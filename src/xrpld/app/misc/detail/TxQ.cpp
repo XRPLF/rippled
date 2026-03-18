@@ -1186,7 +1186,7 @@ TxQ::apply(
             if (lastRIter->feeLevel > feeLevelPaid || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr FeeLevel64 max{std::numeric_limits<std::uint64_t>::max()};
+            constexpr FeeLevel64 kMAX{std::numeric_limits<std::uint64_t>::max()};
             auto endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
@@ -1195,8 +1195,8 @@ TxQ::apply(
                     // Check for overflow.
                     auto next = txn.second.feeLevel / endAccount.transactions.size();
                     auto mod = txn.second.feeLevel % endAccount.transactions.size();
-                    if (total.first >= max - next || total.second >= max - mod)
-                        return {max, FeeLevel64{0}};
+                    if (total.first >= kMAX - next || total.second >= kMAX - mod)
+                        return {kMAX, FeeLevel64{0}};
 
                     return {total.first + next, total.second + mod};
                 });

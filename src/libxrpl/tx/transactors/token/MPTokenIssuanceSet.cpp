@@ -30,7 +30,7 @@ struct MPTMutabilityFlags
     std::uint32_t canMutateFlag;
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
+static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
     {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
      {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth},
      {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
@@ -93,8 +93,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
             // Can not set and clear the same flag
             if (std::any_of(
-                    mptMutabilityFlags.begin(),
-                    mptMutabilityFlags.end(),
+                    kMPT_MUTABILITY_FLAGS.begin(),
+                    kMPT_MUTABILITY_FLAGS.end(),
                     [mutableFlags](auto const& f) {
                         return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
                     }))
@@ -202,8 +202,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::any_of(
-                mptMutabilityFlags.begin(),
-                mptMutabilityFlags.end(),
+                kMPT_MUTABILITY_FLAGS.begin(),
+                kMPT_MUTABILITY_FLAGS.end(),
                 [mutableFlags, &isMutableFlag](auto const& f) {
                     return !isMutableFlag(f.canMutateFlag) &&
                         ((*mutableFlags & (f.setFlag | f.clearFlag)));
@@ -257,7 +257,7 @@ MPTokenIssuanceSet::doApply()
 
     if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
-        for (auto const& f : mptMutabilityFlags)
+        for (auto const& f : kMPT_MUTABILITY_FLAGS)
         {
             if (mutableFlags & f.setFlag)
                 flagsOut |= f.canMutateFlag;

@@ -10,12 +10,12 @@ namespace xrpl {
 std::vector<SOElement> const&
 LedgerFormats::getCommonFields()
 {
-    static auto const commonFields = std::vector<SOElement>{
+    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},
     };
-    return commonFields;
+    return kCOMMON_FIELDS;
 }
 
 LedgerFormats::LedgerFormats()
@@ -40,8 +40,8 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
-    return instance;
+    static LedgerFormats kINSTANCE;
+    return kINSTANCE;
 }
 
 }  // namespace xrpl

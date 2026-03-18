@@ -542,8 +542,8 @@ public:
                                          Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
-                static Amounts const aliceInitialOffer(usd(2), drops(3382562));
-                env(offer(alice, aliceInitialOffer.in, aliceInitialOffer.out));
+                static Amounts const kALICE_INITIAL_OFFER(usd(2), drops(3382562));
+                env(offer(alice, kALICE_INITIAL_OFFER.in, kALICE_INITIAL_OFFER.out));
                 env.close();
                 STAmount const initialRate = Quality(jsonOfferToAmounts(ledgerEntryOffer(
                                                          env, alice, aliceOfferSeq)[jss::node]))
@@ -580,8 +580,8 @@ public:
 
                     Amounts aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
-                    BEAST_EXPECT(aliceReducedOffer.in < aliceInitialOffer.in);
-                    BEAST_EXPECT(aliceReducedOffer.out < aliceInitialOffer.out);
+                    BEAST_EXPECT(aliceReducedOffer.in < kALICE_INITIAL_OFFER.in);
+                    BEAST_EXPECT(aliceReducedOffer.out < kALICE_INITIAL_OFFER.out);
                     STAmount const inLedgerRate = Quality(aliceReducedOffer).rate();
                     badRate = inLedgerRate > initialRate ? 1 : 0;
 
@@ -623,12 +623,12 @@ public:
                 return badRate;
             };
 
-            constexpr int loopCount = 100;
+            constexpr int kLOOP_COUNT = 100;
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = usd(0);
                 STAmount const step(increaseGets.issue(), 1, -8);
-                for (unsigned int i = 0; i < loopCount; ++i)
+                for (unsigned int i = 0; i < kLOOP_COUNT; ++i)
                 {
                     blockedCount +=
                         exerciseOfferTrio(Amounts(drops(1642020), usd(1) + increaseGets));

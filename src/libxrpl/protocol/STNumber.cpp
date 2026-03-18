@@ -153,7 +153,7 @@ operator<<(std::ostream& out, STNumber const& rhs)
 NumberParts
 partsFromString(std::string const& number)
 {
-    static boost::regex const reNumber(
+    static boost::regex const kRE_NUMBER(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
@@ -164,7 +164,7 @@ partsFromString(std::string const& number)
 
     boost::smatch match;
 
-    if (!boost::regex_match(number, match, reNumber))
+    if (!boost::regex_match(number, match, kRE_NUMBER))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
     // Match fields:

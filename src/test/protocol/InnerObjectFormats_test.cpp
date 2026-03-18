@@ -16,7 +16,7 @@ struct TestJSONTxt
     bool const expectFail;
 };
 
-static TestJSONTxt const testArray[] = {
+static TestJSONTxt const kTEST_ARRAY[] = {
 
     // Valid SignerEntry
     {R"({
@@ -157,7 +157,7 @@ public:
         // Instantiate a jtx::Env so debugLog writes are exercised.
         test::jtx::Env env(*this);
 
-        for (auto const& test : testArray)
+        for (auto const& test : kTEST_ARRAY)
         {
             Json::Value req;
             Json::Reader().parse(test.txt, req);

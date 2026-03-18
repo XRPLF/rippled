@@ -512,7 +512,7 @@ public:
             return res;
         };
 
-        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> asFlags{
+        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> kAS_FLAGS{
             {{"defaultRipple", asfDefaultRipple},
              {"depositAuth", asfDepositAuth},
              {"disallowIncomingXRP", asfDisallowXRP},
@@ -521,7 +521,7 @@ public:
              {"requireAuthorization", asfRequireAuth},
              {"requireDestinationTag", asfRequireDest}}};
 
-        for (auto& asf : asFlags)
+        for (auto& asf : kAS_FLAGS)
         {
             // Clear a flag and check that account_info returns results
             // as expected
@@ -541,13 +541,13 @@ public:
         }
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
-            disallowIncomingFlags{
+            kDISALLOW_INCOMING_FLAGS{
                 {{"disallowIncomingCheck", asfDisallowIncomingCheck},
                  {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
                  {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
 
-        for (auto& asf : disallowIncomingFlags)
+        for (auto& asf : kDISALLOW_INCOMING_FLAGS)
         {
             // Clear a flag and check that account_info returns results
             // as expected
@@ -566,47 +566,47 @@ public:
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
-        static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineClawbackFlag{
+        static constexpr std::pair<std::string_view, std::uint32_t> kALLOW_TRUST_LINE_CLAWBACK_FLAG{
             "allowTrustLineClawback", asfAllowTrustLineClawback};
 
         if (features[featureClawback])
         {
             // must use bob's account because alice has noFreeze set
-            auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f1 = getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineClawback
-            env(fset(bob, allowTrustLineClawbackFlag.second));
+            env(fset(bob, kALLOW_TRUST_LINE_CLAWBACK_FLAG.second));
             env.close();
-            auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            auto const f2 = getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
-            BEAST_EXPECT(!getAccountFlag(allowTrustLineClawbackFlag.first, bob));
+            BEAST_EXPECT(!getAccountFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.first, bob));
         }
 
-        static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineLockingFlag{
+        static constexpr std::pair<std::string_view, std::uint32_t> kALLOW_TRUST_LINE_LOCKING_FLAG{
             "allowTrustLineLocking", asfAllowTrustLineLocking};
 
         if (features[featureTokenEscrow])
         {
-            auto const f1 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            auto const f1 = getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob);
             BEAST_EXPECT(f1.has_value());
             BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineLocking
-            env(fset(bob, allowTrustLineLockingFlag.second));
+            env(fset(bob, kALLOW_TRUST_LINE_LOCKING_FLAG.second));
             env.close();
-            auto const f2 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            auto const f2 = getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob);
             BEAST_EXPECT(f2.has_value());
             BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
-            BEAST_EXPECT(!getAccountFlag(allowTrustLineLockingFlag.first, bob));
+            BEAST_EXPECT(!getAccountFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.first, bob));
         }
     }
 

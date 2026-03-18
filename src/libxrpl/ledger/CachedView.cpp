@@ -13,9 +13,9 @@ CachedViewImpl::exists(Keylet const& k) const
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    static CountedObjects::Counter hits{"CachedView::hit"};
-    static CountedObjects::Counter hitsexpired{"CachedView::hitExpired"};
-    static CountedObjects::Counter misses{"CachedView::miss"};
+    static CountedObjects::Counter kHITS{"CachedView::hit"};
+    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
+    static CountedObjects::Counter kMISSES{"CachedView::miss"};
     bool cacheHit = false;
     bool baseRead = false;
 
@@ -40,11 +40,11 @@ CachedViewImpl::read(Keylet const& k) const
     // If the sle is null, then a failure must have occurred in base_.read()
     XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
-        hitsexpired.increment();
+        kHITSEXPIRED.increment();
     else if (cacheHit)
-        hits.increment();
+        kHITS.increment();
     else
-        misses.increment();
+        kMISSES.increment();
 
     if (!cacheHit)
     {

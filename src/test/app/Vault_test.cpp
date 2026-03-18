@@ -34,7 +34,7 @@ class Vault_test : public beast::unit_test::suite
     using PrettyAsset = xrpl::test::jtx::PrettyAsset;
     using PrettyAmount = xrpl::test::jtx::PrettyAmount;
 
-    static auto constexpr negativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
+    static auto constexpr kNEGATIVE_AMOUNT = [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
     };
 
@@ -941,7 +941,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfAssetsMaximum] = negativeAmount(asset).number();
+                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
                     env(tx, ter{temMALFORMED});
                 }
             });
@@ -954,7 +954,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = vault.deposit(
-                        {.depositor = owner, .id = keylet.key, .amount = negativeAmount(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
                     env(tx, ter(temBAD_AMOUNT));
                 }
 
@@ -986,7 +986,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = vault.withdraw(
-                        {.depositor = owner, .id = keylet.key, .amount = negativeAmount(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
                     env(tx, ter(temBAD_AMOUNT));
                 }
 
@@ -1019,7 +1019,7 @@ class Vault_test : public beast::unit_test::suite
                     {.issuer = issuer,
                      .id = keylet.key,
                      .holder = owner,
-                     .amount = negativeAmount(asset)});
+                     .amount = kNEGATIVE_AMOUNT(asset)});
                 env(tx, ter(temBAD_AMOUNT));
             }
         });
@@ -1044,7 +1044,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = tx1;
-                    tx[sfAssetsMaximum] = negativeAmount(asset).number();
+                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
                     env(tx, ter{temMALFORMED});
                 }
 
@@ -4131,17 +4131,17 @@ class Vault_test : public beast::unit_test::suite
                                Json::Value const& issuance = Json::nullValue) {
             BEAST_EXPECT(vault.isObject());
 
-            constexpr auto checkString =
+            constexpr auto kCHECK_STRING =
                 [](auto& node, SField const& field, std::string v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isString() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto checkObject =
+            constexpr auto kCHECK_OBJECT =
                 [](auto& node, SField const& field, Json::Value v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isObject() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto checkInt = [](auto& node, SField const& field, int v) -> bool {
+            constexpr auto kCHECK_INT = [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
                     ((node[field.fieldName].isInt() && node[field.fieldName] == Json::Int(v)) ||
                      (node[field.fieldName].isUInt() && node[field.fieldName] == Json::UInt(v)));
@@ -4149,30 +4149,30 @@ class Vault_test : public beast::unit_test::suite
 
             BEAST_EXPECT(vault["LedgerEntryType"].asString() == "Vault");
             BEAST_EXPECT(vault[jss::index].asString() == strHex(keylet.key));
-            BEAST_EXPECT(checkInt(vault, sfFlags, 0));
+            BEAST_EXPECT(kCHECK_INT(vault, sfFlags, 0));
             // Ignore all other standard fields, this test doesn't care
 
-            BEAST_EXPECT(checkString(vault, sfAccount, toBase58(sle->at(sfAccount))));
-            BEAST_EXPECT(checkObject(vault, sfAsset, to_json(sle->at(sfAsset))));
-            BEAST_EXPECT(checkString(vault, sfAssetsAvailable, "50"));
-            BEAST_EXPECT(checkString(vault, sfAssetsMaximum, "1000"));
-            BEAST_EXPECT(checkString(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfAccount, toBase58(sle->at(sfAccount))));
+            BEAST_EXPECT(kCHECK_OBJECT(vault, sfAsset, to_json(sle->at(sfAsset))));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsAvailable, "50"));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsMaximum, "1000"));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsTotal, "50"));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
-            BEAST_EXPECT(checkString(vault, sfShareMPTID, strShareID));
-            BEAST_EXPECT(checkString(vault, sfOwner, toBase58(owner.id())));
-            BEAST_EXPECT(checkInt(vault, sfSequence, sequence));
-            BEAST_EXPECT(checkInt(vault, sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfShareMPTID, strShareID));
+            BEAST_EXPECT(kCHECK_STRING(vault, sfOwner, toBase58(owner.id())));
+            BEAST_EXPECT(kCHECK_INT(vault, sfSequence, sequence));
+            BEAST_EXPECT(kCHECK_INT(vault, sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
 
             if (issuance.isObject())
             {
                 BEAST_EXPECT(issuance["LedgerEntryType"].asString() == "MPTokenIssuance");
                 BEAST_EXPECT(issuance[jss::mpt_issuance_id].asString() == strShareID);
-                BEAST_EXPECT(checkInt(issuance, sfSequence, 1));
-                BEAST_EXPECT(checkInt(
+                BEAST_EXPECT(kCHECK_INT(issuance, sfSequence, 1));
+                BEAST_EXPECT(kCHECK_INT(
                     issuance, sfFlags, int(lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer)));
-                BEAST_EXPECT(checkString(issuance, sfOutstandingAmount, "50000000"));
+                BEAST_EXPECT(kCHECK_STRING(issuance, sfOutstandingAmount, "50000000"));
             }
         };
 

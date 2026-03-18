@@ -77,8 +77,8 @@ Permission::Permission()
 Permission const&
 Permission::getInstance()
 {
-    static Permission const instance;
-    return instance;
+    static Permission const kINSTANCE;
+    return kINSTANCE;
 }
 
 std::optional<std::string>

@@ -567,15 +567,15 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
 
         std::map<std::size_t, std::vector<Validator>> const lists = []() {
-            auto constexpr listSize = 20;
-            auto constexpr numLists = 9;
+            auto constexpr kLIST_SIZE = 20;
+            auto constexpr kNUM_LISTS = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
             // 1-based to correspond with the individually named blobs below.
-            for (auto i = 1; i <= numLists; ++i)
+            for (auto i = 1; i <= kNUM_LISTS; ++i)
             {
                 auto& list = lists[i];
-                list.reserve(listSize);
-                while (list.size() < listSize)
+                list.reserve(kLIST_SIZE);
+                while (list.size() < kLIST_SIZE)
                     list.push_back(randomValidator());
             }
             return lists;
@@ -913,10 +913,10 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
 
         std::vector<Validator> const list = []() {
-            auto constexpr listSize = 20;
+            auto constexpr kLIST_SIZE = 20;
             std::vector<Validator> list;
-            list.reserve(listSize);
-            while (list.size() < listSize)
+            list.reserve(kLIST_SIZE);
+            while (list.size() < kLIST_SIZE)
                 list.push_back(randomValidator());
             return list;
         }();
@@ -1495,10 +1495,10 @@ private:
             // locals[0]: from 0 to maxKeys - 4
             // locals[1]: from 1 to maxKeys - 2
             // locals[2]: from 2 to maxKeys
-            constexpr static int publishers = 3;
+            constexpr static int kPUBLISHERS = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                publishers>
+                kPUBLISHERS>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1538,7 +1538,7 @@ private:
             };
 
             // Apply multiple published lists
-            for (auto i = 0; i < publishers; ++i)
+            for (auto i = 0; i < kPUBLISHERS; ++i)
                 addPublishedList(i);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 1);
 
@@ -1585,10 +1585,10 @@ private:
             // locals[2]: from 2 to maxKeys
             // intersection of at least 2: same as locals[1]
             // intersection when 1 is dropped: from 2 to maxKeys - 4
-            constexpr static int publishers = 3;
+            constexpr static int kPUBLISHERS = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                publishers>
+                kPUBLISHERS>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1639,7 +1639,7 @@ private:
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
             NetClock::time_point validUntil1, validUntil2;
-            for (auto i = 0; i < publishers; ++i)
+            for (auto i = 0; i < kPUBLISHERS; ++i)
                 addPublishedList(i, validUntil1, validUntil2);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
 
@@ -2476,10 +2476,10 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
 
-        constexpr std::size_t maxKeys = 20;
+        constexpr std::size_t kMAX_KEYS = 20;
         hash_set<NodeID> activeValidators;
         std::vector<Validator> valKeys;
-        while (valKeys.size() != maxKeys)
+        while (valKeys.size() != kMAX_KEYS)
         {
             valKeys.push_back(randomValidator());
             activeValidators.emplace(calcNodeID(valKeys.back().masterPublic));
@@ -2520,13 +2520,13 @@ private:
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
                 cfgPublishers.push_back(strHex(publisherPublic));
 
-                constexpr auto revoked = std::numeric_limits<std::uint32_t>::max();
+                constexpr auto kREVOKED = std::numeric_limits<std::uint32_t>::max();
                 auto const manifest = base64_encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
                     pubSigningKeys.second,
-                    i < countRevoked ? revoked : 1));
+                    i < countRevoked ? kREVOKED : 1));
                 publishers.push_back(
                     Publisher{i < countRevoked, publisherPublic, pubSigningKeys, manifest});
             }
@@ -2563,7 +2563,7 @@ private:
         };
 
         // Test cases use 5 publishers.
-        constexpr auto quorumDisabled = std::numeric_limits<std::size_t>::max();
+        constexpr auto kQUORUM_DISABLED = std::numeric_limits<std::size_t>::max();
         {
             // List threshold = 5 (same as number of trusted publishers)
             ManifestCache pubManifests;
@@ -2611,7 +2611,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2669,7 +2669,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
             hash_set<NodeID> removed;
@@ -2734,7 +2734,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2804,7 +2804,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2870,7 +2870,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2937,7 +2937,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
             hash_set<NodeID> removed;
@@ -3003,7 +3003,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3062,7 +3062,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3120,7 +3120,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3176,7 +3176,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             for (auto const& val : valKeys)
@@ -3221,7 +3221,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3242,7 +3242,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3288,7 +3288,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3308,7 +3308,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3355,7 +3355,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3375,7 +3375,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
             hash_set<NodeID> removed;
@@ -3435,7 +3435,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3496,7 +3496,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3557,7 +3557,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
             hash_set<NodeID> removed;
@@ -3619,7 +3619,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3766,7 +3766,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3834,7 +3834,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;

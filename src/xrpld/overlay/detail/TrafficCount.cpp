@@ -2,7 +2,7 @@
 
 namespace xrpl {
 
-std::unordered_map<protocol::MessageType, TrafficCount::category> const type_lookup = {
+std::unordered_map<protocol::MessageType, TrafficCount::category> const kTYPE_LOOKUP = {
     {protocol::mtPING, TrafficCount::category::base},
     {protocol::mtSTATUS_CHANGE, TrafficCount::category::base},
     {protocol::mtMANIFESTS, TrafficCount::category::manifests},
@@ -27,7 +27,7 @@ TrafficCount::categorize(
     protocol::MessageType type,
     bool inbound)
 {
-    if (auto item = type_lookup.find(type); item != type_lookup.end())
+    if (auto item = kTYPE_LOOKUP.find(type); item != kTYPE_LOOKUP.end())
         return item->second;
 
     if (type == protocol::mtHAVE_SET)

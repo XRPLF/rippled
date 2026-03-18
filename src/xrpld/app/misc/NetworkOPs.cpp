@@ -105,7 +105,7 @@ class NetworkOPsImp final : public NetworkOPs
         running,
     };
 
-    static std::array<char const*, 5> const states;
+    static std::array<char const*, 5> const kSTATES;
 
     /**
      * State accounting records two attributes for each possible server state:
@@ -137,7 +137,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point const processStart_ = start_;
         std::uint64_t initialSyncUs_{0};
-        static std::array<Json::StaticString const, 5> const states;
+        static std::array<Json::StaticString const, 5> const kSTATES;
 
     public:
         explicit StateAccounting()
@@ -804,19 +804,19 @@ private:
 
 //------------------------------------------------------------------------------
 
-static std::array<char const*, 5> const stateNames{
+static std::array<char const*, 5> const kSTATE_NAMES{
     {"disconnected", "connected", "syncing", "tracking", "full"}};
 
-std::array<char const*, 5> const NetworkOPsImp::states = stateNames;
+std::array<char const*, 5> const NetworkOPsImp::kSTATES = kSTATE_NAMES;
 
-std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::states = {
-    {Json::StaticString(stateNames[0]),
-     Json::StaticString(stateNames[1]),
-     Json::StaticString(stateNames[2]),
-     Json::StaticString(stateNames[3]),
-     Json::StaticString(stateNames[4])}};
+std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kSTATES = {
+    {Json::StaticString(kSTATE_NAMES[0]),
+     Json::StaticString(kSTATE_NAMES[1]),
+     Json::StaticString(kSTATE_NAMES[2]),
+     Json::StaticString(kSTATE_NAMES[3]),
+     Json::StaticString(kSTATE_NAMES[4])}};
 
-static auto const genesisAccountId =
+static auto const kGENESIS_ACCOUNT_ID =
     calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
 
 //------------------------------------------------------------------------------
@@ -865,20 +865,20 @@ NetworkOPsImp::isFull()
 std::string
 NetworkOPsImp::getHostId(bool forAdmin)
 {
-    static std::string const hostname = boost::asio::ip::host_name();
+    static std::string const kHOSTNAME = boost::asio::ip::host_name();
 
     if (forAdmin)
-        return hostname;
+        return kHOSTNAME;
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
-    static std::string const shroudedHostId = [this]() {
+    static std::string const kSHROUDED_HOST_ID = [this]() {
         auto const& id = registry_.app().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
     }();
 
-    return shroudedHostId;
+    return kSHROUDED_HOST_ID;
 }
 
 void
@@ -1099,7 +1099,7 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
         }
     }
 
-    return states[static_cast<std::size_t>(mode)];
+    return kSTATES[static_cast<std::size_t>(mode)];
 }
 
 void
@@ -2144,9 +2144,9 @@ NetworkOPsImp::ServerFeeSummary::operator!=(NetworkOPsImp::ServerFeeSummary cons
 static std::uint32_t
 trunc32(std::uint64_t v)
 {
-    constexpr std::uint64_t max32 = std::numeric_limits<std::uint32_t>::max();
+    constexpr std::uint64_t kMAX32 = std::numeric_limits<std::uint32_t>::max();
 
-    return std::min(max32, v);
+    return std::min(kMAX32, v);
 };
 
 void
@@ -2754,11 +2754,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = static_cast<std::uint32_t>(closeOffset.count());
 
-            constexpr std::chrono::seconds highAgeThreshold{1000000};
+            constexpr std::chrono::seconds kHIGH_AGE_THRESHOLD{1000000};
             if (ledgerMaster_.haveValidated())
             {
                 auto const age = ledgerMaster_.getValidatedLedgerAge();
-                l[jss::age] = Json::UInt(age < highAgeThreshold ? age.count() : 0);
+                l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
             }
             else
             {
@@ -2768,7 +2768,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
-                    l[jss::age] = Json::UInt(age < highAgeThreshold ? age.count() : 0);
+                    l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
                 }
             }
         }
@@ -2793,9 +2793,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         std::to_string(registry_.overlay().getPeerDisconnectCharges());
 
     // This array must be sorted in increasing order.
-    static constexpr std::array<std::string_view, 7> protocols{
+    static constexpr std::array<std::string_view, 7> kPROTOCOLS{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
+    static_assert(std::is_sorted(std::begin(kPROTOCOLS), std::end(kPROTOCOLS)));
     {
         Json::Value ports{Json::arrayValue};
         for (auto const& port : registry_.getServerHandler().setup().ports)
@@ -2809,8 +2809,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
-                std::begin(protocols),
-                std::end(protocols),
+                std::begin(kPROTOCOLS),
+                std::end(kPROTOCOLS),
                 std::back_inserter(proto));
             if (!proto.empty())
             {
@@ -2975,11 +2975,11 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         }
 
         {
-            static bool firstTime = true;
-            if (firstTime)
+            static bool kFIRST_TIME = true;
+            if (kFIRST_TIME)
             {
                 // First validated ledger, start delayed SubAccountHistory
-                firstTime = false;
+                kFIRST_TIME = false;
                 for (auto& outer : subAccountHistory_)
                 {
                     for (auto& inner : outer.second)
@@ -3483,7 +3483,7 @@ void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
     enum DatabaseType { Sqlite, None };
-    static auto const databaseType = [&]() -> DatabaseType {
+    static auto const kDATABASE_TYPE = [&]() -> DatabaseType {
         // Use a dynamic_cast to return DatabaseType::None
         // on failure.
         if (dynamic_cast<SQLiteDatabase*>(&registry_.getRelationalDatabase()))
@@ -3493,7 +3493,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
         return DatabaseType::None;
     }();
 
-    if (databaseType == DatabaseType::None)
+    if (kDATABASE_TYPE == DatabaseType::None)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::NetworkOPsImp::addAccountHistoryJob : no database");
@@ -3509,7 +3509,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
     }
 
     registry_.getJobQueue().addJob(
-        jtCLIENT_ACCT_HIST, "HistTxStream", [this, dbType = databaseType, subInfo]() {
+        jtCLIENT_ACCT_HIST, "HistTxStream", [this, dbType = kDATABASE_TYPE, subInfo]() {
             auto const& accountId = subInfo.index->accountId;
             auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
             auto& txHistoryIndex = subInfo.index->historyTxIndex;
@@ -3523,7 +3523,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                  * genesis account: first tx is the one with seq 1
                  * other account: first tx is the one created the account
                  */
-                if (accountId == genesisAccountId)
+                if (accountId == kGENESIS_ACCOUNT_ID)
                 {
                     auto stx = tx->getSTransaction();
                     if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
@@ -3775,7 +3775,7 @@ NetworkOPsImp::subAccountHistoryStart(
                                << ", no need to add AccountHistory job.";
         return;
     }
-    if (accountId == genesisAccountId)
+    if (accountId == kGENESIS_ACCOUNT_ID)
     {
         if (auto const sleAcct = ledger->read(accountKeylet); sleAcct)
         {
@@ -4551,8 +4551,8 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][states[i]] = Json::objectValue;
-        auto& state = obj[jss::state_accounting][states[i]];
+        obj[jss::state_accounting][kSTATES[i]] = Json::objectValue;
+        auto& state = obj[jss::state_accounting][kSTATES[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }

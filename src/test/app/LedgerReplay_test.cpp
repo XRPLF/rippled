@@ -248,8 +248,8 @@ public:
     uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 hash{};
-        return hash;
+        static uint256 kHASH{};
+        return kHASH;
     }
     bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
@@ -398,8 +398,8 @@ struct TestPeerSet : public PeerSet
     std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> emptyPeers;
-        return emptyPeers;
+        static std::set<Peer::id_t> kEMPTY_PEERS;
+        return kEMPTY_PEERS;
     }
 
     LedgerReplayMsgHandler& local;

@@ -109,11 +109,11 @@ TestSink::writeAlways(beast::severities::Severity level, std::string const& text
         }
     }();
 
-    constexpr auto reset = "\033[0m";
+    constexpr auto kRESET = "\033[0m";
 
     if (supportsColor)
     {
-        stream << color << prefix << " " << text << reset << std::endl;
+        stream << color << prefix << " " << text << kRESET << std::endl;
     }
     else
     {

@@ -21,8 +21,8 @@ is_public(AddressV4 const& addr)
 char
 get_class(AddressV4 const& addr)
 {
-    static char const* table = "AAAABBCD";  // cspell:disable-line
-    return table[(addr.to_uint() & 0xE0000000) >> 29];
+    static char const* kTABLE = "AAAABBCD";  // cspell:disable-line
+    return kTABLE[(addr.to_uint() & 0xE0000000) >> 29];
 }
 
 }  // namespace IP

@@ -28,7 +28,7 @@ void
 Section::append(std::vector<std::string> const& lines)
 {
     // <key> '=' <value>
-    static boost::regex const re1(
+    static boost::regex const kRE1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -82,7 +82,7 @@ Section::append(std::vector<std::string> const& lines)
             continue;
 
         boost::smatch match;
-        if (boost::regex_match(line, match, re1))
+        if (boost::regex_match(line, match, kRE1))
             set(match[1], match[2]);
         else
             values_.push_back(line);
@@ -122,10 +122,10 @@ BasicConfig::section(std::string const& name)
 Section const&
 BasicConfig::section(std::string const& name) const
 {
-    static Section none("");
+    static Section kNONE("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
-        return none;
+        return kNONE;
     return iter->second;
 }
 

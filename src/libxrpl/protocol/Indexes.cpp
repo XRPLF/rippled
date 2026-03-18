@@ -122,9 +122,9 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 nextQuality(
+    static constexpr uint256 kNEXT_QUALITY(
         "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + nextQuality;
+    return uBase + kNEXT_QUALITY;
 }
 
 std::uint64_t
@@ -176,8 +176,8 @@ child(uint256 const& key) noexcept
 Keylet const&
 skip() noexcept
 {
-    static Keylet const ret{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SKIP_LIST)};
-    return ret;
+    static Keylet const kRET{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SKIP_LIST)};
+    return kRET;
 }
 
 Keylet
@@ -192,22 +192,22 @@ skip(LedgerIndex ledger) noexcept
 Keylet const&
 amendments() noexcept
 {
-    static Keylet const ret{ltAMENDMENTS, indexHash(LedgerNameSpace::AMENDMENTS)};
-    return ret;
+    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::AMENDMENTS)};
+    return kRET;
 }
 
 Keylet const&
 fees() noexcept
 {
-    static Keylet const ret{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FEE_SETTINGS)};
-    return ret;
+    static Keylet const kRET{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FEE_SETTINGS)};
+    return kRET;
 }
 
 Keylet const&
 negativeUNL() noexcept
 {
-    static Keylet const ret{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NEGATIVE_UNL)};
-    return ret;
+    static Keylet const kRET{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NEGATIVE_UNL)};
+    return kRET;
 }
 
 Keylet

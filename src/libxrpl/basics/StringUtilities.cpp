@@ -37,7 +37,7 @@ bool
 parseUrl(parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl(
+    static boost::regex kRE_URL(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -58,7 +58,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     // Bail if there is no match.
     try
     {
-        if (!boost::regex_match(strUrl, smMatch, reUrl))
+        if (!boost::regex_match(strUrl, smMatch, kRE_URL))
             return false;
     }
     catch (...)
@@ -120,7 +120,7 @@ isProperlyFormedTomlDomain(std::string_view domain)
     // obviously wrong domain names but it isn't perfect. It does not
     // really support IDNs. If this turns out to be an issue, a more
     // thorough regex can be used or this check can just be removed.
-    static boost::regex const re(
+    static boost::regex const kRE(
         "^"                   // Beginning of line
         "("                   // Beginning of a segment
         "(?!-)"               //  - must not begin with '-'
@@ -133,7 +133,7 @@ isProperlyFormedTomlDomain(std::string_view domain)
         ,
         boost::regex_constants::optimize);
 
-    return boost::regex_match(domain.begin(), domain.end(), re);
+    return boost::regex_match(domain.begin(), domain.end(), kRE);
 }
 
 }  // namespace xrpl

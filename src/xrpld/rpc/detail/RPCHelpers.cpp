@@ -133,7 +133,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     using string_to_seed_t = std::function<std::optional<Seed>(std::string const&)>;
     using seed_match_t = std::pair<char const*, string_to_seed_t>;
 
-    static seed_match_t const seedTypes[]{
+    static seed_match_t const kSEED_TYPES[]{
         {jss::passphrase.c_str(), [](std::string const& s) { return parseGenericSeed(s); }},
         {jss::seed.c_str(), [](std::string const& s) { return parseBase58<Seed>(s); }},
         {jss::seed_hex.c_str(), [](std::string const& s) {
@@ -146,7 +146,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     // Identify which seed type is in use.
     seed_match_t const* seedType = nullptr;
     int count = 0;
-    for (auto const& t : seedTypes)
+    for (auto const& t : kSEED_TYPES)
     {
         if (params.isMember(t.first))
         {
@@ -188,13 +188,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     bool const hasKeyType = params.isMember(jss::key_type);
 
     // All of the secret types we allow, but only one at a time.
-    static char const* const secretTypes[]{
+    static char const* const kSECRET_TYPES[]{
         jss::passphrase.c_str(), jss::secret.c_str(), jss::seed.c_str(), jss::seed_hex.c_str()};
 
     // Identify which secret type is in use.
     char const* secretType = nullptr;
     int count = 0;
-    for (auto t : secretTypes)
+    for (auto t : kSECRET_TYPES)
     {
         if (params.isMember(t))
         {
@@ -314,7 +314,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr auto types =
+        static constexpr auto kTYPES =
             std::to_array<std::tuple<char const*, char const*, LedgerEntryType>>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
@@ -341,10 +341,10 @@ chooseLedgerEntryType(Json::Value const& params)
         // against the canonical name (case-insensitive) or the RPC name
         // (case-sensitive).
         auto const filter = p.asString();
-        auto const iter = std::ranges::find_if(types, [&filter](decltype(types.front())& t) {
+        auto const iter = std::ranges::find_if(kTYPES, [&filter](decltype(kTYPES.front())& t) {
             return boost::iequals(std::get<0>(t), filter) || std::get<1>(t) == filter;
         });
-        if (iter == types.end())
+        if (iter == kTYPES.end())
         {
             result.first = RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
             XRPL_ASSERT(

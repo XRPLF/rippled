@@ -96,8 +96,8 @@ protected:
         static BrokerParameters const&
         defaults()
         {
-            static BrokerParameters const result{};
-            return result;
+            static BrokerParameters const kRESULT{};
+            return kRESULT;
         }
 
         // TODO: create an operator() which returns a transaction similar to
@@ -224,8 +224,8 @@ protected:
         static PaymentParameters const&
         defaults()
         {
-            static PaymentParameters const result{};
-            return result;
+            static PaymentParameters const kRESULT{};
+            return kRESULT;
         }
     };
 
@@ -1421,8 +1421,8 @@ protected:
         // Delete the loan
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
-        static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
+        static unsigned kDELETE_COUNTER = 0;
+        auto const deleter = ++kDELETE_COUNTER % 2 ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 
@@ -4144,8 +4144,9 @@ protected:
 
         env.fund(XRP(1'000), issuer, lender);
 
-        std::int64_t constexpr issuerBalance = 10'000'000;
-        MPTTester asset({.env = env, .issuer = issuer, .holders = {lender}, .pay = issuerBalance});
+        std::int64_t constexpr kISSUER_BALANCE = 10'000'000;
+        MPTTester asset(
+            {.env = env, .issuer = issuer, .holders = {lender}, .pay = kISSUER_BALANCE});
 
         BrokerParameters const brokerParams{
             .debtMax = 200,
@@ -4158,13 +4159,13 @@ protected:
         // Issuer should not create MPToken
         BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
         // Issuer "borrowed" 200, OutstandingAmount decreased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-issuerBalance + 200));
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kISSUER_BALANCE + 200));
         // Pay Loan
         auto const loanKeylet = keylet::loan(broker.brokerID, 1);
         env(pay(borrower, loanKeylet.key, asset(200)));
         env.close();
         // Issuer "re-payed" 200, OutstandingAmount increased by 200
-        BEAST_EXPECT(env.balance(issuer, asset) == asset(-issuerBalance));
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kISSUER_BALANCE));
     }
 
     void
@@ -4939,8 +4940,8 @@ protected:
 
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr maxTime = std::numeric_limits<timeType>::max();
-        static_assert(maxTime == 4'294'967'295);
+        timeType constexpr kMAX_TIME = std::numeric_limits<timeType>::max();
+        static_assert(kMAX_TIME == 4'294'967'295);
 
         auto const baseJson = [&]() {
             auto createJson = env.json(
@@ -4969,7 +4970,7 @@ protected:
 
             BEAST_EXPECT(startDate >= 50);
 
-            return maxTime - startDate;
+            return kMAX_TIME - startDate;
         };
 
         {
@@ -5070,7 +5071,7 @@ protected:
 
             auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
             auto const grace = 5'000;
-            auto const interval = maxTime - closeStartDate - grace;
+            auto const interval = kMAX_TIME - closeStartDate - grace;
             auto const total = 1;
             auto createJson = env.json(
                 baseJson, paymentInterval(interval), paymentTotal(total), gracePeriod(grace));
@@ -5087,7 +5088,7 @@ protected:
 
             // This loan exists
             auto const afterState = getCurrentState(env, broker, keylet);
-            BEAST_EXPECT(afterState.nextPaymentDate == maxTime - grace);
+            BEAST_EXPECT(afterState.nextPaymentDate == kMAX_TIME - grace);
             BEAST_EXPECT(afterState.previousPaymentDate == 0);
             BEAST_EXPECT(afterState.paymentRemaining == 1);
         }
@@ -5099,7 +5100,7 @@ protected:
             // Start date when the ledger is closed will be larger
             auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
             auto const grace = 5'000;
-            auto const maxLoanTime = maxTime - closeStartDate - grace;
+            auto const maxLoanTime = kMAX_TIME - closeStartDate - grace;
             auto const total = [&]() {
                 if (maxLoanTime % 5 == 0)
                     return 5;
@@ -5146,8 +5147,8 @@ protected:
             // The loan is on the last payment
             auto const afterState = getCurrentState(env, broker, keylet);
             BEAST_EXPECT(afterState.paymentRemaining == 1);
-            BEAST_EXPECT(afterState.nextPaymentDate == maxTime - grace);
-            BEAST_EXPECT(afterState.previousPaymentDate == maxTime - grace - interval);
+            BEAST_EXPECT(afterState.nextPaymentDate == kMAX_TIME - grace);
+            BEAST_EXPECT(afterState.previousPaymentDate == kMAX_TIME - grace - interval);
         }
     }
 
@@ -5198,8 +5199,8 @@ protected:
                 err);
         });
 
-        std::uint32_t constexpr loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+        std::uint32_t constexpr kLOAN_SEQUENCE = 1;
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLOAN_SEQUENCE);
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {

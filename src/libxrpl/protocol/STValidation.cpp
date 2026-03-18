@@ -37,7 +37,7 @@ STValidation::validationFormat()
     // it relies on the SField's below being initialized, and we can't
     // guarantee the initialization order.
     // clang-format off
-    static SOTemplate const format{
+    static SOTemplate const kFORMAT{
         {sfFlags,               soeREQUIRED},
         {sfLedgerHash,          soeREQUIRED},
         {sfLedgerSequence,      soeREQUIRED},
@@ -61,7 +61,7 @@ STValidation::validationFormat()
     };
     // clang-format on
 
-    return format;
+    return kFORMAT;
 };
 
 uint256

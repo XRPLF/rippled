@@ -79,8 +79,8 @@ csprng_engine::operator()()
 csprng_engine&
 crypto_prng()
 {
-    static csprng_engine engine;
-    return engine;
+    static csprng_engine kENGINE;
+    return kENGINE;
 }
 
 }  // namespace xrpl

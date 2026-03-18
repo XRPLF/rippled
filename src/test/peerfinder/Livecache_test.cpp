@@ -117,9 +117,9 @@ public:
     testHistogram()
     {
         testcase("Histogram");
-        constexpr auto numEps = 40;
+        constexpr auto kNUM_EPS = 40;
         Livecache<> c(clock_, journal_);
-        for (auto i = 0; i < numEps; ++i)
+        for (auto i = 0; i < kNUM_EPS; ++i)
             add(beast::IP::randomEP(true), c, xrpl::rand_int<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
@@ -133,7 +133,7 @@ public:
             sum += val;
             BEAST_EXPECT(val >= 0);
         }
-        BEAST_EXPECT(sum == numEps);
+        BEAST_EXPECT(sum == kNUM_EPS);
     }
 
     void

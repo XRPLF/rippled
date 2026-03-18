@@ -303,7 +303,7 @@ FeatureCollections::featureToName(uint256 const& f) const
     return feature ? feature->name : to_string(f);
 }
 
-static FeatureCollections featureCollections;
+static FeatureCollections gFeatureCollections;
 
 }  // namespace
 
@@ -311,7 +311,7 @@ static FeatureCollections featureCollections;
 std::map<std::string, AmendmentSupport> const&
 allAmendments()
 {
-    return featureCollections.allAmendments();
+    return gFeatureCollections.allAmendments();
 }
 
 /** Amendments that this server supports.
@@ -320,21 +320,21 @@ allAmendments()
 std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
-    return featureCollections.supportedAmendments();
+    return gFeatureCollections.supportedAmendments();
 }
 
 /** Amendments that this server won't vote for by default. */
 std::size_t
 detail::numDownVotedAmendments()
 {
-    return featureCollections.numDownVotedAmendments();
+    return gFeatureCollections.numDownVotedAmendments();
 }
 
 /** Amendments that this server will vote for by default. */
 std::size_t
 detail::numUpVotedAmendments()
 {
-    return featureCollections.numUpVotedAmendments();
+    return gFeatureCollections.numUpVotedAmendments();
 }
 
 //------------------------------------------------------------------------------
@@ -342,13 +342,13 @@ detail::numUpVotedAmendments()
 std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
-    return featureCollections.getRegisteredFeature(name);
+    return gFeatureCollections.getRegisteredFeature(name);
 }
 
 uint256
 registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
-    return featureCollections.registerFeature(name, support, vote);
+    return gFeatureCollections.registerFeature(name, support, vote);
 }
 
 // Retired features are in the ledger and have no code controlled by the
@@ -363,25 +363,25 @@ retireFeature(std::string const& name)
 bool
 registrationIsDone()
 {
-    return featureCollections.registrationIsDone();
+    return gFeatureCollections.registrationIsDone();
 }
 
 size_t
 featureToBitsetIndex(uint256 const& f)
 {
-    return featureCollections.featureToBitsetIndex(f);
+    return gFeatureCollections.featureToBitsetIndex(f);
 }
 
 uint256
 bitsetIndexToFeature(size_t i)
 {
-    return featureCollections.bitsetIndexToFeature(i);
+    return gFeatureCollections.bitsetIndexToFeature(i);
 }
 
 std::string
 featureToName(uint256 const& f)
 {
-    return featureCollections.featureToName(f);
+    return gFeatureCollections.featureToName(f);
 }
 
 // All known amendments must be registered either here or below with the
@@ -438,6 +438,6 @@ enforceValidFeatureName(auto fn) -> char const*
 // are initialized from top to bottom.
 //
 // Use initialization of one final static variable to set featureCollections::readOnly_.
-[[maybe_unused]] static bool const readOnlySet = featureCollections.registrationIsDone();
+[[maybe_unused]] static bool const kREAD_ONLY_SET = gFeatureCollections.registrationIsDone();
 
 }  // namespace xrpl

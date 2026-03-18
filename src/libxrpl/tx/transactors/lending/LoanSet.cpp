@@ -164,7 +164,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{
+    static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{
         ~sfPrincipalRequested,
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
@@ -173,7 +173,7 @@ LoanSet::getValueFields()
         // Overpayment fee is really a rate. Don't check it here.
     };
 
-    return valueFields;
+    return kVALUE_FIELDS;
 }
 
 static std::uint32_t
@@ -195,10 +195,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // overflows, and we kill the transaction.
         using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
         static_assert(std::is_same_v<timeType, std::uint32_t>);
-        timeType constexpr maxTime = std::numeric_limits<timeType>::max();
-        static_assert(maxTime == 4'294'967'295);
+        timeType constexpr kMAX_TIME = std::numeric_limits<timeType>::max();
+        static_assert(kMAX_TIME == 4'294'967'295);
 
-        auto const timeAvailable = maxTime - getStartDate(ctx.view);
+        auto const timeAvailable = kMAX_TIME - getStartDate(ctx.view);
 
         auto const interval = ctx.tx.at(~sfPaymentInterval).value_or(defaultPaymentInterval);
         auto const total = ctx.tx.at(~sfPaymentTotal).value_or(defaultPaymentTotal);

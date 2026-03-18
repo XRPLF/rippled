@@ -36,7 +36,7 @@ deserializeManifest(Slice s, beast::Journal journal)
     if (s.empty())
         return std::nullopt;
 
-    static SOTemplate const manifestFormat{
+    static SOTemplate const kMANIFEST_FORMAT{
         // A manifest must include:
         // - the master public key
         {sfPublicKey, soeREQUIRED},
@@ -66,7 +66,7 @@ deserializeManifest(Slice s, beast::Journal journal)
         SerialIter sit{s};
         STObject st{sit, sfGeneric};
 
-        st.applyTemplate(manifestFormat);
+        st.applyTemplate(kMANIFEST_FORMAT);
 
         // We only understand "version 0" manifests at this time:
         if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)

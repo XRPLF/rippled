@@ -80,8 +80,8 @@ seconds_clock_thread::run()
 basic_seconds_clock::time_point
 basic_seconds_clock::now()
 {
-    static seconds_clock_thread clk;
-    return clk.now();
+    static seconds_clock_thread kCLK;
+    return kCLK.now();
 }
 
 }  // namespace beast

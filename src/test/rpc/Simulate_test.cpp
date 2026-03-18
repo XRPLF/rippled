@@ -471,7 +471,7 @@ class Simulate_test : public beast::unit_test::suite
                     cfg->NETWORK_ID = 0;
                     return cfg;
                 })};
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
 
         {
             auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
@@ -497,7 +497,7 @@ class Simulate_test : public beast::unit_test::suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -509,7 +509,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
 
             // test with autofill
             testTx(env, tx, validateOutput);
@@ -642,7 +642,7 @@ class Simulate_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -682,7 +682,7 @@ class Simulate_test : public beast::unit_test::suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -694,7 +694,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
 
             // test with autofill
             testTx(env, tx, validateOutput, false);
@@ -731,7 +731,7 @@ class Simulate_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
         Account const alice{"alice"};
         env(regkey(env.master, alice));
         env(fset(env.master, asfDisableMaster), sig(env.master));
@@ -755,7 +755,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
 
@@ -780,7 +780,7 @@ class Simulate_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -810,7 +810,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
             tx[sfSigners] = Json::arrayValue;
@@ -843,7 +843,7 @@ class Simulate_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -875,7 +875,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
             tx[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
@@ -1011,7 +1011,7 @@ class Simulate_test : public beast::unit_test::suite
                     cfg->NETWORK_ID = 1025;
                     return cfg;
                 })};
-        static auto const newDomain = "123ABC";
+        static auto const kNEW_DOMAIN = "123ABC";
 
         {
             auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
@@ -1037,7 +1037,7 @@ class Simulate_test : public beast::unit_test::suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -1049,7 +1049,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = newDomain;
+            tx[sfDomain] = kNEW_DOMAIN;
 
             // test with autofill
             testTx(env, tx, validateOutput);

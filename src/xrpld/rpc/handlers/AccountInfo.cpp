@@ -101,7 +101,7 @@ doAccountInfo(RPC::JsonContext& context)
     }
     auto const accountID{std::move(id.value())};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> lsFlags{
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLS_FLAGS{
         {{"defaultRipple", lsfDefaultRipple},
          {"depositAuth", lsfDepositAuth},
          {"disableMasterKey", lsfDisableMaster},
@@ -113,17 +113,17 @@ doAccountInfo(RPC::JsonContext& context)
          {"requireDestinationTag", lsfRequireDestTag}}};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        disallowIncomingFlags{
+        kDISALLOW_INCOMING_FLAGS{
             {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
              {"disallowIncomingCheck", lsfDisallowIncomingCheck},
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
              {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineClawbackFlag{
-        "allowTrustLineClawback", lsfAllowTrustLineClawback};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        kALLOW_TRUST_LINE_CLAWBACK_FLAG{"allowTrustLineClawback", lsfAllowTrustLineClawback};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineLockingFlag{
-        "allowTrustLineLocking", lsfAllowTrustLineLocking};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        kALLOW_TRUST_LINE_LOCKING_FLAG{"allowTrustLineLocking", lsfAllowTrustLineLocking};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -143,19 +143,19 @@ doAccountInfo(RPC::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         Json::Value acctFlags{Json::objectValue};
-        for (auto const& lsf : lsFlags)
+        for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        for (auto const& lsf : disallowIncomingFlags)
+        for (auto const& lsf : kDISALLOW_INCOMING_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
-            acctFlags[allowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
+            acctFlags[kALLOW_TRUST_LINE_CLAWBACK_FLAG.first.data()] =
+                sleAccepted->isFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
-            acctFlags[allowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineLockingFlag.second);
+            acctFlags[kALLOW_TRUST_LINE_LOCKING_FLAG.first.data()] =
+                sleAccepted->isFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.second);
 
         result[jss::account_flags] = std::move(acctFlags);
 

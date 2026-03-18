@@ -420,8 +420,8 @@ public:
         // Alice creates 1001 offers.  This is one greater than the number of
         // directory entries an AccountDelete will remove.
         std::uint32_t const offerSeq0{env.seq(alice)};
-        constexpr int offerCount{1001};
-        for (int i{0}; i < offerCount; ++i)
+        constexpr int kOFFER_COUNT{1001};
+        for (int i{0}; i < kOFFER_COUNT; ++i)
         {
             env(offer(alice, gw[currency](1), XRP(1)));
             env.close();
@@ -457,11 +457,11 @@ public:
             BEAST_EXPECT(closed->exists(aliceOwnerDirKey));
 
             // alice's directory nodes.
-            for (std::uint32_t i{0}; i < ((offerCount / 32) + 1); ++i)
+            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
                 BEAST_EXPECT(closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's offers.
-            for (std::uint32_t i{0}; i < offerCount; ++i)
+            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
                 BEAST_EXPECT(closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
 
@@ -472,10 +472,10 @@ public:
         env(acctdelete(alice, gw), fee(acctDelFee), ter(tefTOO_BIG));
 
         // Cancel one of alice's offers.  Then the account delete can succeed.
-        env.require(offers(alice, offerCount));
+        env.require(offers(alice, kOFFER_COUNT));
         env(offer_cancel(alice, offerSeq0));
         env.close();
-        env.require(offers(alice, offerCount - 1));
+        env.require(offers(alice, kOFFER_COUNT - 1));
 
         // alice successfully deletes her account.
         auto const alicePreDelBal{env.balance(alice)};
@@ -491,11 +491,11 @@ public:
             BEAST_EXPECT(!closed->exists(aliceOwnerDirKey));
 
             // alice's former directory nodes.
-            for (std::uint32_t i{0}; i < ((offerCount / 32) + 1); ++i)
+            for (std::uint32_t i{0}; i < ((kOFFER_COUNT / 32) + 1); ++i)
                 BEAST_EXPECT(!closed->exists(keylet::page(aliceOwnerDirKey, i)));
 
             // alice's former offers.
-            for (std::uint32_t i{0}; i < offerCount; ++i)
+            for (std::uint32_t i{0}; i < kOFFER_COUNT; ++i)
                 BEAST_EXPECT(!closed->exists(keylet::offer(alice.id(), offerSeq0 + i)));
         }
     }

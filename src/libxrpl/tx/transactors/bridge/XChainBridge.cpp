@@ -1335,9 +1335,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const rootAccount = calcAccountID(
+        static auto const kROOT_ACCOUNT = calcAccountID(
             generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != rootAccount)
+        if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }

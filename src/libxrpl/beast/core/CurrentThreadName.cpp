@@ -110,19 +110,19 @@ setCurrentThreadNameImpl(std::string_view name)
 namespace beast {
 
 namespace detail {
-thread_local std::string threadName;
+thread_local std::string gThreadName;
 }  // namespace detail
 
 std::string
 getCurrentThreadName()
 {
-    return detail::threadName;
+    return detail::gThreadName;
 }
 
 void
 setCurrentThreadName(std::string_view name)
 {
-    detail::threadName = name;
+    detail::gThreadName = name;
     detail::setCurrentThreadNameImpl(name);
 }
 

@@ -160,8 +160,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.timeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> skip{};
-        app_.overlay().relay(tx.id(), msg, skip);
+        static std::set<Peer::id_t> kSKIP{};
+        app_.overlay().relay(tx.id(), msg, kSKIP);
     }
     else
     {

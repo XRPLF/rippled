@@ -95,10 +95,10 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Mint 100 sequential NFTs.  Tweak the taxon so zero is always stored.
         // That's what makes them sequential.
-        constexpr std::size_t nftCount = 100;
+        constexpr std::size_t kNFT_COUNT = 100;
         std::vector<uint256> nftIDs;
-        nftIDs.reserve(nftCount);
-        for (int i = 0; i < nftCount; ++i)
+        nftIDs.reserve(kNFT_COUNT);
+        for (int i = 0; i < kNFT_COUNT; ++i)
         {
             std::uint32_t taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
             nftIDs.emplace_back(token::getNextID(env, issuer, taxon, tfTransferable));
@@ -241,7 +241,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // These seeds cause a lopsided split where the new NFT is added
         // to the upper page.
-        static std::initializer_list<std::string_view const> const splitAndAddToHi{
+        static std::initializer_list<std::string_view const> const kSPLIT_AND_ADD_TO_HI{
             "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
             "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
             "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
@@ -287,7 +287,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // These seeds cause a lopsided split where the new NFT is added
         // to the lower page.
-        static std::initializer_list<std::string_view const> const splitAndAddToLo{
+        static std::initializer_list<std::string_view const> const kSPLIT_AND_ADD_TO_LO{
             "sp6JS7f14BuwFY8Mw5p3b8jjQBBTK",  //  0. 0x1d2932ea
             "sp6JS7f14BuwFY8Mw6F7X3EiGKazu",  //  1. 0x1d2932ea
             "sp6JS7f14BuwFY8Mw6FxjntJJfKXq",  //  2. 0x1d2932ea
@@ -332,8 +332,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         };
 
         // Run the test cases.
-        exerciseLopsided(splitAndAddToHi);
-        exerciseLopsided(splitAndAddToLo);
+        exerciseLopsided(kSPLIT_AND_ADD_TO_HI);
+        exerciseLopsided(kSPLIT_AND_ADD_TO_LO);
     }
 
     void
@@ -449,7 +449,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // These seeds fill the last 17 entries of the initial page with
         // equivalent NFTs.  The split should keep these together.
-        static std::initializer_list<std::string_view const> const seventeenHi{
+        static std::initializer_list<std::string_view const> const kSEVENTEEN_HI{
             // These 16 need to be kept together by the implementation.
             "sp6JS7f14BuwFY8Mw5EYu5z86hKDL",  //  0. 0x399187e9
             "sp6JS7f14BuwFY8Mw5PUAMwc5ygd7",  //  1. 0x399187e9
@@ -490,7 +490,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // These seeds fill the first entries of the initial page with
         // equivalent NFTs.  The split should keep these together.
-        static std::initializer_list<std::string_view const> const seventeenLo{
+        static std::initializer_list<std::string_view const> const kSEVENTEEN_LO{
             // These 17 need to be kept together by the implementation.
             "sp6JS7f14BuwFY8Mw5EYu5z86hKDL",  //  0. 0x399187e9
             "sp6JS7f14BuwFY8Mw5PUAMwc5ygd7",  //  1. 0x399187e9
@@ -530,8 +530,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         };
 
         // Run the test cases.
-        exercise(seventeenHi);
-        exercise(seventeenLo);
+        exercise(kSEVENTEEN_HI);
+        exercise(kSEVENTEEN_LO);
     }
 
     void
@@ -552,7 +552,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const seeds{
+        static std::initializer_list<std::string_view const> const kSEEDS{
             "sp6JS7f14BuwFY8Mw5FnqmbciPvH6",  //  0. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5MBGbyMSsXLp",  //  1. 0x9a8ebed3
             "sp6JS7f14BuwFY8Mw5S4PnDyBdKKm",  //  2. 0x9a8ebed3
@@ -590,8 +590,8 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        accounts.reserve(kSEEDS.size());
+        for (std::string_view seed : kSEEDS)
         {
             Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
@@ -715,7 +715,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Here are 33 seeds that produce identical low 32-bits in their
         // corresponding AccountIDs.
-        static std::initializer_list<std::string_view const> const seeds{
+        static std::initializer_list<std::string_view const> const kSEEDS{
             "sp6JS7f14BuwFY8Mw56vZeiBuhePx",  //  0. 0x115d0525
             "sp6JS7f14BuwFY8Mw5BodF9tGuTUe",  //  1. 0x115d0525
             "sp6JS7f14BuwFY8Mw5EnhC1cg84J7",  //  2. 0x115d0525
@@ -753,8 +753,8 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
-        accounts.reserve(seeds.size());
-        for (std::string_view seed : seeds)
+        accounts.reserve(kSEEDS.size());
+        for (std::string_view seed : kSEEDS)
         {
             Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
@@ -817,11 +817,11 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             overflowNFTs.push_back(nftIDsByPage[i].back());
             nftIDsByPage[i].pop_back();
-            BEAST_EXPECT(nftIDsByPage[i].size() == seeds.size() - 1);
+            BEAST_EXPECT(nftIDsByPage[i].size() == kSEEDS.size() - 1);
 
             overflowOffers.push_back(offers[i].back());
             offers[i].pop_back();
-            BEAST_EXPECT(offers[i].size() == seeds.size() - 1);
+            BEAST_EXPECT(offers[i].size() == kSEEDS.size() - 1);
         }
 
         // buyer accepts all of the offers that won't cause an overflow.

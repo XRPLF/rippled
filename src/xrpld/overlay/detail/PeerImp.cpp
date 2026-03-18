@@ -37,13 +37,13 @@ namespace xrpl {
 
 namespace {
 /** The threshold above which we treat a peer connection as high latency */
-std::chrono::milliseconds constexpr peerHighLatency{300};
+std::chrono::milliseconds constexpr kPEER_HIGH_LATENCY{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
-std::chrono::seconds constexpr peerTimerInterval{60};
+std::chrono::seconds constexpr kPEER_TIMER_INTERVAL{60};
 
 /** The timeout for a shutdown timer */
-std::chrono::seconds constexpr shutdownTimerInterval{5};
+std::chrono::seconds constexpr kSHUTDOWN_TIMER_INTERVAL{5};
 
 }  // namespace
 
@@ -578,7 +578,7 @@ PeerImp::tryAsyncShutdown()
 
     shutdownStarted_ = true;
 
-    setTimer(shutdownTimerInterval);
+    setTimer(kSHUTDOWN_TIMER_INTERVAL);
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
     stream_.async_shutdown(bind_executor(
@@ -735,7 +735,7 @@ PeerImp::onTimer(error_code const& ec)
 
     send(std::make_shared<Message>(message, protocol::mtPING));
 
-    setTimer(peerTimerInterval);
+    setTimer(kPEER_TIMER_INTERVAL);
 }
 
 void
@@ -875,7 +875,7 @@ PeerImp::doProtocolStart()
     if (auto m = overlay_.getManifestsMessage())
         send(m);
 
-    setTimer(peerTimerInterval);
+    setTimer(kPEER_TIMER_INTERVAL);
 }
 
 // Called repeatedly with protocol message data
@@ -1316,9 +1316,9 @@ PeerImp::handleTransaction(
         // LCOV_EXCL_STOP
 
         HashRouterFlags flags = HashRouterFlags::UNDEFINED;
-        constexpr std::chrono::seconds txInterval = 10s;
+        constexpr std::chrono::seconds kTX_INTERVAL = 10s;
 
-        if (!app_.getHashRouter().shouldProcess(txID, id_, flags, txInterval))
+        if (!app_.getHashRouter().shouldProcess(txID, id_, flags, kTX_INTERVAL))
         {
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
@@ -3321,24 +3321,24 @@ PeerImp::getScore(bool haveItem) const
 {
     // Random component of score, used to break ties and avoid
     // overloading the "best" peer
-    static int const spRandomMax = 9999;
+    static int const kSP_RANDOM_MAX = 9999;
 
     // Score for being very likely to have the thing we are
     // look for; should be roughly spRandomMax
-    static int const spHaveItem = 10000;
+    static int const kSP_HAVE_ITEM = 10000;
 
     // Score reduction for each millisecond of latency; should
     // be roughly spRandomMax divided by the maximum reasonable
     // latency
-    static int const spLatency = 30;
+    static int const kSP_LATENCY = 30;
 
     // Penalty for unknown latency; should be roughly spRandomMax
-    static int const spNoLatency = 8000;
+    static int const kSP_NO_LATENCY = 8000;
 
-    int score = rand_int(spRandomMax);
+    int score = rand_int(kSP_RANDOM_MAX);
 
     if (haveItem)
-        score += spHaveItem;
+        score += kSP_HAVE_ITEM;
 
     std::optional<std::chrono::milliseconds> latency;
     {
@@ -3347,9 +3347,9 @@ PeerImp::getScore(bool haveItem) const
     }
 
     if (latency)
-        score -= latency->count() * spLatency;
+        score -= latency->count() * kSP_LATENCY;
     else
-        score -= spNoLatency;
+        score -= kSP_NO_LATENCY;
 
     return score;
 }
@@ -3358,7 +3358,7 @@ bool
 PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
-    return latency_ >= peerHighLatency;
+    return latency_ >= kPEER_HIGH_LATENCY;
 }
 
 void

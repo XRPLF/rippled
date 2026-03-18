@@ -16,16 +16,16 @@ ValidNFTokenPage::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    static constexpr uint256 const& pageBits = nft::pageMask;
-    static constexpr uint256 const accountBits = ~pageBits;
+    static constexpr uint256 const& kPAGE_BITS = nft::pageMask;
+    static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) ||
         (after && after->getType() != ltNFTOKEN_PAGE))
         return;
 
     auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
-        uint256 const account = sle->key() & accountBits;
-        uint256 const hiLimit = sle->key() & pageBits;
+        uint256 const account = sle->key() & kACCOUNT_BITS;
+        uint256 const hiLimit = sle->key() & kPAGE_BITS;
         std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
 
         // Make sure that any page links...
@@ -33,19 +33,19 @@ ValidNFTokenPage::visitEntry(
         //  2. The page is correctly ordered between links.
         if (prev)
         {
-            if (account != (*prev & accountBits))
+            if (account != (*prev & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit <= (*prev & pageBits))
+            if (hiLimit <= (*prev & kPAGE_BITS))
                 badLink_ = true;
         }
 
         if (auto const next = (*sle)[~sfNextPageMin])
         {
-            if (account != (*next & accountBits))
+            if (account != (*next & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit >= (*next & pageBits))
+            if (hiLimit >= (*next & kPAGE_BITS))
                 badLink_ = true;
         }
 
@@ -59,7 +59,7 @@ ValidNFTokenPage::visitEntry(
 
             // If prev is valid, use it to establish a lower bound for
             // page entries.  If prev is not valid the lower bound is zero.
-            uint256 const loLimit = prev ? *prev & pageBits : uint256(beast::zero);
+            uint256 const loLimit = prev ? *prev & kPAGE_BITS : uint256(beast::zero);
 
             // Also verify that all NFTokenIDs in the page are sorted.
             uint256 loCmp = loLimit;
@@ -72,7 +72,7 @@ ValidNFTokenPage::visitEntry(
 
                 // None of the NFTs on this page should belong on lower or
                 // higher pages.
-                if (uint256 const tokenPageBits = tokenID & pageBits;
+                if (uint256 const tokenPageBits = tokenID & kPAGE_BITS;
                     tokenPageBits < loLimit || tokenPageBits >= hiLimit)
                     badEntry_ = true;
 

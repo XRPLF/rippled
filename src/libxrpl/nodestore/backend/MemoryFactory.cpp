@@ -55,13 +55,13 @@ public:
     }
 };
 
-MemoryFactory* memoryFactory = nullptr;
+MemoryFactory* gMemoryFactory = nullptr;
 
 void
 registerMemoryFactory(Manager& manager)
 {
-    static MemoryFactory instance{manager};
-    memoryFactory = &instance;
+    static MemoryFactory kINSTANCE{manager};
+    gMemoryFactory = &kINSTANCE;
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ public:
     void
     open(bool) override
     {
-        db_ = &memoryFactory->open(name_);
+        db_ = &gMemoryFactory->open(name_);
     }
 
     bool

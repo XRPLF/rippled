@@ -1456,12 +1456,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<signer> const signers = [] {
-                constexpr int numSigners = 4;
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1514,12 +1514,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<signer> const signers = [] {
-                constexpr int numSigners = 4;
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1573,12 +1573,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<signer> const signers = [] {
-                constexpr int numSigners = 4;
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1632,12 +1632,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             std::uint32_t const quorum7 = 7;
             std::vector<signer> const signers = [] {
-                constexpr int numSigners = 4;
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -3713,7 +3713,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 struct XChainSim_test : public beast::unit_test::suite, public jtx::XChainBridgeObjects
 {
 private:
-    static constexpr size_t numSigners = 5;
+    static constexpr size_t kNUM_SIGNERS = 5;
 
     // --------------------------------------------------
     enum class WithClaim { no, yes };
@@ -3726,7 +3726,7 @@ private:
         bool a2b;  // direction of transfer
         WithClaim with_claim{WithClaim::no};
         uint32_t claim_id{0};
-        std::array<bool, numSigners> attested{};
+        std::array<bool, kNUM_SIGNERS> attested{};
     };
 
     struct AccountCreate
@@ -3737,7 +3737,7 @@ private:
         STAmount reward;
         bool a2b;
         uint32_t claim_id{0};
-        std::array<bool, numSigners> attested{};
+        std::array<bool, kNUM_SIGNERS> attested{};
     };
 
     using ENV = XEnv<XChainSim_test>;
@@ -3926,7 +3926,7 @@ private:
         };
 
         using SignerAttns = std::unordered_map<BridgeID, Claims>;
-        using SignersAttns = std::array<SignerAttns, numSigners>;
+        using SignersAttns = std::array<SignerAttns, kNUM_SIGNERS>;
 
         ENV& env;
         std::map<jtx::Account, AccountStateTrack> accounts;
@@ -4061,9 +4061,9 @@ private:
 
             // check all signers, but start at a random one
             size_t i = 0;
-            for (i = 0; i < numSigners; ++i)
+            for (i = 0; i < kNUM_SIGNERS; ++i)
             {
-                size_t signerIdx = (rnd + i) % numSigners;
+                size_t signerIdx = (rnd + i) % kNUM_SIGNERS;
 
                 if (!(cr_.attested[signerIdx]))
                 {
@@ -4087,7 +4087,7 @@ private:
                 }
             }
 
-            if (i == numSigners)
+            if (i == kNUM_SIGNERS)
                 return;  // did not attest
 
             auto& counters = st.counters[&bridge_];
@@ -4205,7 +4205,7 @@ private:
             auto r = bridge_.reward;
             auto reward = divide(r, STAmount(bridge_.quorum), r.issue());
 
-            for (size_t i = 0; i < numSigners; ++i)
+            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
             {
                 if (xfer_.attested[i])
                     st.receive(bridge_.signers[i].account, reward);
@@ -4219,9 +4219,9 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            for (size_t i = 0; i < numSigners; ++i)
+            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
             {
-                size_t signerIdx = (rnd + i) % numSigners;
+                size_t signerIdx = (rnd + i) % kNUM_SIGNERS;
                 if (!(xfer_.attested[signerIdx]))
                 {
                     // enqueue one attestation for this signer
@@ -4387,12 +4387,12 @@ public:
         Account doorXRPLocking("doorXRPLocking"), doorUSDLocking("doorUSDLocking"),
             doorUSDIssuing("doorUSDIssuing");
 
-        constexpr size_t numAcct = 10;
+        constexpr size_t kNUM_ACCT = 10;
         auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(numAcct);
-            for (int i = 0; i < numAcct; ++i)
+            result.reserve(kNUM_ACCT);
+            for (int i = 0; i < kNUM_ACCT; ++i)
                 result.emplace_back(
                     "a"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
             result.emplace_back("doorXRPLocking");
@@ -4424,7 +4424,7 @@ public:
         for (int i = 0; i < a.size(); ++i)
         {
             auto& acct{a[i]};
-            if (i < numAcct)
+            if (i < kNUM_ACCT)
             {
                 mcEnv.tx(trust(acct, usdLocking(100000)));
                 scEnv.tx(trust(acct, usdIssuing(100000)));
@@ -4437,12 +4437,12 @@ public:
         st->b.init(Account::master);
 
         // also create some unfunded accounts
-        constexpr size_t numUa = 20;
+        constexpr size_t kNUM_UA = 20;
         auto ua = []() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(numUa);
-            for (int i = 0; i < numUa; ++i)
+            result.reserve(kNUM_UA);
+            for (int i = 0; i < kNUM_UA; ++i)
                 result.emplace_back(
                     "ua"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
             return result;

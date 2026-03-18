@@ -63,9 +63,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const valueFields{~sfDebtMaximum};
+    static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{~sfDebtMaximum};
 
-    return valueFields;
+    return kVALUE_FIELDS;
 }
 
 TER

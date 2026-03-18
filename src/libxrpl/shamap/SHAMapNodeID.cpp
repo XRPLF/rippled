@@ -29,8 +29,8 @@ depthMask(unsigned int depth)
         }
     };
 
-    static masks_t const masks;
-    return masks.entry[depth];
+    static masks_t const kMASKS;
+    return kMASKS.entry[depth];
 }
 
 // canonicalize the hash to a node ID for this depth

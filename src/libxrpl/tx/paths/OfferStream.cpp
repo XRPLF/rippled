@@ -135,10 +135,10 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const inIsXRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
+    constexpr bool const kIN_IS_XRP = std::is_same_v<TTakerPays, XRPAmount>;
+    constexpr bool const kOUT_IS_XRP = std::is_same_v<TTakerGets, XRPAmount>;
 
-    if constexpr (outIsXRP)
+    if constexpr (kOUT_IS_XRP)
     {
         // If `TakerGets` is XRP, the worst this offer's quality can change is
         // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
@@ -150,7 +150,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!inIsXRP && !outIsXRP)
+    if constexpr (!kIN_IS_XRP && !kOUT_IS_XRP)
     {
         if (ofrAmts.in >= ofrAmts.out)
             return false;

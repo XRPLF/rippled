@@ -435,8 +435,8 @@ public:
 static DebugSink&
 debugSink()
 {
-    static DebugSink _;
-    return _;
+    static DebugSink kINST_;
+    return kINST_;
 }
 
 std::unique_ptr<beast::Journal::Sink>

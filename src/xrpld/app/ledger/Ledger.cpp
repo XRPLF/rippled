@@ -160,12 +160,12 @@ Ledger::Ledger(
     header_.drops = INITIAL_XRP;
     header_.closeTimeResolution = ledgerGenesisTimeResolution;
 
-    static auto const id =
+    static auto const kID =
         calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
     {
-        auto const sle = std::make_shared<SLE>(keylet::account(id));
+        auto const sle = std::make_shared<SLE>(keylet::account(kID));
         sle->setFieldU32(sfSequence, 1);
-        sle->setAccountID(sfAccount, id);
+        sle->setAccountID(sfAccount, kID);
         sle->setFieldAmount(sfBalance, header_.drops);
         rawInsert(sle);
     }

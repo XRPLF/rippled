@@ -823,9 +823,9 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 {
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
-    constexpr std::string_view prefix("/vl/");
+    constexpr std::string_view kPREFIX("/vl/");
 
-    if (!req.target().starts_with(prefix) || !setup_.vlEnabled)
+    if (!req.target().starts_with(kPREFIX) || !setup_.vlEnabled)
         return false;
 
     std::uint32_t version = 1;
@@ -847,7 +847,7 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         return true;
     };
 
-    std::string_view key = req.target().substr(prefix.size());
+    std::string_view key = req.target().substr(kPREFIX.size());
 
     if (auto slash = key.find('/'); slash != std::string_view::npos)
     {

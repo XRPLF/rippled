@@ -61,7 +61,7 @@ handlerFrom()
         HandlerImpl::maxApiVer};
 }
 
-Handler const handlerArray[]{
+Handler const kHANDLER_ARRAY[]{
     // Some handlers not specified here are added to the table via addHandler()
     // Request-response methods
     {"account_info", byRef(&doAccountInfo), Role::USER, NO_CONDITION},
@@ -188,8 +188,8 @@ public:
     static HandlerTable const&
     instance()
     {
-        static HandlerTable const handlerTable(handlerArray);
-        return handlerTable;
+        static HandlerTable const kHANDLER_TABLE(kHANDLER_ARRAY);
+        return kHANDLER_TABLE;
     }
 
     [[nodiscard]] Handler const*

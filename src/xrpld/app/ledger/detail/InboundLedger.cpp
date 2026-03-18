@@ -52,7 +52,7 @@ enum {
 };
 
 // millisecond for each ledger timeout
-auto constexpr ledgerAcquireTimeout = 3000ms;
+auto constexpr kLEDGER_ACQUIRE_TIMEOUT = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
@@ -64,7 +64,7 @@ InboundLedger::InboundLedger(
     : TimeoutCounter(
           app,
           hash,
-          ledgerAcquireTimeout,
+          kLEDGER_ACQUIRE_TIMEOUT,
           {jtLEDGER_DATA, "InboundLedger", 5},
           app.journal("InboundLedger"))
     , clock_(clock)
@@ -1169,7 +1169,7 @@ void
 InboundLedger::runData()
 {
     // Maximum number of peers to request data from
-    constexpr std::size_t maxUsefulPeers = 6;
+    constexpr std::size_t kMAX_USEFUL_PEERS = 6;
 
     decltype(receivedData_) data;
 
@@ -1207,7 +1207,7 @@ InboundLedger::runData()
     // Select a random sample of the peers that gives us the most nodes that are
     // useful
     dataCounts.prune();
-    dataCounts.sampleN(maxUsefulPeers, [&](std::shared_ptr<Peer> const& peer) {
+    dataCounts.sampleN(kMAX_USEFUL_PEERS, [&](std::shared_ptr<Peer> const& peer) {
         trigger(peer, TriggerReason::reply);
     });
 }

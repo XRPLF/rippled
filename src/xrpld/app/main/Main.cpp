@@ -208,7 +208,7 @@ public:
 };
 
 namespace test {
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 }
 
 template <class Runner>
@@ -247,7 +247,7 @@ runUnitTests(
     using namespace beast::unit_test;
     using namespace xrpl::test;
 
-    xrpl::test::envUseIPv4 = (!ipv6);
+    xrpl::test::gEnvUseIPv4 = (!ipv6);
 
     if (!child && numJobs == 1)
     {

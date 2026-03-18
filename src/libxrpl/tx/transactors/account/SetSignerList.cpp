@@ -17,7 +17,7 @@ namespace xrpl {
 // We're prepared for there to be multiple signer lists in the future,
 // but we don't need them yet.  So for the time being we're manually
 // setting the sfSignerListID to zero in all cases.
-static std::uint32_t const DEFAULT_SIGNER_LIST_ID = 0;
+static std::uint32_t const kDEFAULT_SIGNER_LIST_ID = 0;
 
 std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SetSignerList::Operation>
 SetSignerList::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
@@ -298,10 +298,10 @@ SetSignerList::replaceSignerList()
     // Compute new reserve.  Verify the account has funds to meet the reserve.
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
-    constexpr int addedOwnerCount = 1;
+    constexpr int kADDED_OWNER_COUNT = 1;
     std::uint32_t flags{lsfOneOwnerCount};
 
-    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
+    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + kADDED_OWNER_COUNT)};
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -329,7 +329,7 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    adjustOwnerCount(view(), sle, kADDED_OWNER_COUNT, viewJ);
     return tesSUCCESS;
 }
 
@@ -361,7 +361,7 @@ SetSignerList::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
         ledgerEntry->setAccountID(sfOwner, account_);
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
-    ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
+    ledgerEntry->setFieldU32(sfSignerListID, kDEFAULT_SIGNER_LIST_ID);
     if (flags)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 

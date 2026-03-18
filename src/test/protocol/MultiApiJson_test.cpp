@@ -58,9 +58,9 @@ struct MultiApiJson_test : beast::unit_test::suite
             testcase("forApiVersions, forAllApiVersions");
 
             // Some static data for test inputs
-            static int const primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
-                                         43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
-            static_assert(std::size(primes) > RPC::apiMaximumValidVersion);
+            static int const kPRIMES[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
+                                          43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
+            static_assert(std::size(kPRIMES) > RPC::apiMaximumValidVersion);
 
             MultiApiJson<1, 3> s1{};
             static_assert(
@@ -73,8 +73,8 @@ struct MultiApiJson_test : beast::unit_test::suite
                 auto const index = i - RPC::apiMinimumSupportedVersion;
                 BEAST_EXPECT(index == s1.index(i));
                 BEAST_EXPECT(s1.valid(i));
-                s1.val[index] = makeJson("value", primes[i]);
-                productAllVersions *= primes[i];
+                s1.val[index] = makeJson("value", kPRIMES[i]);
+                productAllVersions *= kPRIMES[i];
             }
             BEAST_EXPECT(!s1.valid(0));
             BEAST_EXPECT(!s1.valid(RPC::apiMaximumValidVersion + 1));
@@ -97,15 +97,15 @@ struct MultiApiJson_test : beast::unit_test::suite
                 &result);
             BEAST_EXPECT(
                 result ==
-                primes[RPC::apiMinimumSupportedVersion] *
-                    primes[RPC::apiMinimumSupportedVersion + 1]);
+                kPRIMES[RPC::apiMinimumSupportedVersion] *
+                    kPRIMES[RPC::apiMinimumSupportedVersion + 1]);
 
             // Check all the values with mutable data
             forAllApiVersions(s1.visit(), [&s1, this](Json::Value& json, auto version) {
                 BEAST_EXPECT(s1.val[s1.index(version)] == json);
                 if (BEAST_EXPECT(json.isMember("value")))
                 {
-                    BEAST_EXPECT(json["value"].asInt() == primes[version]);
+                    BEAST_EXPECT(json["value"].asInt() == kPRIMES[version]);
                 }
             });
 

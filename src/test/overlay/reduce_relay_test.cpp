@@ -35,9 +35,9 @@ using SquelchCB = std::function<void(PublicKey const&, PeerWPtr const&, std::uin
 using UnsquelchCB = std::function<void(PublicKey const&, PeerWPtr const&)>;
 using LinkIterCB = std::function<void(Link&, MessageSPtr)>;
 
-static constexpr std::uint32_t MAX_PEERS = 10;
-static constexpr std::uint32_t MAX_VALIDATORS = 10;
-static constexpr std::uint32_t MAX_MESSAGES = 200000;
+static constexpr std::uint32_t kMAX_PEERS = 10;
+static constexpr std::uint32_t kMAX_VALIDATORS = 10;
+static constexpr std::uint32_t kMAX_MESSAGES = 200000;
 
 /** Simulate two entities - peer directly connected to the server
  * (via squelch in PeerSim) and PeerImp (via Overlay)
@@ -119,8 +119,8 @@ public:
     uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 hash{};
-        return hash;
+        static uint256 kHASH{};
+        return kHASH;
     }
     bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
@@ -182,25 +182,25 @@ public:
     static void
     advance(duration d) noexcept
     {
-        now_ += d;
+        kNOW += d;
     }
 
     static void
     randAdvance(milliseconds min, milliseconds max)
     {
-        now_ += randDuration(min, max);
+        kNOW += randDuration(min, max);
     }
 
     static void
     reset() noexcept
     {
-        now_ = time_point(seconds(0));
+        kNOW = time_point(seconds(0));
     }
 
     static time_point
     now() noexcept
     {
-        return now_;
+        return kNOW;
     }
 
     static duration
@@ -212,7 +212,7 @@ public:
     explicit ManualClock() = default;
 
 private:
-    inline static time_point now_ = time_point(seconds(0));
+    inline static time_point kNOW = time_point(seconds(0));
 };
 
 /** Simulate server's OverlayImpl */
@@ -683,8 +683,8 @@ public:
     void
     init()
     {
-        validators_.resize(MAX_VALIDATORS);
-        for (int p = 0; p < MAX_PEERS; p++)
+        validators_.resize(kMAX_VALIDATORS);
+        for (int p = 0; p < kMAX_PEERS; p++)
         {
             auto peer = overlay_.addPeer();
             for (auto& v : validators_)
@@ -728,7 +728,7 @@ public:
     void
     purgePeers()
     {
-        while (overlay_.getNumPeers() > MAX_PEERS)
+        while (overlay_.getNumPeers() > kMAX_PEERS)
             deleteLastPeer();
     }
 
@@ -793,8 +793,8 @@ public:
     void
     propagate(
         LinkIterCB link,
-        std::uint16_t nValidators = MAX_VALIDATORS,
-        std::uint32_t nMessages = MAX_MESSAGES,
+        std::uint16_t nValidators = kMAX_VALIDATORS,
+        std::uint32_t nMessages = kMAX_MESSAGES,
         bool purge = true,
         bool resetClock = true)
     {
@@ -1132,7 +1132,8 @@ protected:
                 {
                     BEAST_EXPECT(
                         squelched ==
-                        MAX_PEERS - env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
+                        kMAX_PEERS -
+                            env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
                     n++;
                 }
             },
@@ -1203,7 +1204,7 @@ protected:
                 id, [&](PublicKey const& key, PeerWPtr const& peer) { unsquelched++; });
             BEAST_EXPECT(
                 unsquelched ==
-                MAX_PEERS - env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
+                kMAX_PEERS - env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }
@@ -1223,7 +1224,7 @@ protected:
             auto peers = network_.overlay().getPeers(network_.validator(0));
             BEAST_EXPECT(
                 unsquelched ==
-                MAX_PEERS - env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
+                kMAX_PEERS - env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }

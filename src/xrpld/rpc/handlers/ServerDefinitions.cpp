@@ -68,7 +68,7 @@ ServerDefinitions::translate(std::string const& inp)
             return replace("UINT", "UInt");
     }
 
-    static std::unordered_map<std::string_view, std::string_view> const replacements{
+    static std::unordered_map<std::string_view, std::string_view> const kREPLACEMENTS{
         {"OBJECT", "STObject"},
         {"ARRAY", "STArray"},
         {"ACCOUNT", "AccountID"},
@@ -79,7 +79,7 @@ ServerDefinitions::translate(std::string const& inp)
         {"XCHAIN_BRIDGE", "XChainBridge"},
     };
 
-    if (auto const& it = replacements.find(inp); it != replacements.end())
+    if (auto const& it = kREPLACEMENTS.find(inp); it != kREPLACEMENTS.end())
     {
         return std::string(it->second);
     }
@@ -373,14 +373,14 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static detail::ServerDefinitions const defs{};
-    if (defs.hashMatches(hash))
+    static detail::ServerDefinitions const kDEFS{};
+    if (kDEFS.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;
         jv[jss::hash] = to_string(hash);
         return jv;
     }
-    return defs.get();
+    return kDEFS.get();
 }
 
 }  // namespace xrpl

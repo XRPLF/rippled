@@ -51,14 +51,14 @@ namespace {
 
 // This is an arbitrary cutoff, and it might cause us to miss other
 // good paths with this arbitrary cut off.
-constexpr std::size_t PATHFINDER_MAX_COMPLETE_PATHS = 1000;
+constexpr std::size_t kPATHFINDER_MAX_COMPLETE_PATHS = 1000;
 
 struct AccountCandidate
 {
     int priority;
     AccountID account;
 
-    static int const highPriority = 10000;
+    static int const kHIGH_PRIORITY = 10000;
 };
 
 bool
@@ -95,7 +95,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-static PathTable pathTable_;
+static PathTable gPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
@@ -293,7 +293,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     // Now iterate over all paths for that paymentType.
-    for (auto const& costedPath : pathTable_[paymentType])
+    for (auto const& costedPath : gPathTable[paymentType])
     {
         if (continueCallback && !continueCallback())
             return false;
@@ -303,7 +303,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
             JLOG(j_.trace()) << "findPaths trying payment type " << paymentType;
             addPathsForType(costedPath.type, continueCallback);
 
-            if (completePaths_.size() > PATHFINDER_MAX_COMPLETE_PATHS)
+            if (completePaths_.size() > kPATHFINDER_MAX_COMPLETE_PATHS)
                 break;
         }
     }
@@ -983,7 +983,7 @@ Pathfinder::addLink(
                                 else if (!bDestOnly)
                                 {
                                     // this is a high-priority candidate
-                                    candidates.push_back({AccountCandidate::highPriority, acct});
+                                    candidates.push_back({AccountCandidate::kHIGH_PRIORITY, acct});
                                 }
                             }
                             else if (acct == srcAccount_)
@@ -1196,7 +1196,7 @@ makePath(char const* string)
 void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
-    auto& list = pathTable_[type];
+    auto& list = gPathTable[type];
     XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
@@ -1216,7 +1216,7 @@ Pathfinder::initPathTable()
 {
     // CAUTION: Do not include rules that build default paths
 
-    pathTable_.clear();
+    gPathTable.clear();
     fillPaths(pt_XRP_to_XRP, {});
     /* cspell: disable */
 

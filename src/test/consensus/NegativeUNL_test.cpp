@@ -540,11 +540,11 @@ struct NetworkHistory
     bool
     createLedgerHistory()
     {
-        static uint256 fakeAmendment;  // So we have different genesis ledgers
+        static uint256 kFAKE_AMENDMENT;  // So we have different genesis ledgers
         auto l = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
-            std::vector<uint256>{fakeAmendment++},
+            std::vector<uint256>{kFAKE_AMENDMENT++},
             env.app().getNodeFamily());
         history.push_back(l);
 
@@ -599,9 +599,9 @@ struct NetworkHistory
     std::shared_ptr<STValidation>
     createSTVal(std::shared_ptr<Ledger const> const& ledger, NodeID const& v)
     {
-        static auto keyPair = randomKeyPair(KeyType::secp256k1);
+        static auto kEY_PAIR = randomKeyPair(KeyType::secp256k1);
         return std::make_shared<STValidation>(
-            env.app().timeKeeper().now(), keyPair.first, keyPair.second, v, [&](STValidation& v) {
+            env.app().timeKeeper().now(), kEY_PAIR.first, kEY_PAIR.second, v, [&](STValidation& v) {
                 v.setFieldH256(sfLedgerHash, ledger->header().hash);
                 v.setFieldU32(sfLedgerSequence, ledger->seq());
                 v.setFlag(vfFullValidation);
@@ -655,7 +655,7 @@ struct NetworkHistory
     bool goodHistory;
 };
 
-auto defaultPreVote = [](NegativeUNLVote& vote) {};
+auto gDefaultPreVote = [](NegativeUNLVote& vote) {};
 /**
  * Create a NegativeUNLVote object. It then creates ttUNL_MODIFY Tx as its vote
  * on negative UNL changes.
@@ -667,13 +667,13 @@ auto defaultPreVote = [](NegativeUNLVote& vote) {};
  * @param pre the PreVote function
  * @return true if the number of ttUNL_MODIFY Txes created meet expectation
  */
-template <typename PreVote = decltype(defaultPreVote)>
+template <typename PreVote = decltype(gDefaultPreVote)>
 bool
 voteAndCheck(
     NetworkHistory& history,
     NodeID const& myId,
     std::size_t expect,
-    PreVote const& pre = defaultPreVote)
+    PreVote const& pre = gDefaultPreVote)
 {
     NegativeUNLVote vote(myId, history.env.journal);
     pre(vote);

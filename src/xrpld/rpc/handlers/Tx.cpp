@@ -62,12 +62,12 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        constexpr uint16_t maxRange = 1000;
+        constexpr uint16_t kMAX_RANGE = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
             return {result, rpcINVALID_LGR_RANGE};
 
-        if (args.ledgerRange->second - args.ledgerRange->first > maxRange)
+        if (args.ledgerRange->second - args.ledgerRange->first > kMAX_RANGE)
             return {result, rpcEXCESSIVE_LGR_RANGE};
 
         range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
@@ -189,13 +189,13 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto optionsJson =
+            constexpr auto kOPTIONS_JSON =
                 JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
-                response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+                response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
             else
             {
-                response[jss::tx_json] = result.txn->getJson(optionsJson);
+                response[jss::tx_json] = result.txn->getJson(kOPTIONS_JSON);
                 RPC::insertDeliverMax(
                     response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }

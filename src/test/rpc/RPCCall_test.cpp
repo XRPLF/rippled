@@ -60,7 +60,7 @@ struct RPCCallTestData
     operator=(RPCCallTestData&&) = delete;
 };
 
-static RPCCallTestData const rpcCallTestArray[] = {
+static RPCCallTestData const kRPC_CALL_TEST_ARRAY[] = {
     // account_channels
     // ------------------------------------------------------------
     {"account_channels: minimal.",
@@ -5826,9 +5826,9 @@ std::string
 updateAPIVersionString(char const* const req, unsigned apiVersion)
 {
     std::string const versionStr = std::to_string(apiVersion);
-    static auto const placeHolder = "%API_VER%";
+    static auto const kPLACE_HOLDER = "%API_VER%";
     std::string jr(req);
-    boost::replace_all(jr, placeHolder, versionStr);
+    boost::replace_all(jr, kPLACE_HOLDER, versionStr);
     return jr;
 }
 
@@ -5857,7 +5857,7 @@ public:
         test::jtx::Env env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
-        for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)
+        for (RPCCallTestData const& rpcCallTest : kRPC_CALL_TEST_ARRAY)
         {
             if (!BEAST_EXPECT(!rpcCallTest.exp.empty()))
                 break;

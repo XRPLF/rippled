@@ -56,8 +56,8 @@ SField const sfInvalid(access, -1, "");
 SField const sfGeneric(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
-SField const sfHash(access, STI_UINT256, 257, "hash");
-SField const sfIndex(access, STI_UINT256, 258, "index");
+SField const kSF_HASH(access, STI_UINT256, 257, "hash");
+SField const kSF_INDEX(access, STI_UINT256, 258, "index");
 
 #include <xrpl/protocol/detail/sfields.macro>
 

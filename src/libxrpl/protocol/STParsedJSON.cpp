@@ -358,8 +358,8 @@ parseLeaf(
         case STI_UINT8:
             try
             {
-                constexpr auto minValue = std::numeric_limits<std::uint8_t>::min();
-                constexpr auto maxValue = std::numeric_limits<std::uint8_t>::max();
+                constexpr auto kMIN_VALUE = std::numeric_limits<std::uint8_t>::min();
+                constexpr auto kMAX_VALUE = std::numeric_limits<std::uint8_t>::max();
                 if (value.isString())
                 {
                     std::string const strValue = value.asString();
@@ -370,7 +370,7 @@ parseLeaf(
                         {
                             auto ter = transCode(strValue);
 
-                            if (!ter || TERtoInt(*ter) < minValue || TERtoInt(*ter) > maxValue)
+                            if (!ter || TERtoInt(*ter) < kMIN_VALUE || TERtoInt(*ter) > kMAX_VALUE)
                             {
                                 error = outOfRange(jsonName, fieldName);
                                 return ret;
@@ -393,7 +393,7 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
-                    if (value.asInt() < minValue || value.asInt() > maxValue)
+                    if (value.asInt() < kMIN_VALUE || value.asInt() > kMAX_VALUE)
                     {
                         error = outOfRange(jsonName, fieldName);
                         return ret;
@@ -404,7 +404,7 @@ parseLeaf(
                 }
                 else if (value.isUInt())
                 {
-                    if (value.asUInt() > maxValue)
+                    if (value.asUInt() > kMAX_VALUE)
                     {
                         error = outOfRange(jsonName, fieldName);
                         return ret;
@@ -905,7 +905,7 @@ parseLeaf(
     return ret;
 }
 
-static int const maxDepth = 64;
+static int const kMAX_DEPTH = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
@@ -930,7 +930,7 @@ parseObject(
         return std::nullopt;
     }
 
-    if (depth > maxDepth)
+    if (depth > kMAX_DEPTH)
     {
         error = tooDeep(jsonName);
         return std::nullopt;
@@ -1044,7 +1044,7 @@ parseArray(
         return std::nullopt;
     }
 
-    if (depth > maxDepth)
+    if (depth > kMAX_DEPTH)
     {
         error = tooDeep(jsonName);
         return std::nullopt;

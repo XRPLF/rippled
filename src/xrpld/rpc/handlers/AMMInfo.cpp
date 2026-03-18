@@ -63,13 +63,13 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Issue> issue2;
         std::optional<uint256> ammID;
 
-        constexpr auto invalid = [](Json::Value const& params) -> bool {
+        constexpr auto kINVALID = [](Json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
         // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && invalid(params))
+        if (context.apiVersion < 3 && kINVALID(params))
             return Unexpected(rpcINVALID_PARAMS);
 
         if (params.isMember(jss::asset))
@@ -109,7 +109,7 @@ doAMMInfo(RPC::JsonContext& context)
         }
 
         // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && invalid(params))
+        if (context.apiVersion >= 3 && kINVALID(params))
             return Unexpected(rpcINVALID_PARAMS);
 
         XRPL_ASSERT(

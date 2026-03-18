@@ -103,15 +103,15 @@ class LoanBroker_test : public beast::unit_test::suite
         using namespace loanBroker;
 
         // Bogus assets to use in test cases
-        static PrettyAsset const badMptAsset = [&]() {
+        static PrettyAsset const kBAD_MPT_ASSET = [&]() {
             MPTTester badMptt{env, evan, mptInitNoFund};
             badMptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
             return badMptt["BAD"];
         }();
-        static PrettyAsset const badIouAsset = evan["BAD"];
-        static Account const nonExistent{"NonExistent"};
-        static PrettyAsset const ghostIouAsset = nonExistent["GST"];
+        static PrettyAsset const kBAD_IOU_ASSET = evan["BAD"];
+        static Account const kNON_EXISTENT{"NonExistent"};
+        static PrettyAsset const kGHOST_IOU_ASSET = kNON_EXISTENT["GST"];
         PrettyAsset const vaultPseudoIouAsset = vault.pseudoAccount["PSD"];
 
         auto const badKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
@@ -241,7 +241,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverClawback(alice), amount(XRP(1000)), ter(temBAD_AMOUNT));
             env(coverClawback(alice), amount(vault.asset(-10)), ter(temBAD_AMOUNT));
             // Clawbacks with an MPT need to specify the broker ID
-            env(coverClawback(alice), amount(badMptAsset(1)), ter(temINVALID));
+            env(coverClawback(alice), amount(kBAD_MPT_ASSET(1)), ter(temINVALID));
             env(coverClawback(evan), loanBrokerID(vault.vaultID), ter(tecNO_ENTRY));
             // Only the issuer can clawback
             env(coverClawback(alice), loanBrokerID(keylet.key), ter(tecNO_PERMISSION));
@@ -256,8 +256,8 @@ class LoanBroker_test : public beast::unit_test::suite
                 {
                     // Clawbacks without a loanBrokerID need to specify an IOU
                     // with the broker's pseudo-account as the issuer
-                    env(coverClawback(alice), amount(ghostIouAsset(1)), ter(tecNO_ENTRY));
-                    env(coverClawback(alice), amount(badIouAsset(1)), ter(tecOBJECT_NOT_FOUND));
+                    env(coverClawback(alice), amount(kGHOST_IOU_ASSET(1)), ter(tecNO_ENTRY));
+                    env(coverClawback(alice), amount(kBAD_IOU_ASSET(1)), ter(tecOBJECT_NOT_FOUND));
                     // Pseudo-account is not for a broker
                     env(coverClawback(alice),
                         amount(vaultPseudoIouAsset(1)),

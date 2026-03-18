@@ -550,10 +550,10 @@ makeJsonError(Json::Int code, Json::Value&& message)
     return r;
 }
 
-Json::Int constexpr method_not_found = -32601;
-Json::Int constexpr server_overloaded = -32604;
-Json::Int constexpr forbidden = -32605;
-Json::Int constexpr wrong_version = -32606;
+Json::Int constexpr kMETHOD_NOT_FOUND = -32601;
+Json::Int constexpr kSERVER_OVERLOADED = -32604;
+Json::Int constexpr kFORBIDDEN = -32605;
+Json::Int constexpr kWRONG_VERSION = -32606;
 
 void
 ServerHandler::processRequest(
@@ -605,7 +605,7 @@ ServerHandler::processRequest(
         {
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = makeJsonError(method_not_found, "Method not found");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Method not found");
             reply.append(r);
             continue;
         }
@@ -633,7 +633,7 @@ ServerHandler::processRequest(
             }
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = makeJsonError(wrong_version, jss::invalid_API_version.c_str());
+            r[jss::error] = makeJsonError(kWRONG_VERSION, jss::invalid_API_version.c_str());
             reply.append(r);
             continue;
         }
@@ -673,7 +673,7 @@ ServerHandler::processRequest(
                     return;
                 }
                 Json::Value r = jsonRPC;
-                r[jss::error] = makeJsonError(server_overloaded, "Server is overloaded");
+                r[jss::error] = makeJsonError(kSERVER_OVERLOADED, "Server is overloaded");
                 reply.append(r);
                 continue;
             }
@@ -688,7 +688,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(forbidden, "Forbidden");
+            r[jss::error] = makeJsonError(kFORBIDDEN, "Forbidden");
             reply.append(r);
             continue;
         }
@@ -702,7 +702,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(method_not_found, "Null method");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Null method");
             reply.append(r);
             continue;
         }
@@ -717,7 +717,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(method_not_found, "method is not string");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is not string");
             reply.append(r);
             continue;
         }
@@ -732,7 +732,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(method_not_found, "method is empty");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is empty");
             reply.append(r);
             continue;
         }
@@ -785,7 +785,7 @@ ServerHandler::processRequest(
                 }
 
                 Json::Value r = jsonRPC;
-                r[jss::error] = makeJsonError(method_not_found, "ripplerpc is not a string");
+                r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
             }
@@ -954,11 +954,11 @@ ServerHandler::processRequest(
 
     if (auto stream = journal_.debug())
     {
-        static int const maxSize = 10000;
-        if (response.size() <= maxSize)
+        static int const kMAX_SIZE = 10000;
+        if (response.size() <= kMAX_SIZE)
             stream << "Reply: " << response;
         else
-            stream << "Reply: " << response.substr(0, maxSize);
+            stream << "Reply: " << response.substr(0, kMAX_SIZE);
     }
 
     HTTPReply(httpStatus, response, output, rpcJ);

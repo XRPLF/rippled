@@ -42,8 +42,8 @@ public:
         void* a(p->a);
         delete p;
 
-        static std::atomic<std::size_t> n;
-        std::size_t const id(++n);
+        static std::atomic<std::size_t> kN;
+        std::size_t const id(++kN);
         std::stringstream ss;
         ss << "rocksdb #" << id;
         beast::setCurrentThreadName(ss.str());
@@ -445,7 +445,7 @@ public:
 void
 registerRocksDBFactory(Manager& manager)
 {
-    static RocksDBFactory instance{manager};
+    static RocksDBFactory kINSTANCE{manager};
 }
 
 }  // namespace NodeStore

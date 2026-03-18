@@ -117,22 +117,22 @@ public:
         tests::TestNodeFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
-        constexpr uint256 h1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-        constexpr uint256 h2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-        constexpr uint256 h3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+        constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 kH5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
         sMap.invariants();
         if (!backed)
             sMap.setUnbacked();
 
-        auto i1 = make_shamapitem(h1, intToVuc(1));
-        auto i2 = make_shamapitem(h2, intToVuc(2));
-        auto i3 = make_shamapitem(h3, intToVuc(3));
-        auto i4 = make_shamapitem(h4, intToVuc(4));
-        auto i5 = make_shamapitem(h5, intToVuc(5));
+        auto i1 = make_shamapitem(kH1, intToVuc(1));
+        auto i2 = make_shamapitem(kH2, intToVuc(2));
+        auto i3 = make_shamapitem(kH3, intToVuc(3));
+        auto i4 = make_shamapitem(kH4, intToVuc(4));
+        auto i5 = make_shamapitem(kH5, intToVuc(5));
 
         unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)), "no add");
         sMap.invariants();
@@ -184,9 +184,9 @@ public:
 
         BEAST_EXPECT(sMap.compare(*map2, delta, 100));
         BEAST_EXPECT(delta.size() == 1);
-        BEAST_EXPECT(delta.begin()->first == h1);
+        BEAST_EXPECT(delta.begin()->first == kH1);
         BEAST_EXPECT(delta.begin()->second.first == nullptr);
-        BEAST_EXPECT(delta.begin()->second.second->key() == h1);
+        BEAST_EXPECT(delta.begin()->second.second->key() == kH1);
 
         sMap.dump();
 
@@ -195,7 +195,7 @@ public:
         else
             testcase("build/tear unbacked");
         {
-            constexpr std::array keys{
+            constexpr std::array kEYS{
                 uint256(
                     "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),
@@ -221,7 +221,7 @@ public:
                     "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8")};
 
-            constexpr std::array hashes{
+            constexpr std::array kHASHES{
                 uint256(
                     "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
                     "64B6281F7F"),
@@ -252,17 +252,17 @@ public:
                 map.setUnbacked();
 
             BEAST_EXPECT(map.getHash() == beast::zero);
-            for (int k = 0; k < keys.size(); ++k)
+            for (int k = 0; k < kEYS.size(); ++k)
             {
                 BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], intToVuc(k))));
-                BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
+                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(kEYS[k], intToVuc(k))));
+                BEAST_EXPECT(map.getHash().as_uint256() == kHASHES[k]);
                 map.invariants();
             }
-            for (int k = keys.size() - 1; k >= 0; --k)
+            for (int k = kEYS.size() - 1; k >= 0; --k)
             {
-                BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
-                BEAST_EXPECT(map.delItem(keys[k]));
+                BEAST_EXPECT(map.getHash().as_uint256() == kHASHES[k]);
+                BEAST_EXPECT(map.delItem(kEYS[k]));
                 map.invariants();
             }
             BEAST_EXPECT(map.getHash() == beast::zero);
@@ -274,7 +274,7 @@ public:
             testcase("iterate unbacked");
 
         {
-            constexpr std::array keys{
+            constexpr std::array kEYS{
                 uint256(
                     "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                     "5a772c6ca8"),
@@ -304,7 +304,7 @@ public:
             SHAMap map{SHAMapType::FREE, tf};
             if (!backed)
                 map.setUnbacked();
-            for (auto const& k : keys)
+            for (auto const& k : kEYS)
             {
                 map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, intToVuc(0)));
                 map.invariants();
@@ -313,7 +313,7 @@ public:
             int h = 7;
             for (auto const& k : map)
             {
-                BEAST_EXPECT(k.key() == keys[h]);
+                BEAST_EXPECT(k.key() == kEYS[h]);
                 --h;
             }
         }

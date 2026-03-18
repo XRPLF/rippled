@@ -152,9 +152,9 @@ public:
     std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> emptyPeers;
+        static std::set<Peer::id_t> kEMPTY_PEERS;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
-        return emptyPeers;
+        return kEMPTY_PEERS;
     }
 
 private:

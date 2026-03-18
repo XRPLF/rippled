@@ -1914,13 +1914,13 @@ ApplicationImp::loadOldLedger(
         }
         using namespace std::chrono_literals;
         using namespace date;
-        static constexpr NetClock::time_point ledgerWarnTimePoint{
+        static constexpr NetClock::time_point kLEDGER_WARN_TIME_POINT{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->header().closeTime < ledgerWarnTimePoint)
+        if (loadLedger->header().closeTime < kLEDGER_WARN_TIME_POINT)
         {
             JLOG(journal_.fatal()) << "\n\n***  WARNING   ***\n"
                                       "You are replaying a ledger from before "
-                                   << to_string(ledgerWarnTimePoint)
+                                   << to_string(kLEDGER_WARN_TIME_POINT)
                                    << " UTC.\n"
                                       "This replay will not handle your ledger as it was "
                                       "originally "

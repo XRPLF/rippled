@@ -71,7 +71,7 @@ Cluster::for_each(std::function<void(ClusterNode const&)> func) const
 bool
 Cluster::load(Section const& nodes)
 {
-    static boost::regex const re(
+    static boost::regex const kRE(
         "[[:space:]]*"       // skip leading whitespace
         "([[:alnum:]]+)"     // node identity
         "(?:"                // begin optional comment block
@@ -87,7 +87,7 @@ Cluster::load(Section const& nodes)
     {
         boost::smatch match;
 
-        if (!boost::regex_match(n, match, re))
+        if (!boost::regex_match(n, match, kRE))
         {
             JLOG(j_.error()) << "Malformed entry: '" << n << "'";
             return false;

@@ -10,8 +10,8 @@ namespace NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp _;
-    return _;
+    static ManagerImp k_;
+    return k_;
 }
 
 void

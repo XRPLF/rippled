@@ -133,7 +133,7 @@ Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const mod[17] = {
+    static std::uint64_t const kMOD[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -155,8 +155,8 @@ Quality::round(int digits) const
 
     auto exponent = value_ >> (64 - 8);
     auto mantissa = value_ & 0x00ffffffffffffffULL;
-    mantissa += mod[digits] - 1;
-    mantissa -= (mantissa % mod[digits]);
+    mantissa += kMOD[digits] - 1;
+    mantissa -= (mantissa % kMOD[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }

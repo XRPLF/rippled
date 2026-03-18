@@ -462,7 +462,7 @@ SHAMap::firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode> node, SharedPtrNodeStack&
 
     return belowHelper(node, stack, branch, {init, cmp, incr});
 }
-static boost::intrusive_ptr<SHAMapItem const> const no_item;
+static boost::intrusive_ptr<SHAMapItem const> const kNO_ITEM;
 
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::onlyBelow(SHAMapTreeNode* node) const
@@ -478,7 +478,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
             if (!inner->isEmptyBranch(i))
             {
                 if (nextNode)
-                    return no_item;
+                    return kNO_ITEM;
 
                 nextNode = descendThrow(inner, i);
             }
@@ -488,7 +488,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::onlyBelow : no next node");
-            return no_item;
+            return kNO_ITEM;
             // LCOV_EXCL_STOP
         }
 
@@ -552,7 +552,7 @@ SHAMap::peekItem(uint256 const& id) const
     SHAMapLeafNode* leaf = findKey(id);
 
     if (!leaf)
-        return no_item;
+        return kNO_ITEM;
 
     return leaf->peekItem();
 }
@@ -563,7 +563,7 @@ SHAMap::peekItem(uint256 const& id, SHAMapHash& hash) const
     SHAMapLeafNode* leaf = findKey(id);
 
     if (!leaf)
-        return no_item;
+        return kNO_ITEM;
 
     hash = leaf->getHash();
     return leaf->peekItem();

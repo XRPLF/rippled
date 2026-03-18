@@ -51,7 +51,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
         return cur;
 
     // clang-format off
-    constexpr std::uint32_t fib[AMMContext::MaxIterations] = {
+    constexpr std::uint32_t kFIB[AMMContext::MaxIterations] = {
         1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987,
         1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393,
         196418, 317811, 514229, 832040, 1346269};
@@ -63,7 +63,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 
     cur.out = toAmount<TOut>(
         getIssue(balances.out),
-        cur.out * fib[ammContext_.curIters() - 1],
+        cur.out * kFIB[ammContext_.curIters() - 1],
         Number::rounding_mode::downward);
     // swapAssetOut() returns negative in this case
     if (cur.out >= balances.out)

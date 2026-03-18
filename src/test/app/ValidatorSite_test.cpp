@@ -32,8 +32,8 @@ realValidatorContents()
 )vl";
 }
 
-auto constexpr default_expires = std::chrono::seconds{3600};
-auto constexpr default_effective_overlap = std::chrono::seconds{30};
+auto constexpr kDEFAULT_EXPIRES = std::chrono::seconds{3600};
+auto constexpr kDEFAULT_EFFECTIVE_OVERLAP = std::chrono::seconds{30};
 }  // namespace detail
 
 namespace test {
@@ -116,8 +116,8 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow = detail::default_expires;
-        std::chrono::seconds effectiveOverlap = detail::default_effective_overlap;
+        std::chrono::seconds expiresFromNow = detail::kDEFAULT_EXPIRES;
+        std::chrono::seconds effectiveOverlap = detail::kDEFAULT_EFFECTIVE_OVERLAP;
         int expectedRefreshMin = 0;
     };
     void
@@ -159,7 +159,7 @@ private:
         };
         std::vector<publisher> servers;
 
-        auto constexpr listSize = 20;
+        auto constexpr kLIST_SIZE = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)
@@ -167,8 +167,8 @@ private:
             servers.push_back(cfg);
             auto& item = servers.back();
             item.isRetry = cfg.path == "/bad-resource";
-            item.list.reserve(listSize);
-            while (item.list.size() < listSize)
+            item.list.reserve(kLIST_SIZE);
+            while (item.list.size() < kLIST_SIZE)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
             NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
@@ -386,7 +386,7 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
+                  detail::kDEFAULT_EXPIRES,
                   std::chrono::seconds{-90}}});
             // fetch single site with unending redirect (fails to load)
             testFetchList(
@@ -523,8 +523,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -534,8 +534,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -545,8 +545,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -556,8 +556,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -567,8 +567,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   60 * 24}});  // max of 24 hours
             testFetchList(
                 good,
@@ -578,8 +578,8 @@ public:
                   false,
                   false,
                   1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
+                  detail::kDEFAULT_EXPIRES,
+                  detail::kDEFAULT_EFFECTIVE_OVERLAP,
                   60 * 24}});  // max of 24 hours
         }
         using namespace boost::filesystem;

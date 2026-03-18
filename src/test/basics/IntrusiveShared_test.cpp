@@ -82,8 +82,8 @@ enum class TrackedState : std::uint8_t {
 class TIBase : public IntrusiveRefCounts
 {
 public:
-    static constexpr std::size_t maxStates = 128;
-    static std::array<std::atomic<TrackedState>, maxStates> state;
+    static constexpr std::size_t kMAX_STATES = 128;
+    static std::array<std::atomic<TrackedState>, kMAX_STATES> state;
     static std::atomic<int> nextId;
     static TrackedState
     getState(int id)
@@ -94,7 +94,7 @@ public:
     static void
     resetStates(bool resetCallback)
     {
-        for (int i = 0; i < maxStates; ++i)
+        for (int i = 0; i < kMAX_STATES; ++i)
         {
             state[i].store(TrackedState::uninitialized, std::memory_order_release);
         }
@@ -174,7 +174,7 @@ private:
     }
 };
 
-std::array<std::atomic<TrackedState>, TIBase::maxStates> TIBase::state;
+std::array<std::atomic<TrackedState>, TIBase::kMAX_STATES> TIBase::state;
 std::atomic<int> TIBase::nextId{0};
 
 std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCallback =
@@ -534,17 +534,17 @@ public:
             }
             return result;
         };
-        constexpr int loopIters = 2 * 1024;
-        constexpr int numThreads = 16;
+        constexpr int kLOOP_ITERS = 2 * 1024;
+        constexpr int kNUM_THREADS = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        Barrier loopStartSyncPoint{numThreads};
-        Barrier postCreateToCloneSyncPoint{numThreads};
-        Barrier postCreateVecOfPointersSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{kNUM_THREADS};
+        Barrier postCreateToCloneSyncPoint{kNUM_THREADS};
+        Barrier postCreateVecOfPointersSyncPoint{kNUM_THREADS};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
-            result.reserve(numThreads);
-            for (int i = 0; i < numThreads; ++i)
+            result.reserve(kNUM_THREADS);
+            for (int i = 0; i < kNUM_THREADS; ++i)
                 result.emplace_back(rd());
             return result;
         }();
@@ -553,7 +553,7 @@ public:
         // strong and weak pointers and destroys them all at once.
         // threadId==0 is special.
         auto cloneAndDestroy = [&](int threadId) {
-            for (int i = 0; i < loopIters; ++i)
+            for (int i = 0; i < kLOOP_ITERS; ++i)
             {
                 // ------ Sync Point ------
                 loopStartSyncPoint.arriveAndWait();
@@ -573,7 +573,7 @@ public:
                     destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
-                    toClone.resize(numThreads);
+                    toClone.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::fill(toClone.begin(), toClone.end(), strong);
@@ -592,11 +592,11 @@ public:
             }
         };
         std::vector<std::thread> threads;
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
         }
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads[i].join();
         }
@@ -658,19 +658,19 @@ public:
                 result.push_back(SharedIntrusive<TIBase>(toClone));
             return result;
         };
-        constexpr int loopIters = 2 * 1024;
-        constexpr int flipPointersLoopIters = 256;
-        constexpr int numThreads = 16;
+        constexpr int kLOOP_ITERS = 2 * 1024;
+        constexpr int kFLIP_POINTERS_LOOP_ITERS = 256;
+        constexpr int kNUM_THREADS = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        Barrier loopStartSyncPoint{numThreads};
-        Barrier postCreateToCloneSyncPoint{numThreads};
-        Barrier postCreateVecOfPointersSyncPoint{numThreads};
-        Barrier postFlipPointersLoopSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{kNUM_THREADS};
+        Barrier postCreateToCloneSyncPoint{kNUM_THREADS};
+        Barrier postCreateVecOfPointersSyncPoint{kNUM_THREADS};
+        Barrier postFlipPointersLoopSyncPoint{kNUM_THREADS};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
-            result.reserve(numThreads);
-            for (int i = 0; i < numThreads; ++i)
+            result.reserve(kNUM_THREADS);
+            for (int i = 0; i < kNUM_THREADS; ++i)
                 result.emplace_back(rd());
             return result;
         }();
@@ -680,7 +680,7 @@ public:
         // changes strong pointers to weak pointers,  and destroys them
         // all at once.
         auto cloneAndDestroy = [&](int threadId) {
-            for (int i = 0; i < loopIters; ++i)
+            for (int i = 0; i < kLOOP_ITERS; ++i)
             {
                 // ------ Sync Point ------
                 loopStartSyncPoint.arriveAndWait();
@@ -699,7 +699,7 @@ public:
                     destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
-                    toClone.resize(numThreads);
+                    toClone.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::fill(toClone.begin(), toClone.end(), strong);
@@ -715,7 +715,7 @@ public:
                 postCreateVecOfPointersSyncPoint.arriveAndWait();
 
                 std::uniform_int_distribution<> isStrongDist(0, 1);
-                for (int f = 0; f < flipPointersLoopIters; ++f)
+                for (int f = 0; f < kFLIP_POINTERS_LOOP_ITERS; ++f)
                 {
                     for (auto& p : v)
                     {
@@ -737,11 +737,11 @@ public:
             }
         };
         std::vector<std::thread> threads;
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
         }
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads[i].join();
         }
@@ -788,19 +788,19 @@ public:
             }
         };
 
-        constexpr int loopIters = 2 * 1024;
-        constexpr int lockWeakLoopIters = 256;
-        constexpr int numThreads = 16;
+        constexpr int kLOOP_ITERS = 2 * 1024;
+        constexpr int kLOCK_WEAK_LOOP_ITERS = 256;
+        constexpr int kNUM_THREADS = 16;
         std::vector<SharedIntrusive<TIBase>> toLock;
-        Barrier loopStartSyncPoint{numThreads};
-        Barrier postCreateToLockSyncPoint{numThreads};
-        Barrier postLockWeakLoopSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{kNUM_THREADS};
+        Barrier postCreateToLockSyncPoint{kNUM_THREADS};
+        Barrier postLockWeakLoopSyncPoint{kNUM_THREADS};
 
         // lockAndDestroy creates weak pointers from the strong pointer
         // and runs a loop that locks the weak pointer. At the end of the loop
         // all the pointers are destroyed all at once.
         auto lockAndDestroy = [&](int threadId) {
-            for (int i = 0; i < loopIters; ++i)
+            for (int i = 0; i < kLOOP_ITERS; ++i)
             {
                 // ------ Sync Point ------
                 loopStartSyncPoint.arriveAndWait();
@@ -819,7 +819,7 @@ public:
                     destructionState.store(0, std::memory_order_release);
 
                     toLock.clear();
-                    toLock.resize(numThreads);
+                    toLock.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::fill(toLock.begin(), toLock.end(), strong);
@@ -831,7 +831,7 @@ public:
                 // Multiple threads all create a weak pointer from the same
                 // strong pointer
                 WeakIntrusive weak{toLock[threadId]};
-                for (int wi = 0; wi < lockWeakLoopIters; ++wi)
+                for (int wi = 0; wi < kLOCK_WEAK_LOOP_ITERS; ++wi)
                 {
                     BEAST_EXPECT(!weak.expired());
                     auto strong = weak.lock();
@@ -845,11 +845,11 @@ public:
             }
         };
         std::vector<std::thread> threads;
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(lockAndDestroy, i);
         }
-        for (int i = 0; i < numThreads; ++i)
+        for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads[i].join();
         }

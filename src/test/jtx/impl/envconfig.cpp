@@ -6,7 +6,7 @@
 namespace xrpl {
 namespace test {
 
-std::atomic<bool> envUseIPv4{false};
+std::atomic<bool> gEnvUseIPv4{false};
 
 void
 setupConfigForUnitTests(Config& cfg)
@@ -94,14 +94,14 @@ single_thread_io(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
-auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+auto constexpr kDEFAULTSEED = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
-        .append(std::vector<std::string>{seed.empty() ? defaultseed : seed});
+        .append(std::vector<std::string>{seed.empty() ? kDEFAULTSEED : seed});
     return cfg;
 }
 

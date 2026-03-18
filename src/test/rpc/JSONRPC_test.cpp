@@ -49,7 +49,7 @@ struct TxnTestData
     operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData txnTestArray[] = {
+static constexpr TxnTestData kTXN_TEST_ARRAY[] = {
 
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
@@ -2754,26 +2754,26 @@ public:
 
         using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const testFuncs[] = {
+        static TestStuff const kTEST_FUNCS[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
             TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
 
-        for (auto testFunc : testFuncs)
+        for (auto testFunc : kTEST_FUNCS)
         {
             // For each JSON test.
-            for (auto const& txnTest : txnTestArray)
+            for (auto const& txnTest : kTXN_TEST_ARRAY)
             {
                 Json::Value req;
                 Json::Reader().parse(txnTest.json, req);
                 if (RPC::contains_error(req))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const testedRoles[] = {
+                static Role const kTESTED_ROLES[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role testRole : testedRoles)
+                for (Role testRole : kTESTED_ROLES)
                 {
                     Json::Value result;
                     auto const signFn = get<0>(testFunc);

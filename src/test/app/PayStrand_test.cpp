@@ -356,23 +356,23 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        constexpr size_t bufSize = 32;
-        char buf[bufSize];
+        constexpr size_t kBUF_SIZE = 32;
+        char buf[kBUF_SIZE];
 
         for (size_t id = 0; id < numAct; ++id)
         {
-            snprintf(buf, bufSize, "A%zu", id);
+            snprintf(buf, kBUF_SIZE, "A%zu", id);
             accounts.emplace_back(buf);
         }
 
         for (size_t id = 0; id < numCur; ++id)
         {
             if (id < 10)
-                snprintf(buf, bufSize, "CC%zu", id);
+                snprintf(buf, kBUF_SIZE, "CC%zu", id);
             else if (id < 100)
-                snprintf(buf, bufSize, "C%zu", id);
+                snprintf(buf, kBUF_SIZE, "C%zu", id);
             else
-                snprintf(buf, bufSize, "%zu", id);
+                snprintf(buf, kBUF_SIZE, "%zu", id);
             currencies.emplace_back(to_currency(buf));
             currencyNames.emplace_back(buf);
         }

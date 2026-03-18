@@ -22,8 +22,8 @@ namespace {
 LocalValue<std::optional<Rules>>&
 getCurrentTransactionRulesRef()
 {
-    static LocalValue<std::optional<Rules>> r;
-    return r;
+    static LocalValue<std::optional<Rules>> kR;
+    return kR;
 }
 }  // namespace
 

@@ -230,7 +230,7 @@ std::map<std::string, std::string, boost::beast::iless>
 parseArgs(std::string const& s)
 {
     // <key> '=' <value>
-    static boost::regex const re1(
+    static boost::regex const kRE1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -246,7 +246,7 @@ parseArgs(std::string const& s)
     for (auto const& kv : v)
     {
         boost::smatch m;
-        if (!boost::regex_match(kv, m, re1))
+        if (!boost::regex_match(kv, m, kRE1))
             Throw<std::runtime_error>("invalid parameter " + kv);
         auto const result = map.emplace(m[1], m[2]);
         if (!result.second)

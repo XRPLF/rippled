@@ -122,23 +122,23 @@ struct STNumber_test : public beast::unit_test::suite
                 }
             }
 
-            constexpr auto imin = std::numeric_limits<int>::min();
-            BEAST_EXPECT(numberFromJson(sfNumber, imin) == STNumber(sfNumber, Number(imin, 0)));
+            constexpr auto kIMIN = std::numeric_limits<int>::min();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMIN) == STNumber(sfNumber, Number(kIMIN, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(imin)) ==
-                STNumber(sfNumber, Number(imin, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMIN)) ==
+                STNumber(sfNumber, Number(kIMIN, 0)));
 
-            constexpr auto imax = std::numeric_limits<int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, imax) == STNumber(sfNumber, Number(imax, 0)));
+            constexpr auto kIMAX = std::numeric_limits<int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMAX) == STNumber(sfNumber, Number(kIMAX, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(imax)) ==
-                STNumber(sfNumber, Number(imax, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMAX)) ==
+                STNumber(sfNumber, Number(kIMAX, 0)));
 
-            constexpr auto umax = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, umax) == STNumber(sfNumber, Number(umax, 0)));
+            constexpr auto kUMAX = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kUMAX) == STNumber(sfNumber, Number(kUMAX, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(umax)) ==
-                STNumber(sfNumber, Number(umax, 0)));
+                numberFromJson(sfNumber, std::to_string(kUMAX)) ==
+                STNumber(sfNumber, Number(kUMAX, 0)));
 
             // Obvious non-numbers tested here
             try

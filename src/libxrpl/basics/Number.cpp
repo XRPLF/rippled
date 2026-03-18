@@ -224,11 +224,11 @@ Number::Guard::bringIntoRange(
     }
     if (exponent < minExponent)
     {
-        constexpr Number zero = Number{};
+        constexpr Number kZERO = Number{};
 
-        negative = zero.negative_;
-        mantissa = zero.mantissa_;
-        exponent = zero.exponent_;
+        negative = kZERO.negative_;
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
     }
 }
 
@@ -335,7 +335,7 @@ Number::oneSmall()
     return Number{false, Number::smallRange.min, -Number::smallRange.log, Number::unchecked{}};
 };
 
-constexpr Number oneSml = Number::oneSmall();
+constexpr Number kONE_SML = Number::oneSmall();
 
 constexpr Number
 Number::oneLarge()
@@ -343,15 +343,15 @@ Number::oneLarge()
     return Number{false, Number::largeRange.min, -Number::largeRange.log, Number::unchecked{}};
 };
 
-constexpr Number oneLrg = Number::oneLarge();
+constexpr Number kONE_LRG = Number::oneLarge();
 
 Number
 Number::one()
 {
     if (&range_.get() == &smallRange)
-        return oneSml;
+        return kONE_SML;
     XRPL_ASSERT(&range_.get() == &largeRange, "Number::one() : valid range_");
-    return oneLrg;
+    return kONE_LRG;
 }
 
 // Use the member names in this static function for now so the diff is cleaner
@@ -365,22 +365,22 @@ doNormalize(
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa)
 {
-    auto constexpr minExponent = Number::minExponent;
-    auto constexpr maxExponent = Number::maxExponent;
-    auto constexpr maxRep = Number::maxRep;
+    auto constexpr kMIN_EXPONENT = Number::minExponent;
+    auto constexpr kMAX_EXPONENT = Number::maxExponent;
+    auto constexpr kMAX_REP = Number::maxRep;
 
     using Guard = Number::Guard;
 
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     if (mantissa == 0)
     {
-        mantissa = zero.mantissa_;
-        exponent = zero.exponent_;
-        negative = zero.negative_;
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
+        negative = kZERO.negative_;
         return;
     }
     auto m = mantissa;
-    while ((m < minMantissa) && (exponent > minExponent))
+    while ((m < minMantissa) && (exponent > kMIN_EXPONENT))
     {
         m *= 10;
         --exponent;
@@ -390,17 +390,17 @@ doNormalize(
         g.setNegative();
     while (m > maxMantissa)
     {
-        if (exponent >= maxExponent)
+        if (exponent >= kMAX_EXPONENT)
             throw std::overflow_error("Number::normalize 1");
         g.push(m % 10);
         m /= 10;
         ++exponent;
     }
-    if ((exponent < minExponent) || (m < minMantissa))
+    if ((exponent < kMIN_EXPONENT) || (m < minMantissa))
     {
-        mantissa = zero.mantissa_;
-        exponent = zero.exponent_;
-        negative = zero.negative_;
+        mantissa = kZERO.mantissa_;
+        exponent = kZERO.exponent_;
+        negative = kZERO.negative_;
         return;
     }
 
@@ -417,9 +417,9 @@ doNormalize(
     //      9,900,000,000,000,123,450 or 9,900,000,000,000,123,460.
     // mantissa() will return mantissa_ / 10, and exponent() will return
     // exponent_ + 1.
-    if (m > maxRep)
+    if (m > kMAX_REP)
     {
-        if (exponent >= maxExponent)
+        if (exponent >= kMAX_EXPONENT)
             throw std::overflow_error("Number::normalize 1.5");
         g.push(m % 10);
         m /= 10;
@@ -429,7 +429,7 @@ doNormalize(
     // modification, it must be less than maxRep. In other words, the original
     // value should have been no more than maxRep * 10.
     // (maxRep * 10 > maxMantissa)
-    XRPL_ASSERT_PARTS(m <= maxRep, "xrpl::doNormalize", "intermediate mantissa fits in int64");
+    XRPL_ASSERT_PARTS(m <= kMAX_REP, "xrpl::doNormalize", "intermediate mantissa fits in int64");
     mantissa = m;
 
     g.doRoundUp(negative, mantissa, exponent, minMantissa, maxMantissa, "Number::normalize 2");
@@ -504,17 +504,17 @@ Number::shiftExponent(int exponentDelta) const
 Number&
 Number::operator+=(Number const& y)
 {
-    constexpr Number zero = Number{};
-    if (y == zero)
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         return *this;
-    if (*this == zero)
+    if (*this == kZERO)
     {
         *this = y;
         return *this;
     }
     if (*this == -y)
     {
-        *this = zero;
+        *this = kZERO;
         return *this;
     }
 
@@ -631,10 +631,10 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
-    constexpr Number zero = Number{};
-    if (*this == zero)
+    constexpr Number kZERO = Number{};
+    if (*this == kZERO)
         return *this;
-    if (y == zero)
+    if (y == kZERO)
     {
         *this = y;
         return *this;
@@ -694,10 +694,10 @@ Number::operator*=(Number const& y)
 Number&
 Number::operator/=(Number const& y)
 {
-    constexpr Number zero = Number{};
-    if (y == zero)
+    constexpr Number kZERO = Number{};
+    if (y == kZERO)
         throw std::overflow_error("Number: divide by 0");
-    if (*this == zero)
+    if (*this == kZERO)
         return *this;
     // n* = numerator
     // d* = denominator
@@ -837,8 +837,8 @@ std::string
 to_string(Number const& amount)
 {
     // keep full internal accuracy, but make more human friendly if possible
-    constexpr Number zero = Number{};
-    if (amount == zero)
+    constexpr Number kZERO = Number{};
+    if (amount == kZERO)
         return "0";
 
     auto exponent = amount.exponent_;
@@ -953,7 +953,7 @@ power(Number const& f, unsigned n)
 Number
 root(Number f, unsigned d)
 {
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     auto const one = Number::one();
 
     if (f == one || d == 1)
@@ -963,12 +963,12 @@ root(Number f, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return zero;
+            return kZERO;
         throw std::overflow_error("Number::root infinity");
     }
-    if (f < zero && d % 2 == 0)
+    if (f < kZERO && d % 2 == 0)
         throw std::overflow_error("Number::root nan");
-    if (f == zero)
+    if (f == kZERO)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
@@ -987,7 +987,7 @@ root(Number f, unsigned d)
 
     XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
-    if (f < zero)
+    if (f < kZERO)
     {
         neg = true;
         f = -f;
@@ -1025,14 +1025,14 @@ root(Number f, unsigned d)
 Number
 root2(Number f)
 {
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     auto const one = Number::one();
 
     if (f == one)
         return f;
-    if (f < zero)
+    if (f < kZERO)
         throw std::overflow_error("Number::root nan");
-    if (f == zero)
+    if (f == kZERO)
         return f;
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
@@ -1072,7 +1072,7 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
-    constexpr Number zero = Number{};
+    constexpr Number kZERO = Number{};
     auto const one = Number::one();
 
     if (f == one)
@@ -1085,7 +1085,7 @@ power(Number const& f, unsigned n, unsigned d)
         if (f == -one)
             return one;
         if (abs(f) < one)
-            return zero;
+            return kZERO;
         // abs(f) > one
         throw std::overflow_error("Number::power infinity");
     }
@@ -1093,7 +1093,7 @@ power(Number const& f, unsigned n, unsigned d)
         return one;
     n /= g;
     d /= g;
-    if ((n % 2) == 1 && (d % 2) == 0 && f < zero)
+    if ((n % 2) == 1 && (d % 2) == 0 && f < kZERO)
         throw std::overflow_error("Number::power nan");
     return root(power(f, n), d);
 }

@@ -388,7 +388,7 @@ doAccountObjects(RPC::JsonContext& context)
         {
             Json::StaticString name;
             LedgerEntryType type;
-        } static constexpr deletionBlockers[] = {
+        } static constexpr kDELETION_BLOCKERS[] = {
             {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
             {jss::nft_page, ltNFTOKEN_PAGE},
@@ -404,9 +404,9 @@ doAccountObjects(RPC::JsonContext& context)
         };
 
         typeFilter.emplace();
-        typeFilter->reserve(std::size(deletionBlockers));
+        typeFilter->reserve(std::size(kDELETION_BLOCKERS));
 
-        for (auto [name, type] : deletionBlockers)
+        for (auto [name, type] : kDELETION_BLOCKERS)
         {
             if (params.isMember(jss::type) && name != params[jss::type])
             {

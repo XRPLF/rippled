@@ -226,15 +226,16 @@ saveValidatedLedger(
     }
 
     {
-        static boost::format deleteLedger("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-        static boost::format deleteTrans1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
-        static boost::format deleteTrans2("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-        static boost::format deleteAcctTrans(
+        static boost::format kDELETE_LEDGER("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
+        static boost::format kDELETE_TRANS1("DELETE FROM Transactions WHERE LedgerSeq = %u;");
+        static boost::format kDELETE_TRANS2(
+            "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
+        static boost::format kDELETE_ACCT_TRANS(
             "DELETE FROM AccountTransactions WHERE TransID = '%s';");
 
         {
             auto db = ldgDB.checkoutDb();
-            *db << boost::str(deleteLedger % seq);
+            *db << boost::str(kDELETE_LEDGER % seq);
         }
 
         if (app.config().useTxTables())
@@ -251,8 +252,8 @@ saveValidatedLedger(
 
             soci::transaction tr(*db);
 
-            *db << boost::str(deleteTrans1 % seq);
-            *db << boost::str(deleteTrans2 % seq);
+            *db << boost::str(kDELETE_TRANS1 % seq);
+            *db << boost::str(kDELETE_TRANS2 % seq);
 
             std::string const ledgerSeq(std::to_string(seq));
 
@@ -263,7 +264,7 @@ saveValidatedLedger(
                 std::string const txnId(to_string(transactionID));
                 std::string const txnSeq(std::to_string(acceptedLedgerTx->getTxnSeq()));
 
-                *db << boost::str(deleteAcctTrans % transactionID);
+                *db << boost::str(kDELETE_ACCT_TRANS % transactionID);
 
                 auto const& accts = acceptedLedgerTx->getAffected();
 
@@ -327,7 +328,7 @@ saveValidatedLedger(
         }
 
         {
-            static std::string addLedger(
+            static std::string kADD_LEDGER(
                 R"sql(INSERT OR REPLACE INTO Ledgers
                 (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
                 CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
@@ -350,7 +351,7 @@ saveValidatedLedger(
             auto const accountHash = to_string(ledger->header().accountHash);
             auto const txHash = to_string(ledger->header().txHash);
 
-            *db << addLedger, soci::use(hash), soci::use(seq), soci::use(parentHash),
+            *db << kADD_LEDGER, soci::use(hash), soci::use(seq), soci::use(parentHash),
                 soci::use(drops), soci::use(closeTime), soci::use(parentCloseTime),
                 soci::use(closeTimeResolution), soci::use(closeFlags), soci::use(accountHash),
                 soci::use(txHash);
@@ -642,8 +643,8 @@ transactionsSQL(
     bool count,
     beast::Journal j)
 {
-    constexpr std::uint32_t nonbinaryPageLength = 200;
-    constexpr std::uint32_t binaryPageLength = 500;
+    constexpr std::uint32_t kNONBINARY_PAGE_LENGTH = 200;
+    constexpr std::uint32_t kBINARY_PAGE_LENGTH = 500;
 
     std::uint32_t numberOfResults = 0;
 
@@ -653,11 +654,12 @@ transactionsSQL(
     }
     else if (options.limit == UINT32_MAX)
     {
-        numberOfResults = binary ? binaryPageLength : nonbinaryPageLength;
+        numberOfResults = binary ? kBINARY_PAGE_LENGTH : kNONBINARY_PAGE_LENGTH;
     }
     else if (!options.bUnlimited)
     {
-        numberOfResults = std::min(binary ? binaryPageLength : nonbinaryPageLength, options.limit);
+        numberOfResults =
+            std::min(binary ? kBINARY_PAGE_LENGTH : kNONBINARY_PAGE_LENGTH, options.limit);
     }
     else
     {
@@ -976,7 +978,7 @@ accountTxPage(
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
 
-    static std::string const prefix(
+    static std::string const kPREFIX(
         R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
           Status,RawTxn,TxnMeta
           FROM AccountTransactions INNER JOIN Transactions
@@ -993,7 +995,7 @@ accountTxPage(
     if (findLedger == 0)
     {
         sql = boost::str(
-            boost::format(prefix + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
+            boost::format(kPREFIX + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %
@@ -1228,23 +1230,23 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
             dbSize.reset();
         }
 
-        static auto const pageSize = [&] {
+        static auto const kPAGE_SIZE = [&] {
             std::uint32_t ps = 0;
             session << "PRAGMA page_size;", soci::into(ps);
             return ps;
         }();
-        static auto const maxPages = [&] {
+        static auto const kMAX_PAGES = [&] {
             std::uint32_t mp = 0;
             session << "PRAGMA max_page_count;", soci::into(mp);
             return mp;
         }();
         std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
-        std::uint32_t freePages = maxPages - pageCount;
-        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
+        std::uint32_t freePages = kMAX_PAGES - pageCount;
+        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * kPAGE_SIZE;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
-                       << "; SQLite page size: " << pageSize << " bytes"
+                       << "; SQLite page size: " << kPAGE_SIZE << " bytes"
                        << "; Free pages: " << freePages << "; Free space: " << freeSpace
                        << " bytes; "
                        << "Note that this does not take into account available disk "

@@ -584,17 +584,17 @@ public:
             BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
             BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
 
-            constexpr auto imin = std::numeric_limits<int>::min();
-            BEAST_EXPECT(amountFromJson(sfNumber, imin) == XRPAmount(imin));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(imin)) == XRPAmount(imin));
+            constexpr auto kIMIN = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMIN) == XRPAmount(kIMIN));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMIN)) == XRPAmount(kIMIN));
 
-            constexpr auto imax = std::numeric_limits<int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, imax) == XRPAmount(imax));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(imax)) == XRPAmount(imax));
+            constexpr auto kIMAX = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMAX) == XRPAmount(kIMAX));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMAX)) == XRPAmount(kIMAX));
 
-            constexpr auto umax = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, umax) == XRPAmount(umax));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(umax)) == XRPAmount(umax));
+            constexpr auto kUMAX = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kUMAX) == XRPAmount(kUMAX));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kUMAX)) == XRPAmount(kUMAX));
 
             // XRP does not handle fractional part
             try

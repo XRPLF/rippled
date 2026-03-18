@@ -26,41 +26,41 @@ struct key_strings
 };
 
 namespace common {
-static char const* passphrase = "REINDEER FLOTILLA";
-static char const* master_key = "SCAT BERN ISLE FOR ROIL BUS SOAK AQUA FREE FOR DRAM BRIG";
-static char const* master_seed = "snMwVWs2hZzfDUF3p2tHZ3EgmyhFs";
-static char const* master_seed_hex = "BE6A670A19B209E112146D0A7ED2AAD7";
+static char const* gPassphrase = "REINDEER FLOTILLA";
+static char const* gMasterKey = "SCAT BERN ISLE FOR ROIL BUS SOAK AQUA FREE FOR DRAM BRIG";
+static char const* gMasterSeed = "snMwVWs2hZzfDUF3p2tHZ3EgmyhFs";
+static char const* gMasterSeedHex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
 
-static key_strings const secp256k1_strings = {
+static key_strings const kSECP256K1_STRINGS = {
     "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
-    common::master_key,
-    common::master_seed,
-    common::master_seed_hex,
+    common::gMasterKey,
+    common::gMasterSeed,
+    common::gMasterSeedHex,
     "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
     "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
     "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
-    common::passphrase,
+    common::gPassphrase,
     "This wallet was generated using a user-supplied "
     "passphrase that has low entropy and is vulnerable "
     "to brute-force attacks.",
 };
 
-static key_strings const ed25519_strings = {
+static key_strings const kED25519_STRINGS = {
     "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
-    common::master_key,
-    common::master_seed,
-    common::master_seed_hex,
+    common::gMasterKey,
+    common::gMasterSeed,
+    common::gMasterSeedHex,
     "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
     "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
     "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
-    common::passphrase,
+    common::gPassphrase,
     "This wallet was generated using a user-supplied "
     "passphrase that has low entropy and is vulnerable "
     "to brute-force attacks.",
 };
 
-static key_strings const strong_brain_strings = {
+static key_strings const kSTRONG_BRAIN_STRINGS = {
     "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
     "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
     "shKdhWka8hS7Es3bpctCZXBiAwfUN",
@@ -237,9 +237,9 @@ public:
         {
             Json::Value params;
             params[jss::key_type] = "secp256k1";
-            params[jss::passphrase] = common::master_key;
-            params[jss::seed_hex] = common::master_seed_hex;
-            params[jss::seed] = common::master_seed;
+            params[jss::passphrase] = common::gMasterKey;
+            params[jss::seed_hex] = common::gMasterSeedHex;
+            params[jss::seed] = common::gMasterSeed;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
             BEAST_EXPECT(
@@ -252,7 +252,7 @@ public:
         {
             Json::Value params;
             params[jss::key_type] = "prime256v1";
-            params[jss::passphrase] = common::master_key;
+            params[jss::passphrase] = common::gMasterKey;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
@@ -261,7 +261,7 @@ public:
         {
             Json::Value params;
             params[jss::key_type] = Json::objectValue;
-            params[jss::seed_hex] = common::master_seed_hex;
+            params[jss::seed_hex] = common::gMasterSeedHex;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
@@ -270,7 +270,7 @@ public:
         {
             Json::Value params;
             params[jss::key_type] = Json::arrayValue;
-            params[jss::seed] = common::master_seed;
+            params[jss::seed] = common::gMasterSeed;
             auto result = walletPropose(params);
             BEAST_EXPECT(contains_error(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
@@ -425,7 +425,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "ed25519";
-            params[jss::secret] = common::master_seed;
+            params[jss::secret] = common::gMasterSeed;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -440,7 +440,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "prime256v1";
-            params[jss::passphrase] = common::master_key;
+            params[jss::passphrase] = common::gMasterKey;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -452,7 +452,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = Json::objectValue;
-            params[jss::seed_hex] = common::master_seed_hex;
+            params[jss::seed_hex] = common::gMasterSeedHex;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -464,7 +464,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = Json::arrayValue;
-            params[jss::seed] = common::master_seed;
+            params[jss::seed] = common::gMasterSeed;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -659,7 +659,7 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] = common::passphrase;
+            params[jss::seed_hex] = common::gPassphrase;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
@@ -769,16 +769,16 @@ public:
     void
     run() override
     {
-        testKeyType(std::nullopt, secp256k1_strings);
-        testKeyType(std::string("secp256k1"), secp256k1_strings);
-        testKeyType(std::string("ed25519"), ed25519_strings);
-        testKeyType(std::string("secp256k1"), strong_brain_strings);
+        testKeyType(std::nullopt, kSECP256K1_STRINGS);
+        testKeyType(std::string("secp256k1"), kSECP256K1_STRINGS);
+        testKeyType(std::string("ed25519"), kED25519_STRINGS);
+        testKeyType(std::string("secp256k1"), kSTRONG_BRAIN_STRINGS);
         testBadInput();
 
-        testKeypairForSignature(std::nullopt, secp256k1_strings);
-        testKeypairForSignature(std::string("secp256k1"), secp256k1_strings);
-        testKeypairForSignature(std::string("ed25519"), ed25519_strings);
-        testKeypairForSignature(std::string("secp256k1"), strong_brain_strings);
+        testKeypairForSignature(std::nullopt, kSECP256K1_STRINGS);
+        testKeypairForSignature(std::string("secp256k1"), kSECP256K1_STRINGS);
+        testKeypairForSignature(std::string("ed25519"), kED25519_STRINGS);
+        testKeypairForSignature(std::string("secp256k1"), kSTRONG_BRAIN_STRINGS);
 
         testRippleLibEd25519();
 

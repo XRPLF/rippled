@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-static std::optional<HTTPClientSSLContext> httpClientSSLContext;
+static std::optional<HTTPClientSSLContext> gHttpClientSslContext;
 
 void
 HTTPClient::initializeSSLContext(
@@ -23,13 +23,13 @@ HTTPClient::initializeSSLContext(
     bool sslVerify,
     beast::Journal j)
 {
-    httpClientSSLContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
+    gHttpClientSslContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
 }
 
 void
 HTTPClient::cleanupSSLContext()
 {
-    httpClientSSLContext.reset();
+    gHttpClientSslContext.reset();
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ public:
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : socket_(ioContext, httpClientSSLContext->context())
+        : socket_(ioContext, gHttpClientSslContext->context())
         , resolver_(ioContext)
         , header_(maxClientHeaderBytes)
         , port_(port)
@@ -222,7 +222,7 @@ public:
         {
             shutdown_ = ecResult
                 ? ecResult
-                : httpClientSSLContext->preConnectVerify(socket_.SSLSocket(), deqSites_[0]);
+                : gHttpClientSslContext->preConnectVerify(socket_.SSLSocket(), deqSites_[0]);
         }
 
         if (shutdown_)
@@ -258,7 +258,7 @@ public:
         {
             JLOG(j_.trace()) << "Connected.";
 
-            shutdown_ = httpClientSSLContext->postConnectVerify(socket_.SSLSocket(), deqSites_[0]);
+            shutdown_ = gHttpClientSslContext->postConnectVerify(socket_.SSLSocket(), deqSites_[0]);
 
             if (shutdown_)
             {
@@ -346,14 +346,14 @@ public:
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex reStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
-        static boost::regex reSize{
+        static boost::regex kRE_STATUS{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex kRE_SIZE{
             "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+        static boost::regex kRE_BODY{"\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch smMatch;
         // Match status code.
-        if (!boost::regex_match(strHeader, smMatch, reStatus))
+        if (!boost::regex_match(strHeader, smMatch, kRE_STATUS))
         {
             // XXX Use our own error code.
             JLOG(j_.trace()) << "No status code";
@@ -365,11 +365,11 @@ public:
 
         status_ = beast::lexicalCastThrow<int>(std::string(smMatch[1]));
 
-        if (boost::regex_match(strHeader, smMatch, reBody))  // we got some body
+        if (boost::regex_match(strHeader, smMatch, kRE_BODY))  // we got some body
             body_ = smMatch[1];
 
         std::size_t const responseSize = [&] {
-            if (boost::regex_match(strHeader, smMatch, reSize))
+            if (boost::regex_match(strHeader, smMatch, kRE_SIZE))
                 return beast::lexicalCast<std::size_t>(std::string(smMatch[1]), maxResponseSize_);
             return maxResponseSize_;
         }();

@@ -104,11 +104,11 @@ private:
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
-        static boost::regex reCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
+        static boost::regex kRE_CUR_ISS("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 
-        if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
+        if (boost::regex_match(strCurrencyIssuer, smMatch, kRE_CUR_ISS))
         {
             Json::Value jvResult(Json::objectValue);
             std::string strCurrency = smMatch[1];
@@ -1197,7 +1197,7 @@ public:
             int maxParams;
         };
 
-        static constexpr Command commands[] = {
+        static constexpr Command kCOMMANDS[] = {
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
@@ -1273,7 +1273,7 @@ public:
 
         auto const count = jvParams.size();
 
-        for (auto const& command : commands)
+        for (auto const& command : kCOMMANDS)
         {
             if (strMethod == command.name)
             {
@@ -1632,10 +1632,10 @@ fromNetwork(
 
     // Number of bytes to try to receive if no
     // Content-Length header received
-    constexpr auto rpcReplyMaxBytes = megabytes(256);
+    constexpr auto kRPC_REPLY_MAX_BYTES = megabytes(256);
 
     using namespace std::chrono_literals;
-    auto constexpr rpcWebhookTimeout = 30s;
+    auto constexpr kRPC_WEBHOOK_TIMEOUT = 30s;
 
     HTTPClient::request(
         bSSL,
@@ -1651,8 +1651,8 @@ fromNetwork(
             std::placeholders::_1,
             std::placeholders::_2,
             j),
-        rpcReplyMaxBytes,
-        rpcWebhookTimeout,
+        kRPC_REPLY_MAX_BYTES,
+        kRPC_WEBHOOK_TIMEOUT,
         std::bind(
             &RPCCallImp::onResponse,
             callbackFuncP,

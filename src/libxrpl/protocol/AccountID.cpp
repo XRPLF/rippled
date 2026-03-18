@@ -79,20 +79,20 @@ public:
 
 }  // namespace detail
 
-static std::unique_ptr<detail::AccountIdCache> accountIdCache;
+static std::unique_ptr<detail::AccountIdCache> gAccountIdCache;
 
 void
 initAccountIdCache(std::size_t count)
 {
-    if (!accountIdCache && count != 0)
-        accountIdCache = std::make_unique<detail::AccountIdCache>(count);
+    if (!gAccountIdCache && count != 0)
+        gAccountIdCache = std::make_unique<detail::AccountIdCache>(count);
 }
 
 std::string
 toBase58(AccountID const& v)
 {
-    if (accountIdCache)
-        return accountIdCache->toBase58(v);
+    if (gAccountIdCache)
+        return gAccountIdCache->toBase58(v);
 
     return encodeBase58Token(TokenType::AccountID, v.data(), v.size());
 }
@@ -155,15 +155,15 @@ calcAccountID(PublicKey const& pk)
 AccountID const&
 xrpAccount()
 {
-    static AccountID const account(beast::zero);
-    return account;
+    static AccountID const kACCOUNT(beast::zero);
+    return kACCOUNT;
 }
 
 AccountID const&
 noAccount()
 {
-    static AccountID const account(1);
-    return account;
+    static AccountID const kACCOUNT(1);
+    return kACCOUNT;
 }
 
 bool

@@ -29,7 +29,7 @@ namespace detail {
 // status code.
 
 // clang-format off
-constexpr static ErrorInfo unorderedErrorInfos[]{
+constexpr static ErrorInfo kUNORDERED_ERROR_INFOS[]{
     {rpcACT_MALFORMED,          "actMalformed",         "Account malformed."},
     {rpcACT_NOT_FOUND,          "actNotFound",          "Account not found."},
     {rpcALREADY_MULTISIG,       "alreadyMultisig",      "Already multisigned."},
@@ -152,9 +152,9 @@ sortErrorInfos(ErrorInfo const (&unordered)[N]) -> std::array<ErrorInfo, M>
     return ret;
 }
 
-constexpr auto sortedErrorInfos{sortErrorInfos<rpcLAST>(unorderedErrorInfos)};
+constexpr auto kSORTED_ERROR_INFOS{sortErrorInfos<rpcLAST>(kUNORDERED_ERROR_INFOS)};
 
-constexpr ErrorInfo unknownError;
+constexpr ErrorInfo kUNKNOWN_ERROR;
 
 }  // namespace detail
 
@@ -182,8 +182,8 @@ ErrorInfo const&
 get_error_info(error_code_i code)
 {
     if (code <= rpcSUCCESS || code > rpcLAST)
-        return detail::unknownError;
-    return detail::sortedErrorInfos[code - 1];
+        return detail::kUNKNOWN_ERROR;
+    return detail::kSORTED_ERROR_INFOS[code - 1];
 }
 
 Json::Value

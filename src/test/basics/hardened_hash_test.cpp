@@ -85,22 +85,22 @@ private:
 
     static_assert(Bits >= (8 * sizeof(UInt)), "Bits must be at least 8*sizeof(UInt)");
 
-    static std::size_t const size = Bits / (8 * sizeof(UInt));
+    static std::size_t const kSIZE = Bits / (8 * sizeof(UInt));
 
-    std::array<UInt, size> vec_;
+    std::array<UInt, kSIZE> vec_;
 
 public:
     using value_type = UInt;
 
-    static std::size_t const bits = Bits;
-    static std::size_t const bytes = bits / 8;
+    static std::size_t const kBITS = Bits;
+    static std::size_t const kBYTES = kBITS / 8;
 
     template <class Int>
     static unsigned_integer
     fronumber(Int v)
     {
         unsigned_integer result;
-        for (std::size_t i(1); i < size; ++i)
+        for (std::size_t i(1); i < kSIZE; ++i)
             result.vec_[i] = 0;
         result.vec_[0] = v;
         return result;
@@ -129,7 +129,7 @@ public:
     friend std::ostream&
     operator<<(std::ostream& s, unsigned_integer const& v)
     {
-        for (std::size_t i(0); i < size; ++i)
+        for (std::size_t i(0); i < kSIZE; ++i)
             s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.vec_[i];
         return s;
     }
@@ -138,7 +138,7 @@ public:
 using sha256_t = unsigned_integer<256, std::size_t>;
 
 #ifndef __INTELLISENSE__
-static_assert(sha256_t::bits == 256, "sha256_t must have 256 bits");
+static_assert(sha256_t::kBITS == 256, "sha256_t must have 256 bits");
 #endif
 
 }  // namespace xrpl

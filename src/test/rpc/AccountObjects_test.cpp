@@ -16,7 +16,7 @@
 namespace xrpl {
 namespace test {
 
-static char const* bob_account_objects[] = {
+static char const* gBobAccountObjects[] = {
     R"json({
   "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
   "BookDirectory" : "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
@@ -257,7 +257,7 @@ public:
 
         Json::Value bobj[4];
         for (int i = 0; i < 4; ++i)
-            Json::Reader{}.parse(bob_account_objects[i], bobj[i]);
+            Json::Reader{}.parse(gBobAccountObjects[i], bobj[i]);
 
         // test 'unstepped'
         // i.e. request account objects without explicit limit/marker paging
@@ -1038,8 +1038,8 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
 
-        static constexpr unsigned nftsSize = 10;
-        for (unsigned i = 0; i < nftsSize; i++)
+        static constexpr unsigned kNFTS_SIZE = 10;
+        for (unsigned i = 0; i < kNFTS_SIZE; i++)
         {
             env(token::mint(bob, 0));
         }

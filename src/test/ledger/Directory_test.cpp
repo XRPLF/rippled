@@ -304,54 +304,54 @@ struct Directory_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        constexpr uint256 base("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+        constexpr uint256 kBASE("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        constexpr uint256 item("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+        constexpr uint256 kITEM("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {
             // Create a chain of three pages:
             Sandbox sb(env.closed().get(), tapNONE);
-            makePages(sb, base, 3);
+            makePages(sb, kBASE, 3);
 
             // Insert an item in the middle page:
             {
-                auto p = sb.peek(keylet::page(base, 1));
+                auto p = sb.peek(keylet::page(kBASE, 1));
                 BEAST_EXPECT(p);
 
                 STVector256 v;
-                v.push_back(item);
+                v.push_back(kITEM);
                 p->setFieldV256(sfIndexes, v);
                 sb.update(p);
             }
 
             // Now, try to delete the item from the middle
             // page. This should cause all pages to be deleted:
-            BEAST_EXPECT(sb.dirRemove(keylet::page(base, 0), 1, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 1)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 0)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 1, keylet::unchecked(kITEM), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 1)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 0)));
         }
 
         {
             // Create a chain of four pages:
             Sandbox sb(env.closed().get(), tapNONE);
-            makePages(sb, base, 4);
+            makePages(sb, kBASE, 4);
 
             // Now add items on pages 1 and 2:
             {
-                auto p1 = sb.peek(keylet::page(base, 1));
+                auto p1 = sb.peek(keylet::page(kBASE, 1));
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
-                v1.push_back(~item);
+                v1.push_back(~kITEM);
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
-                auto p2 = sb.peek(keylet::page(base, 2));
+                auto p2 = sb.peek(keylet::page(kBASE, 2));
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
-                v2.push_back(item);
+                v2.push_back(kITEM);
                 p2->setFieldV256(sfIndexes, v2);
                 sb.update(p2);
             }
@@ -359,16 +359,16 @@ struct Directory_test : public beast::unit_test::suite
             // Now, try to delete the item from page 2.
             // This should cause pages 2 and 3 to be
             // deleted:
-            BEAST_EXPECT(sb.dirRemove(keylet::page(base, 0), 2, keylet::unchecked(item), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 3)));
-            BEAST_EXPECT(!sb.peek(keylet::page(base, 2)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 2, keylet::unchecked(kITEM), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 3)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
 
-            auto p1 = sb.peek(keylet::page(base, 1));
+            auto p1 = sb.peek(keylet::page(kBASE, 1));
             BEAST_EXPECT(p1);
             BEAST_EXPECT(p1->getFieldU64(sfIndexNext) == 0);
             BEAST_EXPECT(p1->getFieldU64(sfIndexPrevious) == 0);
 
-            auto p0 = sb.peek(keylet::page(base, 0));
+            auto p0 = sb.peek(keylet::page(kBASE, 0));
             BEAST_EXPECT(p0);
             BEAST_EXPECT(p0->getFieldU64(sfIndexNext) == 1);
             BEAST_EXPECT(p0->getFieldU64(sfIndexPrevious) == 1);

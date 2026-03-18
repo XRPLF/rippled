@@ -237,18 +237,18 @@ forwardedFor(http_request_type const& request)
         };
 
         // Look for the first (case insensitive) "for="
-        static std::string const forStr{"for="};
+        static std::string const kFOR_STR{"for="};
         char const* found = std::search(
             it->value().begin(),
             it->value().end(),
-            forStr.begin(),
-            forStr.end(),
+            kFOR_STR.begin(),
+            kFOR_STR.end(),
             [&asciiTolower](char c1, char c2) { return asciiTolower(c1) == asciiTolower(c2); });
 
         if (found == it->value().end())
             return {};
 
-        found += forStr.size();
+        found += kFOR_STR.size();
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
@@ -257,7 +257,7 @@ forwardedFor(http_request_type const& request)
             if (pos != std::string_view::npos)
                 return pos;
 
-            return it->value().size() - forStr.size();
+            return it->value().size() - kFOR_STR.size();
         }();
 
         return extractIpAddrFromField({found, pos});

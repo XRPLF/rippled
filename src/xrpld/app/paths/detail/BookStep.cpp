@@ -28,7 +28,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { AMM, CLOB };
 
-    static constexpr uint32_t maxOffersToConsume{1000};
+    static constexpr uint32_t kMAX_OFFERS_TO_CONSUME{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -564,10 +564,10 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // AMM
     if (!res->isConst())
     {
-        auto static const qOne = Quality{STAmount::uRateOne};
+        auto static const kQ_ONE = Quality{STAmount::uRateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, qOne, prevStepDir, WaiveTransferFee::Yes, OfferType::AMM, v.rules());
-        if (q == qOne)
+            v, kQ_ONE, prevStepDir, WaiveTransferFee::Yes, OfferType::AMM, v.rules());
+        if (q == kQ_ONE)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
         qf.combine(*res);
@@ -664,7 +664,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     // Always charge the transfer fee, even if the owner is the issuer
     std::uint32_t const trOut = ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
 
-    typename FlowOfferStream<TIn, TOut>::StepCounter counter(maxOffersToConsume, j_);
+    typename FlowOfferStream<TIn, TOut>::StepCounter counter(kMAX_OFFERS_TO_CONSUME, j_);
 
     FlowOfferStream<TIn, TOut> offers(sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
@@ -996,7 +996,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         SetUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive
-        if (offersConsumed >= maxOffersToConsume)
+        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
         {
             inactive_ = true;
         }
@@ -1158,7 +1158,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         SetUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive (dry)
-        if (offersConsumed >= maxOffersToConsume)
+        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
         {
             inactive_ = true;
         }

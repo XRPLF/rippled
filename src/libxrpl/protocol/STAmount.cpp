@@ -51,9 +51,9 @@
 
 namespace xrpl {
 
-static std::uint64_t const tenTo14 = 100000000000000ull;
-static std::uint64_t const tenTo14m1 = tenTo14 - 1;
-static std::uint64_t const tenTo17 = tenTo14 * 1000;
+static std::uint64_t const kTEN_TO14 = 100000000000000ull;
+static std::uint64_t const kTEN_TO14M1 = kTEN_TO14 - 1;
+static std::uint64_t const kTEN_TO17 = kTEN_TO14 * 1000;
 
 //------------------------------------------------------------------------------
 static std::int64_t
@@ -510,11 +510,11 @@ canAdd(STAmount const& a, STAmount const& b)
     // IOU case (precision check)
     if (a.holds<Issue>() && b.holds<Issue>())
     {
-        static STAmount const one{IOUAmount{1, 0}, noIssue()};
-        static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
-        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
-        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
-        return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= maxLoss;
+        static STAmount const kONE{IOUAmount{1, 0}, noIssue()};
+        static STAmount const kMAX_LOSS{IOUAmount{1, -4}, noIssue()};
+        STAmount lhs = divide((a - b) + b, a, noIssue()) - kONE;
+        STAmount rhs = divide((b - a) + a, b, noIssue()) - kONE;
+        return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= kMAX_LOSS;
     }
 
     // MPT (overflow & underflow check)
@@ -1252,7 +1252,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
     // is in the range of 10^16 to 10^15.
     return STAmount(
         asset,
-        muldiv(numVal, tenTo17, denVal) + 5,
+        muldiv(numVal, kTEN_TO17, denVal) + 5,
         numOffset - denOffset - 17,
         num.negative() != den.negative());
 }
@@ -1325,7 +1325,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
     // precision, by scaling the result to 10^16 to 10^18.
     return STAmount(
         asset,
-        muldiv(value1, value2, tenTo14) + 7,
+        muldiv(value1, value2, kTEN_TO14) + 7,
         offset1 + offset2 + 14,
         v1.negative() != v2.negative());
 }
@@ -1545,7 +1545,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     // from zero, and if we're rounding down, truncation
     // is implicit.
     std::uint64_t amount =
-        muldivRound(value1, value2, tenTo14, (resultNegative != roundUp) ? tenTo14m1 : 0);
+        muldivRound(value1, value2, kTEN_TO14, (resultNegative != roundUp) ? kTEN_TO14M1 : 0);
 
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
@@ -1634,7 +1634,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     // We round away from zero if we're rounding up or
     // truncate if we're rounding down.
     std::uint64_t amount =
-        muldivRound(numVal, tenTo17, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);
+        muldivRound(numVal, kTEN_TO17, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);
 
     int offset = numOffset - denOffset - 17;
 

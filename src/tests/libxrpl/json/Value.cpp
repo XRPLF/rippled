@@ -24,31 +24,31 @@ TEST(json_value, limits)
 
 TEST(json_value, construct_and_compare_Json_StaticString)
 {
-    static constexpr char sample[]{"Contents of a Json::StaticString"};
+    static constexpr char kSAMPLE[]{"Contents of a Json::StaticString"};
 
-    static constexpr Json::StaticString test1(sample);
-    char const* addrTest1{test1};
+    static constexpr Json::StaticString kTEST1(kSAMPLE);
+    char const* addrTest1{kTEST1};
 
-    EXPECT_EQ(addrTest1, &sample[0]);
-    EXPECT_EQ(test1.c_str(), &sample[0]);
+    EXPECT_EQ(addrTest1, &kSAMPLE[0]);
+    EXPECT_EQ(kTEST1.c_str(), &kSAMPLE[0]);
 
-    static constexpr Json::StaticString test2{"Contents of a Json::StaticString"};
-    static constexpr Json::StaticString test3{"Another StaticString"};
+    static constexpr Json::StaticString kTEST2{"Contents of a Json::StaticString"};
+    static constexpr Json::StaticString kTEST3{"Another StaticString"};
 
-    EXPECT_EQ(test1, test2);
-    EXPECT_NE(test1, test3);
+    EXPECT_EQ(kTEST1, kTEST2);
+    EXPECT_NE(kTEST1, kTEST3);
 
-    std::string str{sample};
-    EXPECT_EQ(str, test2);
-    EXPECT_NE(str, test3);
-    EXPECT_EQ(test2, str);
-    EXPECT_NE(test3, str);
+    std::string str{kSAMPLE};
+    EXPECT_EQ(str, kTEST2);
+    EXPECT_NE(str, kTEST3);
+    EXPECT_EQ(kTEST2, str);
+    EXPECT_NE(kTEST3, str);
 }
 
 TEST(json_value, different_types)
 {
     // Exercise ValueType constructor
-    static constexpr Json::StaticString staticStr{"staticStr"};
+    static constexpr Json::StaticString kSTATIC_STR{"staticStr"};
 
     auto testCopy = [](Json::ValueType typ) {
         Json::Value val{typ};
@@ -133,7 +133,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(stringV.isObjectOrNull());
     }
     {
-        Json::Value const staticStrV{staticStr};
+        Json::Value const staticStrV{kSTATIC_STR};
         {
             Json::Value cpy{staticStrV};
             EXPECT_EQ(staticStrV.type(), Json::stringValue);
@@ -1120,23 +1120,23 @@ TEST(json_value, access_members)
     val = Json::Value(Json::objectValue);
     EXPECT_EQ(val.type(), Json::objectValue);
     EXPECT_EQ(val.size(), 0);
-    static Json::StaticString const staticThree("three");
-    val[staticThree] = 3;
+    static Json::StaticString const kSTATIC_THREE("three");
+    val[kSTATIC_THREE] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
     EXPECT_TRUE(val.isValidIndex(1));
     EXPECT_FALSE(val.isValidIndex(2));
-    EXPECT_EQ(val[staticThree], 3);
+    EXPECT_EQ(val[kSTATIC_THREE], 3);
     EXPECT_TRUE(val.isMember("two"));
-    EXPECT_TRUE(val.isMember(staticThree));
+    EXPECT_TRUE(val.isMember(kSTATIC_THREE));
     EXPECT_FALSE(val.isMember("key"));
     {
         Json::Value const constVal = val;
         EXPECT_EQ(constVal["two"], 2);
         EXPECT_EQ(constVal["four"].type(), Json::nullValue);
-        EXPECT_EQ(constVal[staticThree], 3);
+        EXPECT_EQ(constVal[kSTATIC_THREE], 3);
         EXPECT_TRUE(constVal.isMember("two"));
-        EXPECT_TRUE(constVal.isMember(staticThree));
+        EXPECT_TRUE(constVal.isMember(kSTATIC_THREE));
         EXPECT_FALSE(constVal.isMember("key"));
         EXPECT_EQ(val.get(std::string("two"), "backup"), 2);
         EXPECT_EQ(val.get("missing", "default2"), "default2");
@@ -1168,18 +1168,18 @@ TEST(json_value, remove_members)
     EXPECT_EQ(val.removeMember(std::string("member")).type(), Json::nullValue);
 
     val = Json::Value(Json::objectValue);
-    static Json::StaticString const staticThree("three");
-    val[staticThree] = 3;
+    static Json::StaticString const kSTATIC_THREE("three");
+    val[kSTATIC_THREE] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
 
     EXPECT_EQ(val.removeMember(std::string("six")).type(), Json::nullValue);
     EXPECT_EQ(val.size(), 2);
 
-    EXPECT_EQ(val.removeMember(staticThree), 3);
+    EXPECT_EQ(val.removeMember(kSTATIC_THREE), 3);
     EXPECT_EQ(val.size(), 1);
 
-    EXPECT_EQ(val.removeMember(staticThree).type(), Json::nullValue);
+    EXPECT_EQ(val.removeMember(kSTATIC_THREE).type(), Json::nullValue);
     EXPECT_EQ(val.size(), 1);
 
     EXPECT_EQ(val.removeMember(std::string("two")), 2);

@@ -176,7 +176,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     // Min price
     auto const minSlotPrice = lptAMMBalance * tradingFee / AUCTION_SLOT_MIN_FEE_FRACTION;
 
-    std::uint32_t constexpr tailingSlot = AUCTION_SLOT_TIME_INTERVALS - 1;
+    std::uint32_t constexpr kTAILING_SLOT = AUCTION_SLOT_TIME_INTERVALS - 1;
 
     // If seated then it is the current slot-holder time slot, otherwise
     // the auction slot is not owned. Slot range is in {0-19}
@@ -186,7 +186,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
-        return timeSlot && *timeSlot < tailingSlot && sb.read(keylet::account(account));
+        return timeSlot && *timeSlot < kTAILING_SLOT && sb.read(keylet::account(account));
     };
 
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {

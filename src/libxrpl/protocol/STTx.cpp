@@ -351,13 +351,13 @@ STTx::getJson(JsonOptions options, bool binary) const
 std::string const&
 STTx::getMetaSQLInsertReplaceHeader()
 {
-    static std::string const sql =
+    static std::string const kSQL =
         "INSERT OR REPLACE INTO Transactions "
         "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, "
         "TxnMeta)"
         " VALUES ";
 
-    return sql;
+    return kSQL;
 }
 
 std::string
@@ -376,14 +376,14 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
-    static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format kBF_TRANS("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
-        boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
+        boost::format(kBF_TRANS) % to_string(getTransactionID()) % format->getName() %
         toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
         safe_cast<char>(status) % rTxn % escapedMetaData);
 }
@@ -649,7 +649,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const allowedSymbols = []() {
+            static constexpr std::array<char, 256> const kALLOWED_SYMBOLS = []() {
                 std::array<char, 256> a{};
 
                 std::string_view symbols(
@@ -665,7 +665,7 @@ isMemoOkay(STObject const& st, std::string& reason)
 
             for (unsigned char c : *optData)
             {
-                if (!allowedSymbols[c])
+                if (!kALLOWED_SYMBOLS[c])
                 {
                     reason =
                         "The MemoType and MemoFormat fields may only "

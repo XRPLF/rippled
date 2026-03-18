@@ -286,9 +286,9 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
             return {rpcNOT_SYNCED, "notSynced"};
         }
 
-        static auto const minSequenceGap = 10;
+        static auto const kMIN_SEQUENCE_GAP = 10;
 
-        if (ledger->header().seq + minSequenceGap < context.ledgerMaster.getValidLedgerIndex())
+        if (ledger->header().seq + kMIN_SEQUENCE_GAP < context.ledgerMaster.getValidLedgerIndex())
         {
             ledger.reset();
             if (context.apiVersion == 1)

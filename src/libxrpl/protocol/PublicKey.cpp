@@ -87,9 +87,9 @@ sliceToHex(Slice const& slice)
     }
     for (int i = 0; i < slice.size(); ++i)
     {
-        constexpr char hex[] = "0123456789ABCDEF";
-        s += hex[((slice[i] & 0xf0) >> 4)];
-        s += hex[((slice[i] & 0x0f) >> 0)];
+        constexpr char kHEX[] = "0123456789ABCDEF";
+        s += kHEX[((slice[i] & 0xf0) >> 4)];
+        s += kHEX[((slice[i] & 0x0f) >> 0)];
     }
     return s;
 }
@@ -116,7 +116,7 @@ ecdsaCanonicality(Slice const& sig)
         boost::multiprecision::unchecked,
         void>>;
 
-    static uint264 const g(
+    static uint264 const kG(
         "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
     // The format of a signature should be:
@@ -132,16 +132,16 @@ ecdsaCanonicality(Slice const& sig)
         return std::nullopt;
 
     uint264 R(sliceToHex(*r));  // NOLINT(readability-identifier-naming)
-    if (R >= g)
+    if (R >= kG)
         return std::nullopt;
 
     uint264 S(sliceToHex(*s));  // NOLINT(readability-identifier-naming)
-    if (S >= g)
+    if (S >= kG)
         return std::nullopt;
 
     // (R,S) and (R,G-S) are canonical,
     // but is fully canonical when S <= G-S
-    auto const Sp = g - S;  // NOLINT(readability-identifier-naming)
+    auto const Sp = kG - S;  // NOLINT(readability-identifier-naming)
     if (S > Sp)
         return ECDSACanonicality::canonical;
     return ECDSACanonicality::fullyCanonical;

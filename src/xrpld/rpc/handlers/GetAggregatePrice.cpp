@@ -29,7 +29,7 @@ iteratePriceData(
     std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;
-    constexpr std::uint8_t maxHistory = 3;
+    constexpr std::uint8_t kMAX_HISTORY = 3;
     bool isNew = false;
     std::uint8_t history = 0;
 
@@ -59,7 +59,7 @@ iteratePriceData(
         if (!oracle || f(*oracle) || isNew)
             return;
 
-        if (++history > maxHistory)
+        if (++history > kMAX_HISTORY)
             return;
 
         uint256 prevTx = chain->getFieldH256(sfPreviousTxnID);
@@ -129,11 +129,11 @@ doGetAggregatePrice(RPC::JsonContext& context)
     Json::Value result;
     auto const& params(context.params);
 
-    constexpr std::uint16_t maxOracles = 200;
+    constexpr std::uint16_t kMAX_ORACLES = 200;
     if (!params.isMember(jss::oracles))
         return RPC::missing_field_error(jss::oracles);
     if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 ||
-        params[jss::oracles].size() > maxOracles)
+        params[jss::oracles].size() > kMAX_ORACLES)
     {
         RPC::inject_error(rpcORACLE_MALFORMED, result);
         return result;
@@ -319,11 +319,11 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size / 2;
         if ((size % 2) == 0)
         {
-            static STAmount two{noIssue(), 2, 0};
+            static STAmount kTWO{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;
-            return divide(a1 + a2, two, noIssue());
+            return divide(a1 + a2, kTWO, noIssue());
         }
         return itAdvance(prices.right.begin(), middle)->first;
     }();

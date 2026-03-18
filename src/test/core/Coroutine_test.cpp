@@ -100,8 +100,8 @@ public:
 
         auto& jq = env.app().getJobQueue();
 
-        static int const n = 4;
-        std::array<std::shared_ptr<JobQueue::Coro>, n> a;
+        static int const kN = 4;
+        std::array<std::shared_ptr<JobQueue::Coro>, kN> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -116,7 +116,7 @@ public:
         BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
 
-        for (int i = 0; i < n; ++i)
+        for (int i = 0; i < kN; ++i)
         {
             jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
                 a[id] = c;

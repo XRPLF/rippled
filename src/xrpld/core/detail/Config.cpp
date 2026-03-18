@@ -91,7 +91,7 @@ namespace xrpl {
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
 inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
-sizedItems
+kSIZED_ITEMS
 {{
     // FIXME: We should document each of these items, explaining exactly
     //        what they control and whether there exists an explicit
@@ -119,7 +119,7 @@ static_assert(
     []() constexpr->bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
-        for (auto const& i : sizedItems)
+        for (auto const& i : kSIZED_ITEMS)
         {
             if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
                 return false;
@@ -260,7 +260,8 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     if (!bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
-        auto const& threshold = sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
+        auto const& threshold =
+            kSIZED_ITEMS[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
         auto ns = std::find_if(
             threshold.second.begin(), threshold.second.end(), [this](std::size_t limit) {
@@ -460,14 +461,14 @@ Config::loadFromString(std::string const& fileContents)
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
-            static std::regex const e(":([0-9]+)$");
+            static std::regex const kE(":([0-9]+)$");
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
                 if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
-                std::string result = std::regex_replace(line, e, " $1");
+                std::string result = std::regex_replace(line, kE, " $1");
                 // sanity check the result of the replace, should be same length
                 // as input
                 if (result.size() == line.size())
@@ -1040,9 +1041,9 @@ int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-    XRPL_ASSERT(index < sizedItems.size(), "xrpl::Config::getValueFor : valid index input");
+    XRPL_ASSERT(index < kSIZED_ITEMS.size(), "xrpl::Config::getValueFor : valid index input");
     XRPL_ASSERT(!node || *node <= 4, "xrpl::Config::getValueFor : unset or valid node");
-    return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
+    return kSIZED_ITEMS.at(index).second.at(node.value_or(NODE_SIZE));
 }
 
 FeeSetup

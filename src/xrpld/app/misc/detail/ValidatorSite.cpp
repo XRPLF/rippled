@@ -12,9 +12,9 @@
 
 namespace xrpl {
 
-auto constexpr default_refresh_interval = std::chrono::minutes{5};
-auto constexpr error_retry_interval = std::chrono::seconds{30};
-unsigned short constexpr max_redirects = 3;
+auto constexpr kDEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
+auto constexpr kERROR_RETRY_INTERVAL = std::chrono::seconds{30};
+unsigned short constexpr kMAX_REDIRECTS = 3;
 
 ValidatorSite::Site::Resource::Resource(std::string uri) : uri{std::move(uri)}
 {
@@ -59,7 +59,7 @@ ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
     , redirCount{0}
-    , refreshInterval{default_refresh_interval}
+    , refreshInterval{kDEFAULT_REFRESH_INTERVAL}
     , nextRefresh{clock_type::now()}
     , lastRequestEndpoint{}
     , lastRequestSuccessful{false}
@@ -466,7 +466,7 @@ ValidatorSite::processRedirect(
         throw std::runtime_error{"missing location"};
     }
 
-    if (sites_[siteIdx].redirCount == max_redirects)
+    if (sites_[siteIdx].redirCount == kMAX_REDIRECTS)
     {
         JLOG(j_.warn()) << "Exceeded max redirects for validator list at "
                         << sites_[siteIdx].loadedResource->uri;
@@ -509,7 +509,7 @@ ValidatorSite::onSiteFetch(
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{clock_type::now(), ListDisposition::invalid, errMsg});
             if (retry)
-                sites_[siteIdx].nextRefresh = clock_type::now() + error_retry_interval;
+                sites_[siteIdx].nextRefresh = clock_type::now() + kERROR_RETRY_INTERVAL;
 
             // See if there's a copy saved locally from last time we
             // saw the list.

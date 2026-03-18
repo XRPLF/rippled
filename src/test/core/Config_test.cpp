@@ -19,7 +19,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format configContentsTemplate(R"xrpldConfig(
+    static boost::format kCONFIG_CONTENTS_TEMPLATE(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -103,7 +103,7 @@ backend=sqlite
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(configContentsTemplate % dbPathSection % valFileSection);
+    return boost::str(kCONFIG_CONTENTS_TEMPLATE % dbPathSection % valFileSection);
 }
 
 /**
@@ -492,7 +492,7 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format configTemplate(R"xrpldConfig(
+            static boost::format kCONFIG_TEMPLATE(R"xrpldConfig(
 [validation_seed]
 %1%
 
@@ -505,7 +505,7 @@ port_wss_admin
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(configTemplate % validationSeed % token));
+                c.loadFromString(boost::str(kCONFIG_TEMPLATE % validationSeed % token));
             }
             catch (std::runtime_error& e)
             {

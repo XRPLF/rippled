@@ -137,9 +137,9 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
     // representing a one byte "position" and a 256-bit hash:
-    constexpr std::size_t chunkSize = uint256::bytes + 1;
+    constexpr std::size_t kCHUNK_SIZE = uint256::bytes + 1;
 
-    if (auto const s = data.size(); (s % chunkSize != 0) || (s > chunkSize * branchFactor))
+    if (auto const s = data.size(); (s % kCHUNK_SIZE != 0) || (s > kCHUNK_SIZE * branchFactor))
         Throw<std::runtime_error>("Invalid CI node");
 
     SerialIter si(data);

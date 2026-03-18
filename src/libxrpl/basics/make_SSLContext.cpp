@@ -44,7 +44,7 @@ namespace detail {
       @note If you increase the number of bits you need to generate new
             default DH parameters and update defaultDH  accordingly.
  * */
-int defaultRSAKeyBits = 2048;
+int gDefaultRsaKeyBits = 2048;
 
 /** The default DH parameters.
 
@@ -58,7 +58,7 @@ int defaultRSAKeyBits = 2048;
     @note If you increase the number of bits you need to update
           defaultRSAKeyBits accordingly.
  */
-static constexpr char const defaultDH[] =
+static constexpr char const kDEFAULT_DH[] =
     "-----BEGIN DH PARAMETERS-----\n"
     "MIIBCAKCAQEApKSWfR7LKy0VoZ/SDCObCvJ5HKX2J93RJ+QN8kJwHh+uuA8G+t8Q\n"
     "MDRjL5HanlV/sKN9HXqBc7eqHmmbqYwIXKUt9MUZTLNheguddxVlc2IjdP5i9Ps8\n"
@@ -82,14 +82,14 @@ static constexpr char const defaultDH[] =
           global or per-port basis, using the `ssl_ciphers` directive in the
           config file.
  */
-std::string const defaultCipherList = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
+std::string const kDEFAULT_CIPHER_LIST = "TLSv1.2:!CBC:!DSS:!PSK:!eNULL:!aNULL";
 
 static void
 initAnonymous(boost::asio::ssl::context& context)
 {
     using namespace openssl;
 
-    static auto defaultRSA = []() {
+    static auto kDEFAULT_RSA = []() {
         BIGNUM* bn = BN_new();
         BN_set_word(bn, RSA_F4);
 
@@ -98,7 +98,7 @@ initAnonymous(boost::asio::ssl::context& context)
         if (!rsa)
             LogicError("RSA_new failed");
 
-        if (RSA_generate_key_ex(rsa, defaultRSAKeyBits, bn, nullptr) != 1)
+        if (RSA_generate_key_ex(rsa, gDefaultRsaKeyBits, bn, nullptr) != 1)
             LogicError("RSA_generate_key_ex failure");
 
         BN_clear_free(bn);
@@ -106,7 +106,7 @@ initAnonymous(boost::asio::ssl::context& context)
         return rsa;
     }();
 
-    static auto defaultEphemeralPrivateKey = []() {
+    static auto kDEFAULT_EPHEMERAL_PRIVATE_KEY = []() {
         auto pkey = EVP_PKEY_new();
 
         if (!pkey)
@@ -114,16 +114,16 @@ initAnonymous(boost::asio::ssl::context& context)
 
         // We need to up the reference count of here, since we are retaining a
         // copy of the key for (potential) reuse.
-        if (RSA_up_ref(defaultRSA) != 1)
+        if (RSA_up_ref(kDEFAULT_RSA) != 1)
             LogicError("EVP_PKEY_assign_RSA: incrementing reference count failed");
 
-        if (!EVP_PKEY_assign_RSA(pkey, defaultRSA))
+        if (!EVP_PKEY_assign_RSA(pkey, kDEFAULT_RSA))
             LogicError("EVP_PKEY_assign_RSA failed");
 
         return pkey;
     }();
 
-    static auto defaultCert = []() {
+    static auto kDEFAULT_CERT = []() {
         auto x509 = X509_new();
 
         if (x509 == nullptr)
@@ -203,9 +203,9 @@ initAnonymous(boost::asio::ssl::context& context)
         }
 
         // And a private key
-        X509_set_pubkey(x509, defaultEphemeralPrivateKey);
+        X509_set_pubkey(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY);
 
-        if (!X509_sign(x509, defaultEphemeralPrivateKey, EVP_sha256()))
+        if (!X509_sign(x509, kDEFAULT_EPHEMERAL_PRIVATE_KEY, EVP_sha256()))
             LogicError("X509_sign failed");
 
         return x509;
@@ -213,10 +213,10 @@ initAnonymous(boost::asio::ssl::context& context)
 
     SSL_CTX* const ctx = context.native_handle();
 
-    if (SSL_CTX_use_certificate(ctx, defaultCert) <= 0)
+    if (SSL_CTX_use_certificate(ctx, kDEFAULT_CERT) <= 0)
         LogicError("SSL_CTX_use_certificate failed");
 
-    if (SSL_CTX_use_PrivateKey(ctx, defaultEphemeralPrivateKey) <= 0)
+    if (SSL_CTX_use_PrivateKey(ctx, kDEFAULT_EPHEMERAL_PRIVATE_KEY) <= 0)
         LogicError("SSL_CTX_use_PrivateKey failed");
 }
 
@@ -326,12 +326,12 @@ getContext(std::string cipherList)
         boost::asio::ssl::context::no_compression);
 
     if (cipherList.empty())
-        cipherList = defaultCipherList;
+        cipherList = kDEFAULT_CIPHER_LIST;
 
     if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
         LogicError("SSL_CTX_set_cipher_list failed");
 
-    c->use_tmp_dh({std::addressof(detail::defaultDH), sizeof(defaultDH)});
+    c->use_tmp_dh({std::addressof(detail::kDEFAULT_DH), sizeof(kDEFAULT_DH)});
 
     // Disable all renegotiation support in TLS v1.2. This can help prevent
     // exploitation of the bug described in CVE-2021-3499 (for details see

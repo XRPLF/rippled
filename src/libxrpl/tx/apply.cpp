@@ -10,10 +10,10 @@ namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
-constexpr HashRouterFlags SF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags SF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags SF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags SF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+constexpr HashRouterFlags kSF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags kSF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags kSF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -40,37 +40,37 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
             std::string reason;
             if (!passesLocalChecks(tx, reason))
             {
-                router.setFlags(id, SF_LOCALBAD);
+                router.setFlags(id, kSF_LOCALBAD);
                 return {Validity::SigGoodOnly, reason};
             }
 
-            router.setFlags(id, SF_SIGGOOD);
+            router.setFlags(id, kSF_SIGGOOD);
             return {Validity::Valid, ""};
         }
     }
 
-    if (any(flags & SF_SIGBAD))
+    if (any(flags & kSF_SIGBAD))
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
 
-    if (!any(flags & SF_SIGGOOD))
+    if (!any(flags & kSF_SIGGOOD))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, SF_SIGBAD);
+            router.setFlags(id, kSF_SIGBAD);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, SF_SIGGOOD);
+        router.setFlags(id, kSF_SIGGOOD);
     }
 
     // Signature is now known good
-    if (any(flags & SF_LOCALBAD))
+    if (any(flags & kSF_LOCALBAD))
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
 
-    if (any(flags & SF_LOCALGOOD))
+    if (any(flags & kSF_LOCALGOOD))
         // ...and the local checks
         // are known good.
         return {Validity::Valid, ""};
@@ -79,10 +79,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
-        router.setFlags(id, SF_LOCALBAD);
+        router.setFlags(id, kSF_LOCALBAD);
         return {Validity::SigGoodOnly, reason};
     }
-    router.setFlags(id, SF_LOCALGOOD);
+    router.setFlags(id, kSF_LOCALGOOD);
     return {Validity::Valid, ""};
 }
 
@@ -93,10 +93,10 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
     switch (validity)
     {
         case Validity::Valid:
-            flags |= SF_LOCALGOOD;
+            flags |= kSF_LOCALGOOD;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= SF_SIGGOOD;
+            flags |= kSF_SIGGOOD;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly

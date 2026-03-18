@@ -813,7 +813,7 @@ struct LedgerEntry
 Json::Value
 doLedgerEntry(RPC::JsonContext& context)
 {
-    static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
+    static auto kLEDGER_ENTRY_PARSERS = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -832,7 +832,7 @@ doLedgerEntry(RPC::JsonContext& context)
     auto const hasMoreThanOneMember = [&]() {
         int count = 0;
 
-        for (auto const& ledgerEntry : ledgerEntryParsers)
+        for (auto const& ledgerEntry : kLEDGER_ENTRY_PARSERS)
         {
             if (context.params.isMember(ledgerEntry.fieldName))
             {
@@ -861,7 +861,7 @@ doLedgerEntry(RPC::JsonContext& context)
     try
     {
         bool found = false;
-        for (auto const& ledgerEntry : ledgerEntryParsers)
+        for (auto const& ledgerEntry : kLEDGER_ENTRY_PARSERS)
         {
             if (context.params.isMember(ledgerEntry.fieldName))
             {

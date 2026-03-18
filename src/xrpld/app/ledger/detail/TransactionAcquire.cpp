@@ -13,7 +13,7 @@ namespace xrpl {
 using namespace std::chrono_literals;
 
 // Timeout interval in milliseconds
-auto constexpr TX_ACQUIRE_TIMEOUT = 250ms;
+auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
 
 enum {
     NORM_TIMEOUTS = 4,
@@ -27,7 +27,7 @@ TransactionAcquire::TransactionAcquire(
     : TimeoutCounter(
           app,
           hash,
-          TX_ACQUIRE_TIMEOUT,
+          kTX_ACQUIRE_TIMEOUT,
           {jtTXN_DATA, "TxAcq", {}},
           app.journal("TransactionAcquire"))
     , haveRoot_(false)

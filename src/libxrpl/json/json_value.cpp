@@ -60,8 +60,8 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
-    static ValueAllocator* valueAllocator = new DefaultValueAllocator;
-    return valueAllocator;
+    static ValueAllocator* kVALUE_ALLOCATOR = new DefaultValueAllocator;
+    return kVALUE_ALLOCATOR;
 }
 
 static struct DummyValueAllocatorInitializer
@@ -71,7 +71,7 @@ static struct DummyValueAllocatorInitializer
         valueAllocator();  // ensure valueAllocator() statics are initialized
                            // before main().
     }
-} dummyValueAllocatorInitializer;
+} gDummyValueAllocatorInitializer;
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////

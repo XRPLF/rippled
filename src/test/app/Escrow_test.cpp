@@ -1301,12 +1301,12 @@ struct Escrow_test : public beast::unit_test::suite
             // bob creates a bunch of tickets because he will be burning
             // through them with tec transactions.  Just because we can
             // we'll use them up starting from largest and going smaller.
-            constexpr static std::uint32_t bobTicketCount{20};
-            env(ticket::create(bob, bobTicketCount));
+            constexpr static std::uint32_t kBOB_TICKET_COUNT{20};
+            env(ticket::create(bob, kBOB_TICKET_COUNT));
             env.close();
             std::uint32_t bobTicket{env.seq(bob)};
             env.require(tickets(alice, 1));
-            env.require(tickets(bob, bobTicketCount));
+            env.require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1322,7 +1322,7 @@ struct Escrow_test : public beast::unit_test::suite
                 ticket::use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
             env.require(tickets(alice, 0));
-            env.require(tickets(bob, bobTicketCount));
+            env.require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Advance the ledger, verifying that the finish won't complete
             // prematurely.  Note that each tec consumes one of bob's tickets.
@@ -1361,12 +1361,12 @@ struct Escrow_test : public beast::unit_test::suite
 
             // bob creates a bunch of tickets because he will be burning
             // through them with tec transactions.
-            constexpr std::uint32_t bobTicketCount{20};
+            constexpr std::uint32_t kBOB_TICKET_COUNT{20};
             std::uint32_t bobTicket{env.seq(bob) + 1};
-            env(ticket::create(bob, bobTicketCount));
+            env(ticket::create(bob, kBOB_TICKET_COUNT));
             env.close();
             env.require(tickets(alice, 1));
-            env.require(tickets(bob, bobTicketCount));
+            env.require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1383,7 +1383,7 @@ struct Escrow_test : public beast::unit_test::suite
                 ticket::use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
             env.require(tickets(alice, 0));
-            env.require(tickets(bob, bobTicketCount));
+            env.require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Advance the ledger, verifying that the cancel won't complete
             // prematurely.

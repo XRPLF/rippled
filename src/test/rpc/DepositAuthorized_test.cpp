@@ -397,7 +397,7 @@ public:
         }
 
         {
-            static std::vector<std::string> const credIds = {
+            static std::vector<std::string> const kCRED_IDS = {
                 "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
@@ -408,15 +408,15 @@ public:
                 "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
             };
-            assert(credIds.size() > maxCredentialsArraySize);
+            assert(kCRED_IDS.size() > maxCredentialsArraySize);
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", credIds).toStyledString());
+                depositAuthArgs(alice, becky, "validated", kCRED_IDS).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, credIds, "invalidParams");
+                jv[jss::result], alice, becky, false, kCRED_IDS, "invalidParams");
         }
 
         {

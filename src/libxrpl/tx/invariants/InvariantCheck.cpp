@@ -917,7 +917,9 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const fieldChanged = [](auto const& before, auto const& after, auto const& field) {
+    static auto const kFIELD_CHANGED = [](auto const& before,
+                                          auto const& after,
+                                          auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
@@ -938,17 +940,17 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
-                    fieldChanged(before, after, sfLedgerIndex) ||
-                    fieldChanged(before, after, sfSequence) ||
-                    fieldChanged(before, after, sfOwnerNode) ||
-                    fieldChanged(before, after, sfVaultNode) ||
-                    fieldChanged(before, after, sfVaultID) ||
-                    fieldChanged(before, after, sfAccount) ||
-                    fieldChanged(before, after, sfOwner) ||
-                    fieldChanged(before, after, sfManagementFeeRate) ||
-                    fieldChanged(before, after, sfCoverRateMinimum) ||
-                    fieldChanged(before, after, sfCoverRateLiquidation);
+                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
+                    kFIELD_CHANGED(before, after, sfLedgerIndex) ||
+                    kFIELD_CHANGED(before, after, sfSequence) ||
+                    kFIELD_CHANGED(before, after, sfOwnerNode) ||
+                    kFIELD_CHANGED(before, after, sfVaultNode) ||
+                    kFIELD_CHANGED(before, after, sfVaultID) ||
+                    kFIELD_CHANGED(before, after, sfAccount) ||
+                    kFIELD_CHANGED(before, after, sfOwner) ||
+                    kFIELD_CHANGED(before, after, sfManagementFeeRate) ||
+                    kFIELD_CHANGED(before, after, sfCoverRateMinimum) ||
+                    kFIELD_CHANGED(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
                 /*
@@ -957,26 +959,26 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
-                    fieldChanged(before, after, sfLedgerIndex) ||
-                    fieldChanged(before, after, sfSequence) ||
-                    fieldChanged(before, after, sfOwnerNode) ||
-                    fieldChanged(before, after, sfLoanBrokerNode) ||
-                    fieldChanged(before, after, sfLoanBrokerID) ||
-                    fieldChanged(before, after, sfBorrower) ||
-                    fieldChanged(before, after, sfLoanOriginationFee) ||
-                    fieldChanged(before, after, sfLoanServiceFee) ||
-                    fieldChanged(before, after, sfLatePaymentFee) ||
-                    fieldChanged(before, after, sfClosePaymentFee) ||
-                    fieldChanged(before, after, sfOverpaymentFee) ||
-                    fieldChanged(before, after, sfInterestRate) ||
-                    fieldChanged(before, after, sfLateInterestRate) ||
-                    fieldChanged(before, after, sfCloseInterestRate) ||
-                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
-                    fieldChanged(before, after, sfStartDate) ||
-                    fieldChanged(before, after, sfPaymentInterval) ||
-                    fieldChanged(before, after, sfGracePeriod) ||
-                    fieldChanged(before, after, sfLoanScale);
+                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
+                    kFIELD_CHANGED(before, after, sfLedgerIndex) ||
+                    kFIELD_CHANGED(before, after, sfSequence) ||
+                    kFIELD_CHANGED(before, after, sfOwnerNode) ||
+                    kFIELD_CHANGED(before, after, sfLoanBrokerNode) ||
+                    kFIELD_CHANGED(before, after, sfLoanBrokerID) ||
+                    kFIELD_CHANGED(before, after, sfBorrower) ||
+                    kFIELD_CHANGED(before, after, sfLoanOriginationFee) ||
+                    kFIELD_CHANGED(before, after, sfLoanServiceFee) ||
+                    kFIELD_CHANGED(before, after, sfLatePaymentFee) ||
+                    kFIELD_CHANGED(before, after, sfClosePaymentFee) ||
+                    kFIELD_CHANGED(before, after, sfOverpaymentFee) ||
+                    kFIELD_CHANGED(before, after, sfInterestRate) ||
+                    kFIELD_CHANGED(before, after, sfLateInterestRate) ||
+                    kFIELD_CHANGED(before, after, sfCloseInterestRate) ||
+                    kFIELD_CHANGED(before, after, sfOverpaymentInterestRate) ||
+                    kFIELD_CHANGED(before, after, sfStartDate) ||
+                    kFIELD_CHANGED(before, after, sfPaymentInterval) ||
+                    kFIELD_CHANGED(before, after, sfGracePeriod) ||
+                    kFIELD_CHANGED(before, after, sfLoanScale);
                 break;
             default:
                 /*
@@ -989,8 +991,8 @@ NoModifiedUnmodifiableFields::finalize(
                  * was added.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
-                    fieldChanged(before, after, sfLedgerIndex);
+                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
+                    kFIELD_CHANGED(before, after, sfLedgerIndex);
         }
         XRPL_ASSERT(
             !bad || enforce,

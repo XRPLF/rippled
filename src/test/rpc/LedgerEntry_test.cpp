@@ -34,7 +34,7 @@ enum class FieldType {
     UInt64Field,
 };
 
-std::vector<std::pair<Json::StaticString, FieldType>> mappings{
+std::vector<std::pair<Json::StaticString, FieldType>> gMappings{
     {jss::account, FieldType::AccountField},
     {jss::accounts, FieldType::TwoAccountArrayField},
     {jss::asset, FieldType::IssueField},
@@ -55,8 +55,8 @@ FieldType
 getFieldType(Json::StaticString fieldName)
 {
     auto it = std::ranges::find_if(
-        mappings, [&fieldName](auto const& pair) { return pair.first == fieldName; });
-    if (it != mappings.end())
+        gMappings, [&fieldName](auto const& pair) { return pair.first == fieldName; });
+    if (it != gMappings.end())
     {
         return it->second;
     }
@@ -132,19 +132,19 @@ class LedgerEntry_test : public beast::unit_test::suite
     std::vector<Json::Value>
     getBadValues(FieldType fieldType)
     {
-        static Json::Value const injectObject = []() {
+        static Json::Value const kINJECT_OBJECT = []() {
             Json::Value obj(Json::objectValue);
             obj[jss::account] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             obj[jss::ledger_index] = "validated";
             return obj;
         }();
-        static Json::Value const injectArray = []() {
+        static Json::Value const kINJECT_ARRAY = []() {
             Json::Value arr(Json::arrayValue);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "validated";
             return arr;
         }();
-        static std::array<Json::Value, 21> const allBadValues = {
+        static std::array<Json::Value, 21> const kALL_BAD_VALUES = {
             "",                                                      // 0
             true,                                                    // 1
             1,                                                       // 2
@@ -165,58 +165,58 @@ class LedgerEntry_test : public beast::unit_test::suite
             "6D",               // 16
             Json::arrayValue,   // 17
             Json::objectValue,  // 18
-            injectObject,       // 19
-            injectArray         // 20
+            kINJECT_OBJECT,     // 19
+            kINJECT_ARRAY       // 20
         };
 
         auto remove = [&](std::vector<std::uint8_t> indices) -> std::vector<Json::Value> {
             std::unordered_set<std::uint8_t> indexSet(indices.begin(), indices.end());
             std::vector<Json::Value> values;
-            values.reserve(allBadValues.size() - indexSet.size());
-            for (std::size_t i = 0; i < allBadValues.size(); ++i)
+            values.reserve(kALL_BAD_VALUES.size() - indexSet.size());
+            for (std::size_t i = 0; i < kALL_BAD_VALUES.size(); ++i)
             {
                 if (indexSet.find(i) == indexSet.end())
                 {
-                    values.push_back(allBadValues[i]);
+                    values.push_back(kALL_BAD_VALUES[i]);
                 }
             }
             return values;
         };
 
-        static auto const& badAccountValues = remove({12});
-        static auto const& badArrayValues = remove({17, 20});
-        static auto const& badBlobValues = remove({3, 7, 8, 16});
-        static auto const& badCurrencyValues = remove({14});
-        static auto const& badHashValues = remove({2, 3, 7, 8, 16});
-        static auto const& badFixedHashValues = remove({1, 2, 3, 4, 7, 8, 16});
-        static auto const& badIndexValues = remove({12, 16, 18, 19});
-        static auto const& badUInt32Values = remove({2, 3});
-        static auto const& badUInt64Values = remove({2, 3});
-        static auto const& badIssueValues = remove({});
+        static auto const& kBAD_ACCOUNT_VALUES = remove({12});
+        static auto const& kBAD_ARRAY_VALUES = remove({17, 20});
+        static auto const& kBAD_BLOB_VALUES = remove({3, 7, 8, 16});
+        static auto const& kBAD_CURRENCY_VALUES = remove({14});
+        static auto const& kBAD_HASH_VALUES = remove({2, 3, 7, 8, 16});
+        static auto const& kBAD_FIXED_HASH_VALUES = remove({1, 2, 3, 4, 7, 8, 16});
+        static auto const& kBAD_INDEX_VALUES = remove({12, 16, 18, 19});
+        static auto const& kBAD_U_INT32_VALUES = remove({2, 3});
+        static auto const& kBAD_U_INT64_VALUES = remove({2, 3});
+        static auto const& kBAD_ISSUE_VALUES = remove({});
 
         switch (fieldType)
         {
             case FieldType::AccountField:
-                return badAccountValues;
+                return kBAD_ACCOUNT_VALUES;
             case FieldType::ArrayField:
             case FieldType::TwoAccountArrayField:
-                return badArrayValues;
+                return kBAD_ARRAY_VALUES;
             case FieldType::BlobField:
-                return badBlobValues;
+                return kBAD_BLOB_VALUES;
             case FieldType::CurrencyField:
-                return badCurrencyValues;
+                return kBAD_CURRENCY_VALUES;
             case FieldType::HashField:
-                return badHashValues;
+                return kBAD_HASH_VALUES;
             case FieldType::HashOrObjectField:
-                return badIndexValues;
+                return kBAD_INDEX_VALUES;
             case FieldType::FixedHashField:
-                return badFixedHashValues;
+                return kBAD_FIXED_HASH_VALUES;
             case FieldType::IssueField:
-                return badIssueValues;
+                return kBAD_ISSUE_VALUES;
             case FieldType::UInt32Field:
-                return badUInt32Values;
+                return kBAD_U_INT32_VALUES;
             case FieldType::UInt64Field:
-                return badUInt64Values;
+                return kBAD_U_INT64_VALUES;
             default:
                 Throw<std::runtime_error>(
                     "unknown type " + std::to_string(static_cast<uint8_t>(fieldType)));
@@ -226,13 +226,13 @@ class LedgerEntry_test : public beast::unit_test::suite
     Json::Value
     getCorrectValue(Json::StaticString fieldName)
     {
-        static Json::Value const twoAccountArray = []() {
+        static Json::Value const kTWO_ACCOUNT_ARRAY = []() {
             Json::Value arr(Json::arrayValue);
             arr[0u] = "rhigTLJJyXXSRUyRCQtqi1NoAZZzZnS4KU";
             arr[1u] = "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
             return arr;
         }();
-        static Json::Value const issueObject = []() {
+        static Json::Value const kISSUE_OBJECT = []() {
             Json::Value arr(Json::objectValue);
             arr[jss::currency] = "XRP";
             return arr;
@@ -253,12 +253,12 @@ class LedgerEntry_test : public beast::unit_test::suite
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
             case FieldType::IssueField:
-                return issueObject;
+                return kISSUE_OBJECT;
             case FieldType::HashOrObjectField:
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
             case FieldType::TwoAccountArrayField:
-                return twoAccountArray;
+                return kTWO_ACCOUNT_ARRAY;
             case FieldType::UInt32Field:
                 return 1;
             case FieldType::UInt64Field:
@@ -534,7 +534,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             accountRootIndex = jrr[jss::index].asString();
         }
         {
-            constexpr char aliceAcctRootBinary[]{
+            constexpr char kALICE_ACCT_ROOT_BINARY[]{
                 "1100612200800000240000000425000000032D00000000559CE54C3B934E4"
                 "73A995B477E92EC229F99CED5B62BF4D2ACE4DC42719103AE2F6240000002"
                 "540BE4008114AE123A8556F3CF91154711376AFB0F894F832B3D"};
@@ -547,7 +547,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             Json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::node_binary));
-            BEAST_EXPECT(jrr[jss::node_binary] == aliceAcctRootBinary);
+            BEAST_EXPECT(jrr[jss::node_binary] == kALICE_ACCT_ROOT_BINARY);
         }
         {
             // Request alice's account root using the index.
@@ -1174,9 +1174,9 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         {
             // Failed, authorized_credentials is too long
-            static std::array<std::string_view, 9> const credTypes = {
+            static std::array<std::string_view, 9> const kCRED_TYPES = {
                 "cred1", "cred2", "cred3", "cred4", "cred5", "cred6", "cred7", "cred8", "cred9"};
-            static_assert(sizeof(credTypes) / sizeof(credTypes[0]) > maxCredentialsArraySize);
+            static_assert(sizeof(kCRED_TYPES) / sizeof(kCRED_TYPES[0]) > maxCredentialsArraySize);
 
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
@@ -1185,7 +1185,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
             auto& arr(jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
-            for (auto cred : credTypes)
+            for (auto cred : kCRED_TYPES)
             {
                 Json::Value jo;
                 jo[jss::issuer] = issuer.human();
@@ -2807,7 +2807,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // send less than quorum of attestations (otherwise funds are
         // immediately transferred and no "claim" object is created)
-        size_t constexpr numAttest = 3;
+        size_t constexpr kNUM_ATTEST = 3;
         auto attestations = create_account_attestations(
             scAttester,
             jvb,
@@ -2820,7 +2820,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             scCarol,
             signers,
             UT_XCHAIN_DEFAULT_NUM_SIGNERS);
-        for (size_t i = 0; i < numAttest; ++i)
+        for (size_t i = 0; i < kNUM_ATTEST; ++i)
         {
             scEnv(attestations[i]);
         }
@@ -2850,8 +2850,8 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(attest.size() == 3);
             BEAST_EXPECT(
                 attest[Json::Value::UInt(0)].isMember(sfXChainCreateAccountProofSig.jsonName));
-            Json::Value a[numAttest];
-            for (size_t i = 0; i < numAttest; ++i)
+            Json::Value a[kNUM_ATTEST];
+            for (size_t i = 0; i < kNUM_ATTEST; ++i)
             {
                 a[i] = attest[Json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
@@ -2879,7 +2879,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // complete attestations quorum - CreateAccountClaimID should not be
         // present anymore
-        for (size_t i = numAttest; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
+        for (size_t i = kNUM_ATTEST; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
         {
             scEnv(attestations[i]);
         }
