@@ -34,7 +34,7 @@ getTxReserveSponsorAccountID(STTx const& tx)
     return {};
 }
 
-inline std::shared_ptr<SLE>
+inline SLE::pointer
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
@@ -43,7 +43,7 @@ getTxReserveSponsor(ApplyView& view, STTx const& tx)
     return {};
 }
 
-inline std::shared_ptr<SLE const>
+inline SLE::const_pointer
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
@@ -54,7 +54,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 
 inline std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     SF_ACCOUNT const& field = sfSponsor)
 {
     if (sle->isFieldPresent(field))
@@ -62,10 +62,10 @@ getLedgerEntryReserveSponsorAccountID(
     return {};
 }
 
-inline std::shared_ptr<SLE>
+inline SLE::pointer
 getLedgerEntryReserveSponsor(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    SLE::const_ref sle,
     SF_ACCOUNT const& field = sfSponsor)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
@@ -74,10 +74,10 @@ getLedgerEntryReserveSponsor(
     return {};
 }
 
-inline std::shared_ptr<SLE const>
+inline SLE::const_pointer
 getLedgerEntryReserveSponsor(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     SF_ACCOUNT const& field = sfSponsor)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
@@ -88,8 +88,8 @@ getLedgerEntryReserveSponsor(
 
 inline void
 addSponsorToLedgerEntry(
-    std::shared_ptr<SLE> const& sle,
-    std::shared_ptr<SLE> const& sponsorSle,
+    SLE::ref sle,
+    SLE::const_ref sponsorSle,
     SF_ACCOUNT const& field = sfSponsor)
 {
     XRPL_ASSERT(
@@ -101,7 +101,7 @@ addSponsorToLedgerEntry(
 }
 
 inline void
-removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor)
+removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||

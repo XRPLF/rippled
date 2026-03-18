@@ -134,10 +134,10 @@ transferRate(ReadView const& view, AccountID const& issuer)
     return parityRate;
 }
 
-void
+static void
 adjustSponsorOwnerCountHlp(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    SLE::ref sle,
     SField const& sfield,
     std::int32_t amount,
     beast::Journal j)
@@ -160,8 +160,8 @@ adjustSponsorOwnerCountHlp(
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& accountSle,
-    std::shared_ptr<SLE> const& sponsorSle,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
     std::int32_t amount,
     beast::Journal j)
 {
@@ -258,9 +258,7 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
@@ -274,7 +272,7 @@ isPseudoAccount(
             }) > 0;
 }
 
-Expected<std::shared_ptr<SLE>, TER>
+Expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]
