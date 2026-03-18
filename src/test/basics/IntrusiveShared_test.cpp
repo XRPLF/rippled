@@ -119,17 +119,17 @@ public:
 
     TIBase() : id{checkoutID()}
     {
-        assert(state.size() > id_);
+        assert(state.size() > id);
         state[id].store(TrackedState::alive, std::memory_order_relaxed);
     }
     ~TIBase()
     {
         using enum TrackedState;
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         tracingCallback_(state[id].load(std::memory_order_relaxed), deletedStarted);
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         // Use relaxed memory order to try to avoid atomic operations from
         // adding additional memory synchronizations that may hide threading
         // errors in the underlying shared pointer class.
@@ -137,7 +137,7 @@ public:
 
         tracingCallback_(deletedStarted, deleted);
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         state[id].store(TrackedState::deleted, std::memory_order_relaxed);
 
         tracingCallback_(TrackedState::deleted, std::nullopt);
@@ -148,15 +148,15 @@ public:
     {
         using enum TrackedState;
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         tracingCallback_(state[id].load(std::memory_order_relaxed), partiallyDeletedStarted);
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         state[id].store(partiallyDeletedStarted, std::memory_order_relaxed);
 
         tracingCallback_(partiallyDeletedStarted, partiallyDeleted);
 
-        assert(state.size() > id_);
+        assert(state.size() > id);
         state[id].store(partiallyDeleted, std::memory_order_relaxed);
 
         tracingCallback_(partiallyDeleted, std::nullopt);

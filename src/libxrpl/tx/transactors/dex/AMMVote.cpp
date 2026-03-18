@@ -162,7 +162,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     }
 
     XRPL_ASSERT(
-        !ctx_.view().rules().enabled(fixInnerObjTemplate) || ammSle->isFieldPresent(sfAuctionSlot),
+        !ctx.view().rules().enabled(fixInnerObjTemplate) || ammSle->isFieldPresent(sfAuctionSlot),
         "xrpl::applyVote : has auction slot");
 
     // Update the vote entries and the trading/discounted fee.

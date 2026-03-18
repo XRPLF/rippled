@@ -650,10 +650,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.issue() == place_offer.in.issue(),
+            saTakerGets.issue() == placeOffer.in.issue(),
             "xrpl::CreateOffer::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.issue() == place_offer.out.issue(),
+            saTakerPays.issue() == placeOffer.out.issue(),
             "xrpl::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != placeOffer)

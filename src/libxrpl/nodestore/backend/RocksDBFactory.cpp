@@ -245,7 +245,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
+        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status(ok);
@@ -321,7 +321,7 @@ public:
     storeBatch(Batch const& batch) override
     {
         XRPL_ASSERT(
-            db_,
+            db,
             "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null "
             "database");
         rocksdb::WriteBatch wb;
@@ -351,7 +351,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
+        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(db->NewIterator(options));

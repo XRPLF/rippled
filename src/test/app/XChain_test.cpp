@@ -4097,9 +4097,9 @@ private:
             auto completeCb = [&](std::vector<size_t> const& signers) {
                 auto numAttestors = signers.size();
                 st.env.close();
-                assert(num_attestors <= std::count(cr.attested.begin(), cr.attested.end(), true));
-                assert(num_attestors >= bridge_.quorum);
-                assert(cr.claim_id - 1 == counters.claim_count);
+                assert(numAttestors <= std::count(cr_.attested.begin(), cr_.attested.end(), true));
+                assert(numAttestors >= bridge_.quorum);
+                assert(cr_.claim_id - 1 == counters.claim_count);
 
                 auto r = cr_.reward;
                 auto reward = divide(r, STAmount(numAttestors), r.issue());
@@ -4288,7 +4288,7 @@ private:
                     break;
 
                 case st_attested:
-                    assert(xfer.with_claim == WithClaim::yes);
+                    assert(xfer_.with_claim == WithClaim::yes);
                     claim();
                     sm_state_ = st_completed;
                     break;

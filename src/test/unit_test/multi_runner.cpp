@@ -381,7 +381,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                 this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
                 if (!recvdSize)
                     continue;
-                assert(recvd_size == 1);
+                assert(recvdSize == 1);
                 MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
