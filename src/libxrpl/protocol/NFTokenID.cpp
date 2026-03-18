@@ -30,7 +30,7 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
@@ -154,7 +154,7 @@ insertNFTokenID(
     {
         std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        if (result.size() > 0)
+        if (!result.empty())
             response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
