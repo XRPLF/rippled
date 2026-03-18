@@ -305,7 +305,7 @@ SignerListSet::replaceSignerList()
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
-    // with CreateTicket.
+    // with TicketCreate.
     if (preFeeBalance_ < newReserve)
         return tecINSUFFICIENT_RESERVE;
 

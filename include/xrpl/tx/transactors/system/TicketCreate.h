@@ -4,7 +4,7 @@
 
 namespace xrpl {
 
-class CreateTicket : public Transactor
+class TicketCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
@@ -25,7 +25,7 @@ public:
     // average, 1.25 ms.
     //
     // Using that same test set up creating 250 Tickets in a single
-    // CreateTicket::doApply() in a unit test took, on average, 1.21 ms.
+    // TicketCreate::doApply() in a unit test took, on average, 1.21 ms.
     //
     // So, for the moment, a single transaction creating 250 Tickets takes
     // about the same compute time as a single compute-intensive payment.
@@ -41,7 +41,7 @@ public:
     // ledger-stuffing with Tickets.
     constexpr static std::uint32_t maxTicketThreshold = 250;
 
-    explicit CreateTicket(ApplyContext& ctx) : Transactor(ctx)
+    explicit TicketCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -61,6 +61,6 @@ public:
     doApply() override;
 };
 
-using TicketCreate = CreateTicket;
+using TicketCreate = TicketCreate;
 
 }  // namespace xrpl

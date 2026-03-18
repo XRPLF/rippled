@@ -154,7 +154,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
 
 /** This transaction type creates a new set of tickets. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/system/CreateTicket.h>
+#   include <xrpl/tx/transactors/system/TicketCreate.h>
 #endif
 TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegable,

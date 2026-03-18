@@ -3,19 +3,19 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/system/CreateTicket.h>
+#include <xrpl/tx/transactors/system/TicketCreate.h>
 
 namespace xrpl {
 
 TxConsequences
-CreateTicket::makeTxConsequences(PreflightContext const& ctx)
+TicketCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     // Create TxConsequences identifying the number of sequences consumed.
     return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
 }
 
 NotTEC
-CreateTicket::preflight(PreflightContext const& ctx)
+TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < minValidCount || count > maxValidCount)
@@ -25,7 +25,7 @@ CreateTicket::preflight(PreflightContext const& ctx)
 }
 
 TER
-CreateTicket::preclaim(PreclaimContext const& ctx)
+TicketCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
     auto const sleAccountRoot = ctx.view.read(keylet::account(id));
@@ -51,7 +51,7 @@ CreateTicket::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-CreateTicket::doApply()
+TicketCreate::doApply()
 {
     SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
     if (!sleAccountRoot)
