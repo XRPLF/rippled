@@ -7,26 +7,26 @@
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/payment_channel/PayChanClaim.h>
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
 
-#include <libxrpl/tx/transactors/payment_channel/PayChanHelpers.h>
+#include <libxrpl/tx/transactors/payment_channel/PaymentChannelHelpers.h>
 
 namespace xrpl {
 
 bool
-PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
+PaymentChannelClaim::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 std::uint32_t
-PayChanClaim::getFlagsMask(PreflightContext const&)
+PaymentChannelClaim::getFlagsMask(PreflightContext const&)
 {
     return tfPaymentChannelClaimMask;
 }
 
 NotTEC
-PayChanClaim::preflight(PreflightContext const& ctx)
+PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::zero))
@@ -79,7 +79,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 }
 
 TER
-PayChanClaim::preclaim(PreclaimContext const& ctx)
+PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
@@ -92,7 +92,7 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-PayChanClaim::doApply()
+PaymentChannelClaim::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
@@ -151,7 +151,8 @@ PayChanClaim::doApply()
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        XRPL_ASSERT(reqDelta >= beast::zero, "xrpl::PayChanClaim::doApply : minimum balance delta");
+        XRPL_ASSERT(
+            reqDelta >= beast::zero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);

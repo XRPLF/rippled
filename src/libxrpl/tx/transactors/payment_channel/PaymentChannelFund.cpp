@@ -1,20 +1,20 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/tx/transactors/payment_channel/PayChanFund.h>
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 
-#include <libxrpl/tx/transactors/payment_channel/PayChanHelpers.h>
+#include <libxrpl/tx/transactors/payment_channel/PaymentChannelHelpers.h>
 
 namespace xrpl {
 
 TxConsequences
-PayChanFund::makeTxConsequences(PreflightContext const& ctx)
+PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
-PayChanFund::preflight(PreflightContext const& ctx)
+PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
@@ -23,7 +23,7 @@ PayChanFund::preflight(PreflightContext const& ctx)
 }
 
 TER
-PayChanFund::doApply()
+PaymentChannelFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);

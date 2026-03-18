@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/payment_channel/PayChanCreate.h>
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
 
 namespace xrpl {
 
@@ -32,13 +32,13 @@ namespace xrpl {
 //------------------------------------------------------------------------------
 
 TxConsequences
-PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
+PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
-PayChanCreate::preflight(PreflightContext const& ctx)
+PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
@@ -53,7 +53,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
 }
 
 TER
-PayChanCreate::preclaim(PreclaimContext const& ctx)
+PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const sle = ctx.view.read(keylet::account(account));
@@ -103,7 +103,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-PayChanCreate::doApply()
+PaymentChannelCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
     auto const sle = ctx_.view().peek(keylet::account(account));

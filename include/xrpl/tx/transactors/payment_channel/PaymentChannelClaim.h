@@ -4,12 +4,12 @@
 
 namespace xrpl {
 
-class PayChanClaim : public Transactor
+class PaymentChannelClaim : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit PayChanClaim(ApplyContext& ctx) : Transactor(ctx)
+    explicit PaymentChannelClaim(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -29,6 +29,6 @@ public:
     doApply() override;
 };
 
-using PaymentChannelClaim = PayChanClaim;
+using PaymentChannelClaim = PaymentChannelClaim;
 
 }  // namespace xrpl
