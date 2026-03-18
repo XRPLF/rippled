@@ -97,6 +97,16 @@ public:
     del(key_type const& key, bool valid);
 
 public:
+    /** Tag type for canonicalize: replace the cache entry with caller's data. */
+    struct ReplaceCache
+    {
+    };
+
+    /** Tag type for canonicalize: replace caller's pointer with cached data. */
+    struct ReplaceClient
+    {
+    };
+
     /** Replace aliased objects with originals.
 
         Due to concurrency it is possible for two separate objects with
@@ -106,13 +116,24 @@ public:
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-       replaced
 
         @return `true` If the key already existed.
+
+        Usage:
+        - `canonicalize(ReplaceCache{}, key, data)`: Replace the cache entry
+          with the caller's data.
+        - `canonicalize(ReplaceClient{}, key, data)`: Replace the caller's
+          pointer with the cached data.
     */
-    template <bool ShouldReplace>
+    template <typename ReplacePolicy>
     bool
-    canonicalize(key_type const& key, std::add_const_t<SharedPointerType, ShouldReplace>& data);
+    canonicalize(
+        ReplacePolicy,
+        key_type const& key,
+        std::conditional_t<
+            std::is_same_v<ReplacePolicy, ReplaceCache>,
+            SharedPointerType const&,
+            SharedPointerType&> data);
 
     bool
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data);

@@ -304,11 +304,21 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <bool ShouldReplace>
+template <typename ReplacePolicy>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(key_type const& key, std::add_const_t<SharedPointerType, ShouldReplace>& data)
+    canonicalize(
+        ReplacePolicy,
+        key_type const& key,
+        std::conditional_t<
+            std::is_same_v<ReplacePolicy, ReplaceCache>,
+            SharedPointerType const&,
+            SharedPointerType&> data)
 {
+    static_assert(
+        std::is_same_v<ReplacePolicy, ReplaceCache> ||
+        std::is_same_v<ReplacePolicy, ReplaceClient>);
+
     std::lock_guard lock(m_mutex);
 
     auto cit = m_cache.find(key);
@@ -320,7 +330,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             std::forward_as_tuple(key),
             std::forward_as_tuple(m_clock.now(), data));
         ++m_cache_count;
-        return std::make_pair(false, data);
+        return false;
     }
 
     Entry& entry = cit->second;
@@ -328,7 +338,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (entry.isCached())
     {
-        if constexpr (ShouldReplace)
+        if constexpr (std::is_same_v<ReplacePolicy, ReplaceCache>)
         {
             entry.ptr = data;
         }
@@ -337,14 +347,14 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             data = entry.ptr.getStrong();
         }
 
-        return std::make_pair(true, entry.ptr.getStrong());
+        return true;
     }
 
     auto cachedData = entry.lock();
 
     if (cachedData)
     {
-        if constexpr (ShouldReplace)
+        if constexpr (std::is_same_v<ReplacePolicy, ReplaceCache>)
         {
             entry.ptr = data;
         }
@@ -355,12 +365,12 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         }
 
         ++m_cache_count;
-        return std::make_pair(true, entry.ptr.getStrong());
+        return true;
     }
 
     entry.ptr = data;
     ++m_cache_count;
-    return std::make_pair(false, data);
+    return false;
 }
 
 template <
@@ -376,7 +386,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data)
 {
-    return canonicalize<true>(key, data);
+    return canonicalize(ReplaceCache{}, key, data);
 }
 
 template <
@@ -392,7 +402,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalize_replace_client(key_type const& key, SharedPointerType& data)
 {
-    return canonicalize<false>(key, data);
+    return canonicalize(ReplaceClient{}, key, data);
 }
 
 template <
