@@ -285,8 +285,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (auto const threshold = std::get<std::uint32_t>(timeThreshold))
     {
         // threshold defines an acceptable range {max,min} of lastUpdateTime as
-        // {latestTime, latestTime - threshold}, the prices with lastUpdateTime
-        // greater than (latestTime - threshold) are erased.
+        // {latestTime, latestTime - threshold}. Prices with lastUpdateTime
+        // less than (latestTime - threshold) are erased (outdated prices).
         auto const oldestTime = prices.left.rbegin()->first;
         auto const upperBound = latestTime > threshold ? (latestTime - threshold) : oldestTime;
         if (upperBound > oldestTime)
