@@ -803,7 +803,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
         XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
-        return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
+        return Rate{1'000'000'000u + 10'000 * fee};
     }
 
     return parityRate;
