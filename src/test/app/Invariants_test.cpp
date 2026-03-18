@@ -270,7 +270,7 @@ class Invariants_test : public beast::unit_test::suite
                 BEAST_EXPECT(wrappedA1->at(sfOwnerCount) == 0);
                 wrappedA1.adjustOwnerCount(1, ac.journal);
 
-                ac.view().erase(wrappedA1.mutableSle());
+                wrappedA1.erase();
 
                 return true;
             },

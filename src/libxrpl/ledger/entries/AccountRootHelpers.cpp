@@ -106,7 +106,7 @@ WritableAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     applyView_->adjustOwnerCountHook(id_, current, adjusted);
     mutableSle_->at(sfOwnerCount) = adjusted;
-    applyView_->update(mutableSle_);
+    update();
 }
 
 AccountID

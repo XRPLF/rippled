@@ -372,7 +372,7 @@ EscrowFinish::doApply()
     // Adjust source owner count
     WritableAccountRoot wrappedAcct(account, &ctx_.view());
     wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
-    ctx_.view().update(wrappedAcct.mutableSle());
+    wrappedAcct.update();
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
