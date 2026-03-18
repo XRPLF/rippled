@@ -1375,14 +1375,13 @@ OverlayImpl::updateSlotAndSquelch(
 
     if (!strand_.running_in_this_thread())
     {
-        {
-            post(
-                strand_,
-                // Must capture copies of reference parameters (i.e. key, validator)
-                [this, key = key, validator = validator, peers = std::move(peers), type]() mutable {
-                    updateSlotAndSquelch(key, validator, std::move(peers), type);
-                });
-        }
+        post(
+            strand_,
+            // Must capture copies of reference parameters (i.e. key, validator)
+            [this, key = key, validator = validator, peers = std::move(peers), type]() mutable {
+                updateSlotAndSquelch(key, validator, std::move(peers), type);
+            });
+
         return;
     }
 

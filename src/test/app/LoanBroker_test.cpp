@@ -91,7 +91,7 @@ class LoanBroker_test : public beast::unit_test::suite
     {
         {
             auto const& asset = vault.asset.raw();
-            char const* assetLabel;
+            std::string_view assetLabel;
             if (asset.native())
             {
                 assetLabel = "XRP ";
