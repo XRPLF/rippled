@@ -39,12 +39,24 @@ public:
     {
     }
 
+    /** Validates transaction format and cryptographic field structure.
+     *  @see §9.3.1
+     * https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0096-confidential-mpt#931-data-verification
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    /** Validates ledger state and cryptographic proofs.
+     *  @see §9.3.2
+     * https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0096-confidential-mpt#932-protocol-level-failures
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    /** Updates ledger state.
+     *  @see §9.4
+     * https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0096-confidential-mpt#94-state-changes
+     */
     TER
     doApply() override;
 };
