@@ -550,16 +550,16 @@ Payment::doApply()
     // preFeeBalance_ is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
     // to send. Allow final spend to use reserve for fee.
-    auto const mmm =
+    auto const minRequiredFunds =
         signerIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
 
-    if (preFeeBalance_ < dstAmount.xrp() + mmm)
+    if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
         JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
-                         << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
-                         << ")";
+                         << " / " << to_string(dstAmount.xrp() + minRequiredFunds) << " ("
+                         << to_string(reserve) << ")";
 
         return tecUNFUNDED_PAYMENT;
     }
