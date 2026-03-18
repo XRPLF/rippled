@@ -247,7 +247,7 @@ public:
 
         // Submit fetch tasks to the thread pool.
         auto const itemsPerThread = (hashes.size() + numThreads - 1) / numThreads;
-        for (unsigned int t = 0; t < numThreads; ++t)
+        for (auto t = 0u; t < numThreads; ++t)
         {
             auto const startIdx = t * itemsPerThread;
             XRPL_ASSERT(
@@ -305,7 +305,15 @@ public:
         auto const start = std::chrono::steady_clock::now();
 
         ++pendingWrites_;
-        do_insert(no);
+        try
+        {
+            do_insert(no);
+        }
+        catch (...)
+        {
+            --pendingWrites_;
+            throw;
+        }
         --pendingWrites_;
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -332,7 +340,17 @@ public:
         if (numThreads == 1u)
         {
             for (auto const& e : batch)
-                do_insert(e);
+            {
+                try
+                {
+                    do_insert(e);
+                }
+                catch (...)
+                {
+                    pendingWrites_ -= static_cast<int>(batch.size());
+                    throw;
+                }
+            }
             pendingWrites_ -= static_cast<int>(batch.size());
 
             report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -356,7 +374,7 @@ public:
 
         // Submit compression tasks to the thread pool.
         auto const itemsPerThread = (batch.size() + numThreads - 1) / numThreads;
-        for (unsigned int t = 0; t < numThreads; ++t)
+        for (auto t = 0u; t < numThreads; ++t)
         {
             auto const startIdx = t * itemsPerThread;
             XRPL_ASSERT(
@@ -411,13 +429,17 @@ public:
         {
             if (item.eptr)
             {
+                pendingWrites_ -= static_cast<int>(batch.size());
                 std::rethrow_exception(item.eptr);
             }
 
             nudb::error_code ec;
             db_.insert(item.key.data(), item.data.data(), item.data.size(), ec);
             if (ec && ec != nudb::error::key_exists)
+            {
+                pendingWrites_ -= static_cast<int>(batch.size());
                 Throw<nudb::system_error>(ec);
+            }
         }
 
         pendingWrites_ -= static_cast<int>(batch.size());

@@ -192,12 +192,12 @@ public:
         // Set background job parallelism for better compaction/flush performance to the number of
         // hardware threads, unless the value is explicitly provided in the config. The default is
         // 2 (see include/rocksdb/options.h in the Conan dependency directory), so don't use fewer
-        // than that.
-        if (auto v = get<unsigned int>(keyValues, "max_background_jobs", 0); v > 2)
+        // than that if no value is explicitly provided.
+        if (keyValues.exists("max_background_jobs"))
         {
-            m_options.max_background_jobs = v;
+            m_options.max_background_jobs = get<unsigned int>(keyValues, "max_background_jobs");
         }
-        else if (v = numHardwareThreads; v > 2)
+        else if (auto v = numHardwareThreads; v > 2)
         {
             m_options.max_background_jobs = v;
         }
@@ -206,11 +206,11 @@ public:
         // threads, unless the value is explicitly provided in the config. The default is 1 (see
         // include/rocksdb/options.h in the Conan dependency directory), so don't use fewer
         // than that if no value is explicitly provided.
-        if (auto v = get<unsigned int>(keyValues, "max_subcompactions", 0); v > 1)
+        if (keyValues.exists("max_subcompactions"))
         {
-            m_options.max_subcompactions = v;
+            m_options.max_subcompactions = get<unsigned int>(keyValues, "max_subcompactions");
         }
-        else if (v = numHardwareThreads / 2; v > 1)
+        else if (auto v = numHardwareThreads / 2; v > 1)
         {
             m_options.max_subcompactions = v;
         }
@@ -355,7 +355,7 @@ public:
         auto statuses = m_db->MultiGet(options, keys, &values);
 
         std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
-        for (auto i = 0; i < hashes.size(); ++i)
+        for (size_t i = 0; i < hashes.size(); ++i)
         {
             if (statuses[i].ok())
             {
