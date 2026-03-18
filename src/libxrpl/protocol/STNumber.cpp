@@ -179,8 +179,8 @@ partsFromString(std::string const& number)
 
     bool negative = (match[1].matched && (match[1] == "-"));
 
-    std::uint64_t mantissa;
-    int exponent;
+    std::uint64_t mantissa = 0;
+    int exponent = 0;
 
     if (!match[4].matched)  // integer only
     {

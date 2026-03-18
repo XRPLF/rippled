@@ -33,7 +33,7 @@ public:
     {
         auto onFetch = [&](error_code const& errorCode,
                            endpoint_type const& endpoint,
-                           xrpl::detail::response_type&& resp) {
+                           xrpl::detail::response_type const& resp) {
             BEAST_EXPECT(!errorCode);
             lastEndpoint_ = endpoint;
             resolved_[endpoint.address().to_string()]++;

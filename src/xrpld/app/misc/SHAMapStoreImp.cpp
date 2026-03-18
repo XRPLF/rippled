@@ -97,7 +97,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     {
         // Configuration that affects the behavior of online delete
         get_if_exists(section, "delete_batch", deleteBatch_);
-        std::uint32_t temp;
+        std::uint32_t temp = 0;
         if (get_if_exists(section, "back_off_milliseconds", temp) ||
             // Included for backward compatibility with an undocumented setting
             get_if_exists(section, "backOff", temp))

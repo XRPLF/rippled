@@ -128,8 +128,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
-        // retrieve LP token balance inside the amendment gate to avoid
-        // inconsistent error behavior
+        // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
@@ -138,7 +137,6 @@ AMMClawback::applyGuts(Sandbox& sb)
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
-
     auto const expected =
         ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
 
@@ -151,6 +149,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
 
+    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
+    // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::zero)
         return tecAMM_BALANCE;
@@ -173,7 +173,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
-                mPriorBalance,
+                preFeeBalance_,
                 ctx_.journal);
     }
     else
@@ -256,7 +256,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::Yes,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -288,7 +288,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::No,
-            mPriorBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -307,7 +307,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::fhIGNORE_FREEZE,
         WithdrawAll::No,
-        mPriorBalance,
+        preFeeBalance_,
         ctx_.journal);
 }
 

@@ -419,7 +419,7 @@ PeerImp::json()
     ret[jss::uptime] =
         static_cast<Json::UInt>(std::chrono::duration_cast<std::chrono::seconds>(uptime()).count());
 
-    std::uint32_t minSeq, maxSeq;
+    std::uint32_t minSeq = 0, maxSeq = 0;
     ledgerRange(minSeq, maxSeq);
 
     if ((minSeq != 0) || (maxSeq != 0))
@@ -988,7 +988,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
     while (read_buffer_.size() > 0)
     {
-        std::size_t bytes_consumed;
+        std::size_t bytes_consumed = 0;
 
         using namespace std::chrono_literals;
         std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
@@ -1400,7 +1400,7 @@ PeerImp::handleTransaction(
         }
         // LCOV_EXCL_STOP
 
-        HashRouterFlags flags;
+        HashRouterFlags flags = HashRouterFlags::UNDEFINED;
         constexpr std::chrono::seconds tx_interval = 10s;
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
@@ -1987,7 +1987,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         checkTracking(m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([=, this]() -> Json::Value {
+    app_.getOPs().pubPeerStatus([m, this]() -> Json::Value {
         Json::Value j = Json::objectValue;
 
         if (m->has_newstatus())
@@ -2064,7 +2064,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 void
 PeerImp::checkTracking(std::uint32_t validationSeq)
 {
-    std::uint32_t serverSeq;
+    std::uint32_t serverSeq = 0;
     {
         // Extract the sequence number of the highest
         // ledger this peer has
@@ -3023,7 +3023,7 @@ PeerImp::checkPropose(
         return;
     }
 
-    bool relay;
+    bool relay = false;
 
     if (isTrusted)
     {

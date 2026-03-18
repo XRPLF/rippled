@@ -337,7 +337,7 @@ enum class DepositAuthPolicy { normal, dstCanBypass };
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance;
+    STAmount preFeeBalance_;
     STAmount postFeeBalance;
 };
 
@@ -423,7 +423,7 @@ transferHelper(
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance;
+                return submittingAccountInfo->preFeeBalance_;
             }();
 
             if (availableBalance < amt + reserve)
@@ -981,7 +981,7 @@ applyCreateAccountAttestations(
     struct ScopeResult
     {
         OnNewAttestationResult newAttResult;
-        bool createCID;
+        bool createCID{};
         XChainCreateAccountAttestations curAtts;
     };
 
@@ -1213,9 +1213,9 @@ attestationDoApply(ApplyContext& ctx)
 
     struct ScopeResult
     {
-        STXChainBridge::ChainType srcChain;
+        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
         std::unordered_map<AccountID, std::uint32_t> signersList;
-        std::uint32_t quorum;
+        std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
     };
@@ -1884,7 +1884,8 @@ XChainCommit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    if (!psb.read(keylet::account(account)))
+    auto const sleAccount = psb.read(keylet::account(account));
+    if (!sleAccount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
@@ -1895,7 +1896,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2170,7 +2171,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, preFeeBalance_, (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

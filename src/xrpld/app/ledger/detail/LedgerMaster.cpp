@@ -943,7 +943,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         fees.reserve(fees.size() + fees2.size());
         std::copy(fees2.begin(), fees2.end(), std::back_inserter(fees));
     }
-    std::uint32_t fee;
+    std::uint32_t fee = 0;
     if (!fees.empty())
     {
         std::sort(fees.begin(), fees.end());
@@ -1079,10 +1079,7 @@ LedgerMaster::consensusBuilt(
     class valSeq
     {
     public:
-        valSeq() : valCount_(0), ledgerSeq_(0)
-        {
-            ;
-        }
+        valSeq() = default;
 
         void
         mergeValidation(LedgerIndex seq)
@@ -1094,8 +1091,8 @@ LedgerMaster::consensusBuilt(
                 ledgerSeq_ = seq;
         }
 
-        std::size_t valCount_;
-        LedgerIndex ledgerSeq_;
+        std::size_t valCount_{0};
+        LedgerIndex ledgerSeq_{0};
     };
 
     // Count the number of current, trusted validations
@@ -1770,7 +1767,7 @@ LedgerMaster::fetchForHistory(
             XRPL_ASSERT(seq == missing, "xrpl::LedgerMaster::fetchForHistory : sequence match");
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
             setFullLedger(ledger, false, false);
-            int fillInProgress;
+            int fillInProgress = 0;
             {
                 std::lock_guard lock(m_mutex);
                 mHistLedger = ledger;
@@ -1791,7 +1788,7 @@ LedgerMaster::fetchForHistory(
         }
         else
         {
-            std::uint32_t fetchSz;
+            std::uint32_t fetchSz = 0;
             // Do not fetch ledger sequences lower
             // than the earliest ledger sequence
             fetchSz = app_.getNodeStore().earliestLedgerSeq();

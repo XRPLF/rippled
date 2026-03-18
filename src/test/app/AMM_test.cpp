@@ -5274,7 +5274,7 @@ private:
             // verify that the quality is better in the first case, and CLOB
             // is selected in the second case.
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
@@ -5347,7 +5347,7 @@ private:
 
             // Same as the payment but reduced offer quality
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
@@ -5554,7 +5554,7 @@ private:
             // multiple AMM offers are generated, which results in slightly
             // worse overall quality.
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);

@@ -198,7 +198,7 @@ public:
         testcase("zero conversion");
 
         {
-            std::int32_t out;
+            std::int32_t out = 0;
 
             expect(lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
@@ -206,7 +206,7 @@ public:
         }
 
         {
-            std::uint32_t out;
+            std::uint32_t out = 0;
 
             expect(!lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");

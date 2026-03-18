@@ -533,14 +533,14 @@ public:
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        BEAST_EXPECT(!jt1.get<int>());
-        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt1.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        BEAST_EXPECT(!jt2.get<int>());
-        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt2.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt1.get<int>());
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());

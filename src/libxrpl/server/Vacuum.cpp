@@ -25,7 +25,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 
     auto txnDB = std::make_unique<DatabaseCon>(setup, TxDBName, setup.txPragma, TxDBInit, j);
     auto& session = txnDB->getSession();
-    std::uint32_t pageSize;
+    std::uint32_t pageSize = 0;
 
     // Only the most trivial databases will fit in memory on typical
     // (recommended) hardware. Force temp files to be written to disk

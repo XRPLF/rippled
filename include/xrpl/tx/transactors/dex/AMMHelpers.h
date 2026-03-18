@@ -639,9 +639,9 @@ getRoundedAsset(Rules const& rules, STAmount const& balance, A const& frac, IsDe
 STAmount
 getRoundedAsset(
     Rules const& rules,
-    std::function<Number()>&& noRoundCb,
+    std::function<Number()> const& noRoundCb,
     STAmount const& balance,
-    std::function<Number()>&& productCb,
+    std::function<Number()> const& productCb,
     IsDeposit isDeposit);
 
 /** Round AMM deposit/withdrawal LPToken amount. Deposit/withdrawal formulas
@@ -672,9 +672,9 @@ getRoundedLPTokens(
 STAmount
 getRoundedLPTokens(
     Rules const& rules,
-    std::function<Number()>&& noRoundCb,
+    std::function<Number()> const& noRoundCb,
     STAmount const& lptAMMBalance,
-    std::function<Number()>&& productCb,
+    std::function<Number()> const& productCb,
     IsDeposit isDeposit);
 
 /* Next two functions adjust asset in/out amount to factor in the adjusted

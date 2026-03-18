@@ -1308,7 +1308,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                     NodeID myId = history.UNLNodeIDs[3];
                     history.walkHistoryAndAddValidations(
                         [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
-                            std::size_t k;
+                            std::size_t k = 0;
                             if (idx < 2)
                             {
                                 k = 0;

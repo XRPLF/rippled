@@ -370,7 +370,7 @@ ValidatorSite::parseJsonResponse(
             body[jss::manifest].isString() && body.isMember(jss::version) &&
             body[jss::version].isInt();
         // Check the version-specific blob & signature fields
-        std::uint32_t version;
+        std::uint32_t version = 0;
         std::vector<ValidatorBlobInfo> blobs;
         if (valid)
         {
@@ -456,7 +456,7 @@ ValidatorSite::parseJsonResponse(
 
 std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
-    detail::response_type& res,
+    detail::response_type const& res,
     std::size_t siteIdx,
     std::lock_guard<std::mutex> const& sites_lock)
 {
@@ -499,7 +499,7 @@ void
 ValidatorSite::onSiteFetch(
     boost::system::error_code const& ec,
     endpoint_type const& endpoint,
-    detail::response_type&& res,
+    detail::response_type const& res,
     std::size_t siteIdx)
 {
     std::lock_guard lock_sites{sites_mutex_};

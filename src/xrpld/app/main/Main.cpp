@@ -61,7 +61,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 {
 #ifdef RLIMIT_NOFILE
     // Get the current limit, then adjust it to what we need.
-    struct rlimit rl;
+    struct rlimit rl{};
 
     int available = 0;
 

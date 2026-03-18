@@ -106,18 +106,18 @@ struct Buffer_test : beast::unit_test::suite
             {  // Move-construct from empty buf
                 Buffer x;
                 Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
+                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
-                BEAST_EXPECT(x == y);
+                BEAST_EXPECT(x == y);  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move-construct from non-empty buf
                 Buffer x{b1};
                 Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
+                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y == b1);
             }
@@ -129,8 +129,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to empty buf
@@ -140,8 +140,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x == b1);
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign empty buf to non-empty buf
@@ -151,8 +151,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to non-empty buf
@@ -163,14 +163,14 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
 
                 x = std::move(z);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(z));
-                BEAST_EXPECT(z.empty());
+                BEAST_EXPECT(sane(z));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(z.empty());  // NOLINT(bugprone-use-after-move)
             }
         }
 

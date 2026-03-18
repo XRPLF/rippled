@@ -155,7 +155,7 @@ private:
             std::vector<Validator> list;
             std::string uri;
             FetchListConfig const& cfg;
-            bool isRetry;
+            bool isRetry{};
         };
         std::vector<publisher> servers;
 

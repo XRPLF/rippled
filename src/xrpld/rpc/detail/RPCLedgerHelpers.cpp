@@ -55,7 +55,7 @@ ledgerFromIndex(
     if (index == "closed")
         return getLedger(ledger, LedgerShortcut::Closed, context);
 
-    std::uint32_t iVal;
+    std::uint32_t iVal = 0;
     if (!beast::lexicalCastChecked(iVal, index))
         return {rpcINVALID_PARAMS, expected_field_message(fieldName, "string or number")};
 

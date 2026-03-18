@@ -26,10 +26,8 @@ public:
         , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
-        , mSSL(false)
         , mUsername(strUsername)
         , mPassword(strPassword)
-        , mSending(false)
         , j_(logs.journal("RPCSub"))
         , logs_(logs)
     {
@@ -110,7 +108,7 @@ private:
     sendThread()
     {
         Json::Value jvEvent;
-        bool bSend;
+        bool bSend = false;
 
         do
         {
@@ -172,14 +170,14 @@ private:
     std::string mUrl;
     std::string mIp;
     std::uint16_t mPort;
-    bool mSSL;
+    bool mSSL{false};
     std::string mUsername;
     std::string mPassword;
     std::string mPath;
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending thread is active.
+    bool mSending{false};  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 

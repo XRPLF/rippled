@@ -17,7 +17,7 @@ public:
     {
         struct Table
         {
-            int val[256];
+            int val[256]{};
             Table()
             {
                 std::fill(val, val + 256, 0);

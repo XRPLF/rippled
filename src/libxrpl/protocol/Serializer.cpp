@@ -208,7 +208,7 @@ Serializer::addVL(void const* ptr, int len)
 int
 Serializer::addEncoded(int length)
 {
-    std::array<std::uint8_t, 4> bytes;
+    std::array<std::uint8_t, 4> bytes{};
     int numBytes = 0;
 
     if (length <= 192)
@@ -470,7 +470,7 @@ int
 SerialIter::getVLDataLength()
 {
     int b1 = get8();
-    int datLen;
+    int datLen = 0;
     int lenLen = Serializer::decodeLengthLength(b1);
     if (lenLen == 1)
     {
