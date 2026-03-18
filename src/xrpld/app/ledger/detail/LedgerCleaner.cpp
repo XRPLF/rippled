@@ -262,7 +262,7 @@ private:
 
         Rules const rules{app_.config().features};
         Fees const fees = app_.config().FEES.toFees();
-        auto dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
+        auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
