@@ -234,27 +234,43 @@ int
 compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
     if (lhs.majorVersion > rhs.majorVersion)
+    {
         return 1;
-    else if (lhs.majorVersion < rhs.majorVersion)
+    }
+    if (lhs.majorVersion < rhs.majorVersion)
+    {
         return -1;
+    }
 
     if (lhs.minorVersion > rhs.minorVersion)
+    {
         return 1;
-    else if (lhs.minorVersion < rhs.minorVersion)
+    }
+    if (lhs.minorVersion < rhs.minorVersion)
+    {
         return -1;
+    }
 
     if (lhs.patchVersion > rhs.patchVersion)
+    {
         return 1;
-    else if (lhs.patchVersion < rhs.patchVersion)
+    }
+    if (lhs.patchVersion < rhs.patchVersion)
+    {
         return -1;
+    }
 
     if (lhs.isPreRelease() || rhs.isPreRelease())
     {
         // Pre-releases have a lower precedence
         if (lhs.isRelease() && rhs.isPreRelease())
+        {
             return 1;
-        else if (lhs.isPreRelease() && rhs.isRelease())
+        }
+        if (lhs.isPreRelease() && rhs.isRelease())
+        {
             return -1;
+        }
 
         // Compare pre-release identifiers
         for (int i = 0;
@@ -263,18 +279,26 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size())
+            {
                 return 1;
-            else if (i >= lhs.preReleaseIdentifiers.size())
+            }
+            if (i >= lhs.preReleaseIdentifiers.size())
+            {
                 return -1;
+            }
 
             std::string const& left(lhs.preReleaseIdentifiers[i]);
             std::string const& right(rhs.preReleaseIdentifiers[i]);
 
             // Numeric identifiers have lower precedence
             if (!isNumeric(left) && isNumeric(right))
+            {
                 return 1;
-            else if (isNumeric(left) && !isNumeric(right))
+            }
+            if (isNumeric(left) && !isNumeric(right))
+            {
                 return -1;
+            }
 
             if (isNumeric(left))
             {
@@ -284,9 +308,13 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
                 int const iRight(lexicalCastThrow<int>(right));
 
                 if (iLeft > iRight)
+                {
                     return 1;
-                else if (iLeft < iRight)
+                }
+                if (iLeft < iRight)
+                {
                     return -1;
+                }
             }
             else
             {

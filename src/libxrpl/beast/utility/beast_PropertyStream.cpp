@@ -237,9 +237,13 @@ PropertyStream::Source::write(PropertyStream& stream, std::string const& path)
         return;
 
     if (result.second)
+    {
         result.first->write(stream);
+    }
     else
+    {
         result.first->write_one(stream);
+    }
 }
 
 std::pair<PropertyStream::Source*, bool>
@@ -301,9 +305,13 @@ PropertyStream::Source::peel_name(std::string* path)
     std::string s(first, pos);
 
     if (pos != last)
+    {
         *path = std::string(pos + 1, last);
+    }
     else
+    {
         *path = std::string();
+    }
 
     return s;
 }
@@ -371,9 +379,13 @@ void
 PropertyStream::add(std::string const& key, bool value)
 {
     if (value)
+    {
         add(key, "true");
+    }
     else
+    {
         add(key, "false");
+    }
 }
 
 void
@@ -464,9 +476,13 @@ void
 PropertyStream::add(bool value)
 {
     if (value)
+    {
         add("true");
+    }
     else
+    {
         add("false");
+    }
 }
 
 void

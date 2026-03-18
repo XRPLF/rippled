@@ -52,7 +52,7 @@ InfoSub::getConsumer()
 }
 
 std::uint64_t
-InfoSub::getSeq()
+InfoSub::getSeq() const
 {
     return mSeq;
 }
@@ -68,9 +68,13 @@ InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
     std::lock_guard sl(mLock);
 
     if (rt)
+    {
         realTimeSubscriptions_.insert(account);
+    }
     else
+    {
         normalSubscriptions_.insert(account);
+    }
 }
 
 void
@@ -79,9 +83,13 @@ InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
     std::lock_guard sl(mLock);
 
     if (rt)
+    {
         realTimeSubscriptions_.erase(account);
+    }
     else
+    {
         normalSubscriptions_.erase(account);
+    }
 }
 
 bool

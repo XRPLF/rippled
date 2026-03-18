@@ -217,7 +217,9 @@ LedgerReplayer::sweep()
                     it = subTasks.erase(it);
                 }
                 else
+                {
                     ++it;
+                }
             }
         };
         removeCannotLocked(skipLists_);

@@ -390,7 +390,7 @@ public:
         {
             uint256 const supportedID = amendmentId(a);
             bool const enabled = table->isEnabled(supportedID);
-            bool const found = allEnabled.find(supportedID) != allEnabled.end();
+            bool const found = allEnabled.contains(supportedID);
             BEAST_EXPECTS(
                 enabled == found,
                 a + (enabled ? " enabled " : " disabled ") + (found ? " found" : " not found"));
@@ -404,7 +404,7 @@ public:
 
             std::vector<uint256> const desired = table->getDesired();
             for (uint256 const& a : desired)
-                BEAST_EXPECT(vetoed.count(a) == 0);
+                BEAST_EXPECT(not vetoed.contains(a));
 
             // Unveto an amendment that is already not vetoed.  Shouldn't
             // hurt anything, but the values returned by getDesired()
@@ -526,22 +526,22 @@ public:
             {
                 case 0:
                     // amendment goes from majority to enabled
-                    if (enabled.find(hash) != enabled.end())
+                    if (enabled.contains(hash))
                         Throw<std::runtime_error>("enabling already enabled");
-                    if (majority.find(hash) == majority.end())
+                    if (!majority.contains(hash))
                         Throw<std::runtime_error>("enabling without majority");
                     enabled.insert(hash);
                     majority.erase(hash);
                     break;
 
                 case tfGotMajority:
-                    if (majority.find(hash) != majority.end())
+                    if (majority.contains(hash))
                         Throw<std::runtime_error>("got majority while having majority");
                     majority[hash] = roundTime;
                     break;
 
                 case tfLostMajority:
-                    if (majority.find(hash) == majority.end())
+                    if (!majority.contains(hash))
                         Throw<std::runtime_error>("lost majority without majority");
                     majority.erase(hash);
                     break;
@@ -719,7 +719,7 @@ public:
         BEAST_EXPECT(ourVotes.size() == yes_.size());
         BEAST_EXPECT(enabled.empty());
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
+            BEAST_EXPECT(not majority.contains(amendmentId(i)));
 
         // Now, everyone votes for this feature
         for (auto const& i : yes_)
@@ -766,7 +766,7 @@ public:
         BEAST_EXPECT(enabled.size() == yes_.size());
         BEAST_EXPECT(ourVotes.empty());
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
+            BEAST_EXPECT(not majority.contains(amendmentId(i)));
     }
 
     // Detect majority at 80%, enable later

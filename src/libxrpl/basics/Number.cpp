@@ -94,7 +94,7 @@ public:
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
     int
-    round() noexcept;
+    round() const noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -114,7 +114,7 @@ public:
 
     // Modify the result to the correctly rounded value
     void
-    doRound(rep& drops, std::string location);
+    doRound(rep& drops, std::string location) const;
 
 private:
     void
@@ -171,7 +171,7 @@ Number::Guard::pop() noexcept
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
 int
-Number::Guard::round() noexcept
+Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
@@ -282,7 +282,7 @@ Number::Guard::doRoundDown(
 
 // Modify the result to the correctly rounded value
 void
-Number::Guard::doRound(rep& drops, std::string location)
+Number::Guard::doRound(rep& drops, std::string location) const
 {
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
@@ -911,9 +911,13 @@ to_string(Number const& amount)
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {

@@ -55,7 +55,7 @@ doSubmit(RPC::JsonContext& context)
 
     auto ret = strUnHex(context.params[jss::tx_blob].asString());
 
-    if (!ret || !ret->size())
+    if (!ret || ret->empty())
         return rpcError(rpcINVALID_PARAMS);
 
     SerialIter sitTrans(makeSlice(*ret));
@@ -76,8 +76,10 @@ doSubmit(RPC::JsonContext& context)
 
     {
         if (!context.app.checkSigs())
+        {
             forceValidity(
                 context.app.getHashRouter(), stTx->getTransactionID(), Validity::SigGoodOnly);
+        }
         auto [validity, reason] = checkValidity(
             context.app.getHashRouter(), *stTx, context.ledgerMaster.getCurrentLedger()->rules());
         if (validity != Validity::Valid)
