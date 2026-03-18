@@ -215,11 +215,9 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
 
             return ret;
         }
-        else
-        {
-            auto ret = callMethod(context, method, handler->name_, result);
-            return ret;
-        }
+
+        auto ret = callMethod(context, method, handler->name_, result);
+        return ret;
     }
 
     return rpcUNKNOWN_COMMAND;

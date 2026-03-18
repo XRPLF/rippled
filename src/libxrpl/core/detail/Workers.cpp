@@ -205,11 +205,9 @@ Workers::Worker::run()
                     // We got paused
                     break;
                 }
-                else
-                {
-                    // Undo our decrement
-                    ++workers_.pauseCount_;
-                }
+
+                // Undo our decrement
+                ++workers_.pauseCount_;
             }
 
             // We couldn't pause so we must have gotten

@@ -451,8 +451,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -770,8 +772,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -908,8 +912,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             verifyCounters(parsedLastLine[jss::counters], 2, 2, 24, 36);

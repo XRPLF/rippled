@@ -93,11 +93,17 @@ class Discrepancy_test : public beast::unit_test::suite
         {
             Json::Value node;
             if (an.isMember(sfCreatedNode.fieldName))
+            {
                 node = an[sfCreatedNode.fieldName];
+            }
             else if (an.isMember(sfModifiedNode.fieldName))
+            {
                 node = an[sfModifiedNode.fieldName];
+            }
             else if (an.isMember(sfDeletedNode.fieldName))
+            {
                 node = an[sfDeletedNode.fieldName];
+            }
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
@@ -108,11 +114,15 @@ class Discrepancy_test : public beast::unit_test::suite
                     ? node[sfFinalFields.fieldName]
                     : node[sfNewFields.fieldName];
                 if (prevFields)
+                {
                     sumPrev += beast::lexicalCastThrow<std::uint64_t>(
                         prevFields[sfBalance.fieldName].asString());
+                }
                 if (finalFields)
+                {
                     sumFinal += beast::lexicalCastThrow<std::uint64_t>(
                         finalFields[sfBalance.fieldName].asString());
+                }
             }
         }
         // the difference in balances (final and prev) should be the

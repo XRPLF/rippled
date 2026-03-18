@@ -337,9 +337,11 @@ LedgerHistory::handleMismatch(
     if (builtConsensusHash && validatedConsensusHash)
     {
         if (builtConsensusHash != validatedConsensusHash)
+        {
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
+        }
         else
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
@@ -350,7 +352,9 @@ LedgerHistory::handleMismatch(
     auto const validTx = leaves(validLedger->txMap());
 
     if (builtTx == validTx)
+    {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
+    }
     else
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";

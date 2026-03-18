@@ -45,11 +45,9 @@ class Delegate_test : public beast::unit_test::suite
         env.close();
 
         // delegating an empty permission list when the delegate ledger object
-        // does not exist will not create the ledger object
-        env(delegate::set(gw, alice, std::vector<std::string>{}));
+        // does not exist is not allowed
+        env(delegate::set(gw, alice, {}), ter(tecNO_ENTRY));
         env.close();
-        auto const entry = delegate::entry(env, gw, alice);
-        BEAST_EXPECT(entry[jss::result][jss::error] == "entryNotFound");
 
         auto const permissions = std::vector<std::string>{
             "Payment", "EscrowCreate", "EscrowFinish", "TrustlineAuthorize", "CheckCreate"};
@@ -92,9 +90,7 @@ class Delegate_test : public beast::unit_test::suite
         // newPermissions
         comparePermissions(delegate::entry(env, gw, alice), newPermissions, gw, alice);
 
-        // gw deletes all permissions delegated to alice, this will delete
-        // the
-        // ledger entry
+        // gw deletes all permissions delegated to alice, this will delete the ledger entry
         env(delegate::set(gw, alice, {}));
         env.close();
         auto const jle = delegate::entry(env, gw, alice);
@@ -204,27 +200,48 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test reserve");
         using namespace jtx;
 
-        // test reserve for DelegateSet
+        // reserve requirement not met
         {
             Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
-            Account carol{"carol"};
 
-            env.fund(drops(env.current()->fees().accountReserve(0)), alice);
-            env.fund(drops(env.current()->fees().accountReserve(1)), bob, carol);
+            auto const txFee = env.current()->fees().base;
+            env.fund(env.current()->fees().accountReserve(0) + txFee, alice);
+            env.fund(XRP(100000), bob);
             env.close();
 
             // alice does not have enough reserve to create Delegate
             env(delegate::set(alice, bob, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+        }
 
-            // bob has enough reserve
-            env(delegate::set(bob, alice, {"Payment"}));
+        // reserve recovered after deleting delegation object
+        {
+            Env env(*this);
+            Account bob{"bob"};
+            Account alice{"alice"};
+            Account carol{"carol"};
+
+            auto const txFee = env.current()->fees().base;
+
+            env.fund(env.current()->fees().accountReserve(1) + (txFee * 4), alice);
+            env.fund(XRP(100000), bob, carol);
             env.close();
 
-            // now bob create another Delegate, he does not have
-            // enough reserve
-            env(delegate::set(bob, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            // alice consumes 1 txFee and requires 1 object reserve
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            // alice does not have enough reserve to create another delegation object
+            env(delegate::set(alice, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            // deleting delegation object recovers 1 reserve
+            env(delegate::set(alice, bob, {}));
+            env.close();
+
+            // now alice can delegate again
+            env(delegate::set(alice, carol, {"Payment"}));
         }
 
         // test reserve when sending transaction on behalf of other account

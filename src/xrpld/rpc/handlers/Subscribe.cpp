@@ -281,10 +281,8 @@ doSubscribe(RPC::JsonContext& context)
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             if (!isConsistent(book))

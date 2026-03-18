@@ -6,6 +6,7 @@
 
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace xrpl {
@@ -129,9 +130,13 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (nodes.empty())
         {
             if (map_->isValid())
+            {
                 complete_ = true;
+            }
             else
+            {
                 failed_ = true;
+            }
 
             done();
             return;
@@ -183,13 +188,17 @@ TransactionAcquire::takeNodes(
             if (d.first.isRoot())
             {
                 if (haveRoot_)
+                {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
+                }
                 else if (!map_->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
                 else
+                {
                     haveRoot_ = true;
+                }
             }
             else if (!map_->addKnownNode(d.first, d.second, &sf).isGood())
             {

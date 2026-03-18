@@ -49,8 +49,10 @@ class WSClientImpl : public WSClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
@@ -178,7 +180,9 @@ public:
                 jp[jss::id] = 5;
             }
             else
+            {
                 jp[jss::command] = cmd;
+            }
             auto const s = to_string(jp);
             ws_.write_some(true, buffer(s));
         }

@@ -30,7 +30,7 @@ public:
 
     // Add the address as an endpoint
     template <class C>
-    inline void
+    void
     add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
         Endpoint cep{ep, hops};

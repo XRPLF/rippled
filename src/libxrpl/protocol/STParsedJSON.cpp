@@ -319,7 +319,9 @@ parseUint32(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(field, jsonName, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {

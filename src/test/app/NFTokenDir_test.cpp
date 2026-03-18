@@ -57,14 +57,18 @@ class NFTokenDir_test : public beast::unit_test::suite
                     else
                     {
                         if (tokenCount > 0)
+                        {
                             std::cout
                                 << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
                                 << std::endl;
+                        }
                         if (tokenCount > 1)
+                        {
                             std::cout
                                 << "last: "
                                 << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
                                 << std::endl;
+                        }
                     }
                 }
             }

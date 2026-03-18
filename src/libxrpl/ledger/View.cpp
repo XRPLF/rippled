@@ -51,9 +51,13 @@ internalDirNext(
         }
 
         if constexpr (std::is_const_v<N>)
+        {
             page = view.read(keylet::page(root, next));
+        }
         else
+        {
             page = view.peek(keylet::page(root, next));
+        }
 
         XRPL_ASSERT(page, "xrpl::detail::internalDirNext : non-null root");
 
@@ -83,9 +87,13 @@ internalDirFirst(
     uint256& entry)
 {
     if constexpr (std::is_const_v<N>)
+    {
         page = view.read(keylet::page(root));
+    }
     else
+    {
         page = view.peek(keylet::page(root));
+    }
 
     if (!page)
         return false;
@@ -180,9 +188,13 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return isGlobalFrozen(view, issue.getIssuer());
+            }
             else
+            {
                 return isGlobalFrozen(view, issue);
+            }
         },
         asset.value());
 }
@@ -381,7 +393,7 @@ getLineIfUsable(
             {
                 return nullptr;  // LCOV_EXCL_LINE
             }
-            else if (sleIssuer->isFieldPresent(sfAMMID))
+            if (sleIssuer->isFieldPresent(sfAMMID))
             {
                 auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
 
@@ -457,9 +469,11 @@ accountHolds(
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
     if (returnSpendable && account == issuer)
+    {
         // If the account is the issuer, then their limit is effectively
         // infinite
         return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+    }
 
     // IOU: Return balance on trust line modulo freeze
     SLE::const_pointer const sle =
@@ -514,9 +528,13 @@ accountHolds(
     auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
 
     if (!sleMpt)
+    {
         amount.clear(mptIssue);
+    }
     else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    {
         amount.clear(mptIssue);
+    }
     else
     {
         amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
@@ -751,8 +769,10 @@ forEachItemAfter(
             if (!ownerDir)
                 return true;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
+            {
                 if (f(view.read(keylet::child(key))) && limit-- <= 1)
                     return true;
+            }
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return true;
@@ -791,9 +811,13 @@ transferRate(ReadView const& view, STAmount const& amount)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return transferRate(view, issue.getIssuer());
+            }
             else
+            {
                 return transferRate(view, issue.getMptID());
+            }
         },
         amount.asset().value());
 }
@@ -1168,9 +1192,13 @@ canAddHolding(ReadView const& view, Issue const& issue)
 
     auto const issuer = view.read(keylet::account(issue.getIssuer()));
     if (!issuer)
+    {
         return terNO_ACCOUNT;
-    else if (!issuer->isFlag(lsfDefaultRipple))
+    }
+    if (!issuer->isFlag(lsfDefaultRipple))
+    {
         return terNO_RIPPLE;
+    }
 
     return tesSUCCESS;
 }
@@ -1526,11 +1554,15 @@ authorizeMPToken(
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
     if (flags & tfMPTUnauthorize)
+    {
         flagsOut &= ~lsfMPTAuthorized;
+    }
     // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
     // MPToken
     else
+    {
         flagsOut |= lsfMPTAuthorized;
+    }
 
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
@@ -1995,7 +2027,7 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -2317,15 +2349,13 @@ accountSendMultiIOU(
         {
             return TER{tecFAILED_PROCESSING};
         }
-        else
-        {
-            auto const sndBal = sender->getFieldAmount(sfBalance);
-            view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
 
-            // Decrement XRP balance.
-            sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
-            view.update(sender);
-        }
+        auto const sndBal = sender->getFieldAmount(sfBalance);
+        view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
+
+        // Decrement XRP balance.
+        sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
+        view.update(sender);
     }
 
     if (auto stream = j.trace())
@@ -2373,7 +2403,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     if (uReceiverID == issuer)
@@ -2386,7 +2418,9 @@ rippleCreditMPT(
             view.update(sleIssuance);
         }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     else
     {
@@ -2397,7 +2431,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     return tesSUCCESS;
@@ -2437,7 +2473,7 @@ rippleSendMPT(
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
         auto const ter = rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -2453,7 +2489,7 @@ rippleSendMPT(
                     << " cost=" << saActual.getFullText();
 
     if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
-        terResult != tesSUCCESS)
+        !isTesSuccess(terResult))
         return terResult;
 
     return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
@@ -2597,9 +2633,13 @@ accountSend(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
             else
+            {
                 return accountSendMPT(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
         },
         saAmount.asset().value());
 }
@@ -2618,9 +2658,13 @@ accountSendMulti(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
+            }
             else
+            {
                 return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
+            }
         },
         asset.value());
 }
@@ -2723,12 +2767,14 @@ issueIOU(
         // time of deletion.
         state->setFieldAmount(sfBalance, finalBalance);
         if (mustDelete)
+        {
             return trustDelete(
                 view,
                 state,
                 bSenderHigh ? account : issue.account,
                 bSenderHigh ? issue.account : account,
                 j);
+        }
 
         view.update(state);
 
@@ -2896,9 +2942,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (trustLine)
+        {
             return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
+        }
         return TER{tecNO_LINE};
     }
 
@@ -2946,9 +2994,13 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
+                        {
                             return requireAuth(view, issue, account, authType);
+                        }
                         else
+                        {
                             return requireAuth(view, issue, account, authType, depth + 1);
+                        }
                     },
                     asset.value());
                 !isTesSuccess(err))
@@ -2972,11 +3024,15 @@ requireAuth(
             sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        if (auto const ter = credentials::validDomain(view, *maybeDomainID, account);
-            isTesSuccess(ter))
+        auto const ter = credentials::validDomain(view, *maybeDomainID, account);
+        if (isTesSuccess(ter))
+        {
             return ter;  // Note: sleToken might be null
-        else if (!sleToken)
+        }
+        if (!sleToken)
+        {
             return ter;
+        }
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
@@ -3043,14 +3099,14 @@ enforceMPTokenAuthorization(
         // Either way, return tecNO_AUTH and there is nothing else to do
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain && maybeDomainID.has_value())
+    if (!authorizedByDomain && maybeDomainID.has_value())
     {
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the
         // credentials used to create the MPToken have expired or been deleted.
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain)
+    if (!authorizedByDomain)
     {
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.
@@ -3062,7 +3118,7 @@ enforceMPTokenAuthorization(
 
         return tecNO_AUTH;
     }
-    else if (authorizedByDomain && sleToken != nullptr)
+    if (authorizedByDomain && sleToken != nullptr)
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
@@ -3071,7 +3127,7 @@ enforceMPTokenAuthorization(
             "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
         return tesSUCCESS;
     }
-    else if (authorizedByDomain)
+    if (authorizedByDomain)
     {
         // Could not find MPToken but there should be one because we are
         // authorized by domain. Proceed to create it, then return tesSUCCESS
@@ -3188,7 +3244,7 @@ cleanupOnAccountDelete(
             // Deleter handles the details of specific account-owned object
             // deletion
             auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed
@@ -3257,7 +3313,7 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j); ter != tesSUCCESS)
+    if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;
@@ -3312,9 +3368,11 @@ assetsToSharesDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
+    {
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale)).truncate()};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = ((shareTotal * assets) / assetTotal).truncate();
@@ -3337,8 +3395,10 @@ sharesToAssetsDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
+    {
         return STAmount{
             assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
@@ -3453,9 +3513,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sle->isFieldPresent(sfLockedAmount))
+        {
             (*sle)[sfLockedAmount] += pay;
+        }
         else
+        {
             sle->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sle);
     }
@@ -3476,9 +3540,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sleIssuance->isFieldPresent(sfLockedAmount))
+        {
             (*sleIssuance)[sfLockedAmount] += pay;
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sleIssuance);
     }
@@ -3495,8 +3563,10 @@ rippleUnlockEscrowMPT(
     beast::Journal j)
 {
     if (!view.rules().enabled(fixTokenEscrowV1))
+    {
         XRPL_ASSERT(
             netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
+    }
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
@@ -3531,9 +3601,13 @@ rippleUnlockEscrowMPT(
 
         auto const newLocked = locked - redeem;
         if (newLocked == 0)
+        {
             sleIssuance->makeFieldAbsent(sfLockedAmount);
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, newLocked);
+        }
         view.update(sleIssuance);
     }
 
@@ -3586,42 +3660,44 @@ rippleUnlockEscrowMPT(
                            "cannot unlock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
+
+    // Decrease the MPT Holder EscrowedAmount
+    auto const mptokenID = keylet::mptoken(mptID.key, sender);
+    auto sle = view.peek(mptokenID);
+    if (!sle)
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
+        return tecOBJECT_NOT_FOUND;
+    }  // LCOV_EXCL_STOP
+
+    if (!sle->isFieldPresent(sfLockedAmount))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
+                        << to_string(sender);
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const locked = sle->getFieldU64(sfLockedAmount);
+    auto const delta = grossAmount.mpt().value();
+
+    // Underflow check for subtraction
+    if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+                        << to_string(sender) << ": " << locked << " < " << delta;
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const newLocked = locked - delta;
+    if (newLocked == 0)
+    {
+        sle->makeFieldAbsent(sfLockedAmount);
+    }
     else
     {
-        // Decrease the MPT Holder EscrowedAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, sender);
-        auto sle = view.peek(mptokenID);
-        if (!sle)
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
-            return tecOBJECT_NOT_FOUND;
-        }  // LCOV_EXCL_STOP
-
-        if (!sle->isFieldPresent(sfLockedAmount))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
-                            << to_string(sender);
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        auto const locked = sle->getFieldU64(sfLockedAmount);
-        auto const delta = grossAmount.mpt().value();
-
-        // Underflow check for subtraction
-        if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
-                            << to_string(sender) << ": " << locked << " < " << delta;
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        auto const newLocked = locked - delta;
-        if (newLocked == 0)
-            sle->makeFieldAbsent(sfLockedAmount);
-        else
-            sle->setFieldU64(sfLockedAmount, newLocked);
-        view.update(sle);
+        sle->setFieldU64(sfLockedAmount, newLocked);
     }
+    view.update(sle);
 
     // Note: The gross amount is the amount that was locked, the net
     // amount is the amount that is being unlocked. The difference is the fee

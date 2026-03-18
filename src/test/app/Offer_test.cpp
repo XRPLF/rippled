@@ -382,7 +382,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -507,7 +507,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -1208,7 +1208,7 @@ public:
         {
             auto acctOffers = offersOnAccount(env, accountToTest);
 
-            BEAST_EXPECT(acctOffers.size() == 0);
+            BEAST_EXPECT(acctOffers.empty());
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1926,9 +1926,13 @@ public:
         {
             Env env{*this, features};
             if (numberSwitchOver)
+            {
                 env.enableFeature(fixUniversalNumber);
+            }
             else
+            {
                 env.disableFeature(fixUniversalNumber);
+            }
 
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -2281,7 +2285,7 @@ public:
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
-            if (acctOffers.size() && t.offers)
+            if (!acctOffers.empty() && t.offers)
             {
                 auto const& acctOffer = *(acctOffers.front());
 
@@ -2592,7 +2596,7 @@ public:
 
         // In pre-flow code alice's offer is left empty in the ledger.
         auto const aliceOffers = offersOnAccount(env, alice);
-        if (aliceOffers.size() != 0)
+        if (!aliceOffers.empty())
         {
             BEAST_EXPECT(aliceOffers.size() == 1);
             auto const& aliceOffer = *(aliceOffers.front());
@@ -2772,7 +2776,7 @@ public:
             if (t.offers)
             {
                 auto const acctOffers = offersOnAccount(env, acct);
-                if (acctOffers.size() > 0)
+                if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
                     auto const& acctOffer = *(acctOffers.front());
@@ -2984,7 +2988,7 @@ public:
             env.require(balance(eve, XRP(18000)));
             auto const evesOffers = offersOnAccount(env, eve);
             BEAST_EXPECT(evesOffers.size() == 1);
-            if (evesOffers.size() != 0)
+            if (!evesOffers.empty())
             {
                 auto const& evesOffer = *(evesOffers.front());
                 BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
@@ -3160,7 +3164,7 @@ public:
 
             // In pre-flow code ova's offer is left empty in the ledger.
             auto const ovasOffers = offersOnAccount(env, ova);
-            if (ovasOffers.size() != 0)
+            if (!ovasOffers.empty())
             {
                 BEAST_EXPECT(ovasOffers.size() == 1);
                 auto const& ovasOffer = *(ovasOffers.front());
@@ -3314,7 +3318,7 @@ public:
             env.close();
             std::uint32_t const firstOfferSeq = env.seq(acct) - 1;
 
-            int offerCount = t.firstOfferTec == tesSUCCESS ? 1 : 0;
+            int offerCount = isTesSuccess(t.firstOfferTec) ? 1 : 0;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -3333,7 +3337,7 @@ public:
             env.close();
             std::uint32_t const secondOfferSeq = env.seq(acct) - 1;
 
-            offerCount = t.secondOfferTec == tesSUCCESS ? 1 : offerCount;
+            offerCount = isTesSuccess(t.secondOfferTec) ? 1 : offerCount;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -4593,8 +4597,10 @@ public:
         std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
         forEachItem(*env.current(), alice, [&](std::shared_ptr<SLE const> const& sle) {
             if (sle->getType() == ltOFFER)
+            {
                 offers.emplace(
                     (*sle)[sfSequence], std::make_pair((*sle)[sfTakerPays], (*sle)[sfTakerGets]));
+            }
         });
 
         // first offer
@@ -4749,7 +4755,7 @@ public:
         // Verify that the third offer alice created was consumed.
         {
             auto offers = sortedOffersOnAccount(env, alice);
-            BEAST_EXPECT(offers.size() == 0);
+            BEAST_EXPECT(offers.empty());
         }
         env.require(balance(alice, usd(0)));
         env.require(owners(alice, 1));
@@ -4931,7 +4937,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance -= usd(100);
                 takerUSDBalance += usd(100);
@@ -4948,7 +4954,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += usd(100);
                 takerUSDBalance -= usd(100);
@@ -4965,7 +4971,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += usd(100);
                 takerUSDBalance -= usd(100);

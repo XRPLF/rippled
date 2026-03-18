@@ -40,11 +40,17 @@ CachedViewImpl::read(Keylet const& k) const
     // If the sle is null, then a failure must have occurred in base_.read()
     XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
+    {
         kHITSEXPIRED.increment();
+    }
     else if (cacheHit)
+    {
         kHITS.increment();
+    }
     else
+    {
         kMISSES.increment();
+    }
 
     if (!cacheHit)
     {

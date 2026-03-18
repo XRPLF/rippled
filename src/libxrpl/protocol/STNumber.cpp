@@ -198,9 +198,13 @@ partsFromString(std::string const& number)
     {
         // we have an exponent
         if (match[6].matched && (match[6] == "-"))
+        {
             exponent -= boost::lexical_cast<int>(std::string(match[7]));
+        }
         else
+        {
             exponent += boost::lexical_cast<int>(std::string(match[7]));
+        }
     }
 
     return {mantissa, exponent, negative};

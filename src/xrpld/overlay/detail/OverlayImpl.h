@@ -474,7 +474,7 @@ private:
         Controlled through the config section [crawl] overlay=[0|1]
     */
     Json::Value
-    getOverlayInfo();
+    getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
@@ -522,7 +522,7 @@ private:
 
     /** Send once a second transactions' hashes aggregated by peers. */
     void
-    sendTxQueue();
+    sendTxQueue() const;
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */

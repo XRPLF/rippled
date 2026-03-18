@@ -305,9 +305,13 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 3)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                }
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");

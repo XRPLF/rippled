@@ -9,6 +9,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 
@@ -171,9 +172,13 @@ public:
                 inboundSet.seq = seq_;
 
             if (inboundSet.set)
+            {
                 isNew = false;
+            }
             else
+            {
                 inboundSet.set = set;
+            }
 
             inboundSet.acquire.reset();
         }
@@ -202,9 +207,13 @@ public:
             while (it != map_.end())
             {
                 if (it->second.seq < minSeq || it->second.seq > maxSeq)
+                {
                     it = map_.erase(it);
+                }
                 else
+                {
                     ++it;
+                }
             }
         }
     }

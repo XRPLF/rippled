@@ -70,9 +70,11 @@ parseIndex(Json::Value const& params, Json::StaticString const fieldName, unsign
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
+        {
             // Note this only finds the "short" skip list. Use "hashes":index to
             // get the long list.
             return keylet::skip().key;
+        }
     }
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -532,8 +534,10 @@ parseMPTokenIssuance(
 {
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
+    {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedMPTokenIssuance", fieldName, "Hash192");
+    }
 
     return keylet::mptIssuance(*mptIssuanceID).key;
 }
@@ -901,8 +905,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // this exception return an invalidParam error.
             return RPC::make_error(rpcINVALID_PARAMS);
         }
-        else
-            throw;
+
+        throw;
     }
 
     // Return the computed index regardless of whether the node exists.

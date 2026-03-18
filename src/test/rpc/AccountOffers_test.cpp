@@ -13,7 +13,7 @@ public:
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void

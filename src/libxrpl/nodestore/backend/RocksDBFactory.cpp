@@ -165,8 +165,10 @@ public:
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
                 configOptions, tableOptions, get(keyValues, "bbt_options"), &tableOptions);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+            }
         }
 
         options.table_factory.reset(NewBlockBasedTableFactory(tableOptions));
@@ -176,8 +178,10 @@ public:
             auto const s =
                 rocksdb::GetOptionsFromString(options, get(keyValues, "options"), &options);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB options: ") + s.ToString());
+            }
         }
 
         std::string s1, s2;
@@ -303,9 +307,13 @@ public:
             std::shared_ptr<NodeObject> nObj;
             Status status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};

@@ -123,7 +123,9 @@ public:
                 len -= l2 + 1;
             }
             else
+            {
                 len = l2;
+            }
         }
         return lo;
     }

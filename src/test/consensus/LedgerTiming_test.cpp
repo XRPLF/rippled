@@ -29,11 +29,17 @@ class LedgerTiming_test : public beast::unit_test::suite
                     nextCloseResolution =
                         getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
+                    {
                         ++res.decrease;
+                    }
                     else if (nextCloseResolution > closeResolution)
+                    {
                         ++res.increase;
+                    }
                     else
+                    {
                         ++res.equal;
+                    }
                     std::swap(nextCloseResolution, closeResolution);
                 } while (round < rounds);
                 return res;

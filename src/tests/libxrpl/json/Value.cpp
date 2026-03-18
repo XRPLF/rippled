@@ -761,16 +761,16 @@ TEST(json_value, move)
     EXPECT_EQ(v1.asDouble(), 2.5);
 
     Json::Value v2 = std::move(v1);
-    EXPECT_FALSE(v1);
+    EXPECT_FALSE(v1);  // NOLINT(bugprone-use-after-move)
     EXPECT_TRUE(v2.isDouble());
     EXPECT_EQ(v2.asDouble(), 2.5);
-    EXPECT_NE(v1, v2);
+    EXPECT_NE(v1, v2);  // NOLINT(bugprone-use-after-move)
 
     v1 = std::move(v2);
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
-    EXPECT_FALSE(v2);
-    EXPECT_NE(v1, v2);
+    EXPECT_FALSE(v2);   // NOLINT(bugprone-use-after-move)
+    EXPECT_NE(v1, v2);  // NOLINT(bugprone-use-after-move)
 }
 
 TEST(json_value, comparisons)
@@ -1348,7 +1348,7 @@ TEST(json_value, memory_leak)
 
         // Note that the type() == nullValue check is implementation
         // specific and not guaranteed to be valid in the future.
-        EXPECT_EQ(temp.type(), Json::nullValue);
+        EXPECT_EQ(temp.type(), Json::nullValue);  // NOLINT(bugprone-use-after-move)
     }
 }
 

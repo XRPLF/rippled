@@ -1518,7 +1518,7 @@ public:
             }
             else
             {
-                BEAST_EXPECT(st.size() == 0);
+                BEAST_EXPECT(st.empty());
                 BEAST_EXPECT(equal(sa, XRP(0)));
             }
         };

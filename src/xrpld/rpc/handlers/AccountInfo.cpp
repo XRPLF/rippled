@@ -84,7 +84,9 @@ doAccountInfo(RPC::JsonContext& context)
         strIdent = params[jss::ident].asString();
     }
     else
+    {
         return RPC::missing_field_error(jss::account);
+    }
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
@@ -150,12 +152,16 @@ doAccountInfo(RPC::JsonContext& context)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
+        {
             acctFlags[kALLOW_TRUST_LINE_CLAWBACK_FLAG.first.data()] =
                 sleAccepted->isFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.second);
+        }
 
         if (ledger->rules().enabled(featureTokenEscrow))
+        {
             acctFlags[kALLOW_TRUST_LINE_LOCKING_FLAG.first.data()] =
                 sleAccepted->isFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.second);
+        }
 
         result[jss::account_flags] = std::move(acctFlags);
 
@@ -300,7 +306,9 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::max_spend_drops_total] = to_string(totalSpend);
             }
             else
+            {
                 jvQueueData[jss::txn_count] = 0u;
+            }
 
             result[jss::queue_data] = std::move(jvQueueData);
         }

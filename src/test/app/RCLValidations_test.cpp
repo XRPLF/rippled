@@ -112,9 +112,13 @@ class RCLValidations_test : public beast::unit_test::suite
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
+                {
                     BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
+                }
                 else
+                {
                     BEAST_EXPECT(a[s] == ID{0});
+                }
             }
         }
 

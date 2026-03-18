@@ -417,9 +417,13 @@ public:
         swap(holder_, sink);
 
         if (holder_)
+        {
             sink_ = *holder_;
+        }
         else
+        {
             sink_ = beast::Journal::getNullSink();
+        }
 
         return sink;
     }

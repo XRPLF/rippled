@@ -53,9 +53,13 @@ msig::operator()(Env& env, JTx& jt) const
 
         // The signing pub key is only required at the top level.
         if (!subField)
+        {
             sigObject[sfSigningPubKey] = "";
+        }
         else if (sigObject.isNull())
+        {
             sigObject = Json::Value(Json::objectValue);
+        }
         std::optional<STObject> st;
         try
         {
@@ -80,9 +84,13 @@ msig::operator()(Env& env, JTx& jt) const
         }
     };
     if (!subField)
+    {
         jt.mainSigners.emplace_back(callback);
+    }
     else
+    {
         jt.postSigners.emplace_back(callback);
+    }
 }
 
 }  // namespace jtx

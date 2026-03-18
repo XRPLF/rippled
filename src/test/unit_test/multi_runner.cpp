@@ -108,7 +108,7 @@ results::print(S& s)
 {
     using namespace beast::unit_test;
 
-    if (top.size() > 0)
+    if (!top.empty())
     {
         s << "Longest suite times:\n";
         for (auto const& [name, dur] : top)
@@ -234,9 +234,13 @@ multi_runner_base<IsParent>::multi_runner_base()
 
         region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
+        {
             inner_ = new (region_.get_address()) inner{};
+        }
         else
+        {
             inner_ = reinterpret_cast<inner*>(region_.get_address());
+        }
     }
     catch (...)
     {

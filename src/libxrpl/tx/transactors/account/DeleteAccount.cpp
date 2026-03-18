@@ -30,8 +30,10 @@ NotTEC
 DeleteAccount::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
+    {
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
+    }
 
     if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
         return err;
@@ -367,7 +369,7 @@ DeleteAccount::doApply()
             // LCOV_EXCL_STOP
         },
         ctx_.journal);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:

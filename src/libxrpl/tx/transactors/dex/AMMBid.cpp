@@ -46,13 +46,13 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        if (auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-            authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
+        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+        if (authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
         }
-        else if (ctx.rules.enabled(fixAMMv1_3))
+        if (ctx.rules.enabled(fixAMMv1_3))
         {
             AccountID account = ctx.tx[sfAccount];
             std::set<AccountID> unique;
@@ -193,14 +193,22 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         auctionSlot.setAccountID(sfAccount, account);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         if (fee != 0)
+        {
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
+        }
         else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        {
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
         auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx.tx.isFieldPresent(sfAuthAccounts))
+        {
             auctionSlot.setFieldArray(sfAuthAccounts, ctx.tx.getFieldArray(sfAuthAccounts));
+        }
         else
+        {
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
+        }
         // Burn the remaining bid amount
         auto const saBurn =
             adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
@@ -214,7 +222,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             // LCOV_EXCL_STOP
         }
         auto res = redeemIOU(sb, account, saBurn, lpTokens.issue(), ctx.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
@@ -245,7 +253,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             {
                 return std::max(computedPrice, Number(*bidMin));
             }
-            else if (bidMax)
+            if (bidMax)
             {
                 if (computedPrice <= *bidMax)
                     return computedPrice;
@@ -253,23 +261,30 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                     << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
             }
-            else
-                return computedPrice;
+
+            return computedPrice;
         }();
         if (!payPrice)
+        {
             return Unexpected(tecAMM_FAILED);
-        else if (payPrice > lpTokens)
+        }
+        if (payPrice > lpTokens)
+        {
             return Unexpected(tecAMM_INVALID_TOKENS);
+        }
         return *payPrice;
     };
 
     // No one owns the slot or expired slot.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        if (auto const payPrice = getPayPrice(minSlotPrice); !payPrice)
+        auto const payPrice = getPayPrice(minSlotPrice);
+        if (!payPrice)
+        {
             return {payPrice.error(), false};
-        else
-            res = updateSlot(discountedFee, *payPrice, *payPrice);
+        }
+
+        res = updateSlot(discountedFee, *payPrice, *payPrice);
     }
     else
     {
@@ -304,7 +319,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         }
         res = accountSend(
             sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.issue(), refund), ctx.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
             return {res, false};
@@ -314,7 +329,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         res = updateSlot(discountedFee, *payPrice, burn);
     }
 
-    return {res, res == tesSUCCESS};
+    return {res, isTesSuccess(res)};
 }
 
 TER

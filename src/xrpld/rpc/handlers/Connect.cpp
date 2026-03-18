@@ -36,9 +36,13 @@ doConnect(RPC::JsonContext& context)
     int iPort = 0;
 
     if (context.params.isMember(jss::port))
+    {
         iPort = context.params[jss::port].asInt();
+    }
     else
+    {
         iPort = DEFAULT_PEER_PORT;
+    }
 
     auto const ipStr = context.params[jss::ip].asString();
     auto ip = beast::IP::Endpoint::from_string(ipStr);

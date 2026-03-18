@@ -199,9 +199,13 @@ public:
             }
         };
         if (scale == MantissaRange::small)
+        {
             test(cSmall);
+        }
         else
+        {
             test(cLarge);
+        }
         {
             bool caught = false;
             try
@@ -291,9 +295,13 @@ public:
             }
         };
         if (scale == MantissaRange::small)
+        {
             test(cSmall);
+        }
         else
+        {
             test(cLarge);
+        }
     }
 
     void
@@ -314,9 +322,13 @@ public:
         };
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::small)
+            {
                 test(cSmall);
+            }
             else
+            {
                 test(cLarge);
+            }
         };
         auto const maxMantissa = Number::maxMantissa();
 
@@ -622,9 +634,13 @@ public:
         auto const maxMantissa = Number::maxMantissa();
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::small)
+            {
                 test(cSmall);
+            }
             else
+            {
                 test(cLarge);
+            }
         };
         saveNumberRoundMode save{Number::setround(Number::to_nearest)};
         {

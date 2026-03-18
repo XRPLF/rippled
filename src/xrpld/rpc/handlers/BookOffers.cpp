@@ -83,12 +83,16 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::expected_field_error("taker_pays.issuer", "string");
 
         if (!to_issuer(payIssuer, takerPays[jss::issuer].asString()))
+        {
             return RPC::make_error(
                 rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer.");
+        }
 
         if (payIssuer == noAccount())
+        {
             return RPC::make_error(
                 rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', bad issuer account one.");
+        }
     }
     else
     {
@@ -96,14 +100,18 @@ doBookOffers(RPC::JsonContext& context)
     }
 
     if (isXRP(payCurrency) && !isXRP(payIssuer))
+    {
         return RPC::make_error(
             rpcSRC_ISR_MALFORMED,
             "Unneeded field 'taker_pays.issuer' for "
             "XRP currency specification.");
+    }
 
     if (!isXRP(payCurrency) && isXRP(payIssuer))
+    {
         return RPC::make_error(
             rpcSRC_ISR_MALFORMED, "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
+    }
 
     AccountID getIssuer;
 
@@ -113,12 +121,16 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::expected_field_error("taker_gets.issuer", "string");
 
         if (!to_issuer(getIssuer, takerGets[jss::issuer].asString()))
+        {
             return RPC::make_error(
                 rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer.");
+        }
 
         if (getIssuer == noAccount())
+        {
             return RPC::make_error(
                 rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', bad issuer account one.");
+        }
     }
     else
     {
@@ -126,14 +138,18 @@ doBookOffers(RPC::JsonContext& context)
     }
 
     if (isXRP(getCurrency) && !isXRP(getIssuer))
+    {
         return RPC::make_error(
             rpcDST_ISR_MALFORMED,
             "Unneeded field 'taker_gets.issuer' for "
             "XRP currency specification.");
+    }
 
     if (!isXRP(getCurrency) && isXRP(getIssuer))
+    {
         return RPC::make_error(
             rpcDST_ISR_MALFORMED, "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
+    }
 
     std::optional<AccountID> takerID;
     if (context.params.isMember(jss::taker))
@@ -155,10 +171,8 @@ doBookOffers(RPC::JsonContext& context)
         {
             return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse domain.");
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     if (payCurrency == getCurrency && payIssuer == getIssuer)

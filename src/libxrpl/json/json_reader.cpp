@@ -278,9 +278,13 @@ Reader::skipSpaces()
         Char c = *current_;
 
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+        {
             ++current_;
+        }
         else
+        {
             break;
+        }
     }
 }
 
@@ -293,8 +297,10 @@ Reader::match(Location pattern, int patternLength)
     int index = patternLength;
 
     while (index--)
+    {
         if (current_[index] != pattern[index])
             return false;
+    }
 
     current_ += patternLength;
     return true;
@@ -384,9 +390,13 @@ Reader::readString()
         c = getNextChar();
 
         if (c == '\\')
+        {
             getNextChar();
+        }
         else if (c == '"')
+        {
             break;
+        }
     }
 
     return c == '"';
@@ -578,9 +588,13 @@ Reader::decodeNumber(Token& token)
 
         // If it's representable as a signed integer, construct it as one.
         if (value <= Value::maxInt)
+        {
             currentValue() = static_cast<Value::Int>(value);
+        }
         else
+        {
             currentValue() = static_cast<Value::UInt>(value);
+        }
     }
 
     return true;
@@ -646,8 +660,10 @@ Reader::decodeString(Token& token, std::string& decoded)
         Char c = *current++;
 
         if (c == '"')
+        {
             break;
-        else if (c == '\\')
+        }
+        if (c == '\\')
         {
             if (current == end)
                 return addError("Empty escape sequence in string", token, current);
@@ -721,19 +737,23 @@ Reader::decodeUnicodeCodePoint(Token& token, Location& current, Location end, un
     {
         // surrogate pairs
         if (end - current < 6)
+        {
             return addError(
                 "additional six characters expected to parse unicode surrogate "
                 "pair.",
                 token,
                 current);
+        }
 
         unsigned int surrogatePair = 0;
 
         if (*current != '\\' || *(current + 1) != 'u')
+        {
             return addError(
                 "expecting another \\u token to begin the second half of a unicode surrogate pair",
                 token,
                 current);
+        }
 
         current += 2;  // skip two characters checked above
 
@@ -754,8 +774,10 @@ Reader::decodeUnicodeEscapeSequence(
     unsigned int& unicode)
 {
     if (end - current < 4)
+    {
         return addError(
             "Bad unicode escape sequence in string: four digits expected.", token, current);
+    }
 
     unicode = 0;
 
@@ -765,17 +787,25 @@ Reader::decodeUnicodeEscapeSequence(
         unicode *= 16;
 
         if (c >= '0' && c <= '9')
+        {
             unicode += c - '0';
+        }
         else if (c >= 'a' && c <= 'f')
+        {
             unicode += c - 'a' + 10;
+        }
         else if (c >= 'A' && c <= 'F')
+        {
             unicode += c - 'A' + 10;
+        }
         else
+        {
             return addError(
                 "Bad unicode escape sequence in string: hexadecimal digit "
                 "expected.",
                 token,
                 current);
+        }
     }
 
     return true;

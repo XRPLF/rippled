@@ -66,15 +66,23 @@ class Vault_test : public beast::unit_test::suite
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 if (!asset.integral())
+                {
                     BEAST_EXPECT(vault->at(sfScale) == 6);
+                }
                 else
+                {
                     BEAST_EXPECT(vault->at(sfScale) == 0);
+                }
                 auto const shares = env.le(keylet::mptIssuance(vault->at(sfShareMPTID)));
                 BEAST_EXPECT(shares != nullptr);
                 if (!asset.integral())
+                {
                     BEAST_EXPECT(shares->at(sfAssetScale) == 6);
+                }
                 else
+                {
                     BEAST_EXPECT(shares->at(sfAssetScale) == 0);
+                }
                 return {MPTIssue(vault->at(sfShareMPTID)), Account("vault", vault->at(sfAccount))};
             }();
             auto const shares = share.raw().get<MPTIssue>();
@@ -1330,11 +1338,17 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
             if (!asset1.native() && !asset2.native())
+            {
                 fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+            }
             else if (asset1.native())
+            {
                 fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            }
             else if (asset2.native())
+            {
                 fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+            }
 
             AMM ammAlice(env, alice, asset1, asset2, CreateArg{.log = false, .tfee = 0});
 
@@ -2276,7 +2290,9 @@ class Vault_test : public beast::unit_test::suite
                 env(fset(issuer, asfDefaultRipple));
             }
             else
+            {
                 env.trust(asset(1000), charlie);
+            }
             env.close();
             env(rate(issuer, args.transferRate));
             env.close();
@@ -4605,18 +4621,23 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("VaultClawback (share) - " + prefix + " owner asset clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
+                // when asset is XRP or owner is not issuer clawback fail
+                // when owner is issuer precision loss occurs as vault is
+                // empty
+                auto const expectedTer = [&]() {
+                    if (asset.native())
+                        return ter(temMALFORMED);
+                    if (asset.raw().getIssuer() != owner.id())
+                        return ter(tecNO_PERMISSION);
+                    return ter(tecPRECISION_LOSS);
+                }();
                 env(vault.clawback({
                         .issuer = owner,
                         .id = vaultKeylet.key,
                         .holder = depositor,
                         .amount = asset(100).value(),
                     }),
-                    // when asset is XRP or owner is not issuer clawback fail
-                    // when owner is issuer precision loss occurs as vault is
-                    // empty
-                    asset.native()                              ? ter(temMALFORMED)
-                        : asset.raw().getIssuer() != owner.id() ? ter(tecNO_PERMISSION)
-                                                                : ter(tecPRECISION_LOSS));
+                    expectedTer);
                 env.close();
             }
 

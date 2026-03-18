@@ -173,7 +173,7 @@ public:
     send(Json::Value const& jvObj, bool broadcast) = 0;
 
     std::uint64_t
-    getSeq();
+    getSeq() const;
 
     void
     onSendEmpty();

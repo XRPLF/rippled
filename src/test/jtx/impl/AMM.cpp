@@ -53,8 +53,6 @@ AMM::AMM(
     , log_(log)
     , doClose_(close)
     , lastPurchasePrice_(0)
-    , bidMin_()
-    , bidMax_()
     , msig_(ms)
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
@@ -123,9 +121,13 @@ AMM::create(
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
+    {
         jv[sfFee] = std::to_string(fee_);
+    }
     else
+    {
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
+    }
     submit(jv, seq, ter);
 
     if (!ter || env_.ter() == tesSUCCESS)
@@ -218,6 +220,7 @@ IOUAmount
 AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
 {
     if (account)
+    {
         return accountHolds(
                    *env_.current(),
                    *account,
@@ -225,6 +228,7 @@ AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
                    FreezeHandling::fhZERO_IF_FROZEN,
                    env_.journal)
             .iou();
+    }
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
         return amm->getFieldAmount(sfLPTokenBalance).iou();
     return IOUAmount{0};
@@ -442,15 +446,25 @@ AMM::deposit(
     if (!(jvFlags & tfDepositSubTx))
     {
         if (tokens && !asset1In)
+        {
             jvFlags |= tfLPToken;
+        }
         else if (tokens && asset1In)
+        {
             jvFlags |= tfOneAssetLPToken;
+        }
         else if (asset1In && asset2In)
+        {
             jvFlags |= tfTwoAsset;
+        }
         else if (maxEP && asset1In)
+        {
             jvFlags |= tfLimitLPToken;
+        }
         else if (asset1In)
+        {
             jvFlags |= tfSingleAsset;
+        }
     }
     jv[jss::Flags] = jvFlags;
     return deposit(account, jv, assets, seq, ter);
@@ -562,15 +576,25 @@ AMM::withdraw(
     if (!(jvFlags & tfWithdrawSubTx))
     {
         if (tokens && !asset1Out)
+        {
             jvFlags |= tfLPToken;
+        }
         else if (asset1Out && asset2Out)
+        {
             jvFlags |= tfTwoAsset;
+        }
         else if (tokens && asset1Out)
+        {
             jvFlags |= tfOneAssetLPToken;
+        }
         else if (asset1Out && maxEP)
+        {
             jvFlags |= tfLimitLPToken;
+        }
         else if (asset1Out)
+        {
             jvFlags |= tfSingleAsset;
+        }
     }
     jv[jss::Flags] = jvFlags;
     return withdraw(account, jv, seq, assets, ter);
@@ -615,7 +639,7 @@ AMM::vote(
 void
 AMM::vote(VoteArg const& arg)
 {
-    return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
+    vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
 }
 
 Json::Value
@@ -641,11 +665,15 @@ AMM::bid(BidArg const& arg)
     setTokens(jv, arg.assets);
     auto getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
+        {
             return STAmount{lptIssue_, std::get<int>(bid)};
-        else if (std::holds_alternative<IOUAmount>(bid))
+        }
+        if (std::holds_alternative<IOUAmount>(bid))
+        {
             return toSTAmount(std::get<IOUAmount>(bid), lptIssue_);
-        else
-            return std::get<STAmount>(bid);
+        }
+
+        return std::get<STAmount>(bid);
     };
     if (arg.bidMin)
     {
@@ -659,7 +687,7 @@ AMM::bid(BidArg const& arg)
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }
-    if (arg.authAccounts.size() > 0)
+    if (!arg.authAccounts.empty())
     {
         Json::Value accounts(Json::arrayValue);
         for (auto const& account : arg.authAccounts)
@@ -691,22 +719,38 @@ AMM::submit(
     if (msig_)
     {
         if (seq && ter)
+        {
             env_(jv, *msig_, *seq, *ter);
+        }
         else if (seq)
+        {
             env_(jv, *msig_, *seq);
+        }
         else if (ter)
+        {
             env_(jv, *msig_, *ter);
+        }
         else
+        {
             env_(jv, *msig_);
+        }
     }
     else if (seq && ter)
+    {
         env_(jv, *seq, *ter);
+    }
     else if (seq)
+    {
         env_(jv, *seq);
+    }
     else if (ter)
+    {
         env_(jv, *ter);
+    }
     else
+    {
         env_(jv);
+    }
     if (doClose_)
         env_.close();
 }

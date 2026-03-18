@@ -362,9 +362,13 @@ void
 logDuration(Json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = (duration >= 10s) ? journal.error()
-        : (duration >= 1s)               ? journal.warn()
-                                         : journal.debug();
+    auto const level = [&]() {
+        if (duration >= 10s)
+            return journal.error();
+        if (duration >= 1s)
+            return journal.warn();
+        return journal.debug();
+    }();
 
     JLOG(level) << "RPC request processing duration = "
                 << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
@@ -534,9 +538,13 @@ ServerHandler::processSession(
         }());
 
     if (beast::rfc2616::is_keep_alive(session->request()))
+    {
         session->complete();
+    }
     else
+    {
         session->close(true);
+    }
 }
 
 static Json::Value
@@ -642,8 +650,10 @@ ServerHandler::processRequest(
         auto role = Role::FORBID;
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
+        {
             required = RPC::roleRequired(
                 apiVersion, app_.config().BETA_RPC_API, jsonRPC[jss::method].asString());
+        }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
@@ -748,8 +758,9 @@ ServerHandler::processRequest(
         {
             params = jsonRPC[jss::params];
             if (!params)
+            {
                 params = Json::Value(Json::objectValue);
-
+            }
             else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::feeMalformedRPC);
@@ -908,9 +919,13 @@ ServerHandler::processRequest(
         if (params.isMember(jss::id))
             r[jss::id] = params[jss::id];
         if (batch)
+        {
             reply.append(std::move(r));
+        }
         else
+        {
             reply = std::move(r);
+        }
 
         if (reply.isMember(jss::result) && reply[jss::result].isMember(jss::result))
         {
@@ -956,9 +971,13 @@ ServerHandler::processRequest(
     {
         static int const kMAX_SIZE = 10000;
         if (response.size() <= kMAX_SIZE)
+        {
             stream << "Reply: " << response;
+        }
         else
+        {
             stream << "Reply: " << response.substr(0, kMAX_SIZE);
+        }
     }
 
     HTTPReply(httpStatus, response, output, rpcJ);
@@ -1008,10 +1027,14 @@ ServerHandler::Setup::makeContexts()
         if (p.secure())
         {
             if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
+            {
                 p.context = make_SSLContext(p.ssl_ciphers);
+            }
             else
+            {
                 p.context =
                     make_SSLContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
+            }
         }
         else
         {
@@ -1112,9 +1135,13 @@ parsePorts(Config const& config, std::ostream& log)
             // Remove the peer protocol, and if that would
             // leave the port empty, remove the port as well
             if (p.erase("peer") && p.empty())
+            {
                 it = result.erase(it);
+            }
             else
+            {
                 ++it;
+            }
         }
     }
     else
@@ -1142,15 +1169,22 @@ setupClient(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
+    {
         if (iter->protocol.count("http") > 0 || iter->protocol.count("https") > 0)
             break;
+    }
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.count("https") > 0;
-    setup.client.ip = beast::IP::is_unspecified(iter->ip) ?
-                                                          // VFALCO HACK! to make localhost work
-        (iter->ip.is_v6() ? "::1" : "127.0.0.1")
-                                                          : iter->ip.to_string();
+    if (beast::IP::is_unspecified(iter->ip))
+    {
+        // VFALCO HACK! to make localhost work
+        setup.client.ip = iter->ip.is_v6() ? "::1" : "127.0.0.1";
+    }
+    else
+    {
+        setup.client.ip = iter->ip.to_string();
+    }
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;

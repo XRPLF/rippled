@@ -92,7 +92,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : event_(ev), journal_(journal), probe_(interval, ios), lastSample_{}
+            : event_(ev), journal_(journal), probe_(interval, ios)
         {
         }
 
@@ -280,11 +280,17 @@ public:
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
                       if (config->NODE_SIZE >= 4 && count >= 16)
+                      {
                           count = 6 + std::min(count, 8);
+                      }
                       else if (config->NODE_SIZE >= 3 && count >= 8)
+                      {
                           count = 4 + std::min(count, 6);
+                      }
                       else
+                      {
                           count = 2 + std::min(count, 4);
+                      }
 
                       return count;
                   }(config_),
@@ -598,7 +604,7 @@ public:
     }
 
     void
-    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire)
+    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire) const
     {
         if (set)
             networkOPs_->mapComplete(set, fromAcquire);
@@ -821,7 +827,7 @@ public:
     }
 
     bool
-    initNodeStore()
+    initNodeStore() const
     {
         if (config_->doImport)
         {
@@ -1570,7 +1576,9 @@ ApplicationImp::signalStop(std::string msg)
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
         if (msg.empty())
+        {
             JLOG(journal_.warn()) << "Server stopping";
+        }
         else
             JLOG(journal_.warn()) << "Server stopping: " << msg;
 

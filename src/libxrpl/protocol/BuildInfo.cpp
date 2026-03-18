@@ -23,7 +23,8 @@ namespace {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const kVERSION_STRING = "3.2.0-b0"
+// NOLINTNEXTLINE(readability-identifier-naming)
+char const* const versionString = "3.2.0-b0"
     // clang-format on
     ;
 
@@ -34,7 +35,7 @@ char const* const kVERSION_STRING = "3.2.0-b0"
 std::string
 buildVersionString()
 {
-    std::string version = kVERSION_STRING;
+    std::string version = versionString;
 
 #if defined(DEBUG) || defined(SANITIZERS)
     std::string metadata;

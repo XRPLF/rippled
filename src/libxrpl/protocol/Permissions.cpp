@@ -68,10 +68,12 @@ Permission::Permission()
     };
 
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
+    {
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
             "xrpl::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
+    }
 }
 
 Permission const&
@@ -126,7 +128,7 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
-std::optional<std::reference_wrapper<uint256 const>> const
+std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const txFeaturesIt = txFeatureMap_.find(txType);
@@ -145,8 +147,10 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
     auto const granularPermission =
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
     if (granularPermission)
+    {
         // granular permissions are always allowed to be delegated
         return true;
+    }
 
     auto const txType = permissionToTxType(permissionValue);
     auto const it = delegableTx_.find(txType);

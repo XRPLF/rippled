@@ -77,13 +77,13 @@ getInverse()
 }
 
 /// Returns max chars needed to encode a base64 string
-inline std::size_t constexpr encodedSize(std::size_t n)
+std::size_t constexpr encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
 /// Returns max bytes needed to decode a base64 string
-inline std::size_t constexpr decodedSize(std::size_t n)
+std::size_t constexpr decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }

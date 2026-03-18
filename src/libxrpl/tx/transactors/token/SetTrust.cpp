@@ -118,7 +118,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
+    if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
     std::uint32_t const txFlags = tx.getFlags();
@@ -214,7 +214,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             // pass
         }
         else
+        {
             return tecNO_PERMISSION;
+        }
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless
@@ -233,14 +235,20 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             }
             else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
-                if (auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
-                    lpTokens == beast::zero)
+                auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
+                if (lpTokens == beast::zero)
+                {
                     return tecAMM_EMPTY;
-                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                }
+                if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                {
                     return tecNO_PERMISSION;
+                }
             }
             else
+            {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
         }
         else if (sleDst->isFieldPresent(sfVaultID) || sleDst->isFieldPresent(sfLoanBrokerID))
         {
@@ -249,7 +257,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             // else pass
         }
         else
+        {
             return tecPSEUDO_ACCOUNT;
+        }
     }
 
     // Checking all freeze/deep freeze flag invariants.
@@ -473,11 +483,14 @@ SetTrust::doApply()
         if (bSetNoRipple && !bClearNoRipple)
         {
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::zero)
+            {
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
-
+            }
             else
+            {
                 // Cannot set noRipple on a negative balance.
                 return tecNO_PERMISSION;
+            }
         }
         else if (bClearNoRipple && !bSetNoRipple)
         {

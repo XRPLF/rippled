@@ -97,8 +97,8 @@ makeLedgerDBs(
 
         return {std::move(lgr), std::move(tx), true};
     }
-    else
-        return {std::move(lgr), {}, true};
+
+    return {std::move(lgr), {}, true};
 }
 
 std::optional<LedgerIndex>
@@ -283,7 +283,9 @@ saveValidatedLedger(
                     for (auto const& account : accts)
                     {
                         if (!first)
+                        {
                             sql += ", ('";
+                        }
                         else
                         {
                             sql += "('";
@@ -601,9 +603,13 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
         while (st.fetch())
         {
             if (soci::i_ok == rti)
+            {
                 convert(sociRawTxnBlob, rawTxn);
+            }
             else
+            {
                 rawTxn.clear();
+            }
 
             if (auto trans = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app))
             {
@@ -666,8 +672,8 @@ transactionsSQL(
         numberOfResults = options.limit;
     }
 
-    std::string maxClause = "";
-    std::string minClause = "";
+    std::string maxClause;
+    std::string minClause;
 
     if (options.maxLedger)
     {
@@ -684,13 +690,16 @@ transactionsSQL(
     std::string sql;
 
     if (count)
+    {
         sql = boost::str(
             boost::format(
                 "SELECT %s FROM AccountTransactions "
                 "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % toBase58(options.account) % maxClause % minClause % options.offset %
             numberOfResults);
+    }
     else
+    {
         sql = boost::str(
             boost::format(
                 "SELECT %s FROM "
@@ -703,6 +712,7 @@ transactionsSQL(
             selection % toBase58(options.account) % maxClause % minClause %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
             (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
+    }
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
 }
@@ -747,7 +757,7 @@ getAccountTxs(
         false,
         false,
         j);
-    if (sql == "")
+    if (sql.empty())
         return {ret, 0};
 
     int total = 0;
@@ -770,14 +780,22 @@ getAccountTxs(
         while (st.fetch())
         {
             if (soci::i_ok == rti)
+            {
                 convert(sociTxnBlob, rawTxn);
+            }
             else
+            {
                 rawTxn.clear();
+            }
 
             if (soci::i_ok == tmi)
+            {
                 convert(sociTxnMetaBlob, txnMeta);
+            }
             else
+            {
                 txnMeta.clear();
+            }
 
             auto txn = Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
 
@@ -863,7 +881,7 @@ getAccountTxsB(
         true /*binary*/,
         false,
         j);
-    if (sql == "")
+    if (sql.empty())
         return {ret, 0};
 
     int total = 0;
@@ -958,9 +976,13 @@ accountTxPage(
 
     if (options.limit == 0 || options.limit == UINT32_MAX ||
         (options.limit > pageLength && !options.bAdmin))
+    {
         numberOfResults = pageLength;
+    }
     else
+    {
         numberOfResults = options.limit;
+    }
 
     // As an account can have many thousands of transactions, there is a limit
     // placed on the amount of transactions returned. If the limit is reached
@@ -1063,7 +1085,9 @@ accountTxPage(
                     lookingForMarker = false;
                 }
                 else
+                {
                     continue;
+                }
             }
             else if (numberOfResults == 0)
             {
@@ -1073,17 +1097,25 @@ accountTxPage(
             }
 
             if (dataPresent == soci::i_ok)
+            {
                 convert(txnData, rawData);
+            }
             else
+            {
                 rawData.clear();
+            }
 
             if (metaPresent == soci::i_ok)
+            {
                 convert(txnMeta, rawMeta);
+            }
             else
+            {
                 rawMeta.clear();
+            }
 
             // Work around a bug that could leave the metadata missing
-            if (rawMeta.size() == 0)
+            if (rawMeta.empty())
                 onUnsavedLedger(ledgerSeq.value_or(0));
 
             // `rawData` and `rawMeta` will be used after they are moved.

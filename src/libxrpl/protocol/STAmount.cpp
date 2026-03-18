@@ -223,9 +223,13 @@ STAmount::STAmount(XRPAmount const& amount)
     : asset_(xrpIssue()), offset_(0), isNegative_(amount < beast::zero)
 {
     if (isNegative_)
+    {
         value_ = unsafe_cast<std::uint64_t>(-amount.drops());
+    }
     else
+    {
         value_ = unsafe_cast<std::uint64_t>(amount.drops());
+    }
 
     canonicalize();
 }
@@ -305,9 +309,13 @@ STAmount::operator=(IOUAmount const& iou)
     offset_ = iou.exponent();
     isNegative_ = iou < beast::zero;
     if (isNegative_)
+    {
         value_ = static_cast<std::uint64_t>(-iou.mantissa());
+    }
     else
+    {
         value_ = static_cast<std::uint64_t>(iou.mantissa());
+    }
     return *this;
 }
 
@@ -722,9 +730,13 @@ STAmount::getText() const
 
     // Assemble the output:
     if (preFrom == preTo)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(preFrom, preTo);
+    }
 
     if (postTo != postFrom)
     {
@@ -751,9 +763,13 @@ STAmount::add(Serializer& s) const
         XRPL_ASSERT(offset_ == 0, "xrpl::STAmount::add : zero offset");
 
         if (!isNegative_)
+        {
             s.add64(value_ | cPositive);
+        }
         else
+        {
             s.add64(value_);
+        }
     }
     else if (asset_.holds<MPTIssue>())
     {
@@ -767,11 +783,17 @@ STAmount::add(Serializer& s) const
     else
     {
         if (*this == beast::zero)
+        {
             s.add64(cIssuedCurrency);
-        else if (isNegative_)  // 512 = not native
+        }
+        else if (isNegative_)
+        {  // 512 = not native
             s.add64(value_ | (static_cast<std::uint64_t>(offset_ + 512 + 97) << (64 - 10)));
-        else  // 256 = positive
+        }
+        else
+        {  // 256 = positive
             s.add64(value_ | (static_cast<std::uint64_t>(offset_ + 512 + 256 + 97) << (64 - 10)));
+        }
         s.addBitString(asset_.get<Issue>().currency);
         s.addBitString(asset_.get<Issue>().account);
     }
@@ -839,11 +861,17 @@ STAmount::canonicalize()
                 value_ = isNegative_ ? -value : value;
             };
             if (native())
+            {
                 set(XRPAmount{num});
+            }
             else if (asset_.holds<MPTIssue>())
+            {
                 set(MPTAmount{num});
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown integral asset type");
+            }
             offset_ = 0;
         }
         else
@@ -859,9 +887,13 @@ STAmount::canonicalize()
                 // N.B. do not move the overflow check to after the
                 // multiplication
                 if (native() && value_ > cMaxNativeN)
+                {
                     Throw<std::runtime_error>("Native currency amount out of range");
+                }
                 else if (!native() && value_ > maxMPTokenAmount)
+                {
                     Throw<std::runtime_error>("MPT amount out of range");
+                }
 
                 value_ *= 10;
                 --offset_;
@@ -869,9 +901,13 @@ STAmount::canonicalize()
         }
 
         if (native() && value_ > cMaxNativeN)
+        {
             Throw<std::runtime_error>("Native currency amount out of range");
+        }
         else if (!native() && value_ > maxMPTokenAmount)
+        {
             Throw<std::runtime_error>("MPT amount out of range");
+        }
 
         return;
     }

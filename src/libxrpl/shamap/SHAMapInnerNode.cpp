@@ -125,9 +125,13 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
     ret->resizeChildArrays(ret->getBranchCount());
 
     if (hashValid)
+    {
         ret->hash_ = hash;
+    }
     else
+    {
         ret->updateHash();
+    }
 
     return ret;
 }
@@ -253,9 +257,11 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     auto const dstIsBranch = [&] {
         if (child)
+        {
             return isBranch_ | (1u << m);
-        else
-            return isBranch_ & ~(1u << m);
+        }
+
+        return isBranch_ & ~(1u << m);
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);

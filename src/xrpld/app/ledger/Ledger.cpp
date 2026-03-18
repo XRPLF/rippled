@@ -597,9 +597,13 @@ Ledger::setup()
                     if (src)
                     {
                         if (src->native())
+                        {
                             dest = src->xrp();
+                        }
                         else
+                        {
                             ret = false;
+                        }
                     }
                 };
                 assign(fees_.base, baseFeeXRP);
@@ -608,11 +612,15 @@ Ledger::setup()
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
             if (oldFees && newFees)
+            {
                 // Should be all of one or the other, but not both
                 ret = false;
+            }
             if (!rules_.enabled(featureXRPFees) && newFees)
+            {
                 // Can't populate the new fees before the amendment is enabled
                 ret = false;
+            }
         }
     }
     catch (SHAMapMissingNode const&)
@@ -770,9 +778,11 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
     else
     {
         if (parallel)
+        {
             return stateMap_.walkMapParallel(missingNodes1, 32);
-        else
-            stateMap_.walkMap(missingNodes1, 32);
+        }
+
+        stateMap_.walkMap(missingNodes1, 32);
     }
 
     if (!missingNodes1.empty())
@@ -864,9 +874,13 @@ Ledger::updateSkipList()
         sle->setFieldV256(sfHashes, STVector256(hashes));
         sle->setFieldU32(sfLastLedgerSequence, prevIndex);
         if (created)
+        {
             rawInsert(sle);
+        }
         else
+        {
             rawReplace(sle);
+        }
     }
 
     // update record of past 256 ledger
@@ -891,9 +905,13 @@ Ledger::updateSkipList()
     sle->setFieldV256(sfHashes, STVector256(hashes));
     sle->setFieldU32(sfLastLedgerSequence, prevIndex);
     if (created)
+    {
         rawInsert(sle);
+    }
     else
+    {
         rawReplace(sle);
+    }
 }
 
 bool

@@ -59,7 +59,7 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result = xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);

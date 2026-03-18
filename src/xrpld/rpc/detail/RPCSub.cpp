@@ -34,16 +34,29 @@ public:
         parsedURL pUrl;
 
         if (!parseUrl(pUrl, strUrl))
+        {
             Throw<std::runtime_error>("Failed to parse url.");
+        }
         else if (pUrl.scheme == "https")
+        {
             ssl_ = true;
+        }
         else if (pUrl.scheme != "http")
+        {
             Throw<std::runtime_error>("Only http and https is supported.");
+        }
 
         seq_ = 1;
 
         ip_ = pUrl.domain;
-        port_ = (!pUrl.port) ? (ssl_ ? 443 : 80) : *pUrl.port;
+        if (!pUrl.port)
+        {
+            port_ = ssl_ ? 443 : 80;
+        }
+        else
+        {
+            port_ = *pUrl.port;
+        }
         path_ = pUrl.path;
 
         JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << ip_ << " port=" << port_

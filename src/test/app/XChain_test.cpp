@@ -812,7 +812,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             scEnv.tx(create_bridge(b, bridge(a, ia, b, ib)), ter(TER::fromInt(expected.second)));
             TER scTER = scEnv.env.ter();
 
-            bool pass = mcTER == tesSUCCESS && scTER == tesSUCCESS;
+            bool pass = isTesSuccess(mcTER) && isTesSuccess(scTER);
 
             testResult.emplace_back(mcTER, scTER, pass);
         };
@@ -2141,14 +2141,22 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
                 if (i + 1 == quorum)
+                {
                     scEnv.tx(att, ter(expectedTER)).close();
+                }
                 else
+                {
                     scEnv.tx(att, ter(expectedTER)).close();
+                }
 
                 if (i + 1 < quorum)
+                {
                     BEAST_EXPECT(dstStartBalance == scEnv.env.balance(dst));
+                }
                 else
+                {
                     BEAST_EXPECT(dstStartBalance + amt == scEnv.env.balance(dst));
+                }
             }
             BEAST_EXPECT(dstStartBalance + amt == scEnv.env.balance(dst));
         }
@@ -2335,9 +2343,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv.tx(att, ter(expectedTER)).close();
             if (i + 1 < xrpB.quorum)
+            {
                 BEAST_EXPECT(!scEnv.env.le(ua));
+            }
             else
+            {
                 BEAST_EXPECT(scEnv.env.le(ua));
+            }
         }
         BEAST_EXPECT(scEnv.env.le(ua));
     }
@@ -3900,8 +3912,10 @@ private:
         verify() const
         {
             for (auto const& [acct, state] : accounts)
+            {
                 if (!state.verify(env, acct))
                     return false;
+            }
             return true;
         }
 
@@ -4282,9 +4296,14 @@ private:
                     break;
 
                 case StAttesting:
-                    sm_state_ = attest(time, rnd)
-                        ? (xfer_.with_claim == WithClaim::Yes ? StAttested : StCompleted)
-                        : StAttesting;
+                    if (attest(time, rnd))
+                    {
+                        sm_state_ = xfer_.with_claim == WithClaim::Yes ? StAttested : StCompleted;
+                    }
+                    else
+                    {
+                        sm_state_ = StAttesting;
+                    }
                     break;
 
                 case StAttested:
@@ -4351,9 +4370,13 @@ public:
                 };
                 auto& [t, sm] = *it;
                 if (t <= time && std::visit(vis, sm) == StCompleted)
+                {
                     it = sm_.erase(it);
+                }
                 else
+                {
                     ++it;
+                }
             }
 
             // send attestations
@@ -4393,8 +4416,10 @@ public:
             std::vector<Account> result;
             result.reserve(kNUM_ACCT);
             for (int i = 0; i < kNUM_ACCT; ++i)
+            {
                 result.emplace_back(
                     "a"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            }
             result.emplace_back("doorXRPLocking");
             doorXRPLocking = result.back();
             result.emplace_back("doorUSDLocking");
@@ -4443,8 +4468,10 @@ public:
             std::vector<Account> result;
             result.reserve(kNUM_UA);
             for (int i = 0; i < kNUM_UA; ++i)
+            {
                 result.emplace_back(
                     "ua"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            }
             return result;
         }();
 

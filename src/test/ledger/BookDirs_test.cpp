@@ -56,8 +56,10 @@ struct BookDirs_test : public beast::unit_test::suite
         {
             auto aud = gw["AUD"];
             for (auto i = 1, j = 3; i <= 3; ++i, --j)
+            {
                 for (auto k = 0; k < 80; ++k)
                     env(offer("alice", aud(i), XRP(j)));
+            }
 
             auto d = BookDirs(*env.current(), Book(aud.issue(), xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);

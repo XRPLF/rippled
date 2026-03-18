@@ -2311,7 +2311,7 @@ public:
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2323,7 +2323,7 @@ public:
             auto const jtx = env.jt(trust("carol", usd(50000000)), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2333,7 +2333,7 @@ public:
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2758,14 +2758,18 @@ public:
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
+            {
                 envs(
                     noop(alice),
                     fee(baseFee * 100),
                     seq(none),
                     json(jss::LastLedgerSequence, lastLedgerSeq),
                     ter(terQUEUED))(submitParams);
+            }
             else
+            {
                 envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
+            }
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
@@ -3873,7 +3877,7 @@ public:
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -3941,7 +3945,7 @@ public:
         env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), ticket::use(tktSeq0 + 1), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there

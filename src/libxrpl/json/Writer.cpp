@@ -26,6 +26,7 @@ std::map<char, char const*> gJsonSpecialCharacterEscape = {
     {'\t', "\\t"}};
 
 static size_t const kJSON_ESCAPE_LENGTH = 2;
+size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 char const kCLOSE_BRACE = '}';
@@ -36,7 +37,7 @@ char const kOPEN_BRACE = '{';
 char const kOPEN_BRACKET = '[';
 char const kQUOTE = '"';
 
-static auto const kINTEGRAL_FLOATS_BECOME_INTS = false;
+auto const kINTEGRAL_FLOATS_BECOME_INTS = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -137,9 +138,13 @@ public:
             check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
+        {
             stack_.top().isFirst = false;
+        }
         else
+        {
             output_({&kCOMMA, 1});
+        }
     }
 
     void

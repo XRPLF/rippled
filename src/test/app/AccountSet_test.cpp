@@ -307,9 +307,13 @@ public:
 
                     // If the field is not present expect the default value
                     if (!(*env.le(alice))[~sfTransferRate])
+                    {
                         BEAST_EXPECT(r.get == 1.0);
+                    }
                     else
+                    {
                         BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] == r.get * QUALITY_ONE);
+                    }
                 }
             };
 

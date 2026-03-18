@@ -300,8 +300,10 @@ verifyHandshake(
             throw std::runtime_error("Invalid Local-IP");
 
         if (beast::IP::is_public(remote) && remote != localIp)
+        {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
+        }
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
@@ -317,9 +319,11 @@ verifyHandshake(
             // We know our public IP and peer reports our connection came
             // from some other IP.
             if (remoteIp != publicIp)
+            {
                 throw std::runtime_error(
                     "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
                     remoteIp.to_string());
+            }
         }
     }
 

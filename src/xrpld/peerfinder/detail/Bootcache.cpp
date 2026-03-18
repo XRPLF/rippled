@@ -4,6 +4,8 @@
 
 #include <xrpl/basics/Log.h>
 
+#include <algorithm>
+
 namespace xrpl {
 namespace PeerFinder {
 
@@ -131,8 +133,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
     else
     {
         Entry entry(result.first->right);
-        if (entry.valence() < 0)
-            entry.valence() = 0;
+        entry.valence() = std::max(entry.valence(), 0);
         ++entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
@@ -155,8 +156,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
     else
     {
         Entry entry(result.first->right);
-        if (entry.valence() > 0)
-            entry.valence() = 0;
+        entry.valence() = std::min(entry.valence(), 0);
         --entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));

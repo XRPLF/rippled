@@ -251,9 +251,13 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
             supported_.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
+            {
                 ++upVotes_;
+            }
             else
+            {
                 ++downVotes_;
+            }
         }
         check(upVotes_ + downVotes_ == supported_.size(), "Feature counting logic broke");
         check(
@@ -261,9 +265,9 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         check(features_.size() == all_.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
-    else
-        // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
+
+    // Each feature should only be registered once
+    LogicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -304,7 +308,7 @@ FeatureCollections::featureToName(uint256 const& f) const
     return feature ? feature->name : to_string(f);
 }
 
-static FeatureCollections gFeatureCollections;
+FeatureCollections gFeatureCollections;
 
 }  // namespace
 

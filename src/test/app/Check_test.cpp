@@ -272,7 +272,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(from, to, usd(50)), ter(expected));
             env.close();
 
-            if (expected == tesSUCCESS)
+            if (isTesSuccess(expected))
             {
                 BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount + 2);
                 BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);
@@ -528,8 +528,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, startBalance - XRP(10) - drops(baseFeeDrops)));
             env.require(balance(bob, startBalance + XRP(10) - drops(baseFeeDrops)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -562,8 +562,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, drops(checkAmount.mantissa()));
             env.require(balance(alice, reserve));
             env.require(balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 3)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -592,8 +592,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, drops(checkAmount.mantissa() - 1));
             env.require(balance(alice, reserve));
             env.require(balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 2 + 1)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -663,8 +663,9 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, usd(0)));
             env.require(balance(bob, usd(10)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
@@ -688,8 +689,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, usd(2)));
             env.require(balance(bob, usd(8)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
@@ -755,8 +756,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, usd(0)));
             env.require(balance(bob, usd(10)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -838,8 +839,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, usd(2));
             env.require(balance(alice, usd(0)));
             env.require(balance(bob, usd(8)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -890,8 +891,8 @@ class Check_test : public beast::unit_test::suite
             env.require(balance(alice, usd(8) - bobGot));
             env.require(balance(bob, bobGot));
 
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -945,8 +946,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, usd(5)));
             env.require(balance(bob, usd(3)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 2);
         }
@@ -1018,8 +1019,8 @@ class Check_test : public beast::unit_test::suite
         env.close();
         env.require(balance(alice, usd(1000 - 125 - 60)));
         env.require(balance(bob, usd(0 + 100 + 50)));
-        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-        BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+        BEAST_EXPECT(checksOnAccount(env, alice).empty());
+        BEAST_EXPECT(checksOnAccount(env, bob).empty());
     }
 
     void
@@ -1655,7 +1656,7 @@ class Check_test : public beast::unit_test::suite
 
             env(check::cancel(bob, chkIdNotExp3));
             env.close();
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
@@ -1815,7 +1816,7 @@ class Check_test : public beast::unit_test::suite
 
         env.require(owners(alice, 6));
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
-        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
+        BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(balance(alice, usd(700)));
 
@@ -1852,7 +1853,7 @@ class Check_test : public beast::unit_test::suite
             }
 
             // Operators to make using the class more convenient.
-            operator Account const() const
+            operator Account() const
             {
                 return acct;
             }

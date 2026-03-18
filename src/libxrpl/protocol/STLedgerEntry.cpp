@@ -33,9 +33,11 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
     if (format == nullptr)
+    {
         Throw<std::runtime_error>(
             "Attempt to create a SLE of unknown type " +
             std::to_string(safe_cast<std::uint16_t>(k.type)));
+    }
 
     set(format->getSOTemplate());
 
@@ -118,8 +120,10 @@ STLedgerEntry::getJson(JsonOptions options) const
     ret[jss::index] = to_string(key_);
 
     if (getType() == ltMPTOKEN_ISSUANCE)
+    {
         ret[jss::mpt_issuance_id] =
             to_string(makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
+    }
 
     return ret;
 }

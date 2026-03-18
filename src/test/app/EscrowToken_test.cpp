@@ -1258,9 +1258,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             if (t.hasTrustline)
+            {
                 env.trust(usd(100'000), t.src, t.dst);
+            }
             else
+            {
                 env.trust(usd(100'000), t.src);
+            }
             env.close();
 
             env(pay(t.gw, t.src, usd(10'000)));
