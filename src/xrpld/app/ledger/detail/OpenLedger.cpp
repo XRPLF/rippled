@@ -1,36 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 OpenLedger::OpenLedger(
     std::shared_ptr<Ledger const> const& ledger,
@@ -101,11 +82,8 @@ OpenLedger::accept(
             *ledger,
             boost::adaptors::transform(
                 current_->txs,
-                [](std::pair<
-                    std::shared_ptr<STTx const>,
-                    std::shared_ptr<STObject const>> const& p) {
-                    return p.first;
-                }),
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const&
+                       p) { return p.first; }),
             retries,
             flags,
             j_);
@@ -124,8 +102,11 @@ OpenLedger::accept(
         auto const txId = tx->getTransactionID();
 
         // skip batch txns
+        // The flag should only be settable if Batch feature is enabled. If
+        // Batch is not enabled, the flag is always invalid, so don't relay it
+        // regardless.
         // LCOV_EXCL_START
-        if (tx->isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+        if (tx->isFlag(tfInnerBatchTxn))
         {
             XRPL_ASSERT(
                 txpair.second && txpair.second->isFieldPresent(sfParentBatchID),
@@ -143,8 +124,7 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(
-                app.timeKeeper().now().time_since_epoch().count());
+            msg.set_receivetimestamp(app.timeKeeper().now().time_since_epoch().count());
             app.overlay().relay(txId, msg, *toSkip);
         }
     }
@@ -157,14 +137,10 @@ OpenLedger::accept(
 //------------------------------------------------------------------------------
 
 std::shared_ptr<OpenView>
-OpenLedger::create(
-    Rules const& rules,
-    std::shared_ptr<Ledger const> const& ledger)
+OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
-        open_ledger,
-        rules,
-        std::make_shared<CachedLedger const>(ledger, cache_));
+        open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto
@@ -179,11 +155,10 @@ OpenLedger::apply_one(
     if (retry)
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
-    auto const result = ripple::apply(app, view, *tx, flags, j);
+    auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)
         return Result::success;
-    if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
-        isTelLocal(result.ter))
+    if (isTefFailure(result.ter) || isTemMalformed(result.ter) || isTelLocal(result.ter))
         return Result::failure;
     return Result::retry;
 }
@@ -236,4 +211,4 @@ debugTostr(std::shared_ptr<ReadView const> const& view)
     return ss.str();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

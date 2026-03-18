@@ -1,28 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_JSONFIELDS_H_INCLUDED
-#define RIPPLE_PROTOCOL_JSONFIELDS_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 namespace jss {
 
 // JSON static strings
@@ -45,6 +25,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(AcceptedCredentials);  // out: AccountObjects
+JSS(ACCOUNT_SET_FLAGS);    // out: RPC server_definitions
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
@@ -59,6 +40,8 @@ JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
+JSS(Counterparty);         // field.
+JSS(CounterpartySignature);// field.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
@@ -129,6 +112,7 @@ JSS(accounts);                // in: LedgerEntry, Subscribe,
                               //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);       // in: Subscribe, Unsubscribe
 JSS(action);
+JSS(active);                  // out: OverlayImpl
 JSS(acquiring);               // out: LedgerRequest
 JSS(address);                 // out: PeerImp
 JSS(affected);                // out: AcceptedLedgerTx
@@ -205,6 +189,7 @@ JSS(closed_ledger);           // out: NetworkOPs
 JSS(cluster);                 // out: PeerImp
 JSS(code);                    // out: errors
 JSS(command);                 // in: RPCHandler
+JSS(common);                  // out: RPC server_definitions
 JSS(complete);                // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);        // out: NetworkOPs, PeerImp
 JSS(consensus);               // out: NetworkOPs, LedgerConsensus
@@ -316,6 +301,7 @@ JSS(id);                      // websocket.
 JSS(ident);                   // in: AccountCurrencies, AccountInfo,
                               //     OwnerInfo
 JSS(ignore_default);          // in: AccountLines
+JSS(in);                      // out: OverlayImpl
 JSS(inLedger);                // out: tx/Transaction
 JSS(inbound);                 // out: PeerImp
 JSS(index);                   // in: LedgerEntry
@@ -374,6 +360,8 @@ JSS(ledger_min);              // in, out: AccountTx*
 JSS(ledger_time);             // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);      // out: RPC server_definitions
                               // matches definitions.json format
+JSS(LEDGER_ENTRY_FLAGS);      // out: RPC server_definitions
+JSS(LEDGER_ENTRY_FORMATS);    // out: RPC server_definitions
 JSS(levels);                  // LogLevels
 JSS(limit);                   // in/out: AccountTx*, AccountOffers,
                               //         AccountLines, AccountObjects
@@ -392,6 +380,8 @@ JSS(load_factor_local);       // out: NetworkOPs
 JSS(load_factor_net);         // out: NetworkOPs
 JSS(load_factor_server);      // out: NetworkOPs
 JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
+JSS(loan_broker_id);          // in: LedgerEntry
+JSS(loan_seq);                // in: LedgerEntry
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
@@ -473,8 +463,10 @@ JSS(open);                    // out: handlers/Ledger
 JSS(open_ledger_cost);        // out: SubmitTransaction
 JSS(open_ledger_fee);         // out: TxQ
 JSS(open_ledger_level);       // out: TxQ
+JSS(optionality);             // out: server_definitions
 JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
+JSS(out);                     // out: OverlayImpl
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);             // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS(page_index);
@@ -504,6 +496,7 @@ JSS(propose_seq);             // out: LedgerPropose
 JSS(proposers);               // out: NetworkOPs, LedgerConsensus
 JSS(protocol);                // out: NetworkOPs, PeerImp
 JSS(proxied);                 // out: RPC ping
+JSS(pseudo_account);          // out: AccountInfo
 JSS(pubkey_node);             // out: NetworkOPs
 JSS(pubkey_publisher);        // out: ValidatorList
 JSS(pubkey_validator);        // out: NetworkOPs, ValidatorList
@@ -569,6 +562,7 @@ JSS(settle_delay);            // out: AccountChannels
 JSS(severity);                // in: LogLevel
 JSS(shares);                  // out: VaultInfo
 JSS(signature);               // out: NetworkOPs, ChannelAuthorize
+JSS(signature_target);        // in: TransactionSign
 JSS(signature_verified);      // out: ChannelVerify
 JSS(signing_key);             // out: NetworkOPs
 JSS(signing_keys);            // out: ValidatorList
@@ -630,6 +624,8 @@ JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
                               // matches definitions.json format
+JSS(TRANSACTION_FLAGS);       // out: RPC server_definitions
+JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
 JSS(TYPES);                   // out: RPC server_definitions
                               // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)
@@ -738,6 +734,4 @@ JSS(write_load);              // out: GetCounts
 #undef JSS
 
 }  // namespace jss
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

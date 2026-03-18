@@ -1,23 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -26,8 +6,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doUnsubscribe(RPC::JsonContext& context)
@@ -154,9 +135,8 @@ doUnsubscribe(RPC::JsonContext& context)
         }
         context.netOps.unsubAccountHistory(ispSub, *id, stopHistoryOnly);
 
-        JLOG(context.j.debug())
-            << "doUnsubscribe: account_history_tx_stream: " << toBase58(*id)
-            << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
+        JLOG(context.j.debug()) << "doUnsubscribe: account_history_tx_stream: " << toBase58(*id)
+                                << " stopHistoryOnly=" << (stopHistoryOnly ? "true" : "false");
     }
 
     if (context.params.isMember(jss::books))
@@ -166,10 +146,8 @@ doUnsubscribe(RPC::JsonContext& context)
 
         for (auto& jv : context.params[jss::books])
         {
-            if (!jv.isObject() || !jv.isMember(jss::taker_pays) ||
-                !jv.isMember(jss::taker_gets) ||
-                !jv[jss::taker_pays].isObjectOrNull() ||
-                !jv[jss::taker_gets].isObjectOrNull())
+            if (!jv.isObject() || !jv.isMember(jss::taker_pays) || !jv.isMember(jss::taker_gets) ||
+                !jv[jss::taker_pays].isObjectOrNull() || !jv[jss::taker_gets].isObjectOrNull())
             {
                 return rpcError(rpcINVALID_PARAMS);
             }
@@ -181,18 +159,15 @@ doUnsubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                !to_currency(book.in.currency, taker_pays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (
-                ((taker_pays.isMember(jss::issuer)) &&
+            if (((taker_pays.isMember(jss::issuer)) &&
                  (!taker_pays[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.in.account, taker_pays[jss::issuer].asString())))
+                  !to_issuer(book.in.account, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.in) || noAccount() == book.in.account)
             {
@@ -203,19 +178,16 @@ doUnsubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                !to_currency(book.out.currency, taker_gets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
 
                 return rpcError(rpcDST_AMT_MALFORMED);
             }
             // Parse optional issuer.
-            else if (
-                ((taker_gets.isMember(jss::issuer)) &&
+            if (((taker_gets.isMember(jss::issuer)) &&
                  (!taker_gets[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.out.account, taker_gets[jss::issuer].asString())))
+                  !to_issuer(book.out.account, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
                 || !isConsistent(book.out) || noAccount() == book.out.account)
             {
@@ -233,15 +205,12 @@ doUnsubscribe(RPC::JsonContext& context)
             if (jv.isMember(jss::domain))
             {
                 uint256 domain;
-                if (!jv[jss::domain].isString() ||
-                    !domain.parseHex(jv[jss::domain].asString()))
+                if (!jv[jss::domain].isString() || !domain.parseHex(jv[jss::domain].asString()))
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             context.netOps.unsubBook(ispSub->getSeq(), book);
@@ -263,4 +232,4 @@ doUnsubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

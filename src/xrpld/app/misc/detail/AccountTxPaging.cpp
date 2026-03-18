@@ -1,30 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 convertBlobsToTxResult(
@@ -45,13 +27,17 @@ convertBlobsToTxResult(
 
     // if properly formed meta is available we can use it to generate ctid
     if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
+    {
         tr->setStatus(
             Transaction::sqlTransactionStatus(status),
             ledger_index,
             metaset->getAsObject().getFieldU32(sfTransactionIndex),
-            app.config().NETWORK_ID);
+            app.getNetworkIDService().getNetworkID());
+    }
     else
+    {
         tr->setStatus(Transaction::sqlTransactionStatus(status), ledger_index);
+    }
 
     to.emplace_back(std::move(tr), metaset);
 };
@@ -63,4 +49,4 @@ saveLedgerAsync(Application& app, std::uint32_t seq)
         pendSaveValidated(app, l, false, false);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

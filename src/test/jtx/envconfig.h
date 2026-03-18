@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
-#define RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
-// frequently used macros defined here for convinience.
+// frequently used macros defined here for convenience.
 #define PORT_WS "port_ws"
 #define PORT_RPC "port_rpc"
 #define PORT_PEER "port_peer"
@@ -63,7 +43,7 @@ envconfig()
 ///
 /// @param modfunc callable function or lambda to modify the default config.
 /// The first argument to the function must be std::unique_ptr to
-/// ripple::Config. The function takes ownership of the unique_ptr and
+/// xrpl::Config. The function takes ownership of the unique_ptr and
 /// relinquishes ownership by returning a unique_ptr.
 ///
 /// @param args additional arguments that will be passed to
@@ -92,6 +72,8 @@ std::unique_ptr<Config> secure_gateway(std::unique_ptr<Config>);
 std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
 
 std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
+
+std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
 
 /// @brief adjust configuration with params needed to be a validator
 ///
@@ -123,9 +105,7 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 ///
 /// @param cfg config instance to be modified
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config>,
-    std::string const& secureGateway);
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
 std::unique_ptr<Config>
 makeConfig(
@@ -134,6 +114,4 @@ makeConfig(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

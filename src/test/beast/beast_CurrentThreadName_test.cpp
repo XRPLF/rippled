@@ -1,38 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
 
+#include <boost/predef/os.h>
+
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class CurrentThreadName_test : public beast::unit_test::suite
 {
 private:
     static void
-    exerciseName(
-        std::string myName,
-        std::atomic<bool>* stop,
-        std::atomic<int>* state)
+    exerciseName(std::string myName, std::atomic<bool>* stop, std::atomic<int>* state)
     {
         // Verify that upon creation a thread has no name.
         auto const initialThreadName = beast::getCurrentThreadName();
@@ -56,37 +36,69 @@ private:
         if (beast::getCurrentThreadName() == myName)
             *state = 2;
     }
+#if BOOST_OS_LINUX
+    // Helper function to test a specific name.
+    // It creates a thread, sets the name, and checks if the OS-level
+    // name matches the expected (potentially truncated) name.
+    void
+    testName(std::string const& nameToSet, std::string const& expectedName)
+    {
+        std::thread t([&] {
+            beast::setCurrentThreadName(nameToSet);
+
+            // Initialize buffer to be safe.
+            char actualName[beast::maxThreadNameLength + 1] = {};
+            pthread_getname_np(pthread_self(), actualName, sizeof(actualName));
+
+            BEAST_EXPECT(std::string(actualName) == expectedName);
+        });
+        t.join();
+    }
+#endif
 
 public:
     void
     run() override
     {
-        // Make two different threads with two different names.  Make sure
-        // that the expected thread names are still there when the thread
-        // exits.
-        std::atomic<bool> stop{false};
+        // Make two different threads with two different names.
+        // Make sure that the expected thread names are still there
+        // when the thread exits.
+        {
+            std::atomic<bool> stop{false};
 
-        std::atomic<int> stateA{0};
-        std::thread tA(exerciseName, "tA", &stop, &stateA);
+            std::atomic<int> stateA{0};
+            std::thread tA(exerciseName, "tA", &stop, &stateA);
 
-        std::atomic<int> stateB{0};
-        std::thread tB(exerciseName, "tB", &stop, &stateB);
+            std::atomic<int> stateB{0};
+            std::thread tB(exerciseName, "tB", &stop, &stateB);
 
-        // Wait until both threads have set their names.
-        while (stateA == 0 || stateB == 0)
-            ;
+            // Wait until both threads have set their names.
+            while (stateA == 0 || stateB == 0)
+                ;
 
-        stop = true;
-        tA.join();
-        tB.join();
+            stop = true;
+            tA.join();
+            tB.join();
 
-        // Both threads should still have the expected name when they exit.
-        BEAST_EXPECT(stateA == 2);
-        BEAST_EXPECT(stateB == 2);
+            // Both threads should still have the expected name when they exit.
+            BEAST_EXPECT(stateA == 2);
+            BEAST_EXPECT(stateB == 2);
+        }
+#if BOOST_OS_LINUX
+        // On Linux, verify that thread names within the 15 character limit
+        // are set correctly (the 16th character is reserved for the null
+        // terminator).
+        {
+            testName("123456789012345",
+                     "123456789012345");  // 15 chars, maximum allowed
+            testName("", "");             // empty name
+            testName("short", "short");   // short name
+        }
+#endif
     }
 };
 
 BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

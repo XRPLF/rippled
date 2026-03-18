@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/IOUAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class IOUAmount_test : public beast::unit_test::suite
 {
@@ -160,15 +141,27 @@ public:
     {
         testcase("IOU strings");
 
-        BEAST_EXPECT(to_string(IOUAmount(-2, 0)) == "-2");
-        BEAST_EXPECT(to_string(IOUAmount(0, 0)) == "0");
-        BEAST_EXPECT(to_string(IOUAmount(2, 0)) == "2");
-        BEAST_EXPECT(to_string(IOUAmount(25, -3)) == "0.025");
-        BEAST_EXPECT(to_string(IOUAmount(-25, -3)) == "-0.025");
-        BEAST_EXPECT(to_string(IOUAmount(25, 1)) == "250");
-        BEAST_EXPECT(to_string(IOUAmount(-25, 1)) == "-250");
-        BEAST_EXPECT(to_string(IOUAmount(2, 20)) == "2000000000000000e5");
-        BEAST_EXPECT(to_string(IOUAmount(-2, -20)) == "-2000000000000000e-35");
+        auto test = [this](IOUAmount const& n, std::string const& expected) {
+            auto const result = to_string(n);
+            std::stringstream ss;
+            ss << "to_string(" << result << "). Expected: " << expected;
+            BEAST_EXPECTS(result == expected, ss.str());
+        };
+
+        for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+        {
+            NumberMantissaScaleGuard mg(mantissaSize);
+
+            test(IOUAmount(-2, 0), "-2");
+            test(IOUAmount(0, 0), "0");
+            test(IOUAmount(2, 0), "2");
+            test(IOUAmount(25, -3), "0.025");
+            test(IOUAmount(-25, -3), "-0.025");
+            test(IOUAmount(25, 1), "250");
+            test(IOUAmount(-25, 1), "-250");
+            test(IOUAmount(2, 20), "2e20");
+            test(IOUAmount(-2, -20), "-2e-20");
+        }
     }
 
     void
@@ -209,19 +202,16 @@ public:
             BEAST_EXPECT(tiny == mulRatio(tiny, maxUInt - 1, maxUInt, true));
             // rounding down should be zero
             BEAST_EXPECT(beast::zero == mulRatio(tiny, 1, maxUInt, false));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
 
             // tiny negative numbers
             IOUAmount tinyNeg(-minMantissa, minExponent);
             // Round up should give zero
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, maxUInt, true));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, maxUInt, false));
-            BEAST_EXPECT(
-                tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
         }
 
         {  // rounding
@@ -241,8 +231,7 @@ public:
             {
                 IOUAmount negOne(-1, 0);
                 auto const rup = mulRatio(negOne, maxUInt - 1, maxUInt, true);
-                auto const rdown =
-                    mulRatio(negOne, maxUInt - 1, maxUInt, false);
+                auto const rdown = mulRatio(negOne, maxUInt - 1, maxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
         }
@@ -258,7 +247,7 @@ public:
             IOUAmount big(maxMantissa, maxExponent);
             except([&] { mulRatio(big, 2, 0, true); });
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     //--------------------------------------------------------------------------
 
@@ -274,6 +263,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IOUAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(IOUAmount, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

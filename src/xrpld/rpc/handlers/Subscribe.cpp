@@ -1,25 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCSub.h>
 #include <xrpld/rpc/Role.h>
@@ -31,8 +11,9 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doSubscribe(RPC::JsonContext& context)
@@ -82,8 +63,8 @@ doSubscribe(RPC::JsonContext& context)
                     strUsername,
                     strPassword,
                     context.app.logs());
-                ispSub = context.netOps.addRpcSub(
-                    strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
+                ispSub =
+                    context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
             }
             catch (std::runtime_error& ex)
             {
@@ -129,8 +110,7 @@ doSubscribe(RPC::JsonContext& context)
             std::string streamName = it.asString();
             if (streamName == "server")
             {
-                context.netOps.subServer(
-                    ispSub, jvResult, context.role == Role::ADMIN);
+                context.netOps.subServer(ispSub, jvResult, context.role == Role::ADMIN);
             }
             else if (streamName == "ledger")
             {
@@ -215,8 +195,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!id)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (auto result = context.netOps.subAccountHistory(ispSub, *id);
-            result != rpcSUCCESS)
+        if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != rpcSUCCESS)
         {
             return rpcError(result);
         }
@@ -224,8 +203,7 @@ doSubscribe(RPC::JsonContext& context)
         jvResult[jss::warning] =
             "account_history_tx_stream is an experimental feature and likely "
             "to be removed in the future";
-        JLOG(context.j.debug())
-            << "doSubscribe: account_history_tx_stream: " << toBase58(*id);
+        JLOG(context.j.debug()) << "doSubscribe: account_history_tx_stream: " << toBase58(*id);
     }
 
     if (context.params.isMember(jss::books))
@@ -235,10 +213,8 @@ doSubscribe(RPC::JsonContext& context)
 
         for (auto& j : context.params[jss::books])
         {
-            if (!j.isObject() || !j.isMember(jss::taker_pays) ||
-                !j.isMember(jss::taker_gets) ||
-                !j[jss::taker_pays].isObjectOrNull() ||
-                !j[jss::taker_gets].isObjectOrNull())
+            if (!j.isObject() || !j.isMember(jss::taker_pays) || !j.isMember(jss::taker_gets) ||
+                !j[jss::taker_pays].isObjectOrNull() || !j[jss::taker_gets].isObjectOrNull())
                 return rpcError(rpcINVALID_PARAMS);
 
             Book book;
@@ -247,8 +223,7 @@ doSubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                !to_currency(book.in.currency, taker_pays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
@@ -257,11 +232,9 @@ doSubscribe(RPC::JsonContext& context)
             // Parse optional issuer.
             if (((taker_pays.isMember(jss::issuer)) &&
                  (!taker_pays[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.in.account, taker_pays[jss::issuer].asString())))
+                  !to_issuer(book.in.account, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!book.in.currency != !book.in.account) ||
-                noAccount() == book.in.account)
+                || (!book.in.currency != !book.in.account) || noAccount() == book.in.account)
             {
                 JLOG(context.j.info()) << "Bad taker_pays issuer.";
                 return rpcError(rpcSRC_ISR_MALFORMED);
@@ -269,8 +242,7 @@ doSubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                !to_currency(book.out.currency, taker_gets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
                 return rpcError(rpcDST_AMT_MALFORMED);
@@ -279,18 +251,15 @@ doSubscribe(RPC::JsonContext& context)
             // Parse optional issuer.
             if (((taker_gets.isMember(jss::issuer)) &&
                  (!taker_gets[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.out.account, taker_gets[jss::issuer].asString())))
+                  !to_issuer(book.out.account, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!book.out.currency != !book.out.account) ||
-                noAccount() == book.out.account)
+                || (!book.out.currency != !book.out.account) || noAccount() == book.out.account)
             {
                 JLOG(context.j.info()) << "Bad taker_gets issuer.";
                 return rpcError(rpcDST_ISR_MALFORMED);
             }
 
-            if (book.in.currency == book.out.currency &&
-                book.in.account == book.out.account)
+            if (book.in.currency == book.out.currency && book.in.account == book.out.account)
             {
                 JLOG(context.j.info()) << "taker_gets same as taker_pays.";
                 return rpcError(rpcBAD_MARKET);
@@ -308,15 +277,12 @@ doSubscribe(RPC::JsonContext& context)
             if (j.isMember(jss::domain))
             {
                 uint256 domain;
-                if (!j[jss::domain].isString() ||
-                    !domain.parseHex(j[jss::domain].asString()))
+                if (!j[jss::domain].isString() || !domain.parseHex(j[jss::domain].asString()))
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             if (!isConsistent(book))
@@ -328,8 +294,7 @@ doSubscribe(RPC::JsonContext& context)
             context.netOps.subBook(ispSub, book);
 
             // both_sides is deprecated.
-            bool const both =
-                (j.isMember(jss::both) && j[jss::both].asBool()) ||
+            bool const both = (j.isMember(jss::both) && j[jss::both].asBool()) ||
                 (j.isMember(jss::both_sides) && j[jss::both_sides].asBool());
 
             if (both)
@@ -353,7 +318,7 @@ doSubscribe(RPC::JsonContext& context)
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::bookOffers.rdefault,
+                            RPC::Tuning::bookOffers.rDefault,
                             jvMarker,
                             jvOffers);
 
@@ -386,4 +351,4 @@ doSubscribe(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

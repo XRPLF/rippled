@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
 #include <xrpl/beast/core/LexicalCast.h>
@@ -28,7 +9,7 @@
 #include <algorithm>
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 /** The list of protocol versions we speak and we prefer to use.
 
@@ -49,8 +30,8 @@ constexpr ProtocolVersion const supportedProtocolList[]
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
     []() constexpr -> bool {
-        auto const len = std::distance(
-            std::begin(supportedProtocolList), std::end(supportedProtocolList));
+        auto const len =
+            std::distance(std::begin(supportedProtocolList), std::end(supportedProtocolList));
 
         // There should be at least one protocol we're willing to speak.
         if (len == 0)
@@ -100,8 +81,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
         if (boost::regex_match(s, m, re))
         {
-            std::uint16_t major;
-            std::uint16_t minor;
+            std::uint16_t major = 0;
+            std::uint16_t minor = 0;
             if (!beast::lexicalCastChecked(major, std::string(m[1])))
                 continue;
 
@@ -134,8 +115,9 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion =
-        [&result](ProtocolVersion const& v) { result = v; };
+    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) {
+        result = v;
+    };
 
     std::set_intersection(
         std::begin(versions),
@@ -177,10 +159,7 @@ bool
 isProtocolSupported(ProtocolVersion const& v)
 {
     return std::end(supportedProtocolList) !=
-        std::find(
-               std::begin(supportedProtocolList),
-               std::end(supportedProtocolList),
-               v);
+        std::find(std::begin(supportedProtocolList), std::end(supportedProtocolList), v);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

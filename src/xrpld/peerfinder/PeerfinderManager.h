@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
-#define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -30,7 +10,7 @@
 
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
@@ -94,7 +74,7 @@ struct Config
 
     /** Write the configuration into a property stream */
     void
-    onWrite(beast::PropertyStream::Map& map);
+    onWrite(beast::PropertyStream::Map& map) const;
 
     /** Make PeerFinder::Config from configuration parameters
      * @param config server's configuration
@@ -105,7 +85,7 @@ struct Config
      */
     static Config
     makeConfig(
-        ripple::Config const& config,
+        xrpl::Config const& config,
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
@@ -116,7 +96,7 @@ struct Config
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectible peer address along with some metadata. */
+/** Describes a connectable peer address along with some metadata. */
 struct Endpoint
 {
     Endpoint() = default;
@@ -139,13 +119,7 @@ using Endpoints = std::vector<Endpoint>;
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result {
-    inboundDisabled,
-    duplicatePeer,
-    ipLimitExceeded,
-    full,
-    success
-};
+enum class Result { inboundDisabled, duplicatePeer, ipLimitExceeded, full, success };
 
 /**
  * @brief Converts a `Result` enum value to its string representation.
@@ -221,17 +195,13 @@ public:
         file, along with the set of corresponding IP addresses.
     */
     virtual void
-    addFixedPeer(
-        std::string const& name,
-        std::vector<beast::IP::Endpoint> const& addresses) = 0;
+    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) = 0;
 
     /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
     virtual void
-    addFallbackStrings(
-        std::string const& name,
-        std::vector<std::string> const& strings) = 0;
+    addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) = 0;
 
     /** Add a URL as a fallback location to obtain IP::Endpoint sources.
         @param name A label used for diagnostics.
@@ -261,9 +231,7 @@ public:
 
     /** Called when mtENDPOINTS is received. */
     virtual void
-    on_endpoints(
-        std::shared_ptr<Slot> const& slot,
-        Endpoints const& endpoints) = 0;
+    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) = 0;
 
     /** Called when the slot is closed.
         This always happens when the socket is closed, unless the socket
@@ -292,16 +260,11 @@ public:
         @return `true` if the connection should be kept
     */
     virtual bool
-    onConnected(
-        std::shared_ptr<Slot> const& slot,
-        beast::IP::Endpoint const& local_endpoint) = 0;
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Request an active slot type. */
     virtual Result
-    activate(
-        std::shared_ptr<Slot> const& slot,
-        PublicKey const& key,
-        bool reserved) = 0;
+    activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) = 0;
 
     /** Returns a set of endpoints suitable for redirection. */
     virtual std::vector<Endpoint>
@@ -322,6 +285,4 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

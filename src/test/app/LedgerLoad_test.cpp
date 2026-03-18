@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
@@ -32,7 +13,7 @@
 
 #include <fstream>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerLoad_test : public beast::unit_test::suite
 {
@@ -40,7 +21,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         std::unique_ptr<Config> cfg,
         std::string const& dbPath,
         std::string const& ledger,
-        Config::StartUpType type,
+        StartUpType type,
         std::optional<uint256> trapTxHash)
     {
         cfg->START_LEDGER = ledger;
@@ -55,17 +36,19 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile{};
-        Json::Value ledger{};
-        Json::Value hashes{};
-        uint256 trapTxHash{};
+        // NOLINTBEGIN(readability-redundant-member-init)
+        std::string ledgerFile = {};
+        Json::Value ledger = {};
+        Json::Value hashes = {};
+        uint256 trapTxHash = {};
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     SetupData
     setupLedger(beast::temp_dir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {td.path()};
+        SetupData retval = {.dbPath = td.path()};
 
         retval.ledgerFile = td.file("ledgerdata.json");
 
@@ -77,10 +60,11 @@ class LedgerLoad_test : public beast::unit_test::suite
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0 && BEAST_EXPECT(prev))
+            if (i > 0 && BEAST_EXPECT(prev.has_value()))
             {
-                env.trust(acct["USD"](1000), *prev);
-                env(pay(acct, *prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);  // NOLINT(bugprone-unchecked-optional-access)
+                env(pay(
+                    acct, *prev, acct["USD"](5)));  // NOLINT(bugprone-unchecked-optional-access)
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
@@ -88,8 +72,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         }
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(
-            retval.ledger[jss::ledger][jss::accountState].size() == 102);
+        BEAST_EXPECT(retval.ledger[jss::ledger][jss::accountState].size() == 102);
 
         retval.hashes = [&] {
             for (auto const& it : retval.ledger[jss::ledger][jss::accountState])
@@ -103,9 +86,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         BEAST_EXPECT(retval.hashes.size() == 41);
         retval.trapTxHash = [&]() {
             auto const txs = env.rpc(
-                "ledger",
-                std::to_string(41),
-                "tx")[jss::result][jss::ledger][jss::transactions];
+                "ledger", std::to_string(41), "tx")[jss::result][jss::ledger][jss::transactions];
             BEAST_EXPECT(txs.isArray() && txs.size() > 0);
             uint256 tmp;
             BEAST_EXPECT(tmp.parseHex(txs[0u][jss::hash].asString()));
@@ -128,12 +109,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger file specified for startup
         Env env(
             *this,
-            envconfig(
-                ledgerConfig,
-                sd.dbPath,
-                sd.ledgerFile,
-                Config::LOAD_FILE,
-                std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LOAD_FILE, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -153,12 +129,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(
-                    ledgerConfig,
-                    sd.dbPath,
-                    "",
-                    Config::LOAD_FILE,
-                    std::nullopt),
+                envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LOAD_FILE, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -168,24 +139,15 @@ class LedgerLoad_test : public beast::unit_test::suite
             Env env(
                 *this,
                 envconfig(
-                    ledgerConfig,
-                    sd.dbPath,
-                    "badfile.json",
-                    Config::LOAD_FILE,
-                    std::nullopt),
+                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
 
         // make a corrupted version of the ledger file (last 10 bytes removed).
         boost::system::error_code ec;
-        auto ledgerFileCorrupt =
-            boost::filesystem::path{sd.dbPath} / "ledgerdata_bad.json";
-        copy_file(
-            sd.ledgerFile,
-            ledgerFileCorrupt,
-            copy_options::overwrite_existing,
-            ec);
+        auto ledgerFileCorrupt = boost::filesystem::path{sd.dbPath} / "ledgerdata_bad.json";
+        copy_file(sd.ledgerFile, ledgerFileCorrupt, copy_options::overwrite_existing, ec);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         auto filesize = file_size(ledgerFileCorrupt, ec);
@@ -202,7 +164,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    Config::LOAD_FILE,
+                    StartUpType::LOAD_FILE,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
@@ -220,12 +182,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(
-                ledgerConfig,
-                sd.dbPath,
-                ledgerHash,
-                Config::LOAD,
-                std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -246,12 +203,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(
-                ledgerConfig,
-                sd.dbPath,
-                ledgerHash,
-                Config::REPLAY,
-                std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -277,12 +229,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(
-                ledgerConfig,
-                sd.dbPath,
-                ledgerHash,
-                Config::REPLAY,
-                sd.trapTxHash),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, sd.trapTxHash),
             nullptr,
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -312,12 +259,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             // replay when trapTxHash is set to an invalid transaction
             Env env(
                 *this,
-                envconfig(
-                    ledgerConfig,
-                    sd.dbPath,
-                    ledgerHash,
-                    Config::REPLAY,
-                    ~sd.trapTxHash),
+                envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, ~sd.trapTxHash),
                 nullptr,
                 beast::severities::kDisabled);
             BEAST_EXPECT(false);
@@ -341,8 +283,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger "latest" specified for startup
         Env env(
             *this,
-            envconfig(
-                ledgerConfig, sd.dbPath, "latest", Config::LOAD, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, "latest", StartUpType::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -360,8 +301,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with specific ledger index at startup
         Env env(
             *this,
-            envconfig(
-                ledgerConfig, sd.dbPath, "43", Config::LOAD, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, "43", StartUpType::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -389,6 +329,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerLoad, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerLoad, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

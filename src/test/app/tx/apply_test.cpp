@@ -1,30 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Dev Null Productions
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+// Copyright (c) 2020 Dev Null Productions
 
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Apply_test : public beast::unit_test::suite
 {
@@ -32,7 +14,7 @@ public:
     void
     run() override
     {
-        testcase("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonical Signature");
         testFullyCanonicalSigs();
     }
 
@@ -49,44 +31,24 @@ public:
             "8B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
 
         auto ret = strUnHex(non_fully_canonical_tx);
-        SerialIter sitTrans(makeSlice(*ret));
+        SerialIter sitTrans(makeSlice(*ret));  // NOLINT(bugprone-unchecked-optional-access)
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env no_fully_canonical(
-                *this,
-                test::jtx::testable_amendments() -
-                    featureRequireFullyCanonicalSig);
+            test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
-            Validity valid = checkValidity(
-                                 no_fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 no_fully_canonical.current()->rules(),
-                                 no_fully_canonical.app().config())
-                                 .first;
-
-            if (valid != Validity::Valid)
-                fail("Non-Fully canoncial signature was not permitted");
-        }
-
-        {
-            test::jtx::Env fully_canonical(
-                *this, test::jtx::testable_amendments());
-
-            Validity valid = checkValidity(
-                                 fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 fully_canonical.current()->rules(),
-                                 fully_canonical.app().config())
-                                 .first;
+            Validity valid =
+                checkValidity(
+                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    .first;
             if (valid == Validity::Valid)
-                fail("Non-Fully canoncial signature was permitted");
+                fail("Non-Fully canonical signature was permitted");
         }
 
         pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

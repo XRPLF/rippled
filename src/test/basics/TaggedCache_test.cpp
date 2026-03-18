@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
@@ -26,7 +7,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /*
 I guess you can put some items in, make sure they're still there. Let some
@@ -194,8 +175,7 @@ public:
                 partialDestructor() {};
 
                 MyRefCountObject() = default;
-                explicit MyRefCountObject(std::string data)
-                    : _data(std::move(data))
+                explicit MyRefCountObject(std::string data) : _data(std::move(data))
                 {
                 }
                 explicit MyRefCountObject(char const* data) : _data(data)
@@ -239,9 +219,7 @@ public:
             {
                 {
                     intrPtrCache.canonicalize_replace_cache(
-                        1,
-                        intr_ptr::make_shared<MyRefCountObject>(
-                            "one_replaced"));
+                        1, intr_ptr::make_shared<MyRefCountObject>("one_replaced"));
 
                     auto p = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p == "one_replaced");
@@ -253,9 +231,7 @@ public:
                     BEAST_EXPECT(intrPtrCache.size() == 1);
 
                     intrPtrCache.canonicalize_replace_cache(
-                        1,
-                        intr_ptr::make_shared<MyRefCountObject>(
-                            "one_replaced_2"));
+                        1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_2"));
 
                     auto p2 = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p2 == "one_replaced_2");
@@ -264,8 +240,7 @@ public:
                 }
 
                 intrPtrCache.canonicalize_replace_cache(
-                    1,
-                    intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
+                    1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
                 auto p3 = intrPtrCache.fetch(1);
                 BEAST_EXPECT(*p3 == "one_replaced_3");
             }
@@ -278,6 +253,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

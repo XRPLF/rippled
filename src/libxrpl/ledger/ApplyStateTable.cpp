@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
@@ -24,7 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 void
@@ -84,11 +65,7 @@ ApplyStateTable::visit(
         switch (item.second.first)
         {
             case Action::erase:
-                func(
-                    item.first,
-                    true,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+                func(item.first, true, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
             case Action::insert:
@@ -96,11 +73,7 @@ ApplyStateTable::visit(
                 break;
 
             case Action::modify:
-                func(
-                    item.first,
-                    false,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+                func(item.first, false, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
             default:
@@ -126,15 +99,15 @@ ApplyStateTable::apply(
     std::optional<TxMeta> metadata;
     if (!to.open() || isDryRun)
     {
-        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+        TxMeta meta(tx.getTransactionID(), to.seq());
 
-        if (deliver)
-            meta.setDeliveredAmount(*deliver);
+        meta.setDeliveredAmount(deliver);
+        meta.setParentBatchID(parentBatchId);
 
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
@@ -154,15 +127,14 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode
-                ? curNode->getFieldU16(sfLedgerEntryType)
-                : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                             : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
                 XRPL_ASSERT(
                     origNode && curNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "deletion");
                 threadOwners(to, meta, origNode, newMod, j);
 
@@ -177,33 +149,31 @@ ApplyStateTable::apply(
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_DeleteFinal))
+                    if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_DeleteFinal))
                         finals.emplace_back(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(finals));
             }
             else if (type == &sfModifiedNode)
             {
                 XRPL_ASSERT(
                     curNode && origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // thread transaction to node
-                                      // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -215,32 +185,28 @@ ApplyStateTable::apply(
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_ChangeNew))
+                    if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_ChangeNew))
                         finals.emplace_back(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(finals));
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
                 XRPL_ASSERT(
                     curNode && !origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // always thread to self
+                if (curNode->isThreadedType(to.rules()))  // always thread to self
                     threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
@@ -248,20 +214,18 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(
-                            SField::sMD_Create | SField::sMD_Always))
+                        obj.getFName().shouldMeta(SField::sMD_Create | SField::sMD_Always))
                         news.emplace_back(obj);
                 }
 
                 if (!news.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(news));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(news));
             }
             else
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::detail::ApplyStateTable::apply : unsupported "
+                    "xrpl::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
                 // LCOV_EXCL_STOP
             }
@@ -436,9 +400,7 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     using namespace std;
     auto const result = items_.emplace(
-        piecewise_construct,
-        forward_as_tuple(sle->key()),
-        forward_as_tuple(Action::erase, sle));
+        piecewise_construct, forward_as_tuple(sle->key()), forward_as_tuple(Action::erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -553,7 +515,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
@@ -566,7 +528,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
         {
             XRPL_ASSERT(
                 node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
-                "ripple::ApplyStateTable::threadItem : previous ledger is not "
+                "xrpl::ApplyStateTable::threadItem : previous ledger is not "
                 "set");
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
@@ -574,28 +536,22 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         XRPL_ASSERT(
             node.getFieldH256(sfPreviousTxnID) == prevTxID,
-            "ripple::ApplyStateTable::threadItem : previous transaction is a "
+            "xrpl::ApplyStateTable::threadItem : previous transaction is a "
             "match");
         XRPL_ASSERT(
             node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
-            "ripple::ApplyStateTable::threadItem : previous ledger is a match");
+            "xrpl::ApplyStateTable::threadItem : previous ledger is a match");
     }
 }
 
 std::shared_ptr<SLE>
-ApplyStateTable::getForMod(
-    ReadView const& base,
-    key_type const& key,
-    Mods& mods,
-    beast::Journal j)
+ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
     {
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            XRPL_ASSERT(
-                miter->second,
-                "ripple::ApplyStateTable::getForMod : non-null result");
+            XRPL_ASSERT(miter->second, "xrpl::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -652,8 +608,7 @@ ApplyStateTable::threadTx(
     }
     // threadItem only applied to AccountRoot
     XRPL_ASSERT(
-        sle->isThreadedType(base.rules()),
-        "ripple::ApplyStateTable::threadTx : SLE is threaded");
+        sle->isThreadedType(base.rules()), "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 
@@ -682,12 +637,6 @@ ApplyStateTable::threadOwners(
             if (auto const optSleAcct{(*sle)[~sfAccount]})
                 threadTx(base, meta, *optSleAcct, mods, j);
 
-            // Don't thread a check's sfDestination unless the amendment is
-            // enabled
-            if (ledgerType == ltCHECK &&
-                !base.rules().enabled(fixCheckThreading))
-                break;
-
             // If sfDestination is present, thread to that account
             if (auto const optSleDest{(*sle)[~sfDestination]})
                 threadTx(base, meta, *optSleDest, mods, j);
@@ -696,4 +645,4 @@ ApplyStateTable::threadOwners(
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

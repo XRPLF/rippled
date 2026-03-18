@@ -1,6 +1,3 @@
-//
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
@@ -26,9 +23,7 @@ public:
         std::size_t manual = 0;
         std::size_t total = 0;
 
-        auto prefix = [](suite_info const& s) {
-            return s.manual() ? "|M| " : "    ";
-        };
+        auto prefix = [](suite_info const& s) { return s.manual() ? "|M| " : "    "; };
 
         for (auto const& s : global_suites())
         {
@@ -39,8 +34,7 @@ public:
             ++total;
         }
 
-        log << amount(total, "suite") << " total, "
-            << amount(manual, "manual suite") << std::endl;
+        log << amount(total, "suite") << " total, " << amount(manual, "manual suite") << std::endl;
 
         pass();
     }

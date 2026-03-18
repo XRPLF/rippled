@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_SCOPE_H_INCLUDED
-#define RIPPLE_BASICS_SCOPE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -27,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // RAII scope helpers.  As specified in Library Fundamental, Version 3
 // Basic design of idea:  https://www.youtube.com/watch?v=WjTrfoiB0MQ
@@ -55,8 +35,7 @@ public:
     }
 
     scope_exit(scope_exit&& rhs) noexcept(
-        std::is_nothrow_move_constructible_v<EF> ||
-        std::is_nothrow_copy_constructible_v<EF>)
+        std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
         : exit_function_{std::forward<EF>(rhs.exit_function_)}
         , execute_on_destruction_{rhs.execute_on_destruction_}
     {
@@ -74,9 +53,7 @@ public:
             std::is_constructible_v<EF, EFP>>* = 0) noexcept
         : exit_function_{std::forward<EFP>(f)}
     {
-        static_assert(
-            std::
-                is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
+        static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
 
     void
@@ -99,14 +76,12 @@ class scope_fail
 public:
     ~scope_fail()
     {
-        if (execute_on_destruction_ &&
-            std::uncaught_exceptions() > uncaught_on_creation_)
+        if (execute_on_destruction_ && std::uncaught_exceptions() > uncaught_on_creation_)
             exit_function_();
     }
 
     scope_fail(scope_fail&& rhs) noexcept(
-        std::is_nothrow_move_constructible_v<EF> ||
-        std::is_nothrow_copy_constructible_v<EF>)
+        std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
         : exit_function_{std::forward<EF>(rhs.exit_function_)}
         , execute_on_destruction_{rhs.execute_on_destruction_}
         , uncaught_on_creation_{rhs.uncaught_on_creation_}
@@ -125,9 +100,7 @@ public:
             std::is_constructible_v<EF, EFP>>* = 0) noexcept
         : exit_function_{std::forward<EFP>(f)}
     {
-        static_assert(
-            std::
-                is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
+        static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
 
     void
@@ -150,14 +123,12 @@ class scope_success
 public:
     ~scope_success() noexcept(noexcept(exit_function_()))
     {
-        if (execute_on_destruction_ &&
-            std::uncaught_exceptions() <= uncaught_on_creation_)
+        if (execute_on_destruction_ && std::uncaught_exceptions() <= uncaught_on_creation_)
             exit_function_();
     }
 
     scope_success(scope_success&& rhs) noexcept(
-        std::is_nothrow_move_constructible_v<EF> ||
-        std::is_nothrow_copy_constructible_v<EF>)
+        std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
         : exit_function_{std::forward<EF>(rhs.exit_function_)}
         , execute_on_destruction_{rhs.execute_on_destruction_}
         , uncaught_on_creation_{rhs.uncaught_on_creation_}
@@ -232,12 +203,9 @@ class scope_unlock
     std::unique_lock<Mutex>* plock;
 
 public:
-    explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true)
-        : plock(&lock)
+    explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true) : plock(&lock)
     {
-        XRPL_ASSERT(
-            plock->owns_lock(),
-            "ripple::scope_unlock::scope_unlock : mutex must be locked");
+        XRPL_ASSERT(plock->owns_lock(), "xrpl::scope_unlock::scope_unlock : mutex must be locked");
         plock->unlock();
     }
 
@@ -255,6 +223,4 @@ public:
 template <class Mutex>
 scope_unlock(std::unique_lock<Mutex>&) -> scope_unlock<Mutex>;
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

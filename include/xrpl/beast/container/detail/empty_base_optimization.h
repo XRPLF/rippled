@@ -1,14 +1,10 @@
-//
-// Copyright (c) 2016-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BEAST_CONTAINER_DETAIL_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
-#define BEAST_CONTAINER_DETAIL_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
+#pragma once
 
 #include <boost/type_traits/is_final.hpp>
 
@@ -20,16 +16,11 @@ namespace detail {
 
 template <class T>
 struct is_empty_base_optimization_derived
-    : std::integral_constant<
-          bool,
-          std::is_empty<T>::value && !boost::is_final<T>::value>
+    : std::integral_constant<bool, std::is_empty<T>::value && !boost::is_final<T>::value>
 {
 };
 
-template <
-    class T,
-    int UniqueID = 0,
-    bool isDerived = is_empty_base_optimization_derived<T>::value>
+template <class T, int UniqueID = 0, bool isDerived = is_empty_base_optimization_derived<T>::value>
 class empty_base_optimization : private T
 {
 public:
@@ -97,5 +88,3 @@ public:
 
 }  // namespace detail
 }  // namespace beast
-
-#endif

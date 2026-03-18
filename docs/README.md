@@ -54,8 +54,8 @@ There is a `docs` target in the CMake configuration.
 ```
 mkdir build
 cd build
-cmake ..
-cmake --build . --target docs
+cmake -Donly_docs=ON ..
+cmake --build . --target docs --parallel
 ```
 
 The output will be in `build/docs/html`.

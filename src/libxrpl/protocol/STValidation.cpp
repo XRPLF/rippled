@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -35,7 +16,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STBase*
 STValidation::copy(std::size_t n, void* buf) const
@@ -70,7 +51,6 @@ STValidation::validationFormat()
         {sfSigningPubKey,       soeREQUIRED},
         {sfSignature,           soeREQUIRED},
         {sfConsensusHash,       soeOPTIONAL},
-        // featureHardenedValidations
         {sfCookie,              soeDEFAULT},
         {sfValidatedHash,       soeOPTIONAL},
         {sfServerVersion,       soeOPTIONAL},
@@ -121,7 +101,7 @@ STValidation::isValid() const noexcept
     {
         XRPL_ASSERT(
             publicKeyType(getSignerPublic()) == KeyType::secp256k1,
-            "ripple::STValidation::isValid : valid key type");
+            "xrpl::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
             getSignerPublic(),
@@ -153,4 +133,4 @@ STValidation::getSerialized() const
     return s.peekData();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

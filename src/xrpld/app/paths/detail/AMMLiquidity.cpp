@@ -1,26 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
 
-namespace ripple {
+namespace xrpl {
 
 template <typename TIn, typename TOut>
 AMMLiquidity<TIn, TOut>::AMMLiquidity(
@@ -56,8 +37,7 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 
 template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
-AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
-    TAmounts<TIn, TOut> const& balances) const
+AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const
 {
     TAmounts<TIn, TOut> cur{};
 
@@ -79,7 +59,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
 
     XRPL_ASSERT(
         !ammContext_.maxItersReached(),
-        "ripple::AMMLiquidity::generateFibSeqOffer : maximum iterations");
+        "xrpl::AMMLiquidity::generateFibSeqOffer : maximum iterations");
 
     cur.out = toAmount<TOut>(
         getIssue(balances.out),
@@ -87,8 +67,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
         Number::rounding_mode::downward);
     // swapAssetOut() returns negative in this case
     if (cur.out >= balances.out)
-        Throw<std::overflow_error>(
-            "AMMLiquidity: generateFibSeqOffer exceeds the balance");
+        Throw<std::overflow_error>("AMMLiquidity: generateFibSeqOffer exceeds the balance");
 
     cur.in = swapAssetOut(balances, cur.out, tradingFee_);
 
@@ -101,11 +80,17 @@ constexpr T
 maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
+    {
         return XRPAmount(STAmount::cMaxNative);
+    }
     else if constexpr (std::is_same_v<T, IOUAmount>)
+    {
         return IOUAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+    }
     else if constexpr (std::is_same_v<T, STAmount>)
+    {
         return STAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+    }
 }
 
 template <typename T>
@@ -119,37 +104,28 @@ maxOut(T const& out, Issue const& iss)
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::maxOffer(
-    TAmounts<TIn, TOut> const& balances,
-    Rules const& rules) const
+AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
 {
     if (!rules.enabled(fixAMMOverflowOffer))
     {
         return AMMOffer<TIn, TOut>(
             *this,
-            {maxAmount<TIn>(),
-             swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
+            {maxAmount<TIn>(), swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
             balances,
             Quality{balances});
     }
-    else
-    {
-        auto const out = maxOut<TOut>(balances.out, issueOut());
-        if (out <= TOut{0} || out >= balances.out)
-            return std::nullopt;
-        return AMMOffer<TIn, TOut>(
-            *this,
-            {swapAssetOut(balances, out, tradingFee_), out},
-            balances,
-            Quality{balances});
-    }
+
+    auto const out = maxOut<TOut>(balances.out, issueOut());
+    if (out <= TOut{0} || out >= balances.out)
+        return std::nullopt;
+    return AMMOffer<TIn, TOut>(
+        *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
 }
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::getOffer(
-    ReadView const& view,
-    std::optional<Quality> const& clobQuality) const
+AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
+    const
 {
     // Can't generate more offers if multi-path.
     if (ammContext_.maxItersReached())
@@ -164,11 +140,9 @@ AMMLiquidity<TIn, TOut>::getOffer(
         return std::nullopt;
     }
 
-    JLOG(j_.trace()) << "AMMLiquidity::getOffer balances "
-                     << to_string(initialBalances_.in) << " "
+    JLOG(j_.trace()) << "AMMLiquidity::getOffer balances " << to_string(initialBalances_.in) << " "
                      << to_string(initialBalances_.out) << " new balances "
-                     << to_string(balances.in) << " "
-                     << to_string(balances.out);
+                     << to_string(balances.in) << " " << to_string(balances.out);
 
     // Can't generate AMM with a better quality than CLOB's
     // quality if AMM's Spot Price quality is less than CLOB quality or is
@@ -194,10 +168,9 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 auto const amounts = generateFibSeqOffer(balances);
                 if (clobQuality && Quality{amounts} < clobQuality)
                     return std::nullopt;
-                return AMMOffer<TIn, TOut>(
-                    *this, amounts, balances, Quality{amounts});
+                return AMMOffer<TIn, TOut>(*this, amounts, balances, Quality{amounts});
             }
-            else if (!clobQuality)
+            if (!clobQuality)
             {
                 // If there is no CLOB to compare against, return the largest
                 // amount, which doesn't overflow. The size is going to be
@@ -206,18 +179,15 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 // nullopt if the pool is small.
                 return maxOffer(balances, view.rules());
             }
-            else if (
-                auto const amounts = changeSpotPriceQuality(
-                    balances, *clobQuality, tradingFee_, view.rules(), j_))
+            if (auto const amounts =
+                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
             {
-                return AMMOffer<TIn, TOut>(
-                    *this, *amounts, balances, Quality{*amounts});
+                return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }
-            else if (view.rules().enabled(fixAMMv1_2))
+            if (view.rules().enabled(fixAMMv1_2))
             {
                 if (auto const maxAMMOffer = maxOffer(balances, view.rules());
-                    maxAMMOffer &&
-                    Quality{maxAMMOffer->amount()} > *clobQuality)
+                    maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
                     return maxAMMOffer;
             }
         }
@@ -225,9 +195,11 @@ AMMLiquidity<TIn, TOut>::getOffer(
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
             if (!view.rules().enabled(fixAMMOverflowOffer))
+            {
                 return maxOffer(balances, view.rules());
-            else
-                return std::nullopt;
+            }
+
+            return std::nullopt;
         }
         catch (std::exception const& e)
         {
@@ -238,22 +210,18 @@ AMMLiquidity<TIn, TOut>::getOffer(
 
     if (offer)
     {
-        if (offer->amount().in > beast::zero &&
-            offer->amount().out > beast::zero)
+        if (offer->amount().in > beast::zero && offer->amount().out > beast::zero)
         {
-            JLOG(j_.trace())
-                << "AMMLiquidity::getOffer, created "
-                << to_string(offer->amount().in) << "/" << issueIn_ << " "
-                << to_string(offer->amount().out) << "/" << issueOut_;
+            JLOG(j_.trace()) << "AMMLiquidity::getOffer, created " << to_string(offer->amount().in)
+                             << "/" << issueIn_ << " " << to_string(offer->amount().out) << "/"
+                             << issueOut_;
             return offer;
         }
 
-        JLOG(j_.debug()) << "AMMLiquidity::getOffer, no valid offer "
-                         << ammContext_.multiPath() << " "
-                         << ammContext_.curIters() << " "
-                         << (clobQuality ? clobQuality->rate() : STAmount{})
-                         << " " << to_string(balances.in) << " "
-                         << to_string(balances.out);
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, no valid offer " << ammContext_.multiPath()
+                         << " " << ammContext_.curIters() << " "
+                         << (clobQuality ? clobQuality->rate() : STAmount{}) << " "
+                         << to_string(balances.in) << " " << to_string(balances.out);
     }
 
     return std::nullopt;
@@ -264,4 +232,4 @@ template class AMMLiquidity<IOUAmount, IOUAmount>;
 template class AMMLiquidity<XRPAmount, IOUAmount>;
 template class AMMLiquidity<IOUAmount, XRPAmount>;
 
-}  // namespace ripple
+}  // namespace xrpl

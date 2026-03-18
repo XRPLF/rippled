@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
@@ -28,7 +8,7 @@
 #include <chrono>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents how a node currently participates in Consensus.
 
@@ -208,18 +188,12 @@ struct ConsensusResult
     using NodeID_t = typename Traits::NodeID_t;
 
     using Tx_t = typename TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<
-        NodeID_t,
-        typename Ledger_t::ID,
-        typename TxSet_t::ID>;
+    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
-    ConsensusResult(TxSet_t&& s, Proposal_t&& p)
-        : txns{std::move(s)}, position{std::move(p)}
+    ConsensusResult(TxSet_t&& s, Proposal_t&& p) : txns{std::move(s)}, position{std::move(p)}
     {
-        XRPL_ASSERT(
-            txns.id() == position.position(),
-            "ripple::ConsensusResult : valid inputs");
+        XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
 
     //! The set of transactions consensus agrees go in the ledger
@@ -244,6 +218,4 @@ struct ConsensusResult
     // The number of peers proposing during the round
     std::size_t proposers = 0;
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

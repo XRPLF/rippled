@@ -1,28 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 class StringUtilities_test : public beast::unit_test::suite
 {
@@ -32,6 +13,8 @@ public:
     {
         auto rv = strUnHex(strIn);
         BEAST_EXPECT(rv);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         BEAST_EXPECT(makeSlice(*rv) == makeSlice(strExpected));
     }
 
@@ -111,7 +94,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 234);
+            BEAST_EXPECT(*pUrl.port == 234);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/");
         }
 
@@ -133,19 +116,18 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "::1");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/path");
         }
 
         {
             parsedURL pUrl;
-            BEAST_EXPECT(
-                parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
+            BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -156,7 +138,7 @@ public:
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -167,7 +149,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password == "pass");
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -178,7 +160,7 @@ public:
             BEAST_EXPECT(pUrl.username.empty());
             BEAST_EXPECT(pUrl.password.empty());
             BEAST_EXPECT(pUrl.domain == "domain");
-            BEAST_EXPECT(*pUrl.port == 123);
+            BEAST_EXPECT(*pUrl.port == 123);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(pUrl.path == "/abc:321");
         }
 
@@ -239,8 +221,7 @@ public:
 
         {
             parsedURL pUrl;
-            BEAST_EXPECT(
-                parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
+            BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
             BEAST_EXPECT(pUrl.password == "pass");
@@ -289,8 +270,7 @@ public:
             BEAST_EXPECT(!parseUrl(pUrl, "nonsense"));
             BEAST_EXPECT(!parseUrl(pUrl, "://"));
             BEAST_EXPECT(!parseUrl(pUrl, ":///"));
-            BEAST_EXPECT(
-                !parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
+            BEAST_EXPECT(!parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:23498765/"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:0/"));
             BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:+7/"));
@@ -322,6 +302,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(StringUtilities, basics, ripple);
+BEAST_DEFINE_TESTSUITE(StringUtilities, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

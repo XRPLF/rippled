@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -58,14 +39,14 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 STObject::STObject(STObject&& other)
     : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
 {
 }
 
-STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
+STObject::STObject(SField const& name) : STBase(name)
 {
 }
 
@@ -74,17 +55,14 @@ STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
     set(type);
 }
 
-STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name)
-    : STBase(name)
+STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) : STBase(name)
 {
     v_.reserve(type.size());
     set(sit);
     applyTemplate(type);  // May throw
 }
 
-STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
-    false)
-    : STBase(name), mType(nullptr)
+STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -162,9 +140,13 @@ STObject::set(SOTemplate const& type)
     for (auto const& elem : type)
     {
         if (elem.style() != soeREQUIRED)
+        {
             v_.emplace_back(detail::nonPresentObject, elem.sField());
+        }
         else
+        {
             v_.emplace_back(detail::defaultObject, elem.sField());
+        }
     }
 }
 
@@ -184,17 +166,14 @@ STObject::applyTemplate(SOTemplate const& type)
     v.reserve(type.size());
     for (auto const& e : type)
     {
-        auto const iter =
-            std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
-                return b.get().getFName() == e.sField();
-            });
+        auto const iter = std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
+            return b.get().getFName() == e.sField();
+        });
         if (iter != v_.end())
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
             {
-                throwFieldErr(
-                    e.sField().fieldName,
-                    "may not be explicitly set to default.");
+                throwFieldErr(e.sField().fieldName, "may not be explicitly set to default.");
             }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
@@ -213,8 +192,7 @@ STObject::applyTemplate(SOTemplate const& type)
         // Anything left over in the object must be discardable
         if (!e->getFName().isDiscardable())
         {
-            throwFieldErr(
-                e->getFName().getName(), "found in disallowed location.");
+            throwFieldErr(e->getFName().getName(), "found in disallowed location.");
         }
     }
     // Swap the template matching data in for the old data,
@@ -225,8 +203,7 @@ STObject::applyTemplate(SOTemplate const& type)
 void
 STObject::applyTemplateFromSField(SField const& sField)
 {
-    SOTemplate const* elements =
-        InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
+    SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
     if (elements)
         applyTemplate(*elements);  // May throw
 }
@@ -242,8 +219,8 @@ STObject::set(SerialIter& sit, int depth)
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
-        int type;
-        int field;
+        int type = 0;
+        int field = 0;
 
         // Get the metadata for the next field
         sit.getFieldID(type, field);
@@ -258,8 +235,7 @@ STObject::set(SerialIter& sit, int depth)
 
         if (type == STI_ARRAY && field == 1)
         {
-            JLOG(debugLog().error())
-                << "Encountered object with embedded end-of-array marker";
+            JLOG(debugLog().error()) << "Encountered object with embedded end-of-array marker";
             Throw<std::runtime_error>("Illegal end-of-array marker in object");
         }
 
@@ -267,8 +243,8 @@ STObject::set(SerialIter& sit, int depth)
 
         if (fn.isInvalid())
         {
-            JLOG(debugLog().error()) << "Unknown field: field_type=" << type
-                                     << ", field_name=" << field;
+            JLOG(debugLog().error())
+                << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
 
@@ -284,8 +260,8 @@ STObject::set(SerialIter& sit, int depth)
     // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, withAllFields);
 
-    auto const dup = std::adjacent_find(
-        sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
+    auto const dup =
+        std::adjacent_find(sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
             return lhs->getFName() == rhs->getFName();
         });
 
@@ -296,7 +272,7 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
@@ -318,16 +294,22 @@ STObject::getFullText() const
         ret += " = {";
     }
     else
+    {
         ret = "{";
+    }
 
     for (auto const& elem : v_)
     {
         if (elem->getSType() != STI_NOTPRESENT)
         {
             if (!first)
+            {
                 ret += ", ";
+            }
             else
+            {
                 first = false;
+            }
 
             ret += elem->getFullText();
         }
@@ -367,13 +349,8 @@ STObject::isEquivalent(STBase const& t) const
     if (mType != nullptr && v->mType == mType)
     {
         return std::equal(
-            begin(),
-            end(),
-            v->begin(),
-            v->end(),
-            [](STBase const& st1, STBase const& st2) {
-                return (st1.getSType() == st2.getSType()) &&
-                    st1.isEquivalent(st2);
+            begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
+                return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
             });
     }
 
@@ -381,13 +358,8 @@ STObject::isEquivalent(STBase const& t) const
     auto const sf2 = getSortedFields(*v, withAllFields);
 
     return std::equal(
-        sf1.begin(),
-        sf1.end(),
-        sf2.begin(),
-        sf2.end(),
-        [](STBase const* st1, STBase const* st2) {
-            return (st1->getSType() == st2->getSType()) &&
-                st1->isEquivalent(*st2);
+        sf1.begin(), sf1.end(), sf2.begin(), sf2.end(), [](STBase const* st1, STBase const* st2) {
+            return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
         });
 }
 
@@ -599,6 +571,12 @@ STObject::delField(int index)
     v_.erase(v_.begin() + index);
 }
 
+SOEStyle
+STObject::getStyle(SField const& field) const
+{
+    return mType ? mType->style(field) : soeINVALID;
+}
+
 unsigned char
 STObject::getFieldU8(SField const& field) const
 {
@@ -686,6 +664,16 @@ STObject::getFieldV256(SField const& field) const
 {
     static STVector256 const empty{};
     return getFieldByConstRef<STVector256>(field, empty);
+}
+
+STObject
+STObject::getFieldObject(SField const& field) const
+{
+    STObject const empty{field};
+    auto ret = getFieldByConstRef<STObject>(field, empty);
+    if (ret != empty)
+        ret.applyTemplateFromSField(field);
+    return ret;
 }
 
 STArray const&
@@ -833,6 +821,12 @@ STObject::setFieldArray(SField const& field, STArray const& v)
     setFieldUsingAssignment(field, v);
 }
 
+void
+STObject::setFieldObject(SField const& field, STObject const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
 Json::Value
 STObject::getJson(JsonOptions options) const
 {
@@ -894,8 +888,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
 {
     // Depending on whichFields, signing fields are either serialized or
     // not.  Then fields are added to the Serializer sorted by fieldCode.
-    std::vector<STBase const*> const fields{
-        getSortedFields(*this, whichFields)};
+    std::vector<STBase const*> const fields{getSortedFields(*this, whichFields)};
 
     // insert sorted
     for (STBase const* const field : fields)
@@ -905,9 +898,8 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // must be OBJECT, or the object cannot be deserialized
         SerializedTypeID const sType{field->getSType()};
         XRPL_ASSERT(
-            (sType != STI_OBJECT) ||
-                (field->getFName().fieldType == STI_OBJECT),
-            "ripple::STObject::add : valid field type");
+            (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
+            "xrpl::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)
@@ -925,8 +917,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) &&
-            base.getFName().shouldInclude(whichFields))
+        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields))
         {
             sf.push_back(&base);
         }
@@ -940,4 +931,4 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     return sf;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -26,6 +7,9 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -36,15 +20,13 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
 using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
 using AccountTxArgs = RelationalDatabase::AccountTxArgs;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
-
-using LedgerShortcut = RelationalDatabase::LedgerShortcut;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
@@ -56,31 +38,28 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
     // should not be specified. Error out if it is
     if (context.apiVersion > 1u)
     {
-        if ((params.isMember(jss::ledger_index_min) ||
-             params.isMember(jss::ledger_index_max)) &&
-            (params.isMember(jss::ledger_hash) ||
-             params.isMember(jss::ledger_index)))
+        if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
+            (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
             RPC::Status status{rpcINVALID_PARAMS, "invalidParams"};
             status.inject(response);
             return response;
         }
     }
-    if (params.isMember(jss::ledger_index_min) ||
-        params.isMember(jss::ledger_index_max))
+    if (params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max))
     {
-        uint32_t min = params.isMember(jss::ledger_index_min) &&
-                params[jss::ledger_index_min].asInt() >= 0
+        uint32_t min =
+            params.isMember(jss::ledger_index_min) && params[jss::ledger_index_min].asInt() >= 0
             ? params[jss::ledger_index_min].asUInt()
             : 0;
-        uint32_t max = params.isMember(jss::ledger_index_max) &&
-                params[jss::ledger_index_max].asInt() >= 0
+        uint32_t max =
+            params.isMember(jss::ledger_index_max) && params[jss::ledger_index_max].asInt() >= 0
             ? params[jss::ledger_index_max].asUInt()
             : UINT32_MAX;
 
         return LedgerRange{min, max};
     }
-    else if (params.isMember(jss::ledger_hash))
+    if (params.isMember(jss::ledger_hash))
     {
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
@@ -99,25 +78,32 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         }
         return hash;
     }
-    else if (params.isMember(jss::ledger_index))
+    if (params.isMember(jss::ledger_index))
     {
         LedgerSpecifier ledger;
         if (params[jss::ledger_index].isNumeric())
+        {
             ledger = params[jss::ledger_index].asUInt();
+        }
         else
         {
             std::string ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
-                ledger = LedgerShortcut::CURRENT;
+            {
+                ledger = LedgerShortcut::Current;
+            }
             else if (ledgerStr == "closed")
-                ledger = LedgerShortcut::CLOSED;
+            {
+                ledger = LedgerShortcut::Closed;
+            }
             else if (ledgerStr == "validated")
-                ledger = LedgerShortcut::VALIDATED;
+            {
+                ledger = LedgerShortcut::Validated;
+            }
             else
             {
-                RPC::Status status{
-                    rpcINVALID_PARAMS, "ledger_index string malformed"};
+                RPC::Status status{rpcINVALID_PARAMS, "ledger_index string malformed"};
                 status.inject(response);
                 return response;
             }
@@ -128,14 +114,11 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 }
 
 std::variant<LedgerRange, RPC::Status>
-getLedgerRange(
-    RPC::Context& context,
-    std::optional<LedgerSpecifier> const& ledgerSpecifier)
+getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
-    std::uint32_t uValidatedMin;
-    std::uint32_t uValidatedMax;
-    bool bValidated =
-        context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
+    std::uint32_t uValidatedMin = 0;
+    std::uint32_t uValidatedMax = 0;
+    bool bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
 
     if (!bValidated)
     {
@@ -190,15 +173,14 @@ getLedgerRange(
                         return status;
                     }
 
-                    bool validated =
-                        context.ledgerMaster.isValidated(*ledgerView);
+                    bool validated = context.ledgerMaster.isValidated(*ledgerView);
 
-                    if (!validated || ledgerView->info().seq > uValidatedMax ||
-                        ledgerView->info().seq < uValidatedMin)
+                    if (!validated || ledgerView->header().seq > uValidatedMax ||
+                        ledgerView->header().seq < uValidatedMin)
                     {
                         return rpcLGR_NOT_VALIDATED;
                     }
-                    uLedgerMin = uLedgerMax = ledgerView->info().seq;
+                    uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
                 return RPC::Status::OK;
             },
@@ -236,23 +218,19 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         args.limit,
         isUnlimited(context.role)};
 
-    auto const db =
-        dynamic_cast<SQLiteDatabase*>(&context.app.getRelationalDatabase());
-
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = context.app.getRelationalDatabase();
 
     if (args.binary)
     {
         if (args.forward)
         {
-            auto [tx, marker] = db->oldestAccountTxPageB(options);
+            auto [tx, marker] = db.oldestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = db->newestAccountTxPageB(options);
+            auto [tx, marker] = db.newestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -261,13 +239,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     {
         if (args.forward)
         {
-            auto [tx, marker] = db->oldestAccountTxPage(options);
+            auto [tx, marker] = db.oldestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = db->newestAccountTxPage(options);
+            auto [tx, marker] = db.newestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -304,9 +282,7 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            XRPL_ASSERT(
-                !args.binary,
-                "ripple::populateJsonResponse : binary is not set");
+            XRPL_ASSERT(!args.binary, "xrpl::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -315,49 +291,40 @@ populateJsonResponse(
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
                     jvObj[jss::validated] = true;
 
-                    auto const json_tx =
-                        (context.apiVersion > 1 ? jss::tx_json : jss::tx);
+                    auto const json_tx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
                         jvObj[json_tx] = txn->getJson(
-                            JsonOptions::include_date |
-                                JsonOptions::disable_API_prior_V2,
-                            false);
+                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
-                            to_string(context.ledgerMaster.getHashBySeq(
-                                txn->getLedger()));
+                            to_string(context.ledgerMaster.getHashBySeq(txn->getLedger()));
 
                         if (auto closeTime =
-                                context.ledgerMaster.getCloseTimeBySeq(
-                                    txn->getLedger()))
-                            jvObj[jss::close_time_iso] =
-                                to_string_iso(*closeTime);
+                                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger()))
+                            jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
                     }
                     else
-                        jvObj[json_tx] =
-                            txn->getJson(JsonOptions::include_date);
+                    {
+                        jvObj[json_tx] = txn->getJson(JsonOptions::include_date);
+                    }
 
                     auto const& sttx = txn->getSTransaction();
-                    RPC::insertDeliverMax(
-                        jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
+                    RPC::insertDeliverMax(jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] =
-                            txnMeta->getJson(JsonOptions::include_date);
-                        insertDeliveredAmount(
-                            jvObj[jss::meta], context, txn, *txnMeta);
+                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::include_date);
+                        insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
                         RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
-                        RPC::insertMPTokenIssuanceID(
-                            jvObj[jss::meta], sttx, *txnMeta);
+                        RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
                     {
                         // LCOV_EXCL_START
                         UNREACHABLE(
-                            "ripple::populateJsonResponse : missing "
-                            "transaction medatata");
+                            "xrpl::populateJsonResponse : missing "
+                            "transaction metadata");
                         // LCOV_EXCL_STOP
                     }
                 }
@@ -365,17 +332,14 @@ populateJsonResponse(
         }
         else
         {
-            XRPL_ASSERT(
-                args.binary, "ripple::populateJsonResponse : binary is set");
+            XRPL_ASSERT(args.binary, "xrpl::populateJsonResponse : binary is set");
 
-            for (auto const& binaryData :
-                 std::get<TxnsDataBinary>(result.transactions))
+            for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
                 Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
-                auto const json_meta =
-                    (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+                auto const json_meta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
                 jvObj[json_meta] = strHex(std::get<1>(binaryData));
                 jvObj[jss::ledger_index] = std::get<2>(binaryData);
                 jvObj[jss::validated] = true;
@@ -418,21 +382,20 @@ doAccountTxJson(RPC::JsonContext& context)
     // binary and forward params are both boolean values, however, assigning any
     // string value works. Do not allow this. This check is for api Version 2
     // onwards only
-    if (context.apiVersion > 1u && params.isMember(jss::binary) &&
-        !params[jss::binary].isBool())
+    if (context.apiVersion > 1u && params.isMember(jss::binary) && !params[jss::binary].isBool())
     {
         return RPC::invalid_field_error(jss::binary);
     }
-    if (context.apiVersion > 1u && params.isMember(jss::forward) &&
-        !params[jss::forward].isBool())
+    if (context.apiVersion > 1u && params.isMember(jss::forward) && !params[jss::forward].isBool())
     {
         return RPC::invalid_field_error(jss::forward);
     }
 
-    args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
+    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
+        return *err;
+
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
-    args.forward =
-        params.isMember(jss::forward) && params[jss::forward].asBool();
+    args.forward = params.isMember(jss::forward) && params[jss::forward].asBool();
 
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
@@ -440,8 +403,7 @@ doAccountTxJson(RPC::JsonContext& context)
     if (!params[jss::account].isString())
         return RPC::invalid_field_error(jss::account);
 
-    auto const account =
-        parseBase58<AccountID>(params[jss::account].asString());
+    auto const account = parseBase58<AccountID>(params[jss::account].asString());
     if (!account)
         return rpcError(rpcACT_MALFORMED);
 
@@ -452,10 +414,8 @@ doAccountTxJson(RPC::JsonContext& context)
     {
         return *jv;
     }
-    else
-    {
-        args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
-    }
+
+    args.ledger = std::get<std::optional<LedgerSpecifier>>(parseRes);
 
     if (params.isMember(jss::marker))
     {
@@ -479,4 +439,4 @@ doAccountTxJson(RPC::JsonContext& context)
     return populateJsonResponse(res, args, context);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

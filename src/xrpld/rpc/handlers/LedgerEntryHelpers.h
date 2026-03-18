@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/StringUtilities.h>
@@ -31,14 +12,12 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace LedgerEntryHelpers {
 
 Unexpected<Json::Value>
-missingFieldError(
-    Json::StaticString const field,
-    std::optional<std::string> err = std::nullopt)
+missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
     auto error = RPC::missing_field_message(std::string(field.c_str()));
@@ -49,10 +28,7 @@ missingFieldError(
 }
 
 Unexpected<Json::Value>
-invalidFieldError(
-    std::string const& err,
-    Json::StaticString const field,
-    std::string const& type)
+invalidFieldError(std::string const& err, Json::StaticString const field, std::string const& type)
 {
     Json::Value json = Json::objectValue;
     auto error = RPC::expected_field_message(field, type);
@@ -237,6 +213,26 @@ requiredUInt192(
     return required<uint192>(params, fieldName, err, "Hash192");
 }
 
+template <>
+std::optional<Issue>
+parse(Json::Value const& param)
+{
+    try
+    {
+        return issueFromJson(param);
+    }
+    catch (std::runtime_error const&)
+    {
+        return std::nullopt;
+    }
+}
+
+Expected<Issue, Json::Value>
+requiredIssue(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+{
+    return required<Issue>(params, fieldName, err, "Issue");
+}
+
 Expected<STXChainBridge, Json::Value>
 parseBridgeFields(Json::Value const& params)
 {
@@ -251,15 +247,15 @@ parseBridgeFields(Json::Value const& params)
         return Unexpected(value.error());
     }
 
-    auto const lockingChainDoor = requiredAccountID(
-        params, jss::LockingChainDoor, "malformedLockingChainDoor");
+    auto const lockingChainDoor =
+        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
     if (!lockingChainDoor)
     {
         return Unexpected(lockingChainDoor.error());
     }
 
-    auto const issuingChainDoor = requiredAccountID(
-        params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
+    auto const issuingChainDoor =
+        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
     if (!issuingChainDoor)
     {
         return Unexpected(issuingChainDoor.error());
@@ -272,8 +268,7 @@ parseBridgeFields(Json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError(
-            "malformedIssue", jss::LockingChainIssue, "Issue");
+        return invalidFieldError("malformedIssue", jss::LockingChainIssue, "Issue");
     }
 
     Issue issuingChainIssue;
@@ -283,17 +278,13 @@ parseBridgeFields(Json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError(
-            "malformedIssue", jss::IssuingChainIssue, "Issue");
+        return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
     }
 
     return STXChainBridge(
-        *lockingChainDoor,
-        lockingChainIssue,
-        *issuingChainDoor,
-        issuingChainIssue);
+        *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
 }  // namespace LedgerEntryHelpers
 
-}  // namespace ripple
+}  // namespace xrpl

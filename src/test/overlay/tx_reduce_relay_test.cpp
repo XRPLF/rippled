@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
@@ -27,7 +8,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 
@@ -72,16 +53,24 @@ private:
                     BEAST_EXPECT(c.TX_REDUCE_RELAY_MIN_PEERS == min);
                     BEAST_EXPECT(c.TX_RELAY_PERCENTAGE == pct);
                     if (success)
+                    {
                         pass();
+                    }
                     else
+                    {
                         fail();
+                    }
                 }
                 catch (...)
                 {
                     if (success)
+                    {
                         fail();
+                    }
                     else
+                    {
                         pass();
+                    }
                 }
             };
 
@@ -154,31 +143,23 @@ private:
     boost::beast::multi_buffer read_buf_;
 
 public:
-    tx_reduce_relay_test()
-        : context_(make_SSLContext("")), protocolVersion_{1, 7}
+    tx_reduce_relay_test() : context_(make_SSLContext("")), protocolVersion_{1, 7}
     {
     }
 
 private:
     void
-    addPeer(
-        jtx::Env& env,
-        std::vector<std::shared_ptr<PeerTest>>& peers,
-        std::uint16_t& nDisabled)
+    addPeer(jtx::Env& env, std::vector<std::shared_ptr<PeerTest>>& peers, std::uint16_t& nDisabled)
     {
         auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
         (nDisabled == 0)
-            ? (void)request.insert(
-                  "X-Protocol-Ctl",
-                  makeFeaturesRequestHeader(false, false, true, false))
+            ? request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_context&>(
-                env.app().getIOContext())),
+            socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
-        beast::IP::Endpoint local(
-            boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
+        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
@@ -193,8 +174,7 @@ private:
             consumer,
             std::move(stream_ptr),
             overlay);
-        BEAST_EXPECT(
-            overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
+        BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
         overlay.add_active(peer);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
@@ -237,9 +217,7 @@ private:
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
             env.app().overlay().relay(uint256{0}, m, toSkip);
-            BEAST_EXPECT(
-                PeerTest::sendTx_ == expectRelay &&
-                PeerTest::queueTx_ == expectQueue);
+            BEAST_EXPECT(PeerTest::sendTx_ == expectRelay && PeerTest::queueTx_ == expectQueue);
         }
     }
 
@@ -264,7 +242,7 @@ private:
         // (20+0.25*(60-20)-5=25), queue the rest, skip counts towards relayed
         // (60-25-5=30)
         testRelay("skip", true, 60, 0, 20, 25, 25, 30, skip);
-        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disalbed)
+        // relay to minPeers + disabled + 25% of (nPeers - minPeers - disabled)
         // (20+10+0.25*(70-20-10)=40), queue the rest (30)
         testRelay("disabled", true, 70, 10, 20, 25, 40, 30);
         // relay to minPeers + disabled-not-in-skip + 25% of (nPeers - minPeers
@@ -284,6 +262,6 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

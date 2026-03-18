@@ -1,12 +1,8 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_TEST_YIELD_TO_HPP
-#define BEAST_TEST_YIELD_TO_HPP
+#pragma once
 
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
@@ -34,9 +30,7 @@ protected:
     boost::asio::io_context ios_;
 
 private:
-    boost::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
@@ -133,5 +127,3 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
 
 }  // namespace test
 }  // namespace beast
-
-#endif

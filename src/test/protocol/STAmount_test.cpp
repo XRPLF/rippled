@@ -1,29 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
 
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STAmount_test : public beast::unit_test::suite
 {
@@ -53,11 +35,7 @@ public:
             mantissa--;
 
             if (mantissa < STAmount::cMinValue)
-                return {
-                    amount.issue(),
-                    mantissa,
-                    amount.exponent(),
-                    amount.negative()};
+                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
 
             return {
                 amount.issue(),
@@ -72,11 +50,7 @@ public:
             mantissa++;
 
             if (mantissa > STAmount::cMaxValue)
-                return {
-                    amount.issue(),
-                    mantissa,
-                    amount.exponent(),
-                    amount.negative()};
+                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
 
             return {
                 amount.issue(),
@@ -109,9 +83,8 @@ public:
 
         if (res != cmp)
         {
-            log << "(" << num.getText() << "/" << den.getText() << ") X "
-                << mul.getText() << " = " << res.getText() << " not "
-                << cmp.getText();
+            log << "(" << num.getText() << "/" << den.getText() << ") X " << mul.getText() << " = "
+                << res.getText() << " not " << cmp.getText();
             fail("Rounding");
             return;
         }
@@ -126,15 +99,12 @@ public:
 
         BEAST_EXPECT(!prod1.native());
 
-        STAmount prod2(
-            noIssue(),
-            static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
+        STAmount prod2(noIssue(), static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
 
         if (prod1 != prod2)
         {
             log << "nn(" << aa.getFullText() << " * " << bb.getFullText()
-                << ") = " << prod1.getFullText() << " not "
-                << prod2.getFullText();
+                << ") = " << prod1.getFullText() << " not " << prod2.getFullText();
             fail("Multiplication result is not exact");
         }
     }
@@ -142,10 +112,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    testSetValue(
-        std::string const& value,
-        Issue const& issue,
-        bool success = true)
+    testSetValue(std::string const& value, Issue const& issue, bool success = true)
     {
         try
         {
@@ -233,8 +200,7 @@ public:
         // VFALCO NOTE Why repeat "STAmount fail" so many times??
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
-        unexpected(
-            serializeAndDeserialize(hundred) != hundred, "STAmount fail");
+        unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(!zeroSt.native(), "STAmount fail");
         unexpected(!hundred.native(), "STAmount fail");
         unexpected(zeroSt != beast::zero, "STAmount fail");
@@ -316,8 +282,7 @@ public:
         STAmount zeroSt(noIssue()), one(noIssue(), 1), hundred(noIssue(), 100);
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
-        unexpected(
-            serializeAndDeserialize(hundred) != hundred, "STAmount fail");
+        unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(zeroSt.native(), "STAmount fail");
         unexpected(hundred.native(), "STAmount fail");
         unexpected(zeroSt != beast::zero, "STAmount fail");
@@ -379,19 +344,14 @@ public:
         unexpected((hundred != hundred), "STAmount fail");
         unexpected(STAmount(noIssue()).getText() != "0", "STAmount fail");
         unexpected(STAmount(noIssue(), 31).getText() != "31", "STAmount fail");
+        unexpected(STAmount(noIssue(), 31, 1).getText() != "310", "STAmount fail");
+        unexpected(STAmount(noIssue(), 31, -1).getText() != "3.1", "STAmount fail");
+        unexpected(STAmount(noIssue(), 31, -2).getText() != "0.31", "STAmount fail");
         unexpected(
-            STAmount(noIssue(), 31, 1).getText() != "310", "STAmount fail");
-        unexpected(
-            STAmount(noIssue(), 31, -1).getText() != "3.1", "STAmount fail");
-        unexpected(
-            STAmount(noIssue(), 31, -2).getText() != "0.31", "STAmount fail");
-        unexpected(
-            multiply(STAmount(noIssue(), 20), STAmount(3), noIssue())
-                    .getText() != "60",
+            multiply(STAmount(noIssue(), 20), STAmount(3), noIssue()).getText() != "60",
             "STAmount multiply fail 1");
         unexpected(
-            multiply(STAmount(noIssue(), 20), STAmount(3), xrpIssue())
-                    .getText() != "60",
+            multiply(STAmount(noIssue(), 20), STAmount(3), xrpIssue()).getText() != "60",
             "STAmount multiply fail 2");
         unexpected(
             multiply(STAmount(20), STAmount(3), noIssue()).getText() != "60",
@@ -400,12 +360,9 @@ public:
             multiply(STAmount(20), STAmount(3), xrpIssue()).getText() != "60",
             "STAmount multiply fail 4");
 
-        if (divide(STAmount(noIssue(), 60), STAmount(3), noIssue()).getText() !=
-            "20")
+        if (divide(STAmount(noIssue(), 60), STAmount(3), noIssue()).getText() != "20")
         {
-            log << "60/3 = "
-                << divide(STAmount(noIssue(), 60), STAmount(3), noIssue())
-                       .getText();
+            log << "60/3 = " << divide(STAmount(noIssue(), 60), STAmount(3), noIssue()).getText();
             fail("STAmount divide fail");
         }
         else
@@ -414,18 +371,15 @@ public:
         }
 
         unexpected(
-            divide(STAmount(noIssue(), 60), STAmount(3), xrpIssue())
-                    .getText() != "20",
+            divide(STAmount(noIssue(), 60), STAmount(3), xrpIssue()).getText() != "20",
             "STAmount divide fail");
 
         unexpected(
-            divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), noIssue())
-                    .getText() != "20",
+            divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), noIssue()).getText() != "20",
             "STAmount divide fail");
 
         unexpected(
-            divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), xrpIssue())
-                    .getText() != "20",
+            divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), xrpIssue()).getText() != "20",
             "STAmount divide fail");
 
         STAmount a1(noIssue(), 60), a2(noIssue(), 10, -1);
@@ -512,18 +466,14 @@ public:
 
         STAmount bigNative(STAmount::cMaxNative / 2);
         STAmount bigValue(
-            noIssue(),
-            (STAmount::cMinValue + STAmount::cMaxValue) / 2,
-            STAmount::cMaxOffset - 1);
+            noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
         STAmount smallValue(
-            noIssue(),
-            (STAmount::cMinValue + STAmount::cMaxValue) / 2,
-            STAmount::cMinOffset + 1);
+            noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
         STAmount zeroSt(noIssue(), 0);
 
-        STAmount smallXsmall = multiply(smallValue, smallValue, noIssue());
+        STAmount smallXSmall = multiply(smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXsmall == beast::zero);
+        BEAST_EXPECT(smallXSmall == beast::zero);
 
         STAmount bigDsmall = divide(smallValue, bigValue, noIssue());
 
@@ -605,6 +555,203 @@ public:
     }
 
     void
+    testParseJson()
+    {
+        static_assert(!std::is_convertible_v<STAmount*, Number*>);
+
+        {
+            STAmount const stnum{sfNumber};
+            BEAST_EXPECT(stnum.getSType() == STI_AMOUNT);
+            BEAST_EXPECT(stnum.getText() == "0");
+            BEAST_EXPECT(stnum.isDefault() == true);
+            BEAST_EXPECT(stnum.value() == Number{0});
+        }
+
+        {
+            BEAST_EXPECT(amountFromJson(sfNumber, Json::Value(42)) == XRPAmount(42));
+            BEAST_EXPECT(amountFromJson(sfNumber, Json::Value(-42)) == XRPAmount(-42));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, Json::UInt(42)) == XRPAmount(42));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "-123") == XRPAmount(-123));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "123") == XRPAmount(123));
+            BEAST_EXPECT(amountFromJson(sfNumber, "-123") == XRPAmount(-123));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "3.14e2") == XRPAmount(314));
+            BEAST_EXPECT(amountFromJson(sfNumber, "-3.14e2") == XRPAmount(-314));
+
+            BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
+            BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
+
+            constexpr auto imin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, imin) == XRPAmount(imin));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(imin)) == XRPAmount(imin));
+
+            constexpr auto imax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, imax) == XRPAmount(imax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(imax)) == XRPAmount(imax));
+
+            constexpr auto umax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, umax) == XRPAmount(umax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(umax)) == XRPAmount(umax));
+
+            // XRP does not handle fractional part
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "0.0");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "XRP and MPT must be specified as integral amount.";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // XRP does not handle fractional part
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1000e-2");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "XRP and MPT must be specified as integral amount.";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // Obvious non-numbers tested here
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "e");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'e' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1e");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1e' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "e2");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'e2' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, Json::Value());
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "XRP may not be specified with a null Json value";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(
+                    sfNumber,
+                    "123456789012345678901234567890123456789012345678901234"
+                    "5678"
+                    "901234567890123456789012345678901234567890123456789012"
+                    "3456"
+                    "78901234567890123456789012345678901234567890");
+                BEAST_EXPECT(false);
+            }
+            catch (std::bad_cast const& e)
+            {
+                BEAST_EXPECT(true);
+            }
+
+            // We do not handle leading zeros
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "001");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'001' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "000.0");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'000.0' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            // We do not handle dangling dot
+            try
+            {
+                auto _ = amountFromJson(sfNumber, ".1");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'.1' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1.");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+
+            try
+            {
+                auto _ = amountFromJson(sfNumber, "1.e3");
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error const& e)
+            {
+                std::string const expected = "'1.e3' is not a number";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+    }
+
+    void
     testConvertXRP()
     {
         testcase("STAmount to XRPAmount conversions");
@@ -612,8 +759,7 @@ public:
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
         Issue const xrp{xrpIssue()};
 
-        for (std::uint64_t drops = 100000000000000000; drops != 1;
-             drops = drops / 10)
+        for (std::uint64_t drops = 100000000000000000; drops != 1; drops = drops / 10)
         {
             auto const t = amountFromString(xrp, std::to_string(drops));
             auto const s = t.xrp();
@@ -645,8 +791,7 @@ public:
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
         Issue const xrp{xrpIssue()};
 
-        for (std::uint64_t dollars = 10000000000; dollars != 1;
-             dollars = dollars / 10)
+        for (std::uint64_t dollars = 10000000000; dollars != 1; dollars = dollars / 10)
         {
             auto const t = amountFromString(usd, std::to_string(dollars));
             auto const s = t.iou();
@@ -829,8 +974,7 @@ public:
 
         // Overflow check for max MPT amounts
         {
-            STAmount amt1(
-                mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
             STAmount amt2(mpt, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
@@ -1002,8 +1146,7 @@ public:
 
         // Overflow check for max positive MPT amounts (should fail)
         {
-            STAmount amt1(
-                mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
             STAmount amt2(mpt, -2);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
@@ -1041,6 +1184,7 @@ public:
         testArithmetic();
         testUnderflow();
         testRounding();
+        testParseJson();
         testConvertXRP();
         testConvertIOU();
         testCanAddXRP();
@@ -1052,6 +1196,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAmount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAmount, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

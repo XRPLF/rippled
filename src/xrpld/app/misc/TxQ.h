@@ -1,26 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-19 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TXQ_H_INCLUDED
-#define RIPPLE_TXQ_H_INCLUDED
-
-#include <xrpld/app/tx/applySteps.h>
+#pragma once
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
@@ -28,13 +6,14 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/applySteps.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class Config;
@@ -114,7 +93,7 @@ public:
             allowing more than `maximumTxnInLedger` "cheap" transactions into
             the open ledger.
 
-            @todo eahennis. This setting seems to go against our goals and
+            @todo ximinez. This setting seems to go against our goals and
                 values. Can it be removed?
         */
         std::optional<std::uint32_t> maximumTxnInLedger;
@@ -333,9 +312,7 @@ public:
      *        and first available sequence
      */
     FeeAndSeq
-    getTxRequiredFeeAndSeq(
-        OpenView const& view,
-        std::shared_ptr<STTx const> const& tx) const;
+    getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> const& tx) const;
 
     /** Returns information about the transactions currently
         in the queue for the account.
@@ -401,18 +378,15 @@ private:
         /// Constructor
         FeeMetrics(Setup const& setup, beast::Journal j)
             : minimumTxnCount_(
-                  setup.standAlone ? setup.minimumTxnInLedgerSA
-                                   : setup.minimumTxnInLedger)
+                  setup.standAlone ? setup.minimumTxnInLedgerSA : setup.minimumTxnInLedger)
             , targetTxnCount_(
-                  setup.targetTxnInLedger < minimumTxnCount_
-                      ? minimumTxnCount_
-                      : setup.targetTxnInLedger)
+                  setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
+                                                             : setup.targetTxnInLedger)
             , maximumTxnCount_(
-                  setup.maximumTxnInLedger
-                      ? *setup.maximumTxnInLedger < targetTxnCount_
+                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
                           ? targetTxnCount_
                           : *setup.maximumTxnInLedger
-                      : std::optional<std::size_t>(std::nullopt))
+                                           : std::optional<std::size_t>(std::nullopt))
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -431,11 +405,7 @@ private:
             @param setup Customization params.
         */
         std::size_t
-        update(
-            Application& app,
-            ReadView const& view,
-            bool timeLeap,
-            TxQ::Setup const& setup);
+        update(Application& app, ReadView const& view, bool timeLeap, TxQ::Setup const& setup);
 
         /// Snapshot of the externally relevant FeeMetrics
         /// fields at any given time.
@@ -556,12 +526,12 @@ private:
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times
             it needs to be done.
-            @invariant `pfresult` is never allowed to be empty. The
+            @invariant `pfResult` is never allowed to be empty. The
                 `std::optional` is leveraged to allow `emplace`d
                 construction and replacement without a copy
                 assignment operation.
         */
-        std::optional<PreflightResult const> pfresult;
+        std::optional<PreflightResult const> pfResult;
 
         /** Starting retry count for newly queued transactions.
 
@@ -596,7 +566,7 @@ private:
             TxID const& txID,
             FeeLevel64 feeLevel,
             ApplyFlags const flags,
-            PreflightResult const& pfresult);
+            PreflightResult const& pfResult);
 
         /// Attempt to apply the queued transaction to the open ledger.
         ApplyResult
@@ -607,7 +577,7 @@ private:
         TxConsequences const&
         consequences() const
         {
-            return pfresult->consequences;
+            return pfResult->consequences;
         }
 
         /// Return a TxDetails based on contained information.
@@ -622,7 +592,7 @@ private:
                 seqProxy,
                 txn,
                 retriesRemaining,
-                pfresult->ter,
+                pfResult->ter,
                 lastResult};
         }
     };
@@ -653,8 +623,7 @@ private:
         operator()(MaybeTx const& lhs, MaybeTx const& rhs) const
         {
             if (lhs.feeLevel == rhs.feeLevel)
-                return (lhs.txID ^ MaybeTx::parentHashComp) <
-                    (rhs.txID ^ MaybeTx::parentHashComp);
+                return (lhs.txID ^ MaybeTx::parentHashComp) < (rhs.txID ^ MaybeTx::parentHashComp);
             return lhs.feeLevel > rhs.feeLevel;
         }
     };
@@ -747,13 +716,11 @@ private:
         std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
         std::shared_ptr<STTx const> const& tx);
 
-    using FeeHook = boost::intrusive::member_hook<
-        MaybeTx,
-        boost::intrusive::set_member_hook<>,
-        &MaybeTx::byFeeListHook>;
+    using FeeHook = boost::intrusive::
+        member_hook<MaybeTx, boost::intrusive::set_member_hook<>, &MaybeTx::byFeeListHook>;
 
-    using FeeMultiSet = boost::intrusive::
-        multiset<MaybeTx, FeeHook, boost::intrusive::compare<OrderCandidates>>;
+    using FeeMultiSet =
+        boost::intrusive::multiset<MaybeTx, FeeHook, boost::intrusive::compare<OrderCandidates>>;
 
     using AccountMap = std::map<AccountID, TxQAccount>;
 
@@ -821,10 +788,9 @@ private:
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
     /** Erase and return the next entry for the account (if fee level
         is higher), or next entry in byFee_ (lower fee level).
-        Used to get the next "applyable" MaybeTx for accept().
+        Used to get the next "applicable" MaybeTx for accept().
     */
-    FeeMultiSet::iterator_type eraseAndAdvance(
-        FeeMultiSet::const_iterator_type);
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
     /// Erase a range of items, based on TxQAccount::TxMap iterators
     TxQAccount::TxMap::iterator
     erase(
@@ -845,7 +811,7 @@ private:
         AccountMap::iterator const& accountIter,
         TxQAccount::TxMap::iterator,
         FeeLevel64 feeLevelPaid,
-        PreflightResult const& pfresult,
+        PreflightResult const& pfResult,
         std::size_t const txExtraCount,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
@@ -862,8 +828,7 @@ template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::baseLevel)
-        .value_or(XRPAmount(STAmount::cMaxNativeN));
+    return mulDiv(level, baseFee, TxQ::baseLevel).value_or(XRPAmount(STAmount::cMaxNativeN));
 }
 
 inline FeeLevel64
@@ -873,6 +838,4 @@ toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

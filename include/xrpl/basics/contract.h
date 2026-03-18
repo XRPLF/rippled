@@ -1,32 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_CONTRACT_H_INCLUDED
-#define RIPPLE_BASICS_CONTRACT_H_INCLUDED
-
+#include <xrpl/basics/sanitizers.h>
 #include <xrpl/beast/type_name.h>
 
 #include <exception>
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /*  Programming By Contract
 
@@ -43,16 +24,28 @@ LogThrow(std::string const& title);
     When called from within a catch block, it will pass
     control to the next matching exception handler, if any.
     Otherwise, std::terminate will be called.
+
+    ASAN can't handle sudden jumps in control flow very well. This
+    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+    triggering false positives, since it throws.
 */
-[[noreturn]] inline void
+[[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
 Rethrow()
 {
     LogThrow("Re-throwing exception");
     throw;
 }
 
+/*
+    Logs and throws an exception of type E.
+
+    ASAN can't handle sudden jumps in control flow very well. This
+    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+    triggering false positives, since it throws.
+*/
+
 template <class E, class... Args>
-[[noreturn]] inline void
+[[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
 Throw(Args&&... args)
 {
     static_assert(
@@ -60,10 +53,7 @@ Throw(Args&&... args)
         "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow(
-        std::string(
-            "Throwing exception of type " + beast::type_name<E>() + ": ") +
-        e.what());
+    LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());
     throw e;
 }
 
@@ -71,6 +61,4 @@ Throw(Args&&... args)
 [[noreturn]] void
 LogicError(std::string const& how) noexcept;
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

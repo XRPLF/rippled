@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/net/RegisterSSLCerts.h>
 
 #if BOOST_OS_WINDOWS
@@ -32,13 +13,10 @@
 #include <memory>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 void
-registerSSLCerts(
-    boost::asio::ssl::context& ctx,
-    boost::system::error_code& ec,
-    beast::Journal j)
+registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, beast::Journal j)
 {
 #if BOOST_OS_WINDOWS
     auto certStoreDelete = [](void* h) {
@@ -50,8 +28,7 @@ registerSSLCerts(
 
     if (!hStore)
     {
-        ec = boost::system::error_code(
-            GetLastError(), boost::system::system_category());
+        ec = boost::system::error_code(GetLastError(), boost::system::system_category());
         return;
     }
 
@@ -63,22 +40,20 @@ registerSSLCerts(
     if (!store)
     {
         ec = boost::system::error_code(
-            static_cast<int>(::ERR_get_error()),
-            boost::asio::error::get_ssl_category());
+            static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
         return;
     }
 
-    auto warn = [&](std::string const& mesg) {
+    auto warn = [&](std::string const& msg) {
         // Buffer based on asio recommended size
         char buf[256];
         ::ERR_error_string_n(ec.value(), buf, sizeof(buf));
-        JLOG(j.warn()) << mesg << " " << buf;
+        JLOG(j.warn()) << msg << " " << buf;
         ::ERR_clear_error();
     };
 
     PCCERT_CONTEXT pContext = NULL;
-    while ((pContext = CertEnumCertificatesInStore(hStore.get(), pContext)) !=
-           NULL)
+    while ((pContext = CertEnumCertificatesInStore(hStore.get(), pContext)) != NULL)
     {
         unsigned char const* pbCertEncoded = pContext->pbCertEncoded;
         std::unique_ptr<X509, decltype(X509_free)*> x509{
@@ -104,11 +79,12 @@ registerSSLCerts(
     SSL_CTX_set_cert_store(ctx.native_handle(), store.release());
 
 #else
+    // NOLINTNEXTLINE(bugprone-unused-return-value)
     ctx.set_default_verify_paths(ec);
 #endif
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 // There is a very unpleasant interaction between <wincrypt> and
 // openssl x509 types (namely the former has macros that stomp

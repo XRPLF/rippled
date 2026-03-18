@@ -1,40 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
-#define RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/rpc/InfoSub.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <map>
 #include <mutex>
 #include <optional>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
@@ -122,7 +102,7 @@ private:
         std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are inavlid.
+        Returns false if the source currencies are invalid.
     */
     bool
     findPaths(
@@ -159,7 +139,7 @@ private:
 
     std::optional<uint256> domain;
 
-    bool convert_all_;
+    bool convert_all_{};
 
     std::recursive_mutex mIndexLock;
     LedgerIndex mLastIndex;
@@ -177,6 +157,4 @@ private:
     static unsigned int const max_paths_ = 4;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
@@ -26,7 +7,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 /*
@@ -50,9 +31,10 @@ getDeliveredAmount(
     if (!serializedTx)
         return {};
 
-    if (transactionMeta.hasDeliveredAmount())
+    if (auto const& deliveredAmount = transactionMeta.getDeliveredAmount();
+        deliveredAmount.has_value())
     {
-        return transactionMeta.getDeliveredAmount();
+        return deliveredAmount;
     }
 
     if (serializedTx->isFieldPresent(sfAmount))
@@ -67,8 +49,7 @@ getDeliveredAmount(
         // then its absence indicates that the amount delivered is listed in the
         // Amount field. DeliveredAmount went live January 24, 2014.
         // 446000000 is in Feb 2014, well after DeliveredAmount went live
-        if (getLedgerIndex() >= 4594095 ||
-            getCloseTime() > NetClock::time_point{446000000s})
+        if (getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s})
         {
             return serializedTx->getFieldAmount(sfAmount);
         }
@@ -78,51 +59,25 @@ getDeliveredAmount(
 }
 
 // Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type, transaction result and whether fix1623 is enabled
-template <class GetFix1623Enabled>
+// based on transaction type and transaction result
 bool
-canHaveDeliveredAmountHelp(
-    GetFix1623Enabled const& getFix1623Enabled,
+canHaveDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
 
+    TxType const tt{serializedTx->getTxnType()};
+    // Transaction type should be ttPAYMENT, ttACCOUNT_DELETE or ttCHECK_CASH
+    // and if the transaction failed nothing could have been delivered.
+    if ((tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
+        transactionMeta.getResultTER() == tesSUCCESS)
     {
-        TxType const tt{serializedTx->getTxnType()};
-        if (tt != ttPAYMENT && tt != ttCHECK_CASH && tt != ttACCOUNT_DELETE)
-            return false;
-
-        if (tt == ttCHECK_CASH && !getFix1623Enabled())
-            return false;
+        return true;
     }
 
-    // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
-        return false;
-
-    return true;
-}
-
-// Returns true if transaction meta could contain a delivered amount field,
-// based on transaction type, transaction result and whether fix1623 is enabled
-bool
-canHaveDeliveredAmount(
-    RPC::Context const& context,
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta)
-{
-    // These lambdas are used to compute the values lazily
-    auto const getFix1623Enabled = [&context]() -> bool {
-        auto const view = context.app.openLedger().current();
-        if (!view)
-            return false;
-        return view->rules().enabled(fix1623);
-    };
-
-    return canHaveDeliveredAmountHelp(
-        getFix1623Enabled, serializedTx, transactionMeta);
+    return false;
 }
 
 void
@@ -132,23 +87,17 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
 {
-    auto const info = ledger.info();
-    auto const getFix1623Enabled = [&ledger] {
-        return ledger.rules().enabled(fix1623);
-    };
+    auto const info = ledger.header();
 
-    if (canHaveDeliveredAmountHelp(
-            getFix1623Enabled, serializedTx, transactionMeta))
+    if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getLedgerIndex = [&info] { return info.seq; };
         auto const getCloseTime = [&info] { return info.closeTime; };
 
-        auto amt = getDeliveredAmount(
-            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
+        auto amt = getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
-            meta[jss::delivered_amount] =
-                amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
         }
         else
         {
@@ -167,15 +116,13 @@ getDeliveredAmount(
     TxMeta const& transactionMeta,
     GetLedgerIndex const& getLedgerIndex)
 {
-    if (canHaveDeliveredAmount(context, serializedTx, transactionMeta))
+    if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
-        auto const getCloseTime =
-            [&context,
-             &getLedgerIndex]() -> std::optional<NetClock::time_point> {
+        auto const getCloseTime = [&context,
+                                   &getLedgerIndex]() -> std::optional<NetClock::time_point> {
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
-        return getDeliveredAmount(
-            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
+        return getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
     }
 
     return {};
@@ -189,9 +136,7 @@ getDeliveredAmount(
     LedgerIndex const& ledgerIndex)
 {
     return getDeliveredAmount(
-        context, serializedTx, transactionMeta, [&ledgerIndex]() {
-            return ledgerIndex;
-        });
+        context, serializedTx, transactionMeta, [&ledgerIndex]() { return ledgerIndex; });
 }
 
 void
@@ -201,8 +146,7 @@ insertDeliveredAmount(
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
-    insertDeliveredAmount(
-        meta, context, transaction->getSTransaction(), transactionMeta);
+    insertDeliveredAmount(meta, context, transaction->getSTransaction(), transactionMeta);
 }
 
 void
@@ -212,17 +156,15 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    if (canHaveDeliveredAmount(context, transaction, transactionMeta))
+    if (canHaveDeliveredAmount(transaction, transactionMeta))
     {
-        auto amt = getDeliveredAmount(
-            context, transaction, transactionMeta, [&transactionMeta]() {
-                return transactionMeta.getLgrSeq();
-            });
+        auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta]() {
+            return transactionMeta.getLgrSeq();
+        });
 
         if (amt)
         {
-            meta[jss::delivered_amount] =
-                amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
         }
         else
         {
@@ -234,4 +176,4 @@ insertDeliveredAmount(
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl
