@@ -46,7 +46,7 @@ public:
     {
         if (!object_.isFieldPresent(sfLedgerEntryType))
         {
-            return false;
+            return false;  // LCOV_EXCL_LINE
         }
         auto ledgerEntryType = static_cast<LedgerEntryType>(object_.getFieldU16(sfLedgerEntryType));
         return protocol_autogen::validateSTObject(

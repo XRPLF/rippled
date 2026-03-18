@@ -61,9 +61,13 @@ doFeature(RPC::JsonContext& context)
             return rpcError(rpcNO_PERMISSION);
 
         if (context.params[jss::vetoed].asBool())
+        {
             table.veto(feature);
+        }
         else
+        {
             table.unVeto(feature);
+        }
     }
 
     Json::Value jvReply = table.getJson(feature, isAdmin);

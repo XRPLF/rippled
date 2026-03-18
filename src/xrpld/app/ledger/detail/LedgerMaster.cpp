@@ -283,7 +283,9 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
                 app_.getOPs().setAmendmentWarned();
             }
             else
+            {
                 app_.getOPs().clearAmendmentWarned();
+            }
         }
     }
 }
@@ -350,10 +352,12 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
         LedgerIndex maxSeq = validLedger->header().seq + 10;
 
         if (closeTime > validLedger->header().parentCloseTime)
+        {
             maxSeq += std::chrono::duration_cast<std::chrono::seconds>(
                           closeTime - validLedger->header().parentCloseTime)
                           .count() /
                 2;
+        }
 
         if (ledger->header().seq > maxSeq)
         {
@@ -520,9 +524,13 @@ LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal
     }
 
     if (maybeMin == std::nullopt)
+    {
         minVal = maxVal;
+    }
     else
+    {
         minVal = 1 + *maybeMin;
+    }
 
     return true;
 }
@@ -544,9 +552,9 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
         // Ensure we shrink the tips as much as possible. If we have 7-9 and
         // 8,9 are invalid, we don't want to see the 8 and shrink to just 9
         // because then we'll have nothing when we could have 7.
-        while (pendingSaves.count(maxVal) > 0)
+        while (pendingSaves.contains(maxVal))
             --maxVal;
-        while (pendingSaves.count(minVal) > 0)
+        while (pendingSaves.contains(minVal))
             ++minVal;
 
         // Best effort for remaining exclusions
@@ -555,9 +563,13 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
             if ((v.first >= minVal) && (v.first <= maxVal))
             {
                 if (v.first > ((minVal + maxVal) / 2))
+                {
                     maxVal = v.first - 1;
+                }
                 else
+                {
                     minVal = v.first + 1;
+                }
             }
         }
 
@@ -577,9 +589,13 @@ LedgerMaster::getEarliestFetch()
     std::uint32_t e = getClosedLedger()->header().seq;
 
     if (e > fetch_depth_)
+    {
         e -= fetch_depth_;
+    }
     else
+    {
         e = 0;
+    }
     return e;
 }
 
@@ -1094,6 +1110,7 @@ LedgerMaster::consensusBuilt(
     // Of the ledgers with sufficient validations,
     // find the one with the highest sequence
     for (auto& v : count)
+    {
         if (v.second.valCount_ > neededValidations)
         {
             // If we still don't know the sequence, get it
@@ -1109,6 +1126,7 @@ LedgerMaster::consensusBuilt(
                 maxLedger = v.first;
             }
         }
+    }
 
     if (maxSeq > mValidLedgerSeq)
     {
@@ -1221,8 +1239,10 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
             {
                 // Can we try to acquire the ledger we need?
                 if (!ledger && (++acqCount < ledger_fetch_size_))
+                {
                     ledger = app_.getInboundLedgers().acquire(
                         *hash, seq, InboundLedger::Reason::GENERIC);
+                }
             }
 
             // Did we acquire the next ledger we need to publish?
@@ -1850,7 +1870,9 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                         JLOG(m_journal.trace()) << "advanceThread should acquire";
                     }
                     else
+                    {
                         missing = std::nullopt;
+                    }
                 }
                 if (missing)
                 {
@@ -2133,9 +2155,11 @@ LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
         return {};
 
     for (auto it = lgr->txs.begin(); it != lgr->txs.end(); ++it)
+    {
         if (it->first && it->second && it->second->isFieldPresent(sfTransactionIndex) &&
             it->second->getFieldU32(sfTransactionIndex) == txnIndex)
             return it->first->getTransactionID();
+    }
 
     return {};
 }

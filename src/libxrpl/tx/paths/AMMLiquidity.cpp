@@ -80,11 +80,17 @@ constexpr T
 maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
+    {
         return XRPAmount(STAmount::cMaxNative);
+    }
     else if constexpr (std::is_same_v<T, IOUAmount>)
+    {
         return IOUAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+    }
     else if constexpr (std::is_same_v<T, STAmount>)
+    {
         return STAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+    }
 }
 
 template <typename T>
@@ -108,14 +114,12 @@ AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules con
             balances,
             Quality{balances});
     }
-    else
-    {
-        auto const out = maxOut<TOut>(balances.out, issueOut());
-        if (out <= TOut{0} || out >= balances.out)
-            return std::nullopt;
-        return AMMOffer<TIn, TOut>(
-            *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
-    }
+
+    auto const out = maxOut<TOut>(balances.out, issueOut());
+    if (out <= TOut{0} || out >= balances.out)
+        return std::nullopt;
+    return AMMOffer<TIn, TOut>(
+        *this, {swapAssetOut(balances, out, tradingFee_), out}, balances, Quality{balances});
 }
 
 template <typename TIn, typename TOut>
@@ -166,7 +170,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                     return std::nullopt;
                 return AMMOffer<TIn, TOut>(*this, amounts, balances, Quality{amounts});
             }
-            else if (!clobQuality)
+            if (!clobQuality)
             {
                 // If there is no CLOB to compare against, return the largest
                 // amount, which doesn't overflow. The size is going to be
@@ -175,13 +179,12 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // nullopt if the pool is small.
                 return maxOffer(balances, view.rules());
             }
-            else if (
-                auto const amounts =
+            if (auto const amounts =
                     changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }
-            else if (view.rules().enabled(fixAMMv1_2))
+            if (view.rules().enabled(fixAMMv1_2))
             {
                 if (auto const maxAMMOffer = maxOffer(balances, view.rules());
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
@@ -192,9 +195,11 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
             if (!view.rules().enabled(fixAMMOverflowOffer))
+            {
                 return maxOffer(balances, view.rules());
-            else
-                return std::nullopt;
+            }
+
+            return std::nullopt;
         }
         catch (std::exception const& e)
         {

@@ -55,9 +55,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     {
         std::string const role = params["role"].asString();
         if (role == "gateway")
+        {
             roleGateway = true;
+        }
         else if (role != "user")
+        {
             return RPC::invalid_field_error("role");
+        }
     }
 
     unsigned int limit = 0;

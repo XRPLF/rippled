@@ -43,8 +43,10 @@ public:
         if (!protocol_autogen::validateSTObject(
                 *tx_, TxFormats::getInstance().findByType(tx_->getTxnType())->getSOTemplate()))
         {
+            // LCOV_EXCL_START
             reason = "Transaction failed schema validation";
             return false;
+            // LCOV_EXCL_STOP
         }
 
         // Pseudo transactions are not submitted to the network

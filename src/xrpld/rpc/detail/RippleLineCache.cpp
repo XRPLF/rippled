@@ -77,7 +77,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     {
         XRPL_ASSERT(it->second == nullptr, "xrpl::RippleLineCache::getRippleLines : null lines");
         auto lines = TrustLine::getItems(accountID, *ledger_, direction);
-        if (lines.size())
+        if (!lines.empty())
         {
             it->second = std::make_shared<std::vector<TrustLine>>(std::move(lines));
             totalLineCount_ += it->second->size();

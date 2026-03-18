@@ -707,8 +707,10 @@ public:
         auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
+            {
                 if (!supported[i])
                     return bitsetIndexToFeature(i);
+            }
 
             return std::nullopt;
         }();
@@ -721,7 +723,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (env.app().config().features.find(f) != env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {

@@ -176,7 +176,7 @@ public:
             return std::string{reinterpret_cast<char const*>(blob->data()), blob->size()};
         };
 
-        std::string usdTxBlob = "";
+        std::string usdTxBlob;
         auto wsc = makeWSClient(env.app().config());
         {
             Json::Value requestUSD;

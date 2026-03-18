@@ -334,18 +334,20 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
+            {
                 return sfLowQualityIn;
-            else
-                return sfHighQualityIn;
+            }
+
+            return sfHighQualityIn;
         }
-        else
+
+        // compute src quality out
+        if (this->src_ < this->dst_)
         {
-            // compute src quality out
-            if (this->src_ < this->dst_)
-                return sfLowQualityOut;
-            else
-                return sfHighQualityOut;
+            return sfLowQualityOut;
         }
+
+        return sfHighQualityOut;
     }();
 
     if (!sle->isFieldPresent(field))
@@ -755,15 +757,13 @@ DirectStepI<TDerived>::qualities(
     {
         return qualitiesSrcRedeems(sb);
     }
-    else
-    {
-        auto const prevStepDebtDirection = [&] {
-            if (prevStep_)
-                return prevStep_->debtDirection(sb, strandDir);
-            return DebtDirection::issues;
-        }();
-        return qualitiesSrcIssues(sb, prevStepDebtDirection);
-    }
+
+    auto const prevStepDebtDirection = [&] {
+        if (prevStep_)
+            return prevStep_->debtDirection(sb, strandDir);
+        return DebtDirection::issues;
+    }();
+    return qualitiesSrcIssues(sb, prevStepDebtDirection);
 }
 
 template <class TDerived>
@@ -821,7 +821,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
     }
 
@@ -832,7 +832,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         if (auto prevSrc = ctx.prevStep->directStepSrcAcct())
         {
             auto const ter = checkNoRipple(ctx.view, *prevSrc, src_, dst_, currency_, j_);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
         }
     }
@@ -915,7 +915,7 @@ make_DirectStepI(
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};
