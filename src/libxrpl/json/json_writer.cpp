@@ -304,7 +304,9 @@ StyledWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
 
             if (members.empty())
+            {
                 pushValue("{}");
+            }
             else
             {
                 writeWithIndent("{");
@@ -319,7 +321,7 @@ StyledWriter::writeValue(Value const& value)
                     document_ += " : ";
                     writeValue(childValue);
 
-                    if (++it == members.end())
+                    if (++it; it == members.end())
                         break;
 
                     document_ += ",";
@@ -339,7 +341,9 @@ StyledWriter::writeArrayValue(Value const& value)
     unsigned size = value.size();
 
     if (size == 0)
+    {
         pushValue("[]");
+    }
     else
     {
         bool isArrayMultiLine = isMultilineArray(value);
@@ -356,7 +360,9 @@ StyledWriter::writeArrayValue(Value const& value)
                 Value const& childValue = value[index];
 
                 if (hasChildValue)
+                {
                     writeWithIndent(childValues_[index]);
+                }
                 else
                 {
                     writeIndent();
@@ -429,9 +435,13 @@ void
 StyledWriter::pushValue(std::string const& value)
 {
     if (addChildValues_)
+    {
         childValues_.push_back(value);
+    }
     else
+    {
         document_ += value;
+    }
 }
 
 void
@@ -529,7 +539,9 @@ StyledStreamWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
 
             if (members.empty())
+            {
                 pushValue("{}");
+            }
             else
             {
                 writeWithIndent("{");
@@ -564,7 +576,9 @@ StyledStreamWriter::writeArrayValue(Value const& value)
     unsigned size = value.size();
 
     if (size == 0)
+    {
         pushValue("[]");
+    }
     else
     {
         bool isArrayMultiLine = isMultilineArray(value);
@@ -581,7 +595,9 @@ StyledStreamWriter::writeArrayValue(Value const& value)
                 Value const& childValue = value[index];
 
                 if (hasChildValue)
+                {
                     writeWithIndent(childValues_[index]);
+                }
                 else
                 {
                     writeIndent();
@@ -654,9 +670,13 @@ void
 StyledStreamWriter::pushValue(std::string const& value)
 {
     if (addChildValues_)
+    {
         childValues_.push_back(value);
+    }
     else
+    {
         *document_ << value;
+    }
 }
 
 void

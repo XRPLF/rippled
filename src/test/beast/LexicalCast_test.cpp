@@ -198,7 +198,7 @@ public:
         testcase("zero conversion");
 
         {
-            std::int32_t out;
+            std::int32_t out = 0;
 
             expect(lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
@@ -206,7 +206,7 @@ public:
         }
 
         {
-            std::uint32_t out;
+            std::uint32_t out = 0;
 
             expect(!lexicalCastChecked(out, "-0"), "0");
             expect(lexicalCastChecked(out, "0"), "0");
@@ -220,7 +220,7 @@ public:
         testcase("entire range");
 
         std::int32_t i = std::numeric_limits<std::int16_t>::min();
-        std::string const empty("");
+        std::string const empty;
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {

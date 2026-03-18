@@ -84,7 +84,7 @@ struct SEnv
 
     template <class... FN>
     SEnv&
-    multiTx(jtx::JValueVec&& jvv, FN const&... fN)
+    multiTx(jtx::JValueVec const& jvv, FN const&... fN)
     {
         for (auto const& jv : jvv)
             env_(jv, fN...);
@@ -812,7 +812,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             scEnv.tx(create_bridge(b, bridge(a, ia, b, ib)), ter(TER::fromInt(expected.second)));
             TER scTER = scEnv.env_.ter();
 
-            bool pass = mcTER == tesSUCCESS && scTER == tesSUCCESS;
+            bool pass = isTesSuccess(mcTER) && isTesSuccess(scTER);
 
             test_result.emplace_back(mcTER, scTER, pass);
         };
@@ -2142,14 +2142,22 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
                 if (i + 1 == quorum)
+                {
                     scEnv.tx(att, ter(expectedTER)).close();
+                }
                 else
+                {
                     scEnv.tx(att, ter(expectedTER)).close();
+                }
 
                 if (i + 1 < quorum)
+                {
                     BEAST_EXPECT(dstStartBalance == scEnv.env_.balance(dst));
+                }
                 else
+                {
                     BEAST_EXPECT(dstStartBalance + amt == scEnv.env_.balance(dst));
+                }
             }
             BEAST_EXPECT(dstStartBalance + amt == scEnv.env_.balance(dst));
         }
@@ -2336,9 +2344,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv.tx(att, ter(expectedTER)).close();
             if (i + 1 < xrp_b.quorum)
+            {
                 BEAST_EXPECT(!scEnv.env_.le(ua));
+            }
             else
+            {
                 BEAST_EXPECT(scEnv.env_.le(ua));
+            }
         }
         BEAST_EXPECT(scEnv.env_.le(ua));
     }
@@ -3826,7 +3838,7 @@ private:
         void
         sendAttestations()
         {
-            bool callback_called;
+            bool callback_called = false;
 
             // we have this "do {} while" loop because we want to process
             // all the account create which can reach quorum at this time
@@ -3917,8 +3929,10 @@ private:
         verify() const
         {
             for (auto const& [acct, state] : accounts)
+            {
                 if (!state.verify(env, acct))
                     return false;
+            }
             return true;
         }
 
@@ -3997,12 +4011,12 @@ private:
     template <class T>
     class SmBase
     {
-    public:
         SmBase(std::shared_ptr<ChainStateTracker> const& chainstate, BridgeDef const& bridge)
             : bridge_(bridge), st_(chainstate)
         {
         }
 
+    public:
         ChainStateTrack&
         srcState()
         {
@@ -4030,6 +4044,8 @@ private:
     protected:
         BridgeDef const& bridge_;
         std::shared_ptr<ChainStateTracker> st_;
+
+        friend T;
     };
 
     // --------------------------------------------------
@@ -4042,7 +4058,7 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             AccountCreate create)
-            : Base(chainstate, bridge), sm_state(st_initial), cr(std::move(create))
+            : Base(chainstate, bridge), cr(std::move(create))
         {
         }
 
@@ -4074,7 +4090,7 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            size_t i;
+            size_t i = 0;
             for (i = 0; i < num_signers; ++i)
             {
                 size_t signer_idx = (rnd + i) % num_signers;
@@ -4155,7 +4171,7 @@ private:
         }
 
     private:
-        SmState sm_state;
+        SmState sm_state{st_initial};
         AccountCreate cr;
     };
 
@@ -4169,7 +4185,7 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             Transfer xfer)
-            : Base(chainstate, bridge), xfer(std::move(xfer)), sm_state(st_initial)
+            : Base(chainstate, bridge), xfer(std::move(xfer))
         {
         }
 
@@ -4295,9 +4311,14 @@ private:
                     break;
 
                 case st_attesting:
-                    sm_state = attest(time, rnd)
-                        ? (xfer.with_claim == WithClaim::yes ? st_attested : st_completed)
-                        : st_attesting;
+                    if (attest(time, rnd))
+                    {
+                        sm_state = xfer.with_claim == WithClaim::yes ? st_attested : st_completed;
+                    }
+                    else
+                    {
+                        sm_state = st_attesting;
+                    }
                     break;
 
                 case st_attested:
@@ -4316,7 +4337,7 @@ private:
 
     private:
         Transfer xfer;
-        SmState sm_state;
+        SmState sm_state{st_initial};
     };
 
     // --------------------------------------------------
@@ -4364,9 +4385,13 @@ public:
                 };
                 auto& [t, sm] = *it;
                 if (t <= time && std::visit(vis, sm) == st_completed)
+                {
                     it = sm_.erase(it);
+                }
                 else
+                {
                     ++it;
+                }
             }
 
             // send attestations
@@ -4406,8 +4431,10 @@ public:
             std::vector<Account> result;
             result.reserve(num_acct);
             for (int i = 0; i < num_acct; ++i)
+            {
                 result.emplace_back(
                     "a"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            }
             result.emplace_back("doorXRPLocking");
             doorXRPLocking = result.back();
             result.emplace_back("doorUSDLocking");
@@ -4456,8 +4483,10 @@ public:
             std::vector<Account> result;
             result.reserve(num_ua);
             for (int i = 0; i < num_ua; ++i)
+            {
                 result.emplace_back(
                     "ua"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            }
             return result;
         }();
 

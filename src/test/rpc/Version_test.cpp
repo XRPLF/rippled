@@ -42,10 +42,12 @@ class Version_test : public beast::unit_test::suite
 
         auto badVersion = [](Json::Value const& re) -> bool {
             if (re.isMember("error_what"))
+            {
                 if (re["error_what"].isString())
                 {
                     return re["error_what"].asString().find(jss::invalid_API_version.c_str()) == 0;
                 }
+            }
             return false;
         };
 

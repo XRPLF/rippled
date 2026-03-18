@@ -151,9 +151,13 @@ public:
     testFreeTrustlines(FeatureBitset features, bool thirdLineCreatesLE, bool createOnHighAcct)
     {
         if (thirdLineCreatesLE)
+        {
             testcase("Allow two free trustlines");
+        }
         else
+        {
             testcase("Dynamic reserve for trustline");
+        }
 
         using namespace jtx;
         Env env(*this, features);
@@ -284,8 +288,10 @@ public:
              badFlag *= 2)
         {
             if (badFlag & tfTrustSetMask)
+            {
                 env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)),
                     ter(temINVALID_FLAG));
+            }
         }
 
         // trust amount can't be XRP

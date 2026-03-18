@@ -72,7 +72,9 @@ bumpLastPage(
         // Adjust root previous and previous node's next
         sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
         if (prevIndex.value_or(0) == 0)
+        {
             sleRoot->setFieldU64(sfIndexNext, newLastPage);
+        }
         else
         {
             auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
@@ -88,6 +90,7 @@ bumpLastPage(
 
         // Fixup page numbers in the objects referred by indexes
         if (adjust)
+        {
             for (auto const key : indexes)
             {
                 if (!adjust(sb, key, newLastPage))
@@ -96,6 +99,7 @@ bumpLastPage(
                     return false;
                 }
             }
+        }
 
         sb.apply(view);
         return true;
