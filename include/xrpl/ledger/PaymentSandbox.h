@@ -58,8 +58,8 @@ private:
     {
         explicit Value() = default;
 
-        STAmount lowAcctCredits;
-        STAmount highAcctCredits;
+        STAmount lowAcctDebits;
+        STAmount highAcctDebits;
         STAmount lowAcctOrigBalance;
     };
 

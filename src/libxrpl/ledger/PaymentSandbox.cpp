@@ -37,14 +37,14 @@ DeferredCredits::credit(
 
         if (sender < receiver)
         {
-            v.highAcctCredits = amount;
-            v.lowAcctCredits = amount.zeroed();
+            v.lowAcctDebits = amount;
+            v.highAcctDebits = amount.zeroed();
             v.lowAcctOrigBalance = preCreditSenderBalance;
         }
         else
         {
-            v.highAcctCredits = amount.zeroed();
-            v.lowAcctCredits = amount;
+            v.lowAcctDebits = amount.zeroed();
+            v.highAcctDebits = amount;
             v.lowAcctOrigBalance = -preCreditSenderBalance;
         }
 
@@ -56,11 +56,11 @@ DeferredCredits::credit(
         auto& v = i->second;
         if (sender < receiver)
         {
-            v.highAcctCredits += amount;
+            v.lowAcctDebits += amount;
         }
         else
         {
-            v.lowAcctCredits += amount;
+            v.highAcctDebits += amount;
         }
     }
 }
@@ -104,11 +104,11 @@ DeferredCredits::adjustments(
 
     if (main < other)
     {
-        result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
+        result.emplace(v.lowAcctDebits, v.highAcctDebits, v.lowAcctOrigBalance);
         return result;
     }
 
-    result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+    result.emplace(v.highAcctDebits, v.lowAcctDebits, -v.lowAcctOrigBalance);
     return result;
 }
 
@@ -122,8 +122,8 @@ DeferredCredits::apply(DeferredCredits& to)
         {
             auto& toVal = r.first->second;
             auto const& fromVal = i.second;
-            toVal.lowAcctCredits += fromVal.lowAcctCredits;
-            toVal.highAcctCredits += fromVal.highAcctCredits;
+            toVal.lowAcctDebits += fromVal.lowAcctDebits;
+            toVal.highAcctDebits += fromVal.highAcctDebits;
             // Do not update the orig balance, it's already correct
         }
     }
