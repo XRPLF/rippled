@@ -26,7 +26,7 @@ template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
-    enum class OfferType { AMM, CLOB };
+    enum class OfferType { Amm, Clob };
 
     static constexpr uint32_t kMAX_OFFERS_TO_CONSUME{1000};
     Book book_;
@@ -493,7 +493,7 @@ public:
         if (!rules.enabled(fixAMMv1_1))
             return ofrQ;
         else if (
-            offerType == OfferType::CLOB ||
+            offerType == OfferType::Clob ||
             (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
             return ofrQ;
 
@@ -543,7 +543,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(ReadView const& v, DebtDirectio
     if (!res)
         return {std::nullopt, dir};
 
-    auto const waiveFee = (std::get<OfferType>(*res) == OfferType::AMM) ? WaiveTransferFee::Yes
+    auto const waiveFee = (std::get<OfferType>(*res) == OfferType::Amm) ? WaiveTransferFee::Yes
                                                                         : WaiveTransferFee::No;
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
@@ -566,7 +566,7 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     {
         auto static const kQ_ONE = Quality{STAmount::uRateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, kQ_ONE, prevStepDir, WaiveTransferFee::Yes, OfferType::AMM, v.rules());
+            v, kQ_ONE, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
         if (q == kQ_ONE)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
@@ -576,7 +576,7 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
 
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir, WaiveTransferFee::No, OfferType::CLOB, v.rules());
+        v, *(res->quality()), prevStepDir, WaiveTransferFee::No, OfferType::Clob, v.rules());
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -884,9 +884,9 @@ BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     if (auto const res = tip(view); !res)
         return std::nullopt;
     else if (auto const q = std::get_if<Quality>(&(*res)))
-        return std::make_pair(*q, OfferType::CLOB);
+        return std::make_pair(*q, OfferType::Clob);
     else
-        return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
+        return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::Amm);
 }
 
 template <class TIn, class TOut, class TDerived>

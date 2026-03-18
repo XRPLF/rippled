@@ -45,46 +45,46 @@ namespace xrpl {
           and marked as [[deprecated]] to prevent accidental reuse.
 */
 enum class LedgerNameSpace : std::uint16_t {
-    ACCOUNT = 'a',
+    Account = 'a',
     DirNode = 'd',
     TrustLine = 'r',
-    OFFER = 'o',
+    Offer = 'o',
     OwnerDir = 'O',
     BookDir = 'B',
     SkipList = 's',
-    ESCROW = 'u',
-    AMENDMENTS = 'f',
+    Escrow = 'u',
+    Amendments = 'f',
     FeeSettings = 'e',
-    TICKET = 'T',
+    Ticket = 'T',
     SignerList = 'S',
-    XrpPaymentChannel = 'x',
-    CHECK = 'C',
+    XRPPaymentChannel = 'x',
+    Check = 'C',
     DepositPreauth = 'p',
     DepositPreauthCredentials = 'P',
     NegativeUnl = 'N',
     NftokenOffer = 'q',
     NftokenBuyOffers = 'h',
     NftokenSellOffers = 'i',
-    AMM = 'A',
-    BRIDGE = 'H',
+    Amm = 'A',
+    Bridge = 'H',
     XchainClaimId = 'Q',
     XchainCreateAccountClaimId = 'K',
-    DID = 'I',
-    ORACLE = 'R',
-    MptokenIssuance = '~',
-    MPTOKEN = 't',
-    CREDENTIAL = 'D',
+    Did = 'I',
+    Oracle = 'R',
+    MPTokenIssuance = '~',
+    MPToken = 't',
+    Credential = 'D',
     PermissionedDomain = 'm',
-    DELEGATE = 'E',
-    VAULT = 'V',
+    Delegate = 'E',
+    Vault = 'V',
     LoanBroker = 'l',  // lower-case L
-    LOAN = 'L',
+    Loan = 'L',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
-    CONTRACT [[deprecated]] = 'c',
-    GENERATOR [[deprecated]] = 'g',
-    NICKNAME [[deprecated]] = 'n',
+    Contract [[deprecated]] = 'c',
+    Generator [[deprecated]] = 'g',
+    Nickname [[deprecated]] = 'n',
 };
 
 template <class... Args>
@@ -137,7 +137,7 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+    return indexHash(LedgerNameSpace::Ticket, account, std::uint32_t(ticketSeq));
 }
 
 uint256
@@ -164,7 +164,7 @@ namespace keylet {
 Keylet
 account(AccountID const& id) noexcept
 {
-    return Keylet{ltACCOUNT_ROOT, indexHash(LedgerNameSpace::ACCOUNT, id)};
+    return Keylet{ltACCOUNT_ROOT, indexHash(LedgerNameSpace::Account, id)};
 }
 
 Keylet
@@ -192,7 +192,7 @@ skip(LedgerIndex ledger) noexcept
 Keylet const&
 amendments() noexcept
 {
-    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::AMENDMENTS)};
+    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
     return kRET;
 }
 
@@ -242,7 +242,7 @@ line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexc
 Keylet
 offer(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
+    return {ltOFFER, indexHash(LedgerNameSpace::Offer, id, seq)};
 }
 
 Keylet
@@ -300,7 +300,7 @@ signers(AccountID const& account) noexcept
 Keylet
 check(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
+    return {ltCHECK, indexHash(LedgerNameSpace::Check, id, seq)};
 }
 
 Keylet
@@ -350,13 +350,13 @@ page(uint256 const& key, std::uint64_t index) noexcept
 Keylet
 escrow(AccountID const& src, std::uint32_t seq) noexcept
 {
-    return {ltESCROW, indexHash(LedgerNameSpace::ESCROW, src, seq)};
+    return {ltESCROW, indexHash(LedgerNameSpace::Escrow, src, seq)};
 }
 
 Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
-    return {ltPAYCHAN, indexHash(LedgerNameSpace::XrpPaymentChannel, src, dst, seq)};
+    return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq)};
 }
 
 Keylet
@@ -405,7 +405,7 @@ amm(Asset const& issue1, Asset const& issue2) noexcept
 {
     auto const& [minI, maxI] = std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
     return amm(
-        indexHash(LedgerNameSpace::AMM, minI.account, minI.currency, maxI.account, maxI.currency));
+        indexHash(LedgerNameSpace::Amm, minI.account, minI.currency, maxI.account, maxI.currency));
 }
 
 Keylet
@@ -417,7 +417,7 @@ amm(uint256 const& id) noexcept
 Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept
 {
-    return {ltDELEGATE, indexHash(LedgerNameSpace::DELEGATE, account, authorizedAccount)};
+    return {ltDELEGATE, indexHash(LedgerNameSpace::Delegate, account, authorizedAccount)};
 }
 
 Keylet
@@ -427,7 +427,7 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
     // there can only be one bridge per lockingChainCurrency. On the issuing
     // chain there can only be one bridge per issuingChainCurrency.
     auto const& issue = bridge.issue(chainType);
-    return {ltBRIDGE, indexHash(LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.currency)};
+    return {ltBRIDGE, indexHash(LedgerNameSpace::Bridge, bridge.door(chainType), issue.currency)};
 }
 
 Keylet
@@ -461,13 +461,13 @@ xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 Keylet
 did(AccountID const& account) noexcept
 {
-    return {ltDID, indexHash(LedgerNameSpace::DID, account)};
+    return {ltDID, indexHash(LedgerNameSpace::Did, account)};
 }
 
 Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 {
-    return {ltORACLE, indexHash(LedgerNameSpace::ORACLE, account, documentID)};
+    return {ltORACLE, indexHash(LedgerNameSpace::Oracle, account, documentID)};
 }
 
 Keylet
@@ -479,7 +479,7 @@ mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 Keylet
 mptIssuance(MPTID const& issuanceID) noexcept
 {
-    return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MptokenIssuance, issuanceID)};
+    return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTokenIssuance, issuanceID)};
 }
 
 Keylet
@@ -491,19 +491,19 @@ mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
-    return {ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
+    return {ltMPTOKEN, indexHash(LedgerNameSpace::MPToken, issuanceKey, holder)};
 }
 
 Keylet
 credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept
 {
-    return {ltCREDENTIAL, indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+    return {ltCREDENTIAL, indexHash(LedgerNameSpace::Credential, subject, issuer, credType)};
 }
 
 Keylet
 vault(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
+    return vault(indexHash(LedgerNameSpace::Vault, owner, seq));
 }
 
 Keylet
@@ -515,7 +515,7 @@ loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
 Keylet
 loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept
 {
-    return loan(indexHash(LedgerNameSpace::LOAN, loanBrokerID, loanSeq));
+    return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq));
 }
 
 Keylet
