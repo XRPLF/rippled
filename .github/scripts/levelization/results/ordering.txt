@@ -19,6 +19,7 @@ libxrpl.nodestore > xrpl.protocol
 libxrpl.protocol > xrpl.basics
 libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
+libxrpl.protocol_autogen > xrpl.protocol_autogen
 libxrpl.rdb > xrpl.basics
 libxrpl.rdb > xrpl.rdb
 libxrpl.resource > xrpl.basics
@@ -176,6 +177,8 @@ test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
+tests.libxrpl > xrpl.protocol
+tests.libxrpl > xrpl.protocol_autogen
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
@@ -192,6 +195,8 @@ xrpl.nodestore > xrpl.basics
 xrpl.nodestore > xrpl.protocol
 xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
+xrpl.protocol_autogen > xrpl.json
+xrpl.protocol_autogen > xrpl.protocol
 xrpl.rdb > xrpl.basics
 xrpl.rdb > xrpl.core
 xrpl.rdb > xrpl.protocol
