@@ -137,7 +137,7 @@ VaultCreate::doApply()
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     adjustOwnerCount(view(), owner, 2, j_);
     auto const ownerCount = owner->at(sfOwnerCount);
-    if (mPriorBalance < view().fees().accountReserve(ownerCount))
+    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
@@ -147,7 +147,7 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -206,7 +206,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -214,7 +214,7 @@ VaultCreate::doApply()
     if (txFlags & tfVaultPrivate)
     {
         if (auto const err = authorizeMPToken(
-                view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

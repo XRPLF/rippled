@@ -110,6 +110,7 @@ class Invariants_test : public beast::unit_test::suite
 
     void
     doInvariantCheck(
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         test::jtx::Env&& env,
         test::jtx::Account const& A1,
         test::jtx::Account const& A2,
@@ -3499,12 +3500,13 @@ class Invariants_test : public beast::unit_test::suite
             precloseXrp);
 
         doInvariantCheck(
-            {"withdrawal must change vault and destination balance by "
-             "equal amount",
-             "withdrawal must decrease vault balance",
-             "withdrawal must increase destination balance",
-             "withdrawal and assets outstanding must add up",
-             "withdrawal and assets available must add up"},
+            {
+                "withdrawal must change vault and destination balance by equal amount",
+                "withdrawal must decrease vault balance",
+                "withdrawal must increase destination balance",
+                "withdrawal and assets outstanding must add up",
+                "withdrawal and assets available must add up",
+            },
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
 

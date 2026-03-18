@@ -78,8 +78,6 @@ RCLConsensus::Adaptor::Adaptor(
 
     if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
     {
-        std::stringstream ss;
-
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
 
@@ -384,7 +382,10 @@ RCLConsensus::Adaptor::onAccept(
     bool const validating)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT, "AcceptLedger", [=, this, cj = std::move(consensusJson)]() mutable {
+        jtACCEPT,
+        "AcceptLedger",
+        // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
+        [=, this, cj = std::move(consensusJson)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
@@ -408,7 +409,7 @@ RCLConsensus::Adaptor::doAccept(
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
 
-    bool closeTimeCorrect;
+    bool closeTimeCorrect = false;
 
     bool const proposing = mode == ConsensusMode::proposing;
     bool const haveCorrectLCL = mode != ConsensusMode::wrongLedger;
@@ -673,7 +674,7 @@ RCLConsensus::Adaptor::notify(
         ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::bytes);
     s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::bytes);
 
-    std::uint32_t uMin, uMax;
+    std::uint32_t uMin = 0, uMax = 0;
     if (!ledgerMaster_.getFullValidatedRange(uMin, uMax))
     {
         uMin = 0;

@@ -1345,7 +1345,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     {
         try
         {
-            auto setup = setup_ServerHandler(*config_, beast::logstream{m_journal.error()});
+            beast::logstream logStream{m_journal.error()};
+            auto setup = setup_ServerHandler(*config_, logStream);
             setup.makeContexts();
             serverHandler_->setup(setup, m_journal);
             fixConfigPorts(*config_, serverHandler_->endpoints());
@@ -1866,7 +1867,7 @@ ApplicationImp::loadOldLedger(
         else
         {
             // assume by sequence
-            std::uint32_t index;
+            std::uint32_t index = 0;
 
             if (beast::lexicalCastChecked(index, ledgerID))
                 loadLedger = loadByIndex(index, *this);

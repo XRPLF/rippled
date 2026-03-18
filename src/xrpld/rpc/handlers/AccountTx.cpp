@@ -108,8 +108,8 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
 std::variant<LedgerRange, RPC::Status>
 getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledgerSpecifier)
 {
-    std::uint32_t uValidatedMin;
-    std::uint32_t uValidatedMax;
+    std::uint32_t uValidatedMin = 0;
+    std::uint32_t uValidatedMax = 0;
     bool bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
 
     if (!bValidated)

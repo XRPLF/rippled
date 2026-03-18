@@ -10,16 +10,25 @@ include(target_protobuf_sources)
 # so we just build them as a separate library.
 add_library(xrpl.libpb)
 set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
-target_protobuf_sources(xrpl.libpb xrpl/proto LANGUAGE cpp IMPORT_DIRS include/xrpl/proto
-                        PROTOS include/xrpl/proto/xrpl.proto
+target_protobuf_sources(
+    xrpl.libpb
+    xrpl/proto
+    LANGUAGE cpp
+    IMPORT_DIRS include/xrpl/proto
+    PROTOS include/xrpl/proto/xrpl.proto
 )
 
 file(GLOB_RECURSE protos "include/xrpl/proto/org/*.proto")
-target_protobuf_sources(xrpl.libpb xrpl/proto LANGUAGE cpp IMPORT_DIRS include/xrpl/proto
-                        PROTOS "${protos}"
+target_protobuf_sources(
+    xrpl.libpb
+    xrpl/proto
+    LANGUAGE cpp
+    IMPORT_DIRS include/xrpl/proto
+    PROTOS "${protos}"
 )
 target_protobuf_sources(
-    xrpl.libpb xrpl/proto
+    xrpl.libpb
+    xrpl/proto
     LANGUAGE grpc
     IMPORT_DIRS include/xrpl/proto
     PROTOS "${protos}"

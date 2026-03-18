@@ -214,8 +214,10 @@ CreateOffer::checkAcceptAsset(
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
+    // An account cannot create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
     if (issue.account == id)
-        // An account can always accept its own issuance.
         return tesSUCCESS;
 
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
@@ -240,14 +242,6 @@ CreateOffer::checkAcceptAsset(
 
             return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
-    }
-
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
-    {
-        return tesSUCCESS;
     }
 
     auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
@@ -733,7 +727,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then

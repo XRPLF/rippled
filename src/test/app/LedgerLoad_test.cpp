@@ -58,10 +58,11 @@ class LedgerLoad_test : public beast::unit_test::suite
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0 && BEAST_EXPECT(prev))
+            if (i > 0 && BEAST_EXPECT(prev.has_value()))
             {
-                env.trust(acct["USD"](1000), *prev);
-                env(pay(acct, *prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);  // NOLINT(bugprone-unchecked-optional-access)
+                env(pay(
+                    acct, *prev, acct["USD"](5)));  // NOLINT(bugprone-unchecked-optional-access)
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();

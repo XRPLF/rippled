@@ -270,7 +270,7 @@ class base58_test : public beast::unit_test::suite
                 }
                 else
                 {
-                    std::array<std::uint8_t, 128> tmpBuf;
+                    std::array<std::uint8_t, 128> tmpBuf{};
                     std::string const s = xrpl::b58_ref::detail::encodeBase58(
                         b256Data.data(), b256Data.size(), tmpBuf.data(), tmpBuf.size());
                     BEAST_EXPECT(s.size());
@@ -394,7 +394,7 @@ class base58_test : public beast::unit_test::suite
         // bytes range from 0-255
         for (int i = 0; i < numTokenTypeIndexes; ++i)
         {
-            std::array<std::uint8_t, 128> b256DataBuf;
+            std::array<std::uint8_t, 128> b256DataBuf{};
             auto const [tokType, tokSize] = tokenTypeAndSize(i);
             for (int d = 0; d <= 255; ++d)
             {
@@ -407,7 +407,7 @@ class base58_test : public beast::unit_test::suite
         constexpr std::size_t iters = 100000;
         for (int i = 0; i < iters; ++i)
         {
-            std::array<std::uint8_t, 128> b256DataBuf;
+            std::array<std::uint8_t, 128> b256DataBuf{};
             auto const [tokType, b256Data] = randomB256TestData(b256DataBuf);
             testIt(tokType, b256Data);
         }

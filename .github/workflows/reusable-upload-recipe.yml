@@ -69,22 +69,28 @@ jobs:
           conan export . --version=${{ steps.version.outputs.version }}
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
 
+      # When this workflow is triggered by a push event, it will always be when merging into the
+      # 'develop' branch, see on-trigger.yml.
       - name: Upload Conan recipe (develop)
-        if: ${{ github.ref == 'refs/heads/develop' }}
+        if: ${{ github.event_name == 'push' }}
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=develop
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/develop
 
+      # When this workflow is triggered by a pull request event, it will always be when merging into
+      # one of the 'release' branches, see on-pr.yml.
       - name: Upload Conan recipe (rc)
-        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        if: ${{ github.event_name == 'pull_request' }}
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=rc
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/rc
 
+      # When this workflow is triggered by a tag event, it will always be when tagging a final
+      # release, see on-tag.yml.
       - name: Upload Conan recipe (release)
         if: ${{ github.event_name == 'tag' }}
         env:

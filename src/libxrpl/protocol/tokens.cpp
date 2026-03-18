@@ -329,7 +329,7 @@ decodeBase58Token(std::string const& s, TokenType type)
         return {};
 
     // And the checksum must as well.
-    std::array<char, 4> guard;
+    std::array<char, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
         return {};
@@ -610,7 +610,7 @@ encodeBase58Token(
     std::span<std::uint8_t> out)
 {
     constexpr std::size_t tmpBufSize = 128;
-    std::array<std::uint8_t, tmpBufSize> buf;
+    std::array<std::uint8_t, tmpBufSize> buf{};
     if (input.size() > tmpBufSize - 5)
     {
         return Unexpected(TokenCodecErrc::inputTooLarge);
@@ -637,7 +637,7 @@ encodeBase58Token(
 B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
-    std::array<std::uint8_t, 64> tmpBuf;
+    std::array<std::uint8_t, 64> tmpBuf{};
     auto const decodeResult = detail::b58_to_b256_be(s, std::span(tmpBuf.data(), tmpBuf.size()));
 
     if (!decodeResult)
@@ -654,7 +654,7 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
         return Unexpected(TokenCodecErrc::mismatchedTokenType);
 
     // And the checksum must as well.
-    std::array<std::uint8_t, 4> guard;
+    std::array<std::uint8_t, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
     {

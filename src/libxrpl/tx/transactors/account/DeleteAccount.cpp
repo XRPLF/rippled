@@ -1,5 +1,4 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
@@ -11,7 +10,7 @@
 #include <xrpl/tx/transactors/account/DeleteAccount.h>
 #include <xrpl/tx/transactors/account/SetSignerList.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
-#include <xrpl/tx/transactors/did/DID.h>
+#include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/DeleteOracle.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
@@ -372,9 +371,10 @@ DeleteAccount::doApply()
         return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
-    ctx_.deliver(mSourceBalance);
+    auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
+    (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
+    ctx_.deliver(remainingBalance);
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
@@ -388,7 +388,7 @@ DeleteAccount::doApply()
     }
 
     // Re-arm the password change fee if we can and need to.
-    if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+    if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
     view().update(dst);

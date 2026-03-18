@@ -66,7 +66,7 @@ protected:
     std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
-public:
+private:
     DirectStepI(
         StrandContext const& ctx,
         AccountID const& src,
@@ -81,6 +81,7 @@ public:
     {
     }
 
+public:
     AccountID const&
     src() const
     {
@@ -195,6 +196,8 @@ private:
         }
         return false;
     }
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -209,7 +212,15 @@ private:
 class DirectIPaymentStep : public DirectStepI<DirectIPaymentStep>
 {
 public:
-    using DirectStepI<DirectIPaymentStep>::DirectStepI;
+    DirectIPaymentStep(
+        StrandContext const& ctx,
+        AccountID const& src,
+        AccountID const& dst,
+        Currency const& c)
+        : DirectStepI<DirectIPaymentStep>(ctx, src, dst, c)
+    {
+    }
+
     using DirectStepI<DirectIPaymentStep>::check;
 
     bool
@@ -252,7 +263,15 @@ public:
 class DirectIOfferCrossingStep : public DirectStepI<DirectIOfferCrossingStep>
 {
 public:
-    using DirectStepI<DirectIOfferCrossingStep>::DirectStepI;
+    DirectIOfferCrossingStep(
+        StrandContext const& ctx,
+        AccountID const& src,
+        AccountID const& dst,
+        Currency const& c)
+        : DirectStepI<DirectIOfferCrossingStep>(ctx, src, dst, c)
+    {
+    }
+
     using DirectStepI<DirectIOfferCrossingStep>::check;
 
     bool
