@@ -98,12 +98,26 @@ Checks: "-*,
   performance-implicit-conversion-in-loop,
   performance-move-constructor-init,
   performance-trivially-destructible,
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-return-with-void-value,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-container-contains,
+  readability-container-size-empty,
   readability-duplicate-include,
+  readability-else-after-return,
   readability-enum-initial-value,
+  readability-make-member-function-const,
   readability-misleading-indentation,
   readability-non-const-parameter,
+  readability-redundant-casting,
   readability-redundant-declaration,
-  readability-reference-to-constructed-temporary
+  readability-redundant-inline-specifier,
+  readability-redundant-member-init,
+  readability-redundant-string-init,
+  readability-reference-to-constructed-temporary,
+  readability-static-definition-in-anonymous-namespace,
+  readability-use-std-min-max
   "
 # ---
 # checks that have some issues that need to be resolved:
@@ -113,27 +127,13 @@ Checks: "-*,
 # misc-include-cleaner,
 # misc-redundant-expression,
 #
-# readability-avoid-nested-conditional-operator,
-# readability-avoid-return-with-void-value,
-# readability-braces-around-statements,
-# readability-container-contains,
-# readability-container-size-empty,
 # readability-convert-member-functions-to-static,
-# readability-const-return-type,
-# readability-else-after-return,
 # readability-implicit-bool-conversion,
 # readability-inconsistent-declaration-parameter-name,
 # readability-identifier-naming,
-# readability-make-member-function-const,
 # readability-math-missing-parentheses,
-# readability-redundant-inline-specifier,
-# readability-redundant-member-init,
-# readability-redundant-casting,
-# readability-redundant-string-init,
 # readability-simplify-boolean-expr,
-# readability-static-definition-in-anonymous-namespace,
 # readability-suspicious-call-argument,
-# readability-use-std-min-max,
 # readability-static-accessed-through-instance,
 #
 # modernize-concat-nested-namespaces,
@@ -157,7 +157,7 @@ Checks: "-*,
 # ---
 #
 CheckOptions:
-  #   readability-braces-around-statements.ShortStatementLines: 2
+  readability-braces-around-statements.ShortStatementLines: 2
   #   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
   #   readability-identifier-naming.ClassCase: CamelCase
   #   readability-identifier-naming.StructCase: CamelCase

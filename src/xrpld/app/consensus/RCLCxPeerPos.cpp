@@ -19,7 +19,7 @@ RCLCxPeerPos::RCLCxPeerPos(
         signature.size() != 0 && signature.size() <= signature_.capacity(),
         "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
-    if (signature.size() != 0 && signature.size() <= signature_.capacity())
+    if (!signature.empty() && signature.size() <= signature_.capacity())
         signature_.assign(signature.begin(), signature.end());
 }
 

@@ -29,8 +29,10 @@ doChannelAuthorize(RPC::JsonContext& context)
 
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
+    {
         if (!params.isMember(p))
             return RPC::missing_field_error(p);
+    }
 
     // Compatibility if a key type isn't specified. If it is, the
     // keypairForSignature code will validate parameters and return
@@ -92,8 +94,10 @@ doChannelVerify(RPC::JsonContext& context)
 {
     auto const& params(context.params);
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
+    {
         if (!params.isMember(p))
             return RPC::missing_field_error(p);
+    }
 
     std::optional<PublicKey> pk;
     {
@@ -125,7 +129,7 @@ doChannelVerify(RPC::JsonContext& context)
     std::uint64_t const drops = *optDrops;
 
     auto sig = strUnHex(params[jss::signature].asString());
-    if (!sig || !sig->size())
+    if (!sig || sig->empty())
         return rpcError(rpcINVALID_PARAMS);
 
     Serializer msg;

@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -621,8 +622,9 @@ public:
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
-            if (w < test.first.size())
-                w = test.first.size();
+        {
+            w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
+        }
         log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
             << " Objects" << std::endl;
         {
@@ -649,8 +651,10 @@ public:
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
+                {
                     ss << " " << setw(w)
                        << to_string(do_test(test.second, config, params, journal));
+                }
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
@@ -690,10 +694,16 @@ public:
         std::vector<std::string> config_strings;
         boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
         for (auto iter = config_strings.begin(); iter != config_strings.end();)
+        {
             if (iter->empty())
+            {
                 iter = config_strings.erase(iter);
+            }
             else
+            {
                 ++iter;
+            }
+        }
 
         do_tests(1, tests, config_strings);
         do_tests(4, tests, config_strings);

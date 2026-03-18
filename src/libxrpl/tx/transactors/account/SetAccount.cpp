@@ -126,7 +126,7 @@ SetAccount::preflight(PreflightContext const& ctx)
 
     if (auto const mk = tx[~sfMessageKey])
     {
-        if (mk->size() && !publicKeyType({mk->data(), mk->size()}))
+        if (!mk->empty() && !publicKeyType({mk->data(), mk->size()}))
         {
             JLOG(j.trace()) << "Invalid message key specified.";
             return telBAD_PUBLIC_KEY;
@@ -565,32 +565,52 @@ SetAccount::doApply()
         sle->makeFieldAbsent(sfNFTokenMinter);
 
     if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+    {
         uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+    }
     else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+    {
         uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
+    }
 
     if (uSetFlag == asfDisallowIncomingCheck)
+    {
         uFlagsOut |= lsfDisallowIncomingCheck;
+    }
     else if (uClearFlag == asfDisallowIncomingCheck)
+    {
         uFlagsOut &= ~lsfDisallowIncomingCheck;
+    }
 
     if (uSetFlag == asfDisallowIncomingPayChan)
+    {
         uFlagsOut |= lsfDisallowIncomingPayChan;
+    }
     else if (uClearFlag == asfDisallowIncomingPayChan)
+    {
         uFlagsOut &= ~lsfDisallowIncomingPayChan;
+    }
 
     if (uSetFlag == asfDisallowIncomingTrustline)
+    {
         uFlagsOut |= lsfDisallowIncomingTrustline;
+    }
     else if (uClearFlag == asfDisallowIncomingTrustline)
+    {
         uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
 
     // Set or clear flags for disallowing escrow
     if (ctx_.view().rules().enabled(featureTokenEscrow))
     {
         if (uSetFlag == asfAllowTrustLineLocking)
+        {
             uFlagsOut |= lsfAllowTrustLineLocking;
+        }
         else if (uClearFlag == asfAllowTrustLineLocking)
+        {
             uFlagsOut &= ~lsfAllowTrustLineLocking;
+        }
     }
 
     // Set flag for clawback

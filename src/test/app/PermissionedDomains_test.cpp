@@ -199,9 +199,13 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
             uint256 d;
             if (domain)
+            {
                 d = *domain;
+            }
             else
+            {
                 d = pdomain::getNewDomain(env.meta());
+            }
             env.close();
             auto objects = pdomain::getObjects(account, env);
             auto const fromObject = pdomain::credentialsFromJson(objects[d], human2Acc);
@@ -228,9 +232,13 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
             uint256 d;
             if (domain)
+            {
                 d = *domain;
+            }
             else
+            {
                 d = pdomain::getNewDomain(env.meta());
+            }
             env.close();
             auto objects = pdomain::getObjects(account, env);
             auto const fromObject = pdomain::credentialsFromJson(objects[d], human2Acc);
@@ -479,7 +487,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
         BEAST_EXPECT(env.ownerCount(alice) == 0);
-        BEAST_EXPECT(pdomain::getObjects(alice, env).size() == 0);
+        BEAST_EXPECT(pdomain::getObjects(alice, env).empty());
         env.close();
 
         auto const baseFee = env.current()->fees().base.drops();

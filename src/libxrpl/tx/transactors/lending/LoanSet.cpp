@@ -62,9 +62,10 @@ LoanSet::preflight(PreflightContext const& ctx)
             return temINVALID;
     }
     // Principal Requested is required
-    if (auto const p = tx[sfPrincipalRequested]; p <= 0)
+    auto const p = tx[sfPrincipalRequested];
+    if (p <= 0)
         return temINVALID;
-    else if (!validNumericRange(tx[~sfLoanOriginationFee], p))
+    if (!validNumericRange(tx[~sfLoanOriginationFee], p))
         return temINVALID;
     if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
         return temINVALID;
@@ -80,17 +81,16 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const paymentTotal = tx[~sfPaymentTotal]; paymentTotal && *paymentTotal <= 0)
         return temINVALID;
 
-    if (auto const paymentInterval = tx[~sfPaymentInterval];
-        !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
-        return temINVALID;
-    // Grace period is between min default value and payment interval
-    else if (
-        auto const gracePeriod = tx[~sfGracePeriod];  //
-        !validNumericRange(
+    auto const paymentInterval = tx[~sfPaymentInterval];
+    if (!validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
+        return temINVALID;  // Grace period is between min default value and payment interval
+    if (auto const gracePeriod = tx[~sfGracePeriod]; !validNumericRange(
             gracePeriod,
             paymentInterval.value_or(LoanSet::defaultPaymentInterval),
             defaultGracePeriod))
+    {
         return temINVALID;
+    }
 
     // Copied from preflight2
     if (counterPartySig)
@@ -150,12 +150,12 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = [&counterSig]() {
-        // Compute defensively. Assure that "tx" cannot be accessed and cause
-        // confusion or miscalculations.
-        return counterSig.isFieldPresent(sfSigners)
-            ? counterSig.getFieldArray(sfSigners).size()
-            : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
+    std::size_t const signerCount = [&counterSig]() -> int {
+        // Compute defensively.
+        // Assure that "tx" cannot be accessed and cause confusion or miscalculations.
+        if (counterSig.isFieldPresent(sfSigners))
+            return counterSig.getFieldArray(sfSigners).size();
+        return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
     }();
 
     return normalCost + (signerCount * baseFee);
@@ -266,8 +266,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
+    {
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
 
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
@@ -492,9 +494,11 @@ LoanSet::doApply()
     if (auto const ter = addEmptyHolding(
             view, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
+    {
         // ignore tecDUPLICATE. That means the holding already exists, and
         // is fine here
         return ter;
+    }
 
     if (auto const ter = requireAuth(view, vaultAsset, borrower, AuthType::StrongAuth))
         return ter;
@@ -513,9 +517,11 @@ LoanSet::doApply()
         if (auto const ter = addEmptyHolding(
                 view, brokerOwner, brokerOwnerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
             ter && ter != tecDUPLICATE)
+        {
             // ignore tecDUPLICATE. That means the holding already exists,
             // and is fine here
             return ter;
+        }
     }
 
     if (auto const ter = requireAuth(view, vaultAsset, brokerOwner, AuthType::StrongAuth))

@@ -129,11 +129,17 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
         if (!asset1.native() && !asset2.native())
+        {
             fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
+        {
             fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        }
         else if (asset2.native())
+        {
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        }
 
         AMM ammAlice(
             env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});

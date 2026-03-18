@@ -42,8 +42,10 @@ PayChanFund::doApply()
     }
 
     if (src != txAccount)
+    {
         // only the owner can add funds or extend
         return tecNO_PERMISSION;
+    }
 
     if (auto extend = ctx_.tx[~sfExpiration])
     {

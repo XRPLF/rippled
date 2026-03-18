@@ -164,9 +164,13 @@ public:
 
         auto const wallet = testSecretWallet(params, strings);
         if (value == strings.passphrase)
+        {
             BEAST_EXPECT(wallet[jss::warning] == strings.passphrase_warning);
+        }
         else
+        {
             BEAST_EXPECT(!wallet.isMember(jss::warning));
+        }
     }
 
     void

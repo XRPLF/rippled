@@ -225,8 +225,10 @@ private:
 
             Json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
+            {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
                 myStatus[jss::last_refresh_message].asString().empty() != u.cfg.failFetch,
                 to_string(myStatus) + "\n" + sink.messages().str());
@@ -307,8 +309,10 @@ private:
             auto const jv = sites->getJson();
             Json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
+            {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
                 myStatus[jss::last_refresh_message].asString().empty() != u.shouldFail,
                 to_string(myStatus));

@@ -74,7 +74,9 @@ void
 fillJsonBinary(Json::Value& json, bool closed, LedgerHeader const& info)
 {
     if (!closed)
+    {
         json[jss::closed] = false;
+    }
     else
     {
         json[jss::closed] = true;
@@ -120,11 +122,13 @@ fillJsonTx(
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+            {
                 RPC::insertDeliveredAmount(
                     txJson[jss::meta],
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            }
 
             // If applicable, insert mpt issuance id
             RPC::insertMPTokenIssuanceID(
@@ -154,11 +158,13 @@ fillJsonTx(
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+            {
                 RPC::insertDeliveredAmount(
                     txJson[jss::metaData],
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+            }
 
             // If applicable, insert mpt issuance id
             RPC::insertMPTokenIssuanceID(
@@ -233,9 +239,13 @@ fillJsonState(Json::Value& json, LedgerFill const& fill)
             obj[jss::tx_blob] = serializeHex(*sle);
         }
         else if (expanded)
+        {
             array.append(sle->getJson(JsonOptions::none));
+        }
         else
+        {
             array.append(to_string(sle->key()));
+        }
     }
 }
 
@@ -266,9 +276,13 @@ fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 
         auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
         if (fill.context->apiVersion > 1)
+        {
             copyFrom(txJson, temp);
+        }
         else
+        {
             copyFrom(txJson[jss::tx], temp);
+        }
     }
 }
 
@@ -279,14 +293,18 @@ fillJson(Json::Value& json, LedgerFill const& fill)
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
+    {
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.header());
+    }
     else
+    {
         fillJson(
             json,
             !fill.ledger.open(),
             fill.ledger.header(),
             bFull,
             (fill.context ? fill.context->apiVersion : RPC::apiMaximumSupportedVersion));
+    }
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
@@ -318,8 +336,10 @@ getJson(LedgerFill const& fill)
 void
 copyFrom(Json::Value& to, Json::Value const& from)
 {
-    if (!to)  // Short circuit this very common case.
+    if (!to)
+    {  // Short circuit this very common case.
         to = from;
+    }
     else
     {
         // TODO: figure out if there is a way to remove this clause

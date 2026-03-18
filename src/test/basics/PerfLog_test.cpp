@@ -87,7 +87,10 @@ class PerfLog_test : public beast::unit_test::suite
         {
             perf::PerfLog::Setup const setup{
                 withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
+            return perf::make_PerfLog(setup, app_, j_, [this]() {
+                signalStop();
+                return;
+            });
         }
 
         // Block until the log file has grown in size, indicating that the
@@ -451,8 +454,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -770,8 +775,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -908,8 +915,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             verifyCounters(parsedLastLine[jss::counters], 2, 2, 24, 36);

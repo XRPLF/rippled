@@ -143,7 +143,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
-        if (!state.writableDb.size())
+        if (state.writableDb.empty())
         {
             state.writableDb = writableBackend->getName();
             state.archiveDb = archiveBackend->getName();
@@ -248,7 +248,9 @@ SHAMapStoreImp::run()
                 validatedLedger = std::move(newLedger_);
             }
             else
+            {
                 continue;
+            }
         }
 
         LedgerIndex const validatedSeq = validatedLedger->header().seq;
@@ -385,15 +387,21 @@ SHAMapStoreImp::dbPaths()
          ++it)
     {
         if (!state.writableDb.compare(it->path().string()))
+        {
             writableDbExists = true;
+        }
         else if (!state.archiveDb.compare(it->path().string()))
+        {
             archiveDbExists = true;
+        }
         else if (!dbPrefix_.compare(it->path().stem().string()))
+        {
             pathsToDelete.push_back(it->path());
+        }
     }
 
-    if ((!writableDbExists && state.writableDb.size()) ||
-        (!archiveDbExists && state.archiveDb.size()) || (writableDbExists != archiveDbExists) ||
+    if ((!writableDbExists && !state.writableDb.empty()) ||
+        (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
         boost::filesystem::path stateDbPathName = app_.config().legacy("database_path");
@@ -428,7 +436,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     Section section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path newPath;
 
-    if (path.size())
+    if (!path.empty())
     {
         newPath = path;
     }

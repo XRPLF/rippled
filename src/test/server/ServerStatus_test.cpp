@@ -616,9 +616,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::switching_protocols);
-        BEAST_EXPECT(resp.find("Upgrade") != resp.end() && resp["Upgrade"] == "websocket");
-        BEAST_EXPECT(
-            resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
+        BEAST_EXPECT(resp.contains("Upgrade") && resp["Upgrade"] == "websocket");
+        BEAST_EXPECT(resp.contains("Connection") && boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void
