@@ -3430,11 +3430,17 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                         // set the `id` field for inner nodes and the `depth` field for leaf nodes.
                         auto const& nodeID = std::get<0>(d);
                         if (!useLedgerNodeDepth)
+                        {
                             node->set_nodeid(nodeID.getRawString());
+                        }
                         else if (std::get<2>(d))
+                        {
                             node->set_depth(nodeID.getDepth());
+                        }
                         else
+                        {
                             node->set_id(nodeID.getRawString());
+                        }
                     }
                 }
                 else

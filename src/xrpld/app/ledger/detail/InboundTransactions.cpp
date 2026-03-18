@@ -164,7 +164,7 @@ public:
             data.emplace_back(std::make_pair(*nodeID, std::move(*treeNode)));
         }
 
-        if (!ta->takeNodes(std::move(data), peer).isUseful())
+        if (!ta->takeNodes(data, peer).isUseful())
             peer->charge(Resource::feeUselessData, "ledger_data not useful");
     }
 

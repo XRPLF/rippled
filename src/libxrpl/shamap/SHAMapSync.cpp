@@ -540,9 +540,9 @@ SHAMap::addKnownNode(
     SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
-    if (!nodeID.isRoot())
+    if (nodeID.isRoot())
     {
-        JLOG(journal_.error()) << "Non-root node received";
+        JLOG(journal_.error()) << "Root node received";
         return SHAMapAddNode::invalid();
     }
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");

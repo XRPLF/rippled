@@ -875,9 +875,13 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
             }
 
             if (nodeID->isRoot())
+            {
                 san += map.addRootNode(rootHash, std::move(*treeNode), f);
+            }
             else
+            {
                 san += map.addKnownNode(*nodeID, std::move(*treeNode), f);
+            }
 
             if (!san.isGood())
             {
