@@ -11,19 +11,19 @@ namespace xrpl {
 namespace detail {
 
 template <class T>
-class test_user_type_member
+class TestUserTypeMember
 {
 private:
     T t_;
 
 public:
-    explicit test_user_type_member(T const& t = T()) : t_(t)
+    explicit TestUserTypeMember(T const& t = T()) : t_(t)
     {
     }
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, test_user_type_member const& a) noexcept
+    hash_append(Hasher& h, TestUserTypeMember const& a) noexcept
     {
         using beast::hash_append;
         hash_append(h, a.t_);
@@ -31,19 +31,19 @@ public:
 };
 
 template <class T>
-class test_user_type_free
+class TestUserTypeFree
 {
 private:
     T t_;
 
 public:
-    explicit test_user_type_free(T const& t = T()) : t_(t)
+    explicit TestUserTypeFree(T const& t = T()) : t_(t)
     {
     }
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, test_user_type_free const& a) noexcept
+    hash_append(Hasher& h, TestUserTypeFree const& a) noexcept
     {
         using beast::hash_append;
         hash_append(h, a.t_);
@@ -74,7 +74,7 @@ using test_hardened_unordered_multimap = std::unordered_multimap<T, int, hardene
 }  // namespace detail
 
 template <std::size_t Bits, class UInt = std::uint64_t>
-class unsigned_integer
+class UnsignedInteger
 {
 private:
     static_assert(
@@ -96,10 +96,10 @@ public:
     static std::size_t const kBYTES = kBITS / 8;
 
     template <class Int>
-    static unsigned_integer
+    static UnsignedInteger
     fronumber(Int v)
     {
-        unsigned_integer result;
+        UnsignedInteger result;
         for (std::size_t i(1); i < kSIZE; ++i)
             result.vec_[i] = 0;
         result.vec_[0] = v;
@@ -120,14 +120,14 @@ public:
 
     template <class Hasher>
     friend void
-    hashAppend(Hasher& h, unsigned_integer const& a) noexcept
+    hashAppend(Hasher& h, UnsignedInteger const& a) noexcept
     {
         using beast::hash_append;
         hash_append(h, a.vec_);
     }
 
     friend std::ostream&
-    operator<<(std::ostream& s, unsigned_integer const& v)
+    operator<<(std::ostream& s, UnsignedInteger const& v)
     {
         for (std::size_t i(0); i < kSIZE; ++i)
             s << std::hex << std::setfill('0') << std::setw(2 * sizeof(UInt)) << v.vec_[i];
@@ -135,7 +135,7 @@ public:
     }
 };
 
-using sha256_t = unsigned_integer<256, std::size_t>;
+using sha256_t = UnsignedInteger<256, std::size_t>;
 
 #ifndef __INTELLISENSE__
 static_assert(sha256_t::kBITS == 256, "sha256_t must have 256 bits");
@@ -189,13 +189,13 @@ public:
     checkContainer()
     {
         {
-            C<detail::test_user_type_member<std::string>> c;
+            C<detail::TestUserTypeMember<std::string>> c;
         }
 
         pass();
 
         {
-            C<detail::test_user_type_free<std::string>> c;
+            C<detail::TestUserTypeFree<std::string>> c;
         }
 
         pass();
@@ -205,8 +205,8 @@ public:
     testUserTypes()
     {
         testcase("user types");
-        checkUserType<detail::test_user_type_member>();
-        checkUserType<detail::test_user_type_free>();
+        checkUserType<detail::TestUserTypeMember>();
+        checkUserType<detail::TestUserTypeFree>();
     }
 
     void

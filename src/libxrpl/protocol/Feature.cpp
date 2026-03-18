@@ -33,7 +33,7 @@ hash_value(xrpl::uint256 const& feature)
 
 namespace {
 
-enum class Supported : bool { no = false, yes };
+enum class Supported : bool { No = false, Yes };
 
 // *NOTE*
 //
@@ -78,28 +78,28 @@ class FeatureCollections
         // These structs are used by the `features` multi_index_container to
         // provide access to the features collection by size_t index, string
         // name, and uint256 feature identifier
-        struct byIndex
+        struct ByIndex
         {
         };
-        struct byName
+        struct ByName
         {
         };
-        struct byFeature
+        struct ByFeature
         {
         };
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::* PtrToMember>
+    template <class Tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
-        boost::multi_index::tag<tag>,
+        boost::multi_index::tag<Tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
 
     // Intermediate types to help with readability
     using feature_indexing = boost::multi_index::indexed_by<
-        boost::multi_index::random_access<boost::multi_index::tag<Feature::byIndex>>,
-        feature_hashed_unique<Feature::byFeature, uint256, &Feature::feature>,
-        feature_hashed_unique<Feature::byName, std::string, &Feature::name>>;
+        boost::multi_index::random_access<boost::multi_index::tag<Feature::ByIndex>>,
+        feature_hashed_unique<Feature::ByFeature, uint256, &Feature::feature>,
+        feature_hashed_unique<Feature::ByName, std::string, &Feature::name>>;
 
     // This multi_index_container provides access to the features collection by
     // name, index, and uint256 feature identifier
@@ -118,27 +118,27 @@ class FeatureCollections
     {
         if (i >= features_.size())
             LogicError("Invalid FeatureBitset index");
-        auto const& sequence = features_.get<Feature::byIndex>();
+        auto const& sequence = features_.get<Feature::ByIndex>();
         return sequence[i];
     }
     size_t
     getIndex(Feature const& feature) const
     {
-        auto const& sequence = features_.get<Feature::byIndex>();
+        auto const& sequence = features_.get<Feature::ByIndex>();
         auto const itTo = sequence.iterator_to(feature);
         return itTo - sequence.begin();
     }
     Feature const*
     getByFeature(uint256 const& feature) const
     {
-        auto const& featureIndex = features_.get<Feature::byFeature>();
+        auto const& featureIndex = features_.get<Feature::ByFeature>();
         auto const featureIt = featureIndex.find(feature);
         return featureIt == featureIndex.end() ? nullptr : &*featureIt;
     }
     Feature const*
     getByName(std::string const& name) const
     {
-        auto const& nameIndex = features_.get<Feature::byName>();
+        auto const& nameIndex = features_.get<Feature::ByName>();
         auto const nameIt = nameIndex.find(name);
         return nameIt == nameIndex.end() ? nullptr : &*nameIt;
     }
@@ -226,7 +226,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
 {
     check(!readOnly_, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo,
+        support == Supported::Yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
@@ -240,12 +240,12 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         auto const getAmendmentSupport = [=]() {
             if (vote == VoteBehavior::Obsolete)
                 return AmendmentSupport::Retired;
-            return support == Supported::yes ? AmendmentSupport::Supported
+            return support == Supported::Yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
         };
         all_.emplace(name, getAmendmentSupport());
 
-        if (support == Supported::yes)
+        if (support == Supported::Yes)
         {
             supported_.emplace(name, vote);
 
@@ -356,7 +356,7 @@ registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 uint256
 retireFeature(std::string const& name)
 {
-    return registerFeature(name, Supported::yes, VoteBehavior::Obsolete);
+    return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
 }
 
 /** Tell FeatureCollections when registration is complete. */

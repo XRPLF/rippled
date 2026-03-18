@@ -71,12 +71,12 @@ struct Barrier
 
 namespace {
 enum class TrackedState : std::uint8_t {
-    uninitialized,
-    alive,
-    partiallyDeletedStarted,
-    partiallyDeleted,
-    deletedStarted,
-    deleted
+    Uninitialized,
+    Alive,
+    PartiallyDeletedStarted,
+    PartiallyDeleted,
+    DeletedStarted,
+    Deleted
 };
 
 class TIBase : public IntrusiveRefCounts
@@ -96,7 +96,7 @@ public:
     {
         for (int i = 0; i < kMAX_STATES; ++i)
         {
-            state[i].store(TrackedState::uninitialized, std::memory_order_release);
+            state[i].store(TrackedState::Uninitialized, std::memory_order_release);
         }
         nextId.store(0, std::memory_order_release);
         if (resetCallback)
@@ -120,27 +120,27 @@ public:
     TIBase() : id{checkoutID()}
     {
         assert(state.size() > id);
-        state[id].store(TrackedState::alive, std::memory_order_relaxed);
+        state[id].store(TrackedState::Alive, std::memory_order_relaxed);
     }
     ~TIBase()
     {
         using enum TrackedState;
 
         assert(state.size() > id);
-        tracingCallback(state[id].load(std::memory_order_relaxed), deletedStarted);
+        tracingCallback(state[id].load(std::memory_order_relaxed), DeletedStarted);
 
         assert(state.size() > id);
         // Use relaxed memory order to try to avoid atomic operations from
         // adding additional memory synchronizations that may hide threading
         // errors in the underlying shared pointer class.
-        state[id].store(deletedStarted, std::memory_order_relaxed);
+        state[id].store(DeletedStarted, std::memory_order_relaxed);
 
-        tracingCallback(deletedStarted, deleted);
+        tracingCallback(DeletedStarted, Deleted);
 
         assert(state.size() > id);
-        state[id].store(TrackedState::deleted, std::memory_order_relaxed);
+        state[id].store(TrackedState::Deleted, std::memory_order_relaxed);
 
-        tracingCallback(TrackedState::deleted, std::nullopt);
+        tracingCallback(TrackedState::Deleted, std::nullopt);
     }
 
     void
@@ -149,17 +149,17 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id);
-        tracingCallback(state[id].load(std::memory_order_relaxed), partiallyDeletedStarted);
+        tracingCallback(state[id].load(std::memory_order_relaxed), PartiallyDeletedStarted);
 
         assert(state.size() > id);
-        state[id].store(partiallyDeletedStarted, std::memory_order_relaxed);
+        state[id].store(PartiallyDeletedStarted, std::memory_order_relaxed);
 
-        tracingCallback(partiallyDeletedStarted, partiallyDeleted);
+        tracingCallback(PartiallyDeletedStarted, PartiallyDeleted);
 
         assert(state.size() > id);
-        state[id].store(partiallyDeleted, std::memory_order_relaxed);
+        state[id].store(PartiallyDeleted, std::memory_order_relaxed);
 
-        tracingCallback(partiallyDeleted, std::nullopt);
+        tracingCallback(PartiallyDeleted, std::nullopt);
     }
 
     static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback;
@@ -215,40 +215,40 @@ public:
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
             auto id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 strong.push_back(b);
             }
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             strong.resize(strong.size() - 1);
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             strong.clear();
-            BEAST_EXPECT(TIBase::getState(id) == deleted);
+            BEAST_EXPECT(TIBase::getState(id) == Deleted);
 
             b = make_SharedIntrusive<TIBase>();
             id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 weak.push_back(b);
                 BEAST_EXPECT(b->use_count() == 1);
             }
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             weak.resize(weak.size() - 1);
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
+            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
             while (!weak.empty())
             {
                 weak.resize(weak.size() - 1);
                 if (weak.size())
-                    BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
+                    BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
             }
-            BEAST_EXPECT(TIBase::getState(id) == deleted);
+            BEAST_EXPECT(TIBase::getState(id) == Deleted);
         }
         {
             TIBase::ResetStatesGuard rsg{true};
@@ -256,23 +256,23 @@ public:
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
             auto id = b->id;
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             WeakIntrusive<TIBase> w{b};
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             auto s = w.lock();
             BEAST_EXPECT(s && s->use_count() == 2);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(s && s->use_count() == 1);
             s.reset();
-            BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
+            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
             BEAST_EXPECT(w.expired());
             s = w.lock();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
             BEAST_EXPECT(!s);
             w.reset();
-            BEAST_EXPECT(TIBase::getState(id) == deleted);
+            BEAST_EXPECT(TIBase::getState(id) == Deleted);
         }
         {
             TIBase::ResetStatesGuard rsg{true};
@@ -282,9 +282,9 @@ public:
             swu b = make_SharedIntrusive<TIBase>();
             BEAST_EXPECT(b.isStrong() && b.use_count() == 1);
             auto id = b.get()->id;
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             swu w = b;
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(w.isStrong() && b.use_count() == 2);
             w.convertToWeak();
             BEAST_EXPECT(w.isWeak() && b.use_count() == 1);
@@ -293,18 +293,18 @@ public:
             s.convertToStrong();
             BEAST_EXPECT(s.isStrong() && b.use_count() == 2);
             b.reset();
-            BEAST_EXPECT(TIBase::getState(id) == alive);
+            BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(s.use_count() == 1);
             BEAST_EXPECT(!w.expired());
             s.reset();
-            BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
+            BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
             BEAST_EXPECT(w.expired());
             w.convertToStrong();
             // Cannot convert a weak pointer to a strong pointer if object is
             // already partially deleted
             BEAST_EXPECT(w.isWeak());
             w.reset();
-            BEAST_EXPECT(TIBase::getState(id) == deleted);
+            BEAST_EXPECT(TIBase::getState(id) == Deleted);
         }
         {
             // Testing SharedWeakUnion assignment operator
@@ -332,19 +332,19 @@ public:
             BEAST_EXPECT(union1.isStrong());
             BEAST_EXPECT(union2.isStrong());
             BEAST_EXPECT(union1.get() == union2.get());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
-            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::alive);
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
+            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::Alive);
 
             // 2) Test self-assignment
             BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
             int initialRefCount = strong1->use_count();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
             union1 = union1;  // Self-assignment
 #pragma clang diagnostic pop
             BEAST_EXPECT(union1.isStrong());
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
             BEAST_EXPECT(strong1->use_count() == initialRefCount);
 
             // 3) Test assignment from null union pointer
@@ -356,7 +356,7 @@ public:
             union2.reset();
             union1 = union2;
             BEAST_EXPECT(union1.get() == nullptr);
-            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::deleted);
+            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::Deleted);
         }
     }
 
@@ -383,16 +383,16 @@ public:
         std::latch partialDeleteStartedSyncPoint{2};
         strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
-            if (next == deletedStarted)
+            if (next == DeletedStarted)
             {
                 // strong goes out of scope while weak is still in scope
                 // This checks that partialDelete has run to completion
                 // before the destructor is called. A sleep is inserted
                 // inside the partial delete to make sure the destructor is
                 // given an opportunity to run during partial delete.
-                BEAST_EXPECT(cur == partiallyDeleted);
+                BEAST_EXPECT(cur == PartiallyDeleted);
             }
-            if (next == partiallyDeletedStarted)
+            if (next == PartiallyDeletedStarted)
             {
                 partialDeleteStartedSyncPoint.arrive_and_wait();
                 using namespace std::chrono_literals;
@@ -401,12 +401,12 @@ public:
                 // is running. The test is to make sure that doesn't happen.
                 std::this_thread::sleep_for(800ms);
             }
-            if (next == partiallyDeleted)
+            if (next == PartiallyDeleted)
             {
                 BEAST_EXPECT(!partialDeleteRan && !destructorRan);
                 partialDeleteRan = true;
             }
-            if (next == deleted)
+            if (next == Deleted)
             {
                 BEAST_EXPECT(!destructorRan);
                 destructorRan = true;
@@ -450,12 +450,12 @@ public:
         std::latch weakResetSyncPoint{2};
         strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
-            if (next == partiallyDeleted)
+            if (next == PartiallyDeleted)
             {
                 BEAST_EXPECT(!partialDeleteRan && !destructorRan);
                 partialDeleteRan = true;
             }
-            if (next == deleted)
+            if (next == Deleted)
             {
                 BEAST_EXPECT(!destructorRan);
                 destructorRan = true;
@@ -503,12 +503,12 @@ public:
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
-            if (next == partiallyDeleted)
+            if (next == PartiallyDeleted)
             {
                 BEAST_EXPECT(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
-            if (next == deleted)
+            if (next == Deleted)
             {
                 BEAST_EXPECT(!destructorRan);
                 setDestructorRan();
@@ -636,12 +636,12 @@ public:
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
-            if (next == partiallyDeleted)
+            if (next == PartiallyDeleted)
             {
                 BEAST_EXPECT(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
-            if (next == deleted)
+            if (next == Deleted)
             {
                 BEAST_EXPECT(!destructorRan);
                 setDestructorRan();
@@ -776,12 +776,12 @@ public:
         auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             auto [destructorRan, partialDeleteRan] = getDestructorState();
-            if (next == partiallyDeleted)
+            if (next == PartiallyDeleted)
             {
                 BEAST_EXPECT(!partialDeleteRan && !destructorRan);
                 setPartialDeleteRan();
             }
-            if (next == deleted)
+            if (next == Deleted)
             {
                 BEAST_EXPECT(!destructorRan);
                 setDestructorRan();

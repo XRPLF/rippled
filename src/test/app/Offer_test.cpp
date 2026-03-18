@@ -2178,13 +2178,13 @@ public:
         auto const f = env.current()->fees().base;
 
         // To keep things simple all offers are 1 : 1 for XRP : USD.
-        enum preTrustType { noPreTrust, gwPreTrust, acctPreTrust };
+        enum PreTrustType { NoPreTrust, GwPreTrust, AcctPreTrust };
         struct TestData
         {
             std::string account;      // Account operated on
             STAmount fundXrp;         // Account funded with
             int bookAmount;           // USD -> XRP offer on the books
-            preTrustType preTrust;    // If true, pre-establish trust line
+            PreTrustType preTrust;    // If true, pre-establish trust line
             int offerAmount;          // Account offers this much XRP -> USD
             TER tec;                  // Returned tec code
             STAmount spentXrp;        // Amount removed from fundXrp
@@ -2196,45 +2196,45 @@ public:
         // clang-format off
         TestData const tests[]{
             // acct                     fundXrp        bookAmt   preTrust  offerAmount                   tec     spentXrp       balanceUSD offers  owners
-            {"ann",             reserve(env, 0) + 0 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
-            {"bev",             reserve(env, 0) + 1 * f,    1,   noPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account has just enough for the reserve and the fee.
-            {"cam",             reserve(env, 0) + 2 * f,    0,   noPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
-            {"deb", drops(10) + reserve(env, 0) + 1 * f,    1,   noPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 1},  // Account has enough to buy a little USD then the offer runs dry.
-            {"eve",             reserve(env, 1) + 0 * f,    0,   noPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},  // No offer to cross
-            {"flo",             reserve(env, 1) + 0 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
-            {"gay",             reserve(env, 1) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(  50)   + f, usd(     50),    0, 1},
-            {"hye", XRP(1000)                   + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP( 800)   + f, usd(    800),    0, 1},
-            {"ivy", XRP(   1) + reserve(env, 1) + 1 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
-            {"joy", XRP(   1) + reserve(env, 2) + 1 * f,    1,   noPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    1, 2},
-            {"kim", XRP( 900) + reserve(env, 2) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"liz", XRP( 998) + reserve(env, 0) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 998)   + f, usd(    998),    0, 1},
-            {"meg", XRP( 998) + reserve(env, 1) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"nia", XRP( 998) + reserve(env, 2) + 1 * f,  999,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    1, 2},
-            {"ova", XRP( 999) + reserve(env, 0) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"pam", XRP( 999) + reserve(env, 1) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
-            {"rae", XRP( 999) + reserve(env, 2) + 1 * f, 1000,   noPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
-            {"sue", XRP(1000) + reserve(env, 2) + 1 * f,    0,   noPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
+            {"ann",             reserve(env, 0) + 0 * f,    1,   NoPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
+            {"bev",             reserve(env, 0) + 1 * f,    1,   NoPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account has just enough for the reserve and the fee.
+            {"cam",             reserve(env, 0) + 2 * f,    0,   NoPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
+            {"deb", drops(10) + reserve(env, 0) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 1},  // Account has enough to buy a little USD then the offer runs dry.
+            {"eve",             reserve(env, 1) + 0 * f,    0,   NoPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},  // No offer to cross
+            {"flo",             reserve(env, 1) + 0 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
+            {"gay",             reserve(env, 1) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(  50)   + f, usd(     50),    0, 1},
+            {"hye", XRP(1000)                   + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP( 800)   + f, usd(    800),    0, 1},
+            {"ivy", XRP(   1) + reserve(env, 1) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
+            {"joy", XRP(   1) + reserve(env, 2) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    1, 2},
+            {"kim", XRP( 900) + reserve(env, 2) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
+            {"liz", XRP( 998) + reserve(env, 0) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 998)   + f, usd(    998),    0, 1},
+            {"meg", XRP( 998) + reserve(env, 1) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
+            {"nia", XRP( 998) + reserve(env, 2) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    1, 2},
+            {"ova", XRP( 999) + reserve(env, 0) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
+            {"pam", XRP( 999) + reserve(env, 1) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
+            {"rae", XRP( 999) + reserve(env, 2) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
+            {"sue", XRP(1000) + reserve(env, 2) + 1 * f,    0,   NoPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
             //---------------- Pre-established trust lines ---------------------
-            {"abe",             reserve(env, 0) + 0 * f,    1,   gwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
-            {"bud",             reserve(env, 0) + 1 * f,    1,   gwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
-            {"che",             reserve(env, 0) + 2 * f,    0,   gwPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},
-            {"dan", drops(10) + reserve(env, 0) + 1 * f,    1,   gwPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 0},
-            {"eli", XRP(  20) + reserve(env, 0) + 1 * f, 1000,   gwPreTrust, 1000,             tesSUCCESS, XRP(20) + 1 * f, usd(     20),    0, 0},
-            {"fyn",             reserve(env, 1) + 0 * f,    0,   gwPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
-            {"gar",             reserve(env, 1) + 0 * f,    1,   gwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
-            {"hal",             reserve(env, 1) + 1 * f,    1,   gwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
+            {"abe",             reserve(env, 0) + 0 * f,    1,   GwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
+            {"bud",             reserve(env, 0) + 1 * f,    1,   GwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
+            {"che",             reserve(env, 0) + 2 * f,    0,   GwPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},
+            {"dan", drops(10) + reserve(env, 0) + 1 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 0},
+            {"eli", XRP(  20) + reserve(env, 0) + 1 * f, 1000,   GwPreTrust, 1000,             tesSUCCESS, XRP(20) + 1 * f, usd(     20),    0, 0},
+            {"fyn",             reserve(env, 1) + 0 * f,    0,   GwPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
+            {"gar",             reserve(env, 1) + 0 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
+            {"hal",             reserve(env, 1) + 1 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
 
-            {"ned",             reserve(env, 1) + 0 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"ole",             reserve(env, 1) + 1 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"pat",             reserve(env, 1) + 2 * f,    0, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"quy",             reserve(env, 1) + 2 * f,    1, acctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"ron",             reserve(env, 1) + 3 * f,    0, acctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
-            {"syd", drops(10) + reserve(env, 1) + 2 * f,    1, acctPreTrust, 1000,             tesSUCCESS, drops(10) + 2 * f, usd(0.00001),    0, 1},
-            {"ted", XRP(  20) + reserve(env, 1) + 2 * f, 1000, acctPreTrust, 1000,             tesSUCCESS, XRP(20) + 2 * f, usd(     20),    0, 1},
-            {"uli",             reserve(env, 2) + 0 * f,    0, acctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
-            {"vic",             reserve(env, 2) + 0 * f,    1, acctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    0, 1},
-            {"wes",             reserve(env, 2) + 1 * f,    0, acctPreTrust, 1000,             tesSUCCESS,           2 * f, usd(      0),    1, 2},
-            {"xan",             reserve(env, 2) + 1 * f,    1, acctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    1, 2},
+            {"ned",             reserve(env, 1) + 0 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
+            {"ole",             reserve(env, 1) + 1 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
+            {"pat",             reserve(env, 1) + 2 * f,    0, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
+            {"quy",             reserve(env, 1) + 2 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
+            {"ron",             reserve(env, 1) + 3 * f,    0, AcctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
+            {"syd", drops(10) + reserve(env, 1) + 2 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, drops(10) + 2 * f, usd(0.00001),    0, 1},
+            {"ted", XRP(  20) + reserve(env, 1) + 2 * f, 1000, AcctPreTrust, 1000,             tesSUCCESS, XRP(20) + 2 * f, usd(     20),    0, 1},
+            {"uli",             reserve(env, 2) + 0 * f,    0, AcctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
+            {"vic",             reserve(env, 2) + 0 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    0, 1},
+            {"wes",             reserve(env, 2) + 1 * f,    0, AcctPreTrust, 1000,             tesSUCCESS,           2 * f, usd(      0),    1, 2},
+            {"xan",             reserve(env, 2) + 1 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    1, 2},
         };
         // clang-format on
 
@@ -2255,14 +2255,14 @@ public:
             std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
 
             // Optionally pre-establish a trustline between gw and acct.
-            if (t.preTrust == gwPreTrust)
+            if (t.preTrust == GwPreTrust)
                 env(trust(gw, acct["USD"](1)));
             env.close();
 
             // Optionally pre-establish a trustline between acct and gw.
             // Note this is not really part of the test, so we expect there
             // to be enough XRP reserve for acct to create the trust line.
-            if (t.preTrust == acctPreTrust)
+            if (t.preTrust == AcctPreTrust)
                 env(trust(acct, usd(1)));
             env.close();
 
@@ -2290,7 +2290,7 @@ public:
                 BEAST_EXPECT(acctOffer[sfTakerPays] == usd(leftover));
             }
 
-            if (t.preTrust == noPreTrust)
+            if (t.preTrust == NoPreTrust)
             {
                 if (t.balanceUsd.value().signum())
                 {
@@ -2625,7 +2625,7 @@ public:
         auto const f = env.current()->fees().base;
 
         // To keep things simple all offers are 1 : 1 for XRP : USD.
-        enum preTrustType { noPreTrust, gwPreTrust, acctPreTrust };
+        enum PreTrustType { NoPreTrust, GwPreTrust, AcctPreTrust };
         struct TestData
         {
             std::string account;  // Account operated on

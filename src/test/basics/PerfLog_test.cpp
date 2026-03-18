@@ -22,7 +22,7 @@ namespace xrpl {
 
 class PerfLog_test : public beast::unit_test::suite
 {
-    enum class WithFile : bool { no = false, yes = true };
+    enum class WithFile : bool { No = false, Yes = true };
 
     using path = boost::filesystem::path;
 
@@ -86,7 +86,7 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
+                withFile == WithFile::No ? "" : logFile(), logInterval()};
             return perf::make_PerfLog(setup, app, j, [this]() { return signalStop(); });
         }
 
@@ -175,7 +175,7 @@ public:
             Fixture fixture{env_.app(), j_};
             BEAST_EXPECT(!exists(fixture.logFile()));
 
-            auto perfLog{fixture.perfLog(WithFile::yes)};
+            auto perfLog{fixture.perfLog(WithFile::Yes)};
 
             BEAST_EXPECT(fixture.stopSignaled == false);
             BEAST_EXPECT(exists(fixture.logFile()));
@@ -200,7 +200,7 @@ public:
             // Now construct a PerfLog.  The PerfLog should attempt to shut
             // down the server because it can't open its file.
             BEAST_EXPECT(fixture.stopSignaled == false);
-            auto perfLog{fixture.perfLog(WithFile::yes)};
+            auto perfLog{fixture.perfLog(WithFile::Yes)};
             BEAST_EXPECT(fixture.stopSignaled == true);
 
             // Start PerfLog and wait long enough for PerfLog::report()
@@ -251,7 +251,7 @@ public:
             // Now construct a PerfLog.  The PerfLog should attempt to shut
             // down the server because it can't open its file.
             BEAST_EXPECT(fixture.stopSignaled == false);
-            auto perfLog{fixture.perfLog(WithFile::yes)};
+            auto perfLog{fixture.perfLog(WithFile::Yes)};
             BEAST_EXPECT(fixture.stopSignaled == true);
 
             // Start PerfLog and wait long enough for PerfLog::report()
@@ -429,7 +429,7 @@ public:
 
         auto const fullPath = fixture.logFile();
 
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fullPath));
         }
@@ -748,7 +748,7 @@ public:
         // Check file contents if that is appropriate.
         auto const fullPath = fixture.logFile();
 
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fullPath));
         }
@@ -886,7 +886,7 @@ public:
         // Check file contents if that is appropriate.
         auto const fullPath = fixture.logFile();
 
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fullPath));
         }
@@ -931,7 +931,7 @@ public:
         auto perfLog{fixture.perfLog(withFile)};
 
         BEAST_EXPECT(fixture.stopSignaled == false);
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fixture.logDir()));
         }
@@ -947,7 +947,7 @@ public:
         fixture.wait();
 
         decltype(file_size(fixture.logFile())) firstFileSize{0};
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fixture.logDir()));
         }
@@ -963,7 +963,7 @@ public:
 
         perfLog->stop();
 
-        if (withFile == WithFile::no)
+        if (withFile == WithFile::No)
         {
             BEAST_EXPECT(!exists(fixture.logDir()));
         }
@@ -977,14 +977,14 @@ public:
     run() override
     {
         testFileCreation();
-        testRPC(WithFile::no);
-        testRPC(WithFile::yes);
-        testJobs(WithFile::no);
-        testJobs(WithFile::yes);
-        testInvalidID(WithFile::no);
-        testInvalidID(WithFile::yes);
-        testRotate(WithFile::no);
-        testRotate(WithFile::yes);
+        testRPC(WithFile::No);
+        testRPC(WithFile::Yes);
+        testJobs(WithFile::No);
+        testJobs(WithFile::Yes);
+        testInvalidID(WithFile::No);
+        testInvalidID(WithFile::Yes);
+        testRotate(WithFile::No);
+        testRotate(WithFile::Yes);
     }
 };
 

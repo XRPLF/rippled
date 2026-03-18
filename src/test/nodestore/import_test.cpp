@@ -44,7 +44,7 @@ namespace xrpl {
 
 namespace detail {
 
-class save_stream_state
+class SaveStreamState
 {
     std::ostream& os_;
     std::streamsize precision_;
@@ -52,16 +52,16 @@ class save_stream_state
     std::ios::char_type fill_;
 
 public:
-    ~save_stream_state()
+    ~SaveStreamState()
     {
         os_.precision(precision_);
         os_.flags(flags_);
         os_.fill(fill_);
     }
-    save_stream_state(save_stream_state const&) = delete;
-    save_stream_state&
-    operator=(save_stream_state const&) = delete;
-    explicit save_stream_state(std::ostream& os)
+    SaveStreamState(SaveStreamState const&) = delete;
+    SaveStreamState&
+    operator=(SaveStreamState const&) = delete;
+    explicit SaveStreamState(std::ostream& os)
         : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
@@ -71,7 +71,7 @@ template <class Rep, class Period>
 std::ostream&
 prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state _(os);
+    SaveStreamState _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -171,7 +171,7 @@ namespace NodeStore {
 
 //------------------------------------------------------------------------------
 
-class progress
+class Progress
 {
 private:
     using clock_type = beast::basic_seconds_clock;
@@ -184,7 +184,7 @@ private:
     bool estimate_ = false;
 
 public:
-    explicit progress(std::size_t work) : work_(work)
+    explicit Progress(std::size_t work) : work_(work)
     {
     }
 
@@ -446,7 +446,7 @@ public:
             << "\n"
                "passes:  "
             << passes;
-        progress p(dfSize * passes);
+        Progress p(dfSize * passes);
         std::size_t npass = 0;
         for (std::size_t b0 = 0; b0 < kh.buckets; b0 += buckets)
         {

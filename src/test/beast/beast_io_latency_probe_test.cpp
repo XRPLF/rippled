@@ -104,12 +104,12 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     };
 #endif
 
-    struct test_sampler
+    struct TestSampler
     {
         beast::io_latency_probe<std::chrono::steady_clock> probe;
         std::vector<std::chrono::steady_clock::duration> durations;
 
-        test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
+        TestSampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
             : probe(interval, ios)
         {
         }
@@ -138,7 +138,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        test_sampler ioProbe{100ms, get_io_context()};
+        TestSampler ioProbe{100ms, get_io_context()};
         ioProbe.startOne();
         MyTimer timer{get_io_context(), 1s};
         timer.async_wait(yield[ec]);
@@ -169,7 +169,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             static_cast<size_t>(duration_cast<milliseconds>(probeDuration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        test_sampler ioProbe{interval, get_io_context()};
+        TestSampler ioProbe{interval, get_io_context()};
         ioProbe.start();
         MyTimer timer{get_io_context(), probeDuration};
         timer.async_wait(yield[ec]);
@@ -190,7 +190,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        test_sampler ioProbe{100ms, get_io_context()};
+        TestSampler ioProbe{100ms, get_io_context()};
         ioProbe.probe.cancel_async();
         except<std::logic_error>([&ioProbe]() { ioProbe.startOne(); });
         except<std::logic_error>([&ioProbe]() { ioProbe.start(); });

@@ -12,7 +12,7 @@ namespace xrpl {
 
 namespace RPC {
 
-struct key_strings
+struct KeyStrings
 {
     char const* account_id;
     char const* master_key;
@@ -32,7 +32,7 @@ static char const* gMasterSeed = "snMwVWs2hZzfDUF3p2tHZ3EgmyhFs";
 static char const* gMasterSeedHex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
 
-static key_strings const kSECP256K1_STRINGS = {
+static KeyStrings const kSECP256K1_STRINGS = {
     "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
     common::gMasterKey,
     common::gMasterSeed,
@@ -46,7 +46,7 @@ static key_strings const kSECP256K1_STRINGS = {
     "to brute-force attacks.",
 };
 
-static key_strings const kED25519_STRINGS = {
+static KeyStrings const kED25519_STRINGS = {
     "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
     common::gMasterKey,
     common::gMasterSeed,
@@ -60,7 +60,7 @@ static key_strings const kED25519_STRINGS = {
     "to brute-force attacks.",
 };
 
-static key_strings const kSTRONG_BRAIN_STRINGS = {
+static KeyStrings const kSTRONG_BRAIN_STRINGS = {
     "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
     "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
     "shKdhWka8hS7Es3bpctCZXBiAwfUN",
@@ -107,7 +107,7 @@ public:
     }
 
     Json::Value
-    testSecretWallet(Json::Value const& params, key_strings const& s)
+    testSecretWallet(Json::Value const& params, KeyStrings const& s)
     {
         Json::Value result = walletPropose(params);
 
@@ -124,7 +124,7 @@ public:
     }
 
     void
-    testSeed(std::optional<std::string> const& keyType, key_strings const& strings)
+    testSeed(std::optional<std::string> const& keyType, KeyStrings const& strings)
     {
         testcase("seed");
 
@@ -138,7 +138,7 @@ public:
     }
 
     void
-    testSeedHex(std::optional<std::string> const& keyType, key_strings const& strings)
+    testSeedHex(std::optional<std::string> const& keyType, KeyStrings const& strings)
     {
         testcase("seed_hex");
 
@@ -155,7 +155,7 @@ public:
     testLegacyPassphrase(
         char const* value,
         std::optional<std::string> const& keyType,
-        key_strings const& strings)
+        KeyStrings const& strings)
     {
         Json::Value params;
         if (keyType)
@@ -170,7 +170,7 @@ public:
     }
 
     void
-    testLegacyPassphrase(std::optional<std::string> const& keyType, key_strings const& strings)
+    testLegacyPassphrase(std::optional<std::string> const& keyType, KeyStrings const& strings)
     {
         testcase("passphrase");
 
@@ -181,7 +181,7 @@ public:
     }
 
     void
-    testKeyType(std::optional<std::string> const& keyType, key_strings const& strings)
+    testKeyType(std::optional<std::string> const& keyType, KeyStrings const& strings)
     {
         testcase(keyType ? *keyType : "no key_type");
 
@@ -278,7 +278,7 @@ public:
     }
 
     void
-    testKeypairForSignature(std::optional<std::string> keyType, key_strings const& strings)
+    testKeypairForSignature(std::optional<std::string> keyType, KeyStrings const& strings)
     {
         testcase("keypairForSignature - " + (keyType ? *keyType : "no key_type"));
 

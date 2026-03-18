@@ -100,9 +100,9 @@ class NetworkOPsImp final : public NetworkOPs
      * Synchronization states for transaction batches.
      */
     enum class DispatchState : unsigned char {
-        none,
-        scheduled,
-        running,
+        None,
+        Scheduled,
+        Running,
     };
 
     static std::array<char const*, 5> const kSTATES;
@@ -722,19 +722,19 @@ private:
     SubAccountHistoryMapType subAccountHistory_;
 
     enum SubTypes {
-        sLedger,          // Accepted ledgers.
-        sManifests,       // Received validator manifests.
-        sServer,          // When server changes connectivity state.
-        sTransactions,    // All accepted transactions.
-        sRTTransactions,  // All proposed and accepted transactions.
-        sValidations,     // Received validations.
-        sPeerStatus,      // Peer status changes.
-        sConsensusPhase,  // Consensus phase
-        sBookChanges,     // Per-ledger order book changes
-        sLastEntry        // Any new entry must be ADDED ABOVE this one
+        SLedger,          // Accepted ledgers.
+        SManifests,       // Received validator manifests.
+        SServer,          // When server changes connectivity state.
+        STransactions,    // All accepted transactions.
+        SRtTransactions,  // All proposed and accepted transactions.
+        SValidations,     // Received validations.
+        SPeerStatus,      // Peer status changes.
+        SConsensusPhase,  // Consensus phase
+        SBookChanges,     // Per-ledger order book changes
+        SLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
-    std::array<SubMapType, SubTypes::sLastEntry> streamMaps_;
+    std::array<SubMapType, SubTypes::SLastEntry> streamMaps_;
 
     ServerFeeSummary lastFeeSummary_;
 
@@ -749,7 +749,7 @@ private:
     // Transaction batching.
     std::condition_variable cond_;
     std::mutex mutex_;
-    DispatchState dispatchState_ = DispatchState::none;
+    DispatchState dispatchState_ = DispatchState::None;
     std::vector<TransactionStatus> transactions_;
 
     StateAccounting accounting_{};
@@ -1242,11 +1242,11 @@ NetworkOPsImp::doTransactionAsync(
     transactions_.push_back(TransactionStatus(transaction, bUnlimited, false, failType));
     transaction->setApplying();
 
-    if (dispatchState_ == DispatchState::none)
+    if (dispatchState_ == DispatchState::None)
     {
         if (job_queue_.addJob(jtBATCH, "TxBatchAsync", [this]() { transactionBatch(); }))
         {
-            dispatchState_ = DispatchState::scheduled;
+            dispatchState_ = DispatchState::Scheduled;
         }
     }
 }
@@ -1277,7 +1277,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 {
     do
     {
-        if (dispatchState_ == DispatchState::running)
+        if (dispatchState_ == DispatchState::Running)
         {
             // A batch processing job is already running, so wait.
             cond_.wait(lock);
@@ -1291,7 +1291,7 @@ NetworkOPsImp::doTransactionSyncBatch(
                 // More transactions need to be applied, but by another job.
                 if (job_queue_.addJob(jtBATCH, "TxBatchSync", [this]() { transactionBatch(); }))
                 {
-                    dispatchState_ = DispatchState::scheduled;
+                    dispatchState_ = DispatchState::Scheduled;
                 }
             }
         }
@@ -1367,7 +1367,7 @@ NetworkOPsImp::transactionBatch()
 {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (dispatchState_ == DispatchState::running)
+    if (dispatchState_ == DispatchState::Running)
         return;
 
     while (transactions_.size())
@@ -1384,9 +1384,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     transactions_.swap(transactions);
     XRPL_ASSERT(!transactions.empty(), "xrpl::NetworkOPsImp::apply : non-empty transactions");
     XRPL_ASSERT(
-        dispatchState_ != DispatchState::running, "xrpl::NetworkOPsImp::apply : is not running");
+        dispatchState_ != DispatchState::Running, "xrpl::NetworkOPsImp::apply : is not running");
 
-    dispatchState_ = DispatchState::running;
+    dispatchState_ = DispatchState::Running;
 
     batchLock.unlock();
 
@@ -1616,7 +1616,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
     cond_.notify_all();
 
-    dispatchState_ = DispatchState::none;
+    dispatchState_ = DispatchState::None;
 }
 
 //
@@ -2080,7 +2080,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
     // VFALCO consider std::shared_mutex
     std::lock_guard sl(subLock_);
 
-    if (!streamMaps_[sManifests].empty())
+    if (!streamMaps_[SManifests].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
@@ -2096,7 +2096,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             jvObj[jss::domain] = mo.domain;
         jvObj[jss::manifest] = strHex(mo.serialized);
 
-        for (auto i = streamMaps_[sManifests].begin(); i != streamMaps_[sManifests].end();)
+        for (auto i = streamMaps_[SManifests].begin(); i != streamMaps_[SManifests].end();)
         {
             if (auto p = i->second.lock())
             {
@@ -2105,7 +2105,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             }
             else
             {
-                i = streamMaps_[sManifests].erase(i);
+                i = streamMaps_[SManifests].erase(i);
             }
         }
     }
@@ -2158,7 +2158,7 @@ NetworkOPsImp::pubServer()
     //
     std::lock_guard sl(subLock_);
 
-    if (!streamMaps_[sServer].empty())
+    if (!streamMaps_[SServer].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
@@ -2190,7 +2190,7 @@ NetworkOPsImp::pubServer()
 
         lastFeeSummary_ = f;
 
-        for (auto i = streamMaps_[sServer].begin(); i != streamMaps_[sServer].end();)
+        for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
             InfoSub::pointer p = i->second.lock();
 
@@ -2204,7 +2204,7 @@ NetworkOPsImp::pubServer()
             }
             else
             {
-                i = streamMaps_[sServer].erase(i);
+                i = streamMaps_[SServer].erase(i);
             }
         }
     }
@@ -2215,7 +2215,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 {
     std::lock_guard sl(subLock_);
 
-    auto& streamMap = streamMaps_[sConsensusPhase];
+    auto& streamMap = streamMaps_[SConsensusPhase];
     if (!streamMap.empty())
     {
         Json::Value jvObj(Json::objectValue);
@@ -2243,7 +2243,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
     // VFALCO consider std::shared_mutex
     std::lock_guard sl(subLock_);
 
-    if (!streamMaps_[sValidations].empty())
+    if (!streamMaps_[SValidations].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
@@ -2326,7 +2326,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
                 }
             });
 
-        for (auto i = streamMaps_[sValidations].begin(); i != streamMaps_[sValidations].end();)
+        for (auto i = streamMaps_[SValidations].begin(); i != streamMaps_[SValidations].end();)
         {
             if (auto p = i->second.lock())
             {
@@ -2337,7 +2337,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             }
             else
             {
-                i = streamMaps_[sValidations].erase(i);
+                i = streamMaps_[SValidations].erase(i);
             }
         }
     }
@@ -2348,13 +2348,13 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
 {
     std::lock_guard sl(subLock_);
 
-    if (!streamMaps_[sPeerStatus].empty())
+    if (!streamMaps_[SPeerStatus].empty())
     {
         Json::Value jvObj(func());
 
         jvObj[jss::type] = "peerStatusChange";
 
-        for (auto i = streamMaps_[sPeerStatus].begin(); i != streamMaps_[sPeerStatus].end();)
+        for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
             InfoSub::pointer p = i->second.lock();
 
@@ -2365,7 +2365,7 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
             }
             else
             {
-                i = streamMaps_[sPeerStatus].erase(i);
+                i = streamMaps_[SPeerStatus].erase(i);
             }
         }
     }
@@ -2870,8 +2870,8 @@ NetworkOPsImp::pubProposedTransaction(
     {
         std::lock_guard sl(subLock_);
 
-        auto it = streamMaps_[sRTTransactions].begin();
-        while (it != streamMaps_[sRTTransactions].end())
+        auto it = streamMaps_[SRtTransactions].begin();
+        while (it != streamMaps_[SRtTransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -2884,7 +2884,7 @@ NetworkOPsImp::pubProposedTransaction(
             }
             else
             {
-                it = streamMaps_[sRTTransactions].erase(it);
+                it = streamMaps_[SRtTransactions].erase(it);
             }
         }
     }
@@ -2917,7 +2917,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         std::lock_guard sl(subLock_);
 
-        if (!streamMaps_[sLedger].empty())
+        if (!streamMaps_[SLedger].empty())
         {
             Json::Value jvObj(Json::objectValue);
 
@@ -2942,8 +2942,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 jvObj[jss::validated_ledgers] = registry_.getLedgerMaster().getCompleteLedgers();
             }
 
-            auto it = streamMaps_[sLedger].begin();
-            while (it != streamMaps_[sLedger].end())
+            auto it = streamMaps_[SLedger].begin();
+            while (it != streamMaps_[SLedger].end())
             {
                 InfoSub::pointer p = it->second.lock();
                 if (p)
@@ -2952,16 +2952,16 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     ++it;
                 }
                 else
-                    it = streamMaps_[sLedger].erase(it);
+                    it = streamMaps_[SLedger].erase(it);
             }
         }
 
-        if (!streamMaps_[sBookChanges].empty())
+        if (!streamMaps_[SBookChanges].empty())
         {
             Json::Value jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
 
-            auto it = streamMaps_[sBookChanges].begin();
-            while (it != streamMaps_[sBookChanges].end())
+            auto it = streamMaps_[SBookChanges].begin();
+            while (it != streamMaps_[SBookChanges].end())
             {
                 InfoSub::pointer p = it->second.lock();
                 if (p)
@@ -2970,7 +2970,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     ++it;
                 }
                 else
-                    it = streamMaps_[sBookChanges].erase(it);
+                    it = streamMaps_[SBookChanges].erase(it);
             }
         }
 
@@ -3152,8 +3152,8 @@ NetworkOPsImp::pubValidatedTransaction(
     {
         std::lock_guard sl(subLock_);
 
-        auto it = streamMaps_[sTransactions].begin();
-        while (it != streamMaps_[sTransactions].end())
+        auto it = streamMaps_[STransactions].begin();
+        while (it != streamMaps_[STransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -3165,12 +3165,12 @@ NetworkOPsImp::pubValidatedTransaction(
                 ++it;
             }
             else
-                it = streamMaps_[sTransactions].erase(it);
+                it = streamMaps_[STransactions].erase(it);
         }
 
-        it = streamMaps_[sRTTransactions].begin();
+        it = streamMaps_[SRtTransactions].begin();
 
-        while (it != streamMaps_[sRTTransactions].end())
+        while (it != streamMaps_[SRtTransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -3182,7 +3182,7 @@ NetworkOPsImp::pubValidatedTransaction(
                 ++it;
             }
             else
-                it = streamMaps_[sRTTransactions].erase(it);
+                it = streamMaps_[SRtTransactions].erase(it);
         }
     }
 
@@ -3951,7 +3951,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
     }
 
     std::lock_guard sl(subLock_);
-    return streamMaps_[sLedger].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SLedger].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=added, false=already there
@@ -3959,7 +3959,7 @@ bool
 NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sBookChanges].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -3967,7 +3967,7 @@ bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sLedger].erase(uSeq);
+    return streamMaps_[SLedger].erase(uSeq);
 }
 
 // <-- bool: true=erased, false=was not there
@@ -3975,7 +3975,7 @@ bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sBookChanges].erase(uSeq);
+    return streamMaps_[SBookChanges].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -3983,7 +3983,7 @@ bool
 NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sManifests].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -3991,7 +3991,7 @@ bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sManifests].erase(uSeq);
+    return streamMaps_[SManifests].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4016,7 +4016,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, Json::Value& jvResult, bool a
         toBase58(TokenType::NodePublic, registry_.app().nodeIdentity().first);
 
     std::lock_guard sl(subLock_);
-    return streamMaps_[sServer].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4024,7 +4024,7 @@ bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sServer].erase(uSeq);
+    return streamMaps_[SServer].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4032,7 +4032,7 @@ bool
 NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sTransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4040,7 +4040,7 @@ bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sTransactions].erase(uSeq);
+    return streamMaps_[STransactions].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4048,7 +4048,7 @@ bool
 NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sRTTransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4056,7 +4056,7 @@ bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sRTTransactions].erase(uSeq);
+    return streamMaps_[SRtTransactions].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4064,7 +4064,7 @@ bool
 NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sValidations].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 void
@@ -4078,7 +4078,7 @@ bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sValidations].erase(uSeq);
+    return streamMaps_[SValidations].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4086,7 +4086,7 @@ bool
 NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4094,7 +4094,7 @@ bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sPeerStatus].erase(uSeq);
+    return streamMaps_[SPeerStatus].erase(uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -4102,7 +4102,7 @@ bool
 NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4110,7 +4110,7 @@ bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
     std::lock_guard sl(subLock_);
-    return streamMaps_[sConsensusPhase].erase(uSeq);
+    return streamMaps_[SConsensusPhase].erase(uSeq);
 }
 
 InfoSub::pointer

@@ -173,13 +173,13 @@ printHelp(po::options_description const& desc)
 /* simple unit test selector that allows a comma separated list
  * of selectors
  */
-class multi_selector
+class MultiSelector
 {
 private:
     std::vector<beast::unit_test::selector> selectors_;
 
 public:
-    explicit multi_selector(std::string const& patterns = "")
+    explicit MultiSelector(std::string const& patterns = "")
     {
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
@@ -213,7 +213,7 @@ extern std::atomic<bool> gEnvUseIPv4;
 
 template <class Runner>
 static bool
-anyMissing(Runner& runner, multi_selector const& pred)
+anyMissing(Runner& runner, MultiSelector const& pred)
 {
     if (runner.tests() == 0)
     {
@@ -255,7 +255,7 @@ runUnitTests(
 
         multi_runner_child childRunner{numJobs, quiet, log};
         childRunner.arg(argument);
-        multi_selector pred(pattern);
+        MultiSelector pred(pattern);
         auto const anyFailed = childRunner.run_multi(pred) || anyMissing(childRunner, pred);
 
         if (anyFailed)
@@ -299,7 +299,7 @@ runUnitTests(
         }
 
         parentRunner.addFailures(terminatedChildExits);
-        anyMissing(parentRunner, multi_selector(pattern));
+        anyMissing(parentRunner, MultiSelector(pattern));
 
         if (parentRunner.anyFailed() || badChildExits)
             return EXIT_FAILURE;
@@ -310,7 +310,7 @@ runUnitTests(
         // child
         multi_runner_child runner{numJobs, quiet, log};
         runner.arg(argument);
-        auto const anyFailed = runner.run_multi(multi_selector(pattern));
+        auto const anyFailed = runner.run_multi(MultiSelector(pattern));
 
         if (anyFailed)
             return EXIT_FAILURE;

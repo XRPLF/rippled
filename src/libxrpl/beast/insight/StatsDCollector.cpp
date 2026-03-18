@@ -206,7 +206,7 @@ class StatsDCollectorImp : public StatsDCollector,
 private:
     enum {
         // max_packet_size = 484
-        max_packet_size = 1472
+        MaxPacketSize = 1472
     };
 
     Journal journal_;
@@ -390,7 +390,7 @@ public:
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::send_buffers : "
                 "non-empty payload");
-            if (!buffers.empty() && (size + length) > max_packet_size)
+            if (!buffers.empty() && (size + length) > MaxPacketSize)
             {
                 log(buffers);
                 socket_.async_send(

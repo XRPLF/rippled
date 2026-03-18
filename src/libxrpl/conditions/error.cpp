@@ -7,10 +7,10 @@ namespace xrpl {
 namespace cryptoconditions {
 namespace detail {
 
-class cryptoconditions_error_category : public std::error_category
+class CryptoconditionsErrorCategory : public std::error_category
 {
 public:
-    explicit cryptoconditions_error_category() = default;
+    explicit CryptoconditionsErrorCategory() = default;
 
     char const*
     name() const noexcept override
@@ -99,7 +99,7 @@ public:
 inline std::error_category const&
 getCryptoconditionsErrorCategory()
 {
-    static cryptoconditions_error_category const kCAT{};
+    static CryptoconditionsErrorCategory const kCAT{};
     return kCAT;
 }
 

@@ -32,8 +32,8 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char { notCleaning = 0, cleaning };
-    State state_ = State::notCleaning;
+    enum class State : char { NotCleaning = 0, Cleaning };
+    State state_ = State::NotCleaning;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
@@ -185,7 +185,7 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            state_ = State::cleaning;
+            state_ = State::Cleaning;
             wakeup_.notify_one();
         }
     }
@@ -206,11 +206,11 @@ private:
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                state_ = State::notCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::cleaning); });
+                state_ = State::NotCleaning;
+                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(state_ == State::cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
+                XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }

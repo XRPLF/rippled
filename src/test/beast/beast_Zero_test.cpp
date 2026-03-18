@@ -3,24 +3,24 @@
 
 namespace beast {
 
-struct adl_tester
+struct AdlTester
 {
 };
 
 int
-signum(adl_tester)
+signum(AdlTester)
 {
     return 0;
 }
 
 namespace inner_adl_test {
 
-struct adl_tester2
+struct AdlTester2
 {
 };
 
 int
-signum(adl_tester2)
+signum(AdlTester2)
 {
     return 0;
 }
@@ -97,8 +97,8 @@ public:
     void
     testAdl()
     {
-        expect(adl_tester{} == zero, "ADL failure!");
-        expect(inner_adl_test::adl_tester2{} == zero, "ADL failure!");
+        expect(AdlTester{} == zero, "ADL failure!");
+        expect(inner_adl_test::AdlTester2{} == zero, "ADL failure!");
     }
 
     void

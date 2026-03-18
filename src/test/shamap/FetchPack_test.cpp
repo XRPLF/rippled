@@ -19,7 +19,7 @@ namespace tests {
 class FetchPack_test : public beast::unit_test::suite
 {
 public:
-    enum { tableItems = 100, tableItemsExtra = 20 };
+    enum { TableItems = 100, TableItemsExtra = 20 };
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;

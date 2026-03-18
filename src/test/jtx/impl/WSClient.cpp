@@ -23,11 +23,11 @@ class WSClientImpl : public WSClient
 {
     using error_code = boost::system::error_code;
 
-    struct msg
+    struct Msg
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv) : jv(std::move(jv))
+        explicit Msg(Json::Value&& jv) : jv(std::move(jv))
         {
         }
     };
@@ -91,7 +91,7 @@ class WSClientImpl : public WSClient
     // synchronize message queue
     std::mutex m_;
     std::condition_variable cv_;
-    std::list<std::shared_ptr<msg>> msgs_;
+    std::list<std::shared_ptr<Msg>> msgs_;
 
     unsigned rpc_version_;
 
@@ -208,7 +208,7 @@ public:
     std::optional<Json::Value>
     getMsg(std::chrono::milliseconds const& timeout) override
     {
-        std::shared_ptr<msg> m;
+        std::shared_ptr<Msg> m;
         {
             std::unique_lock<std::mutex> lock(m_);
             if (!cv_.wait_for(lock, timeout, [&] { return !msgs_.empty(); }))
@@ -223,7 +223,7 @@ public:
     findMsg(std::chrono::milliseconds const& timeout, std::function<bool(Json::Value const&)> pred)
         override
     {
-        std::shared_ptr<msg> m;
+        std::shared_ptr<Msg> m;
         {
             std::unique_lock<std::mutex> lock(m_);
             if (!cv_.wait_for(lock, timeout, [&] {
@@ -266,7 +266,7 @@ private:
         Json::Reader jr;
         jr.parse(bufferString(rb_.data()), jv);
         rb_.consume(rb_.size());
-        auto m = std::make_shared<msg>(std::move(jv));
+        auto m = std::make_shared<Msg>(std::move(jv));
         {
             std::lock_guard lock(m_);
             msgs_.push_front(m);

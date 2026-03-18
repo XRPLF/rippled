@@ -62,7 +62,7 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
+    enum { MinLedger = 1, MaxLedger = 1000000, MinSize = 250, MaxSize = 1250 };
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
@@ -75,7 +75,7 @@ public:
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
         , d_type_({1, 1, 0, 1, 1})
-        , d_size_(minSize, maxSize)
+        , d_size_(MinSize, MaxSize)
     {
     }
 
@@ -122,7 +122,7 @@ class Timing_test : public beast::unit_test::suite
 public:
     enum {
         // percent of fetches for missing nodes
-        missingNodePercent = 20
+        MissingNodePercent = 20
     };
 
     std::size_t const default_repeat = 3;
@@ -173,14 +173,14 @@ public:
     // Workaround for GCC's parameter pack expansion in lambdas
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47226
     template <class Body>
-    class parallel_for_lambda
+    class ParallelForLambda
     {
     private:
         std::size_t const n_;
         std::atomic<std::size_t>& c_;
 
     public:
-        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c) : n_(n), c_(c)
+        ParallelForLambda(std::size_t n, std::atomic<std::size_t>& c) : n_(n), c_(c)
         {
         }
 
@@ -213,7 +213,7 @@ public:
         std::vector<beast::unit_test::thread> t;
         t.reserve(numberOfThreads);
         for (std::size_t id = 0; id < numberOfThreads; ++id)
-            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
+            t.emplace_back(*this, ParallelForLambda<Body>(n, c), args...);
         for (auto& _ : t)
             _.join();
     }
@@ -226,7 +226,7 @@ public:
         std::vector<beast::unit_test::thread> t;
         t.reserve(numberOfThreads);
         for (std::size_t id = 0; id < numberOfThreads; ++id)
-            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
+            t.emplace_back(*this, ParallelForLambda<Body>(n, c), id, args...);
         for (auto& _ : t)
             _.join();
     }
@@ -447,7 +447,7 @@ public:
             {
                 try
                 {
-                    if (rand_(gen_) < missingNodePercent)
+                    if (rand_(gen_) < MissingNodePercent)
                     {
                         auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;

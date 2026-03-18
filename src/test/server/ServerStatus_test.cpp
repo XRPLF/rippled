@@ -29,7 +29,7 @@ namespace test {
 
 class ServerStatus_test : public beast::unit_test::suite, public beast::test::enable_yield_to
 {
-    class myFields : public boost::beast::http::fields
+    class MyFields : public boost::beast::http::fields
     {
     };
 
@@ -102,7 +102,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         std::string const& host,
         uint16_t port,
         std::string const& body,
-        myFields const& fields)
+        MyFields const& fields)
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
@@ -208,7 +208,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::beast::http::response<boost::beast::http::string_body>& resp,
         boost::system::error_code& ec,
         std::string const& body = "",
-        myFields const& fields = {})
+        MyFields const& fields = {})
     {
         auto const port = env.app().config()["port_rpc"].get<std::uint16_t>("port");
         auto const ip = env.app().config()["port_rpc"].get<std::string>("ip");
@@ -501,7 +501,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr));
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
-        myFields auth;
+        MyFields auth;
         auth.insert("Authorization", "");
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);

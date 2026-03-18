@@ -14,14 +14,14 @@ namespace test {
 // a non-hashing Hasher that just copies the bytes.
 // Used to test hash_append in base_uint
 template <std::size_t Bits>
-struct nonhash
+struct Nonhash
 {
     static constexpr auto const kENDIAN = boost::endian::order::big;
     static constexpr std::size_t kWIDTH = Bits / 8;
 
     std::array<std::uint8_t, kWIDTH> data;
 
-    nonhash() = default;
+    Nonhash() = default;
 
     void
     operator()(void const* key, std::size_t len) noexcept
@@ -143,7 +143,7 @@ struct base_uint_test : beast::unit_test::suite
         // Test hash_append by "hashing" with a no-op hasher (h)
         // and then extracting the bytes that were written during hashing
         // back into another base_uint (w) for comparison with the original
-        nonhash<96> h{};
+        Nonhash<96> h{};
         hash_append(h, u);
         test96 w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
         BEAST_EXPECT(w == u);

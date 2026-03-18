@@ -334,12 +334,12 @@ TxQ::~TxQ()
     byFee_.clear();
 }
 
-template <size_t fillPercentage>
+template <size_t FillPercentage>
 bool
 TxQ::isFull() const
 {
-    static_assert(fillPercentage > 0 && fillPercentage <= 100, "Invalid fill percentage");
-    return maxSize_ && byFee_.size() >= (*maxSize_ * fillPercentage / 100);
+    static_assert(FillPercentage > 0 && FillPercentage <= 100, "Invalid fill percentage");
+    return maxSize_ && byFee_.size() >= (*maxSize_ * FillPercentage / 100);
 }
 
 TER

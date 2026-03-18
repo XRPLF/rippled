@@ -11,7 +11,7 @@ namespace test {
 class Coroutine_test : public beast::unit_test::suite
 {
 public:
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -53,7 +53,7 @@ public:
             return cfg;
         }));
 
-        gate g1, g2;
+        Gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
         env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& cr) {
             c = cr;
@@ -80,7 +80,7 @@ public:
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& c) {
             c->post();
             c->yield();
@@ -106,7 +106,7 @@ public:
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
 
-        gate g;
+        Gate g;
         jq.addJob(jtCLIENT, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;

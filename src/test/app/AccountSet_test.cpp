@@ -283,7 +283,7 @@ public:
     void
     testTransferRate()
     {
-        struct test_results
+        struct TestResults
         {
             double set;
             TER code;
@@ -294,7 +294,7 @@ public:
 
         using namespace test::jtx;
         auto doTests =
-            [this](FeatureBitset const& features, std::initializer_list<test_results> testData) {
+            [this](FeatureBitset const& features, std::initializer_list<TestResults> testData) {
                 Env env(*this, features);
 
                 Account const alice("alice");

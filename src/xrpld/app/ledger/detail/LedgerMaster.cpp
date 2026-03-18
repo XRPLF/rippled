@@ -1060,10 +1060,10 @@ LedgerMaster::consensusBuilt(
     auto validations = app_.validators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
     // Track validation counts with sequence numbers
-    class valSeq
+    class ValSeq
     {
     public:
-        valSeq() = default;
+        ValSeq() = default;
 
         void
         mergeValidation(LedgerIndex seq)
@@ -1080,10 +1080,10 @@ LedgerMaster::consensusBuilt(
     };
 
     // Count the number of current, trusted validations
-    hash_map<uint256, valSeq> count;
+    hash_map<uint256, ValSeq> count;
     for (auto const& v : validations)
     {
-        valSeq& vs = count[v->getLedgerHash()];
+        ValSeq& vs = count[v->getLedgerHash()];
         vs.mergeValidation(v->getFieldU32(sfLedgerSequence));
     }
 

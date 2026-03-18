@@ -3716,7 +3716,7 @@ private:
     static constexpr size_t kNUM_SIGNERS = 5;
 
     // --------------------------------------------------
-    enum class WithClaim { no, yes };
+    enum class WithClaim { No, Yes };
     struct Transfer
     {
         jtx::Account from;
@@ -3724,7 +3724,7 @@ private:
         jtx::Account finaldest;
         STAmount amt;
         bool a2b;  // direction of transfer
-        WithClaim with_claim{WithClaim::no};
+        WithClaim with_claim{WithClaim::No};
         uint32_t claim_id{0};
         std::array<bool, kNUM_SIGNERS> attested{};
     };
@@ -3966,15 +3966,15 @@ private:
     };
 
     enum SmState {
-        st_initial,
-        st_claim_id_created,
-        st_attesting,
-        st_attested,
-        st_completed,
-        st_closed,
+        StInitial,
+        StClaimIdCreated,
+        StAttesting,
+        StAttested,
+        StCompleted,
+        StClosed,
     };
 
-    enum Act_Flags { af_a2b = 1 << 0 };
+    enum ActFlags { AfA2b = 1 << 0 };
 
     // --------------------------------------------------
     template <class T>
@@ -4110,7 +4110,7 @@ private:
                 st.spend(dstDoor(), reward, numAttestors);
                 st.transfer(dstDoor(), cr_.to, cr_.amt);
                 st.env.env.memoize(cr_.to);
-                sm_state_ = st_completed;
+                sm_state_ = StCompleted;
             };
 
             counters.create_callbacks[cr_.claim_id - 1] = std::move(completeCb);
@@ -4121,12 +4121,12 @@ private:
         {
             switch (sm_state_)
             {
-                case st_initial:
+                case StInitial:
                     cr_.claim_id = issueAccountCreate();
-                    sm_state_ = st_attesting;
+                    sm_state_ = StAttesting;
                     break;
 
-                case st_attesting:
+                case StAttesting:
                     attest(time, rnd);
                     break;
 
@@ -4134,14 +4134,14 @@ private:
                     assert(0);
                     break;
 
-                case st_completed:
+                case StCompleted:
                     break;  // will get this once
             }
             return sm_state_;
         }
 
     private:
-        SmState sm_state_{st_initial};
+        SmState sm_state_{StInitial};
         AccountCreate cr_;
     };
 
@@ -4193,7 +4193,7 @@ private:
                 bridge_.jvb,
                 xfer_.claim_id,
                 xfer_.amt,
-                xfer_.with_claim == WithClaim::yes ? std::nullopt
+                xfer_.with_claim == WithClaim::Yes ? std::nullopt
                                                    : std::optional<jtx::Account>(xfer_.finaldest)));
             st.spendFee(xfer_.from);
             st.transfer(xfer_.from, srcdoor, xfer_.amt);
@@ -4236,7 +4236,7 @@ private:
                             bridge_.signers[signerIdx].account,
                             xfer_.a2b,
                             xfer_.claim_id,
-                            xfer_.with_claim == WithClaim::yes
+                            xfer_.with_claim == WithClaim::Yes
                                 ? std::nullopt
                                 : std::optional<jtx::Account>(xfer_.finaldest),
                             bridge_.signers[signerIdx]));
@@ -4247,7 +4247,7 @@ private:
             // return true if quorum was reached, false otherwise
             bool quorum =
                 std::count(xfer_.attested.begin(), xfer_.attested.end(), true) >= bridge_.quorum;
-            if (quorum && xfer_.with_claim == WithClaim::no)
+            if (quorum && xfer_.with_claim == WithClaim::No)
             {
                 distributeReward(st);
                 st.transfer(dstDoor(), xfer_.finaldest, xfer_.amt);
@@ -4271,30 +4271,30 @@ private:
         {
             switch (sm_state_)
             {
-                case st_initial:
+                case StInitial:
                     xfer_.claim_id = createClaimId();
-                    sm_state_ = st_claim_id_created;
+                    sm_state_ = StClaimIdCreated;
                     break;
 
-                case st_claim_id_created:
+                case StClaimIdCreated:
                     commit();
-                    sm_state_ = st_attesting;
+                    sm_state_ = StAttesting;
                     break;
 
-                case st_attesting:
+                case StAttesting:
                     sm_state_ = attest(time, rnd)
-                        ? (xfer_.with_claim == WithClaim::yes ? st_attested : st_completed)
-                        : st_attesting;
+                        ? (xfer_.with_claim == WithClaim::Yes ? StAttested : StCompleted)
+                        : StAttesting;
                     break;
 
-                case st_attested:
-                    assert(xfer_.with_claim == WithClaim::yes);
+                case StAttested:
+                    assert(xfer_.with_claim == WithClaim::Yes);
                     claim();
-                    sm_state_ = st_completed;
+                    sm_state_ = StCompleted;
                     break;
 
                 default:
-                case st_completed:
+                case StCompleted:
                     assert(0);  // should have been removed
                     break;
             }
@@ -4303,7 +4303,7 @@ private:
 
     private:
         Transfer xfer_;
-        SmState sm_state_{st_initial};
+        SmState sm_state_{StInitial};
     };
 
     // --------------------------------------------------
@@ -4350,7 +4350,7 @@ public:
                     return sm.advance(time, rnd);
                 };
                 auto& [t, sm] = *it;
-                if (t <= time && std::visit(vis, sm) == st_completed)
+                if (t <= time && std::visit(vis, sm) == StCompleted)
                     it = sm_.erase(it);
                 else
                     ++it;
@@ -4502,12 +4502,12 @@ public:
 
         // run multiple XRP transfers
         // --------------------------
-        xfer(0, st, xrpB, {a[0], a[0], a[1], XRP(6), true, WithClaim::no});
-        xfer(1, st, xrpB, {a[0], a[0], a[1], XRP(8), false, WithClaim::no});
+        xfer(0, st, xrpB, {a[0], a[0], a[1], XRP(6), true, WithClaim::No});
+        xfer(1, st, xrpB, {a[0], a[0], a[1], XRP(8), false, WithClaim::No});
         xfer(1, st, xrpB, {a[1], a[1], a[1], XRP(1), true});
         xfer(2, st, xrpB, {a[0], a[0], a[1], XRP(3), false});
         xfer(2, st, xrpB, {a[1], a[1], a[1], XRP(5), false});
-        xfer(2, st, xrpB, {a[0], a[0], a[1], XRP(7), false, WithClaim::no});
+        xfer(2, st, xrpB, {a[0], a[0], a[1], XRP(7), false, WithClaim::No});
         xfer(2, st, xrpB, {a[1], a[1], a[1], XRP(9), true});
         runSimulation(st);
 

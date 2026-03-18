@@ -77,7 +77,7 @@ class Path_test : public beast::unit_test::suite
     }
 
 public:
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -154,7 +154,7 @@ public:
             params[jss::domain] = to_string(*domain);
 
         Json::Value result;
-        gate g;
+        Gate g;
         app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
             context.params = std::move(params);
             context.coro = coro;
@@ -247,7 +247,7 @@ public:
             {},
             {}};
         Json::Value result;
-        gate g;
+        Gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
             context.params = rpf(Account("alice"), Account("bob"), RPC::Tuning::max_src_cur);

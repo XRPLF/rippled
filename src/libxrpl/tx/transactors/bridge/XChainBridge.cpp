@@ -162,7 +162,7 @@ checkAttestationPublicKey(
 // must attest to this destination, if it is `ignore` then the `dst` of the
 // attestations are not checked (as for a `claim` transaction)
 
-enum class CheckDst { check, ignore };
+enum class CheckDst { Check, Ignore };
 template <class TAttestation>
 Expected<std::vector<AccountID>, TER>
 claimHelper(
@@ -193,7 +193,7 @@ claimHelper(
         // attestation transaction. The dst does not need to match if the
         // claimHelper is being run using an explicit claim transaction.
         using enum AttestationMatch;
-        if (matchR == nonDstMismatch || (checkDst == CheckDst::check && matchR != match))
+        if (matchR == nonDstMismatch || (checkDst == CheckDst::Check && matchR != match))
             continue;
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
@@ -300,7 +300,7 @@ onNewAttestations(
         attestations,
         view,
         typename TAttestation::MatchFields{*attBegin},
-        CheckDst::check,
+        CheckDst::Check,
         quorum,
         signersList,
         j);
@@ -325,12 +325,12 @@ onClaim(
     beast::Journal j)
 {
     XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
-    return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
+    return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
 }
 
-enum class CanCreateDstPolicy { no, yes };
+enum class CanCreateDstPolicy { No, Yes };
 
-enum class DepositAuthPolicy { normal, dstCanBypass };
+enum class DepositAuthPolicy { Normal, DstCanBypass };
 
 // Allow the fee to dip into the reserve. To support this, information about the
 // submitting account needs to be fed to the transfer helper.
@@ -391,7 +391,7 @@ transferHelper(
         // transaction, that's the dst account sending funds to itself. It
         // can bypass deposit auth.
         bool const canBypassDepositAuth =
-            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
+            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
         if (!canBypassDepositAuth && (sleDst->getFlags() & lsfDepositAuth) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
@@ -399,7 +399,7 @@ transferHelper(
             return tecNO_PERMISSION;
         }
     }
-    else if (!amt.native() || canCreate == CanCreateDstPolicy::no)
+    else if (!amt.native() || canCreate == CanCreateDstPolicy::No)
     {
         return tecNO_DST;
     }
@@ -435,7 +435,7 @@ transferHelper(
         auto sleDst = psb.peek(dstK);
         if (!sleDst)
         {
-            if (canCreate == CanCreateDstPolicy::no)
+            if (canCreate == CanCreateDstPolicy::No)
             {
                 // Already checked, but OK to check again
                 return tecNO_DST;
@@ -489,9 +489,9 @@ transferHelper(
 */
 enum class OnTransferFail {
     /** Remove the claim even if the transfer fails */
-    removeClaim,
+    RemoveClaim,
     /**  Keep the claim if the transfer fails */
-    keepClaim
+    KeepClaim
 };
 
 struct FinalizeClaimHelperResult
@@ -614,12 +614,12 @@ finalizeClaimHelper(
             dstTag,
             claimOwner,
             thisChainAmount,
-            CanCreateDstPolicy::yes,
+            CanCreateDstPolicy::Yes,
             depositAuthPolicy,
             std::nullopt,
             j);
 
-        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::keepClaim)
+        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::KeepClaim)
         {
             return result;
         }
@@ -652,8 +652,8 @@ finalizeClaimHelper(
                     // claim owner is not relevant to distributing rewards
                     /*claimOwner*/ std::nullopt,
                     share,
-                    CanCreateDstPolicy::no,
-                    DepositAuthPolicy::normal,
+                    CanCreateDstPolicy::No,
+                    DepositAuthPolicy::Normal,
                     std::nullopt,
                     j);
 
@@ -674,7 +674,7 @@ finalizeClaimHelper(
         }();
 
         if (!isTesSuccess(*result.rewardTer) &&
-            (onTransferFail == OnTransferFail::keepClaim || *result.rewardTer == tecINTERNAL))
+            (onTransferFail == OnTransferFail::KeepClaim || *result.rewardTer == tecINTERNAL))
         {
             return result;
         }
@@ -903,8 +903,8 @@ applyClaimAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::keepClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::KeepClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -1073,8 +1073,8 @@ applyCreateAccountAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::removeClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::RemoveClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -1756,8 +1756,8 @@ XChainClaim::doApply()
         rewardAccounts,
         srcChain,
         claimIDKeylet,
-        OnTransferFail::keepClaim,
-        DepositAuthPolicy::dstCanBypass,
+        OnTransferFail::KeepClaim,
+        DepositAuthPolicy::DstCanBypass,
         ctx_.journal);
     if (!r.isTesSuccess())
         return r.ter();
@@ -1873,8 +1873,8 @@ XChainCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         amount,
-        CanCreateDstPolicy::no,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::No,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 
@@ -2142,8 +2142,8 @@ XChainCreateAccountCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         toTransfer,
-        CanCreateDstPolicy::yes,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::Yes,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 

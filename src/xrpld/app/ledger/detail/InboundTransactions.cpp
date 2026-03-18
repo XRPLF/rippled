@@ -16,10 +16,10 @@ namespace xrpl {
 
 enum {
     // Ideal number of peers to start with
-    startPeers = 2,
+    StartPeers = 2,
 
     // How many rounds to keep a set
-    setKeepRounds = 3,
+    SetKeepRounds = 3,
 };
 
 class InboundTransactionSet
@@ -105,7 +105,7 @@ public:
             obj.seq = seq_;
         }
 
-        ta->init(startPeers);
+        ta->init(StartPeers);
 
         return {};
     }
@@ -196,8 +196,8 @@ public:
 
             auto it = map_.begin();
 
-            std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
-            std::uint32_t maxSeq = seq + setKeepRounds;
+            std::uint32_t const minSeq = (seq < SetKeepRounds) ? 0 : (seq - SetKeepRounds);
+            std::uint32_t maxSeq = seq + SetKeepRounds;
 
             while (it != map_.end())
             {

@@ -7159,7 +7159,7 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     }
 };
 
-class NFTokenWOExpiredOfferRemoval_test : public NFTokenBaseUtil_test
+class NfTokenWoExpiredOfferRemovalTest : public NFTokenBaseUtil_test
 {
     void
     run() override

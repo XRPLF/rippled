@@ -161,13 +161,13 @@ Checks: "-*,
 #
 CheckOptions:
   #   readability-braces-around-statements.ShortStatementLines: 2
-  #   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
-  #   readability-identifier-naming.ClassCase: CamelCase
-  #   readability-identifier-naming.StructCase: CamelCase
-  #   readability-identifier-naming.UnionCase: CamelCase
-  #   readability-identifier-naming.EnumCase: CamelCase
-  #   readability-identifier-naming.EnumConstantCase: CamelCase
-  #   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: CamelCase
+  readability-identifier-naming.ScopedEnumConstantCase: CamelCase
   readability-identifier-naming.GlobalConstantCase: UPPER_CASE
   readability-identifier-naming.GlobalConstantPrefix: "k"
   readability-identifier-naming.GlobalVariableCase: CamelCase
@@ -176,8 +176,8 @@ CheckOptions:
   readability-identifier-naming.ConstexprMethodCase: camelBack
   readability-identifier-naming.ClassMethodCase: camelBack
   readability-identifier-naming.ClassMemberCase: camelBack
-  #   readability-identifier-naming.ClassConstantCase: UPPER_CASE
-  #   readability-identifier-naming.ClassConstantPrefix: "k"
+  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantPrefix: "k"
   readability-identifier-naming.StaticConstantCase: UPPER_CASE
   readability-identifier-naming.StaticConstantPrefix: "k"
   readability-identifier-naming.StaticVariableCase: UPPER_CASE
@@ -186,7 +186,7 @@ CheckOptions:
   readability-identifier-naming.ConstexprVariablePrefix: "k"
   readability-identifier-naming.LocalConstantCase: camelBack
   readability-identifier-naming.LocalVariableCase: camelBack
-  #   readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.TemplateParameterCase: CamelCase
   readability-identifier-naming.ParameterCase: camelBack
   readability-identifier-naming.FunctionCase: camelBack
   readability-identifier-naming.MemberCase: camelBack

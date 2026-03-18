@@ -29,22 +29,22 @@ struct XRPEndpointStepInfo
     AccountID acc;
 };
 
-enum class TrustFlag { freeze, auth, noripple };
+enum class TrustFlag { Freeze, Auth, Noripple };
 
 /*constexpr*/ std::uint32_t
 trustFlag(TrustFlag f, bool useHigh)
 {
     switch (f)
     {
-        case TrustFlag::freeze:
+        case TrustFlag::Freeze:
             if (useHigh)
                 return lsfHighFreeze;
             return lsfLowFreeze;
-        case TrustFlag::auth:
+        case TrustFlag::Auth:
             if (useHigh)
                 return lsfHighAuth;
             return lsfLowAuth;
-        case TrustFlag::noripple:
+        case TrustFlag::Noripple:
             if (useHigh)
                 return lsfHighNoRipple;
             return lsfLowNoRipple;
@@ -149,25 +149,25 @@ class ElementComboIter
 {
     enum class SB /*state bit*/
         : std::uint16_t {
-            acc,
-            iss,
-            cur,
-            rootAcc,
-            rootIss,
-            xrp,
-            sameAccIss,
-            existingAcc,
-            existingCur,
-            existingIss,
-            prevAcc,
-            prevCur,
-            prevIss,
-            boundary,
-            last
+            Acc,
+            Iss,
+            Cur,
+            RootAcc,
+            RootIss,
+            Xrp,
+            SameAccIss,
+            ExistingAcc,
+            ExistingCur,
+            ExistingIss,
+            PrevAcc,
+            PrevCur,
+            PrevIss,
+            Boundary,
+            Last
         };
 
     std::uint16_t state_ = 0;
-    static_assert(safe_cast<size_t>(SB::last) <= sizeof(decltype(state_)) * 8, "");
+    static_assert(safe_cast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8, "");
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies
     // some tests)
@@ -207,29 +207,29 @@ public:
     bool
     valid() const
     {
-        return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
-            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || prev_) &&
-            (!hasAny({SB::rootAcc, SB::sameAccIss, SB::existingAcc, SB::prevAcc}) ||
-             has(SB::acc)) &&
-            (!hasAny({SB::rootIss, SB::sameAccIss, SB::existingIss, SB::prevIss}) ||
-             has(SB::iss)) &&
-            (!hasAny({SB::xrp, SB::existingCur, SB::prevCur}) || has(SB::cur)) &&
+        return (allowCompound_ || !(has(SB::Acc) && hasAny({SB::Cur, SB::Iss}))) &&
+            (!hasAny({SB::PrevAcc, SB::PrevCur, SB::PrevIss}) || prev_) &&
+            (!hasAny({SB::RootAcc, SB::SameAccIss, SB::ExistingAcc, SB::PrevAcc}) ||
+             has(SB::Acc)) &&
+            (!hasAny({SB::RootIss, SB::SameAccIss, SB::ExistingIss, SB::PrevIss}) ||
+             has(SB::Iss)) &&
+            (!hasAny({SB::Xrp, SB::ExistingCur, SB::PrevCur}) || has(SB::Cur)) &&
             // These will be duplicates
-            (count({SB::xrp, SB::existingCur, SB::prevCur}) <= 1) &&
-            (count({SB::rootAcc, SB::existingAcc, SB::prevAcc}) <= 1) &&
-            (count({SB::rootIss, SB::existingIss, SB::rootIss}) <= 1);
+            (count({SB::Xrp, SB::ExistingCur, SB::PrevCur}) <= 1) &&
+            (count({SB::RootAcc, SB::ExistingAcc, SB::PrevAcc}) <= 1) &&
+            (count({SB::RootIss, SB::ExistingIss, SB::RootIss}) <= 1);
     }
     bool
     next()
     {
-        if (!(has(SB::last)))
+        if (!(has(SB::Last)))
         {
             do
             {
                 ++state_;
             } while (!valid());
         }
-        return !has(SB::last);
+        return !has(SB::Last);
     }
 
     template <class Col, class AccFactory, class IssFactory, class CurrencyFactory>
@@ -243,38 +243,38 @@ public:
         std::optional<Currency> const& existingCur,
         std::optional<AccountID> const& existingIss)
     {
-        assert(!has(SB::last));
+        assert(!has(SB::Last));
 
         auto const acc = [&]() -> std::optional<AccountID> {
-            if (!has(SB::acc))
+            if (!has(SB::Acc))
                 return std::nullopt;
-            if (has(SB::rootAcc))
+            if (has(SB::RootAcc))
                 return xrpAccount();
-            if (has(SB::existingAcc) && existingAcc)
+            if (has(SB::ExistingAcc) && existingAcc)
                 return existingAcc;
             return accF().id();
         }();
         auto const iss = [&]() -> std::optional<AccountID> {
-            if (!has(SB::iss))
+            if (!has(SB::Iss))
                 return std::nullopt;
-            if (has(SB::rootIss))
+            if (has(SB::RootIss))
                 return xrpAccount();
-            if (has(SB::sameAccIss))
+            if (has(SB::SameAccIss))
                 return acc;
-            if (has(SB::existingIss) && existingIss)
+            if (has(SB::ExistingIss) && existingIss)
                 return existingIss;
             return issF().id();
         }();
         auto const cur = [&]() -> std::optional<Currency> {
-            if (!has(SB::cur))
+            if (!has(SB::Cur))
                 return std::nullopt;
-            if (has(SB::xrp))
+            if (has(SB::Xrp))
                 return xrpCurrency();
-            if (has(SB::existingCur) && existingCur)
+            if (has(SB::ExistingCur) && existingCur)
                 return existingCur;
             return currencyF();
         }();
-        if (!has(SB::boundary))
+        if (!has(SB::Boundary))
             col.emplace_back(acc, cur, iss);
         else
             col.emplace_back(
@@ -889,7 +889,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             test(env, usd, std::nullopt, STPath(), tesSUCCESS);
             env(trust(gw, alice["USD"](0), tfSetFreeze));
-            BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::freeze));
+            BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::Freeze));
             test(env, usd, std::nullopt, STPath(), terNO_LINE);
         }
         {
@@ -902,7 +902,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env.trust(usd(1000), alice, bob);
             // Authorize alice but not bob
             env(trust(gw, alice["USD"](1000), tfSetfAuth));
-            BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::auth));
+            BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::Auth));
             env(pay(gw, alice, usd(100)));
             env.require(balance(alice, usd(100)));
             test(env, usd, std::nullopt, STPath(), terNO_AUTH);

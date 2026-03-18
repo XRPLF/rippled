@@ -24,31 +24,31 @@ using namespace std::chrono_literals;
 
 enum {
     // Number of peers to start with
-    peerCountStart = 5
+    PeerCountStart = 5
 
     // Number of peers to add on a timeout
     ,
-    peerCountAdd = 3
+    PeerCountAdd = 3
 
     // how many timeouts before we give up
     ,
-    ledgerTimeoutRetriesMax = 6
+    LedgerTimeoutRetriesMax = 6
 
     // how many timeouts before we get aggressive
     ,
-    ledgerBecomeAggressiveThreshold = 4
+    LedgerBecomeAggressiveThreshold = 4
 
     // Number of nodes to find initially
     ,
-    missingNodesFind = 256
+    MissingNodesFind = 256
 
     // Number of nodes to request for a reply
     ,
-    reqNodesReply = 128
+    ReqNodesReply = 128
 
     // Number of nodes to request blindly
     ,
-    reqNodes = 12
+    ReqNodes = 12
 };
 
 // millisecond for each ledger timeout
@@ -336,7 +336,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         return;
     }
 
-    if (timeouts_ > ledgerTimeoutRetriesMax)
+    if (timeouts_ > LedgerTimeoutRetriesMax)
     {
         if (seq_ != 0)
         {
@@ -377,7 +377,7 @@ void
 InboundLedger::addPeers()
 {
     peerSet_->addPeers(
-        (getPeerCount() == 0) ? peerCountStart : peerCountAdd,
+        (getPeerCount() == 0) ? PeerCountStart : PeerCountAdd,
         [this](auto peer) { return peer->hasLedger(hash_, seq_); },
         [this](auto peer) {
             // For historical nodes, do not trigger too soon
@@ -485,7 +485,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         // Be more aggressive if we've timed out at least once
         tmGL.set_querytype(protocol::qtINDIRECT);
 
-        if (!progress_ && !failed_ && byHash_ && (timeouts_ > ledgerBecomeAggressiveThreshold))
+        if (!progress_ && !failed_ && byHash_ && (timeouts_ > LedgerBecomeAggressiveThreshold))
         {
             auto need = getNeededHashes();
 
@@ -593,7 +593,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
             // Release the lock while we process the large state map
             sl.unlock();
-            auto nodes = ledger_->stateMap().getMissingNodes(missingNodesFind, &filter);
+            auto nodes = ledger_->stateMap().getMissingNodes(MissingNodesFind, &filter);
             sl.lock();
 
             // Make sure nothing happened while we released the lock
@@ -662,7 +662,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
 
-            auto nodes = ledger_->txMap().getMissingNodes(missingNodesFind, &filter);
+            auto nodes = ledger_->txMap().getMissingNodes(MissingNodesFind, &filter);
 
             if (nodes.empty())
             {
@@ -740,7 +740,7 @@ InboundLedger::filterNodes(
         nodes.erase(dup, nodes.end());
     }
 
-    std::size_t const limit = (reason == TriggerReason::reply) ? reqNodesReply : reqNodes;
+    std::size_t const limit = (reason == TriggerReason::reply) ? ReqNodesReply : ReqNodes;
 
     if (nodes.size() > limit)
         nodes.resize(limit);

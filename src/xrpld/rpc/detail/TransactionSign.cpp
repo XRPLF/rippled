@@ -360,31 +360,31 @@ checkTxJsonFields(
 
 // A move-only struct that makes it easy to return either a Json::Value or a
 // std::shared_ptr<STTx const> from transactionPreProcessImpl ().
-struct transactionPreProcessResult
+struct TransactionPreProcessResult
 {
     Json::Value const first;
     std::shared_ptr<STTx> const second;
 
-    transactionPreProcessResult() = delete;
-    transactionPreProcessResult(transactionPreProcessResult const&) = delete;
-    transactionPreProcessResult(transactionPreProcessResult&& rhs) = default;
+    TransactionPreProcessResult() = delete;
+    TransactionPreProcessResult(TransactionPreProcessResult const&) = delete;
+    TransactionPreProcessResult(TransactionPreProcessResult&& rhs) = default;
 
-    transactionPreProcessResult&
-    operator=(transactionPreProcessResult const&) = delete;
-    transactionPreProcessResult&
-    operator=(transactionPreProcessResult&&) = delete;
+    TransactionPreProcessResult&
+    operator=(TransactionPreProcessResult const&) = delete;
+    TransactionPreProcessResult&
+    operator=(TransactionPreProcessResult&&) = delete;
 
-    transactionPreProcessResult(Json::Value&& json) : first(std::move(json)), second()
+    TransactionPreProcessResult(Json::Value&& json) : first(std::move(json)), second()
     {
     }
 
-    explicit transactionPreProcessResult(std::shared_ptr<STTx>&& st)
+    explicit TransactionPreProcessResult(std::shared_ptr<STTx>&& st)
         : first(), second(std::move(st))
     {
     }
 };
 
-static transactionPreProcessResult
+static TransactionPreProcessResult
 transactionPreProcessImpl(
     Json::Value& params,
     Role role,
@@ -629,7 +629,7 @@ transactionPreProcessImpl(
         stTx->sign(pk, sk, signatureTarget);
     }
 
-    return transactionPreProcessResult{std::move(stTx)};
+    return TransactionPreProcessResult{std::move(stTx)};
 }
 
 static std::pair<Json::Value, Transaction::pointer>
@@ -933,7 +933,7 @@ transactionSign(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
+    TransactionPreProcessResult preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -969,7 +969,7 @@ transactionSubmit(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
+    TransactionPreProcessResult preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -1127,7 +1127,7 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    transactionPreProcessResult preprocResult =
+    TransactionPreProcessResult preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)

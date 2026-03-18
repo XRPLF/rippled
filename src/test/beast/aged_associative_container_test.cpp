@@ -30,7 +30,7 @@
 
 namespace beast {
 
-class aged_associative_container_test_base : public unit_test::suite
+class AgedAssociativeContainerTestBase : public unit_test::suite
 {
 public:
     template <class T>
@@ -101,7 +101,7 @@ public:
         // using std::true_type::type = propagate_on_container_swap :;
 
         template <class U>
-        struct rebind
+        struct Rebind
         {
             using other = AllocT<U>;
         };
@@ -373,7 +373,7 @@ public:
     }
 
     template <class Traits>
-    struct equal_value
+    struct EqualValue
     {
         bool
         operator()(typename Traits::Value const& lhs, typename Traits::Value const& rhs)
@@ -605,7 +605,7 @@ public:
 // map, unordered_map
 template <class Container, class Values>
 typename std::enable_if<Container::is_map::value && !Container::is_multi::value>::type
-aged_associative_container_test_base::checkMapContents(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v)
 {
     if (v.empty())
     {
@@ -631,7 +631,7 @@ aged_associative_container_test_base::checkMapContents(Container& c, Values cons
 // unordered
 template <class C, class Values>
 typename std::enable_if<std::remove_reference<C>::type::is_unordered::value>::type
-aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values const& v)
+AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values const& v)
 {
     using Cont = typename std::remove_reference<C>::type;
     using Traits =
@@ -657,7 +657,7 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values
 
 template <class C, class Values>
 void
-aged_associative_container_test_base::checkContentsRefRef(C&& c, Values const& v)
+AgedAssociativeContainerTestBase::checkContentsRefRef(C&& c, Values const& v)
 {
     using Cont = typename std::remove_reference<C>::type;
     using size_type = typename Cont::size_type;
@@ -679,7 +679,7 @@ aged_associative_container_test_base::checkContentsRefRef(C&& c, Values const& v
 
 template <class Cont, class Values>
 void
-aged_associative_container_test_base::checkContents(Cont& c, Values const& v)
+AgedAssociativeContainerTestBase::checkContents(Cont& c, Values const& v)
 {
     checkContentsRefRef(c, v);
     checkContentsRefRef(const_cast<Cont const&>(c), v);
@@ -688,7 +688,7 @@ aged_associative_container_test_base::checkContents(Cont& c, Values const& v)
 
 template <class Cont>
 void
-aged_associative_container_test_base::checkContents(Cont& c)
+AgedAssociativeContainerTestBase::checkContents(Cont& c)
 {
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
@@ -705,7 +705,7 @@ aged_associative_container_test_base::checkContents(Cont& c)
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testConstructEmpty()
+AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     using Comp = typename Traits::Comp;
@@ -741,7 +741,7 @@ aged_associative_container_test_base::testConstructEmpty()
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<IsUnordered>::type
-aged_associative_container_test_base::testConstructEmpty()
+AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     using Hash = typename Traits::Hash;
@@ -799,7 +799,7 @@ aged_associative_container_test_base::testConstructEmpty()
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testConstructRange()
+AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     using Comp = typename Traits::Comp;
@@ -846,7 +846,7 @@ aged_associative_container_test_base::testConstructRange()
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<IsUnordered>::type
-aged_associative_container_test_base::testConstructRange()
+AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     using Hash = typename Traits::Hash;
@@ -912,7 +912,7 @@ aged_associative_container_test_base::testConstructRange()
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testConstructInitList()
+AgedAssociativeContainerTestBase::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -928,7 +928,7 @@ aged_associative_container_test_base::testConstructInitList()
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<IsUnordered>::type
-aged_associative_container_test_base::testConstructInitList()
+AgedAssociativeContainerTestBase::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -948,7 +948,7 @@ aged_associative_container_test_base::testConstructInitList()
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testCopyMove()
+AgedAssociativeContainerTestBase::testCopyMove()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     using Alloc = typename Traits::Alloc;
@@ -1018,7 +1018,7 @@ aged_associative_container_test_base::testCopyMove()
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testIterator()
+AgedAssociativeContainerTestBase::testIterator()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1074,7 +1074,7 @@ aged_associative_container_test_base::testIterator()
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testReverseIterator()
+AgedAssociativeContainerTestBase::testReverseIterator()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1159,7 +1159,7 @@ aged_associative_container_test_base::testReverseIterator()
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkInsertCopy(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkInsertCopy(Container& c, Values const& v)
 {
     for (auto const& e : v)
         c.insert(e);
@@ -1168,7 +1168,7 @@ aged_associative_container_test_base::checkInsertCopy(Container& c, Values const
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkInsertMove(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkInsertMove(Container& c, Values const& v)
 {
     Values v2(v);
     for (auto& e : v2)
@@ -1178,7 +1178,7 @@ aged_associative_container_test_base::checkInsertMove(Container& c, Values const
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkInsertHintCopy(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkInsertHintCopy(Container& c, Values const& v)
 {
     for (auto const& e : v)
         c.insert(c.cend(), e);
@@ -1187,7 +1187,7 @@ aged_associative_container_test_base::checkInsertHintCopy(Container& c, Values c
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkInsertHintMove(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkInsertHintMove(Container& c, Values const& v)
 {
     Values v2(v);
     for (auto& e : v2)
@@ -1197,7 +1197,7 @@ aged_associative_container_test_base::checkInsertHintMove(Container& c, Values c
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkEmplace(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkEmplace(Container& c, Values const& v)
 {
     for (auto const& e : v)
         c.emplace(e);
@@ -1206,7 +1206,7 @@ aged_associative_container_test_base::checkEmplace(Container& c, Values const& v
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::checkEmplaceHint(Container& c, Values const& v)
+AgedAssociativeContainerTestBase::checkEmplaceHint(Container& c, Values const& v)
 {
     for (auto const& e : v)
         c.emplace_hint(c.cend(), e);
@@ -1215,7 +1215,7 @@ aged_associative_container_test_base::checkEmplaceHint(Container& c, Values cons
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testModifiers()
+AgedAssociativeContainerTestBase::testModifiers()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1274,7 +1274,7 @@ aged_associative_container_test_base::testModifiers()
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testChronological()
+AgedAssociativeContainerTestBase::testChronological()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1291,7 +1291,7 @@ aged_associative_container_test_base::testChronological()
             c.chronological.cend(),
             v.begin(),
             v.end(),
-            equal_value<Traits>()));
+            EqualValue<Traits>()));
 
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
@@ -1311,7 +1311,7 @@ aged_associative_container_test_base::testChronological()
             c.chronological.cend(),
             v.crbegin(),
             v.crend(),
-            equal_value<Traits>()));
+            EqualValue<Traits>()));
 
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
@@ -1331,7 +1331,7 @@ aged_associative_container_test_base::testChronological()
             c.chronological.cend(),
             v.cbegin(),
             v.cend(),
-            equal_value<Traits>()));
+            EqualValue<Traits>()));
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following
@@ -1350,7 +1350,7 @@ aged_associative_container_test_base::testChronological()
 // map, unordered_map
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<IsMap && !IsMulti>::type
-aged_associative_container_test_base::testArrayCreate()
+AgedAssociativeContainerTestBase::testArrayCreate()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1384,7 +1384,7 @@ aged_associative_container_test_base::testArrayCreate()
 
 template <class Container, class Values>
 void
-aged_associative_container_test_base::reverseFillAgedContainer(Container& c, Values const& values)
+AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values const& values)
 {
     // Just in case the passed in container was not empty.
     c.clear();
@@ -1410,7 +1410,7 @@ aged_associative_container_test_base::reverseFillAgedContainer(Container& c, Val
 // cannot use operator-- with unordered container iterators.
 template <class Iter>
 Iter
-aged_associative_container_test_base::nextToEndIter(Iter beginIter, Iter const endIter)
+AgedAssociativeContainerTestBase::nextToEndIter(Iter beginIter, Iter const endIter)
 {
     if (beginIter == endIter)
     {
@@ -1442,7 +1442,7 @@ aged_associative_container_test_base::nextToEndIter(Iter beginIter, Iter const e
 // the whole test.
 template <class Container, class Iter>
 bool
-aged_associative_container_test_base::doElementErase(
+AgedAssociativeContainerTestBase::doElementErase(
     Container& c,
     Iter const beginItr,
     Iter const endItr)
@@ -1488,7 +1488,7 @@ aged_associative_container_test_base::doElementErase(
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testElementErase()
+AgedAssociativeContainerTestBase::testElementErase()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
 
@@ -1573,7 +1573,7 @@ aged_associative_container_test_base::testElementErase()
 //
 template <class Container, class BeginEndSrc>
 void
-aged_associative_container_test_base::doRangeErase(Container& c, BeginEndSrc const& beginEndSrc)
+AgedAssociativeContainerTestBase::doRangeErase(Container& c, BeginEndSrc const& beginEndSrc)
 {
     BEAST_EXPECT(c.size() > 2);
     auto itBeginPlusOne(beginEndSrc.begin());
@@ -1601,7 +1601,7 @@ aged_associative_container_test_base::doRangeErase(Container& c, BeginEndSrc con
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testRangeErase()
+AgedAssociativeContainerTestBase::testRangeErase()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
 
@@ -1633,7 +1633,7 @@ aged_associative_container_test_base::testRangeErase()
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testCompare()
+AgedAssociativeContainerTestBase::testCompare()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1664,7 +1664,7 @@ aged_associative_container_test_base::testCompare()
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<!IsUnordered>::type
-aged_associative_container_test_base::testObservers()
+AgedAssociativeContainerTestBase::testObservers()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1682,7 +1682,7 @@ aged_associative_container_test_base::testObservers()
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 typename std::enable_if<IsUnordered>::type
-aged_associative_container_test_base::testObservers()
+AgedAssociativeContainerTestBase::testObservers()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1705,7 +1705,7 @@ aged_associative_container_test_base::testObservers()
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
-aged_associative_container_test_base::testMaybeUnorderedMultiMap()
+AgedAssociativeContainerTestBase::testMaybeUnorderedMultiMap()
 {
     testConstructEmpty<IsUnordered, IsMulti, IsMap>();
     testConstructRange<IsUnordered, IsMulti, IsMap>();
@@ -1724,7 +1724,7 @@ aged_associative_container_test_base::testMaybeUnorderedMultiMap()
 
 //------------------------------------------------------------------------------
 
-class aged_set_test : public aged_associative_container_test_base
+class aged_set_test : public AgedAssociativeContainerTestBase
 {
 public:
     // Compile time checks
@@ -1781,7 +1781,7 @@ public:
     }
 };
 
-class aged_map_test : public aged_associative_container_test_base
+class aged_map_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1791,7 +1791,7 @@ public:
     }
 };
 
-class aged_multiset_test : public aged_associative_container_test_base
+class aged_multiset_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1801,7 +1801,7 @@ public:
     }
 };
 
-class aged_multimap_test : public aged_associative_container_test_base
+class aged_multimap_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1811,7 +1811,7 @@ public:
     }
 };
 
-class aged_unordered_set_test : public aged_associative_container_test_base
+class aged_unordered_set_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1821,7 +1821,7 @@ public:
     }
 };
 
-class aged_unordered_map_test : public aged_associative_container_test_base
+class aged_unordered_map_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1831,7 +1831,7 @@ public:
     }
 };
 
-class aged_unordered_multiset_test : public aged_associative_container_test_base
+class aged_unordered_multiset_test : public AgedAssociativeContainerTestBase
 {
 public:
     void
@@ -1841,7 +1841,7 @@ public:
     }
 };
 
-class aged_unordered_multimap_test : public aged_associative_container_test_base
+class aged_unordered_multimap_test : public AgedAssociativeContainerTestBase
 {
 public:
     void

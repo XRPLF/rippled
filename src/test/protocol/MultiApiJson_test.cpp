@@ -295,10 +295,10 @@ struct MultiApiJson_test : beast::unit_test::suite
             static_assert([](auto&& v) { return requires { v.set("name", 42); }; }(x));
 
             // Tests of requires clause - these are expected NOT to match
-            struct foo_t final
+            struct FooT final
             {
             };
-            static_assert([](auto&& v) { return !requires { v.set("name", foo_t{}); }; }(x));
+            static_assert([](auto&& v) { return !requires { v.set("name", FooT{}); }; }(x));
             static_assert([](auto&& v) { return !requires { v.set("name", std::nullopt); }; }(x));
         }
 

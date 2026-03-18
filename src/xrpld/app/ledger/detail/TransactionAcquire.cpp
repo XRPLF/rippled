@@ -16,8 +16,8 @@ using namespace std::chrono_literals;
 auto constexpr kTX_ACQUIRE_TIMEOUT = 250ms;
 
 enum {
-    NORM_TIMEOUTS = 4,
-    MAX_TIMEOUTS = 20,
+    NormTimeouts = 4,
+    MaxTimeouts = 20,
 };
 
 TransactionAcquire::TransactionAcquire(
@@ -68,14 +68,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (timeouts_ > MAX_TIMEOUTS)
+    if (timeouts_ > MaxTimeouts)
     {
         failed_ = true;
         done();
         return;
     }
 
-    if (timeouts_ >= NORM_TIMEOUTS)
+    if (timeouts_ >= NormTimeouts)
         trigger(nullptr);
 
     addPeers(1);
@@ -234,8 +234,8 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
 
-    if (timeouts_ > NORM_TIMEOUTS)
-        timeouts_ = NORM_TIMEOUTS;
+    if (timeouts_ > NormTimeouts)
+        timeouts_ = NormTimeouts;
     failed_ = false;
 }
 

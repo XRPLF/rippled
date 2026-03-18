@@ -9,27 +9,27 @@ namespace xrpl {
 static uint256 const&
 depthMask(unsigned int depth)
 {
-    enum { mask_size = 65 };
+    enum { MaskSize = 65 };
 
-    struct masks_t
+    struct MasksT
     {
-        uint256 entry[mask_size];
+        uint256 entry[MaskSize];
 
-        masks_t()
+        MasksT()
         {
             uint256 selector;
-            for (int i = 0; i < mask_size - 1; i += 2)
+            for (int i = 0; i < MaskSize - 1; i += 2)
             {
                 entry[i] = selector;
                 *(selector.begin() + (i / 2)) = 0xF0;
                 entry[i + 1] = selector;
                 *(selector.begin() + (i / 2)) = 0xFF;
             }
-            entry[mask_size - 1] = selector;
+            entry[MaskSize - 1] = selector;
         }
     };
 
-    static masks_t const kMASKS;
+    static MasksT const kMASKS;
     return kMASKS.entry[depth];
 }
 

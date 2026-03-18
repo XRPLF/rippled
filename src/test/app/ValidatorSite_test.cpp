@@ -146,9 +146,9 @@ private:
         beast::Journal journal{sink};
 
         std::vector<std::string> emptyCfgKeys;
-        struct publisher
+        struct Publisher
         {
-            publisher(FetchListConfig const& c) : cfg{c}
+            Publisher(FetchListConfig const& c) : cfg{c}
             {
             }
             std::shared_ptr<TrustedPublisherServer> server;
@@ -157,7 +157,7 @@ private:
             FetchListConfig const& cfg;
             bool isRetry{};
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
         auto constexpr kLIST_SIZE = 20;
         std::vector<std::string> cfgPublishers;
@@ -273,13 +273,13 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        struct publisher
+        struct Publisher
         {
             std::string uri;
             std::string expectMsg;
             bool shouldFail;
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
         for (auto const& cfg : paths)
         {
