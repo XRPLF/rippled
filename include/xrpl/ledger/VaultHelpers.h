@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Number.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -41,43 +40,5 @@ sharesToAssetsWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& shares);
-
-// Pure math — v2 only. Testable without SLE objects.
-
-namespace math::v2 {
-
-[[nodiscard]] Number
-assetsToSharesDeposit(
-    Number const& assetTotal,
-    Number const& interestUnrealized,
-    Number const& shareTotal,
-    std::int32_t scale,
-    Number const& assets);
-
-[[nodiscard]] Number
-sharesToAssetsDeposit(
-    Number const& assetTotal,
-    Number const& interestUnrealized,
-    Number const& shareTotal,
-    std::int32_t scale,
-    STAmount const& shares);
-
-[[nodiscard]] Number
-assetsToSharesWithdraw(
-    Number const& assetTotal,
-    Number const& interestUnrealized,
-    Number const& lossUnrealized,
-    Number const& shareTotal,
-    Number const& assets);
-
-[[nodiscard]] Number
-sharesToAssetsWithdraw(
-    Number const& assetTotal,
-    Number const& interestUnrealized,
-    Number const& lossUnrealized,
-    Number const& shareTotal,
-    STAmount const& shares);
-
-}  // namespace math::v2
 
 }  // namespace xrpl::vault
