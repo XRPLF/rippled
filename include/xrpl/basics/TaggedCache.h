@@ -106,15 +106,13 @@ public:
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param shouldReplaceCheckCb Function that decides if cache should be
        replaced
 
-        @return First item: `true` If the key already existed; Second item: The
-        canonicalized item.
+        @return `true` If the key already existed.
     */
-    template <class R>
-    std::pair<bool, SharedPointerType>
-    canonicalize(key_type const& key, SharedPointerType const& data, R&& shouldReplaceCheckCb);
+    template <bool ShouldReplace>
+    bool
+    canonicalize(key_type const& key, std::add_const_t<SharedPointerType, ShouldReplace>& data);
 
     bool
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data);

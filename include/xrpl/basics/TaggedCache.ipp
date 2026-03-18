@@ -304,10 +304,10 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <class R>
-inline std::pair<bool, SharedPointerType>
+template <bool ShouldReplace>
+inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(key_type const& key, SharedPointerType const& data, R&& replaceCallback)
+    canonicalize(key_type const& key, std::add_const_t<SharedPointerType, ShouldReplace>& data)
 {
     std::lock_guard lock(m_mutex);
 
@@ -326,23 +326,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     Entry& entry = cit->second;
     entry.touch(m_clock.now());
 
-    auto shouldReplace = [&] {
-        if constexpr (std::is_invocable_r_v<bool, R>)
-        {
-            // The reason for this extra complexity is for intrusive
-            // strong/weak combo getting a strong is relatively expensive
-            // and not needed for many cases.
-            return replaceCallback();
-        }
-        else
-        {
-            return replaceCallback(entry.ptr.getStrong());
-        }
-    };
-
     if (entry.isCached())
     {
-        if (shouldReplace())
+        if constexpr (ShouldReplace)
         {
             entry.ptr = data;
         }
@@ -358,7 +344,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (cachedData)
     {
-        if (shouldReplace())
+        if constexpr (ShouldReplace)
         {
             entry.ptr = data;
         }
@@ -390,8 +376,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data)
 {
-    auto [alreadyExists, _] = canonicalize(key, data, []() { return true; });
-    return alreadyExists;
+    return canonicalize<true>(key, data);
 }
 
 template <
@@ -407,9 +392,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalize_replace_client(key_type const& key, SharedPointerType& data)
 {
-    auto [alreadyExists, itemInCache] = canonicalize(key, data, []() { return false; });
-    data = itemInCache;
-    return alreadyExists;
+    return canonicalize<false>(key, data);
 }
 
 template <
