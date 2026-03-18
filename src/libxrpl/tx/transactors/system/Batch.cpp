@@ -489,7 +489,7 @@ Batch::checkBatchSign(PreclaimContext const& ctx)
         else
         {
             if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH; // LCOV_EXCL_LINE
+                return tefBAD_AUTH;  // LCOV_EXCL_LINE
 
             auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
             auto const sleAccount = ctx.view.read(keylet::account(idAccount));
