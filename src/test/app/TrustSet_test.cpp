@@ -7,7 +7,7 @@ namespace xrpl {
 
 namespace test {
 
-class SetTrust_test : public beast::unit_test::suite
+class TrustSet_test : public beast::unit_test::suite
 {
 public:
     void
@@ -227,7 +227,7 @@ public:
     }
 
     void
-    testTicketSetTrust(FeatureBitset features)
+    testTicketTrustSet(FeatureBitset features)
     {
         testcase("TrustSet using a ticket");
 
@@ -576,7 +576,7 @@ public:
         // true, true case doesn't matter since creating a trustline ledger
         // entry requires reserve from the creator
         // independent of hi/low account ids for endpoints
-        testTicketSetTrust(features);
+        testTicketTrustSet(features);
         testMalformedTransaction(features);
         testModifyQualityOfTrustline(features, false, false);
         testModifyQualityOfTrustline(features, false, true);
