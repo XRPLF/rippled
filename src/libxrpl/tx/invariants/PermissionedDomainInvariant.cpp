@@ -89,10 +89,9 @@ ValidPermissionedDomain::finalize(
     if (view.rules().enabled(fixPermissionedDomainInvariant))
     {
         // No permissioned domains should be affected if the transaction failed
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
         {
-            // If nothing changed, all is good. If there were changes, that's
-            // bad.
+            // If nothing changed, all is good. If there were changes, that's bad.
             return sleStatus_.empty();
         }
 
@@ -154,7 +153,7 @@ ValidPermissionedDomain::finalize(
     }
     else
     {
-        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS ||
+        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || !isTesSuccess(result) ||
             sleStatus_.empty())
             return true;
         return check(sleStatus_[0], j);

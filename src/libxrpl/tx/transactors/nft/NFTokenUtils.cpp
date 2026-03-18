@@ -921,7 +921,7 @@ tokenOfferCreatePreclaim(
         // unauthorized trustlines with balance
         auto const res =
             nft::checkTrustlineAuthorized(view, acctID, j, amount.asset().get<Issue>());
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return res;
     }
     return tesSUCCESS;

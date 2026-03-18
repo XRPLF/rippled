@@ -1736,7 +1736,7 @@ class LoanBroker_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ter() == err);
             env.close();
 
-            if (err != tesSUCCESS)
+            if (!isTesSuccess(err))
             {
                 env(vault.withdraw(
                     {.depositor = broker, .id = keylet.key, .amount = token(1'000)}));

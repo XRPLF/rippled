@@ -812,7 +812,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             scEnv.tx(create_bridge(b, bridge(a, ia, b, ib)), ter(TER::fromInt(expected.second)));
             TER scTER = scEnv.env_.ter();
 
-            bool pass = mcTER == tesSUCCESS && scTER == tesSUCCESS;
+            bool pass = isTesSuccess(mcTER) && isTesSuccess(scTER);
 
             test_result.emplace_back(mcTER, scTER, pass);
         };

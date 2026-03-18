@@ -1766,7 +1766,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
     auto const res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
     if (pass)
     {
-        return res.ter == tesSUCCESS;
+        return isTesSuccess(res.ter);
     }
 
     return res.ter == tefFAILURE || res.ter == temDISABLED;

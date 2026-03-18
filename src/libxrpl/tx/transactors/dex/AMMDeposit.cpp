@@ -408,7 +408,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // LCOV_EXCL_STOP
     }();
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         XRPL_ASSERT(
             newLPTokenBalance > beast::zero,
@@ -422,7 +422,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         sb.update(ammSle);
     }
 
-    return {result, result == tesSUCCESS};
+    return {result, isTesSuccess(result)};
 }
 
 TER
@@ -518,7 +518,7 @@ AMMDeposit::deposit(
 
     auto res = accountSend(
         view, account_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
         return {res, STAmount{}};
@@ -537,7 +537,7 @@ AMMDeposit::deposit(
 
         res = accountSend(
             view, account_, ammAccount, *amount2DepositActual, ctx_.journal, WaiveTransferFee::Yes);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug())
                 << "AMM Deposit: failed to deposit " << *amount2DepositActual;
@@ -547,7 +547,7 @@ AMMDeposit::deposit(
 
     // Deposit LP tokens
     res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";
         return {res, STAmount{}};

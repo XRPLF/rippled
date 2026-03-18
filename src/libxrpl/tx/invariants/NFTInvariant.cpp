@@ -219,14 +219,14 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_MINT)
     {
-        if (result == tesSUCCESS && beforeMintedTotal >= afterMintedTotal)
+        if (isTesSuccess(result) && beforeMintedTotal >= afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: successful minting didn't increase "
                                "the number of minted tokens.";
             return false;
         }
 
-        if (result != tesSUCCESS && beforeMintedTotal != afterMintedTotal)
+        if (!isTesSuccess(result) && beforeMintedTotal != afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
                                "number of minted tokens.";
@@ -243,7 +243,7 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_BURN)
     {
-        if (result == tesSUCCESS)
+        if (isTesSuccess(result))
         {
             if (beforeBurnedTotal >= afterBurnedTotal)
             {
@@ -253,7 +253,7 @@ NFTokenCountTracking::finalize(
             }
         }
 
-        if (result != tesSUCCESS && beforeBurnedTotal != afterBurnedTotal)
+        if (!isTesSuccess(result) && beforeBurnedTotal != afterBurnedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
                                "number of burned tokens.";

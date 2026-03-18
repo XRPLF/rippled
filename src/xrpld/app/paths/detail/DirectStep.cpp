@@ -822,7 +822,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
     }
 
@@ -833,7 +833,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         if (auto prevSrc = ctx.prevStep->directStepSrcAcct())
         {
             auto const ter = checkNoRipple(ctx.view, *prevSrc, src_, dst_, currency_, j_);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
         }
     }
@@ -916,7 +916,7 @@ make_DirectStepI(
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};

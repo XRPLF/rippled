@@ -382,7 +382,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -507,7 +507,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -3318,7 +3318,7 @@ public:
             env.close();
             std::uint32_t const firstOfferSeq = env.seq(acct) - 1;
 
-            int offerCount = t.firstOfferTec == tesSUCCESS ? 1 : 0;
+            int offerCount = isTesSuccess(t.firstOfferTec) ? 1 : 0;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -3337,7 +3337,7 @@ public:
             env.close();
             std::uint32_t const secondOfferSeq = env.seq(acct) - 1;
 
-            offerCount = t.secondOfferTec == tesSUCCESS ? 1 : offerCount;
+            offerCount = isTesSuccess(t.secondOfferTec) ? 1 : offerCount;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -4937,7 +4937,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance -= USD(100);
                 takerUSDBalance += USD(100);
@@ -4954,7 +4954,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);
@@ -4971,7 +4971,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);

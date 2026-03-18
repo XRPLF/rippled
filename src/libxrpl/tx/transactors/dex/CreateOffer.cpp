@@ -178,7 +178,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     {
         auto result =
             checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
     }
 
@@ -565,7 +565,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bOpenLedger = sb.open();
     bool crossed = false;
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         // If a tick size applies, round the offer to the tick size
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
@@ -637,7 +637,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We expect the implementation of cross to succeed
         // or give a tec.
         XRPL_ASSERT(
-            result == tesSUCCESS || isTecClaim(result),
+            isTesSuccess(result) || isTecClaim(result),
             "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
@@ -651,7 +651,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (result == tecFAILED_PROCESSING && bOpenLedger)
             result = telFAILED_PROCESSING;
 
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
         {
             JLOG(j_.debug()) << "final result: " << transToken(result);
             return {result, true};
@@ -694,7 +694,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         saTakerPays > zero && saTakerGets > zero,
         "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
     {
         JLOG(j_.debug()) << "final result: " << transToken(result);
         return {result, true};
@@ -745,7 +745,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (!crossed)
                 result = tecINSUF_RESERVE_OFFER;
 
-            if (result != tesSUCCESS)
+            if (!isTesSuccess(result))
             {
                 JLOG(j_.debug()) << "final result: " << transToken(result);
             }
@@ -837,7 +837,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         auto const res =
             applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }
 
