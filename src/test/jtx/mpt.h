@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -177,6 +178,7 @@ struct MPTSet
     std::optional<uint256> domainID = std::nullopt;
     std::optional<Buffer> issuerPubKey = std::nullopt;
     std::optional<Buffer> auditorPubKey = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -198,6 +200,7 @@ struct MPTConvert
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
 
     std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -208,6 +211,7 @@ struct MPTMergeInbox
 {
     std::optional<Account> account = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -231,6 +235,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<Buffer> amountCommitment = std::nullopt;
     std::optional<Buffer> balanceCommitment = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -250,6 +255,7 @@ struct MPTConvertBack
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<Buffer> pedersenCommitment = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -522,7 +528,21 @@ private:
     TER
     submit(A const& arg, Json::Value const& jv)
     {
-        env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+        if constexpr (requires { arg.ticketSeq; })
+        {
+            if (arg.ticketSeq)
+                env_(
+                    jv,
+                    txflags(arg.flags.value_or(0)),
+                    ter(arg.err.value_or(tesSUCCESS)),
+                    ticket::use(*arg.ticketSeq));
+            else
+                env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+        }
+        else
+        {
+            env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+        }
         auto const err = env_.ter();
         if (close_)
             env_.close();
