@@ -127,7 +127,8 @@ public:
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replaceCallback Function that decides if cache should be replaced
+        @param shouldReplaceCheckCb Function that decides if cache should be
+       replaced
 
         @return First item: `true` If the key already existed; Second item: The
         canonicalized item.
@@ -137,7 +138,7 @@ public:
     canonicalize(
         key_type const& key,
         SharedPointerType const& data,
-        R&& replaceCallback);
+        R&& shouldReplaceCheckCb);
 
     bool
     canonicalize_replace_cache(

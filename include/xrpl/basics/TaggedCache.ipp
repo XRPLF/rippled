@@ -435,27 +435,31 @@ TaggedCache<
     Entry& entry = cit->second;
     entry.touch(m_clock.now());
 
-    auto replaceEntryIfNecessary = [&] {
-        bool shouldReplace = false;
+    auto shouldReplace = [&] {
         if constexpr (std::is_invocable_r_v<bool, R>)
         {
             // The reason for this extra complexity is for intrusive
             // strong/weak combo getting a strong is relatively expensive
             // and not needed for many cases.
-            shouldReplace = replaceCallback();
+            return replaceCallback();
         }
         else
         {
-            shouldReplace = replaceCallback(entry.ptr.getStrong());
+            return replaceCallback(entry.ptr.getStrong());
         }
-
-        if (shouldReplace)
-            entry.ptr = data;
     };
 
     if (entry.isCached())
     {
-        replaceEntryIfNecessary();
+        if (shouldReplace())
+        {
+            entry.ptr = data;
+        }
+        else
+        {
+            data = entry.ptr.getStrong();
+        }
+
         return std::make_pair(true, entry.ptr.getStrong());
     }
 
@@ -463,8 +467,16 @@ TaggedCache<
 
     if (cachedData)
     {
-        replaceEntryIfNecessary();
-        entry.ptr.convertToStrong();
+        if (shouldReplace())
+        {
+            entry.ptr = data;
+        }
+        else
+        {
+            entry.ptr.convertToStrong();
+            data = cachedData;
+        }
+
         ++m_cache_count;
         return std::make_pair(true, entry.ptr.getStrong());
     }
