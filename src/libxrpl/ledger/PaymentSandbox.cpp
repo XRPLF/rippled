@@ -349,14 +349,14 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         auto const cur = newBalance.getCurrency();
         result[std::make_tuple(lowID, highID, cur)] = delta;
         auto r = result.emplace(std::make_tuple(lowID, lowID, cur), delta);
-        if (r.second)
+        if (!r.second)
         {
             r.first->second += delta;
         }
 
         delta.negate();
         r = result.emplace(std::make_tuple(highID, highID, cur), delta);
-        if (r.second)
+        if (!r.second)
         {
             r.first->second += delta;
         }
