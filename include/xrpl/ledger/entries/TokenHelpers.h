@@ -232,7 +232,7 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // Direct send w/o fees:
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line of needed.
-// --> bCheckIssuer : normally require issuer to be involved.
+// bCheckIssuer : normally require issuer to be involved.
 // [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
 
 /** Calls static rippleCreditIOU if saAmount represents Issue.

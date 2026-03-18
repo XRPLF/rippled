@@ -514,7 +514,7 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // Direct send w/o fees:
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line if needed.
-// --> bCheckIssuer : normally require issuer to be involved.
+// bCheckIssuer : normally require issuer to be involved.
 static TER
 rippleCreditIOU(
     ApplyView& view,
@@ -656,7 +656,7 @@ rippleCreditIOU(
 }
 
 // Send regardless of limits.
-// --> saAmount: Amount/currency/issuer to deliver to receiver.
+// saAmount: Amount/currency/issuer to deliver to receiver.
 // <-- saActual: Amount actually cost.  Sender pays fees.
 static TER
 rippleSendIOU(
@@ -707,7 +707,7 @@ rippleSendIOU(
 }
 
 // Send regardless of limits.
-// --> receivers: Amount/currency/issuer to deliver to receivers.
+// receivers: Amount/currency/issuer to deliver to receivers.
 // <-- saActual: Amount actually cost to sender.  Sender pays fees.
 static TER
 rippleSendMultiIOU(
