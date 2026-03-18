@@ -5,12 +5,12 @@
 
 namespace xrpl {
 
-class SetAccount : public Transactor
+class AccountSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
-    explicit SetAccount(ApplyContext& ctx) : Transactor(ctx)
+    explicit AccountSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -33,6 +33,6 @@ public:
     doApply() override;
 };
 
-using AccountSet = SetAccount;
+using AccountSet = AccountSet;
 
 }  // namespace xrpl

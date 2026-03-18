@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/account/SetSignerList.h>
+#include <xrpl/tx/transactors/account/SignerListSet.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -19,8 +19,8 @@ namespace xrpl {
 // setting the sfSignerListID to zero in all cases.
 static std::uint32_t const DEFAULT_SIGNER_LIST_ID = 0;
 
-std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SetSignerList::Operation>
-SetSignerList::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
+std::tuple<NotTEC, std::uint32_t, std::vector<SignerEntries::SignerEntry>, SignerListSet::Operation>
+SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j)
 {
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
@@ -51,14 +51,14 @@ SetSignerList::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 }
 
 std::uint32_t
-SetSignerList::getFlagsMask(PreflightContext const& ctx)
+SignerListSet::getFlagsMask(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
 NotTEC
-SetSignerList::preflight(PreflightContext const& ctx)
+SignerListSet::preflight(PreflightContext const& ctx)
 {
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
@@ -88,7 +88,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
 }
 
 TER
-SetSignerList::doApply()
+SignerListSet::doApply()
 {
     // Perform the operation preCompute() decided on.
     switch (do_)
@@ -103,22 +103,22 @@ SetSignerList::doApply()
             break;
     }
     // LCOV_EXCL_START
-    UNREACHABLE("xrpl::SetSignerList::doApply : invalid operation");
+    UNREACHABLE("xrpl::SignerListSet::doApply : invalid operation");
     return temMALFORMED;
     // LCOV_EXCL_STOP
 }
 
 void
-SetSignerList::preCompute()
+SignerListSet::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
     XRPL_ASSERT(
         isTesSuccess(std::get<0>(result)),
-        "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
+        "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
         std::get<3>(result) != unknown,
-        "xrpl::SetSignerList::preCompute : result is known operation");
+        "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -204,7 +204,7 @@ removeSignersFromLedger(
 }
 
 TER
-SetSignerList::removeFromLedger(
+SignerListSet::removeFromLedger(
     ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
@@ -219,7 +219,7 @@ SetSignerList::removeFromLedger(
 }
 
 NotTEC
-SetSignerList::validateQuorumAndSignerEntries(
+SignerListSet::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
     std::vector<SignerEntries::SignerEntry> const& signers,
     AccountID const& account,
@@ -239,7 +239,7 @@ SetSignerList::validateQuorumAndSignerEntries(
     // Make sure there are no duplicate signers.
     XRPL_ASSERT(
         std::is_sorted(signers.begin(), signers.end()),
-        "xrpl::SetSignerList::validateQuorumAndSignerEntries : sorted "
+        "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
     if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
     {
@@ -278,7 +278,7 @@ SetSignerList::validateQuorumAndSignerEntries(
 }
 
 TER
-SetSignerList::replaceSignerList()
+SignerListSet::replaceSignerList()
 {
     auto const accountKeylet = keylet::account(account_);
     auto const ownerDirKeylet = keylet::ownerDir(account_);
@@ -334,7 +334,7 @@ SetSignerList::replaceSignerList()
 }
 
 TER
-SetSignerList::destroySignerList()
+SignerListSet::destroySignerList()
 {
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
@@ -353,7 +353,7 @@ SetSignerList::destroySignerList()
 }
 
 void
-SetSignerList::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
+SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

@@ -11,10 +11,10 @@
 namespace xrpl {
 
 /**
-See the README.md for an overview of the SetSignerList transaction that
+See the README.md for an overview of the SignerListSet transaction that
 this class implements.
 */
-class SetSignerList : public Transactor
+class SignerListSet : public Transactor
 {
 private:
     // Values determined during preCompute for use later.
@@ -26,7 +26,7 @@ private:
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    explicit SetSignerList(ApplyContext& ctx) : Transactor(ctx)
+    explicit SignerListSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -41,7 +41,7 @@ public:
     void
     preCompute() override;
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     removeFromLedger(
         ServiceRegistry& registry,
@@ -70,6 +70,6 @@ private:
     writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
-using SignerListSet = SetSignerList;
+using SignerListSet = SignerListSet;
 
 }  // namespace xrpl

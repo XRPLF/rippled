@@ -76,7 +76,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
 
 /** This transaction type adjusts various account settings. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/SetAccount.h>
+#   include <xrpl/tx/transactors/account/AccountSet.h>
 #endif
 TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
     Delegation::notDelegable,
@@ -170,7 +170,7 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
 // The SignerEntries are optional because a SignerList is deleted by
 // setting the SignerQuorum to zero and omitting SignerEntries.
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/SetSignerList.h>
+#   include <xrpl/tx/transactors/account/SignerListSet.h>
 #endif
 TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     Delegation::notDelegable,
@@ -302,7 +302,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
 
 /** This transaction type deletes an existing account. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/DeleteAccount.h>
+#   include <xrpl/tx/transactors/account/AccountDelete.h>
 #endif
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegable,

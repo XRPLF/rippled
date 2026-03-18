@@ -4,12 +4,12 @@
 
 namespace xrpl {
 
-class DeleteAccount : public Transactor
+class AccountDelete : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
-    explicit DeleteAccount(ApplyContext& ctx) : Transactor(ctx)
+    explicit AccountDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -29,6 +29,6 @@ public:
     doApply() override;
 };
 
-using AccountDelete = DeleteAccount;
+using AccountDelete = AccountDelete;
 
 }  // namespace xrpl

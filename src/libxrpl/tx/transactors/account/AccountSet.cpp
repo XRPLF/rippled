@@ -5,15 +5,15 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/account/SetAccount.h>
+#include <xrpl/tx/transactors/account/AccountSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 
 TxConsequences
-SetAccount::makeTxConsequences(PreflightContext const& ctx)
+AccountSet::makeTxConsequences(PreflightContext const& ctx)
 {
-    // The SetAccount may be a blocker, but only if it sets or clears
+    // The AccountSet may be a blocker, but only if it sets or clears
     // specific account flags.
     auto getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
@@ -37,13 +37,13 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
 }
 
 std::uint32_t
-SetAccount::getFlagsMask(PreflightContext const& ctx)
+AccountSet::getFlagsMask(PreflightContext const& ctx)
 {
     return tfAccountSetMask;
 }
 
 NotTEC
-SetAccount::preflight(PreflightContext const& ctx)
+AccountSet::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;
@@ -150,9 +150,9 @@ SetAccount::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-SetAccount::checkPermission(ReadView const& view, STTx const& tx)
+AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 {
-    // SetAccount is prohibited to be granted on a transaction level,
+    // AccountSet is prohibited to be granted on a transaction level,
     // but some granular permissions are allowed.
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
@@ -199,7 +199,7 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
 }
 
 TER
-SetAccount::preclaim(PreclaimContext const& ctx)
+AccountSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
@@ -262,7 +262,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SetAccount::doApply()
+AccountSet::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)

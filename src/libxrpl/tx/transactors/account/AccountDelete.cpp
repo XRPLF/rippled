@@ -7,8 +7,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/account/DeleteAccount.h>
-#include <xrpl/tx/transactors/account/SetSignerList.h>
+#include <xrpl/tx/transactors/account/AccountDelete.h>
+#include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
@@ -18,7 +18,7 @@
 namespace xrpl {
 
 bool
-DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
+AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
         return false;
@@ -27,7 +27,7 @@ DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 NotTEC
-DeleteAccount::preflight(PreflightContext const& ctx)
+AccountDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
@@ -42,7 +42,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
 }
 
 XRPAmount
-DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
+AccountDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AccountDelete is one owner reserve.
     return calculateOwnerReserveFee(view, tx);
@@ -80,7 +80,7 @@ removeSignersFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return SetSignerList::removeFromLedger(registry, view, account, j);
+    return SignerListSet::removeFromLedger(registry, view, account, j);
 }
 
 TER
@@ -204,7 +204,7 @@ nonObligationDeleter(LedgerEntryType t)
 }  // namespace
 
 TER
-DeleteAccount::preclaim(PreclaimContext const& ctx)
+AccountDelete::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
@@ -234,7 +234,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(sleAccount, "xrpl::DeleteAccount::preclaim : non-null account");
+    XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -303,7 +303,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         {
             // Directory node has an invalid index.  Bail out.
             // LCOV_EXCL_START
-            JLOG(ctx.j.fatal()) << "DeleteAccount: directory node in ledger " << ctx.view.seq()
+            JLOG(ctx.j.fatal()) << "AccountDelete: directory node in ledger " << ctx.view.seq()
                                 << " has index to object that is missing: " << to_string(dirEntry);
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
@@ -325,14 +325,14 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-DeleteAccount::doApply()
+AccountDelete::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(src, "xrpl::DeleteAccount::doApply : non-null source account");
+    XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
-    XRPL_ASSERT(dst, "xrpl::DeleteAccount::doApply : non-null destination account");
+    XRPL_ASSERT(dst, "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
@@ -361,9 +361,9 @@ DeleteAccount::doApply()
 
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::DeleteAccount::doApply : undeletable item not found "
+                "xrpl::AccountDelete::doApply : undeletable item not found "
                 "in preclaim");
-            JLOG(j_.error()) << "DeleteAccount undeletable item not "
+            JLOG(j_.error()) << "AccountDelete undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
             // LCOV_EXCL_STOP
@@ -379,13 +379,13 @@ DeleteAccount::doApply()
     ctx_.deliver(remainingBalance);
 
     XRPL_ASSERT(
-        (*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
+        (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of " << toBase58(account_);
+        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(account_);
         return tecHAS_OBLIGATIONS;
     }
 
