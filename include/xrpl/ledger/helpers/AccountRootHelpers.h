@@ -38,8 +38,8 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& accountSle,
-    std::shared_ptr<SLE> const& sponsorSle,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
     std::int32_t amount,
     beast::Journal j);
 
@@ -54,7 +54,7 @@ adjustOwnerCount(
     adjustOwnerCount(
         view,
         view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>(),
+        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
         amount,
         j);
 }
@@ -93,9 +93,7 @@ getPseudoAccountFields();
     - null pointer
 */
 [[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter = {});
+isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
 
 /** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool
@@ -115,7 +113,7 @@ isPseudoAccount(
  * before using a field. The amendment check is **not** performed in
  * createPseudoAccount.
  */
-[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+[[nodiscard]] Expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
 /** Checks the destination and tag.

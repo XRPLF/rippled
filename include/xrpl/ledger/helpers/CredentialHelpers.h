@@ -74,7 +74,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::const_ref sleDst,
     beast::Journal j);
 
 }  // namespace xrpl

@@ -135,9 +135,9 @@ TER
 checkInsufficientReserve(
     ReadView const& view,
     STTx const& tx,
-    std::shared_ptr<SLE const> accSle,
+    SLE::const_ref accSle,
     STAmount const& accBalance,
-    std::shared_ptr<SLE const> const& sponsorSle,
+    SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0);
 

@@ -301,7 +301,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 }
 
 uint32_t
-ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
+ownerCount(SLE::const_ref sponsorSle)
 {
     auto const ownerCount = sponsorSle->getFieldU32(sfOwnerCount);
     auto const sponsoredOwnerCount = sponsorSle->getFieldU32(sfSponsoredOwnerCount);
@@ -311,7 +311,7 @@ ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
 }
 
 XRPAmount
-calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
+calculateReserve(SLE::const_ref sle, Fees const& fees)
 {
     XRPL_ASSERT(sle->getType() == ltACCOUNT_ROOT, "xrpl::calculateReserve : valid sle type");
 
@@ -327,9 +327,9 @@ TER
 checkInsufficientReserve(
     ReadView const& view,
     STTx const& tx,
-    std::shared_ptr<SLE const> accSle,
+    SLE::const_ref accSle,
     STAmount const& accBalance,
-    std::shared_ptr<SLE const> const& sponsorSle,
+    SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta)
 {
