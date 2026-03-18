@@ -161,7 +161,7 @@ PropertyStream::Source::~Source()
     // Read parent_ under lock, then release before calling remove()
     // to maintain consistent lock ordering (parent before child),
     // matching the order used in find_one_deep().
-    Source* parent;
+    Source* parent = nullptr;
     {
         std::lock_guard _(lock_);
         parent = parent_;
