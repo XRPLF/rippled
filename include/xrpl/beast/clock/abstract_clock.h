@@ -40,7 +40,7 @@ public:
     using time_point = typename Clock::time_point;
     using clock_type = Clock;
 
-    static bool const is_steady = Clock::is_steady;
+    static bool const is_steady = Clock::is_steady;  // NOLINT(readability-identifier-naming)
 
     virtual ~abstract_clock() = default;
     abstract_clock() = default;

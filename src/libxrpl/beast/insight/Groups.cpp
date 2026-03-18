@@ -39,7 +39,7 @@ public:
     }
 
     std::string
-    make_name(std::string const& name)
+    makeName(std::string const& name)
     {
         return name_ + "." + name;
     }
@@ -53,25 +53,25 @@ public:
     Counter
     make_counter(std::string const& name) override
     {
-        return collector_->make_counter(make_name(name));
+        return collector_->make_counter(makeName(name));
     }
 
     Event
     make_event(std::string const& name) override
     {
-        return collector_->make_event(make_name(name));
+        return collector_->make_event(makeName(name));
     }
 
     Gauge
     make_gauge(std::string const& name) override
     {
-        return collector_->make_gauge(make_name(name));
+        return collector_->make_gauge(makeName(name));
     }
 
     Meter
     make_meter(std::string const& name) override
     {
-        return collector_->make_meter(make_name(name));
+        return collector_->make_meter(makeName(name));
     }
 
 private:

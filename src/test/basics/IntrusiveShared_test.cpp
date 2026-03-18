@@ -54,7 +54,7 @@ struct Barrier
     }
 
     void
-    arrive_and_wait()
+    arriveAndWait()
     {
         std::unique_lock lock(mtx);
         if (--count == 0)
@@ -100,7 +100,7 @@ public:
         }
         nextId.store(0, std::memory_order_release);
         if (resetCallback)
-            TIBase::tracingCallback_ = [](TrackedState, std::optional<TrackedState>) {};
+            TIBase::tracingCallback = [](TrackedState, std::optional<TrackedState>) {};
     }
 
     struct ResetStatesGuard
@@ -127,7 +127,7 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id);
-        tracingCallback_(state[id].load(std::memory_order_relaxed), deletedStarted);
+        tracingCallback(state[id].load(std::memory_order_relaxed), deletedStarted);
 
         assert(state.size() > id);
         // Use relaxed memory order to try to avoid atomic operations from
@@ -135,12 +135,12 @@ public:
         // errors in the underlying shared pointer class.
         state[id].store(deletedStarted, std::memory_order_relaxed);
 
-        tracingCallback_(deletedStarted, deleted);
+        tracingCallback(deletedStarted, deleted);
 
         assert(state.size() > id);
         state[id].store(TrackedState::deleted, std::memory_order_relaxed);
 
-        tracingCallback_(TrackedState::deleted, std::nullopt);
+        tracingCallback(TrackedState::deleted, std::nullopt);
     }
 
     void
@@ -149,20 +149,20 @@ public:
         using enum TrackedState;
 
         assert(state.size() > id);
-        tracingCallback_(state[id].load(std::memory_order_relaxed), partiallyDeletedStarted);
+        tracingCallback(state[id].load(std::memory_order_relaxed), partiallyDeletedStarted);
 
         assert(state.size() > id);
         state[id].store(partiallyDeletedStarted, std::memory_order_relaxed);
 
-        tracingCallback_(partiallyDeletedStarted, partiallyDeleted);
+        tracingCallback(partiallyDeletedStarted, partiallyDeleted);
 
         assert(state.size() > id);
         state[id].store(partiallyDeleted, std::memory_order_relaxed);
 
-        tracingCallback_(partiallyDeleted, std::nullopt);
+        tracingCallback(partiallyDeleted, std::nullopt);
     }
 
-    static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback_;
+    static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback;
 
     int id;
 
@@ -177,7 +177,7 @@ private:
 std::array<std::atomic<TrackedState>, TIBase::maxStates> TIBase::state;
 std::atomic<int> TIBase::nextId{0};
 
-std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCallback_ =
+std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCallback =
     [](TrackedState, std::optional<TrackedState>) {};
 
 }  // namespace
@@ -381,7 +381,7 @@ public:
         bool destructorRan = false;
         bool partialDeleteRan = false;
         std::latch partialDeleteStartedSyncPoint{2};
-        strong->tracingCallback_ = [&](TrackedState cur, std::optional<TrackedState> next) {
+        strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             if (next == deletedStarted)
             {
@@ -448,7 +448,7 @@ public:
         bool destructorRan = false;
         bool partialDeleteRan = false;
         std::latch weakResetSyncPoint{2};
-        strong->tracingCallback_ = [&](TrackedState cur, std::optional<TrackedState> next) {
+        strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
             using enum TrackedState;
             if (next == partiallyDeleted)
             {
@@ -556,7 +556,7 @@ public:
             for (int i = 0; i < loopIters; ++i)
             {
                 // ------ Sync Point ------
-                loopStartSyncPoint.arrive_and_wait();
+                loopStartSyncPoint.arriveAndWait();
 
                 // only thread 0 should reset the state
                 std::optional<TIBase::ResetStatesGuard> rsg;
@@ -575,18 +575,18 @@ public:
                     toClone.clear();
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
-                    strong->tracingCallback_ = tracingCallback;
+                    strong->tracingCallback = tracingCallback;
                     std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
                 // ------ Sync Point ------
-                postCreateToCloneSyncPoint.arrive_and_wait();
+                postCreateToCloneSyncPoint.arriveAndWait();
 
                 auto v = createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
                 // ------ Sync Point ------
-                postCreateVecOfPointersSyncPoint.arrive_and_wait();
+                postCreateVecOfPointersSyncPoint.arriveAndWait();
 
                 v.clear();
             }
@@ -683,7 +683,7 @@ public:
             for (int i = 0; i < loopIters; ++i)
             {
                 // ------ Sync Point ------
-                loopStartSyncPoint.arrive_and_wait();
+                loopStartSyncPoint.arriveAndWait();
 
                 // only thread 0 should reset the state
                 std::optional<TIBase::ResetStatesGuard> rsg;
@@ -701,18 +701,18 @@ public:
                     toClone.clear();
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
-                    strong->tracingCallback_ = tracingCallback;
+                    strong->tracingCallback = tracingCallback;
                     std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
                 // ------ Sync Point ------
-                postCreateToCloneSyncPoint.arrive_and_wait();
+                postCreateToCloneSyncPoint.arriveAndWait();
 
                 auto v = createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
                 // ------ Sync Point ------
-                postCreateVecOfPointersSyncPoint.arrive_and_wait();
+                postCreateVecOfPointersSyncPoint.arriveAndWait();
 
                 std::uniform_int_distribution<> isStrongDist(0, 1);
                 for (int f = 0; f < flipPointersLoopIters; ++f)
@@ -731,7 +731,7 @@ public:
                 }
 
                 // ------ Sync Point ------
-                postFlipPointersLoopSyncPoint.arrive_and_wait();
+                postFlipPointersLoopSyncPoint.arriveAndWait();
 
                 v.clear();
             }
@@ -803,7 +803,7 @@ public:
             for (int i = 0; i < loopIters; ++i)
             {
                 // ------ Sync Point ------
-                loopStartSyncPoint.arrive_and_wait();
+                loopStartSyncPoint.arriveAndWait();
 
                 // only thread 0 should reset the state
                 std::optional<TIBase::ResetStatesGuard> rsg;
@@ -821,12 +821,12 @@ public:
                     toLock.clear();
                     toLock.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
-                    strong->tracingCallback_ = tracingCallback;
+                    strong->tracingCallback = tracingCallback;
                     std::fill(toLock.begin(), toLock.end(), strong);
                 }
 
                 // ------ Sync Point ------
-                postCreateToLockSyncPoint.arrive_and_wait();
+                postCreateToLockSyncPoint.arriveAndWait();
 
                 // Multiple threads all create a weak pointer from the same
                 // strong pointer
@@ -839,7 +839,7 @@ public:
                 }
 
                 // ------ Sync Point ------
-                postLockWeakLoopSyncPoint.arrive_and_wait();
+                postLockWeakLoopSyncPoint.arriveAndWait();
 
                 toLock[threadId].reset();
             }

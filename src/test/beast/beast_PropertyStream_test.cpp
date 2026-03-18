@@ -9,7 +9,7 @@ public:
     using Source = PropertyStream::Source;
 
     void
-    test_peel_name(std::string s, std::string const& expected, std::string const& expectedRemainder)
+    testPeelName(std::string s, std::string const& expected, std::string const& expectedRemainder)
     {
         try
         {
@@ -25,7 +25,7 @@ public:
     }
 
     void
-    test_peel_leading_slash(std::string s, std::string const& expected, bool shouldBeFound)
+    testPeelLeadingSlash(std::string s, std::string const& expected, bool shouldBeFound)
     {
         try
         {
@@ -41,7 +41,7 @@ public:
     }
 
     void
-    test_peel_trailing_slashstar(
+    testPeelTrailingSlashstar(
         std::string s,
         std::string const& expectedRemainder,
         bool shouldBeFound)
@@ -60,7 +60,7 @@ public:
     }
 
     void
-    test_find_one(Source& root, Source* expected, std::string const& name)
+    testFindOne(Source& root, Source* expected, std::string const& name)
     {
         try
         {
@@ -75,7 +75,7 @@ public:
     }
 
     void
-    test_find_path(Source& root, std::string const& path, Source* expected)
+    testFindPath(Source& root, std::string const& path, Source* expected)
     {
         try
         {
@@ -90,7 +90,7 @@ public:
     }
 
     void
-    test_find_one_deep(Source& root, std::string const& name, Source* expected)
+    testFindOneDeep(Source& root, std::string const& name, Source* expected)
     {
         try
         {
@@ -105,7 +105,7 @@ public:
     }
 
     void
-    test_find(Source& root, std::string path, Source* expected, bool expectedStar)
+    testFind(Source& root, std::string path, Source* expected, bool expectedStar)
     {
         try
         {
@@ -143,69 +143,69 @@ public:
         d.add(f);
 
         testcase("peel_name");
-        test_peel_name("a", "a", "");
-        test_peel_name("foo/bar", "foo", "bar");
-        test_peel_name("foo/goo/bar", "foo", "goo/bar");
-        test_peel_name("", "", "");
+        testPeelName("a", "a", "");
+        testPeelName("foo/bar", "foo", "bar");
+        testPeelName("foo/goo/bar", "foo", "goo/bar");
+        testPeelName("", "", "");
 
         testcase("peel_leading_slash");
-        test_peel_leading_slash("foo/", "foo/", false);
-        test_peel_leading_slash("foo", "foo", false);
-        test_peel_leading_slash("/foo/", "foo/", true);
-        test_peel_leading_slash("/foo", "foo", true);
+        testPeelLeadingSlash("foo/", "foo/", false);
+        testPeelLeadingSlash("foo", "foo", false);
+        testPeelLeadingSlash("/foo/", "foo/", true);
+        testPeelLeadingSlash("/foo", "foo", true);
 
         testcase("peel_trailing_slashstar");
-        test_peel_trailing_slashstar("/foo/goo/*", "/foo/goo", true);
-        test_peel_trailing_slashstar("foo/goo/*", "foo/goo", true);
-        test_peel_trailing_slashstar("/foo/goo/", "/foo/goo", false);
-        test_peel_trailing_slashstar("foo/goo", "foo/goo", false);
-        test_peel_trailing_slashstar("", "", false);
-        test_peel_trailing_slashstar("/", "", false);
-        test_peel_trailing_slashstar("/*", "", true);
-        test_peel_trailing_slashstar("//", "/", false);
-        test_peel_trailing_slashstar("**", "*", true);
-        test_peel_trailing_slashstar("*/", "*", false);
+        testPeelTrailingSlashstar("/foo/goo/*", "/foo/goo", true);
+        testPeelTrailingSlashstar("foo/goo/*", "foo/goo", true);
+        testPeelTrailingSlashstar("/foo/goo/", "/foo/goo", false);
+        testPeelTrailingSlashstar("foo/goo", "foo/goo", false);
+        testPeelTrailingSlashstar("", "", false);
+        testPeelTrailingSlashstar("/", "", false);
+        testPeelTrailingSlashstar("/*", "", true);
+        testPeelTrailingSlashstar("//", "/", false);
+        testPeelTrailingSlashstar("**", "*", true);
+        testPeelTrailingSlashstar("*/", "*", false);
 
         testcase("find_one");
-        test_find_one(a, &b, "b");
-        test_find_one(a, nullptr, "d");
-        test_find_one(b, &e, "e");
-        test_find_one(d, &f, "f");
+        testFindOne(a, &b, "b");
+        testFindOne(a, nullptr, "d");
+        testFindOne(b, &e, "e");
+        testFindOne(d, &f, "f");
 
         testcase("find_path");
-        test_find_path(a, "a", nullptr);
-        test_find_path(a, "e", nullptr);
-        test_find_path(a, "a/b", nullptr);
-        test_find_path(a, "a/b/e", nullptr);
-        test_find_path(a, "b/e/g", nullptr);
-        test_find_path(a, "b/e/f", nullptr);
-        test_find_path(a, "b", &b);
-        test_find_path(a, "b/e", &e);
-        test_find_path(a, "b/d/f", &f);
+        testFindPath(a, "a", nullptr);
+        testFindPath(a, "e", nullptr);
+        testFindPath(a, "a/b", nullptr);
+        testFindPath(a, "a/b/e", nullptr);
+        testFindPath(a, "b/e/g", nullptr);
+        testFindPath(a, "b/e/f", nullptr);
+        testFindPath(a, "b", &b);
+        testFindPath(a, "b/e", &e);
+        testFindPath(a, "b/d/f", &f);
 
         testcase("find_one_deep");
-        test_find_one_deep(a, "z", nullptr);
-        test_find_one_deep(a, "g", &g);
-        test_find_one_deep(a, "b", &b);
-        test_find_one_deep(a, "d", &d);
-        test_find_one_deep(a, "f", &f);
+        testFindOneDeep(a, "z", nullptr);
+        testFindOneDeep(a, "g", &g);
+        testFindOneDeep(a, "b", &b);
+        testFindOneDeep(a, "d", &d);
+        testFindOneDeep(a, "f", &f);
 
         testcase("find");
-        test_find(a, "", &a, false);
-        test_find(a, "*", &a, true);
-        test_find(a, "/b", &b, false);
-        test_find(a, "b", &b, false);
-        test_find(a, "d", &d, false);
-        test_find(a, "/b*", &b, true);
-        test_find(a, "b*", &b, true);
-        test_find(a, "d*", &d, true);
-        test_find(a, "/b/*", &b, true);
-        test_find(a, "b/*", &b, true);
-        test_find(a, "d/*", &d, true);
-        test_find(a, "a", nullptr, false);
-        test_find(a, "/d", nullptr, false);
-        test_find(a, "/d*", nullptr, true);
-        test_find(a, "/d/*", nullptr, true);
+        testFind(a, "", &a, false);
+        testFind(a, "*", &a, true);
+        testFind(a, "/b", &b, false);
+        testFind(a, "b", &b, false);
+        testFind(a, "d", &d, false);
+        testFind(a, "/b*", &b, true);
+        testFind(a, "b*", &b, true);
+        testFind(a, "d*", &d, true);
+        testFind(a, "/b/*", &b, true);
+        testFind(a, "b/*", &b, true);
+        testFind(a, "d/*", &d, true);
+        testFind(a, "a", nullptr, false);
+        testFind(a, "/d", nullptr, false);
+        testFind(a, "/d*", nullptr, true);
+        testFind(a, "/d/*", nullptr, true);
     }
 };
 

@@ -62,7 +62,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass);
  * @return true if meet the expectation
  */
 bool
-VerifyPubKeyAndSeq(
+verifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
     hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq);
 
@@ -307,7 +307,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(l->validatorToDisable() == publicKeys[1]);
                 BEAST_EXPECT(l->validatorToReEnable() == publicKeys[0]);
                 // test sfFirstLedgerSequence
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
         }
 
@@ -350,7 +350,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
                 nUnlLedgerSeq.emplace(publicKeys[1], l->seq());
                 nUnlLedgerSeq.erase(publicKeys[0]);
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
         }
 
@@ -379,7 +379,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[0]));
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                 nUnlLedgerSeq.emplace(publicKeys[0], l->seq());
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
 
             auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
@@ -398,7 +398,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[0]));
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                 BEAST_EXPECT(l->validatorToReEnable() == publicKeys[0]);
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
         }
 
@@ -427,7 +427,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                 nUnlLedgerSeq.erase(publicKeys[0]);
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
 
             auto txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
@@ -441,7 +441,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                 BEAST_EXPECT(l->validatorToReEnable() == publicKeys[1]);
-                BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
+                BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
         }
 
@@ -1758,7 +1758,7 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 }
 
 bool
-VerifyPubKeyAndSeq(
+verifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
     hash_map<PublicKey, std::uint32_t> nUnlLedgerSeq)
 {

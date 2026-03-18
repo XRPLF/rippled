@@ -11,7 +11,7 @@ namespace PeerFinder {
 
 /** Create a new Manager. */
 std::unique_ptr<Manager>
-make_Manager(
+makeManager(
     boost::asio::io_context& io_context,
     clock_type& clock,
     beast::Journal journal,

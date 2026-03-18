@@ -233,7 +233,7 @@ makeOutput(Session& session)
 }
 
 static std::map<std::string, std::string>
-build_map(boost::beast::http::fields const& h)
+buildMap(boost::beast::http::fields const& h)
 {
     std::map<std::string, std::string> c;
     for (auto const& e : h)
@@ -251,7 +251,7 @@ build_map(boost::beast::http::fields const& h)
 
 template <class ConstBufferSequence>
 static std::string
-buffers_to_string(ConstBufferSequence const& bs)
+buffersToString(ConstBufferSequence const& bs)
 {
     using boost::asio::buffer_size;
     std::string s;
@@ -275,7 +275,7 @@ ServerHandler::onRequest(Session& session)
     }
 
     // Check user/password authorization
-    if (!authorized(session.port(), build_map(session.request())))
+    if (!authorized(session.port(), buildMap(session.request())))
     {
         HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
         session.close(true);
@@ -308,7 +308,7 @@ ServerHandler::onWSMessage(
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
-        jvResult[jss::value] = buffers_to_string(buffers);
+        jvResult[jss::value] = buffersToString(buffers);
         boost::beast::multi_buffer sb;
         Json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
@@ -521,7 +521,7 @@ ServerHandler::processSession(
 {
     processRequest(
         session->port(),
-        buffers_to_string(session->request().body().data()),
+        buffersToString(session->request().body().data()),
         session->remoteAddress().at_port(0),
         makeOutput(*session),
         coro,
@@ -540,7 +540,7 @@ ServerHandler::processSession(
 }
 
 static Json::Value
-make_json_error(Json::Int code, Json::Value&& message)
+makeJsonError(Json::Int code, Json::Value&& message)
 {
     Json::Value sub{Json::objectValue};
     sub["code"] = code;
@@ -605,7 +605,7 @@ ServerHandler::processRequest(
         {
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "Method not found");
+            r[jss::error] = makeJsonError(method_not_found, "Method not found");
             reply.append(r);
             continue;
         }
@@ -633,7 +633,7 @@ ServerHandler::processRequest(
             }
             Json::Value r(Json::objectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = make_json_error(wrong_version, jss::invalid_API_version.c_str());
+            r[jss::error] = makeJsonError(wrong_version, jss::invalid_API_version.c_str());
             reply.append(r);
             continue;
         }
@@ -673,7 +673,7 @@ ServerHandler::processRequest(
                     return;
                 }
                 Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(server_overloaded, "Server is overloaded");
+                r[jss::error] = makeJsonError(server_overloaded, "Server is overloaded");
                 reply.append(r);
                 continue;
             }
@@ -688,7 +688,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(forbidden, "Forbidden");
+            r[jss::error] = makeJsonError(forbidden, "Forbidden");
             reply.append(r);
             continue;
         }
@@ -702,7 +702,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "Null method");
+            r[jss::error] = makeJsonError(method_not_found, "Null method");
             reply.append(r);
             continue;
         }
@@ -717,7 +717,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "method is not string");
+            r[jss::error] = makeJsonError(method_not_found, "method is not string");
             reply.append(r);
             continue;
         }
@@ -732,7 +732,7 @@ ServerHandler::processRequest(
                 return;
             }
             Json::Value r = jsonRPC;
-            r[jss::error] = make_json_error(method_not_found, "method is empty");
+            r[jss::error] = makeJsonError(method_not_found, "method is empty");
             reply.append(r);
             continue;
         }
@@ -785,7 +785,7 @@ ServerHandler::processRequest(
                 }
 
                 Json::Value r = jsonRPC;
-                r[jss::error] = make_json_error(method_not_found, "ripplerpc is not a string");
+                r[jss::error] = makeJsonError(method_not_found, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
             }
@@ -1022,7 +1022,7 @@ ServerHandler::Setup::makeContexts()
 }
 
 static Port
-to_Port(ParsedPort const& parsed, std::ostream& log)
+toPort(ParsedPort const& parsed, std::ostream& log)
 {
     Port p;
     p.name = parsed.name;
@@ -1068,7 +1068,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 }
 
 static std::vector<Port>
-parse_Ports(Config const& config, std::ostream& log)
+parsePorts(Config const& config, std::ostream& log)
 {
     std::vector<Port> result;
 
@@ -1098,7 +1098,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
         ParsedPort parsed = common;
         parse_Port(parsed, config[name], log);
-        result.push_back(to_Port(parsed, log));
+        result.push_back(toPort(parsed, log));
     }
 
     if (config.standalone())
@@ -1138,7 +1138,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
 // Fill out the client portion of the Setup
 static void
-setup_Client(ServerHandler::Setup& setup)
+setupClient(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
@@ -1160,7 +1160,7 @@ setup_Client(ServerHandler::Setup& setup)
 
 // Fill out the overlay portion of the Setup
 static void
-setup_Overlay(ServerHandler::Setup& setup)
+setupOverlay(ServerHandler::Setup& setup)
 {
     auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
         return port.protocol.count("peer") != 0;
@@ -1177,10 +1177,10 @@ ServerHandler::Setup
 setup_ServerHandler(Config const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
-    setup.ports = parse_Ports(config, log);
+    setup.ports = parsePorts(config, log);
 
-    setup_Client(setup);
-    setup_Overlay(setup);
+    setupClient(setup);
+    setupOverlay(setup);
 
     return setup;
 }

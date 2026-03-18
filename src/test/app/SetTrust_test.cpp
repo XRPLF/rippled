@@ -257,7 +257,7 @@ public:
     }
 
     Json::Value
-    trust_explicit_amt(jtx::Account const& a, STAmount const& amt)
+    trustExplicitAmt(jtx::Account const& a, STAmount const& amt)
     {
         Json::Value jv;
         jv[jss::Account] = a.human();
@@ -289,16 +289,16 @@ public:
         }
 
         // trust amount can't be XRP
-        env(trust_explicit_amt(alice, drops(10000)), ter(temBAD_LIMIT));
+        env(trustExplicitAmt(alice, drops(10000)), ter(temBAD_LIMIT));
 
         // trust amount can't be badCurrency IOU
-        env(trust_explicit_amt(alice, gw[to_string(badCurrency())](100)), ter(temBAD_CURRENCY));
+        env(trustExplicitAmt(alice, gw[to_string(badCurrency())](100)), ter(temBAD_CURRENCY));
 
         // trust amount can't be negative
         env(trust(alice, gw["USD"](-1000)), ter(temBAD_LIMIT));
 
         // trust amount can't be from invalid issuer
-        env(trust_explicit_amt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
+        env(trustExplicitAmt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
             ter(temDST_NEEDED));
 
         // trust cannot be to self

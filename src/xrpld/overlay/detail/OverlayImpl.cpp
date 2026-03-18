@@ -116,7 +116,7 @@ OverlayImpl::OverlayImpl(
     , serverHandler_(serverHandler)
     , resourceManager_(resourceManager)
     , peerFinder_(
-          PeerFinder::make_Manager(
+          PeerFinder::makeManager(
               ioContext,
               stopwatch(),
               app_.journal("PeerFinder"),
@@ -1404,7 +1404,7 @@ OverlayImpl::deleteIdlePeers()
 //------------------------------------------------------------------------------
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config)
+setupOverlay(BasicConfig const& config)
 {
     Overlay::Setup setup;
 
@@ -1507,7 +1507,7 @@ setup_Overlay(BasicConfig const& config)
 }
 
 std::unique_ptr<Overlay>
-make_Overlay(
+makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,

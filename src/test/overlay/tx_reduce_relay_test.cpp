@@ -89,7 +89,7 @@ private:
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  sid_,
+                  sid,
                   slot,
                   std::move(request),
                   publicKey,
@@ -98,7 +98,7 @@ private:
                   std::move(streamPtr),
                   overlay)
         {
-            sid_++;
+            sid++;
         }
         ~PeerTest() = default;
 
@@ -109,23 +109,23 @@ private:
         void
         send(std::shared_ptr<Message> const&) override
         {
-            sendTx_++;
+            sendTx++;
         }
         void
         addTxQueue(uint256 const& hash) override
         {
-            queueTx_++;
+            queueTx++;
         }
         static void
         init()
         {
-            queueTx_ = 0;
-            sendTx_ = 0;
-            sid_ = 0;
+            queueTx = 0;
+            sendTx = 0;
+            sid = 0;
         }
-        inline static std::size_t sid_ = 0;
-        inline static std::uint16_t queueTx_ = 0;
-        inline static std::uint16_t sendTx_ = 0;
+        inline static std::size_t sid = 0;
+        inline static std::uint16_t queueTx = 0;
+        inline static std::uint16_t sendTx = 0;
     };
 
     std::uint16_t lid_{0};
@@ -210,7 +210,7 @@ private:
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
             env.app().overlay().relay(uint256{0}, m, toSkip);
-            BEAST_EXPECT(PeerTest::sendTx_ == expectRelay && PeerTest::queueTx_ == expectQueue);
+            BEAST_EXPECT(PeerTest::sendTx == expectRelay && PeerTest::queueTx == expectQueue);
         }
     }
 

@@ -191,8 +191,7 @@ private:
                     socket,
                     bind_executor(
                         strand,
-                        std::bind(
-                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -207,7 +206,7 @@ private:
             }
 
             void
-            on_accept(error_code ec)
+            onAccept(error_code ec)
             {
                 if (ec)
                     return fail("accept", ec);
@@ -218,8 +217,7 @@ private:
                     socket,
                     bind_executor(
                         strand,
-                        std::bind(
-                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
             }
         };
 
@@ -262,13 +260,13 @@ private:
                 timer.expires_after(std::chrono::seconds(3));
                 timer.async_wait(bind_executor(
                     strand,
-                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
                 stream.async_handshake(
                     stream_type::server,
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -284,7 +282,7 @@ private:
             }
 
             void
-            on_timer(error_code ec)
+            onTimer(error_code ec)
             {
                 if (ec == boost::asio::error::operation_aborted)
                     return;
@@ -295,7 +293,7 @@ private:
             }
 
             void
-            on_handshake(error_code ec)
+            onHandshake(error_code ec)
             {
                 if (ec)
                     return fail("handshake", ec);
@@ -307,7 +305,7 @@ private:
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_read,
+                            &Connection::onRead,
                             shared_from_this(),
                             std::placeholders::_1,
                             std::placeholders::_2)));
@@ -317,7 +315,7 @@ private:
             }
 
             void
-            on_read(error_code ec, std::size_t bytesTransferred)
+            onRead(error_code ec, std::size_t bytesTransferred)
             {
                 if (ec == boost::asio::error::eof)
                 {
@@ -325,7 +323,7 @@ private:
                     return stream.async_shutdown(bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                            &Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
                 }
                 if (ec)
                     return fail("read", ec);
@@ -339,26 +337,25 @@ private:
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_write,
+                            &Connection::onWrite,
                             shared_from_this(),
                             std::placeholders::_1,
                             std::placeholders::_2)));
             }
 
             void
-            on_write(error_code ec, std::size_t bytesTransferred)
+            onWrite(error_code ec, std::size_t bytesTransferred)
             {
                 buf.consume(bytesTransferred);
                 if (ec)
                     return fail("write", ec);
                 stream.async_shutdown(bind_executor(
                     strand,
-                    std::bind(
-                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
-            on_shutdown(error_code ec)
+            onShutdown(error_code ec)
             {
                 if (ec)
                     return fail("shutdown", ec);
@@ -436,13 +433,13 @@ private:
                 timer.expires_after(std::chrono::seconds(3));
                 timer.async_wait(bind_executor(
                     strand,
-                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
                 socket.async_connect(
                     ep,
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_connect, shared_from_this(), std::placeholders::_1)));
+                            &Connection::onConnect, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -458,7 +455,7 @@ private:
             }
 
             void
-            on_timer(error_code ec)
+            onTimer(error_code ec)
             {
                 if (ec == boost::asio::error::operation_aborted)
                     return;
@@ -469,7 +466,7 @@ private:
             }
 
             void
-            on_connect(error_code ec)
+            onConnect(error_code ec)
             {
                 if (ec)
                     return fail("connect", ec);
@@ -478,11 +475,11 @@ private:
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
-            on_handshake(error_code ec)
+            onHandshake(error_code ec)
             {
                 if (ec)
                     return fail("handshake", ec);
@@ -495,7 +492,7 @@ private:
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_write,
+                            &Connection::onWrite,
                             shared_from_this(),
                             std::placeholders::_1,
                             std::placeholders::_2)));
@@ -508,7 +505,7 @@ private:
             }
 
             void
-            on_write(error_code ec, std::size_t bytesTransferred)
+            onWrite(error_code ec, std::size_t bytesTransferred)
             {
                 buf.consume(bytesTransferred);
                 if (ec)
@@ -521,7 +518,7 @@ private:
                     bind_executor(
                         strand,
                         std::bind(
-                            &Connection::on_read,
+                            &Connection::onRead,
                             shared_from_this(),
                             std::placeholders::_1,
                             std::placeholders::_2)));
@@ -534,19 +531,18 @@ private:
             }
 
             void
-            on_read(error_code ec, std::size_t bytesTransferred)
+            onRead(error_code ec, std::size_t bytesTransferred)
             {
                 if (ec)
                     return fail("read", ec);
                 buf.commit(bytesTransferred);
                 stream.async_shutdown(bind_executor(
                     strand,
-                    std::bind(
-                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
-            on_shutdown(error_code ec)
+            onShutdown(error_code ec)
             {
                 if (ec)
                     return fail("shutdown", ec);

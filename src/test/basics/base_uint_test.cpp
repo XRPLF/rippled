@@ -17,23 +17,23 @@ template <std::size_t Bits>
 struct nonhash
 {
     static constexpr auto const endian = boost::endian::order::big;
-    static constexpr std::size_t WIDTH = Bits / 8;
+    static constexpr std::size_t width = Bits / 8;
 
-    std::array<std::uint8_t, WIDTH> data;
+    std::array<std::uint8_t, width> data;
 
     nonhash() = default;
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        assert(len == WIDTH);
+        assert(len == width);
         memcpy(data.data(), key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        return WIDTH;
+        return width;
     }
 };
 

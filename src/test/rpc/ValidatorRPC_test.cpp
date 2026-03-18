@@ -507,7 +507,7 @@ public:
     }
 
     void
-    test_validation_create()
+    testValidationCreate()
     {
         using namespace test::jtx;
         Env env{*this};
@@ -524,7 +524,7 @@ public:
         testPrivileges();
         testStaticUNL();
         testDynamicUNL();
-        test_validation_create();
+        testValidationCreate();
     }
 };
 

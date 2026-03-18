@@ -105,7 +105,7 @@ class NetworkOPsImp final : public NetworkOPs
         running,
     };
 
-    static std::array<char const*, 5> const states_;
+    static std::array<char const*, 5> const states;
 
     /**
      * State accounting records two attributes for each possible server state:
@@ -137,7 +137,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point const processStart_ = start_;
         std::uint64_t initialSyncUs_{0};
-        static std::array<Json::StaticString const, 5> const states_;
+        static std::array<Json::StaticString const, 5> const states;
 
     public:
         explicit StateAccounting()
@@ -242,7 +242,7 @@ public:
         , job_queue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collect_metrics, this), collector)
+        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
     {
     }
 
@@ -799,7 +799,7 @@ private:
 
 private:
     void
-    collect_metrics();
+    collectMetrics();
 };
 
 //------------------------------------------------------------------------------
@@ -807,9 +807,9 @@ private:
 static std::array<char const*, 5> const stateNames{
     {"disconnected", "connected", "syncing", "tracking", "full"}};
 
-std::array<char const*, 5> const NetworkOPsImp::states_ = stateNames;
+std::array<char const*, 5> const NetworkOPsImp::states = stateNames;
 
-std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::states_ = {
+std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::states = {
     {Json::StaticString(stateNames[0]),
      Json::StaticString(stateNames[1]),
      Json::StaticString(stateNames[2]),
@@ -1099,7 +1099,7 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
         }
     }
 
-    return states_[static_cast<std::size_t>(mode)];
+    return states[static_cast<std::size_t>(mode)];
 }
 
 void
@@ -4489,7 +4489,7 @@ NetworkOPsImp::getBookPage(
 #endif
 
 inline void
-NetworkOPsImp::collect_metrics()
+NetworkOPsImp::collectMetrics()
 {
     auto [counters, mode, start, initialSync] = accounting_.getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -4551,8 +4551,8 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][states_[i]] = Json::objectValue;
-        auto& state = obj[jss::state_accounting][states_[i]];
+        obj[jss::state_accounting][states[i]] = Json::objectValue;
+        auto& state = obj[jss::state_accounting][states[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }

@@ -35,7 +35,7 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(Rules const& rules, TxType txnType, F&& f)
+withTxnType(Rules const& rules, TxType txnType, F&& f)
 {
     // These global updates really should have been for every Transaction
     // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
@@ -100,7 +100,7 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 template <class T>
 requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+    consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
@@ -109,7 +109,7 @@ TxConsequences
 template <class T>
 requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+    consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::blocker);
 };
@@ -118,21 +118,21 @@ TxConsequences
 template <class T>
 requires(T::ConsequencesFactory == Transactor::Custom)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+    consequencesHelper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
 // clang-format on
 
 static std::pair<NotTEC, TxConsequences>
-invoke_preflight(PreflightContext const& ctx)
+invokePreflight(PreflightContext const& ctx)
 {
     try
     {
-        return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
-                tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
+                tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
@@ -147,13 +147,13 @@ invoke_preflight(PreflightContext const& ctx)
 }
 
 static TER
-invoke_preclaim(PreclaimContext const& ctx)
+invokePreclaim(PreclaimContext const& ctx)
 {
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -222,11 +222,11 @@ invoke_preclaim(PreclaimContext const& ctx)
  * logs an error and returns an XRPAmount of zero.
  */
 static XRPAmount
-invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
+invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
             return T::calculateBaseFee(view, tx);
         });
     }
@@ -275,11 +275,11 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) 
 }
 
 static ApplyResult
-invoke_apply(ApplyContext& ctx)
+invokeApply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
             T p(ctx);
             return p();
         });
@@ -306,7 +306,7 @@ preflight(
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
@@ -327,7 +327,7 @@ preflight(
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
@@ -385,7 +385,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     {
         if (ctx->preflightResult != tesSUCCESS)
             return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
+        return {*ctx, invokePreclaim(*ctx)};
     }
     catch (std::exception const& e)
     {
@@ -397,7 +397,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return invoke_calculateBaseFee(view, tx);
+    return invokeCalculateBaseFee(view, tx);
 }
 
 XRPAmount
@@ -428,7 +428,7 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
             calculateBaseFee(view, preclaimResult.tx),
             preclaimResult.flags,
             preclaimResult.j);
-        return invoke_apply(ctx);
+        return invokeApply(ctx);
     }
     catch (std::exception const& e)
     {

@@ -48,7 +48,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  id_++,
+                  id++,
                   slot,
                   std::move(request),
                   publicKey,
@@ -81,11 +81,11 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         static void
         resetId()
         {
-            id_ = 0;
+            id = 0;
         }
 
     private:
-        inline static Peer::id_t id_ = 0;
+        inline static Peer::id_t id = 0;
         std::shared_ptr<Message> lastSentMessage_;
     };
 

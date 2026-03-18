@@ -17,7 +17,7 @@ private:
     }
 
     void
-    test_OK()
+    testOk()
     {
         testcase("OK");
         {
@@ -47,7 +47,7 @@ private:
     }
 
     void
-    test_error()
+    testError()
     {
         testcase("error");
         {
@@ -70,8 +70,8 @@ public:
     void
     run() override
     {
-        test_OK();
-        test_error();
+        testOk();
+        testError();
     }
 };
 
@@ -91,7 +91,7 @@ private:
     }
 
     void
-    test_OK()
+    testOk()
     {
         testcase("OK");
         fillJson(Status());
@@ -148,7 +148,7 @@ private:
     }
 
     void
-    test_error()
+    testError()
     {
         testcase("error");
         expectFill("temBAD_AMOUNT", temBAD_AMOUNT, {}, "temBAD_AMOUNT: Malformed: Bad amount.");
@@ -163,7 +163,7 @@ private:
     }
 
     void
-    test_throw()
+    testThrow()
     {
         testcase("throw");
         try
@@ -187,9 +187,9 @@ public:
     void
     run() override
     {
-        test_OK();
-        test_error();
-        test_throw();
+        testOk();
+        testError();
+        testThrow();
     }
 };
 

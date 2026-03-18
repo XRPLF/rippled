@@ -69,7 +69,7 @@ public:
 
 template <class Rep, class Period>
 std::ostream&
-pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
+prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
     save_stream_state _(os);
     using namespace std::chrono;
@@ -161,7 +161,7 @@ inline std::string
 fmtdur(std::chrono::duration<Period, Rep> const& d)
 {
     std::stringstream ss;
-    pretty_time(ss, d);
+    prettyTime(ss, d);
     return ss.str();
 }
 
@@ -227,7 +227,7 @@ public:
 };
 
 std::map<std::string, std::string, boost::beast::iless>
-parse_args(std::string const& s)
+parseArgs(std::string const& s)
 {
     // <key> '=' <value>
     static boost::regex const re1(
@@ -271,7 +271,7 @@ public:
         using namespace nudb::detail;
 
         pass();
-        auto const args = parse_args(arg());
+        auto const args = parseArgs(arg());
         bool usage = args.empty();
 
         if (!usage && args.find("from") == args.end())

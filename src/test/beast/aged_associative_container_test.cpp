@@ -165,7 +165,7 @@ public:
 
     protected:
         static std::string
-        name_ordered_part()
+        nameOrderedPart()
         {
             return "";
         }
@@ -183,7 +183,7 @@ public:
 
     protected:
         static std::string
-        name_ordered_part()
+        nameOrderedPart()
         {
             return "unordered_";
         }
@@ -196,7 +196,7 @@ public:
     public:
     protected:
         static std::string
-        name_multi_part()
+        nameMultiPart()
         {
             return "";
         }
@@ -209,7 +209,7 @@ public:
     public:
     protected:
         static std::string
-        name_multi_part()
+        nameMultiPart()
         {
             return "multi";
         }
@@ -245,7 +245,7 @@ public:
 
     protected:
         static std::string
-        name_map_part()
+        nameMapPart()
         {
             return "set";
         }
@@ -280,7 +280,7 @@ public:
 
     protected:
         static std::string
-        name_map_part()
+        nameMapPart()
         {
             return "map";
         }
@@ -384,7 +384,7 @@ public:
 
     template <class Cont>
     static std::vector<typename Cont::value_type>
-    make_list(Cont const& c)
+    makeList(Cont const& c)
     {
         return std::vector<typename Cont::value_type>(c.begin(), c.end());
     }
@@ -1220,7 +1220,7 @@ aged_associative_container_test_base::testModifiers()
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
-    auto const l(make_list(v));
+    auto const l(makeList(v));
 
     // testcase (Traits::name() + " modify");
     testcase("modify");

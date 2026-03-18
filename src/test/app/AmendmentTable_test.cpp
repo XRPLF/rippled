@@ -114,12 +114,12 @@ private:
 
     template <class Arg, class... Args>
     static void
-    combine_arg(std::vector<Arg>& dest, std::vector<Arg> const& src, Args const&... args)
+    combineArg(std::vector<Arg>& dest, std::vector<Arg> const& src, Args const&... args)
     {
         assert(dest.capacity() >= dest.size() + src.size());
         std::copy(src.begin(), src.end(), std::back_inserter(dest));
         if constexpr (sizeof...(args) > 0)
-            combine_arg(dest, args...);
+            combineArg(dest, args...);
     }
 
     template <class Arg, class... Args>
@@ -133,7 +133,7 @@ private:
     {
         left.reserve(totalsize(left, right, args...));
 
-        combine_arg(left, right, args...);
+        combineArg(left, right, args...);
 
         return left;
     }

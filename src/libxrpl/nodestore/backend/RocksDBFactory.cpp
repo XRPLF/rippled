@@ -35,7 +35,7 @@ public:
     };
 
     static void
-    thread_entry(void* ptr)
+    threadEntry(void* ptr)
     {
         ThreadParams* const p(reinterpret_cast<ThreadParams*>(ptr));
         void (*f)(void*) = p->f;
@@ -55,7 +55,7 @@ public:
     StartThread(void (*f)(void*), void* a) override
     {
         ThreadParams* const p(new ThreadParams(f, a));
-        EnvWrapper::StartThread(&RocksDBEnv::thread_entry, p);
+        EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
 };
 

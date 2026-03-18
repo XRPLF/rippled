@@ -89,7 +89,7 @@ public:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& relTime)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
             auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
@@ -107,7 +107,7 @@ public:
     };
 
     auto
-    find_paths_request(
+    findPathsRequest(
         jtx::Env& env,
         jtx::Account const& src,
         jtx::Account const& dst,
@@ -163,13 +163,13 @@ public:
         });
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
         return result;
     }
 
     std::tuple<STPathSet, STAmount, STAmount>
-    find_paths(
+    findPaths(
         jtx::Env& env,
         jtx::Account const& src,
         jtx::Account const& dst,
@@ -179,7 +179,7 @@ public:
         std::optional<uint256> const& domain = std::nullopt)
     {
         Json::Value result =
-            find_paths_request(env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain);
+            findPathsRequest(env, src, dst, saDstAmount, saSendMax, saSrcCurrency, domain);
         BEAST_EXPECT(!result.isMember(jss::error));
 
         STAmount da;
@@ -217,7 +217,7 @@ public:
     }
 
     void
-    source_currencies_limit()
+    sourceCurrenciesLimit()
     {
         testcase("source currency limits");
         using namespace std::chrono_literals;
@@ -255,7 +255,7 @@ public:
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
@@ -265,7 +265,7 @@ public:
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
         // Test RPC::Tuning::max_auto_src_cur source currencies.
@@ -277,7 +277,7 @@ public:
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_auto_src_cur source currencies.
@@ -288,12 +288,12 @@ public:
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
     }
 
     void
-    no_direct_path_no_intermediary_no_alternatives()
+    noDirectPathNoIntermediaryNoAlternatives()
     {
         testcase("no direct path no intermediary no alternatives");
         using namespace jtx;
@@ -301,12 +301,12 @@ public:
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
-        auto const result = find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+        auto const result = findPaths(env, "alice", "bob", Account("bob")["USD"](5));
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
-    direct_path_no_intermediary()
+    directPathNoIntermediary()
     {
         testcase("direct path no intermediary");
         using namespace jtx;
@@ -317,13 +317,13 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", Account("bob")["USD"](5));
         BEAST_EXPECT(st.empty());
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
-    payment_auto_path_find()
+    paymentAutoPathFind()
     {
         testcase("payment auto path find");
         using namespace jtx;
@@ -343,7 +343,7 @@ public:
     }
 
     void
-    path_find(bool const domainEnabled)
+    pathFind(bool const domainEnabled)
     {
         testcase(std::string("path find") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
@@ -363,14 +363,14 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(
+        std::tie(st, sa, std::ignore) = findPaths(
             env, "alice", "bob", Account("bob")["USD"](5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(same(st, stpath("gateway")));
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
-    xrp_to_xrp(bool const domainEnabled)
+    xrpToXrp(bool const domainEnabled)
     {
         using namespace jtx;
         testcase(std::string("XRP to XRP") + (domainEnabled ? " w/ " : " w/o ") + "domain");
@@ -383,12 +383,12 @@ public:
             domainID = setupDomain(env, {"alice", "bob"});
 
         auto const result =
-            find_paths(env, "alice", "bob", XRP(5), std::nullopt, std::nullopt, domainID);
+            findPaths(env, "alice", "bob", XRP(5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
-    path_find_consume_all(bool const domainEnabled)
+    pathFindConsumeAll(bool const domainEnabled)
     {
         testcase(
             std::string("path find consume all") + (domainEnabled ? " w/ " : " w/o ") + "domain");
@@ -411,7 +411,7 @@ public:
             STPathSet st;
             STAmount sa;
             STAmount da;
-            std::tie(st, sa, da) = find_paths(
+            std::tie(st, sa, da) = findPaths(
                 env,
                 "alice",
                 "edward",
@@ -450,7 +450,7 @@ public:
             STPathSet st;
             STAmount sa;
             STAmount da;
-            std::tie(st, sa, da) = find_paths(
+            std::tie(st, sa, da) = findPaths(
                 env,
                 "alice",
                 "bob",
@@ -459,7 +459,7 @@ public:
                 std::nullopt,
                 domainID);
             BEAST_EXPECT(st.empty());
-            std::tie(st, sa, da) = find_paths(
+            std::tie(st, sa, da) = findPaths(
                 env,
                 "alice",
                 "bob",
@@ -474,7 +474,7 @@ public:
             // empty result
             if (domainEnabled)
             {
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     "alice",
                     "bob",
@@ -488,7 +488,7 @@ public:
     }
 
     void
-    alternative_path_consume_both(bool const domainEnabled)
+    alternativePathConsumeBoth(bool const domainEnabled)
     {
         testcase(
             std::string("alternative path consume both") + (domainEnabled ? " w/ " : " w/o ") +
@@ -534,7 +534,7 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer(bool const domainEnabled)
+    alternativePathsConsumeBestTransfer(bool const domainEnabled)
     {
         testcase(
             std::string("alternative paths consume best transfer") +
@@ -578,7 +578,7 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer_first()
+    alternativePathsConsumeBestTransferFirst()
     {
         testcase("alternative paths - consume best transfer first");
         using namespace jtx;
@@ -610,7 +610,7 @@ public:
     }
 
     void
-    alternative_paths_limit_returned_paths_to_best_quality(bool const domainEnabled)
+    alternativePathsLimitReturnedPathsToBestQuality(bool const domainEnabled)
     {
         testcase(
             std::string("alternative paths - limit returned paths to best quality") +
@@ -646,7 +646,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(
+        std::tie(st, sa, std::ignore) = findPaths(
             env, "alice", "bob", Account("bob")["USD"](5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(
             same(st, stpath("gateway"), stpath("gateway2"), stpath("dan"), stpath("carol")));
@@ -654,7 +654,7 @@ public:
     }
 
     void
-    issues_path_negative_issue(bool const domainEnabled)
+    issuesPathNegativeIssue(bool const domainEnabled)
     {
         testcase(
             std::string("path negative: Issue #5") + (domainEnabled ? " w/ " : " w/o ") + "domain");
@@ -676,14 +676,14 @@ public:
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan"});
         }
 
-        auto result = find_paths(
+        auto result = findPaths(
             env, "alice", "bob", Account("bob")["USD"](25), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
 
         env(pay("alice", "bob", Account("alice")["USD"](25)), ter(tecPATH_DRY));
         env.close();
 
-        result = find_paths(
+        result = findPaths(
             env, "alice", "bob", Account("alice")["USD"](25), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
 
@@ -703,7 +703,7 @@ public:
     // alice --> carol --> dan --> bob
     // Balance of 100 USD Bob - Balance of 37 USD -> Rod
     void
-    issues_path_negative_ripple_client_issue_23_smaller()
+    issuesPathNegativeRippleClientIssue23Smaller()
     {
         testcase("path negative: ripple-client issue #23: smaller");
         using namespace jtx;
@@ -722,7 +722,7 @@ public:
     // alice -120 USD-> edward -25 USD-> bob
     // alice -25 USD-> carol -75 USD -> dan -100 USD-> bob
     void
-    issues_path_negative_ripple_client_issue_23_larger()
+    issuesPathNegativeRippleClientIssue23Larger()
     {
         testcase("path negative: ripple-client issue #23: larger");
         using namespace jtx;
@@ -749,7 +749,7 @@ public:
     // bob will hold gateway AUD
     // alice pays bob gateway AUD using XRP
     void
-    via_offers_via_gateway(bool const domainEnabled)
+    viaOffersViaGateway(bool const domainEnabled)
     {
         testcase(std::string("via gateway") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
@@ -785,13 +785,13 @@ public:
         env.require(balance("bob", aud(10)));
         env.require(balance("carol", aud(39)));
 
-        auto const result = find_paths(
+        auto const result = findPaths(
             env, "alice", "bob", Account("bob")["USD"](25), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
-    indirect_paths_path_find()
+    indirectPathsPathFind()
     {
         testcase("path find");
         using namespace jtx;
@@ -804,13 +804,13 @@ public:
         STPathSet st;
         STAmount sa;
         std::tie(st, sa, std::ignore) =
-            find_paths(env, "alice", "carol", Account("carol")["USD"](5));
+            findPaths(env, "alice", "carol", Account("carol")["USD"](5));
         BEAST_EXPECT(same(st, stpath("bob")));
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
-    quality_paths_quality_set_and_test()
+    qualityPathsQualitySetAndTest()
     {
         testcase("quality set and test");
         using namespace jtx;
@@ -855,7 +855,7 @@ public:
     }
 
     void
-    trust_auto_clear_trust_normal_clear()
+    trustAutoClearTrustNormalClear()
     {
         testcase("trust normal clear");
         using namespace jtx;
@@ -902,7 +902,7 @@ public:
     }
 
     void
-    trust_auto_clear_trust_auto_clear()
+    trustAutoClearTrustAutoClear()
     {
         testcase("trust auto clear");
         using namespace jtx;
@@ -952,7 +952,7 @@ public:
     }
 
     void
-    path_find_01(bool const domainEnabled)
+    pathFind01(bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: XRP -> XRP and XRP -> IOU") +
@@ -1009,7 +1009,7 @@ public:
         {
             auto const& sendAmt = XRP(10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
@@ -1019,7 +1019,7 @@ public:
             // does not exist.
             auto const& sendAmt = XRP(200);
             std::tie(st, sa, da) =
-                find_paths(env, a1, Account{"A0"}, sendAmt, std::nullopt, xrpCurrency(), domainID);
+                findPaths(env, a1, Account{"A0"}, sendAmt, std::nullopt, xrpCurrency(), domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
@@ -1027,7 +1027,7 @@ public:
         {
             auto const& sendAmt = g3["ABC"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a2, g3, sendAmt, std::nullopt, xrpCurrency(), domainID);
+                findPaths(env, a2, g3, sendAmt, std::nullopt, xrpCurrency(), domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(100)));
             BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]))));
@@ -1036,7 +1036,7 @@ public:
         {
             auto const& sendAmt = a2["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency(), domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(10)));
             BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]), g3)));
@@ -1045,7 +1045,7 @@ public:
         {
             auto const& sendAmt = a3["ABC"](1);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a3, sendAmt, std::nullopt, xrpCurrency(), domainID);
+                findPaths(env, a1, a3, sendAmt, std::nullopt, xrpCurrency(), domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, XRP(10)));
             BEAST_EXPECT(same(st, stpath(IPE(g3["ABC"]), g3, a2)));
@@ -1053,7 +1053,7 @@ public:
     }
 
     void
-    path_find_02(bool const domainEnabled)
+    pathFind02(bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> XRP") + (domainEnabled ? " w/ " : " w/o ") +
@@ -1095,7 +1095,7 @@ public:
 
         {
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency, domainID);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["ABC"](1)));
             BEAST_EXPECT(same(st, stpath(g3, IPE(xrpIssue()))));
@@ -1106,14 +1106,14 @@ public:
         if (domainEnabled)
         {
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
         }
     }
 
     void
-    path_find_04(bool const domainEnabled)
+    pathFind04(bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: Bitstamp and SnapSwap, liquidity with no offers") +
@@ -1155,7 +1155,7 @@ public:
         {
             auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, a2["HKD"].currency, domainID);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, a2["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(g1Bs, m1, g2Sw)));
@@ -1164,7 +1164,7 @@ public:
         {
             auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a2, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+                findPaths(env, a2, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a2["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(g2Sw, m1, g1Bs)));
@@ -1173,7 +1173,7 @@ public:
         {
             auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, g1Bs, a2, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+                findPaths(env, g1Bs, a2, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, g1Bs["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(m1, g2Sw)));
@@ -1182,7 +1182,7 @@ public:
         {
             auto const& sendAmt = m1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, m1, g1Bs, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+                findPaths(env, m1, g1Bs, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, m1["HKD"](10)));
             BEAST_EXPECT(st.empty());
@@ -1191,7 +1191,7 @@ public:
         {
             auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, g2Sw, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
+                findPaths(env, g2Sw, a1, sendAmt, std::nullopt, a1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, g2Sw["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(m1, g1Bs)));
@@ -1199,7 +1199,7 @@ public:
     }
 
     void
-    path_find_05(bool const domainEnabled)
+    pathFind05(bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency") +
@@ -1263,7 +1263,7 @@ public:
             //  Source -> Destination (repay source issuer)
             auto const& sendAmt = g1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(st.empty());
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
@@ -1274,7 +1274,7 @@ public:
             //  Source -> Destination (repay destination issuer)
             auto const& sendAmt = a1["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, a1, g1, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(st.empty());
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
@@ -1285,7 +1285,7 @@ public:
             //  Source -> AC -> Destination
             auto const& sendAmt = a3["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a3, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, a1, a3, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(st, stpath(g1)));
@@ -1296,7 +1296,7 @@ public:
             //  Source -> OB -> Destination
             auto const& sendAmt = g2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, g1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, g1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, g1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1312,7 +1312,7 @@ public:
             //  Source -> AC -> OB -> Destination
             auto const& sendAmt = g2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, a1, g2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1329,7 +1329,7 @@ public:
             //  Destination
             auto const& sendAmt = a2["HKD"](10);
             std::tie(st, sa, da) =
-                find_paths(env, a1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+                findPaths(env, a1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(equal(sa, a1["HKD"](10)));
             BEAST_EXPECT(same(
@@ -1342,7 +1342,7 @@ public:
     }
 
     void
-    path_find_06(bool const domainEnabled)
+    pathFind06(bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency)") +
@@ -1390,14 +1390,14 @@ public:
         STPathSet st;
         STAmount sa, da;
         std::tie(st, sa, da) =
-            find_paths(env, g1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
+            findPaths(env, g1, a2, sendAmt, std::nullopt, g1["HKD"].currency, domainID);
         BEAST_EXPECT(equal(da, sendAmt));
         BEAST_EXPECT(equal(sa, g1["HKD"](10)));
         BEAST_EXPECT(same(st, stpath(m1, g2), stpath(IPE(g2["HKD"]), g2)));
     }
 
     void
-    receive_max(bool const domainEnabled)
+    receiveMax(bool const domainEnabled)
     {
         testcase(std::string("Receive max") + (domainEnabled ? " w/ " : " w/o ") + "domain");
 
@@ -1431,7 +1431,7 @@ public:
             }
 
             auto [st, sa, da] =
-                find_paths(env, alice, bob, usd(-1), XRP(100).value(), std::nullopt, domainID);
+                findPaths(env, alice, bob, usd(-1), XRP(100).value(), std::nullopt, domainID);
             BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, usd(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1466,7 +1466,7 @@ public:
             }
 
             auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), usd(100).value(), std::nullopt, domainID);
+                findPaths(env, alice, bob, drops(-1), usd(100).value(), std::nullopt, domainID);
             BEAST_EXPECT(sa == usd(10));
             BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1480,7 +1480,7 @@ public:
     }
 
     void
-    noripple_combinations()
+    norippleCombinations()
     {
         using namespace jtx;
         // This test will create trust lines with various values of the noRipple
@@ -1507,7 +1507,7 @@ public:
             env(pay(george, alice, usd(70)));
             env.close();
 
-            auto [st, sa, da] = find_paths(env, "alice", "bob", Account("bob")["USD"](5));
+            auto [st, sa, da] = findPaths(env, "alice", "bob", Account("bob")["USD"](5));
             BEAST_EXPECT(equal(da, bob["USD"](5)));
 
             if (expectPath)
@@ -1529,7 +1529,7 @@ public:
     }
 
     void
-    hybrid_offer_path()
+    hybridOfferPath()
     {
         testcase("Hybrid offer path");
         using namespace jtx;
@@ -1586,7 +1586,7 @@ public:
                 // A) Borrow or repay --
                 //  Source -> Destination (repay source issuer)
                 auto const& sendAmt = g1["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     a1,
                     g1,
@@ -1603,7 +1603,7 @@ public:
                 // A2) Borrow or repay --
                 //  Source -> Destination (repay destination issuer)
                 auto const& sendAmt = a1["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     a1,
                     g1,
@@ -1620,7 +1620,7 @@ public:
                 // B) Common gateway --
                 //  Source -> AC -> Destination
                 auto const& sendAmt = a3["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     a1,
                     a3,
@@ -1637,7 +1637,7 @@ public:
                 // C) Gateway to gateway --
                 //  Source -> OB -> Destination
                 auto const& sendAmt = g2["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     g1,
                     g2,
@@ -1659,7 +1659,7 @@ public:
                 // D) User to unlinked gateway via order book --
                 //  Source -> AC -> OB -> Destination
                 auto const& sendAmt = g2["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     a1,
                     g2,
@@ -1682,7 +1682,7 @@ public:
                 //  Source -> AC -> OB to XRP -> OB from XRP -> AC ->
                 //  Destination
                 auto const& sendAmt = a2["HKD"](10);
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     a1,
                     a2,
@@ -1810,7 +1810,7 @@ public:
     }
 
     void
-    amm_domain_path_()
+    ammDomainPath()
     {
         testcase("AMM not used in domain path");
         using namespace jtx;
@@ -1826,41 +1826,41 @@ public:
 
         // doing pathfind with domain won't include amm
         std::tie(st, sa, da) =
-            find_paths(env, bob, carol, sendAmt, std::nullopt, USD.currency, domainID);
+            findPaths(env, bob, carol, sendAmt, std::nullopt, USD.currency, domainID);
         BEAST_EXPECT(st.empty());
 
         // a non-domain pathfind returns amm in the path
-        std::tie(st, sa, da) = find_paths(env, bob, carol, sendAmt, std::nullopt, USD.currency);
+        std::tie(st, sa, da) = findPaths(env, bob, carol, sendAmt, std::nullopt, USD.currency);
         BEAST_EXPECT(same(st, stpath(gw, IPE(xrpIssue()))));
     }
 
     void
     run() override
     {
-        source_currencies_limit();
-        no_direct_path_no_intermediary_no_alternatives();
-        direct_path_no_intermediary();
-        payment_auto_path_find();
-        indirect_paths_path_find();
-        alternative_paths_consume_best_transfer_first();
-        issues_path_negative_ripple_client_issue_23_smaller();
-        issues_path_negative_ripple_client_issue_23_larger();
-        quality_paths_quality_set_and_test();
-        trust_auto_clear_trust_normal_clear();
-        trust_auto_clear_trust_auto_clear();
-        noripple_combinations();
+        sourceCurrenciesLimit();
+        noDirectPathNoIntermediaryNoAlternatives();
+        directPathNoIntermediary();
+        paymentAutoPathFind();
+        indirectPathsPathFind();
+        alternativePathsConsumeBestTransferFirst();
+        issuesPathNegativeRippleClientIssue23Smaller();
+        issuesPathNegativeRippleClientIssue23Larger();
+        qualityPathsQualitySetAndTest();
+        trustAutoClearTrustNormalClear();
+        trustAutoClearTrustAutoClear();
+        norippleCombinations();
 
         for (bool const domainEnabled : {false, true})
         {
-            path_find(domainEnabled);
-            path_find_consume_all(domainEnabled);
-            alternative_path_consume_both(domainEnabled);
-            alternative_paths_consume_best_transfer(domainEnabled);
-            alternative_paths_limit_returned_paths_to_best_quality(domainEnabled);
-            issues_path_negative_issue(domainEnabled);
-            via_offers_via_gateway(domainEnabled);
-            xrp_to_xrp(domainEnabled);
-            receive_max(domainEnabled);
+            pathFind(domainEnabled);
+            pathFindConsumeAll(domainEnabled);
+            alternativePathConsumeBoth(domainEnabled);
+            alternativePathsConsumeBestTransfer(domainEnabled);
+            alternativePathsLimitReturnedPathsToBestQuality(domainEnabled);
+            issuesPathNegativeIssue(domainEnabled);
+            viaOffersViaGateway(domainEnabled);
+            xrpToXrp(domainEnabled);
+            receiveMax(domainEnabled);
 
             // The following path_find_NN tests are data driven tests
             // that were originally implemented in js/coffee and migrated
@@ -1868,15 +1868,15 @@ public:
             // those legacy tests, which in some cases probably represented
             // customer use cases.
 
-            path_find_01(domainEnabled);
-            path_find_02(domainEnabled);
-            path_find_04(domainEnabled);
-            path_find_05(domainEnabled);
-            path_find_06(domainEnabled);
+            pathFind01(domainEnabled);
+            pathFind02(domainEnabled);
+            pathFind04(domainEnabled);
+            pathFind05(domainEnabled);
+            pathFind06(domainEnabled);
         }
 
-        hybrid_offer_path();
-        amm_domain_path_();
+        hybridOfferPath();
+        ammDomainPath();
     }
 };
 

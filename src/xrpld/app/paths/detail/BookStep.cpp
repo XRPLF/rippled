@@ -28,7 +28,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { AMM, CLOB };
 
-    static constexpr uint32_t MaxOffersToConsume{1000};
+    static constexpr uint32_t maxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -664,7 +664,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     // Always charge the transfer fee, even if the owner is the issuer
     std::uint32_t const trOut = ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
 
-    typename FlowOfferStream<TIn, TOut>::StepCounter counter(MaxOffersToConsume, j_);
+    typename FlowOfferStream<TIn, TOut>::StepCounter counter(maxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
@@ -996,7 +996,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         SetUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive
-        if (offersConsumed >= MaxOffersToConsume)
+        if (offersConsumed >= maxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1158,7 +1158,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         SetUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive (dry)
-        if (offersConsumed >= MaxOffersToConsume)
+        if (offersConsumed >= maxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1320,7 +1320,7 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 
 template <class TIn, class TOut>
 static std::pair<TER, std::unique_ptr<Step>>
-make_BookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
+makeBookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
@@ -1345,19 +1345,19 @@ make_BookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out)
 {
-    return make_BookStepHelper<IOUAmount, IOUAmount>(ctx, in, out);
+    return makeBookStepHelper<IOUAmount, IOUAmount>(ctx, in, out);
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepIX(StrandContext const& ctx, Issue const& in)
 {
-    return make_BookStepHelper<IOUAmount, XRPAmount>(ctx, in, xrpIssue());
+    return makeBookStepHelper<IOUAmount, XRPAmount>(ctx, in, xrpIssue());
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepXI(StrandContext const& ctx, Issue const& out)
 {
-    return make_BookStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
+    return makeBookStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
 }
 
 }  // namespace xrpl

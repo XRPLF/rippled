@@ -17,7 +17,7 @@
 namespace xrpl {
 
 double
-estimate_entropy(std::string const& input)
+estimateEntropy(std::string const& input)
 {
     // First, we calculate the Shannon entropy. This gives
     // the average number of bits per symbol that we would
@@ -141,7 +141,7 @@ walletPropose(Json::Value const& params)
         {
             // 80 bits of entropy isn't bad, but it's better to
             // err on the side of caution and be conservative.
-            if (estimate_entropy(passphrase) < 80.0)
+            if (estimateEntropy(passphrase) < 80.0)
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "
                     "passphrase that has low entropy and is vulnerable "

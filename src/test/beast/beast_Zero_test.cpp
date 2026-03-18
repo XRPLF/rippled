@@ -47,55 +47,55 @@ private:
 
 public:
     void
-    expect_same(bool result, bool correct, char const* message)
+    expectSame(bool result, bool correct, char const* message)
     {
         expect(result == correct, message);
     }
 
     void
-    test_lhs_zero(IntegerWrapper x)
+    testLhsZero(IntegerWrapper x)
     {
-        expect_same(x >= zero, x.signum() >= 0, "lhs greater-than-or-equal-to");
-        expect_same(x > zero, x.signum() > 0, "lhs greater than");
-        expect_same(x == zero, x.signum() == 0, "lhs equal to");
-        expect_same(x != zero, x.signum() != 0, "lhs not equal to");
-        expect_same(x < zero, x.signum() < 0, "lhs less than");
-        expect_same(x <= zero, x.signum() <= 0, "lhs less-than-or-equal-to");
+        expectSame(x >= zero, x.signum() >= 0, "lhs greater-than-or-equal-to");
+        expectSame(x > zero, x.signum() > 0, "lhs greater than");
+        expectSame(x == zero, x.signum() == 0, "lhs equal to");
+        expectSame(x != zero, x.signum() != 0, "lhs not equal to");
+        expectSame(x < zero, x.signum() < 0, "lhs less than");
+        expectSame(x <= zero, x.signum() <= 0, "lhs less-than-or-equal-to");
     }
 
     void
-    test_lhs_zero()
+    testLhsZero()
     {
         testcase("lhs zero");
 
-        test_lhs_zero(-7);
-        test_lhs_zero(0);
-        test_lhs_zero(32);
+        testLhsZero(-7);
+        testLhsZero(0);
+        testLhsZero(32);
     }
 
     void
-    test_rhs_zero(IntegerWrapper x)
+    testRhsZero(IntegerWrapper x)
     {
-        expect_same(zero >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
-        expect_same(zero > x, 0 > x.signum(), "rhs greater than");
-        expect_same(zero == x, 0 == x.signum(), "rhs equal to");
-        expect_same(zero != x, 0 != x.signum(), "rhs not equal to");
-        expect_same(zero < x, 0 < x.signum(), "rhs less than");
-        expect_same(zero <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
+        expectSame(zero >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
+        expectSame(zero > x, 0 > x.signum(), "rhs greater than");
+        expectSame(zero == x, 0 == x.signum(), "rhs equal to");
+        expectSame(zero != x, 0 != x.signum(), "rhs not equal to");
+        expectSame(zero < x, 0 < x.signum(), "rhs less than");
+        expectSame(zero <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
     }
 
     void
-    test_rhs_zero()
+    testRhsZero()
     {
         testcase("rhs zero");
 
-        test_rhs_zero(-4);
-        test_rhs_zero(0);
-        test_rhs_zero(64);
+        testRhsZero(-4);
+        testRhsZero(0);
+        testRhsZero(64);
     }
 
     void
-    test_adl()
+    testAdl()
     {
         expect(adl_tester{} == zero, "ADL failure!");
         expect(inner_adl_test::adl_tester2{} == zero, "ADL failure!");
@@ -104,9 +104,9 @@ public:
     void
     run() override
     {
-        test_lhs_zero();
-        test_rhs_zero();
-        test_adl();
+        testLhsZero();
+        testRhsZero();
+        testAdl();
     }
 };
 

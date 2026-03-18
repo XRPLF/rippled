@@ -30,7 +30,7 @@ public:
     }
 
     void
-    test_manual()
+    testManual()
     {
         testcase("manual");
 
@@ -55,7 +55,7 @@ public:
         test("system_clock", get_abstract_clock<std::chrono::system_clock>());
         test("high_resolution_clock", get_abstract_clock<std::chrono::high_resolution_clock>());
 
-        test_manual();
+        testManual();
     }
 };
 

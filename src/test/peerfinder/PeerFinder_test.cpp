@@ -49,7 +49,7 @@ public:
 
         template <class Handler>
         void
-        async_connect(beast::IP::Endpoint const& ep, Handler&& handler)
+        asyncConnect(beast::IP::Endpoint const& ep, Handler&& handler)
         {
             boost::system::error_code ec;
             handler(ep, ep, ec);
@@ -57,7 +57,7 @@ public:
     };
 
     void
-    test_backoff1()
+    testBackoff1()
     {
         auto const seconds = 10000;
         testcase("backoff 1");
@@ -94,7 +94,7 @@ public:
 
     // with activate
     void
-    test_backoff2()
+    testBackoff2()
     {
         auto const seconds = 10000;
         testcase("backoff 2");
@@ -137,7 +137,7 @@ public:
 
     // test accepting an incoming slot for an already existing outgoing slot
     void
-    test_duplicateOutIn()
+    testDuplicateOutIn()
     {
         testcase("duplicate out/in");
         TestStore store;
@@ -171,7 +171,7 @@ public:
 
     // test establishing outgoing slot for an already existing incoming slot
     void
-    test_duplicateInOut()
+    testDuplicateInOut()
     {
         testcase("duplicate in/out");
         TestStore store;
@@ -203,7 +203,7 @@ public:
     }
 
     void
-    test_peerLimitExceeded()
+    testPeerLimitExceeded()
     {
         testcase("peer limit exceeded");
         TestStore store;
@@ -240,7 +240,7 @@ public:
     }
 
     void
-    test_activate_duplicate_peer()
+    testActivateDuplicatePeer()
     {
         testcase("test activate duplicate peer");
         TestStore store;
@@ -285,7 +285,7 @@ public:
     }
 
     void
-    test_activate_inbound_disabled()
+    testActivateInboundDisabled()
     {
         testcase("test activate inbound disabled");
         TestStore store;
@@ -337,7 +337,7 @@ public:
     }
 
     void
-    test_addFixedPeer_no_port()
+    testAddFixedPeerNoPort()
     {
         testcase("test addFixedPeer no port");
         TestStore store;
@@ -356,7 +356,7 @@ public:
     }
 
     void
-    test_onConnected_self_connection()
+    testOnConnectedSelfConnection()
     {
         testcase("test onConnected self connection");
         TestStore store;
@@ -375,7 +375,7 @@ public:
     }
 
     void
-    test_config()
+    testConfig()
     {
         // if peers_max is configured then peers_in_max and peers_out_max
         // are ignored
@@ -453,7 +453,7 @@ public:
     }
 
     void
-    test_invalid_config()
+    testInvalidConfig()
     {
         testcase("invalid config");
 
@@ -500,17 +500,17 @@ public:
     void
     run() override
     {
-        test_backoff1();
-        test_backoff2();
-        test_duplicateOutIn();
-        test_duplicateInOut();
-        test_config();
-        test_invalid_config();
-        test_peerLimitExceeded();
-        test_activate_duplicate_peer();
-        test_activate_inbound_disabled();
-        test_addFixedPeer_no_port();
-        test_onConnected_self_connection();
+        testBackoff1();
+        testBackoff2();
+        testDuplicateOutIn();
+        testDuplicateInOut();
+        testConfig();
+        testInvalidConfig();
+        testPeerLimitExceeded();
+        testActivateDuplicatePeer();
+        testActivateInboundDisabled();
+        testAddFixedPeerNoPort();
+        testOnConnectedSelfConnection();
     }
 };
 

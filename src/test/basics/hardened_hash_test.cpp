@@ -97,7 +97,7 @@ public:
 
     template <class Int>
     static unsigned_integer
-    fronumber_(Int v)
+    fronumber(Int v)
     {
         unsigned_integer result;
         for (std::size_t i(1); i < size; ++i)
@@ -120,7 +120,7 @@ public:
 
     template <class Hasher>
     friend void
-    hash_append(Hasher& h, unsigned_integer const& a) noexcept
+    hashAppend(Hasher& h, unsigned_integer const& a) noexcept
     {
         using beast::hash_append;
         hash_append(h, a.vec_);
@@ -161,7 +161,7 @@ public:
 
     template <template <class T> class U>
     void
-    check_user_type()
+    checkUserType()
     {
         check<U<bool>>();
         check<U<char>>();
@@ -186,7 +186,7 @@ public:
 
     template <template <class T> class C>
     void
-    check_container()
+    checkContainer()
     {
         {
             C<detail::test_user_type_member<std::string>> c;
@@ -202,28 +202,28 @@ public:
     }
 
     void
-    test_user_types()
+    testUserTypes()
     {
         testcase("user types");
-        check_user_type<detail::test_user_type_member>();
-        check_user_type<detail::test_user_type_free>();
+        checkUserType<detail::test_user_type_member>();
+        checkUserType<detail::test_user_type_free>();
     }
 
     void
-    test_containers()
+    testContainers()
     {
         testcase("containers");
-        check_container<detail::test_hardened_unordered_set>();
-        check_container<detail::test_hardened_unordered_map>();
-        check_container<detail::test_hardened_unordered_multiset>();
-        check_container<detail::test_hardened_unordered_multimap>();
+        checkContainer<detail::test_hardened_unordered_set>();
+        checkContainer<detail::test_hardened_unordered_map>();
+        checkContainer<detail::test_hardened_unordered_multiset>();
+        checkContainer<detail::test_hardened_unordered_multimap>();
     }
 
     void
     run() override
     {
-        test_user_types();
-        test_containers();
+        testUserTypes();
+        testContainers();
     }
 };
 

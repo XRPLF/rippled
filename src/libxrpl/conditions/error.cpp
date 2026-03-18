@@ -97,7 +97,7 @@ public:
 };
 
 inline std::error_category const&
-get_cryptoconditions_error_category()
+getCryptoconditionsErrorCategory()
 {
     static cryptoconditions_error_category const cat{};
     return cat;
@@ -110,7 +110,7 @@ make_error_code(error ev)
 {
     return std::error_code{
         safe_cast<std::underlying_type<error>::type>(ev),
-        detail::get_cryptoconditions_error_category()};
+        detail::getCryptoconditionsErrorCategory()};
 }
 
 }  // namespace cryptoconditions

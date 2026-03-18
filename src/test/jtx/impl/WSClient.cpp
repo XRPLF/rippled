@@ -63,7 +63,7 @@ class WSClientImpl : public WSClient
 
     template <class ConstBuffers>
     static std::string
-    buffer_string(ConstBuffers const& b)
+    bufferString(ConstBuffers const& b)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_size;
@@ -146,7 +146,7 @@ public:
             ws_.async_read(
                 rb_,
                 boost::asio::bind_executor(
-                    strand_, std::bind(&WSClientImpl::on_read_msg, this, std::placeholders::_1)));
+                    strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
         }
         catch (std::exception&)
         {
@@ -253,7 +253,7 @@ public:
 
 private:
     void
-    on_read_msg(error_code const& ec)
+    onReadMsg(error_code const& ec)
     {
         if (ec)
         {
@@ -264,7 +264,7 @@ private:
 
         Json::Value jv;
         Json::Reader jr;
-        jr.parse(buffer_string(rb_.data()), jv);
+        jr.parse(bufferString(rb_.data()), jv);
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {
@@ -275,12 +275,12 @@ private:
         ws_.async_read(
             rb_,
             boost::asio::bind_executor(
-                strand_, std::bind(&WSClientImpl::on_read_msg, this, std::placeholders::_1)));
+                strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
     }
 
     // Called when the read op terminates
     void
-    on_read_done()
+    onReadDone()
     {
         std::lock_guard lock(m0_);
         b0_ = true;

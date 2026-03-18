@@ -49,7 +49,7 @@ class JSONRPCClient : public AbstractClient
 
     template <class ConstBufferSequence>
     static std::string
-    buffer_string(ConstBufferSequence const& b)
+    bufferString(ConstBufferSequence const& b)
     {
         using namespace boost::asio;
         std::string s;
@@ -125,7 +125,7 @@ public:
 
         Json::Reader jr;
         Json::Value jv;
-        jr.parse(buffer_string(res.body().data()), jv);
+        jr.parse(bufferString(res.body().data()), jv);
         if (jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];
         if (jv["result"].isMember("status"))

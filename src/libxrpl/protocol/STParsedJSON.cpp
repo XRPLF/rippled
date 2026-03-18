@@ -46,7 +46,7 @@ namespace xrpl {
 namespace STParsedJSONDetail {
 template <typename U, typename S>
 constexpr std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
-to_unsigned(S value)
+toUnsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -55,7 +55,7 @@ to_unsigned(S value)
 
 template <typename U1, typename U2>
 constexpr std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
-to_unsigned(U2 value)
+toUnsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -64,7 +64,7 @@ to_unsigned(U2 value)
 
 // LCOV_EXCL_START
 static inline std::string
-make_name(std::string const& object, std::string const& field)
+makeName(std::string const& object, std::string const& field)
 {
     if (field.empty())
         return object;
@@ -73,81 +73,81 @@ make_name(std::string const& object, std::string const& field)
 }
 
 static inline Json::Value
-not_an_object(std::string const& object, std::string const& field)
+notAnObject(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' is not a JSON object.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
 
 static inline Json::Value
-not_an_object(std::string const& object)
+notAnObject(std::string const& object)
 {
-    return not_an_object(object, "");
+    return notAnObject(object, "");
 }
 
 static inline Json::Value
-not_an_array(std::string const& object)
+notAnArray(std::string const& object)
 {
     return RPC::make_error(rpcINVALID_PARAMS, "Field '" + object + "' is not a JSON array.");
 }
 
 static inline Json::Value
-unknown_field(std::string const& object, std::string const& field)
+unknownField(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' is unknown.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
 static inline Json::Value
-out_of_range(std::string const& object, std::string const& field)
+outOfRange(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' is out of range.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is out of range.");
 }
 
 static inline Json::Value
-bad_type(std::string const& object, std::string const& field)
+badType(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' has bad type.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' has bad type.");
 }
 
 static inline Json::Value
-invalid_data(std::string const& object, std::string const& field)
+invalidData(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' has invalid data.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' has invalid data.");
 }
 
 static inline Json::Value
-invalid_data(std::string const& object)
+invalidData(std::string const& object)
 {
-    return invalid_data(object, "");
+    return invalidData(object, "");
 }
 
 static inline Json::Value
-array_expected(std::string const& object, std::string const& field)
-{
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' must be a JSON array.");
-}
-
-static inline Json::Value
-string_expected(std::string const& object, std::string const& field)
+arrayExpected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + make_name(object, field) + "' must be a string.");
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
 
 static inline Json::Value
-too_deep(std::string const& object)
+stringExpected(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' must be a string.");
+}
+
+static inline Json::Value
+tooDeep(std::string const& object)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
 static inline Json::Value
-singleton_expected(std::string const& object, unsigned int index)
+singletonExpected(std::string const& object, unsigned int index)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS,
@@ -156,7 +156,7 @@ singleton_expected(std::string const& object, unsigned int index)
 }
 
 static inline Json::Value
-template_mismatch(SField const& sField)
+templateMismatch(SField const& sField)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS,
@@ -164,7 +164,7 @@ template_mismatch(SField const& sField)
 }
 
 static inline Json::Value
-non_object_in_array(std::string const& item, Json::UInt index)
+nonObjectInArray(std::string const& item, Json::UInt index)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS,
@@ -197,22 +197,22 @@ parseUnsigned(
         else if (value.isInt())
         {
             ret = detail::make_stvar<STResult>(
-                field, to_unsigned<typename STResult::value_type>(value.asInt()));
+                field, toUnsigned<typename STResult::value_type>(value.asInt()));
         }
         else if (value.isUInt())
         {
             ret = detail::make_stvar<STResult>(
-                field, to_unsigned<typename STResult::value_type>(value.asUInt()));
+                field, toUnsigned<typename STResult::value_type>(value.asUInt()));
         }
         else
         {
-            error = bad_type(jsonName, fieldName);
+            error = badType(jsonName, fieldName);
             return ret;
         }
     }
     catch (std::exception const&)
     {
-        error = invalid_data(jsonName, fieldName);
+        error = invalidData(jsonName, fieldName);
         return ret;
     }
 
@@ -261,7 +261,7 @@ parseUint16(
                 }
                 else
                 {
-                    error = invalid_data(jsonName, fieldName);
+                    error = invalidData(jsonName, fieldName);
                     return ret;
                 }
             }
@@ -271,7 +271,7 @@ parseUint16(
     }
     catch (std::exception const&)
     {
-        error = invalid_data(jsonName, fieldName);
+        error = invalidData(jsonName, fieldName);
         return ret;
     }
 
@@ -323,7 +323,7 @@ parseUint32(
     }
     catch (std::exception const&)
     {
-        error = invalid_data(jsonName, fieldName);
+        error = invalidData(jsonName, fieldName);
         return ret;
     }
 
@@ -348,7 +348,7 @@ parseLeaf(
     if (field == sfInvalid)
     {
         // LCOV_EXCL_START
-        error = unknown_field(jsonName, fieldName);
+        error = unknownField(jsonName, fieldName);
         return ret;
         // LCOV_EXCL_STOP
     }
@@ -372,7 +372,7 @@ parseLeaf(
 
                             if (!ter || TERtoInt(*ter) < minValue || TERtoInt(*ter) > maxValue)
                             {
-                                error = out_of_range(jsonName, fieldName);
+                                error = outOfRange(jsonName, fieldName);
                                 return ret;
                             }
 
@@ -381,7 +381,7 @@ parseLeaf(
                         }
                         else
                         {
-                            error = bad_type(jsonName, fieldName);
+                            error = badType(jsonName, fieldName);
                             return ret;
                         }
                     }
@@ -395,7 +395,7 @@ parseLeaf(
                 {
                     if (value.asInt() < minValue || value.asInt() > maxValue)
                     {
-                        error = out_of_range(jsonName, fieldName);
+                        error = outOfRange(jsonName, fieldName);
                         return ret;
                     }
 
@@ -406,7 +406,7 @@ parseLeaf(
                 {
                     if (value.asUInt() > maxValue)
                     {
-                        error = out_of_range(jsonName, fieldName);
+                        error = outOfRange(jsonName, fieldName);
                         return ret;
                     }
 
@@ -415,13 +415,13 @@ parseLeaf(
                 }
                 else
                 {
-                    error = bad_type(jsonName, fieldName);
+                    error = badType(jsonName, fieldName);
                     return ret;
                 }
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
             break;
@@ -463,7 +463,7 @@ parseLeaf(
                 else if (value.isInt())
                 {
                     ret = detail::make_stvar<STUInt64>(
-                        field, to_unsigned<std::uint64_t>(value.asInt()));
+                        field, toUnsigned<std::uint64_t>(value.asInt()));
                 }
                 else if (value.isUInt())
                 {
@@ -472,13 +472,13 @@ parseLeaf(
                 }
                 else
                 {
-                    error = bad_type(jsonName, fieldName);
+                    error = badType(jsonName, fieldName);
                     return ret;
                 }
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -487,7 +487,7 @@ parseLeaf(
         case STI_UINT128: {
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -497,7 +497,7 @@ parseLeaf(
             {
                 if (!s.empty())
                 {
-                    error = invalid_data(jsonName, fieldName);
+                    error = invalidData(jsonName, fieldName);
                     return ret;
                 }
 
@@ -511,7 +511,7 @@ parseLeaf(
         case STI_UINT160: {
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -521,7 +521,7 @@ parseLeaf(
             {
                 if (!s.empty())
                 {
-                    error = invalid_data(jsonName, fieldName);
+                    error = invalidData(jsonName, fieldName);
                     return ret;
                 }
 
@@ -535,7 +535,7 @@ parseLeaf(
         case STI_UINT192: {
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -545,7 +545,7 @@ parseLeaf(
             {
                 if (!s.empty())
                 {
-                    error = invalid_data(jsonName, fieldName);
+                    error = invalidData(jsonName, fieldName);
                     return ret;
                 }
 
@@ -559,7 +559,7 @@ parseLeaf(
         case STI_UINT256: {
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -569,7 +569,7 @@ parseLeaf(
             {
                 if (!s.empty())
                 {
-                    error = invalid_data(jsonName, fieldName);
+                    error = invalidData(jsonName, fieldName);
                     return ret;
                 }
 
@@ -602,20 +602,20 @@ parseLeaf(
                     if (uintValue >
                         static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max()))
                     {
-                        error = out_of_range(jsonName, fieldName);
+                        error = outOfRange(jsonName, fieldName);
                         return ret;
                     }
                     ret = detail::make_stvar<STInt32>(field, static_cast<std::int32_t>(uintValue));
                 }
                 else
                 {
-                    error = bad_type(jsonName, fieldName);
+                    error = badType(jsonName, fieldName);
                     return ret;
                 }
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -624,7 +624,7 @@ parseLeaf(
         case STI_VL:
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -641,7 +641,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -654,7 +654,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -667,7 +667,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -676,7 +676,7 @@ parseLeaf(
         case STI_VECTOR256:
             if (!value.isArrayOrNull())
             {
-                error = array_expected(jsonName, fieldName);
+                error = arrayExpected(jsonName, fieldName);
                 return ret;
             }
 
@@ -694,7 +694,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -703,7 +703,7 @@ parseLeaf(
         case STI_PATHSET:
             if (!value.isArrayOrNull())
             {
-                error = array_expected(jsonName, fieldName);
+                error = arrayExpected(jsonName, fieldName);
                 return ret;
             }
 
@@ -719,7 +719,7 @@ parseLeaf(
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "]";
-                        error = array_expected(jsonName, ss.str());
+                        error = arrayExpected(jsonName, ss.str());
                         return ret;
                     }
 
@@ -736,7 +736,7 @@ parseLeaf(
 
                         if (!pathEl.isObject())
                         {
-                            error = not_an_object(elementName);
+                            error = notAnObject(elementName);
                             return ret;
                         }
 
@@ -749,7 +749,7 @@ parseLeaf(
 
                         if (!account && !currency && !issuer)
                         {
-                            error = invalid_data(elementName);
+                            error = invalidData(elementName);
                             return ret;
                         }
 
@@ -758,7 +758,7 @@ parseLeaf(
                             // human account id
                             if (!account.isString())
                             {
-                                error = string_expected(elementName, "account");
+                                error = stringExpected(elementName, "account");
                                 return ret;
                             }
 
@@ -769,7 +769,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(account.asString());
                                 if (!a)
                                 {
-                                    error = invalid_data(elementName, "account");
+                                    error = invalidData(elementName, "account");
                                     return ret;
                                 }
                                 uAccount = *a;
@@ -781,7 +781,7 @@ parseLeaf(
                             // human currency
                             if (!currency.isString())
                             {
-                                error = string_expected(elementName, "currency");
+                                error = stringExpected(elementName, "currency");
                                 return ret;
                             }
 
@@ -791,7 +791,7 @@ parseLeaf(
                             {
                                 if (!to_currency(uCurrency, currency.asString()))
                                 {
-                                    error = invalid_data(elementName, "currency");
+                                    error = invalidData(elementName, "currency");
                                     return ret;
                                 }
                             }
@@ -802,7 +802,7 @@ parseLeaf(
                             // human account id
                             if (!issuer.isString())
                             {
-                                error = string_expected(elementName, "issuer");
+                                error = stringExpected(elementName, "issuer");
                                 return ret;
                             }
 
@@ -811,7 +811,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(issuer.asString());
                                 if (!a)
                                 {
-                                    error = invalid_data(elementName, "issuer");
+                                    error = invalidData(elementName, "issuer");
                                     return ret;
                                 }
                                 uIssuer = *a;
@@ -827,7 +827,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
 
@@ -836,7 +836,7 @@ parseLeaf(
         case STI_ACCOUNT: {
             if (!value.isString())
             {
-                error = bad_type(jsonName, fieldName);
+                error = badType(jsonName, fieldName);
                 return ret;
             }
 
@@ -850,12 +850,12 @@ parseLeaf(
                 if (auto result = parseBase58<AccountID>(strValue))
                     return detail::make_stvar<STAccount>(field, *result);
 
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
         }
@@ -868,7 +868,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
             break;
@@ -880,7 +880,7 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
             break;
@@ -892,13 +892,13 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                error = invalid_data(jsonName, fieldName);
+                error = invalidData(jsonName, fieldName);
                 return ret;
             }
             break;
 
         default:
-            error = bad_type(jsonName, fieldName);
+            error = badType(jsonName, fieldName);
             return ret;
     }
 
@@ -926,13 +926,13 @@ parseObject(
 {
     if (!json.isObjectOrNull())
     {
-        error = not_an_object(jsonName);
+        error = notAnObject(jsonName);
         return std::nullopt;
     }
 
     if (depth > maxDepth)
     {
-        error = too_deep(jsonName);
+        error = tooDeep(jsonName);
         return std::nullopt;
     }
 
@@ -948,7 +948,7 @@ parseObject(
 
             if (field == sfInvalid)
             {
-                error = unknown_field(jsonName, fieldName);
+                error = unknownField(jsonName, fieldName);
                 return std::nullopt;
             }
 
@@ -961,7 +961,7 @@ parseObject(
                 case STI_VALIDATION:
                     if (!value.isObject())
                     {
-                        error = not_an_object(jsonName, fieldName);
+                        error = notAnObject(jsonName, fieldName);
                         return std::nullopt;
                     }
 
@@ -975,7 +975,7 @@ parseObject(
                     }
                     catch (std::exception const&)
                     {
-                        error = invalid_data(jsonName, fieldName);
+                        error = invalidData(jsonName, fieldName);
                         return std::nullopt;
                     }
 
@@ -993,7 +993,7 @@ parseObject(
                     }
                     catch (std::exception const&)
                     {
-                        error = invalid_data(jsonName, fieldName);
+                        error = invalidData(jsonName, fieldName);
                         return std::nullopt;
                     }
 
@@ -1021,11 +1021,11 @@ parseObject(
     catch (STObject::FieldErr const& e)
     {
         std::cerr << "template_mismatch: " << e.what() << "\n";
-        error = template_mismatch(inName);
+        error = templateMismatch(inName);
     }
     catch (std::exception const&)
     {
-        error = invalid_data(jsonName);
+        error = invalidData(jsonName);
     }
     return std::nullopt;
 }
@@ -1040,13 +1040,13 @@ parseArray(
 {
     if (!json.isArrayOrNull())
     {
-        error = not_an_array(jsonName);
+        error = notAnArray(jsonName);
         return std::nullopt;
     }
 
     if (depth > maxDepth)
     {
-        error = too_deep(jsonName);
+        error = tooDeep(jsonName);
         return std::nullopt;
     }
 
@@ -1062,7 +1062,7 @@ parseArray(
             if (!isObjectOrNull || !singleKey)
             {
                 // null values are !singleKey
-                error = singleton_expected(jsonName, i);
+                error = singletonExpected(jsonName, i);
                 return std::nullopt;
             }
 
@@ -1075,7 +1075,7 @@ parseArray(
 
             if (nameField == sfInvalid)
             {
-                error = unknown_field(jsonName, objectName);
+                error = unknownField(jsonName, objectName);
                 return std::nullopt;
             }
 
@@ -1095,7 +1095,7 @@ parseArray(
             if (ret->getFName().fieldType != STI_OBJECT)
             {
                 ss << "Field type: " << ret->getFName().fieldType << " ";
-                error = non_object_in_array(ss.str(), i);
+                error = nonObjectInArray(ss.str(), i);
                 return std::nullopt;
             }
 
@@ -1106,7 +1106,7 @@ parseArray(
     }
     catch (std::exception const&)
     {
-        error = invalid_data(jsonName);
+        error = invalidData(jsonName);
         return std::nullopt;
     }
 }

@@ -88,9 +88,9 @@ class RandomAccountParams
     std::uint32_t const initialBalance_;
 
     // probability of changing a value from its default
-    constexpr static double probChangeDefault_ = 0.75;
+    constexpr static double probChangeDefault = 0.75;
     // probability that an account redeems into another account
-    constexpr static double probRedeem_ = 0.5;
+    constexpr static double probRedeem = 0.5;
     std::uniform_real_distribution<> zeroOneDist_{0.0, 1.0};
     std::uniform_real_distribution<> transferRateDist_{1.0, 2.0};
     std::uniform_real_distribution<> qualityPercentDist_{80, 120};
@@ -98,7 +98,7 @@ class RandomAccountParams
     bool
     shouldSet()
     {
-        return zeroOneDist_(engine_) <= probChangeDefault_;
+        return zeroOneDist_(engine_) <= probChangeDefault;
     };
 
     void
@@ -169,7 +169,7 @@ public:
         Currency const& currency)
     {
         using namespace jtx;
-        if (zeroOneDist_(engine_) > probRedeem_)
+        if (zeroOneDist_(engine_) > probRedeem)
             return;
         setInitialBalance(env, acc, peer, currency);
     }

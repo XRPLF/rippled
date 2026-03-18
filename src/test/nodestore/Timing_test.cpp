@@ -31,7 +31,7 @@ namespace xrpl {
 namespace NodeStore {
 
 std::unique_ptr<Backend>
-make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
+makeBackend(Section const& config, Scheduler& scheduler, beast::Journal journal)
 {
     return Manager::instance().make_Backend(config, megabytes(4), scheduler, journal);
 }
@@ -142,7 +142,7 @@ public:
     };
 
     static std::string
-    to_string(Section const& config)
+    toString(Section const& config)
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
@@ -151,7 +151,7 @@ public:
     }
 
     static std::string
-    to_string(duration_type const& d)
+    toString(duration_type const& d)
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(3) << (d.count() / 1000.) << "s";
@@ -207,7 +207,7 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
+    parallelFor(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
@@ -220,7 +220,7 @@ public:
 
     template <class Body, class... Args>
     void
-    parallel_for_id(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
+    parallelForId(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
@@ -235,10 +235,10 @@ public:
 
     // Insert only
     void
-    do_insert(Section const& config, Params const& params, beast::Journal journal)
+    doInsert(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -270,7 +270,7 @@ public:
 
         try
         {
-            parallel_for<Body>(params.items, params.threads, std::ref(*this), std::ref(*backend));
+            parallelFor<Body>(params.items, params.threads, std::ref(*this), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -284,10 +284,10 @@ public:
 
     // Fetch existing keys
     void
-    do_fetch(Section const& config, Params const& params, beast::Journal journal)
+    doFetch(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -325,7 +325,7 @@ public:
         };
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -344,10 +344,10 @@ public:
 
     // Perform lookups of non-existent keys
     void
-    do_missing(Section const& config, Params const& params, beast::Journal journal)
+    doMissing(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -391,7 +391,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -410,10 +410,10 @@ public:
 
     // Fetch with present and missing keys
     void
-    do_mixed(Section const& config, Params const& params, beast::Journal journal)
+    doMixed(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -472,7 +472,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -495,10 +495,10 @@ public:
     //      fetches an old key
     //      fetches recent, possibly non existent data
     void
-    do_work(Section const& config, Params const& params, beast::Journal journal)
+    doWork(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->setDeletePath();
         backend->open();
@@ -582,7 +582,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -605,7 +605,7 @@ public:
     using test_list = std::vector<std::pair<std::string, test_func>>;
 
     duration_type
-    do_test(test_func f, Section const& config, Params const& params, beast::Journal journal)
+    doTest(test_func f, Section const& config, Params const& params, beast::Journal journal)
     {
         auto const start = clock_type::now();
         (this->*f)(config, params, journal);
@@ -613,7 +613,7 @@ public:
     }
 
     void
-    do_tests(
+    doTests(
         std::size_t threads,
         test_list const& tests,
         std::vector<std::string> const& configStrings)
@@ -649,9 +649,8 @@ public:
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
-                    ss << " " << setw(w)
-                       << to_string(do_test(test.second, config, params, journal));
-                ss << "   " << to_string(config);
+                    ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));
+                ss << "   " << toString(config);
                 log << ss.str() << std::endl;
             }
         }
@@ -680,11 +679,11 @@ public:
             ;
 
         test_list const tests = {
-            {"Insert", &Timing_test::do_insert},
-            {"Fetch", &Timing_test::do_fetch},
-            {"Missing", &Timing_test::do_missing},
-            {"Mixed", &Timing_test::do_mixed},
-            {"Work", &Timing_test::do_work}};
+            {"Insert", &Timing_test::doInsert},
+            {"Fetch", &Timing_test::doFetch},
+            {"Missing", &Timing_test::doMissing},
+            {"Mixed", &Timing_test::doMixed},
+            {"Work", &Timing_test::doWork}};
 
         auto args = arg().empty() ? defaultArgs : arg();
         std::vector<std::string> configStrings;
@@ -695,9 +694,9 @@ public:
             else
                 ++iter;
 
-        do_tests(1, tests, configStrings);
-        do_tests(4, tests, configStrings);
-        do_tests(8, tests, configStrings);
+        doTests(1, tests, configStrings);
+        doTests(4, tests, configStrings);
+        doTests(8, tests, configStrings);
         // do_tests (16, tests, config_strings);
     }
 };

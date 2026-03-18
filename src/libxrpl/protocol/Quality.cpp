@@ -53,7 +53,7 @@ Quality::operator--(int)
 
 template <STAmount (*DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.in > limit)
     {
@@ -71,18 +71,18 @@ ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality
 Amounts
 Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_in_impl<divRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
 Quality::ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_in_impl<divRoundStrict>(amount, limit, roundUp, *this);
+    return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
 template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_out_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.out > limit)
     {
@@ -100,13 +100,13 @@ ceil_out_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Qualit
 Amounts
 Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_out_impl<mulRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
 Quality::ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_out_impl<mulRoundStrict>(amount, limit, roundUp, *this);
+    return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality

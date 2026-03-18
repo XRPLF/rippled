@@ -177,7 +177,7 @@ public:
     typedef std::milli period;
     typedef std::chrono::duration<std::uint32_t, period> duration;
     typedef std::chrono::time_point<ManualClock> time_point;
-    inline static bool const is_steady = false;
+    inline static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 
     static void
     advance(duration d) noexcept
@@ -308,7 +308,7 @@ public:
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
-        id_ = sid_++;
+        id_ = sid++;
     }
     Validator(Validator const&) = default;
     Validator(Validator&&) = default;
@@ -330,7 +330,7 @@ public:
     static void
     resetId()
     {
-        sid_ = 0;
+        sid = 0;
     }
 
     PublicKey const&
@@ -357,7 +357,7 @@ public:
     }
 
     void
-    for_links(std::vector<Peer::id_t> peers, LinkIterCB f)
+    forLinks(std::vector<Peer::id_t> peers, LinkIterCB f)
     {
         for (auto id : peers)
         {
@@ -367,7 +367,7 @@ public:
     }
 
     void
-    for_links(LinkIterCB f, bool simulateSlow = false)
+    forLinks(LinkIterCB f, bool simulateSlow = false)
     {
         std::vector<LinkSPtr> v;
         std::transform(links_.begin(), links_.end(), std::back_inserter(v), [](auto& kv) {
@@ -387,14 +387,14 @@ public:
     void
     send(std::vector<Peer::id_t> peers, SquelchCB f)
     {
-        for_links(peers, [&](Link& link, MessageSPtr m) { link.send(m, f); });
+        forLinks(peers, [&](Link& link, MessageSPtr m) { link.send(m, f); });
     }
 
     /** Send to all peers */
     void
     send(SquelchCB f)
     {
-        for_links([&](Link& link, MessageSPtr m) { link.send(m, f); });
+        forLinks([&](Link& link, MessageSPtr m) { link.send(m, f); });
     }
 
     MessageSPtr
@@ -429,7 +429,7 @@ private:
     Links links_;
     PublicKey pkey_;
     MessageSPtr message_ = nullptr;
-    inline static std::uint16_t sid_ = 0;
+    inline static std::uint16_t sid = 0;
     std::uint16_t id_ = 0;
 };
 
@@ -439,7 +439,7 @@ public:
     using id_t = Peer::id_t;
     PeerSim(Overlay& overlay, beast::Journal journal) : overlay_(overlay), squelch_(journal)
     {
-        id_ = sid_++;
+        id_ = sid++;
     }
 
     ~PeerSim() = default;
@@ -459,7 +459,7 @@ public:
     static void
     resetId()
     {
-        sid_ = 0;
+        sid = 0;
     }
 
     /** Local Peer (PeerImp) */
@@ -488,7 +488,7 @@ public:
     }
 
 private:
-    inline static id_t sid_ = 0;
+    inline static id_t sid = 0;
     std::string fingerprint_;
     id_t id_;
     Overlay& overlay_;
@@ -771,14 +771,14 @@ public:
             PublicKey key = v;
             squelch.clear_validatorpubkey();
             squelch.set_validatorpubkey(key.data(), key.size());
-            v.for_links({peer}, [&](Link& l, MessageSPtr) {
+            v.forLinks({peer}, [&](Link& l, MessageSPtr) {
                 std::dynamic_pointer_cast<PeerSim>(l.getPeer())->send(squelch);
             });
         }
     }
 
     void
-    for_rand(std::uint32_t min, std::uint32_t max, std::function<void(std::uint32_t)> f)
+    forRand(std::uint32_t min, std::uint32_t max, std::function<void(std::uint32_t)> f)
     {
         auto size = max - min;
         std::vector<std::uint32_t> s(size);
@@ -810,7 +810,7 @@ public:
         for (int m = 0; m < nMessages; ++m)
         {
             ManualClock::randAdvance(milliseconds(1800), milliseconds(2200));
-            for_rand(0, nValidators, [&](std::uint32_t v) { validators_[v].for_links(link); });
+            forRand(0, nValidators, [&](std::uint32_t v) { validators_[v].forLinks(link); });
         }
     }
 

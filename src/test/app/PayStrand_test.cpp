@@ -234,7 +234,7 @@ public:
 
     template <class Col, class AccFactory, class IssFactory, class CurrencyFactory>
     void
-    emplace_into(
+    emplaceInto(
         Col& col,
         AccFactory&& accF,
         IssFactory&& issF,
@@ -519,7 +519,7 @@ struct ExistingElementPool
 
     template <class F>
     void
-    for_each_element_pair(
+    forEachElementPair(
         STAmount const& sendMax,
         STAmount const& deliver,
         std::vector<STPathElement> const& prefix,
@@ -545,7 +545,7 @@ struct ExistingElementPool
         {
             StateGuard og{*this};
             outerResult = prefix;
-            outer.emplace_into(
+            outer.emplaceInto(
                 outerResult, accF, issF, currencyF, existingAcc, existingCur, existingIss);
             STPathElement const* prevInner = &outerResult.back();
             ElementComboIter inner(prevInner);
@@ -553,7 +553,7 @@ struct ExistingElementPool
             {
                 StateGuard ig{*this};
                 result = outerResult;
-                inner.emplace_into(
+                inner.emplaceInto(
                     result, accF, issF, currencyF, existingAcc, existingCur, existingIss);
                 result.insert(result.end(), suffix.begin(), suffix.end());
                 f(sendMax, deliver, result);

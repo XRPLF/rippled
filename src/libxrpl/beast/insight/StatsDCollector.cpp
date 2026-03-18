@@ -51,7 +51,7 @@ class StatsDMetricBase : public List<StatsDMetricBase>::Node
 {
 public:
     virtual void
-    do_process() = 0;
+    doProcess() = 0;
     virtual ~StatsDMetricBase() = default;
     StatsDMetricBase() = default;
     StatsDMetricBase(StatsDMetricBase const&) = delete;
@@ -69,7 +69,7 @@ public:
     ~StatsDHookImpl() override;
 
     void
-    do_process() override;
+    doProcess() override;
 
 private:
     StatsDHookImpl&
@@ -94,9 +94,9 @@ public:
     void
     flush();
     void
-    do_increment(CounterImpl::value_type amount);
+    doIncrement(CounterImpl::value_type amount);
     void
-    do_process() override;
+    doProcess() override;
 
 private:
     StatsDCounterImpl&
@@ -121,9 +121,9 @@ public:
     notify(EventImpl::value_type const& value) override;
 
     void
-    do_notify(EventImpl::value_type const& value);
+    doNotify(EventImpl::value_type const& value);
     void
-    do_process();
+    doProcess();
 
 private:
     StatsDEventImpl&
@@ -150,11 +150,11 @@ public:
     void
     flush();
     void
-    do_set(GaugeImpl::value_type value);
+    doSet(GaugeImpl::value_type value);
     void
-    do_increment(GaugeImpl::difference_type amount);
+    doIncrement(GaugeImpl::difference_type amount);
     void
-    do_process() override;
+    doProcess() override;
 
 private:
     StatsDGaugeImpl&
@@ -184,9 +184,9 @@ public:
     void
     flush();
     void
-    do_increment(MeterImpl::value_type amount);
+    doIncrement(MeterImpl::value_type amount);
     void
-    do_process() override;
+    doProcess() override;
 
 private:
     StatsDMeterImpl&
@@ -225,7 +225,7 @@ private:
     std::thread thread_;
 
     static boost::asio::ip::udp::endpoint
-    to_endpoint(IP::Endpoint const& ep)
+    toEndpoint(IP::Endpoint const& ep)
     {
         return boost::asio::ip::udp::endpoint(ep.address(), ep.port());
     }
@@ -307,7 +307,7 @@ public:
     //--------------------------------------------------------------------------
 
     boost::asio::io_context&
-    get_io_context()
+    getIoContext()
     {
         return io_context_;
     }
@@ -319,24 +319,24 @@ public:
     }
 
     void
-    do_post_buffer(std::string const& buffer)
+    doPostBuffer(std::string const& buffer)
     {
         data_.emplace_back(buffer);
     }
 
     void
-    post_buffer(std::string&& buffer)
+    postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
             io_context_,
             boost::asio::bind_executor(
-                strand_, std::bind(&StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
+                strand_, std::bind(&StatsDCollectorImp::doPostBuffer, this, std::move(buffer))));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
     // boost::asio::async_send do not go away until the call is finished
     void
-    on_send(
+    onSend(
         std::shared_ptr<std::deque<std::string>> /*keepAlive*/,
         boost::system::error_code ec,
         std::size_t)
@@ -368,7 +368,7 @@ public:
 
     // Send what we have
     void
-    send_buffers()
+    sendBuffers()
     {
         if (data_.empty())
             return;
@@ -396,7 +396,7 @@ public:
                 socket_.async_send(
                     buffers,
                     std::bind(
-                        &StatsDCollectorImp::on_send,
+                        &StatsDCollectorImp::onSend,
                         this,
                         keepAlive,
                         std::placeholders::_1,
@@ -415,7 +415,7 @@ public:
             socket_.async_send(
                 buffers,
                 std::bind(
-                    &StatsDCollectorImp::on_send,
+                    &StatsDCollectorImp::onSend,
                     this,
                     keepAlive,
                     std::placeholders::_1,
@@ -424,15 +424,15 @@ public:
     }
 
     void
-    set_timer()
+    setTimer()
     {
         using namespace std::chrono_literals;
         timer_.expires_after(1s);
-        timer_.async_wait(std::bind(&StatsDCollectorImp::on_timer, this, std::placeholders::_1));
+        timer_.async_wait(std::bind(&StatsDCollectorImp::onTimer, this, std::placeholders::_1));
     }
 
     void
-    on_timer(boost::system::error_code ec)
+    onTimer(boost::system::error_code ec)
     {
         if (ec == boost::asio::error::operation_aborted)
             return;
@@ -447,11 +447,11 @@ public:
         std::lock_guard _(metricsLock_);
 
         for (auto& m : metrics_)
-            m.do_process();
+            m.doProcess();
 
-        send_buffers();
+        sendBuffers();
 
-        set_timer();
+        setTimer();
     }
 
     void
@@ -459,14 +459,14 @@ public:
     {
         boost::system::error_code ec;
 
-        if (socket_.connect(to_endpoint(address_), ec))
+        if (socket_.connect(toEndpoint(address_), ec))
         {
             if (auto stream = journal_.error())
                 stream << "Connect failed: " << ec.message();
             return;
         }
 
-        set_timer();
+        setTimer();
 
         io_context_.run();
 
@@ -495,7 +495,7 @@ StatsDHookImpl::~StatsDHookImpl()
 }
 
 void
-StatsDHookImpl::do_process()
+StatsDHookImpl::doProcess()
 {
     handler_();
 }
@@ -519,9 +519,9 @@ void
 StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
     boost::asio::dispatch(
-        impl_->get_io_context(),
+        impl_->getIoContext(),
         std::bind(
-            &StatsDCounterImpl::do_increment,
+            &StatsDCounterImpl::doIncrement,
             std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
             amount));
 }
@@ -536,19 +536,19 @@ StatsDCounterImpl::flush()
         ss << impl_->prefix() << "." << name_ << ":" << value_ << "|c"
            << "\n";
         value_ = 0;
-        impl_->post_buffer(ss.str());
+        impl_->postBuffer(ss.str());
     }
 }
 
 void
-StatsDCounterImpl::do_increment(CounterImpl::value_type amount)
+StatsDCounterImpl::doIncrement(CounterImpl::value_type amount)
 {
     value_ += amount;
     dirty_ = true;
 }
 
 void
-StatsDCounterImpl::do_process()
+StatsDCounterImpl::doProcess()
 {
     flush();
 }
@@ -566,20 +566,20 @@ void
 StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
     boost::asio::dispatch(
-        impl_->get_io_context(),
+        impl_->getIoContext(),
         std::bind(
-            &StatsDEventImpl::do_notify,
+            &StatsDEventImpl::doNotify,
             std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
             value));
 }
 
 void
-StatsDEventImpl::do_notify(EventImpl::value_type const& value)
+StatsDEventImpl::doNotify(EventImpl::value_type const& value)
 {
     std::stringstream ss;
     ss << impl_->prefix() << "." << name_ << ":" << value.count() << "|ms"
        << "\n";
-    impl_->post_buffer(ss.str());
+    impl_->postBuffer(ss.str());
 }
 
 //------------------------------------------------------------------------------
@@ -601,9 +601,9 @@ void
 StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
     boost::asio::dispatch(
-        impl_->get_io_context(),
+        impl_->getIoContext(),
         std::bind(
-            &StatsDGaugeImpl::do_set,
+            &StatsDGaugeImpl::doSet,
             std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
             value));
 }
@@ -612,9 +612,9 @@ void
 StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
     boost::asio::dispatch(
-        impl_->get_io_context(),
+        impl_->getIoContext(),
         std::bind(
-            &StatsDGaugeImpl::do_increment,
+            &StatsDGaugeImpl::doIncrement,
             std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
             amount));
 }
@@ -628,12 +628,12 @@ StatsDGaugeImpl::flush()
         std::stringstream ss;
         ss << impl_->prefix() << "." << name_ << ":" << value_ << "|g"
            << "\n";
-        impl_->post_buffer(ss.str());
+        impl_->postBuffer(ss.str());
     }
 }
 
 void
-StatsDGaugeImpl::do_set(GaugeImpl::value_type value)
+StatsDGaugeImpl::doSet(GaugeImpl::value_type value)
 {
     value_ = value;
 
@@ -645,7 +645,7 @@ StatsDGaugeImpl::do_set(GaugeImpl::value_type value)
 }
 
 void
-StatsDGaugeImpl::do_increment(GaugeImpl::difference_type amount)
+StatsDGaugeImpl::doIncrement(GaugeImpl::difference_type amount)
 {
     GaugeImpl::value_type value(value_);
 
@@ -662,11 +662,11 @@ StatsDGaugeImpl::do_increment(GaugeImpl::difference_type amount)
         value = (d >= value) ? 0 : value - d;
     }
 
-    do_set(value);
+    doSet(value);
 }
 
 void
-StatsDGaugeImpl::do_process()
+StatsDGaugeImpl::doProcess()
 {
     flush();
 }
@@ -690,9 +690,9 @@ void
 StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
     boost::asio::dispatch(
-        impl_->get_io_context(),
+        impl_->getIoContext(),
         std::bind(
-            &StatsDMeterImpl::do_increment,
+            &StatsDMeterImpl::doIncrement,
             std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
             amount));
 }
@@ -707,19 +707,19 @@ StatsDMeterImpl::flush()
         ss << impl_->prefix() << "." << name_ << ":" << value_ << "|m"
            << "\n";
         value_ = 0;
-        impl_->post_buffer(ss.str());
+        impl_->postBuffer(ss.str());
     }
 }
 
 void
-StatsDMeterImpl::do_increment(MeterImpl::value_type amount)
+StatsDMeterImpl::doIncrement(MeterImpl::value_type amount)
 {
     value_ += amount;
     dirty_ = true;
 }
 
 void
-StatsDMeterImpl::do_process()
+StatsDMeterImpl::doProcess()
 {
     flush();
 }

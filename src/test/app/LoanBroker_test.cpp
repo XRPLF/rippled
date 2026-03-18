@@ -1483,7 +1483,7 @@ class LoanBroker_test : public beast::unit_test::suite
     }
 
     void
-    testAMB06_VaultFreezeCheckMissing()
+    testAmB06VaultFreezeCheckMissing()
     {
         testcase << "RIPD-4466 - LoanBrokerSet disallows frozen vaults";
         using namespace jtx;
@@ -1771,7 +1771,7 @@ public:
         testRequireAuth();
 
         testRIPD4323();
-        testAMB06_VaultFreezeCheckMissing();
+        testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
 

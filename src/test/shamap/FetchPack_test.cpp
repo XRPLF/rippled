@@ -67,7 +67,7 @@ public:
     };
 
     boost::intrusive_ptr<Item>
-    make_random_item_member(beast::xor_shift_engine& r)
+    makeRandomItemMember(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
@@ -76,19 +76,18 @@ public:
     }
 
     void
-    add_random_items_(std::size_t n, Table& t, beast::xor_shift_engine& r)
+    addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
         while (n--)
         {
-            auto const result(
-                t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item_member(r)));
+            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomItemMember(r)));
             assert(result);
             (void)result;
         }
     }
 
     void
-    on_fetch(Map& map, SHAMapHash const& hash, Blob const& blob)
+    onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
         BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
         map.emplace(hash, blob);

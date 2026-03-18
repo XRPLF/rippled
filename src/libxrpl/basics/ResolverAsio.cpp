@@ -187,7 +187,7 @@ public:
             boost::asio::dispatch(
                 io_context,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::do_stop, this, CompletionCounter(this))));
+                    strand, std::bind(&ResolverAsioImpl::doStop, this, CompletionCounter(this))));
 
             JLOG(journal.debug()) << "Queued a stop request";
         }
@@ -218,13 +218,13 @@ public:
             boost::asio::bind_executor(
                 strand,
                 std::bind(
-                    &ResolverAsioImpl::do_resolve, this, names, handler, CompletionCounter(this))));
+                    &ResolverAsioImpl::doResolve, this, names, handler, CompletionCounter(this))));
     }
 
     //-------------------------------------------------------------------------
     // Resolver
     void
-    do_stop(CompletionCounter)
+    doStop(CompletionCounter)
     {
         XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
@@ -238,7 +238,7 @@ public:
     }
 
     void
-    do_finish(
+    doFinish(
         std::string name,
         boost::system::error_code const& ec,
         HandlerType handler,
@@ -267,7 +267,7 @@ public:
         boost::asio::post(
             io_context,
             boost::asio::bind_executor(
-                strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
     }
 
     HostAndPort
@@ -316,7 +316,7 @@ public:
     }
 
     void
-    do_work(CompletionCounter)
+    doWork(CompletionCounter)
     {
         if (stop_called == true)
             return;
@@ -342,7 +342,7 @@ public:
             boost::asio::post(
                 io_context,
                 boost::asio::bind_executor(
-                    strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                    strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
 
             return;
         }
@@ -351,7 +351,7 @@ public:
             host,
             port,
             std::bind(
-                &ResolverAsioImpl::do_finish,
+                &ResolverAsioImpl::doFinish,
                 this,
                 name,
                 std::placeholders::_1,
@@ -361,7 +361,7 @@ public:
     }
 
     void
-    do_resolve(std::vector<std::string> const& names, HandlerType const& handler, CompletionCounter)
+    doResolve(std::vector<std::string> const& names, HandlerType const& handler, CompletionCounter)
     {
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
@@ -378,7 +378,7 @@ public:
                     io_context,
                     boost::asio::bind_executor(
                         strand,
-                        std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+                        std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
             }
         }
     }

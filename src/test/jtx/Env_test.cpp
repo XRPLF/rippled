@@ -22,7 +22,7 @@ class Env_test : public beast::unit_test::suite
 public:
     template <class T>
     static std::string
-    to_string(T const& t)
+    toString(T const& t)
     {
         return boost::lexical_cast<std::string>(t);
     }
@@ -86,19 +86,19 @@ public:
             pass();
         }
 
-        BEAST_EXPECT(to_string(XRP(5)) == "5 XRP");
-        BEAST_EXPECT(to_string(XRP(.80)) == "0.8 XRP");
-        BEAST_EXPECT(to_string(XRP(.005)) == "5000 drops");
-        BEAST_EXPECT(to_string(XRP(0.1)) == "0.1 XRP");
-        BEAST_EXPECT(to_string(XRP(10000)) == "10000 XRP");
-        BEAST_EXPECT(to_string(drops(10)) == "10 drops");
-        BEAST_EXPECT(to_string(drops(123400000)) == "123.4 XRP");
-        BEAST_EXPECT(to_string(XRP(-5)) == "-5 XRP");
-        BEAST_EXPECT(to_string(XRP(-.99)) == "-0.99 XRP");
-        BEAST_EXPECT(to_string(XRP(-.005)) == "-5000 drops");
-        BEAST_EXPECT(to_string(XRP(-0.1)) == "-0.1 XRP");
-        BEAST_EXPECT(to_string(drops(-10)) == "-10 drops");
-        BEAST_EXPECT(to_string(drops(-123400000)) == "-123.4 XRP");
+        BEAST_EXPECT(toString(XRP(5)) == "5 XRP");
+        BEAST_EXPECT(toString(XRP(.80)) == "0.8 XRP");
+        BEAST_EXPECT(toString(XRP(.005)) == "5000 drops");
+        BEAST_EXPECT(toString(XRP(0.1)) == "0.1 XRP");
+        BEAST_EXPECT(toString(XRP(10000)) == "10000 XRP");
+        BEAST_EXPECT(toString(drops(10)) == "10 drops");
+        BEAST_EXPECT(toString(drops(123400000)) == "123.4 XRP");
+        BEAST_EXPECT(toString(XRP(-5)) == "-5 XRP");
+        BEAST_EXPECT(toString(XRP(-.99)) == "-0.99 XRP");
+        BEAST_EXPECT(toString(XRP(-.005)) == "-5000 drops");
+        BEAST_EXPECT(toString(XRP(-0.1)) == "-0.1 XRP");
+        BEAST_EXPECT(toString(drops(-10)) == "-10 drops");
+        BEAST_EXPECT(toString(drops(-123400000)) == "-123.4 XRP");
 
         BEAST_EXPECT(XRP(1) == drops(1000000));
         BEAST_EXPECT(XRP(1) == STAmount(1000000));
@@ -106,9 +106,9 @@ public:
 
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        BEAST_EXPECT(to_string(usd(0)) == "0/USD(gw)");
-        BEAST_EXPECT(to_string(usd(10)) == "10/USD(gw)");
-        BEAST_EXPECT(to_string(usd(-10)) == "-10/USD(gw)");
+        BEAST_EXPECT(toString(usd(0)) == "0/USD(gw)");
+        BEAST_EXPECT(toString(usd(10)) == "10/USD(gw)");
+        BEAST_EXPECT(toString(usd(-10)) == "-10/USD(gw)");
         BEAST_EXPECT(usd(0) == STAmount(usd, 0));
         BEAST_EXPECT(usd(1) == STAmount(usd, 1));
         BEAST_EXPECT(usd(-1) == STAmount(usd, -1));
@@ -174,8 +174,8 @@ public:
             BEAST_EXPECT(env.balance(gw) == n);
             env.trust(usd(1000), alice);
             env(pay(gw, alice, usd(10)));
-            BEAST_EXPECT(to_string(env.balance("alice", usd)) == "10/USD(gw)");
-            BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(toString(env.balance("alice", usd)) == "10/USD(gw)");
+            BEAST_EXPECT(toString(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq

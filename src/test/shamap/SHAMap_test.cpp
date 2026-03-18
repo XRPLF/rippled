@@ -89,7 +89,7 @@ class SHAMap_test : public beast::unit_test::suite
 {
 public:
     static Buffer
-    IntToVUC(int v)
+    intToVuc(int v)
     {
         Buffer vuc(32);
         std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
@@ -128,11 +128,11 @@ public:
         if (!backed)
             sMap.setUnbacked();
 
-        auto i1 = make_shamapitem(h1, IntToVUC(1));
-        auto i2 = make_shamapitem(h2, IntToVUC(2));
-        auto i3 = make_shamapitem(h3, IntToVUC(3));
-        auto i4 = make_shamapitem(h4, IntToVUC(4));
-        auto i5 = make_shamapitem(h5, IntToVUC(5));
+        auto i1 = make_shamapitem(h1, intToVuc(1));
+        auto i2 = make_shamapitem(h2, intToVuc(2));
+        auto i3 = make_shamapitem(h3, intToVuc(3));
+        auto i4 = make_shamapitem(h4, intToVuc(4));
+        auto i5 = make_shamapitem(h5, intToVuc(5));
 
         unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)), "no add");
         sMap.invariants();
@@ -255,7 +255,7 @@ public:
             for (int k = 0; k < keys.size(); ++k)
             {
                 BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
+                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], intToVuc(k))));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -306,7 +306,7 @@ public:
                 map.setUnbacked();
             for (auto const& k : keys)
             {
-                map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, IntToVUC(0)));
+                map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, intToVuc(0)));
                 map.invariants();
             }
 

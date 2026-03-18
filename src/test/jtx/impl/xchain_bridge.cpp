@@ -34,7 +34,7 @@ bridge(
 
 // use this for creating a bridge for a rpc query
 Json::Value
-bridge_rpc(
+bridgeRpc(
     Account const& lockingChainDoor,
     Issue const& lockingChainIssue,
     Account const& issuingChainDoor,
@@ -358,7 +358,7 @@ XChainBridgeObjects::XChainBridgeObjects()
     , scuGw("scuGw")
     , mcUSD(mcGw["USD"])
     , scUSD(scGw["USD"])
-    , jvXRPBridgeRPC(bridge_rpc(mcDoor, xrpIssue(), Account::master, xrpIssue()))
+    , jvXRPBridgeRPC(bridgeRpc(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvb(bridge(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvub(bridge(mcuDoor, xrpIssue(), Account::master, xrpIssue()))
     , features(testable_amendments() | FeatureBitset{featureXChainBridge})

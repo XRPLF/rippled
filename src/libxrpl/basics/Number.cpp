@@ -75,11 +75,11 @@ public:
 
     // set & test the sign bit
     void
-    set_positive() noexcept;
+    setPositive() noexcept;
     void
-    set_negative() noexcept;
+    setNegative() noexcept;
     bool
-    is_negative() const noexcept;
+    isNegative() const noexcept;
 
     // add a digit
     template <class T>
@@ -126,19 +126,19 @@ private:
 };
 
 inline void
-Number::Guard::set_positive() noexcept
+Number::Guard::setPositive() noexcept
 {
     sbit_ = 0;
 }
 
 inline void
-Number::Guard::set_negative() noexcept
+Number::Guard::setNegative() noexcept
 {
     sbit_ = 1;
 }
 
 inline bool
-Number::Guard::is_negative() const noexcept
+Number::Guard::isNegative() const noexcept
 {
     return sbit_ == 1;
 }
@@ -300,7 +300,7 @@ Number::Guard::doRound(rep& drops, std::string location)
         }
         ++drops;
     }
-    if (is_negative())
+    if (isNegative())
         drops = -drops;
 }
 
@@ -387,7 +387,7 @@ doNormalize(
     }
     Guard g;
     if (negative)
-        g.set_negative();
+        g.setNegative();
     while (m > maxMantissa)
     {
         if (exponent >= maxExponent)
@@ -537,7 +537,7 @@ Number::operator+=(Number const& y)
     if (xe < ye)
     {
         if (xn)
-            g.set_negative();
+            g.setNegative();
         do
         {
             g.push(xm % 10);
@@ -548,7 +548,7 @@ Number::operator+=(Number const& y)
     else if (xe > ye)
     {
         if (yn)
-            g.set_negative();
+            g.setNegative();
         do
         {
             g.push(ym % 10);
@@ -660,7 +660,7 @@ Number::operator*=(Number const& y)
     bool zn = (zs == -1);
     Guard g;
     if (zn)
-        g.set_negative();
+        g.setNegative();
 
     auto const& range = range_.get();
     auto const& minMantissa = range.min;
@@ -796,7 +796,7 @@ operator rep() const
     {
         if (negative_)
         {
-            g.set_negative();
+            g.setNegative();
             drops = -drops;
         }
         for (; offset < 0; ++offset)

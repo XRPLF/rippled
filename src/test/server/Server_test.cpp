@@ -53,7 +53,7 @@ public:
         }
 
         boost::asio::io_context&
-        get_io_context()
+        getIoContext()
         {
             return io_context_;
         }
@@ -186,7 +186,7 @@ public:
     // Expect that reading the stream produces a matching string
     template <class SyncReadStream>
     bool
-    expect_read(SyncReadStream& s, std::string const& match)
+    expectRead(SyncReadStream& s, std::string const& match)
     {
         boost::asio::streambuf b(1000);  // limit on read
         try
@@ -212,7 +212,7 @@ public:
     }
 
     void
-    test_request(boost::asio::ip::tcp::endpoint const& ep)
+    testRequest(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -228,7 +228,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -238,7 +238,7 @@ public:
     }
 
     void
-    test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
+    testKeepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
         boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
@@ -254,7 +254,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         if (!write(
@@ -264,7 +264,7 @@ public:
                 "\r\n"))
             return;
 
-        if (!expect_read(s, "Hello, world!\n"))
+        if (!expectRead(s, "Hello, world!\n"))
             return;
 
         boost::system::error_code ec;
@@ -280,14 +280,14 @@ public:
         sink.threshold(beast::severities::Severity::kAll);
         beast::Journal journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.get_io_context(), journal);
+        auto s = make_Server(handler, thread.getIoContext(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps.begin()->second);
-        test_keepalive(eps.begin()->second);
+        testRequest(eps.begin()->second);
+        testKeepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -354,7 +354,7 @@ public:
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.get_io_context(), journal);
+            auto s = make_Server(h, thread.getIoContext(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;

@@ -14,7 +14,7 @@ Rate const parityRate(QUALITY_ONE);
 namespace detail {
 
 STAmount
-as_amount(Rate const& rate)
+asAmount(Rate const& rate)
 {
     return {noIssue(), rate.value, -9, false};
 }
@@ -38,7 +38,7 @@ multiply(STAmount const& amount, Rate const& rate)
     if (rate == parityRate)
         return amount;
 
-    return multiply(amount, detail::as_amount(rate), amount.asset());
+    return multiply(amount, detail::asAmount(rate), amount.asset());
 }
 
 STAmount
@@ -49,7 +49,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
     if (rate == parityRate)
         return amount;
 
-    return mulRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
+    return mulRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
 }
 
 STAmount
@@ -62,7 +62,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool
         return amount;
     }
 
-    return mulRound(amount, detail::as_amount(rate), asset, roundUp);
+    return mulRound(amount, detail::asAmount(rate), asset, roundUp);
 }
 
 STAmount
@@ -73,7 +73,7 @@ divide(STAmount const& amount, Rate const& rate)
     if (rate == parityRate)
         return amount;
 
-    return divide(amount, detail::as_amount(rate), amount.asset());
+    return divide(amount, detail::asAmount(rate), amount.asset());
 }
 
 STAmount
@@ -84,7 +84,7 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
+    return divRound(amount, detail::asAmount(rate), amount.asset(), roundUp);
 }
 
 STAmount
@@ -95,7 +95,7 @@ divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool r
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), asset, roundUp);
+    return divRound(amount, detail::asAmount(rate), asset, roundUp);
 }
 
 }  // namespace xrpl

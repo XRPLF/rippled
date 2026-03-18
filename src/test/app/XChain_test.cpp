@@ -275,7 +275,7 @@ struct BalanceTransfer
     }
 
     bool
-    payees_received(STAmount const& reward) const
+    payeesReceived(STAmount const& reward) const
     {
         return std::all_of(reward_accounts.begin(), reward_accounts.end(), [&](balance const& b) {
             return b.diff() == reward;
@@ -283,23 +283,23 @@ struct BalanceTransfer
     }
 
     bool
-    check_most_balances(STAmount const& amt, STAmount const& reward)
+    checkMostBalances(STAmount const& amt, STAmount const& reward)
     {
-        return from.diff() == -amt && to.diff() == amt && payees_received(reward);
+        return from.diff() == -amt && to.diff() == amt && payeesReceived(reward);
     }
 
     bool
-    has_happened(STAmount const& amt, STAmount const& reward, bool checkPayer = true)
+    hasHappened(STAmount const& amt, STAmount const& reward, bool checkPayer = true)
     {
         auto rewardCost = multiply(reward, STAmount(reward_accounts.size()), reward.issue());
-        return check_most_balances(amt, reward) &&
+        return checkMostBalances(amt, reward) &&
             (!checkPayer || payer.diff() == -(rewardCost + tfs));
     }
 
     bool
-    has_not_happened()
+    hasNotHappened()
     {
-        return check_most_balances(STAmount(0), STAmount(0)) &&
+        return checkMostBalances(STAmount(0), STAmount(0)) &&
             payer.diff() <= tfs;  // could have paid fee for failed claim
     }
 };
@@ -973,13 +973,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Check that the reward paid from a claim Id was the reward when
@@ -1023,7 +1023,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1031,7 +1031,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure the reward accounts indeed received the original
             // split reward (1 split 5 ways) instead of the updated 2 XRP.
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Check that the signatures used to verify attestations and decide
@@ -1087,7 +1087,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure transfer has not happened as we sent attestations
             // using outdated signers
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
 
             // submit claim using current signers - should succeed
             scEnv
@@ -1096,7 +1096,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1104,7 +1104,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure the transfer went through as we sent attestations
             // using new signers
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum, false));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum, false));
         }
 
         // coverage test: bridge_modify transaction with incorrect flag
@@ -1432,7 +1432,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1440,7 +1440,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 BEAST_EXPECT(scEnv.claimID(jvb) == claimID);
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_everyone));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_everyone));
         }
 
         // Test that signature weights are correctly handled. Assign
@@ -1495,7 +1495,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1503,7 +1503,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             BEAST_EXPECT(!scEnv.claimID(jvb, 1));  // claim id deleted
 
-            BEAST_EXPECT(transfer.has_happened(amt, divide(reward, STAmount(3), reward.issue())));
+            BEAST_EXPECT(transfer.hasHappened(amt, divide(reward, STAmount(3), reward.issue())));
         }
 
         // 4,4 => should succeed
@@ -1554,7 +1554,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1562,7 +1562,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             BEAST_EXPECT(!scEnv.claimID(jvb, claimID));  // claim id deleted
 
-            BEAST_EXPECT(transfer.has_happened(amt, divide(reward, STAmount(2), reward.issue())));
+            BEAST_EXPECT(transfer.hasHappened(amt, divide(reward, STAmount(2), reward.issue())));
         }
 
         // 1,2 => should fail
@@ -1611,7 +1611,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -1621,7 +1621,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             }
 
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id still present
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // 2,4 => should fail
@@ -1672,7 +1672,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -1682,7 +1682,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             }
 
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id still present
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Confirm that account create transactions happen in the correct
@@ -2389,13 +2389,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Claim with just one attestation signed by the Master key
@@ -2430,7 +2430,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     ter(tecXCHAIN_NO_SIGNERS_LIST))
                 .close();
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim with just one attestation signed by a regular key
@@ -2467,7 +2467,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     ter(tecXCHAIN_NO_SIGNERS_LIST))
                 .close();
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against non-existent bridge
@@ -2510,14 +2510,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvbUnknown, claimID, amt, scBob), ter(tecNO_ENTRY))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against non-existent claim id
@@ -2550,14 +2550,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // claim using non-existent claim id
                 scEnv.tx(xchain_claim(scAlice, jvb, 999, amt, scBob), ter(tecXCHAIN_NO_CLAIM_ID))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against a claim id owned by another account
@@ -2595,17 +2595,17 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // submit a claim transaction with the wrong account (scGw
                 // instead of scAlice)
                 scEnv.tx(xchain_claim(scGw, jvb, claimID, amt, scBob), ter(tecXCHAIN_BAD_CLAIM_ID))
                     .close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
             }
             else
             {
-                BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+                BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
             }
         }
 
@@ -2635,7 +2635,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2644,7 +2644,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against a claim id with attestations, but not enough to
@@ -2677,7 +2677,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2686,7 +2686,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim id of zero
@@ -2719,14 +2719,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, 0, amt, scBob), ter(tecXCHAIN_NO_CLAIM_ID))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim issue that does not match the expected issue on the bridge
@@ -2768,7 +2768,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2776,7 +2776,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim to a destination that does not already exist on the chain
@@ -2814,13 +2814,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scuBob), ter(tecNO_DST)).close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim where the claim id owner does not have enough XRP to pay
@@ -2861,7 +2861,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .multiTx(claim_attestations(
                         scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers))
                     .close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), ter(tecUNFUNDED_PAYMENT))
@@ -2884,7 +2884,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim where the claim id owner has enough XRP to pay the reward,
@@ -2921,7 +2921,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2930,7 +2930,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Pay to an account with deposit auth set
@@ -2972,7 +2972,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             {
                 scEnv.tx(txns.back()).close();
 
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), ter(tecNO_PERMISSION))
@@ -3041,7 +3041,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             if (withClaim)
             {
                 scEnv.tx(txns.back()).close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), ter(tecDST_TAG_NEEDED))
@@ -3143,7 +3143,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // claim wrong amount
                 scEnv
@@ -3152,7 +3152,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Verify that rewards are paid from the account that owns the claim
@@ -3192,14 +3192,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
                 claimCost += tf;
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
             BEAST_EXPECT(scAliceBal.diff() == -claimCost);  // because reward % 4 == 0
         }
 
@@ -3239,14 +3239,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
                 claimCost += tf;
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, tiny_reward_split));
+            BEAST_EXPECT(transfer.hasHappened(amt, tiny_reward_split));
             BEAST_EXPECT(scAliceBal.diff() == -(claimCost - tiny_reward_remainder));
         }
 
@@ -3289,7 +3289,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -3298,7 +3298,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             // this also checks that only 3 * split_reward was deducted from
             // scAlice (the payer account), since we passed alt_payees to
             // BalanceTransfer
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         for (auto withClaim : {false, true})
@@ -3339,7 +3339,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -3348,7 +3348,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             // this also checks that only 3 * split_reward was deducted from
             // scAlice (the payer account), since we passed payees.size() -
             // 1 to BalanceTransfer
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
 
             // and make sure the account with deposit auth received nothing
             BEAST_EXPECT(lastSigner.diff() == STAmount(0));
@@ -3713,7 +3713,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 struct XChainSim_test : public beast::unit_test::suite, public jtx::XChainBridgeObjects
 {
 private:
-    static constexpr size_t num_signers = 5;
+    static constexpr size_t numSigners = 5;
 
     // --------------------------------------------------
     enum class WithClaim { no, yes };
@@ -3726,7 +3726,7 @@ private:
         bool a2b;  // direction of transfer
         WithClaim with_claim{WithClaim::no};
         uint32_t claim_id{0};
-        std::array<bool, num_signers> attested{};
+        std::array<bool, numSigners> attested{};
     };
 
     struct AccountCreate
@@ -3737,7 +3737,7 @@ private:
         STAmount reward;
         bool a2b;
         uint32_t claim_id{0};
-        std::array<bool, num_signers> attested{};
+        std::array<bool, numSigners> attested{};
     };
 
     using ENV = XEnv<XChainSim_test>;
@@ -3926,7 +3926,7 @@ private:
         };
 
         using SignerAttns = std::unordered_map<BridgeID, Claims>;
-        using SignersAttns = std::array<SignerAttns, num_signers>;
+        using SignersAttns = std::array<SignerAttns, numSigners>;
 
         ENV& env;
         std::map<jtx::Account, AccountStateTrack> accounts;
@@ -4038,7 +4038,7 @@ private:
         }
 
         uint32_t
-        issue_account_create()
+        issueAccountCreate()
         {
             ChainStateTrack& st = srcState();
             jtx::Account const& srcdoor = srcDoor();
@@ -4061,9 +4061,9 @@ private:
 
             // check all signers, but start at a random one
             size_t i = 0;
-            for (i = 0; i < num_signers; ++i)
+            for (i = 0; i < numSigners; ++i)
             {
-                size_t signerIdx = (rnd + i) % num_signers;
+                size_t signerIdx = (rnd + i) % numSigners;
 
                 if (!(cr_.attested[signerIdx]))
                 {
@@ -4087,7 +4087,7 @@ private:
                 }
             }
 
-            if (i == num_signers)
+            if (i == numSigners)
                 return;  // did not attest
 
             auto& counters = st.counters[&bridge_];
@@ -4122,7 +4122,7 @@ private:
             switch (sm_state_)
             {
                 case st_initial:
-                    cr_.claim_id = issue_account_create();
+                    cr_.claim_id = issueAccountCreate();
                     sm_state_ = st_attesting;
                     break;
 
@@ -4166,7 +4166,7 @@ private:
         }
 
         uint32_t
-        create_claim_id()
+        createClaimId()
         {
             ChainStateTrack& st = destState();
 
@@ -4200,12 +4200,12 @@ private:
         }
 
         void
-        distribute_reward(ChainStateTrack& st)
+        distributeReward(ChainStateTrack& st)
         {
             auto r = bridge_.reward;
             auto reward = divide(r, STAmount(bridge_.quorum), r.issue());
 
-            for (size_t i = 0; i < num_signers; ++i)
+            for (size_t i = 0; i < numSigners; ++i)
             {
                 if (xfer_.attested[i])
                     st.receive(bridge_.signers[i].account, reward);
@@ -4219,9 +4219,9 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            for (size_t i = 0; i < num_signers; ++i)
+            for (size_t i = 0; i < numSigners; ++i)
             {
-                size_t signerIdx = (rnd + i) % num_signers;
+                size_t signerIdx = (rnd + i) % numSigners;
                 if (!(xfer_.attested[signerIdx]))
                 {
                     // enqueue one attestation for this signer
@@ -4249,7 +4249,7 @@ private:
                 std::count(xfer_.attested.begin(), xfer_.attested.end(), true) >= bridge_.quorum;
             if (quorum && xfer_.with_claim == WithClaim::no)
             {
-                distribute_reward(st);
+                distributeReward(st);
                 st.transfer(dstDoor(), xfer_.finaldest, xfer_.amt);
             }
             return quorum;
@@ -4261,7 +4261,7 @@ private:
             ChainStateTrack& st = destState();
             st.env.tx(
                 xchain_claim(xfer_.to, bridge_.jvb, xfer_.claim_id, xfer_.amt, xfer_.finaldest));
-            distribute_reward(st);
+            distributeReward(st);
             st.transfer(dstDoor(), xfer_.finaldest, xfer_.amt);
             st.spendFee(xfer_.to);
         }
@@ -4272,7 +4272,7 @@ private:
             switch (sm_state_)
             {
                 case st_initial:
-                    xfer_.claim_id = create_claim_id();
+                    xfer_.claim_id = createClaimId();
                     sm_state_ = st_claim_id_created;
                     break;
 

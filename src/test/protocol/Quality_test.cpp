@@ -41,7 +41,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_in(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
+    ceilIn(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
         auto expectResult(amounts(inExpected, outExpected));
         auto actualResult(q.ceil_in(amounts(in, out), amount(limit)));
@@ -51,7 +51,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_out(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
+    ceilOut(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
         auto const expectResult(amounts(inExpected, outExpected));
         auto const actualResult(q.ceil_out(amounts(in, out), amount(limit)));
@@ -60,7 +60,7 @@ public:
     }
 
     void
-    test_ceil_in()
+    testCeilIn()
     {
         testcase("ceil_in");
 
@@ -68,7 +68,7 @@ public:
             // 1 in, 1 out:
             Quality q(Amounts(amount(1), amount(1)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 1,
                 1,  // 1 in, 1 out
@@ -76,7 +76,7 @@ public:
                 1,
                 1);  // 1 in, 1 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -84,7 +84,7 @@ public:
                 5,
                 5);  // 5 in, 5 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 5,
                 5,   // 5 in, 5 out
@@ -97,7 +97,7 @@ public:
             // 1 in, 2 out:
             Quality q(Amounts(amount(1), amount(2)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -105,7 +105,7 @@ public:
                 40,
                 80);  // 40 in, 20 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -113,7 +113,7 @@ public:
                 20,
                 40);  // 20 in, 40 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -126,7 +126,7 @@ public:
             // 2 in, 1 out:
             Quality q(Amounts(amount(2), amount(1)));
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -134,7 +134,7 @@ public:
                 20,
                 10);  // 20 in, 10 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -142,7 +142,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_in(
+            ceilIn(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -153,7 +153,7 @@ public:
     }
 
     void
-    test_ceil_out()
+    testCeilOut()
     {
         testcase("ceil_out");
 
@@ -161,7 +161,7 @@ public:
             // 1 in, 1 out:
             Quality q(Amounts(amount(1), amount(1)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 1,
                 1,  // 1 in, 1 out
@@ -169,7 +169,7 @@ public:
                 1,
                 1);  // 1 in, 1 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -177,7 +177,7 @@ public:
                 5,
                 5);  // 5 in, 5 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 10,
                 10,  // 10 in, 10 out
@@ -190,7 +190,7 @@ public:
             // 1 in, 2 out:
             Quality q(Amounts(amount(1), amount(2)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -198,7 +198,7 @@ public:
                 20,
                 40);  // 20 in, 40 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,  // 40 in, 80 out
@@ -206,7 +206,7 @@ public:
                 40,
                 80);  // 40 in, 80 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 80,   // 40 in, 80 out
@@ -219,7 +219,7 @@ public:
             // 2 in, 1 out:
             Quality q(Amounts(amount(2), amount(1)));
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -227,7 +227,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -235,7 +235,7 @@ public:
                 40,
                 20);  // 40 in, 20 out
 
-            ceil_out(
+            ceilOut(
                 q,
                 40,
                 20,  // 40 in, 20 out
@@ -246,7 +246,7 @@ public:
     }
 
     void
-    test_raw()
+    testRaw()
     {
         testcase("raw");
 
@@ -262,7 +262,7 @@ public:
     }
 
     void
-    test_round()
+    testRound()
     {
         testcase("round");
 
@@ -284,7 +284,7 @@ public:
     }
 
     void
-    test_comparisons()
+    testComparisons()
     {
         testcase("comparisons");
 
@@ -321,7 +321,7 @@ public:
     }
 
     void
-    test_composition()
+    testComposition()
     {
         testcase("composition");
 
@@ -345,7 +345,7 @@ public:
     }
 
     void
-    test_operations()
+    testOperations()
     {
         testcase("operations");
 
@@ -368,13 +368,13 @@ public:
     void
     run() override
     {
-        test_comparisons();
-        test_composition();
-        test_operations();
-        test_ceil_in();
-        test_ceil_out();
-        test_raw();
-        test_round();
+        testComparisons();
+        testComposition();
+        testOperations();
+        testCeilIn();
+        testCeilOut();
+        testRaw();
+        testRound();
     }
 };
 

@@ -9,7 +9,7 @@ namespace test {
 struct BookDirs_test : public beast::unit_test::suite
 {
     void
-    test_bookdir(FeatureBitset features)
+    testBookdir(FeatureBitset features)
     {
         using namespace jtx;
         Env env(*this, features);
@@ -80,8 +80,8 @@ struct BookDirs_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = testable_amendments();
-        test_bookdir(sa - featurePermissionedDEX);
-        test_bookdir(sa);
+        testBookdir(sa - featurePermissionedDEX);
+        testBookdir(sa);
     }
 };
 

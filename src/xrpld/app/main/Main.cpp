@@ -217,14 +217,14 @@ anyMissing(Runner& runner, multi_selector const& pred)
 {
     if (runner.tests() == 0)
     {
-        runner.add_failures(1);
+        runner.addFailures(1);
         std::cout << "Failed: No tests run" << std::endl;
         return true;
     }
     if (runner.suites() < pred.size())
     {
         auto const missing = pred.size() - runner.suites();
-        runner.add_failures(missing);
+        runner.addFailures(missing);
         std::cout << "Failed: " << missing << " filters did not match any existing test suites"
                   << std::endl;
         return true;
@@ -298,10 +298,10 @@ runUnitTests(
             }
         }
 
-        parentRunner.add_failures(terminatedChildExits);
+        parentRunner.addFailures(terminatedChildExits);
         anyMissing(parentRunner, multi_selector(pattern));
 
-        if (parentRunner.any_failed() || badChildExits)
+        if (parentRunner.anyFailed() || badChildExits)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }

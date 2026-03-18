@@ -5543,7 +5543,7 @@ protected:
 #endif
 
     void
-    testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic()
+    testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic()
     {
         // --- PoC Summary ----------------------------------------------------
         // Scenario: Borrower makes one periodic payment early (before next due)
@@ -6968,7 +6968,7 @@ public:
         testInvalidLoanSet();
 
         testCoverDepositWithdrawNonTransferableMPT();
-        testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
+        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
         testDisabled();
         testSelfLoan();

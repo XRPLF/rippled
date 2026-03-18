@@ -44,7 +44,7 @@ public:
         , checker_(io_context_)
         , logic_(clock, store_, checker_, journal)
         , config_(config)
-        , stats_(std::bind(&ManagerImp::collect_metrics, this), collector)
+        , stats_(std::bind(&ManagerImp::collectMetrics, this), collector)
     {
     }
 
@@ -227,7 +227,7 @@ private:
     Stats stats_;
 
     void
-    collect_metrics()
+    collectMetrics()
     {
         std::lock_guard lock(statsMutex_);
         stats_.activeInboundPeers = logic_.counts_.inboundActive();
@@ -242,7 +242,7 @@ Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 }
 
 std::unique_ptr<Manager>
-make_Manager(
+makeManager(
     boost::asio::io_context& ioContext,
     clock_type& clock,
     beast::Journal journal,

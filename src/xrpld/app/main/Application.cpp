@@ -132,7 +132,7 @@ private:
         }
 
         void
-        cancel_async()
+        cancelAsync()
         {
             probe_.cancel_async();
         }
@@ -316,7 +316,7 @@ public:
         , validatorKeys_(*config_, journal_)
 
         , resourceManager_(
-              Resource::make_Manager(collectorManager_->collector(), logs_->journal("Resource")))
+              Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
 
         , nodeStore_(shaMapStore_->makeNodeStore(
               config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
@@ -1322,9 +1322,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //             move the instantiation inside a conditional:
     //
     //             if (!config_.standalone())
-    overlay_ = make_Overlay(
+    overlay_ = makeOverlay(
         *this,
-        setup_Overlay(*config_),
+        setupOverlay(*config_),
         *serverHandler_,
         *resourceManager_,
         *resolver_,
@@ -1488,7 +1488,7 @@ ApplicationImp::run()
 
     JLOG(journal_.debug()) << "Application stopping";
 
-    io_latency_sampler_.cancel_async();
+    io_latency_sampler_.cancelAsync();
 
     // VFALCO Enormous hack, we have to force the probe to cancel
     //        before we stop the io_context queue or else it never

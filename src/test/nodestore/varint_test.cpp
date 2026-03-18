@@ -12,7 +12,7 @@ class varint_test : public beast::unit_test::suite
 {
 public:
     void
-    test_varints(std::vector<std::size_t> vv)
+    testVarints(std::vector<std::size_t> vv)
     {
         testcase("encode, decode");
         for (auto const v : vv)
@@ -31,7 +31,7 @@ public:
     void
     run() override
     {
-        test_varints(
+        testVarints(
             {0,
              1,
              2,

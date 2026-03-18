@@ -23,7 +23,7 @@ public:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& relTime)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
             auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
@@ -41,7 +41,7 @@ public:
     };
 
     void
-    correct_order()
+    correctOrder()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -61,14 +61,14 @@ public:
             c->yield();
             g2.signal();
         });
-        BEAST_EXPECT(g1.wait_for(5s));
+        BEAST_EXPECT(g1.waitFor(5s));
         c->join();
         c->post();
-        BEAST_EXPECT(g2.wait_for(5s));
+        BEAST_EXPECT(g2.waitFor(5s));
     }
 
     void
-    incorrect_order()
+    incorrectOrder()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -86,11 +86,11 @@ public:
             c->yield();
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
     }
 
     void
-    thread_specific_storage()
+    threadSpecificStorage()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -113,7 +113,7 @@ public:
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
 
         for (int i = 0; i < n; ++i)
@@ -131,13 +131,13 @@ public:
 
                 this->BEAST_EXPECT(*lv == id);
             });
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             a[i]->join();
         }
         for (auto const& c : a)
         {
             c->post();
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             c->join();
         }
         for (auto const& c : a)
@@ -150,16 +150,16 @@ public:
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
     }
 
     void
     run() override
     {
-        correct_order();
-        incorrect_order();
-        thread_specific_storage();
+        correctOrder();
+        incorrectOrder();
+        threadSpecificStorage();
     }
 };
 

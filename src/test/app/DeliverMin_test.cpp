@@ -10,7 +10,7 @@ class DeliverMin_test : public beast::unit_test::suite
 {
 public:
     void
-    test_convert_all_of_an_asset(FeatureBitset features)
+    testConvertAllOfAnAsset(FeatureBitset features)
     {
         testcase("Convert all of an asset using DeliverMin");
 
@@ -121,8 +121,8 @@ public:
     {
         using namespace jtx;
         auto const sa = testable_amendments();
-        test_convert_all_of_an_asset(sa - featurePermissionedDEX);
-        test_convert_all_of_an_asset(sa);
+        testConvertAllOfAnAsset(sa - featurePermissionedDEX);
+        testConvertAllOfAnAsset(sa);
     }
 };
 

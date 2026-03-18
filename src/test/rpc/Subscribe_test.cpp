@@ -146,7 +146,7 @@ public:
     }
 
     void
-    testTransactions_APIv1()
+    testTransactionsApIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -280,7 +280,7 @@ public:
     }
 
     void
-    testTransactions_APIv2()
+    testTransactionsApIv2()
     {
         testcase("transactions API version 2");
 
@@ -1476,8 +1476,8 @@ public:
 
         testServer();
         testLedger();
-        testTransactions_APIv1();
-        testTransactions_APIv2();
+        testTransactionsApIv1();
+        testTransactionsApIv2();
         testManifests();
         testValidations(all - xrpFees);
         testValidations(all);

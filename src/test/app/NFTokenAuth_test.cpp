@@ -27,7 +27,7 @@ class NFTokenAuth_test : public beast::unit_test::suite
 
 public:
     void
-    testBuyOffer_UnauthorizedSeller(FeatureBitset features)
+    testBuyOfferUnauthorizedSeller(FeatureBitset features)
     {
         testcase("Unauthorized seller tries to accept buy offer");
         using namespace test::jtx;
@@ -80,7 +80,7 @@ public:
     }
 
     void
-    testCreateBuyOffer_UnauthorizedBuyer(FeatureBitset features)
+    testCreateBuyOfferUnauthorizedBuyer(FeatureBitset features)
     {
         testcase("Unauthorized buyer tries to create buy offer");
         using namespace test::jtx;
@@ -126,7 +126,7 @@ public:
     }
 
     void
-    testAcceptBuyOffer_UnauthorizedBuyer(FeatureBitset features)
+    testAcceptBuyOfferUnauthorizedBuyer(FeatureBitset features)
     {
         testcase("Seller tries to accept buy offer from unauth buyer");
         using namespace test::jtx;
@@ -182,7 +182,7 @@ public:
     }
 
     void
-    testSellOffer_UnauthorizedSeller(FeatureBitset features)
+    testSellOfferUnauthorizedSeller(FeatureBitset features)
     {
         testcase(
             "Authorized buyer tries to accept sell offer from unauthorized "
@@ -259,7 +259,7 @@ public:
     }
 
     void
-    testSellOffer_UnauthorizedBuyer(FeatureBitset features)
+    testSellOfferUnauthorizedBuyer(FeatureBitset features)
     {
         testcase("Unauthorized buyer tries to accept sell offer");
         using namespace test::jtx;
@@ -301,7 +301,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnauthorizedBroker(FeatureBitset features)
+    testBrokeredAcceptOfferUnauthorizedBroker(FeatureBitset features)
     {
         testcase("Unauthorized broker bridges authorized buyer and seller.");
         using namespace test::jtx;
@@ -365,7 +365,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnauthorizedBuyer(FeatureBitset features)
+    testBrokeredAcceptOfferUnauthorizedBuyer(FeatureBitset features)
     {
         testcase(
             "Authorized broker tries to bridge offers from unauthorized "
@@ -425,7 +425,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnauthorizedSeller(FeatureBitset features)
+    testBrokeredAcceptOfferUnauthorizedSeller(FeatureBitset features)
     {
         testcase(
             "Authorized broker tries to bridge offers from unauthorized "
@@ -501,7 +501,7 @@ public:
     }
 
     void
-    testTransferFee_UnauthorizedMinter(FeatureBitset features)
+    testTransferFeeUnauthorizedMinter(FeatureBitset features)
     {
         testcase("Unauthorized minter receives transfer fee.");
         using namespace test::jtx;
@@ -563,15 +563,15 @@ public:
 
         for (auto const feature : features)
         {
-            testBuyOffer_UnauthorizedSeller(feature);
-            testCreateBuyOffer_UnauthorizedBuyer(feature);
-            testAcceptBuyOffer_UnauthorizedBuyer(feature);
-            testSellOffer_UnauthorizedSeller(feature);
-            testSellOffer_UnauthorizedBuyer(feature);
-            testBrokeredAcceptOffer_UnauthorizedBroker(feature);
-            testBrokeredAcceptOffer_UnauthorizedBuyer(feature);
-            testBrokeredAcceptOffer_UnauthorizedSeller(feature);
-            testTransferFee_UnauthorizedMinter(feature);
+            testBuyOfferUnauthorizedSeller(feature);
+            testCreateBuyOfferUnauthorizedBuyer(feature);
+            testAcceptBuyOfferUnauthorizedBuyer(feature);
+            testSellOfferUnauthorizedSeller(feature);
+            testSellOfferUnauthorizedBuyer(feature);
+            testBrokeredAcceptOfferUnauthorizedBroker(feature);
+            testBrokeredAcceptOfferUnauthorizedBuyer(feature);
+            testBrokeredAcceptOfferUnauthorizedSeller(feature);
+            testTransferFeeUnauthorizedMinter(feature);
         }
     }
 };

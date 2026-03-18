@@ -12,7 +12,7 @@
 namespace beast {
 
 std::string
-print_identifiers(SemanticVersion::identifier_list const& list)
+printIdentifiers(SemanticVersion::identifier_list const& list)
 {
     std::string ret;
 
@@ -89,7 +89,7 @@ chopUInt(int& value, int limit, std::string& input)
 }
 
 bool
-extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& input)
+extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& input)
 {
     // Must not be empty
     if (input.empty())
@@ -112,7 +112,7 @@ extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& inp
 }
 
 bool
-extract_identifiers(
+extractIdentifiers(
     SemanticVersion::identifier_list& identifiers,
     bool allowLeadingZeroes,
     std::string& input)
@@ -124,7 +124,7 @@ extract_identifiers(
     {
         std::string s;
 
-        if (!extract_identifier(s, allowLeadingZeroes, input))
+        if (!extractIdentifier(s, allowLeadingZeroes, input))
             return false;
         identifiers.push_back(s);
     } while (chop(".", input));
@@ -185,7 +185,7 @@ SemanticVersion::parse(std::string_view input)
     // May have pre-release identifier list
     if (chop("-", version))
     {
-        if (!extract_identifiers(preReleaseIdentifiers, false, version))
+        if (!extractIdentifiers(preReleaseIdentifiers, false, version))
             return false;
 
         // Must not be empty
@@ -196,7 +196,7 @@ SemanticVersion::parse(std::string_view input)
     // May have metadata identifier list
     if (chop("+", version))
     {
-        if (!extract_identifiers(metaData, true, version))
+        if (!extractIdentifiers(metaData, true, version))
             return false;
 
         // Must not be empty
@@ -218,13 +218,13 @@ SemanticVersion::print() const
     if (!preReleaseIdentifiers.empty())
     {
         s += "-";
-        s += print_identifiers(preReleaseIdentifiers);
+        s += printIdentifiers(preReleaseIdentifiers);
     }
 
     if (!metaData.empty())
     {
         s += "+";
-        s += print_identifiers(metaData);
+        s += printIdentifiers(metaData);
     }
 
     return s;

@@ -1311,7 +1311,7 @@ public:
 //
 
 std::string
-JSONRPCRequest(std::string const& strMethod, Json::Value const& params, Json::Value const& id)
+jsonrpcRequest(std::string const& strMethod, Json::Value const& params, Json::Value const& id)
 {
     Json::Value request;
     request[jss::method] = strMethod;
@@ -1398,7 +1398,7 @@ struct RPCCallImp
 
         std::ostream osRequest(&sb);
         osRequest << createHTTPPost(
-            strHost, strPath, JSONRPCRequest(strMethod, jvParams, Json::Value(1)), headers);
+            strHost, strPath, jsonrpcRequest(strMethod, jvParams, Json::Value(1)), headers);
     }
 };
 

@@ -315,7 +315,7 @@ initAuthenticated(
 }
 
 std::shared_ptr<boost::asio::ssl::context>
-get_context(std::string cipherList)
+getContext(std::string cipherList)
 {
     auto c = std::make_shared<boost::asio::ssl::context>(boost::asio::ssl::context::sslv23);
 
@@ -349,7 +349,7 @@ get_context(std::string cipherList)
 std::shared_ptr<boost::asio::ssl::context>
 make_SSLContext(std::string const& cipherList)
 {
-    auto context = openssl::detail::get_context(cipherList);
+    auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAnonymous(*context);
     // VFALCO NOTE, It seems the WebSocket context never has
     // set_verify_mode called, for either setting of WEBSOCKET_SECURE
@@ -364,7 +364,7 @@ make_SSLContextAuthed(
     std::string const& chainFile,
     std::string const& cipherList)
 {
-    auto context = openssl::detail::get_context(cipherList);
+    auto context = openssl::detail::getContext(cipherList);
     openssl::detail::initAuthenticated(*context, keyFile, certFile, chainFile);
     return context;
 }

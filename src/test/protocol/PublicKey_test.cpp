@@ -13,7 +13,7 @@ public:
 
     template <class FwdIter, class Container>
     static void
-    hex_to_binary(FwdIter first, FwdIter last, Container& out)
+    hexToBinary(FwdIter first, FwdIter last, Container& out)
     {
         struct Table
         {
@@ -50,7 +50,7 @@ public:
     sig(std::string const& hex)
     {
         blob b;
-        hex_to_binary(hex.begin(), hex.end(), b);
+        hexToBinary(hex.begin(), hex.end(), b);
         return b;
     }
 

@@ -9,7 +9,7 @@ class Clawback_test : public beast::unit_test::suite
 {
     template <class T>
     static std::string
-    to_string(T const& t)
+    toString(T const& t)
     {
         return boost::lexical_cast<std::string>(t);
     }

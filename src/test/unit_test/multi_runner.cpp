@@ -124,28 +124,28 @@ results::print(S& s)
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::checkout_job_index()
+multi_runner_base<IsParent>::inner::checkoutJobIndex()
 {
     return job_index_++;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::checkout_test_index()
+multi_runner_base<IsParent>::inner::checkoutTestIndex()
 {
     return test_index_++;
 }
 
 template <bool IsParent>
 bool
-multi_runner_base<IsParent>::inner::any_failed() const
+multi_runner_base<IsParent>::inner::anyFailed() const
 {
     return any_failed_;
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inner::any_failed(bool v)
+multi_runner_base<IsParent>::inner::anyFailed(bool v)
 {
     any_failed_ = any_failed_ || v;
 }
@@ -168,14 +168,14 @@ multi_runner_base<IsParent>::inner::suites() const
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inner::inc_keep_alive_count()
+multi_runner_base<IsParent>::inner::incKeepAliveCount()
 {
     ++keep_alive_;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::get_keep_alive_count()
+multi_runner_base<IsParent>::inner::getKeepAliveCount()
 {
     return keep_alive_;
 }
@@ -262,30 +262,30 @@ multi_runner_base<IsParent>::~multi_runner_base()
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::checkout_test_index()
+multi_runner_base<IsParent>::checkoutTestIndex()
 {
-    return inner_->checkout_test_index();
+    return inner_->checkoutTestIndex();
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::checkout_job_index()
+multi_runner_base<IsParent>::checkoutJobIndex()
 {
-    return inner_->checkout_job_index();
+    return inner_->checkoutJobIndex();
 }
 
 template <bool IsParent>
 bool
-multi_runner_base<IsParent>::any_failed() const
+multi_runner_base<IsParent>::anyFailed() const
 {
-    return inner_->any_failed();
+    return inner_->anyFailed();
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::any_failed(bool v)
+multi_runner_base<IsParent>::anyFailed(bool v)
 {
-    return inner_->any_failed(v);
+    return inner_->anyFailed(v);
 }
 
 template <bool IsParent>
@@ -297,16 +297,16 @@ multi_runner_base<IsParent>::add(results const& r)
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inc_keep_alive_count()
+multi_runner_base<IsParent>::incKeepAliveCount()
 {
-    inner_->inc_keep_alive_count();
+    inner_->incKeepAliveCount();
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::get_keep_alive_count()
+multi_runner_base<IsParent>::getKeepAliveCount()
 {
-    return inner_->get_keep_alive_count();
+    return inner_->getKeepAliveCount();
 }
 
 template <bool IsParent>
@@ -319,7 +319,7 @@ multi_runner_base<IsParent>::print_results(S& s)
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
+multi_runner_base<IsParent>::messageQueueSend(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
     std::lock_guard l{inner_->m_};
@@ -343,12 +343,12 @@ multi_runner_base<IsParent>::suites() const
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::add_failures(std::size_t failures)
+multi_runner_base<IsParent>::addFailures(std::size_t failures)
 {
     results results;
     results.failed += failures;
     add(results);
-    any_failed(failures != 0);
+    anyFailed(failures != 0);
 }
 
 }  // namespace detail
@@ -364,7 +364,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
         while (this->continue_message_queue_ || this->message_queue_->get_num_msg())
         {
             // let children know the parent is still alive
-            this->inc_keep_alive_count();
+            this->incKeepAliveCount();
             if (!this->message_queue_->get_num_msg())
             {
                 // If a child does not see the keep alive count incremented,
@@ -426,7 +426,7 @@ multi_runner_parent::~multi_runner_parent()
     continue_message_queue_ = false;
     message_queue_thread_.join();
 
-    add_failures(running_suites_.size());
+    addFailures(running_suites_.size());
 
     print_results(os_);
 
@@ -437,9 +437,9 @@ multi_runner_parent::~multi_runner_parent()
 }
 
 bool
-multi_runner_parent::any_failed() const
+multi_runner_parent::anyFailed() const
 {
-    return multi_runner_base<true>::any_failed();
+    return multi_runner_base<true>::anyFailed();
 }
 
 std::size_t
@@ -455,15 +455,15 @@ multi_runner_parent::suites() const
 }
 
 void
-multi_runner_parent::add_failures(std::size_t failures)
+multi_runner_parent::addFailures(std::size_t failures)
 {
-    multi_runner_base<true>::add_failures(failures);
+    multi_runner_base<true>::addFailures(failures);
 }
 
 //------------------------------------------------------------------------------
 
 multi_runner_child::multi_runner_child(std::size_t numJobs, bool quiet, bool printLog)
-    : job_index_{checkout_job_index()}
+    : job_index_{checkoutJobIndex()}
     , num_jobs__{numJobs}
     , quiet_{quiet}
     , print_log_{!quiet || printLog}
@@ -471,19 +471,19 @@ multi_runner_child::multi_runner_child(std::size_t numJobs, bool quiet, bool pri
     if (num_jobs__ > 1)
     {
         keep_alive_thread_ = std::thread([this] {
-            std::size_t lastCount = get_keep_alive_count();
+            std::size_t lastCount = getKeepAliveCount();
             while (this->continue_keep_alive_)
             {
                 // Use a small sleep time so in the normal case the child
                 // process may shutdown quickly. However, to protect against
                 // false alarms, use a longer sleep time later on.
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                auto curCount = this->get_keep_alive_count();
+                auto curCount = this->getKeepAliveCount();
                 if (curCount == lastCount)
                 {
                     // longer sleep time to protect against false alarms
                     std::this_thread::sleep_for(std::chrono::seconds(2));
-                    curCount = this->get_keep_alive_count();
+                    curCount = this->getKeepAliveCount();
                     if (curCount == lastCount)
                     {
                         // assume parent process is no longer alive
@@ -522,17 +522,17 @@ multi_runner_child::suites() const
 }
 
 void
-multi_runner_child::add_failures(std::size_t failures)
+multi_runner_child::addFailures(std::size_t failures)
 {
     results_.failed += failures;
-    any_failed(failures != 0);
+    anyFailed(failures != 0);
 }
 
 void
 multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
 {
     suite_results_ = detail::suite_results{info.full_name()};
-    message_queue_send(MessageType::test_start, suite_results_.name);
+    messageQueueSend(MessageType::test_start, suite_results_.name);
 }
 
 void
@@ -545,10 +545,10 @@ multi_runner_child::on_suite_end()
             s << job_index_ << "> ";
         s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
           << suite_results_.failed << " failures." << std::endl;
-        message_queue_send(MessageType::log, s.str());
+        messageQueueSend(MessageType::log, s.str());
     }
     results_.add(suite_results_);
-    message_queue_send(MessageType::test_end, suite_results_.name);
+    messageQueueSend(MessageType::test_end, suite_results_.name);
 }
 
 void
@@ -564,7 +564,7 @@ multi_runner_child::on_case_begin(std::string const& name)
         s << job_index_ << "> ";
     s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
       << '\n';
-    message_queue_send(MessageType::log, s.str());
+    messageQueueSend(MessageType::log, s.str());
 }
 
 void
@@ -588,7 +588,7 @@ multi_runner_child::on_fail(std::string const& reason)
     if (num_jobs__ > 1)
         s << job_index_ << "> ";
     s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
-    message_queue_send(MessageType::log, s.str());
+    messageQueueSend(MessageType::log, s.str());
 }
 
 void
@@ -601,7 +601,7 @@ multi_runner_child::on_log(std::string const& msg)
     if (num_jobs__ > 1)
         s << job_index_ << "> ";
     s << msg;
-    message_queue_send(MessageType::log, s.str());
+    messageQueueSend(MessageType::log, s.str());
 }
 
 }  // namespace test

@@ -31,7 +31,7 @@ struct case_results
     std::size_t total = 0;
     std::size_t failed = 0;
 
-    explicit case_results(std::string name_ = "") : name(std::move(name_))
+    explicit case_results(std::string name = "") : name(std::move(name))
     {
     }
 };
@@ -44,7 +44,7 @@ struct suite_results
     std::size_t failed = 0;
     typename clock_type::time_point start = clock_type::now();
 
-    explicit suite_results(std::string name_ = "") : name(std::move(name_))
+    explicit suite_results(std::string name = "") : name(std::move(name))
     {
     }
 
@@ -100,16 +100,16 @@ class multi_runner_base
         detail::results results_;
 
         std::size_t
-        checkout_job_index();
+        checkoutJobIndex();
 
         std::size_t
-        checkout_test_index();
+        checkoutTestIndex();
 
         bool
-        any_failed() const;
+        anyFailed() const;
 
         void
-        any_failed(bool v);
+        anyFailed(bool v);
 
         std::size_t
         tests() const;
@@ -118,10 +118,10 @@ class multi_runner_base
         suites() const;
 
         void
-        inc_keep_alive_count();
+        incKeepAliveCount();
 
         std::size_t
-        get_keep_alive_count();
+        getKeepAliveCount();
 
         void
         add(results const& r);
@@ -147,36 +147,36 @@ protected:
 
     enum class MessageType : std::uint8_t { test_start, test_end, log };
     void
-    message_queue_send(MessageType mt, std::string const& s);
+    messageQueueSend(MessageType mt, std::string const& s);
 
 public:
     multi_runner_base();
     ~multi_runner_base();
 
     std::size_t
-    checkout_test_index();
+    checkoutTestIndex();
 
     std::size_t
-    checkout_job_index();
+    checkoutJobIndex();
 
     void
-    any_failed(bool v);
+    anyFailed(bool v);
 
     void
     add(results const& r);
 
     void
-    inc_keep_alive_count();
+    incKeepAliveCount();
 
     std::size_t
-    get_keep_alive_count();
+    getKeepAliveCount();
 
     template <class S>
     void
     print_results(S& s);
 
     bool
-    any_failed() const;
+    anyFailed() const;
 
     std::size_t
     tests() const;
@@ -185,7 +185,7 @@ public:
     suites() const;
 
     void
-    add_failures(std::size_t failures);
+    addFailures(std::size_t failures);
 };
 
 }  // namespace detail
@@ -215,7 +215,7 @@ public:
     ~multi_runner_parent();
 
     bool
-    any_failed() const;
+    anyFailed() const;
 
     std::size_t
     tests() const;
@@ -224,7 +224,7 @@ public:
     suites() const;
 
     void
-    add_failures(std::size_t failures);
+    addFailures(std::size_t failures);
 };
 
 //------------------------------------------------------------------------------
@@ -261,7 +261,7 @@ public:
     suites() const;
 
     void
-    add_failures(std::size_t failures);
+    addFailures(std::size_t failures);
 
     template <class Pred>
     bool
@@ -301,7 +301,7 @@ multi_runner_child::run_multi(Pred pred)
     bool failed = false;
 
     auto get_test = [&]() -> beast::unit_test::suite_info const* {
-        auto const cur_test_index = checkout_test_index();
+        auto const cur_test_index = checkoutTestIndex();
         if (cur_test_index >= num_tests_)
             return nullptr;
         auto iter = suite.begin();
@@ -324,11 +324,11 @@ multi_runner_child::run_multi(Pred pred)
             // inform the parent
             std::stringstream s;
             s << job_index_ << ">  failed Unhandled exception in test.\n";
-            message_queue_send(MessageType::log, s.str());
+            messageQueueSend(MessageType::log, s.str());
             failed = true;
         }
     }
-    any_failed(failed);
+    anyFailed(failed);
     return failed;
 }
 

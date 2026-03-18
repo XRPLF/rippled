@@ -159,7 +159,7 @@ Manager::~Manager() = default;
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
+makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal)
 {
     return std::make_unique<ManagerImp>(collector, journal);
 }

@@ -1341,7 +1341,7 @@ private:
     }
 
     void
-    path_find_consume_all()
+    pathFindConsumeAll()
     {
         testcase("path find consume all");
         using namespace jtx;
@@ -1371,7 +1371,7 @@ private:
     // bob will hold gateway AUD
     // alice pays bob gateway AUD using XRP
     void
-    via_offers_via_gateway()
+    viaOffersViaGateway()
     {
         testcase("via gateway");
         using namespace jtx;
@@ -1396,7 +1396,7 @@ private:
     }
 
     void
-    receive_max()
+    receiveMax()
     {
         testcase("Receive max");
         using namespace jtx;
@@ -1437,7 +1437,7 @@ private:
     }
 
     void
-    path_find_01()
+    pathFind01()
     {
         testcase("Path Find: XRP -> XRP and XRP -> IOU");
         using namespace jtx;
@@ -1522,7 +1522,7 @@ private:
     }
 
     void
-    path_find_02()
+    pathFind02()
     {
         testcase("Path Find: non-XRP -> XRP");
         using namespace jtx;
@@ -1558,7 +1558,7 @@ private:
     }
 
     void
-    path_find_05()
+    pathFind05()
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
@@ -1688,7 +1688,7 @@ private:
     }
 
     void
-    path_find_06()
+    pathFind06()
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
@@ -2654,7 +2654,7 @@ private:
     }
 
     void
-    test_convert_all_of_an_asset(FeatureBitset features)
+    testConvertAllOfAnAsset(FeatureBitset features)
     {
         testcase("Convert all of an asset using DeliverMin");
 
@@ -3432,13 +3432,13 @@ private:
     void
     testPaths()
     {
-        path_find_consume_all();
-        via_offers_via_gateway();
-        receive_max();
-        path_find_01();
-        path_find_02();
-        path_find_05();
-        path_find_06();
+        pathFindConsumeAll();
+        viaOffersViaGateway();
+        receiveMax();
+        pathFind01();
+        pathFind02();
+        pathFind05();
+        pathFind06();
     }
 
     void
@@ -3478,8 +3478,8 @@ private:
         // mantissas in the transaction engine
         FeatureBitset const all{
             testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
-        test_convert_all_of_an_asset(all);
-        test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
+        testConvertAllOfAnAsset(all);
+        testConvertAllOfAnAsset(all - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void

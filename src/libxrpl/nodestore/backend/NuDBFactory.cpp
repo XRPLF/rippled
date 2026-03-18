@@ -225,7 +225,7 @@ public:
     }
 
     void
-    do_insert(std::shared_ptr<NodeObject> const& no)
+    doInsert(std::shared_ptr<NodeObject> const& no)
     {
         EncodedBlob e(no);
         nudb::error_code ec;
@@ -242,7 +242,7 @@ public:
         BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
-        do_insert(no);
+        doInsert(no);
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler.onBatchWrite(report);
@@ -255,7 +255,7 @@ public:
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
         for (auto const& e : batch)
-            do_insert(e);
+            doInsert(e);
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler.onBatchWrite(report);

@@ -121,7 +121,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         }
 
         void
-        start_one()
+        startOne()
         {
             probe.sample_one(std::ref(*this));
         }
@@ -139,7 +139,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         testcase << "sample one";
         boost::system::error_code ec;
         test_sampler ioProbe{100ms, get_io_context()};
-        ioProbe.start_one();
+        ioProbe.startOne();
         MyTimer timer{get_io_context(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
@@ -192,7 +192,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         testcase << "canceled";
         test_sampler ioProbe{100ms, get_io_context()};
         ioProbe.probe.cancel_async();
-        except<std::logic_error>([&ioProbe]() { ioProbe.start_one(); });
+        except<std::logic_error>([&ioProbe]() { ioProbe.startOne(); });
         except<std::logic_error>([&ioProbe]() { ioProbe.start(); });
     }
 

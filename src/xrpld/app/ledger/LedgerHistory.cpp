@@ -129,7 +129,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 }
 
 static void
-log_one(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
 {
     auto metaData = ledger.txRead(tx).second;
 
@@ -147,7 +147,7 @@ log_one(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journ
 }
 
 static void
-log_metadata_difference(
+logMetadataDifference(
     ReadView const& builtLedger,
     ReadView const& validLedger,
     uint256 const& tx,
@@ -365,12 +365,12 @@ LedgerHistory::handleMismatch(
     {
         if ((*b)->key() < (*v)->key())
         {
-            log_one(*builtLedger, (*b)->key(), "valid", j_);
+            logOne(*builtLedger, (*b)->key(), "valid", j_);
             ++b;
         }
         else if ((*b)->key() > (*v)->key())
         {
-            log_one(*validLedger, (*v)->key(), "built", j_);
+            logOne(*validLedger, (*v)->key(), "built", j_);
             ++v;
         }
         else
@@ -378,16 +378,16 @@ LedgerHistory::handleMismatch(
             if ((*b)->slice() != (*v)->slice())
             {
                 // Same transaction with different metadata
-                log_metadata_difference(*builtLedger, *validLedger, (*b)->key(), j_);
+                logMetadataDifference(*builtLedger, *validLedger, (*b)->key(), j_);
             }
             ++b;
             ++v;
         }
     }
     for (; b != builtTx.end(); ++b)
-        log_one(*builtLedger, (*b)->key(), "valid", j_);
+        logOne(*builtLedger, (*b)->key(), "valid", j_);
     for (; v != validTx.end(); ++v)
-        log_one(*validLedger, (*v)->key(), "built", j_);
+        logOne(*validLedger, (*v)->key(), "built", j_);
 }
 
 void

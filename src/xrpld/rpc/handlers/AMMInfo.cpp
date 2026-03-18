@@ -28,7 +28,7 @@ getIssue(Json::Value const& v, beast::Journal j)
 }
 
 std::string
-to_iso8601(NetClock::time_point tp)
+toIso8601(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
@@ -187,7 +187,7 @@ doAMMInfo(RPC::JsonContext& context)
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));
             auction[jss::expiration] =
-                to_iso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
+                toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
                 Json::Value auth;

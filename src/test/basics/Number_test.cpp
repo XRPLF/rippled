@@ -29,7 +29,7 @@ public:
     }
 
     void
-    test_limits()
+    testLimits()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_limits " << to_string(scale);
@@ -96,7 +96,7 @@ public:
     }
 
     void
-    test_add()
+    testAdd()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_add " << to_string(scale);
@@ -218,7 +218,7 @@ public:
     }
 
     void
-    test_sub()
+    testSub()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_sub " << to_string(scale);
@@ -297,7 +297,7 @@ public:
     }
 
     void
-    test_mul()
+    testMul()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_mul " << to_string(scale);
@@ -604,7 +604,7 @@ public:
     }
 
     void
-    test_div()
+    testDiv()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_div " << to_string(scale);
@@ -791,7 +791,7 @@ public:
     }
 
     void
-    test_root()
+    testRoot()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_root " << to_string(scale);
@@ -867,7 +867,7 @@ public:
     }
 
     void
-    test_root2()
+    testRoot2()
     {
         auto const scale = Number::getMantissaScale();
         testcase << "test_root2 " << to_string(scale);
@@ -908,7 +908,7 @@ public:
     }
 
     void
-    test_power1()
+    testPower1()
     {
         testcase << "test_power1 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, Number>;
@@ -926,7 +926,7 @@ public:
     }
 
     void
-    test_power2()
+    testPower2()
     {
         testcase << "test_power2 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, unsigned, Number>;
@@ -998,7 +998,7 @@ public:
     }
 
     void
-    test_to_integer()
+    testToInteger()
     {
         testcase << "test_to_integer " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, std::int64_t>;
@@ -1166,7 +1166,7 @@ public:
     }
 
     void
-    test_squelch()
+    testSquelch()
     {
         testcase << "test_squelch " << to_string(Number::getMantissaScale());
         Number limit{1, -6};
@@ -1285,7 +1285,7 @@ public:
     }
 
     void
-    test_relationals()
+    testRelationals()
     {
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
         BEAST_EXPECT(!(Number{100} < Number{10}));
@@ -1295,7 +1295,7 @@ public:
     }
 
     void
-    test_stream()
+    testStream()
     {
         testcase << "test_stream " << to_string(Number::getMantissaScale());
         Number x{100};
@@ -1305,7 +1305,7 @@ public:
     }
 
     void
-    test_inc_dec()
+    testIncDec()
     {
         testcase << "test_inc_dec " << to_string(Number::getMantissaScale());
         Number x{100};
@@ -1318,7 +1318,7 @@ public:
     }
 
     void
-    test_toSTAmount()
+    testToStAmount()
     {
         NumberSO stNumberSO{true};
         Issue const issue;
@@ -1341,7 +1341,7 @@ public:
     }
 
     void
-    test_truncate()
+    testTruncate()
     {
         BEAST_EXPECT(Number(25, +1).truncate() == Number(250, 0));
         BEAST_EXPECT(Number(25, 0).truncate() == Number(25, 0));
@@ -1532,24 +1532,24 @@ public:
         {
             NumberMantissaScaleGuard sg(scale);
             testZero();
-            test_limits();
+            testLimits();
             testToString();
-            test_add();
-            test_sub();
-            test_mul();
-            test_div();
-            test_root();
-            test_root2();
-            test_power1();
-            test_power2();
+            testAdd();
+            testSub();
+            testMul();
+            testDiv();
+            testRoot();
+            testRoot2();
+            testPower1();
+            testPower2();
             testConversions();
-            test_to_integer();
-            test_squelch();
-            test_relationals();
-            test_stream();
-            test_inc_dec();
-            test_toSTAmount();
-            test_truncate();
+            testToInteger();
+            testSquelch();
+            testRelationals();
+            testStream();
+            testIncDec();
+            testToStAmount();
+            testTruncate();
             testRounding();
             testInt64();
         }
