@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -64,7 +65,8 @@ getSHAMapNodeID(
             if (!ledger_node.has_depth())
                 return std::nullopt;
 
-            auto const key = static_cast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+            auto const key =
+                safe_downcast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
             return SHAMapNodeID::createID(ledger_node.depth(), key);
         }
 
@@ -81,7 +83,7 @@ getSHAMapNodeID(
 
     if (treeNode->isLeaf())
     {
-        auto const key = static_cast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
+        auto const key = safe_downcast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
         auto const expected_id = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
         if (nodeID->getNodeID() != expected_id.getNodeID())
             return std::nullopt;

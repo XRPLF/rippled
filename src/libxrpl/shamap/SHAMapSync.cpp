@@ -388,7 +388,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 bool
 SHAMap::getNodeFat(
     SHAMapNodeID const& wanted,
-    std::vector<std::pair<SHAMapNodeID, Blob>>& data,
+    std::vector<std::tuple<SHAMapNodeID, Blob, bool>>& data,
     bool fatLeaves,
     std::uint32_t depth) const
 {
