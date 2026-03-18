@@ -418,9 +418,13 @@ SHAMap::belowHelper(
     }
     auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
+    {
         stack.push({inner, SHAMapNodeID{}});
+    }
     else
+    {
         stack.push({inner, stack.top().second.getChildNodeID(branch)});
+    }
     for (int i = init; cmp(i);)
     {
         if (!inner->isEmptyBranch(i))
@@ -438,7 +442,9 @@ SHAMap::belowHelper(
             i = init;  // descend and reset loop
         }
         else
+        {
             incr(i);  // scan next branch
+        }
     }
     return nullptr;
 }
@@ -663,9 +669,10 @@ SHAMap::delItem(uint256 const& id)
 
     SHAMapNodeType type = leaf->getType();
 
-    // What gets attached to the end of the chain
-    // (For now, nothing, since we deleted the leaf)
-    intr_ptr::SharedPtr<SHAMapTreeNode> prevNode;
+    using TreeNodeType = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
+    // What gets attached to the end of the chain (For now, nothing, since we deleted the leaf)
+    TreeNodeType prevNode;
 
     while (!stack.empty())
     {
@@ -674,7 +681,12 @@ SHAMap::delItem(uint256 const& id)
         stack.pop();
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(selectBranch(nodeID, id), std::move(prevNode));
+        node->setChild(
+            selectBranch(nodeID, id), std::move(prevNode));  // NOLINT(bugprone-use-after-move)
+
+        XRPL_ASSERT(
+            not prevNode,  // NOLINT(bugprone-use-after-move)
+            "xrpl::SHAMap::delItem : prevNode should be nullptr after std::move");
 
         if (!nodeID.isRoot())
         {
@@ -684,7 +696,9 @@ SHAMap::delItem(uint256 const& id)
             if (bc == 0)
             {
                 // no children below this branch
-                prevNode.reset();
+                //
+                // Note: This is unnecessary due to the std::move above but left here for safety
+                prevNode = TreeNodeType{};
             }
             else if (bc == 1)
             {
@@ -697,7 +711,7 @@ SHAMap::delItem(uint256 const& id)
                     {
                         if (!node->isEmptyBranch(i))
                         {
-                            node->setChild(i, intr_ptr::SharedPtr<SHAMapTreeNode>{});
+                            node->setChild(i, TreeNodeType{});
                             break;
                         }
                     }
@@ -1106,7 +1120,9 @@ SHAMap::dump(bool hash) const
             }
         }
         else
+        {
             ++leafCount;
+        }
     } while (!stack.empty());
 
     JLOG(journal_.info()) << leafCount << " resident leaves";

@@ -52,12 +52,16 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
     if (pathSearchMax_ != 0)
     {
         if (standalone_)
+        {
             update(ledger);
+        }
         else
+        {
             registry_.getJobQueue().addJob(
                 jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() {
                     update(ledger);
                 });
+        }
     }
 }
 
@@ -111,14 +115,22 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
+                {
                     domainBooks[{book.in, *book.domain}].insert(book.out);
+                }
                 else
+                {
                     allBooks[book.in].insert(book.out);
+                }
 
                 if (book.domain && isXRP(book.out))
+                {
                     xrpDomainBooks.insert({book.in, *book.domain});
+                }
                 else if (isXRP(book.out))
+                {
                     xrpBooks.insert(book.in);
+                }
 
                 ++cnt;
             }
@@ -167,14 +179,22 @@ OrderBookDBImpl::addOrderBook(Book const& book)
     std::lock_guard sl(mLock);
 
     if (book.domain)
+    {
         domainBooks_[{book.in, *book.domain}].insert(book.out);
+    }
     else
+    {
         allBooks_[book.in].insert(book.out);
+    }
 
     if (book.domain && toXRP)
+    {
         xrpDomainBooks_.insert({book.in, *book.domain});
+    }
     else if (toXRP)
+    {
         xrpBooks_.insert(book.in);
+    }
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
@@ -198,9 +218,13 @@ OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> 
         };
 
         if (!domain)
+        {
             getBooks(allBooks_, issue);
+        }
         else
+        {
             getBooks(domainBooks_, std::make_pair(issue, *domain));
+        }
     }
 
     return ret;
@@ -306,11 +330,17 @@ OrderBookDBImpl::processTxn(
                 // We need a field that contains the TakerGets and TakerPays
                 // parameters.
                 if (node.getFName() == sfModifiedNode)
+                {
                     process(sfPreviousFields);
+                }
                 else if (node.getFName() == sfCreatedNode)
+                {
                     process(sfNewFields);
+                }
                 else if (node.getFName() == sfDeletedNode)
+                {
                     process(sfFinalFields);
+                }
             }
         }
         catch (std::exception const& ex)

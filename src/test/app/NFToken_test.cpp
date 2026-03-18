@@ -171,7 +171,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                                                int line) {
             auto oneCheck = [line, this](char const* type, std::uint32_t found, std::uint32_t exp) {
                 if (found == exp)
+                {
                     pass();
+                }
                 else
                 {
                     std::stringstream ss;
@@ -269,7 +271,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             auto oneCheck =
                 [this](char const* type, std::uint32_t found, std::uint32_t exp, int line) {
                     if (found == exp)
+                    {
                         pass();
+                    }
                     else
                     {
                         std::stringstream ss;
@@ -2171,9 +2175,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         for (auto NumberSwitchOver : {true})
         {
             if (NumberSwitchOver)
+            {
                 env.enableFeature(fixUniversalNumber);
+            }
             else
+            {
                 env.disableFeature(fixUniversalNumber);
+            }
 
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID = token::getNextID(env, alice, 0u, tfTransferable, 1);
@@ -2347,7 +2355,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto check = [this](std::uint32_t taxon, uint256 const& nftID) {
                     nft::Taxon const gotTaxon = nft::getTaxon(nftID);
                     if (nft::toTaxon(taxon) == gotTaxon)
+                    {
                         pass();
+                    }
                     else
                     {
                         std::stringstream ss;
@@ -4791,7 +4801,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     env(pay(secondarySeller, gw, env.balance(secondarySeller, gwXPB)));
                 auto brokerDiff = gwXAU(5000) - env.balance(broker, gwXAU);
                 if (brokerDiff > gwXAU(0))
+                {
                     env(pay(gw, broker, brokerDiff));
+                }
                 else if (brokerDiff < gwXAU(0))
                 {
                     brokerDiff.negate();
@@ -6976,7 +6988,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             auto checkURI = [&accountNFTs, this](Account const& acct, char const* uri, int line) {
                 auto const nfts = accountNFTs(acct);
                 if (nfts.size() == 1)
+                {
                     pass();
+                }
                 else
                 {
                     std::ostringstream text;
@@ -6988,7 +7002,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 if (uri == nullptr)
                 {
                     if (!nfts[0u].isMember(sfURI.jsonName))
+                    {
                         pass();
+                    }
                     else
                     {
                         std::ostringstream text;
@@ -6999,7 +7015,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 }
 
                 if (nfts[0u][sfURI.jsonName] == strHex(std::string(uri)))
+                {
                     pass();
+                }
                 else
                 {
                     std::ostringstream text;

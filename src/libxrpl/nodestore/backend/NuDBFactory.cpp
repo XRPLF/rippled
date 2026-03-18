@@ -235,7 +235,9 @@ public:
             {
                 std::shared_ptr<NodeObject> nObj;
                 if (fetch(hashes[i], &nObj) == ok)
+                {
                     results[i] = nObj;
+                }
             }
             return {results, ok};
         }
@@ -264,7 +266,9 @@ public:
                 {
                     std::shared_ptr<NodeObject> nObj;
                     if (fetch(hashes[i], &nObj) == ok)
+                    {
                         results[i] = nObj;
+                    }
                 }
                 // Signal task completion.
                 taskCompletion.count_down();

@@ -167,8 +167,10 @@ public:
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
                 config_options, table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+            }
         }
 
         m_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
@@ -178,8 +180,10 @@ public:
             auto const s =
                 rocksdb::GetOptionsFromString(m_options, get(keyValues, "options"), &m_options);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB options: ") + s.ToString());
+            }
         }
 
         // Enable pipelined writes for better write concurrency.
@@ -246,8 +250,10 @@ public:
         m_options.create_if_missing = createIfMissing;
         rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
         if (!status.ok() || !db)
+        {
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
+        }
         m_db.reset(db);
     }
 

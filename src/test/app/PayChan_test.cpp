@@ -1015,9 +1015,11 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(r[jss::result][jss::validated]);
             BEAST_EXPECT(chan1Str != chan2Str);
             for (auto const& c : {chan1Str, chan2Str})
+            {
                 BEAST_EXPECT(
                     r[jss::result][jss::channels][0u][jss::channel_id] == c ||
                     r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
         }
     }
 
@@ -1249,9 +1251,11 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(r[jss::result][jss::validated]);
             BEAST_EXPECT(chan1Str != chan2Str);
             for (auto const& c : {chan1Str, chan2Str})
+            {
                 BEAST_EXPECT(
                     r[jss::result][jss::channels][0u][jss::channel_id] == c ||
                     r[jss::result][jss::channels][1u][jss::channel_id] == c);
+            }
         }
 
         auto sliceToHex = [](Slice const& slice) {

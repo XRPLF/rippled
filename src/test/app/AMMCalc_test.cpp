@@ -43,10 +43,14 @@ class AMMCalc_test : public beast::unit_test::suite
             if (delimited)
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
+            {
                 return XRP(std::stoll(match[2]));
-            // drops
-            else if (match[1] == "XRPA")
+                // drops
+            }
+            if (match[1] == "XRPA")
+            {
                 return XRPAmount{std::stoll(match[2])};
+            }
             return amountFromString(gw[match[1]].asset(), match[2]);
         }
         return std::nullopt;
@@ -120,7 +124,9 @@ class AMMCalc_test : public beast::unit_test::suite
                     break;
             }
             else
+            {
                 return std::nullopt;
+            }
         }
         return rates;
     }
@@ -398,13 +404,17 @@ class AMMCalc_test : public beast::unit_test::suite
                                 env.current()->rules(),
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
+                        {
                             std::cout << "amm offer: " << toString(ammOffer->in) << " "
                                       << toString(ammOffer->out)
                                       << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
                                       << " " << toString(pool->first.out - ammOffer->out)
                                       << std::endl;
+                        }
                         else
+                        {
                             std::cout << "can't change the pool's SP quality" << std::endl;
+                        }
                         return true;
                     }
                 }

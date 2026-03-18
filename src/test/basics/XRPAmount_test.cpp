@@ -16,11 +16,17 @@ public:
             XRPAmount const x(i);
 
             if (i < 0)
+            {
                 BEAST_EXPECT(x.signum() < 0);
+            }
             else if (i > 0)
+            {
                 BEAST_EXPECT(x.signum() > 0);
+            }
             else
+            {
                 BEAST_EXPECT(x.signum() == 0);
+            }
         }
     }
 

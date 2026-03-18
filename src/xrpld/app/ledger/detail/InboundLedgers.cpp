@@ -174,8 +174,10 @@ public:
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
+            {
                 app_.getJobQueue().addJob(
                     jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+            }
 
             return true;
         }
@@ -290,9 +292,13 @@ public:
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
+                {
                     ret[std::to_string(it.second)][jss::failed] = true;
+                }
                 else
+                {
                     ret[to_string(it.first)][jss::failed] = true;
+                }
             }
         }
 
@@ -301,9 +307,13 @@ public:
             // getJson is expensive, so call without the lock
             std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
+            {
                 ret[std::to_string(seq)] = it.second->getJson(0);
+            }
             else
+            {
                 ret[to_string(it.first)] = it.second->getJson(0);
+            }
         }
 
         return ret;

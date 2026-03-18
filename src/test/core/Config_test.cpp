@@ -284,7 +284,7 @@ port_wss_admin
         expectException([&c] { c.legacy("server"); });  // not a single line
 
         // set a legacy value
-        BEAST_EXPECT(c.legacy("not_in_file") == "");
+        BEAST_EXPECT(c.legacy("not_in_file").empty());
         c.legacy("not_in_file", "new_value");
         BEAST_EXPECT(c.legacy("not_in_file") == "new_value");
     }
@@ -434,7 +434,7 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString("");
-                BEAST_EXPECT(c.legacy("database_path") == "");
+                BEAST_EXPECT(c.legacy("database_path").empty());
             }
         }
         {
@@ -533,7 +533,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -546,7 +546,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -561,7 +561,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 255);
 
         try
@@ -576,7 +576,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 10000);
     }
 
@@ -1337,7 +1337,7 @@ r.ripple.com:51235
             auto val_3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val_3 == "mystring");
             auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4 == "");
+            BEAST_EXPECT(val_4.empty());
             auto val_5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val_5 == "default");
 
@@ -1429,7 +1429,7 @@ r.ripple.com:51235
             {"months", 2592000, 1, false},
             {"years", 31536000, 1, false}};
 
-        std::string space = "";
+        std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;
@@ -1437,22 +1437,30 @@ r.ripple.com:51235
 [amendment_majority_time]
 )xrpldConfig");
             toLoad += std::to_string(val) + space + unit;
-            space = space == "" ? " " : "";
+            space = space.empty() ? " " : "";
 
             try
             {
                 c.loadFromString(toLoad);
                 if (shouldPass)
+                {
                     BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                }
                 else
+                {
                     fail();
+                }
             }
             catch (std::runtime_error&)
             {
                 if (!shouldPass)
+                {
                     pass();
+                }
                 else
+                {
                     fail();
+                }
             }
         }
     }

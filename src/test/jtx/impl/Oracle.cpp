@@ -12,7 +12,7 @@ namespace test {
 namespace jtx {
 namespace oracle {
 
-Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env), owner_{}, documentID_{}
+Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env), documentID_{}
 {
     // LastUpdateTime is checked to be in range
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.
@@ -38,11 +38,17 @@ Oracle::remove(RemoveArg const& arg)
     jv[jss::Account] = to_string(arg.owner.value_or(owner_));
     toJson(jv[jss::OracleDocumentID], arg.documentID.value_or(documentID_));
     if (Oracle::fee != 0)
+    {
         jv[jss::Fee] = std::to_string(Oracle::fee);
+    }
     else if (arg.fee != 0)
+    {
         jv[jss::Fee] = std::to_string(arg.fee);
+    }
     else
+    {
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
+    }
     if (arg.flags != 0)
         jv[jss::Flags] = arg.flags;
     submit(jv, arg.msig, arg.seq, arg.err);
@@ -58,22 +64,38 @@ Oracle::submit(
     if (msig)
     {
         if (seq && err)
+        {
             env_(jv, *msig, *seq, *err);
+        }
         else if (seq)
+        {
             env_(jv, *msig, *seq);
+        }
         else if (err)
+        {
             env_(jv, *msig, *err);
+        }
         else
+        {
             env_(jv, *msig);
+        }
     }
     else if (seq && err)
+    {
         env_(jv, *seq, *err);
+    }
     else if (seq)
+    {
         env_(jv, *seq);
+    }
     else if (err)
+    {
         env_(jv, *err);
+    }
     else
+    {
         env_(jv);
+    }
     env_.close();
 }
 
@@ -90,7 +112,7 @@ Oracle::expectPrice(DataSeries const& series) const
     if (auto const sle = env_.le(keylet::oracle(owner_, documentID_)))
     {
         auto const& leSeries = sle->getFieldArray(sfPriceDataSeries);
-        if (leSeries.size() == 0 || leSeries.size() != series.size())
+        if (leSeries.empty() || leSeries.size() != series.size())
             return false;
         for (auto const& data : series)
         {
@@ -157,9 +179,13 @@ Oracle::aggregatePrice(
     if (jr.isObject())
     {
         if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
+        {
             return jr[jss::result];
-        else if (jr.isMember(jss::error))
+        }
+        if (jr.isMember(jss::error))
+        {
             return jr;
+        }
     }
     return Json::nullValue;
 }
@@ -177,9 +203,13 @@ Oracle::set(UpdateArg const& arg)
         jv[jss::OracleDocumentID] = documentID_;
     }
     else if (arg.documentID)
+    {
         toJson(jv[jss::OracleDocumentID], *arg.documentID);
+    }
     else
+    {
         jv[jss::OracleDocumentID] = documentID_;
+    }
     jv[jss::TransactionType] = jss::OracleSet;
     jv[jss::Account] = to_string(owner_);
     if (arg.assetClass)
@@ -191,24 +221,36 @@ Oracle::set(UpdateArg const& arg)
     if (arg.flags != 0)
         jv[jss::Flags] = arg.flags;
     if (Oracle::fee != 0)
+    {
         jv[jss::Fee] = std::to_string(Oracle::fee);
+    }
     else if (arg.fee != 0)
+    {
         jv[jss::Fee] = std::to_string(arg.fee);
+    }
     else
+    {
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
+    }
     // lastUpdateTime if provided is offset from testStartTime
     if (arg.lastUpdateTime)
     {
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
+        {
             jv[jss::LastUpdateTime] =
                 to_string(testStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
+        }
         else
+        {
             toJson(jv[jss::LastUpdateTime], *arg.lastUpdateTime);
+        }
     }
     else
+    {
         jv[jss::LastUpdateTime] = to_string(
             duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
             epoch_offset.count());
+    }
     Json::Value dataSeries(Json::arrayValue);
     auto assetToStr = [](std::string const& s) {
         // assume standard currency
@@ -225,8 +267,10 @@ Oracle::set(UpdateArg const& arg)
         price[jss::BaseAsset] = assetToStr(std::get<0>(data));
         price[jss::QuoteAsset] = assetToStr(std::get<1>(data));
         if (std::get<2>(data))
+        {
             price[jss::AssetPrice] =
                 *std::get<2>(data);  // NOLINT(bugprone-unchecked-optional-access)
+        }
         if (std::get<3>(data))
             price[jss::Scale] = *std::get<3>(data);  // NOLINT(bugprone-unchecked-optional-access)
         priceData[jss::PriceData] = price;
@@ -265,9 +309,13 @@ Oracle::ledgerEntry(
     if (account)
     {
         if (std::holds_alternative<AccountID>(*account))
+        {
             jvParams[jss::oracle][jss::account] = to_string(std::get<AccountID>(*account));
+        }
         else
+        {
             jvParams[jss::oracle][jss::account] = std::get<std::string>(*account);
+        }
     }
     if (documentID)
         toJson(jvParams[jss::oracle][jss::oracle_document_id], *documentID);
@@ -275,9 +323,13 @@ Oracle::ledgerEntry(
     {
         std::uint32_t i = 0;
         if (boost::conversion::try_lexical_convert(*index, i))
+        {
             jvParams[jss::oracle][jss::ledger_index] = i;
+        }
         else
+        {
             jvParams[jss::oracle][jss::ledger_index] = *index;
+        }
     }
     // Convert "%None%" to None
     auto str = to_string(jvParams);
@@ -308,12 +360,18 @@ toJsonHex(Json::Value& jv, AnyValue const& v)
             if constexpr (std::is_same_v<T, std::string const&>)
             {
                 if (arg.starts_with("##"))
+                {
                     jv = arg.substr(2);
+                }
                 else
+                {
                     jv = strHex(arg);
+                }
             }
             else
+            {
                 jv = arg;
+            }
         },
         v);
 }
