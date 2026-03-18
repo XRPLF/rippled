@@ -28,14 +28,14 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
      *
      */
     template <class Clock, class MeasureClock = std::chrono::high_resolution_clock>
-    struct measure_asio_timers
+    struct MeasureAsioTimers
     {
         using duration = typename Clock::duration;
         using rep = typename MeasureClock::duration::rep;
 
         std::vector<duration> elapsedTimes;
 
-        measure_asio_timers(duration interval = 100ms, size_t numSamples = 50)
+        MeasureAsioTimers(duration interval = 100ms, size_t numSamples = 50)
         {
             using namespace std::chrono;
             boost::asio::io_context ios;
@@ -162,7 +162,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
 #ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements
         // if running in CI/VM environment
-        measure_asio_timers<steady_clock> tt{interval};
+        MeasureAsioTimers<steady_clock> tt{interval};
         log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
         log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
         expectedProbeCountMin =

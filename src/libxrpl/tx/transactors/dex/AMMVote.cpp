@@ -80,17 +80,17 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     // has the vote entry.
     for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
     {
-        auto const account = entry[sfAccount];
-        auto lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
+        auto const entryAccount = entry[sfAccount];
+        auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
         if (lpTokens == beast::zero)
         {
-            JLOG(j.debug()) << "AMMVote::applyVote, account " << account << " is not LP";
+            JLOG(j.debug()) << "AMMVote::applyVote, account " << entryAccount << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
-        if (account == account)
+        if (entryAccount == account)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
@@ -99,7 +99,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
-        newEntry.setAccountID(sfAccount, account);
+        newEntry.setAccountID(sfAccount, entryAccount);
         if (feeVal != 0)
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
@@ -111,11 +111,11 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         if (!minTokens ||
             (lpTokens < *minTokens ||
              (lpTokens == *minTokens &&
-              (feeVal < minFee || (feeVal == minFee && account < minAccount)))))
+              (feeVal < minFee || (feeVal == minFee && entryAccount < minAccount)))))
         {
             minTokens = lpTokens;
             minPos = updatedVoteSlots.size();
-            minAccount = account;
+            minAccount = entryAccount;
             minFee = feeVal;
         }
         updatedVoteSlots.push_back(std::move(newEntry));

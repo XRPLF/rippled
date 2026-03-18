@@ -23,6 +23,7 @@ public:
 
     template <class Hasher>
     friend void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     hash_append(Hasher& h, TestUserTypeMember const& a) noexcept
     {
         using beast::hash_append;
@@ -43,6 +44,7 @@ public:
 
     template <class Hasher>
     friend void
+    // NOLINTNEXTLINE(readability-identifier-naming)
     hash_append(Hasher& h, TestUserTypeFree const& a) noexcept
     {
         using beast::hash_append;

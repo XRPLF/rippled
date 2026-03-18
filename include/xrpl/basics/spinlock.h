@@ -26,7 +26,7 @@ namespace detail {
     specific amount of time, to prevent this.
  */
 inline void
-spin_pause() noexcept
+spinPause() noexcept
 {
 #ifdef __aarch64__
     asm volatile("yield");
@@ -123,7 +123,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while ((bits_.load(std::memory_order_relaxed) & mask_) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 
@@ -193,7 +193,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while (lock_.load(std::memory_order_relaxed) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 

@@ -16,7 +16,7 @@ auto constexpr kDEFAULT_REFRESH_INTERVAL = std::chrono::minutes{5};
 auto constexpr kERROR_RETRY_INTERVAL = std::chrono::seconds{30};
 unsigned short constexpr kMAX_REDIRECTS = 3;
 
-ValidatorSite::Site::Resource::Resource(std::string uri) : uri{std::move(uri)}
+ValidatorSite::Site::Resource::Resource(std::string inUri) : uri{std::move(inUri)}
 {
     if (!parseUrl(pUrl, uri))
         throw std::runtime_error("URI '" + uri + "' cannot be parsed");

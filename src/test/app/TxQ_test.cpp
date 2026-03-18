@@ -1549,7 +1549,7 @@ public:
             BEAST_EXPECT(
                 e.what() ==
                 "The minimum number of low-fee transactions allowed "
-                "per ledger (minimum_txn_in_ledger_) exceeds "
+                "per ledger (minimum_txn_in_ledger) exceeds "
                 "the maximum number of low-fee transactions allowed per "
                 "ledger (maximum_txn_in_ledger)."s);
         }

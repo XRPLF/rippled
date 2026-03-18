@@ -146,7 +146,7 @@ public:
     }
 
     void
-    testTransactionsApIv1()
+    testTransactionsAPIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -280,7 +280,7 @@ public:
     }
 
     void
-    testTransactionsApIv2()
+    testTransactionsAPIv2()
     {
         testcase("transactions API version 2");
 
@@ -932,11 +932,11 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t nutx = vec.size();
-            for (size_t i = 0; i < nutx; ++i)
+            size_t numTx = vec.size();
+            for (size_t i = 0; i < numTx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
-                if ((i + 1 == nutx || ledger != std::get<3>(vec[i + 1])) != boundary)
+                if ((i + 1 == numTx || ledger != std::get<3>(vec[i + 1])) != boundary)
                     return false;
             }
             return true;
@@ -1476,8 +1476,8 @@ public:
 
         testServer();
         testLedger();
-        testTransactionsApIv1();
-        testTransactionsApIv2();
+        testTransactionsAPIv1();
+        testTransactionsAPIv2();
         testManifests();
         testValidations(all - xrpFees);
         testValidations(all);

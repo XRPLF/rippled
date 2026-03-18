@@ -2763,7 +2763,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         scEnv.close();
 
         {
-            // request the xchain_claim_id_ via RPC
+            // request the xchain_claim_id via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] = 1;
@@ -2781,7 +2781,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         }
 
         {
-            // request the xchain_claim_id_ via RPC
+            // request the xchain_claim_id via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_claim_id][jss::xchain_owned_claim_id] = 2;
@@ -2839,7 +2839,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         scEnv.close();
 
         {
-            // request the create account claim_id_ via RPC
+            // request the create account claim_id via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_create_account_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_create_account_claim_id]
@@ -2897,7 +2897,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
         }
         scEnv.close();
         {
-            // request the create account claim_id_ via RPC
+            // request the create account claim_id via RPC
             Json::Value jvParams;
             jvParams[jss::xchain_owned_create_account_claim_id] = jvXRPBridgeRPC;
             jvParams[jss::xchain_owned_create_account_claim_id]

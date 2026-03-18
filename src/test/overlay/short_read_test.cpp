@@ -237,11 +237,11 @@ private:
             timer_type timer;
             boost::asio::streambuf buf;
 
-            Connection(Server& server, socket_type&& socket)
-                : Child(server)
-                , server(server)
+            Connection(Server& inServer, socket_type&& inSocket)
+                : Child(inServer)
+                , server(inServer)
                 , test(server.test_)
-                , socket(std::move(socket))
+                , socket(std::move(inSocket))
                 , stream(socket, *test.context_)
                 , strand(boost::asio::make_strand(test.io_context_))
                 , timer(test.io_context_)
