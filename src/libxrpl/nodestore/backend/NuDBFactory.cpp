@@ -136,16 +136,24 @@ public:
             nudb::create<nudb::xxhasher>(
                 dp, kp, lp, appType, uid, salt, keyBytes_, blockSize_, 0.50, ec);
             if (ec == nudb::errc::file_exists)
+            {
                 ec = {};
+            }
             if (ec)
+            {
                 Throw<nudb::system_error>(ec);
+            }
         }
         db_.open(dp, kp, lp, ec);
         if (ec)
+        {
             Throw<nudb::system_error>(ec);
+        }
 
         if (db_.appnum() != appnum)
+        {
             Throw<std::runtime_error>("nodestore: unknown appnum");
+        }
         db_.set_burst(burstSize_);
     }
 
@@ -211,9 +219,13 @@ public:
             ec);
 
         if (ec == nudb::error::key_not_found)
+        {
             return notFound;
+        }
         if (ec)
+        {
             Throw<nudb::system_error>(ec);
+        }
         return status;
     }
 
@@ -294,7 +306,9 @@ public:
         nudb::error_code ec;
         db_.insert(e.getKey(), result.first, result.second, ec);
         if (ec && ec != nudb::error::key_exists)
+        {
             Throw<nudb::system_error>(ec);
+        }
     }
 
     void
