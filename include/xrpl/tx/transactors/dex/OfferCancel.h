@@ -5,12 +5,12 @@
 
 namespace xrpl {
 
-class CancelOffer : public Transactor
+class OfferCancel : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CancelOffer(ApplyContext& ctx) : Transactor(ctx)
+    explicit OfferCancel(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -24,6 +24,6 @@ public:
     doApply() override;
 };
 
-using OfferCancel = CancelOffer;
+using OfferCancel = OfferCancel;
 
 }  // namespace xrpl

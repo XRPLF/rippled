@@ -124,7 +124,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 
 /** This transaction type creates an offer to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/dex/CreateOffer.h>
+#   include <xrpl/tx/transactors/dex/OfferCreate.h>
 #endif
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     Delegation::delegable,
@@ -140,7 +140,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
 
 /** This transaction type cancels existing offers to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/dex/CancelOffer.h>
+#   include <xrpl/tx/transactors/dex/OfferCancel.h>
 #endif
 TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
     Delegation::delegable,

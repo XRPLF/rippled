@@ -1,16 +1,16 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/dex/CancelOffer.h>
+#include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 namespace xrpl {
 
 NotTEC
-CancelOffer::preflight(PreflightContext const& ctx)
+OfferCancel::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfOfferSequence])
     {
-        JLOG(ctx.j.trace()) << "CancelOffer::preflight: missing sequence";
+        JLOG(ctx.j.trace()) << "OfferCancel::preflight: missing sequence";
         return temBAD_SEQUENCE;
     }
 
@@ -20,7 +20,7 @@ CancelOffer::preflight(PreflightContext const& ctx)
 //------------------------------------------------------------------------------
 
 TER
-CancelOffer::preclaim(PreclaimContext const& ctx)
+OfferCancel::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
@@ -42,7 +42,7 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
 //------------------------------------------------------------------------------
 
 TER
-CancelOffer::doApply()
+OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 

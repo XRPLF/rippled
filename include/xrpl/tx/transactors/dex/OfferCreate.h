@@ -9,13 +9,13 @@ class PaymentSandbox;
 class Sandbox;
 
 /** Transactor specialized for creating offers in the ledger. */
-class CreateOffer : public Transactor
+class OfferCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
-    explicit CreateOffer(ApplyContext& ctx) : Transactor(ctx)
+    explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -74,6 +74,6 @@ private:
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 };
 
-using OfferCreate = CreateOffer;
+using OfferCreate = OfferCreate;
 
 }  // namespace xrpl

@@ -8,12 +8,12 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/dex/CreateOffer.h>
+#include <xrpl/tx/transactors/dex/OfferCreate.h>
 #include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 
 namespace xrpl {
 TxConsequences
-CreateOffer::makeTxConsequences(PreflightContext const& ctx)
+OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
@@ -24,7 +24,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 }
 
 bool
-CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
+OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
         return false;
@@ -33,7 +33,7 @@ CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 std::uint32_t
-CreateOffer::getFlagsMask(PreflightContext const& ctx)
+OfferCreate::getFlagsMask(PreflightContext const& ctx)
 {
     // The tfOfferCreateMask is built assuming that PermissionedDEX is
     // enabled
@@ -45,7 +45,7 @@ CreateOffer::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+OfferCreate::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;
@@ -123,7 +123,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
 }
 
 TER
-CreateOffer::preclaim(PreclaimContext const& ctx)
+OfferCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
@@ -194,7 +194,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-CreateOffer::checkAcceptAsset(
+OfferCreate::checkAcceptAsset(
     ReadView const& view,
     ApplyFlags const flags,
     AccountID const id,
@@ -202,7 +202,7 @@ CreateOffer::checkAcceptAsset(
     Issue const& issue)
 {
     // Only valid for custom currencies
-    XRPL_ASSERT(!isXRP(issue.currency), "xrpl::CreateOffer::checkAcceptAsset : input is not XRP");
+    XRPL_ASSERT(!isXRP(issue.currency), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
@@ -264,7 +264,7 @@ CreateOffer::checkAcceptAsset(
 }
 
 std::pair<TER, Amounts>
-CreateOffer::flowCross(
+OfferCreate::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
     Amounts const& takerAmount,
@@ -433,7 +433,7 @@ CreateOffer::flowCross(
                     afterCross.out -= result.actualAmountOut;
                     XRPL_ASSERT(
                         afterCross.out >= beast::zero,
-                        "xrpl::CreateOffer::flowCross : minimum offer");
+                        "xrpl::OfferCreate::flowCross : minimum offer");
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(afterCross.out, rate, takerAmount.in.issue(), true);
@@ -452,7 +452,7 @@ CreateOffer::flowCross(
 }
 
 std::string
-CreateOffer::format_amount(STAmount const& amount)
+OfferCreate::format_amount(STAmount const& amount)
 {
     std::string txt = amount.getText();
     txt += "/";
@@ -461,7 +461,7 @@ CreateOffer::format_amount(STAmount const& amount)
 }
 
 TER
-CreateOffer::applyHybrid(
+OfferCreate::applyHybrid(
     Sandbox& sb,
     std::shared_ptr<STLedgerEntry> sleOffer,
     Keylet const& offerKey,
@@ -507,7 +507,7 @@ CreateOffer::applyHybrid(
 }
 
 std::pair<TER, bool>
-CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
+OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
     using beast::zero;
 
@@ -638,7 +638,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // or give a tec.
         XRPL_ASSERT(
             isTesSuccess(result) || isTecClaim(result),
-            "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
+            "xrpl::OfferCreate::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
         if (auto stream = j_.trace())
@@ -659,10 +659,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         XRPL_ASSERT(
             saTakerGets.issue() == place_offer.in.issue(),
-            "xrpl::CreateOffer::applyGuts : taker gets issue match");
+            "xrpl::OfferCreate::applyGuts : taker gets issue match");
         XRPL_ASSERT(
             saTakerPays.issue() == place_offer.out.issue(),
-            "xrpl::CreateOffer::applyGuts : taker pays issue match");
+            "xrpl::OfferCreate::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
             crossed = true;
@@ -692,7 +692,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     XRPL_ASSERT(
         saTakerPays > zero && saTakerGets > zero,
-        "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
+        "xrpl::OfferCreate::applyGuts : taker pays and gets positive");
 
     if (!isTesSuccess(result))
     {
@@ -852,7 +852,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 }
 
 TER
-CreateOffer::doApply()
+OfferCreate::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
