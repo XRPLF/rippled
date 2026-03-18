@@ -4,12 +4,12 @@
 
 namespace xrpl {
 
-class CancelCheck : public Transactor
+class CheckCancel : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CancelCheck(ApplyContext& ctx) : Transactor(ctx)
+    explicit CheckCancel(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -23,6 +23,6 @@ public:
     doApply() override;
 };
 
-using CheckCancel = CancelCheck;
+using CheckCancel = CheckCancel;
 
 }  // namespace xrpl

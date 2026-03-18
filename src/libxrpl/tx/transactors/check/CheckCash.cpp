@@ -6,14 +6,14 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/check/CashCheck.h>
+#include <xrpl/tx/transactors/check/CheckCash.h>
 
 #include <algorithm>
 
 namespace xrpl {
 
 NotTEC
-CashCheck::preflight(PreflightContext const& ctx)
+CheckCash::preflight(PreflightContext const& ctx)
 {
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
@@ -44,7 +44,7 @@ CashCheck::preflight(PreflightContext const& ctx)
 }
 
 TER
-CashCheck::preclaim(PreclaimContext const& ctx)
+CheckCash::preclaim(PreclaimContext const& ctx)
 {
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
@@ -196,7 +196,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-CashCheck::doApply()
+CheckCash::doApply()
 {
     // Flow requires that we operate on a PaymentSandbox, rather than
     // directly on a View.

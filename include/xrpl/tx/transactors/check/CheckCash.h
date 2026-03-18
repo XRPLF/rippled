@@ -4,12 +4,12 @@
 
 namespace xrpl {
 
-class CashCheck : public Transactor
+class CheckCash : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit CashCheck(ApplyContext& ctx) : Transactor(ctx)
+    explicit CheckCash(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -23,6 +23,6 @@ public:
     doApply() override;
 };
 
-using CheckCash = CashCheck;
+using CheckCash = CheckCash;
 
 }  // namespace xrpl

@@ -5,18 +5,18 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/check/CancelCheck.h>
+#include <xrpl/tx/transactors/check/CheckCancel.h>
 
 namespace xrpl {
 
 NotTEC
-CancelCheck::preflight(PreflightContext const& ctx)
+CheckCancel::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
 TER
-CancelCheck::preclaim(PreclaimContext const& ctx)
+CheckCancel::preclaim(PreclaimContext const& ctx)
 {
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
@@ -45,7 +45,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-CancelCheck::doApply()
+CheckCancel::doApply()
 {
     auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)

@@ -4,12 +4,12 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/check/CreateCheck.h>
+#include <xrpl/tx/transactors/check/CheckCreate.h>
 
 namespace xrpl {
 
 NotTEC
-CreateCheck::preflight(PreflightContext const& ctx)
+CheckCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
@@ -47,7 +47,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
 }
 
 TER
-CreateCheck::preclaim(PreclaimContext const& ctx)
+CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
     auto const sleDst = ctx.view.read(keylet::account(dstId));
@@ -128,7 +128,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-CreateCheck::doApply()
+CheckCreate::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
