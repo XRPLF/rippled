@@ -101,7 +101,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status;
+        Status status = ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {

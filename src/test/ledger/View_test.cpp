@@ -88,7 +88,7 @@ class View_test : public beast::unit_test::suite
         auto const next = v.succ(k(id).key);
         if (answer)
         {
-            if (BEAST_EXPECT(next))
+            if (BEAST_EXPECT(next); next.has_value())
                 BEAST_EXPECT(*next == k(*answer).key);
         }
         else

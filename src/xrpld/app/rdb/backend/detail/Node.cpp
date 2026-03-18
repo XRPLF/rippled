@@ -74,8 +74,8 @@ makeLedgerDBs(
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
-            std::size_t notnull, dflt_value, pk;
-            soci::indicator ind;
+            std::size_t notnull = 0, dflt_value = 0, pk = 0;
+            soci::indicator ind = soci::i_null;
             soci::statement st =
                 (tx->getSession().prepare << ("PRAGMA table_info(AccountTransactions);"),
                  soci::into(cid),
@@ -136,7 +136,7 @@ deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledger
 std::size_t
 getRows(soci::session& session, TableType type)
 {
-    std::size_t rows;
+    std::size_t rows = 0;
     session << "SELECT COUNT(*) AS rows "
                "FROM "
             << to_string(type) << ";",
@@ -148,7 +148,7 @@ getRows(soci::session& session, TableType type)
 RelationalDatabase::CountMinMax
 getRowsMinMax(soci::session& session, TableType type)
 {
-    RelationalDatabase::CountMinMax res;
+    RelationalDatabase::CountMinMax res{};
     session << "SELECT COUNT(*) AS rows, "
                "MIN(LedgerSeq) AS first, "
                "MAX(LedgerSeq) AS last "
@@ -543,7 +543,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
     sql.append(std::to_string(maxSeq));
     sql.append(";");
 
-    std::uint64_t ls;
+    std::uint64_t ls = 0;
     std::string lh;
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> ph;
@@ -587,7 +587,7 @@ getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, i
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociRawTxnBlob(session);
-        soci::indicator rti;
+        soci::indicator rti = soci::i_null;
         Blob rawTxn;
 
         soci::statement st =
@@ -645,7 +645,7 @@ transactionsSQL(
     constexpr std::uint32_t NONBINARY_PAGE_LENGTH = 200;
     constexpr std::uint32_t BINARY_PAGE_LENGTH = 500;
 
-    std::uint32_t numberOfResults;
+    std::uint32_t numberOfResults = 0;
 
     if (count)
     {
@@ -755,7 +755,7 @@ getAccountTxs(
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(session), sociTxnMetaBlob(session);
-        soci::indicator rti, tmi;
+        soci::indicator rti = soci::i_null, tmi = soci::i_null;
         Blob rawTxn, txnMeta;
 
         soci::statement st =
@@ -872,7 +872,7 @@ getAccountTxsB(
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(session), sociTxnMetaBlob(session);
-        soci::indicator rti, tmi;
+        soci::indicator rti = soci::i_null, tmi = soci::i_null;
 
         soci::statement st =
             (session.prepare << sql,
@@ -953,7 +953,7 @@ accountTxPage(
 
     bool lookingForMarker = options.marker.has_value();
 
-    std::uint32_t numberOfResults;
+    std::uint32_t numberOfResults = 0;
 
     if (options.limit == 0 || options.limit == UINT32_MAX ||
         (options.limit > page_length && !options.bAdmin))
@@ -1041,7 +1041,7 @@ accountTxPage(
         boost::optional<std::string> status;
         soci::blob txnData(session);
         soci::blob txnMeta(session);
-        soci::indicator dataPresent, metaPresent;
+        soci::indicator dataPresent = soci::i_null, metaPresent = soci::i_null;
 
         soci::statement st =
             (session.prepare << sql,
@@ -1151,7 +1151,7 @@ getTransaction(
     Blob rawTxn, rawMeta;
     {
         soci::blob sociRawTxnBlob(session), sociRawMetaBlob(session);
-        soci::indicator txn, meta;
+        soci::indicator txn = soci::i_null, meta = soci::i_null;
 
         session << sql, soci::into(ledgerSeq), soci::into(status), soci::into(sociRawTxnBlob, txn),
             soci::into(sociRawMetaBlob, meta);
@@ -1164,7 +1164,7 @@ getTransaction(
         if (!got_data)
         {
             uint64_t count = 0;
-            soci::indicator rti;
+            soci::indicator rti = soci::i_null;
 
             session << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE "
                        "LedgerSeq BETWEEN "
@@ -1230,16 +1230,16 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         }
 
         static auto const pageSize = [&] {
-            std::uint32_t ps;
+            std::uint32_t ps = 0;
             session << "PRAGMA page_size;", soci::into(ps);
             return ps;
         }();
         static auto const maxPages = [&] {
-            std::uint32_t mp;
+            std::uint32_t mp = 0;
             session << "PRAGMA max_page_count;", soci::into(mp);
             return mp;
         }();
-        std::uint32_t pageCount;
+        std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
         std::uint32_t freePages = maxPages - pageCount;
         std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;

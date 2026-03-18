@@ -305,6 +305,7 @@ class Transaction_test : public beast::unit_test::suite
             uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *RPC::encodeCTID(startLegSeq + i, txnIdx, netID),
                 BINARY,
                 to_string(startLegSeq),
@@ -316,6 +317,7 @@ class Transaction_test : public beast::unit_test::suite
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
@@ -340,6 +342,7 @@ class Transaction_test : public beast::unit_test::suite
             uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *RPC::encodeCTID(startLegSeq + i, txnIdx, netID),
                 BINARY,
                 to_string(endLegSeq + 1),
@@ -399,6 +402,7 @@ class Transaction_test : public beast::unit_test::suite
             uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *RPC::encodeCTID(endLegSeq, txnIdx, netID),
                 to_string(startLegSeq),
                 to_string(deletedLedger - 1));
@@ -594,7 +598,7 @@ class Transaction_test : public beast::unit_test::suite
 
             Json::Value jsonTx;
             jsonTx[jss::binary] = false;
-            jsonTx[jss::ctid] = *ctid;
+            jsonTx[jss::ctid] = *ctid;  // NOLINT(bugprone-unchecked-optional-access)
             jsonTx[jss::id] = 1;
             auto const jrr = env.rpc("json", "tx", to_string(jsonTx))[jss::result];
             BEAST_EXPECT(jrr[jss::ctid] == ctid);
@@ -614,6 +618,7 @@ class Transaction_test : public beast::unit_test::suite
             env(pay(alice, bob, XRP(10)));
             env.close();
 
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             std::string const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
             auto isUpper = [](char c) { return std::isupper(c) != 0; };
 
@@ -670,7 +675,8 @@ class Transaction_test : public beast::unit_test::suite
             if (jrr.isMember(jss::ctid))
             {
                 auto const ctid = RPC::encodeCTID(ledgerSeq, 0, netID);
-                BEAST_EXPECT(jrr[jss::ctid] == *ctid);
+                BEAST_EXPECT(
+                    jrr[jss::ctid] == *ctid);  // NOLINT(bugprone-unchecked-optional-access)
             }
         }
 
@@ -687,6 +693,7 @@ class Transaction_test : public beast::unit_test::suite
             env(pay(alice, bob, XRP(10)));
             env.close();
 
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const ctid = *RPC::encodeCTID(startLegSeq, 0, netID + 1);
             Json::Value jsonTx;
             jsonTx[jss::binary] = false;

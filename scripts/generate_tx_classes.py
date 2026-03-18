@@ -18,6 +18,7 @@ from macro_parser_common import (
     parse_field_list,
     generate_cpp_class,
     generate_from_template,
+    clear_output_directory,
 )
 
 
@@ -99,7 +100,7 @@ def parse_macro_file(filepath):
         c_code = f.read()
 
     # Step 1: Clean the C++ code using pcpp
-    cleaner = CppCleaner("TRANSACTION_INCLUDE")
+    cleaner = CppCleaner("TRANSACTION_INCLUDE", "TRANSACTION")
     cleaner.parse(c_code)
 
     out = io.StringIO()
@@ -146,8 +147,27 @@ def main():
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
+    parser.add_argument(
+        "--list-outputs",
+        action="store_true",
+        help="List output files without generating (one per line)",
+    )
 
     args = parser.parse_args()
+
+    # Parse the macro file to get transaction names
+    transactions = parse_macro_file(args.macro_path)
+
+    # If --list-outputs, just print the output file paths and exit
+    if args.list_outputs:
+        header_dir = Path(args.header_dir)
+        for tx in transactions:
+            print(header_dir / f"{tx['name']}.h")
+        if args.test_dir:
+            test_dir = Path(args.test_dir)
+            for tx in transactions:
+                print(test_dir / f"{tx['name']}Tests.cpp")
+        return
 
     # Auto-detect sfields.macro path if not provided
     if args.sfields_macro:
@@ -164,9 +184,6 @@ def main():
         f"Found {len(field_types)} field definitions ({sum(1 for f in field_types.values() if f['typed'])} typed, {sum(1 for f in field_types.values() if not f['typed'])} untyped)\n"
     )
 
-    # Parse the file
-    transactions = parse_macro_file(args.macro_path)
-
     print(f"Found {len(transactions)} transactions\n")
 
     for tx in transactions:
@@ -181,6 +198,9 @@ def main():
     # Set up output directory
     header_dir = Path(args.header_dir)
     header_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clear existing generated files before regenerating
+    clear_output_directory(header_dir)
 
     print(f"\nGenerating header-only template classes...")
     print(f"  Headers: {header_dir}\n")
@@ -206,6 +226,9 @@ def main():
     if args.test_dir:
         test_dir = Path(args.test_dir)
         test_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clear existing generated test files before regenerating
+        clear_output_directory(test_dir)
 
         for tx_info in transactions:
             # Fields are already enriched from generate_cpp_class above

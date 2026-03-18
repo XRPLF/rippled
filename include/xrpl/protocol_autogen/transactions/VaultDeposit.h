@@ -19,7 +19,7 @@ class VaultDepositBuilder;
  * @brief Transaction: VaultDeposit
  *
  * Type: ttVAULT_DEPOSIT (68)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: mayAuthorizeMPT | mustModifyVault
  *

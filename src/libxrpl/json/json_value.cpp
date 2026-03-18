@@ -157,7 +157,7 @@ Value::CZString::isStaticString() const
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
-Value::Value(ValueType type) : type_(type), allocated_(0)
+Value::Value(ValueType type) : type_(type)
 {
     switch (type)
     {
@@ -225,7 +225,7 @@ Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
         valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
 }
 
-Value::Value(StaticString const& value) : type_(stringValue), allocated_(false)
+Value::Value(StaticString const& value) : type_(stringValue)
 {
     value_.string_ = const_cast<char*>(value.c_str());
 }

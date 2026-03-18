@@ -20,6 +20,7 @@ from macro_parser_common import (
     parse_field_list,
     generate_cpp_class,
     generate_from_template,
+    clear_output_directory,
 )
 
 
@@ -96,7 +97,7 @@ def parse_macro_file(file_path):
         c_code = f.read()
 
     # Step 1: Clean the C++ code using pcpp
-    cleaner = CppCleaner("LEDGER_ENTRY_INCLUDE")
+    cleaner = CppCleaner("LEDGER_ENTRY_INCLUDE", "LEDGER_ENTRY")
     cleaner.parse(c_code)
 
     out = io.StringIO()
@@ -137,8 +138,27 @@ def main():
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
+    parser.add_argument(
+        "--list-outputs",
+        action="store_true",
+        help="List output files without generating (one per line)",
+    )
 
     args = parser.parse_args()
+
+    # Parse the macro file to get ledger entry names
+    entries = parse_macro_file(args.macro_path)
+
+    # If --list-outputs, just print the output file paths and exit
+    if args.list_outputs:
+        header_dir = Path(args.header_dir)
+        for entry in entries:
+            print(header_dir / f"{entry['name']}.h")
+        if args.test_dir:
+            test_dir = Path(args.test_dir)
+            for entry in entries:
+                print(test_dir / f"{entry['name']}Tests.cpp")
+        return
 
     # Auto-detect sfields.macro path if not provided
     if args.sfields_macro:
@@ -154,9 +174,6 @@ def main():
     print(
         f"Found {len(field_types)} field definitions ({sum(1 for f in field_types.values() if f['typed'])} typed, {sum(1 for f in field_types.values() if not f['typed'])} untyped)\n"
     )
-
-    # Parse the file
-    entries = parse_macro_file(args.macro_path)
 
     print(f"Found {len(entries)} ledger entries\n")
 
@@ -179,6 +196,9 @@ def main():
     header_dir = Path(args.header_dir)
     header_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clear existing generated files before regenerating
+    clear_output_directory(header_dir)
+
     for entry in entries:
         generate_cpp_class(
             entry, header_dir, template_dir, field_types, "LedgerEntry.h.mako"
@@ -190,6 +210,9 @@ def main():
     if args.test_dir:
         test_dir = Path(args.test_dir)
         test_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clear existing generated test files before regenerating
+        clear_output_directory(test_dir)
 
         for entry in entries:
             # Fields are already enriched from generate_cpp_class above

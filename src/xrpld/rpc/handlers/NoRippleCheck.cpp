@@ -60,7 +60,7 @@ doNoRippleCheck(RPC::JsonContext& context)
             return RPC::invalid_field_error("role");
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::noRippleCheck, context))
         return *err;
 

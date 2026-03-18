@@ -3,6 +3,11 @@
 #]===================================================================]
 
 # Options for code generation
+option(
+    XRPL_NO_CODEGEN
+    "Disable code generation (use pre-generated files from repository)"
+    OFF
+)
 set(CODEGEN_VENV_DIR
     ""
     CACHE PATH
@@ -27,10 +32,27 @@ function(setup_protocol_autogen)
     set(LEDGER_ENTRIES_MACRO "${MACRO_DIR}/ledger_entries.macro")
     set(SFIELDS_MACRO "${MACRO_DIR}/sfields.macro")
 
-    # Python scripts
+    # Python scripts and templates
     set(GENERATE_TX_SCRIPT "${SCRIPTS_DIR}/generate_tx_classes.py")
     set(GENERATE_LEDGER_SCRIPT "${SCRIPTS_DIR}/generate_ledger_classes.py")
     set(REQUIREMENTS_FILE "${SCRIPTS_DIR}/requirements.txt")
+    set(MACRO_PARSER_COMMON "${SCRIPTS_DIR}/macro_parser_common.py")
+    set(TX_TEMPLATE "${SCRIPTS_DIR}/templates/Transaction.h.mako")
+    set(TX_TEST_TEMPLATE "${SCRIPTS_DIR}/templates/TransactionTests.cpp.mako")
+    set(LEDGER_TEMPLATE "${SCRIPTS_DIR}/templates/LedgerEntry.h.mako")
+    set(LEDGER_TEST_TEMPLATE
+        "${SCRIPTS_DIR}/templates/LedgerEntryTests.cpp.mako"
+    )
+
+    # Check if code generation is disabled
+    if(XRPL_NO_CODEGEN)
+        message(
+            WARNING
+            "Protocol autogen: Code generation is disabled (XRPL_NO_CODEGEN=ON). "
+            "Generated files may be out of date."
+        )
+        return()
+    endif()
 
     # Create output directories
     file(MAKE_DIRECTORY "${AUTOGEN_HEADER_DIR}/transactions")
@@ -51,7 +73,8 @@ function(setup_protocol_autogen)
     if(NOT Python3_EXECUTABLE)
         message(
             FATAL_ERROR
-            "Python3 not found. Code generation cannot proceed."
+            "Python3 not found. Code generation cannot proceed.\n"
+            "Please install Python 3, or set -DXRPL_NO_CODEGEN=ON to use existing generated files."
         )
         return()
     endif()
@@ -146,89 +169,113 @@ function(setup_protocol_autogen)
         endif()
     endif()
 
-    # Generate transaction classes and tests at configure time
-    message(STATUS "Generating transaction classes from transactions.macro...")
+    # At configure time - get list of output files for transactions
     execute_process(
+        COMMAND
+            ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
+            --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
+            "${AUTOGEN_TEST_DIR}/transactions" --list-outputs
+        OUTPUT_VARIABLE TX_OUTPUT_FILES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE TX_LIST_RESULT
+        ERROR_VARIABLE TX_LIST_ERROR
+    )
+    if(NOT TX_LIST_RESULT EQUAL 0)
+        message(
+            FATAL_ERROR
+            "Failed to list transaction output files:\n${TX_LIST_ERROR}"
+        )
+    endif()
+    # Convert newline-separated list to CMake list
+    string(REPLACE "\\" "/" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
+    string(REPLACE "\n" ";" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
+
+    # At configure time - get list of output files for ledger entries
+    execute_process(
+        COMMAND
+            ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
+            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
+            "${AUTOGEN_TEST_DIR}/ledger_entries" --list-outputs
+        OUTPUT_VARIABLE LEDGER_OUTPUT_FILES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE LEDGER_LIST_RESULT
+        ERROR_VARIABLE LEDGER_LIST_ERROR
+    )
+    if(NOT LEDGER_LIST_RESULT EQUAL 0)
+        message(
+            FATAL_ERROR
+            "Failed to list ledger entry output files:\n${LEDGER_LIST_ERROR}"
+        )
+    endif()
+    # Convert newline-separated list to CMake list
+    string(REPLACE "\\" "/" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
+    string(REPLACE "\n" ";" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
+
+    # Custom command to generate transaction classes at build time
+    add_custom_command(
+        OUTPUT ${TX_OUTPUT_FILES}
         COMMAND
             ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
             "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        RESULT_VARIABLE TX_GEN_RESULT
-        OUTPUT_VARIABLE TX_GEN_OUTPUT
-        ERROR_VARIABLE TX_GEN_ERROR
+        DEPENDS
+            "${TRANSACTIONS_MACRO}"
+            "${SFIELDS_MACRO}"
+            "${GENERATE_TX_SCRIPT}"
+            "${MACRO_PARSER_COMMON}"
+            "${TX_TEMPLATE}"
+            "${TX_TEST_TEMPLATE}"
+            "${REQUIREMENTS_FILE}"
+        COMMENT "Generating transaction classes from transactions.macro..."
+        VERBATIM
     )
-    if(NOT TX_GEN_RESULT EQUAL 0)
-        message(
-            FATAL_ERROR
-            "Failed to generate transaction classes:\n${TX_GEN_ERROR}"
-        )
-    else()
-        message(STATUS "Transaction classes generated successfully")
-    endif()
 
-    # Generate ledger entry classes and tests at configure time
-    message(
-        STATUS
-        "Generating ledger entry classes from ledger_entries.macro..."
-    )
-    execute_process(
+    # Custom command to generate ledger entry classes at build time
+    add_custom_command(
+        OUTPUT ${LEDGER_OUTPUT_FILES}
         COMMAND
             ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
             "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        RESULT_VARIABLE LEDGER_GEN_RESULT
-        OUTPUT_VARIABLE LEDGER_GEN_OUTPUT
-        ERROR_VARIABLE LEDGER_GEN_ERROR
-    )
-    if(NOT LEDGER_GEN_RESULT EQUAL 0)
-        message(
-            FATAL_ERROR
-            "Failed to generate ledger entry classes:\n${LEDGER_GEN_ERROR}"
-        )
-    else()
-        message(STATUS "Ledger entry classes generated successfully")
-    endif()
-
-    # Format generated files using pre-commit (clang-format)
-    if(WIN32)
-        set(VENV_PRECOMMIT "${VENV_DIR}/Scripts/pre-commit.exe")
-    else()
-        set(VENV_PRECOMMIT "${VENV_DIR}/bin/pre-commit")
-    endif()
-
-    file(
-        GLOB GENERATED_FILES
-        "${AUTOGEN_HEADER_DIR}/transactions/*.h"
-        "${AUTOGEN_HEADER_DIR}/ledger_entries/*.h"
-        "${AUTOGEN_TEST_DIR}/transactions/*.cpp"
-        "${AUTOGEN_TEST_DIR}/ledger_entries/*.cpp"
+        DEPENDS
+            "${LEDGER_ENTRIES_MACRO}"
+            "${SFIELDS_MACRO}"
+            "${GENERATE_LEDGER_SCRIPT}"
+            "${MACRO_PARSER_COMMON}"
+            "${LEDGER_TEMPLATE}"
+            "${LEDGER_TEST_TEMPLATE}"
+            "${REQUIREMENTS_FILE}"
+        COMMENT "Generating ledger entry classes from ledger_entries.macro..."
+        VERBATIM
     )
 
-    if(GENERATED_FILES)
-        message(STATUS "Formatting generated files with clang-format...")
-        execute_process(
-            COMMAND
-                ${VENV_PRECOMMIT} run clang-format --files ${GENERATED_FILES}
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            RESULT_VARIABLE FORMAT_RESULT
-            OUTPUT_VARIABLE FORMAT_OUTPUT
-            ERROR_VARIABLE FORMAT_ERROR
-        )
-        if(NOT FORMAT_RESULT EQUAL 0)
-            message(
-                WARNING
-                "Failed to format generated files:\n${FORMAT_ERROR}"
-            )
-        else()
-            message(STATUS "Generated files formatted successfully")
+    # Create a custom target that depends on all generated files
+    add_custom_target(
+        protocol_autogen_generate
+        DEPENDS ${TX_OUTPUT_FILES} ${LEDGER_OUTPUT_FILES}
+        COMMENT "Protocol autogen code generation"
+    )
+
+    # Extract test files from output lists (files ending in Tests.cpp)
+    set(PROTOCOL_AUTOGEN_TEST_SOURCES "")
+    foreach(FILE ${TX_OUTPUT_FILES} ${LEDGER_OUTPUT_FILES})
+        if(FILE MATCHES "Tests\\.cpp$")
+            list(APPEND PROTOCOL_AUTOGEN_TEST_SOURCES "${FILE}")
         endif()
-    endif()
+    endforeach()
+    # Export test sources to parent scope for use in test CMakeLists.txt
+    set(PROTOCOL_AUTOGEN_TEST_SOURCES
+        "${PROTOCOL_AUTOGEN_TEST_SOURCES}"
+        CACHE INTERNAL
+        "Generated protocol_autogen test sources"
+    )
 
-    # Register dependencies so CMake reconfigures when these files change
+    # Register dependencies so CMake reconfigures when macro files change
+    # (to update the list of output files)
     set_property(
         DIRECTORY
         APPEND
@@ -236,14 +283,5 @@ function(setup_protocol_autogen)
             CMAKE_CONFIGURE_DEPENDS
                 "${TRANSACTIONS_MACRO}"
                 "${LEDGER_ENTRIES_MACRO}"
-                "${SFIELDS_MACRO}"
-                "${GENERATE_TX_SCRIPT}"
-                "${GENERATE_LEDGER_SCRIPT}"
-                "${SCRIPTS_DIR}/macro_parser_common.py"
-                "${SCRIPTS_DIR}/templates/Transaction.h.mako"
-                "${SCRIPTS_DIR}/templates/TransactionTests.cpp.mako"
-                "${SCRIPTS_DIR}/templates/LedgerEntry.h.mako"
-                "${SCRIPTS_DIR}/templates/LedgerEntryTests.cpp.mako"
-                "${REQUIREMENTS_FILE}"
     )
 endfunction()

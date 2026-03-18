@@ -19,7 +19,7 @@ class LoanSetBuilder;
  * @brief Transaction: LoanSet
  *
  * Type: ttLOAN_SET (80)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: mayAuthorizeMPT | mustModifyVault
  *

@@ -815,7 +815,7 @@ Ledger::updateSkipList()
         auto sle = peek(k);
         std::vector<uint256> hashes;
 
-        bool created;
+        bool created = false;
         if (!sle)
         {
             sle = std::make_shared<SLE>(k);
@@ -842,7 +842,7 @@ Ledger::updateSkipList()
     auto const k = keylet::skip();
     auto sle = peek(k);
     std::vector<uint256> hashes;
-    bool created;
+    bool created = false;
     if (!sle)
     {
         sle = std::make_shared<SLE>(k);
@@ -982,7 +982,7 @@ loadLedgerHelper(
     ServiceRegistry& registry,
     bool acquire)
 {
-    bool loaded;
+    bool loaded = false;
     auto ledger = std::make_shared<Ledger>(
         info, loaded, acquire, rules, fees, registry.getNodeFamily(), registry.journal("Ledger"));
 

@@ -19,7 +19,7 @@ class LoanDeleteBuilder;
  * @brief Transaction: LoanDelete
  *
  * Type: ttLOAN_DELETE (81)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: noPriv
  *

@@ -19,7 +19,7 @@ class VaultDeleteBuilder;
  * @brief Transaction: VaultDelete
  *
  * Type: ttVAULT_DELETE (67)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: mustDeleteAcct | destroyMPTIssuance | mustModifyVault
  *
