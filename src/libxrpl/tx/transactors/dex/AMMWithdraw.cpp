@@ -414,7 +414,7 @@ AMMWithdraw::withdraw(
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
-        mPriorBalance,
+        preFeeBalance_,
         j_);
     return {ter, newLPTokenBalance};
 }
@@ -628,7 +628,7 @@ AMMWithdraw::equalWithdrawTokens(
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
-        mPriorBalance,
+        preFeeBalance_,
         ctx_.journal);
     return {ter, newLPTokenBalance};
 }

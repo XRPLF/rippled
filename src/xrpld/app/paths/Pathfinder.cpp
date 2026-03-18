@@ -260,7 +260,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
 
     // Now compute the payment type from the types of the source and destination
     // currencies.
-    PaymentType paymentType;
+    PaymentType paymentType = pt_XRP_to_XRP;
     if (bSrcXrp && bDstXrp)
     {
         // XRP -> XRP
@@ -491,7 +491,7 @@ Pathfinder::rankPaths(
         if (!currentPath.empty())
         {
             STAmount liquidity;
-            uint64_t uQuality;
+            uint64_t uQuality = 0;
             auto const resultCode =
                 getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
             if (!isTesSuccess(resultCode))
@@ -1158,6 +1158,7 @@ makePath(char const* string)
 
     while (true)
     {
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (*string++)
         {
             case 's':  // source

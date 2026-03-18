@@ -109,6 +109,7 @@ credentialsFromJson(
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): used only in tests
         auto blob = strUnHex(credentialType.asString()).value();
         ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
     }

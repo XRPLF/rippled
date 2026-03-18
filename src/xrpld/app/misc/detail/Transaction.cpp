@@ -53,26 +53,26 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
+    auto const c = (status) ? safe_cast<TxnSql>((*status)[0]) : TxnSql::txnSqlUnknown;
 
-    switch (c)
+    switch (static_cast<TxnSql>(c))
     {
-        case txnSqlNew:
+        case TxnSql::txnSqlNew:
             return NEW;
-        case txnSqlConflict:
+        case TxnSql::txnSqlConflict:
             return CONFLICTED;
-        case txnSqlHeld:
+        case TxnSql::txnSqlHeld:
             return HELD;
-        case txnSqlValidated:
+        case TxnSql::txnSqlValidated:
             return COMMITTED;
-        case txnSqlIncluded:
+        case TxnSql::txnSqlIncluded:
             return INCLUDED;
+        default:
+            XRPL_ASSERT(
+                c == TxnSql::txnSqlUnknown,
+                "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    XRPL_ASSERT(
-        c == txnSqlUnknown,
-        "xrpl::Transaction::sqlTransactionStatus : unknown transaction "
-        "status");
     return INVALID;
 }
 

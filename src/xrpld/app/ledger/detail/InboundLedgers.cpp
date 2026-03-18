@@ -340,7 +340,7 @@ public:
 
         // Make a list of things to sweep, while holding the lock
         std::vector<MapType::mapped_type> stuffToSweep;
-        std::size_t total;
+        std::size_t total = 0;
 
         {
             ScopedLockType sl(mLock);

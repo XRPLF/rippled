@@ -361,7 +361,7 @@ NFTokenAcceptOffer::transferNFToken(
     // NFTs free of reserve.
     if (view().rules().enabled(fixNFTokenReserve))
     {
-        // To check if there is sufficient reserve, we cannot use mPriorBalance
+        // To check if there is sufficient reserve, we cannot use preFeeBalance_
         // because NFT is sold for a price. So we must use the balance after
         // the deduction of the potential offer price. A small caveat here is
         // that the balance has already deducted the transaction fee, meaning

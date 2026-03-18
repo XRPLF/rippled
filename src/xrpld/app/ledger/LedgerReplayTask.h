@@ -78,7 +78,7 @@ public:
         InboundLedgers& inboundLedgers,
         LedgerReplayer& replayer,
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-        TaskParameter&& parameter);
+        TaskParameter const& parameter);
 
     ~LedgerReplayTask();
 

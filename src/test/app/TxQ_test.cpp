@@ -722,6 +722,7 @@ public:
             auto aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.size() == 1);
             BEAST_EXPECT(aliceStat.begin()->feeLevel == baseFeeLevel);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(aliceStat.begin()->lastValid && *aliceStat.begin()->lastValid == 8);
             BEAST_EXPECT(!aliceStat.begin()->consequences.isBlocker());
 

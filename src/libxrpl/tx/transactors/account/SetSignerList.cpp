@@ -306,7 +306,7 @@ SetSignerList::replaceSignerList()
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with CreateTicket.
-    if (mPriorBalance < newReserve)
+    if (preFeeBalance_ < newReserve)
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.

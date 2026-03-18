@@ -197,7 +197,7 @@ private:
     onSiteFetch(
         boost::system::error_code const& ec,
         endpoint_type const& endpoint,
-        detail::response_type&& res,
+        detail::response_type const& res,
         std::size_t siteIdx);
 
     /// Store latest list fetched from anywhere
@@ -224,7 +224,7 @@ private:
     /// lock over sites_mutex_ required
     std::shared_ptr<Site::Resource>
     processRedirect(
-        detail::response_type& res,
+        detail::response_type const& res,
         std::size_t siteIdx,
         std::lock_guard<std::mutex> const&);
 

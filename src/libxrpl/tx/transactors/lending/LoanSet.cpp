@@ -474,7 +474,7 @@ LoanSet::doApply()
     {
         auto const ownerCount = borrowerSle->at(sfOwnerCount);
         auto const balance =
-            account_ == borrower ? mPriorBalance : borrowerSle->at(sfBalance).value().xrp();
+            account_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
         if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }

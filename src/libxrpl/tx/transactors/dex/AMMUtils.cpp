@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
@@ -153,7 +154,7 @@ getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
         "xrpl::getTradingFee : auction present");
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
-        auto const& auctionSlot = static_cast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
+        auto const& auctionSlot = safe_downcast<STObject const&>(ammSle.peekAtField(sfAuctionSlot));
         // Not expired
         if (auto const expiration = auctionSlot[~sfExpiration];
             duration_cast<seconds>(view.header().parentCloseTime.time_since_epoch()).count() <

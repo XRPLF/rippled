@@ -371,9 +371,10 @@ DeleteAccount::doApply()
         return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
-    (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
-    ctx_.deliver(mSourceBalance);
+    auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
+    (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
+    (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
+    ctx_.deliver(remainingBalance);
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::DeleteAccount::doApply : source balance is zero");
@@ -387,7 +388,7 @@ DeleteAccount::doApply()
     }
 
     // Re-arm the password change fee if we can and need to.
-    if (mSourceBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
+    if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
     view().update(dst);

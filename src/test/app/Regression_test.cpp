@@ -270,7 +270,7 @@ struct Regression_test : public beast::unit_test::suite
             if (BEAST_EXPECT(bob_index.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
                 auto& cache = env.app().cachedSLEs();
-                cache.del(*digest, false);
+                cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));

@@ -727,7 +727,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then

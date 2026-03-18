@@ -5154,7 +5154,7 @@ private:
             // verify that the quality is better in the first case, and CLOB
             // is selected in the second case.
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
@@ -5227,7 +5227,7 @@ private:
 
             // Same as the payment but reduced offer quality
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
@@ -5426,7 +5426,7 @@ private:
             // multiple AMM offers are generated, which results in slightly
             // worse overall quality.
             {
-                std::array<Quality, 3> q;
+                std::array<Quality, 3> q{};
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
@@ -6117,9 +6117,13 @@ private:
                 auto const failUsdBIT = features[fixAMMv1_1] ? input.failUsdBITr : input.failUsdBIT;
                 auto const goodUsdGH = features[fixAMMv1_1] ? input.goodUsdGHr : input.goodUsdGH;
                 auto const goodUsdBIT = features[fixAMMv1_1] ? input.goodUsdBITr : input.goodUsdBIT;
-                auto const lpTokenBalance = env.enabled(fixAMMv1_3) && input.lpTokenBalanceAlt
-                    ? *input.lpTokenBalanceAlt
-                    : input.lpTokenBalance;
+                auto const lpTokenBalance = [&] {
+                    if (not env.enabled(fixAMMv1_3))
+                        return input.lpTokenBalance;
+
+                    return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
+                }();
+
                 if (!features[fixAMMOverflowOffer])
                 {
                     BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));

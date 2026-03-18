@@ -357,7 +357,7 @@ private:
     mutable std::mutex mutex_;
 
     hash_map<uint256, AmendmentState> amendmentMap_;
-    std::uint32_t lastUpdateSeq_;
+    std::uint32_t lastUpdateSeq_{0};
 
     // Record of the last votes seen from trusted validators.
     TrustedVotes previousTrustedVotes_;
@@ -370,7 +370,7 @@ private:
     std::unique_ptr<AmendmentSet> lastVote_;
 
     // True if an unsupported amendment is enabled
-    bool unsupportedEnabled_;
+    bool unsupportedEnabled_{false};
 
     // Unset if no unsupported amendments reach majority,
     // else set to the earliest time an unsupported amendment
@@ -477,11 +477,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
-    : lastUpdateSeq_(0)
-    , majorityTime_(majorityTime)
-    , unsupportedEnabled_(false)
-    , j_(journal)
-    , db_(registry.getWalletDB())
+    : majorityTime_(majorityTime), j_(journal), db_(registry.getWalletDB())
 {
     std::lock_guard lock(mutex_);
 
