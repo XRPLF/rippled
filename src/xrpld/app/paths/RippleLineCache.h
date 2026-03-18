@@ -72,7 +72,7 @@ private:
         }
 
         std::size_t
-        get_hash() const
+        getHash() const
         {
             return hash_value_;
         }
@@ -84,7 +84,7 @@ private:
             std::size_t
             operator()(AccountKey const& key) const noexcept
             {
-                return key.get_hash();
+                return key.getHash();
             }
         };
     };

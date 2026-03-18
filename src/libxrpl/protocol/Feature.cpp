@@ -22,6 +22,7 @@
 namespace xrpl {
 
 inline std::size_t
+// NOLINTNEXTLINE(readability-identifier-naming)
 hash_value(xrpl::uint256 const& feature)
 {
     std::size_t seed = 0;

@@ -92,7 +92,7 @@ public:
 
 private:
     static std::size_t
-    get_hash(STPathElement const& element);
+    getHash(STPathElement const& element);
 };
 
 class STPath final : public CountedObject<STPath>
@@ -216,7 +216,7 @@ private:
 
 inline STPathElement::STPathElement() : type_(typeNone), is_offer_(true)
 {
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -251,7 +251,7 @@ inline STPathElement::STPathElement(
         XRPL_ASSERT(issuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -274,7 +274,7 @@ inline STPathElement::STPathElement(
     if (!isXRP(issuer))
         type_ |= typeIssuer;
 
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -288,7 +288,7 @@ inline STPathElement::STPathElement(
     , issuerID_(issuer)
     , is_offer_(isXRP(accountID_))
 {
-    hash_value_ = get_hash(*this);
+    hash_value_ = getHash(*this);
 }
 
 inline auto

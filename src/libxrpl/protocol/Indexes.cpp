@@ -80,8 +80,7 @@ enum class LedgerNameSpace : std::uint16_t {
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
 
-    // No longer used or supported. Left here to reserve the space
-    // to avoid accidental reuse.
+    // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
     Generator [[deprecated]] = 'g',
     Nickname [[deprecated]] = 'n',

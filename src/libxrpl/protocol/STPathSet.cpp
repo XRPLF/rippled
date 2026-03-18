@@ -18,7 +18,7 @@
 namespace xrpl {
 
 std::size_t
-STPathElement::get_hash(STPathElement const& element)
+STPathElement::getHash(STPathElement const& element)
 {
     std::size_t hashAccount = 2654435761;
     std::size_t hashCurrency = 2654435761;
