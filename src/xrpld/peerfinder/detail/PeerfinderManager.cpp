@@ -35,8 +35,7 @@ public:
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector)
-        : Manager()
-        , io_context_(ioContext)
+        : io_context_(ioContext)
         , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , clock_(clock)
         , journal_(journal)

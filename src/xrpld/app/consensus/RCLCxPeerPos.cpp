@@ -16,7 +16,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
     XRPL_ASSERT(
-        signature.size() != 0 && signature.size() <= signature_.capacity(),
+        !signature.empty() && signature.size() <= signature_.capacity(),
         "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
     if (!signature.empty() && signature.size() <= signature_.capacity())

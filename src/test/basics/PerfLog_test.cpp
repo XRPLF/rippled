@@ -87,7 +87,10 @@ class PerfLog_test : public beast::unit_test::suite
         {
             perf::PerfLog::Setup const setup{
                 withFile == WithFile::No ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app, j, [this]() { return signalStop(); });
+            return perf::make_PerfLog(setup, app, j, [this]() {
+                signalStop();
+                return;
+            });
         }
 
         // Block until the log file has grown in size, indicating that the

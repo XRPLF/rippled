@@ -168,8 +168,7 @@ public:
 
             auto& inboundSet = map_[hash];
 
-            if (inboundSet.seq < seq_)
-                inboundSet.seq = seq_;
+            inboundSet.seq = std::max(inboundSet.seq, seq_);
 
             if (inboundSet.set)
             {

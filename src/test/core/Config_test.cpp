@@ -1337,7 +1337,7 @@ r.ripple.com:51235
             auto val3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val3 == "mystring");
             auto val4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val4 == "");
+            BEAST_EXPECT(val4.empty());
             auto val5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val5 == "default");
 

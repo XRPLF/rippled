@@ -25,8 +25,7 @@ std::map<char, char const*> gJsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-static size_t const kJSON_ESCAPE_LENGTH = 2;
-size_t const jsonEscapeLength = 2;
+size_t const kJSON_ESCAPE_LENGTH = 2;
 
 // All other JSON punctuation.
 char const kCLOSE_BRACE = '}';
@@ -153,7 +152,7 @@ public:
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
-        check(tags.find(tag) == tags.end(), "Already seen tag " + tag);
+        check(!tags.contains(tag), "Already seen tag " + tag);
         tags.insert(tag);
 #endif
 

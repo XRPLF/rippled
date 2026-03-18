@@ -105,7 +105,7 @@ class Invariants_test : public beast::unit_test::suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
-        return doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
+        doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
     }
 
     void

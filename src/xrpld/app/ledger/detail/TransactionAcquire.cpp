@@ -243,8 +243,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
 
-    if (timeouts_ > NormTimeouts)
-        timeouts_ = NormTimeouts;
+    timeouts_ = std::min<int>(timeouts_, NormTimeouts);
     failed_ = false;
 }
 

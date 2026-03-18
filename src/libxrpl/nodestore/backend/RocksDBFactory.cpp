@@ -213,8 +213,10 @@ public:
         options.create_if_missing = createIfMissing;
         rocksdb::Status status = rocksdb::DB::Open(options, name, &localDb);
         if (!status.ok() || !localDb)
+        {
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
+        }
         db.reset(localDb);
     }
 
