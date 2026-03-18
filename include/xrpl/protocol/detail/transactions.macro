@@ -650,7 +650,7 @@ TRANSACTION(ttDID_DELETE, 50, DIDDelete,
 
 /** This transaction type creates an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/oracle/SetOracle.h>
+#   include <xrpl/tx/transactors/oracle/OracleSet.h>
 #endif
 TRANSACTION(ttORACLE_SET, 51, OracleSet,
     Delegation::delegable,
@@ -667,7 +667,7 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet,
 
 /** This transaction type deletes an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/oracle/DeleteOracle.h>
+#   include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #endif
 TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
     Delegation::delegable,

@@ -10,15 +10,15 @@ namespace xrpl {
     to decentralized applications (dApps) on the blockchain. This implementation
     conforms to the requirements specified in the XLS-47d.
 
-    The SetOracle transactor implements creating or updating Oracle objects.
+    The OracleSet transactor implements creating or updating Oracle objects.
 */
 
-class SetOracle : public Transactor
+class OracleSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SetOracle(ApplyContext& ctx) : Transactor(ctx)
+    explicit OracleSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -32,6 +32,6 @@ public:
     doApply() override;
 };
 
-using OracleSet = SetOracle;
+using OracleSet = OracleSet;
 
 }  // namespace xrpl

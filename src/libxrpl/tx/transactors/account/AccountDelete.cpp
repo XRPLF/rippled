@@ -12,7 +12,7 @@
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
-#include <xrpl/tx/transactors/oracle/DeleteOracle.h>
+#include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 namespace xrpl {
@@ -143,7 +143,7 @@ removeOracleFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DeleteOracle::deleteOracle(view, sleDel, account, j);
+    return OracleDelete::deleteOracle(view, sleDel, account, j);
 }
 
 TER

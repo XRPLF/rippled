@@ -2,18 +2,18 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/oracle/DeleteOracle.h>
+#include <xrpl/tx/transactors/oracle/OracleDelete.h>
 
 namespace xrpl {
 
 NotTEC
-DeleteOracle::preflight(PreflightContext const& ctx)
+OracleDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
 TER
-DeleteOracle::preclaim(PreclaimContext const& ctx)
+OracleDelete::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
@@ -38,7 +38,7 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-DeleteOracle::deleteOracle(
+OracleDelete::deleteOracle(
     ApplyView& view,
     std::shared_ptr<SLE> const& sle,
     AccountID const& account,
@@ -69,7 +69,7 @@ DeleteOracle::deleteOracle(
 }
 
 TER
-DeleteOracle::doApply()
+OracleDelete::doApply()
 {
     if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, account_, j_);

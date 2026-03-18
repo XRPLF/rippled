@@ -4,7 +4,7 @@
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/oracle/SetOracle.h>
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 namespace xrpl {
 
@@ -17,7 +17,7 @@ tokenPairKey(STObject const& pair)
 }
 
 NotTEC
-SetOracle::preflight(PreflightContext const& ctx)
+OracleSet::preflight(PreflightContext const& ctx)
 {
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
@@ -38,7 +38,7 @@ SetOracle::preflight(PreflightContext const& ctx)
 }
 
 TER
-SetOracle::preclaim(PreclaimContext const& ctx)
+OracleSet::preclaim(PreclaimContext const& ctx)
 {
     auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
@@ -178,7 +178,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
 }
 
 TER
-SetOracle::doApply()
+OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
 

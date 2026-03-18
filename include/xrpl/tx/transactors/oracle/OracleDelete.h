@@ -10,15 +10,15 @@ namespace xrpl {
     to decentralized applications (dApps) on the blockchain. This implementation
     conforms to the requirements specified in the XLS-47d.
 
-    The DeleteOracle transactor implements the deletion of Oracle objects.
+    The OracleDelete transactor implements the deletion of Oracle objects.
 */
 
-class DeleteOracle : public Transactor
+class OracleDelete : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit DeleteOracle(ApplyContext& ctx) : Transactor(ctx)
+    explicit OracleDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -39,6 +39,6 @@ public:
         beast::Journal j);
 };
 
-using OracleDelete = DeleteOracle;
+using OracleDelete = OracleDelete;
 
 }  // namespace xrpl
