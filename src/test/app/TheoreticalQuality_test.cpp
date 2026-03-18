@@ -241,9 +241,9 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             std::nullopt,
             dummyJ);
 
-        BEAST_EXPECT(sr.first == tesSUCCESS);
+        BEAST_EXPECT(isTesSuccess(sr.first));
 
-        if (sr.first != tesSUCCESS)
+        if (!isTesSuccess(sr.first))
             return;
 
         // Due to the floating point calculations, theoretical and actual

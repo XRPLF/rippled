@@ -277,7 +277,7 @@ NFTokenMint::doApply()
     });
 
     if (TER const ret = nft::insertToken(ctx_.view(), account_, std::move(newToken));
-        ret != tesSUCCESS)
+        !isTesSuccess(ret))
         return ret;
 
     if (ctx_.tx.isFieldPresent(sfAmount))

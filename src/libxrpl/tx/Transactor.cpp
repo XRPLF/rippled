@@ -594,11 +594,11 @@ Transactor::apply()
         preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         result = payFee();
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         if (sle->isFieldPresent(sfAccountTxnID))
@@ -983,7 +983,7 @@ removeDeletedTrustLines(
     for (auto const& index : trustLines)
     {
         if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
-            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) != tesSUCCESS)
+            !isTesSuccess(deleteAMMTrustLine(view, sleState, std::nullopt, viewJ)))
         {
             JLOG(viewJ.error()) << "removeDeletedTrustLines: failed to delete AMM trustline";
         }
@@ -1092,7 +1092,7 @@ Transactor::operator()()
     }
 
     auto result = ctx_.preclaimResult;
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
         result = apply();
 
     // No transaction can return temUNKNOWN from apply,

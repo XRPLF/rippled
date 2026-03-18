@@ -46,7 +46,7 @@ ValidMPTIssuance::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         auto const& rules = view.rules();
         [[maybe_unused]]

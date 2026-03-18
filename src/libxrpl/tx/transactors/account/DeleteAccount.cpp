@@ -367,7 +367,7 @@ DeleteAccount::doApply()
             // LCOV_EXCL_STOP
         },
         ctx_.journal);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:

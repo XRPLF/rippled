@@ -140,7 +140,7 @@ class Invariants_test : public beast::unit_test::suite
             BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
 
-            if (terActual != tesSUCCESS)
+            if (!isTesSuccess(terActual))
             {
                 BEAST_EXPECTS(
                     messages.starts_with("Invariant failed:") ||

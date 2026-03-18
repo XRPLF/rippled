@@ -379,7 +379,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (hasPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
+    if (hasPrivilege(tx, mustDeleteAcct) && isTesSuccess(result))
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -396,7 +396,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (hasPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, mayDeleteAcct) && isTesSuccess(result) && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -689,7 +689,7 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (hasPrivilege(tx, createAcct | createPseudoAcct) && result == tesSUCCESS)
+    if (hasPrivilege(tx, createAcct | createPseudoAcct) && isTesSuccess(result))
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
@@ -756,7 +756,7 @@ ValidClawback::finalize(
     if (tx.getTxnType() != ttCLAWBACK)
         return true;
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         if (trustlinesChanged > 1)
         {

@@ -270,7 +270,7 @@ CashCheck::doApply()
 
             // The source account has enough XRP so make the ledger change.
             if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
-                ter != tesSUCCESS)
+                !isTesSuccess(ter))
             {
                 // The transfer failed.  Return the error code.
                 return ter;
@@ -389,7 +389,7 @@ CashCheck::doApply()
                 std::nullopt,  // check does not support domain
                 viewJ);
 
-            if (result.result() != tesSUCCESS)
+            if (!isTesSuccess(result.result()))
             {
                 JLOG(ctx_.journal.warn()) << "flow failed when cashing check.";
                 return result.result();

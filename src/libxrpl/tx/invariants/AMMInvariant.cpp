@@ -152,7 +152,7 @@ ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (res == tesSUCCESS) ? "AMM object is not deleted on tesSUCCESS"
+        std::string const msg = (isTesSuccess(res)) ? "AMM object is not deleted on tesSUCCESS"
                                                     : "AMM object is changed on tecINCOMPLETE";
         JLOG(j.error()) << "AMMDelete invariant failed: " << msg;
         if (enforce)
@@ -271,7 +271,7 @@ ValidAMM::finalize(
 {
     // Delete may return tecINCOMPLETE if there are too many
     // trustlines to delete.
-    if (result != tesSUCCESS && result != tecINCOMPLETE)
+    if (!isTesSuccess(result) && result != tecINCOMPLETE)
         return true;
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);

@@ -811,7 +811,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const dr =
             offer.send(sb, book_.in.account, offer.owner(), toSTAmount(ofrAmt.in, book_.in), j_);
-        if (dr != tesSUCCESS)
+        if (!isTesSuccess(dr))
             Throw<FlowException>(dr);
     }
 
@@ -820,7 +820,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const cr =
             offer.send(sb, offer.owner(), book_.out.account, toSTAmount(ownerGives, book_.out), j_);
-        if (cr != tesSUCCESS)
+        if (!isTesSuccess(cr))
             Throw<FlowException>(cr);
     }
 
@@ -1336,7 +1336,7 @@ make_BookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};

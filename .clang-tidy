@@ -71,6 +71,7 @@ Checks: "-*,
   bugprone-unhandled-self-assignment,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
+  bugprone-use-after-move,
   bugprone-unused-raii,
   bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
@@ -106,9 +107,6 @@ Checks: "-*,
   "
 # ---
 # checks that have some issues that need to be resolved:
-#
-# bugprone-move-forwarding-reference,
-# bugprone-use-after-move,
 #
 # llvm-namespace-comment,
 # misc-const-correctness,

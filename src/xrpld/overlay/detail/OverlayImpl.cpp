@@ -671,12 +671,12 @@ OverlayImpl::getOverlayInfo()
 {
     using namespace std::chrono;
     Json::Value jv;
-    auto& av = jv["active"] = Json::Value(Json::arrayValue);
+    auto& av = jv[jss::active] = Json::Value(Json::arrayValue);
 
     for_each([&](std::shared_ptr<PeerImp> const& sp) {
         auto& pv = av.append(Json::Value(Json::objectValue));
         pv[jss::public_key] = base64_encode(sp->getNodePublic().data(), sp->getNodePublic().size());
-        pv[jss::type] = sp->slot()->inbound() ? "in" : "out";
+        pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
         if (sp->crawl())
         {
@@ -688,7 +688,7 @@ OverlayImpl::getOverlayInfo()
             }
             else
             {
-                pv[jss::port] = std::to_string(sp->getRemoteAddress().port());
+                pv[jss::port] = sp->getRemoteAddress().port();
             }
         }
 

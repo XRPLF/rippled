@@ -3089,7 +3089,7 @@ private:
                 PreflightContext pfCtx(
                     env.app(), *jtx.stx, env.current()->rules(), tapNONE, env.journal);
                 auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
-                BEAST_EXPECT(pf != tesSUCCESS);
+                BEAST_EXPECT(!isTesSuccess(pf));
             }
 
             {

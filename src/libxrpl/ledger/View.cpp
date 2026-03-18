@@ -1995,7 +1995,7 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -2439,7 +2439,7 @@ rippleSendMPT(
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
         auto const ter = rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -2455,7 +2455,7 @@ rippleSendMPT(
                     << " cost=" << saActual.getFullText();
 
     if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
-        terResult != tesSUCCESS)
+        !isTesSuccess(terResult))
         return terResult;
 
     return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
@@ -3190,7 +3190,7 @@ cleanupOnAccountDelete(
             // Deleter handles the details of specific account-owned object
             // deletion
             auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed
@@ -3259,7 +3259,7 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j); ter != tesSUCCESS)
+    if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;

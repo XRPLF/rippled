@@ -126,7 +126,7 @@ escrowFinishPreclaimHelper<Issue>(
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
@@ -158,7 +158,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED

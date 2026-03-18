@@ -145,7 +145,7 @@ MPTTester::create(MPTCreate const& arg)
          .metadata = arg.metadata,
          .mutableFlags = arg.mutableFlags,
          .domainID = arg.domainID});
-    if (submit(arg, jv) != tesSUCCESS)
+    if (!isTesSuccess(submit(arg, jv)))
     {
         // Verify issuance doesn't exist
         env_.require(
@@ -245,7 +245,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
     });
-    if (auto const result = submit(arg, jv); result == tesSUCCESS)
+    if (auto const result = submit(arg, jv); isTesSuccess(result))
     {
         // Issuer authorizes
         if (!arg.account || *arg.account == issuer_)
@@ -505,7 +505,7 @@ MPTTester::pay(
     else
         env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
 
-    if (env_.ter() != tesSUCCESS)
+    if (!isTesSuccess(env_.ter()))
         amount = 0;
     if (close_)
         env_.close();
@@ -543,7 +543,7 @@ MPTTester::claw(
     auto const issuerAmt = getBalance(issuer);
     auto const holderAmt = getBalance(holder);
     env_(jtx::claw(issuer, mpt(amount), holder), ter(err.value_or(tesSUCCESS)));
-    if (env_.ter() != tesSUCCESS)
+    if (!isTesSuccess(env_.ter()))
         amount = 0;
     if (close_)
         env_.close();

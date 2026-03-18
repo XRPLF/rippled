@@ -214,15 +214,14 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(strCounter.count() == 1);
             BEAST_EXPECT(wrapped);
 
-            // Make the string big enough to (probably) avoid the small string
-            // optimization.
+            // Make the string big enough to (probably) avoid the small string optimization.
             TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
             TrackedString const result =
                 (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);
+            BEAST_EXPECT(strRValue.str.size() == 0);  // NOLINT(bugprone-use-after-move)
         }
     }
 
