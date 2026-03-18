@@ -7,7 +7,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/token/SetTrust.h>
+#include <xrpl/tx/transactors/token/TrustSet.h>
 
 namespace {
 
@@ -46,13 +46,13 @@ computeFreezeFlags(
 namespace xrpl {
 
 std::uint32_t
-SetTrust::getFlagsMask(PreflightContext const& ctx)
+TrustSet::getFlagsMask(PreflightContext const& ctx)
 {
     return tfTrustSetMask;
 }
 
 NotTEC
-SetTrust::preflight(PreflightContext const& ctx)
+TrustSet::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;
@@ -106,7 +106,7 @@ SetTrust::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-SetTrust::checkPermission(ReadView const& view, STTx const& tx)
+TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
@@ -167,7 +167,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 }
 
 TER
-SetTrust::preclaim(PreclaimContext const& ctx)
+TrustSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
@@ -226,7 +226,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     if (sleDst && isPseudoAccount(sleDst))
     {
         // If destination is AMM and the trustline doesn't exist then only allow
-        // SetTrust if the asset is AMM LP token and AMM is not in empty state.
+        // TrustSet if the asset is AMM LP token and AMM is not in empty state.
         if (sleDst->isFieldPresent(sfAMMID))
         {
             if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
@@ -308,7 +308,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SetTrust::doApply()
+TrustSet::doApply()
 {
     TER terResult = tesSUCCESS;
 

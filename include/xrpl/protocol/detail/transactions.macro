@@ -288,7 +288,7 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
 
 /** This transaction type modifies a trustline between two accounts. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/token/SetTrust.h>
+#   include <xrpl/tx/transactors/token/TrustSet.h>
 #endif
 TRANSACTION(ttTRUST_SET, 20, TrustSet,
     Delegation::delegable,

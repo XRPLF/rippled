@@ -229,7 +229,7 @@ public:
     void
     testTicketSetTrust(FeatureBitset features)
     {
-        testcase("SetTrust using a ticket");
+        testcase("TrustSet using a ticket");
 
         using namespace jtx;
 
@@ -274,7 +274,7 @@ public:
     void
     testMalformedTransaction(FeatureBitset features)
     {
-        testcase("SetTrust checks for malformed transactions");
+        testcase("TrustSet checks for malformed transactions");
 
         using namespace jtx;
         Env env{*this, features};
@@ -411,7 +411,7 @@ public:
     void
     testModifyQualityOfTrustline(FeatureBitset features, bool createQuality, bool createOnHighAcct)
     {
-        testcase << "SetTrust " << (createQuality ? "creates" : "removes")
+        testcase << "TrustSet " << (createQuality ? "creates" : "removes")
                  << " quality of trustline for " << (createOnHighAcct ? "high" : "low")
                  << " account";
 
@@ -599,6 +599,6 @@ public:
         testWithFeats(sa);
     }
 };
-BEAST_DEFINE_TESTSUITE(SetTrust, app, xrpl);
+BEAST_DEFINE_TESTSUITE(TrustSet, app, xrpl);
 }  // namespace test
 }  // namespace xrpl

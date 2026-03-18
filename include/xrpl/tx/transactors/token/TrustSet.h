@@ -5,12 +5,12 @@
 
 namespace xrpl {
 
-class SetTrust : public Transactor
+class TrustSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SetTrust(ApplyContext& ctx) : Transactor(ctx)
+    explicit TrustSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -30,6 +30,6 @@ public:
     doApply() override;
 };
 
-using TrustSet = SetTrust;
+using TrustSet = TrustSet;
 
 }  // namespace xrpl
