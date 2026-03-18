@@ -29,6 +29,4 @@ public:
     doApply() override;
 };
 
-using AccountDelete = AccountDelete;
-
 }  // namespace xrpl

@@ -23,6 +23,4 @@ public:
     doApply() override;
 };
 
-using CheckCreate = CheckCreate;
-
 }  // namespace xrpl

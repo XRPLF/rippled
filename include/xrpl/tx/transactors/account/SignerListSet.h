@@ -70,6 +70,4 @@ private:
     writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
-using SignerListSet = SignerListSet;
-
 }  // namespace xrpl

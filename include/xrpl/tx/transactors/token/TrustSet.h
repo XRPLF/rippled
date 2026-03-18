@@ -30,6 +30,4 @@ public:
     doApply() override;
 };
 
-using TrustSet = TrustSet;
-
 }  // namespace xrpl

@@ -24,6 +24,4 @@ public:
     doApply() override;
 };
 
-using OfferCancel = OfferCancel;
-
 }  // namespace xrpl

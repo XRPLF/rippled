@@ -74,6 +74,4 @@ private:
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 };
 
-using OfferCreate = OfferCreate;
-
 }  // namespace xrpl

@@ -33,6 +33,4 @@ public:
     doApply() override;
 };
 
-using AccountSet = AccountSet;
-
 }  // namespace xrpl

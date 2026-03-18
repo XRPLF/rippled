@@ -23,6 +23,4 @@ public:
     doApply() override;
 };
 
-using CheckCash = CheckCash;
-
 }  // namespace xrpl

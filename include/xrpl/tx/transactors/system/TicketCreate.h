@@ -61,6 +61,4 @@ public:
     doApply() override;
 };
 
-using TicketCreate = TicketCreate;
-
 }  // namespace xrpl

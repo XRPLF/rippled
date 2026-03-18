@@ -29,6 +29,4 @@ public:
     doApply() override;
 };
 
-using PaymentChannelClaim = PaymentChannelClaim;
-
 }  // namespace xrpl

@@ -23,6 +23,4 @@ public:
     doApply() override;
 };
 
-using PaymentChannelFund = PaymentChannelFund;
-
 }  // namespace xrpl

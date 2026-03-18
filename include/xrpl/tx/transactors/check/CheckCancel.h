@@ -23,6 +23,4 @@ public:
     doApply() override;
 };
 
-using CheckCancel = CheckCancel;
-
 }  // namespace xrpl

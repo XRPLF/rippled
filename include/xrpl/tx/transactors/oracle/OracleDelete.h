@@ -39,6 +39,4 @@ public:
         beast::Journal j);
 };
 
-using OracleDelete = OracleDelete;
-
 }  // namespace xrpl

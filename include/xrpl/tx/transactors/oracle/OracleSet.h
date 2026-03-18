@@ -32,6 +32,4 @@ public:
     doApply() override;
 };
 
-using OracleSet = OracleSet;
-
 }  // namespace xrpl
