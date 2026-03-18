@@ -165,8 +165,7 @@ doUnsubscribe(RPC::JsonContext& context)
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (
-                ((taker_pays.isMember(jss::issuer)) &&
+            if (((taker_pays.isMember(jss::issuer)) &&
                  (!taker_pays[jss::issuer].isString() ||
                   !to_issuer(book.in.account, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
@@ -186,8 +185,7 @@ doUnsubscribe(RPC::JsonContext& context)
                 return rpcError(rpcDST_AMT_MALFORMED);
             }
             // Parse optional issuer.
-            else if (
-                ((taker_gets.isMember(jss::issuer)) &&
+            if (((taker_gets.isMember(jss::issuer)) &&
                  (!taker_gets[jss::issuer].isString() ||
                   !to_issuer(book.out.account, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
@@ -211,10 +209,8 @@ doUnsubscribe(RPC::JsonContext& context)
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             context.netOps.unsubBook(ispSub->getSeq(), book);

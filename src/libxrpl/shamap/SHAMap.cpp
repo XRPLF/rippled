@@ -418,9 +418,13 @@ SHAMap::belowHelper(
     }
     auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
+    {
         stack.push({inner, SHAMapNodeID{}});
+    }
     else
+    {
         stack.push({inner, stack.top().second.getChildNodeID(branch)});
+    }
     for (int i = init; cmp(i);)
     {
         if (!inner->isEmptyBranch(i))
@@ -438,7 +442,9 @@ SHAMap::belowHelper(
             i = init;  // descend and reset loop
         }
         else
+        {
             incr(i);  // scan next branch
+        }
     }
     return nullptr;
 }
@@ -1114,7 +1120,9 @@ SHAMap::dump(bool hash) const
             }
         }
         else
+        {
             ++leafCount;
+        }
     } while (!stack.empty());
 
     JLOG(journal_.info()) << leafCount << " resident leaves";

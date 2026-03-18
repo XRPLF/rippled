@@ -50,9 +50,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         if (*domain == beast::zero)
+        {
             return temMALFORMED;
-        else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        }
+        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        {
             return temMALFORMED;  // DomainID only allowed on private vaults
+        }
     }
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
@@ -63,7 +67,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -197,9 +201,13 @@ VaultCreate::doApply()
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe
     if (auto value = tx[~sfWithdrawalPolicy])
+    {
         vault->at(sfWithdrawalPolicy) = *value;
+    }
     else
+    {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+    }
     if (scale)
         vault->at(sfScale) = scale;
     view().insert(vault);

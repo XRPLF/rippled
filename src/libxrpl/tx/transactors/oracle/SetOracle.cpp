@@ -77,11 +77,17 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         if (entry[~sfScale] > maxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
+        {
             pairs.emplace(key);
+        }
         else if (sle)
+        {
             pairsDel.emplace(key);
+        }
         else
+        {
             return temMALFORMED;
+        }
     }
 
     // Lambda is used to check if the value of a field, passed
@@ -111,9 +117,13 @@ SetOracle::preclaim(PreclaimContext const& ctx)
             if (!pairs.contains(key))
             {
                 if (pairsDel.contains(key))
+                {
                     pairsDel.erase(key);
+                }
                 else
+                {
                     pairs.emplace(key);
+                }
             }
         }
         if (!pairsDel.empty())

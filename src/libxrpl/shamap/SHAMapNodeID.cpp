@@ -107,9 +107,13 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
     auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
 
     if (depth & 1)
+    {
         branch &= 0xf;
+    }
     else
+    {
         branch >>= 4;
+    }
 
     XRPL_ASSERT(branch < SHAMap::branchFactor, "xrpl::selectBranch : maximum result");
     return branch;

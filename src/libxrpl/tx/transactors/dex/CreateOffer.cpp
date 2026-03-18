@@ -178,7 +178,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     {
         auto result =
             checkAcceptAsset(ctx.view, ctx.flags, id, ctx.j, Issue(uPaysCurrency, uPaysIssuerID));
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
     }
 
@@ -337,14 +337,18 @@ CreateOffer::flowCross(
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.
             if (deliver.native())
+            {
                 deliver = STAmount{STAmount::cMaxNative};
+            }
             else
+            {
                 // We can't use the maximum possible currency here because
                 // there might be a gateway transfer rate to account for.
                 // Since the transfer rate cannot exceed 200%, we use 1/2
                 // maxValue for our limit.
                 deliver = STAmount{
                     takerAmount.out.issue(), STAmount::cMaxValue / 2, STAmount::cMaxOffset};
+            }
         }
 
         // Call the payment engine's flow() to do the actual work.
@@ -402,17 +406,21 @@ CreateOffer::flowCross(
                     // gateway's transfer rate.
                     STAmount nonGatewayAmountIn = result.actualAmountIn;
                     if (gatewayXferRate.value != QUALITY_ONE)
+                    {
                         nonGatewayAmountIn = divideRound(
                             result.actualAmountIn, gatewayXferRate, takerAmount.in.issue(), true);
+                    }
 
                     afterCross.in -= nonGatewayAmountIn;
 
                     // It's possible that the divRound will cause our subtract
                     // to go slightly negative.  So limit afterCross.in to zero.
                     if (afterCross.in < beast::zero)
+                    {
                         // We should verify that the difference *is* small, but
                         // what is a good threshold to check?
                         afterCross.in.clear();
+                    }
 
                     afterCross.out =
                         divRoundStrict(afterCross.in, rate, takerAmount.out.issue(), false);
@@ -557,7 +565,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bOpenLedger = sb.open();
     bool crossed = false;
 
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
     {
         // If a tick size applies, round the offer to the tick size
         auto const& uPaysIssuerID = saTakerPays.getIssuer();
@@ -629,7 +637,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We expect the implementation of cross to succeed
         // or give a tec.
         XRPL_ASSERT(
-            result == tesSUCCESS || isTecClaim(result),
+            isTesSuccess(result) || isTecClaim(result),
             "xrpl::CreateOffer::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
@@ -643,7 +651,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         if (result == tecFAILED_PROCESSING && bOpenLedger)
             result = telFAILED_PROCESSING;
 
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
         {
             JLOG(j_.debug()) << "final result: " << transToken(result);
             return {result, true};
@@ -686,7 +694,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         saTakerPays > zero && saTakerGets > zero,
         "xrpl::CreateOffer::applyGuts : taker pays and gets positive");
 
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
     {
         JLOG(j_.debug()) << "final result: " << transToken(result);
         return {result, true};
@@ -713,10 +721,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
         if (!crossed)
+        {
             // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
             // change is here: https://github.com/ripple/rippled/issues/4115
             return {tecKILLED, false};
+        }
         return {tesSUCCESS, true};
     }
 
@@ -735,7 +745,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             if (!crossed)
                 result = tecINSUF_RESERVE_OFFER;
 
-            if (result != tesSUCCESS)
+            if (!isTesSuccess(result))
             {
                 JLOG(j_.debug()) << "final result: " << transToken(result);
             }
@@ -827,7 +837,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     {
         auto const res =
             applyHybrid(sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }
 
@@ -855,9 +865,13 @@ CreateOffer::doApply()
 
     auto const result = applyGuts(sb, sbCancel);
     if (result.second)
+    {
         sb.apply(ctx_.rawView());
+    }
     else
+    {
         sbCancel.apply(ctx_.rawView());
+    }
     return result.first;
 }
 

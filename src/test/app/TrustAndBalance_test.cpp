@@ -343,12 +343,16 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         // alice pays amazon via multiple paths
         if (with_rate)
+        {
             env(pay(alice, amazon, gw["USD"](150)),
                 sendmax(alice["USD"](200)),
                 test::jtx::path(bob),
                 test::jtx::path(carol));
+        }
         else
+        {
             env(pay(alice, amazon, gw["USD"](150)), test::jtx::path(bob), test::jtx::path(carol));
+        }
 
         if (with_rate)
         {

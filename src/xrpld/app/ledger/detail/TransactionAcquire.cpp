@@ -6,6 +6,7 @@
 
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 
 namespace xrpl {
@@ -129,9 +130,13 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (nodes.empty())
         {
             if (mMap->isValid())
+            {
                 complete_ = true;
+            }
             else
+            {
                 failed_ = true;
+            }
 
             done();
             return;
@@ -183,12 +188,18 @@ TransactionAcquire::takeNodes(
             if (d.first.isRoot())
             {
                 if (mHaveRoot)
+                {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
+                }
                 else if (!mMap->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
                               .isGood())
+                {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
+                }
                 else
+                {
                     mHaveRoot = true;
+                }
             }
             else if (!mMap->addKnownNode(d.first, std::move(d.second), &sf).isGood())
             {
@@ -233,8 +244,7 @@ TransactionAcquire::stillNeed()
 {
     ScopedLockType sl(mtx_);
 
-    if (timeouts_ > NORM_TIMEOUTS)
-        timeouts_ = NORM_TIMEOUTS;
+    timeouts_ = std::min<int>(timeouts_, NORM_TIMEOUTS);
     failed_ = false;
 }
 
