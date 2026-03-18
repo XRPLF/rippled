@@ -100,7 +100,7 @@ escrowUnlockApplyHelper<Issue>(
         }
         // clang-format on
 
-        view.update(wrappedDest.mutableSle());
+        wrappedDest.update();
     }
 
     if (!view.exists(trustLineKey) && !receiverIssuer)

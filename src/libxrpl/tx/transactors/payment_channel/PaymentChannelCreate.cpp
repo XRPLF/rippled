@@ -166,7 +166,7 @@ PaymentChannelCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*wrappedOwner)[sfBalance] = (*wrappedOwner)[sfBalance] - ctx_.tx[sfAmount];
     wrappedOwner.adjustOwnerCount(1, ctx_.journal);
-    ctx_.view().update(wrappedOwner.mutableSle());
+    wrappedOwner.update();
 
     return tesSUCCESS;
 }

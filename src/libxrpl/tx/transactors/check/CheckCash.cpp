@@ -350,7 +350,7 @@ CheckCash::doApply()
                 }
                 // clang-format on
 
-                psb.update(wrappedDst.mutableSle());
+                wrappedDst.update();
 
                 // Note that we _don't_ need to be careful about destroying
                 // the trust line if the check cashing fails.  The transaction

@@ -76,7 +76,7 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
         (*sle)[sfOwnerNode] = *page;
     }
     wrappedAcct.adjustOwnerCount(1, ctx.journal);
-    ctx.view().update(wrappedAcct.mutableSle());
+    wrappedAcct.update();
 
     return tesSUCCESS;
 }

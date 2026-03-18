@@ -1461,7 +1461,7 @@ XChainCreateBridge::doApply()
     wrappedAcct.adjustOwnerCount(1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
-    ctx_.view().update(wrappedAcct.mutableSle());
+    wrappedAcct.update();
 
     return tesSUCCESS;
 }
