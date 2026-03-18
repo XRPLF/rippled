@@ -150,13 +150,16 @@ private:
     Expected<void, std::string>
     checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
+    void
+    buildBatchTxnIds();
+
     STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    mutable std::vector<uint256> batchTxnIds_;
+    std::vector<uint256> batchTxnIds_;
 };
 
 bool

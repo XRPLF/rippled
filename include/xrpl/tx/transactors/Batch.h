@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {

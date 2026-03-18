@@ -63,9 +63,9 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
         // LCOV_EXCL_STOP
 
-        for (STObject txn : txns)
+        for (auto const& txn : txns)
         {
-            STTx const stx = STTx{std::move(txn)};
+            STTx const stx = STTx{STObject(txn)};
 
             // LCOV_EXCL_START
             if (stx.getTxnType() == ttBATCH)
@@ -256,9 +256,9 @@ Batch::preflight(PreflightContext const& ctx)
 
         return tesSUCCESS;
     };
-    for (STObject rb : rawTxns)
+    for (auto const& rb : rawTxns)
     {
-        STTx const stx = STTx{std::move(rb)};
+        STTx const stx = STTx{STObject(rb)};
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {

@@ -178,6 +178,10 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
+    if (ctx.rules.enabled(featureBatchV1_1) &&
+        ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+        return temINVALID_INNER_BATCH;
+
     XRPL_ASSERT(
         ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
             !ctx.rules.enabled(featureBatchV1_1),

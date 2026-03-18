@@ -2,13 +2,12 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/SignerUtils.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
 
 #include <xrpl/protocol/TxFlags.h>
-
-#include "test/jtx/SignerUtils.h"
 
 #include <concepts>
 #include <cstdint>
@@ -34,7 +33,6 @@ class inner
 {
 private:
     Json::Value txn_;
-    std::uint32_t seq_;
     std::optional<std::uint32_t> ticket_;
 
 public:
@@ -42,10 +40,10 @@ public:
         Json::Value const& txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(txn), seq_(sequence), ticket_(ticket)
+        : txn_(txn), ticket_(ticket)
     {
         txn_[jss::SigningPubKey] = "";
-        txn_[jss::Sequence] = seq_;
+        txn_[jss::Sequence] = sequence;
         txn_[jss::Fee] = "0";
         txn_[jss::Flags] = txn_[jss::Flags].asUInt() | tfInnerBatchTxn;
 
