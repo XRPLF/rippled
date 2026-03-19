@@ -32,6 +32,7 @@ include(default)
             {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) ~ " " ~ model_code %}
 
             tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
+            tools.build:cflags+=['{{sanitizer_flags}} -fno-omit-frame-pointer -O1']
             tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
             tools.build:exelinkflags+=['{{sanitizer_flags}}']
             tools.build:defines+={{defines}}
@@ -61,6 +62,7 @@ include(default)
             {% set sanitizer_flags = "-fsanitize=" ~ ",".join(sanitizer_list) %}
 
             tools.build:cxxflags+=['{{sanitizer_flags}} {{" ".join(extra_cxxflags)}}']
+            tools.build:cflags+=['{{sanitizer_flags}} -fno-omit-frame-pointer -O1']
             tools.build:sharedlinkflags+=['{{sanitizer_flags}}']
             tools.build:exelinkflags+=['{{sanitizer_flags}}']
             tools.build:defines+={{defines}}
@@ -68,7 +70,7 @@ include(default)
     {% endif %}
 {% endif %}
 
-tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
+tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:cflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
 
 [options]
 {% if sanitizers %}

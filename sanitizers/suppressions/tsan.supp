@@ -42,6 +42,13 @@ deadlock:boost::asio
 # Requires a larger lock-ordering redesign to fix properly.
 deadlock:RCLConsensus
 
+# Lock-order-inversion in LedgerReplay subsystem.
+# LedgerDeltaAcquire::notify() calls LedgerReplayTask::deltaReady() while
+# holding LedgerDeltaAcquire's mutex, which then acquires LedgerReplayTask's
+# mutex. The reverse order also occurs. Pre-existing design issue.
+deadlock:LedgerReplayTask
+deadlock:LedgerDeltaAcquire
+
 # Signal/crash suppressions for GCC TSAN instrumentation issues
 signal:std::__cxx11::basic_stringbuf
 signal:basic_stringbuf
