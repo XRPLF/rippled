@@ -1214,8 +1214,11 @@ Transactor::operator()()
                 case ltCREDENTIAL:
                     removeExpiredCredentials(view(), ids, viewJ);
                     break;
+                // LCOV_EXCL_START
                 default:
+                    UNREACHABLE("xrpl::Transactor::operator() : unexpected type");
                     break;
+                    // LCOV_EXCL_STOP
             }
         }
 
