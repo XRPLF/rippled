@@ -96,8 +96,8 @@ class PerfLog_test : public beast::unit_test::suite
         // Block until the log file has grown in size, indicating that the
         // PerfLog has written new values to the file and _should_ have the
         // latest update.
-        void
-        wait() const
+        static void
+        wait()
         {
             using namespace boost::filesystem;
 
