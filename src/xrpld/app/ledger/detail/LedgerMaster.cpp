@@ -1454,7 +1454,11 @@ LedgerMaster::newOrderBookDB()
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
 {
-    if (!app_.isStopping() && mPathFindThread < 2 && app_.getPathRequests().requestsPending())
+    auto const maxPathFindThreads = std::max(1, app_.config().WORKERS);
+
+    if (
+        !app_.isStopping() && mPathFindThread < maxPathFindThreads &&
+        app_.getPathRequests().requestsPending())
     {
         JLOG(m_journal.debug()) << "newPFWork: Creating job. path find threads: "
                                 << mPathFindThread;
