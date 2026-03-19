@@ -284,7 +284,7 @@ RFC1751::standard(std::string& strWord)
 {
     for (auto& letter : strWord)
     {
-        if (islower(static_cast<unsigned char>(letter)))
+        if (islower(static_cast<unsigned char>(letter)) != 0)
         {
             letter = toupper(static_cast<unsigned char>(letter));
         }
@@ -315,7 +315,7 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
         int iMid = iMin + (iMax - iMin) / 2;
         int iDir = strWord.compare(s_dictionary[iMid]);
 
-        if (!iDir)
+        if (iDir == 0)
         {
             iResult = iMid;  // Found it.
         }

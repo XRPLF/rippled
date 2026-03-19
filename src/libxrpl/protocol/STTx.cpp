@@ -618,7 +618,7 @@ isMemoOkay(STObject const& st, std::string& reason)
     {
         auto memoObj = dynamic_cast<STObject const*>(&memo);
 
-        if (!memoObj || (memoObj->getFName() != sfMemo))
+        if ((memoObj == nullptr) || (memoObj->getFName() != sfMemo))
         {
             reason = "A memo array may contain only Memo objects.";
             return false;
@@ -669,7 +669,7 @@ isMemoOkay(STObject const& st, std::string& reason)
 
             for (unsigned char c : *optData)
             {
-                if (!allowedSymbols[c])
+                if (allowedSymbols[c] == 0)
                 {
                     reason =
                         "The MemoType and MemoFormat fields may only "
@@ -691,7 +691,7 @@ isAccountFieldOkay(STObject const& st)
     for (int i = 0; i < st.getCount(); ++i)
     {
         auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex(i));
-        if (t && t->isDefault())
+        if ((t != nullptr) && t->isDefault())
             return false;
     }
 

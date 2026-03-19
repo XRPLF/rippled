@@ -810,19 +810,19 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Connection", "close");
     msg.body()["version"] = Json::Value(2u);
 
-    if (setup_.crawlOptions & CrawlOptions::Overlay)
+    if ((setup_.crawlOptions & CrawlOptions::Overlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if (setup_.crawlOptions & CrawlOptions::ServerInfo)
+    if ((setup_.crawlOptions & CrawlOptions::ServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if (setup_.crawlOptions & CrawlOptions::ServerCounts)
+    if ((setup_.crawlOptions & CrawlOptions::ServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if (setup_.crawlOptions & CrawlOptions::Unl)
+    if ((setup_.crawlOptions & CrawlOptions::Unl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }

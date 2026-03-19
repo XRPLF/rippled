@@ -333,7 +333,7 @@ public:
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
             rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
-            if (!status.ok() || !pdb)
+            if (!status.ok() || (pdb == nullptr))
                 Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
         }

@@ -355,7 +355,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         return QUALITY_ONE;
 
     auto const q = (*sle)[field];
-    if (!q)
+    if (q == 0u)
         return QUALITY_ONE;
     return q;
 }
@@ -410,21 +410,21 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (((*sleSrc)[sfFlags] & lsfRequireAuth) && !((*sleLine)[sfFlags] & authField) &&
-            (*sleLine)[sfBalance] == beast::zero)
+        if ((((*sleSrc)[sfFlags] & lsfRequireAuth) != 0u) &&
+            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::zero)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
             return terNO_AUTH;
         }
 
-        if (ctx.prevStep)
+        if (ctx.prevStep != nullptr)
         {
             if (ctx.prevStep->bookStepBook())
             {
                 auto const noRippleSrcToDst =
                     ((*sleLine)[sfFlags] & ((src_ > dst_) ? lsfHighNoRipple : lsfLowNoRipple));
-                if (noRippleSrcToDst)
+                if (noRippleSrcToDst != 0u)
                     return terNO_RIPPLE;
             }
         }
@@ -713,7 +713,7 @@ template <class TDerived>
 std::pair<std::uint32_t, std::uint32_t>
 DirectStepI<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
 {
-    if (!prevStep_)
+    if (prevStep_ == nullptr)
         return {QUALITY_ONE, QUALITY_ONE};
 
     auto const prevStepQIn = prevStep_->lineQualityIn(sb);
@@ -828,7 +828,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
     // If previous step was a direct step then we need to check
     // no ripple flags.
-    if (ctx.prevStep)
+    if (ctx.prevStep != nullptr)
     {
         if (auto prevSrc = ctx.prevStep->directStepSrcAcct())
         {
@@ -841,9 +841,9 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         Issue const srcIssue{currency_, src_};
         Issue const dstIssue{currency_, dst_};
 
-        if (ctx.seenBookOuts.count(srcIssue))
+        if (ctx.seenBookOuts.count(srcIssue) != 0u)
         {
-            if (!ctx.prevStep)
+            if (ctx.prevStep == nullptr)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
@@ -904,7 +904,7 @@ make_DirectStepI(
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing)
+    if (ctx.offerCrossing != 0u)
     {
         auto offerCrossingStep = std::make_unique<DirectIOfferCrossingStep>(ctx, src, dst, c);
         ter = offerCrossingStep->check(ctx);

@@ -47,7 +47,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
     if (m_numberOfThreads == numberOfThreads)
         return;
 
-    if (perfLog_)
+    if (perfLog_ != nullptr)
         perfLog_->resizeJobs(numberOfThreads);
 
     if (numberOfThreads > m_numberOfThreads)

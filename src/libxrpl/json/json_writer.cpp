@@ -23,7 +23,7 @@ isControlCharacter(char ch)
 static bool
 containsControlCharacter(char const* str)
 {
-    while (*str)
+    while (*str != 0)
     {
         if (isControlCharacter(*(str++)))
             return true;

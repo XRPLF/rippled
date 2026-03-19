@@ -308,7 +308,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // Lay the data out as
     //      <type><token><checksum>
     buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
-    if (size)
+    if (size != 0u)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
@@ -502,7 +502,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b_58_10_coeff{};
     auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
-    auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
+    auto const num_partial_coeffs = (partial_coeff_len != 0u) ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
     XRPL_ASSERT(
         num_b_58_10_coeffs <= b_58_10_coeff.size(),

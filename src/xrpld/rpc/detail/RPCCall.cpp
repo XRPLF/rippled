@@ -335,7 +335,7 @@ private:
             try
             {
                 int bProof = jvParams[5u].asInt();
-                if (bProof)
+                if (bProof != 0)
                     jvRequest[jss::proof] = true;
             }
             catch (std::exception const&)
@@ -356,7 +356,7 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        if (!jvParams.size())
+        if (jvParams.size() == 0u)
             return jvRequest;
 
         std::string input = jvParams[0u].asString();
@@ -468,7 +468,7 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        if (jvParams.size())
+        if (jvParams.size() != 0u)
             jvRequest[jss::min_count] = jvParams[0u].asUInt();
 
         return jvRequest;
@@ -546,10 +546,9 @@ private:
                 jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
-                return !(
-                    jv.isMember(jss::params) &&
-                    !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
-                      jv[jss::params].isObject()));
+                return !jv.isMember(jss::params) ||
+                    (jv[jss::params].isNull() || jv[jss::params].isArray() ||
+                     jv[jss::params].isObject());
             }
         }
         return false;
@@ -611,7 +610,7 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        if (!jvParams.size())
+        if (jvParams.size() == 0u)
         {
             return jvRequest;
         }
@@ -1091,7 +1090,7 @@ private:
     {
         Json::Value jvRequest{Json::objectValue};
 
-        if (jvParams.size())
+        if (jvParams.size() != 0u)
             jvRequest[jss::secret] = jvParams[0u].asString();
 
         return jvRequest;
@@ -1105,7 +1104,7 @@ private:
     {
         Json::Value jvRequest{Json::objectValue};
 
-        if (jvParams.size())
+        if (jvParams.size() != 0u)
             jvRequest[jss::passphrase] = jvParams[0u].asString();
 
         return jvRequest;
@@ -1541,8 +1540,8 @@ rpcClient(
                             return jvRequest[jss::method].asString();
                         return jvRequest.isArray() ? "batch" : args[0];
                     }(),
-                    jvParams,                  // Parsed, execute.
-                    setup.client.secure != 0,  // Use SSL
+                    jvParams,                                    // Parsed, execute.
+                    static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
                     std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),

@@ -126,14 +126,14 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
         if (auto it = endpoints_.find(port.name); it != endpoints_.end())
         {
             auto const endpointPort = it->second.port();
-            if (!port.port)
+            if (port.port == 0u)
                 port.port = endpointPort;
 
-            if (!setup_.client.port &&
+            if ((setup_.client.port == 0u) &&
                 (port.protocol.count("http") > 0 || port.protocol.count("https") > 0))
                 setup_.client.port = endpointPort;
 
-            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+            if ((setup_.overlay.port() == 0u) && (port.protocol.count("peer") > 0))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -163,7 +163,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
         return ++count_[port];
     }();
 
-    if (port.limit && c >= port.limit)
+    if ((port.limit != 0) && c >= port.limit)
     {
         JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
@@ -1135,7 +1135,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
             // Remove the peer protocol, and if that would
             // leave the port empty, remove the port as well
-            if (p.erase("peer") && p.empty())
+            if ((p.erase("peer") != 0u) && p.empty())
             {
                 it = result.erase(it);
             }

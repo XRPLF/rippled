@@ -199,7 +199,7 @@ Serializer::addVL(void const* ptr, int len)
 {
     int ret = addEncoded(len);
 
-    if (len)
+    if (len != 0)
         addRaw(ptr, len);
 
     return ret;

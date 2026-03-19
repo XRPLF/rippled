@@ -76,7 +76,7 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    if (app)
+    if (app != nullptr)
     {
         app->getJobQueue().rendezvous();
         app->signalStop("~AppBundle");
@@ -468,7 +468,7 @@ Env::postconditions(
         // we didn't get the expected result.
         return;
     }
-    if (trace_)
+    if (trace_ != 0)
     {
         if (trace_ > 0)
             --trace_;

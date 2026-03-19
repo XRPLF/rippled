@@ -121,7 +121,7 @@ TxQ::FeeMetrics::update(
         txnsExpected_ = std::min(next, maximumTxnCount_.value_or(next));
     }
 
-    if (!size)
+    if (size == 0)
     {
         escalationMultiplier_ = setup.minimumEscalationMultiplier;
     }
@@ -357,7 +357,7 @@ TxQ::canBeHeld(
     // queue yet, but should be added in the future.
     // tapFAIL_HARD transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
-        (flags & tapFAIL_HARD))
+        ((flags & tapFAIL_HARD) != 0u))
         return telCAN_NOT_QUEUE;
 
     {

@@ -40,7 +40,7 @@ class AMMCalc_test : public beast::unit_test::suite
         boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
-            if (delimited)
+            if (delimited != nullptr)
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
             {

@@ -3376,7 +3376,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    if (!map)
+    if (map == nullptr)
     {
         JLOG(p_journal_.warn()) << "processLedgerRequest: Unable to find map";
         return;

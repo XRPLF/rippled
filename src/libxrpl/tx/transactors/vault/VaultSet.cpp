@@ -14,7 +14,7 @@ namespace xrpl {
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !(ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains));
+    return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
 NotTEC

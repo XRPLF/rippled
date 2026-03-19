@@ -42,7 +42,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
     {
         auto const flags = ctx.tx.getFlags();
 
-        if ((flags & tfClose) && (flags & tfRenew))
+        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
             return temMALFORMED;
     }
 
@@ -158,7 +158,7 @@ PaymentChannelClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags() & tfRenew)
+    if ((ctx_.tx.getFlags() & tfRenew) != 0u)
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
@@ -166,7 +166,7 @@ PaymentChannelClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags() & tfClose)
+    if ((ctx_.tx.getFlags() & tfClose) != 0u)
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])

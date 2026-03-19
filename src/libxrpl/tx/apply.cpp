@@ -188,13 +188,13 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if (mode & tfAllOrNothing)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if (mode & tfUntilFailure)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if (mode & tfOnlyOne)
+        else if ((mode & tfOnlyOne) != 0u)
         {
             break;
         }

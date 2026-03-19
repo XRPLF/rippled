@@ -696,7 +696,7 @@ forEachItem(
         for (auto const& key : sle->getFieldV256(sfIndexes))
             f(view.read(keylet::child(key)));
         auto const next = sle->getFieldU64(sfIndexNext);
-        if (!next)
+        if (next == 0u)
             return;
         pos = keylet::page(root, next);
     }
@@ -1473,7 +1473,7 @@ authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if (flags & tfMPTUnauthorize)
+        if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
@@ -1553,7 +1553,7 @@ authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if (flags & tfMPTUnauthorize)
+    if ((flags & tfMPTUnauthorize) != 0u)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
@@ -1643,10 +1643,10 @@ trustCreate(
         bSetHigh ? sfLowLimit : sfHighLimit,
         STAmount(Issue{saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
 
-    if (uQualityIn)
+    if (uQualityIn != 0u)
         sleRippleState->setFieldU32(bSetHigh ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
 
-    if (uQualityOut)
+    if (uQualityOut != 0u)
         sleRippleState->setFieldU32(bSetHigh ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
     std::uint32_t uFlags = bSetHigh ? lsfHighReserve : lsfLowReserve;
@@ -1922,17 +1922,18 @@ rippleCreditIOU(
             // Sender balance was positive.
             && saBalance <= beast::zero
             // Sender is zero or negative.
-            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
                 static_cast<bool>(
                     view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
-            !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
+            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            &&
+            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -1944,7 +1945,7 @@ rippleCreditIOU(
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
             // Receiver reserve is clear.
         }
 
@@ -2694,16 +2695,16 @@ updateTrustLine(
         // Sender balance was positive.
         && after <= beast::zero
         // Sender is zero or negative.
-        && (flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
         && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
             static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
-        !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
+        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
-        && !state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+        && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
         // Sender quality in is 0.
-        && !state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+        && (state->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
     // Sender quality out is 0.
     {
         // VFALCO Where is the line being deleted?
@@ -2715,7 +2716,7 @@ updateTrustLine(
 
         // Balance is zero, receiver reserve is clear.
         if (!after  // Balance is zero.
-            && !(flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)))
+            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
             return true;
     }
     return false;
@@ -2941,11 +2942,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
+        issuerAccount && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
     {
         if (trustLine)
         {
-            return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+            return (((*trustLine)[sfFlags] &
+                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -3166,7 +3168,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    if ((sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer) == 0u)
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
@@ -3322,7 +3324,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if (!(sleState->getFlags() & uFlags))
+    if ((sleState->getFlags() & uFlags) == 0u)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);

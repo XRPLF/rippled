@@ -151,7 +151,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             pageIndex = (*page)[~sfIndexNext];
             dirCnt += (*page)[sfIndexes].size();
 
-        } while (pageIndex.value_or(0));
+        } while (pageIndex.value_or(0) != 0u);
 
         return dirCnt == dirSize;
     }

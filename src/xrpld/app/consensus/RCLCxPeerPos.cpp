@@ -34,7 +34,7 @@ RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();
 
-    if (publicKey().size())
+    if (publicKey().size() != 0u)
         ret[jss::peer_id] = toBase58(TokenType::NodePublic, publicKey());
 
     return ret;

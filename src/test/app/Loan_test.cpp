@@ -388,7 +388,7 @@ protected:
                     if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                         env.test.BEAST_EXPECT(vaultSle))
                     {
-                        if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
+                        if (((flags & lsfLoanImpaired) != 0u) && ((flags & lsfLoanDefault) == 0u))
                         {
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
@@ -1439,7 +1439,7 @@ protected:
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
         static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
+        auto const deleter = ((++deleteCounter % 2) != 0u) ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 

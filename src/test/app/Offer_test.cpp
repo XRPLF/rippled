@@ -2253,7 +2253,7 @@ public:
 
             // The gateway optionally creates an offer that would be crossed.
             auto const book = t.bookAmount;
-            if (book)
+            if (book != 0)
                 env(offer(gw, XRP(book), USD(book)));
             env.close();
             std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
@@ -2285,7 +2285,7 @@ public:
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
-            if (!acctOffers.empty() && t.offers)
+            if (!acctOffers.empty() && (t.offers != 0))
             {
                 auto const& acctOffer = *(acctOffers.front());
 
@@ -2296,7 +2296,7 @@ public:
 
             if (t.preTrust == noPreTrust)
             {
-                if (t.balanceUsd.value().signum())
+                if (t.balanceUsd.value().signum() != 0)
                 {
                     // Verify the correct contents of the trustline
                     verifyDefaultTrustline(env, acct, t.balanceUsd);
@@ -2773,7 +2773,7 @@ public:
             env.require(offers(acct, t.offers));
             env.require(owners(acct, t.owners));
 
-            if (t.offers)
+            if (t.offers != 0)
             {
                 auto const acctOffers = offersOnAccount(env, acct);
                 if (!acctOffers.empty())

@@ -111,7 +111,7 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
@@ -643,7 +643,7 @@ public:
             Params params{};
             params.items = default_items;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
                 beast::temp_dir tempDir;
                 Section config = parse(config_string);

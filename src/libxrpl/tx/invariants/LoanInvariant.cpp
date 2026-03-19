@@ -49,7 +49,7 @@ ValidLoanBroker::goodZeroDirectory(
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
-    if ((prev && *prev) || (next && *next))
+    if ((prev && (*prev != 0u)) || (next && (*next != 0u)))
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
                            "OwnerCount has multiple directory pages";

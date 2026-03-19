@@ -42,7 +42,7 @@ STArray::STArray(SField const& f, std::size_t n) : STBase(f)
 
 STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
-    while (!sit.empty())
+    while (sit.empty() == 0u)
     {
         int type = 0, field = 0;
         sit.getFieldID(type, field);

@@ -152,7 +152,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 
     value &= ~(1023ull << (64 - 10));
 
-    if (value)
+    if (value != 0u)
     {
         bool isNegative = (offset & 256) == 0;
         offset = (offset & 255) - 97;  // center the range
@@ -796,7 +796,7 @@ bool
 STAmount::isEquivalent(STBase const& t) const
 {
     STAmount const* v = dynamic_cast<STAmount const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

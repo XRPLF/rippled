@@ -287,7 +287,7 @@ public:
         for (std::uint64_t badFlag = 1u; badFlag <= std::numeric_limits<std::uint32_t>::max();
              badFlag *= 2)
         {
-            if (badFlag & tfTrustSetMask)
+            if ((badFlag & tfTrustSetMask) != 0u)
             {
                 env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)),
                     ter(temINVALID_FLAG));

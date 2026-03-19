@@ -79,7 +79,7 @@ public:
     AccountID const&
     getSigner() const
     {
-        if (!multiSigningAcctID_)
+        if (multiSigningAcctID_ == nullptr)
             LogicError("Accessing unknown SigningForParams::getSigner()");
         return *multiSigningAcctID_;
     }
@@ -428,7 +428,7 @@ transactionPreProcessImpl(
         : nullptr;
     if (signatureTarget)
     {
-        if (!signatureTemplate)
+        if (signatureTemplate == nullptr)
         {  // Invalid target field
             return RPC::make_error(rpcINVALID_PARAMS, signatureTarget->get().getName());
         }

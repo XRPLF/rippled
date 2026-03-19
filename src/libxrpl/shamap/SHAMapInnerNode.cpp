@@ -152,7 +152,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     auto hashes = ret->hashesAndChildren_.getHashes();
 
-    while (!si.empty())
+    while (si.empty() == 0u)
     {
         auto const hash = si.getBitString<256>();
         auto const pos = si.get8();
