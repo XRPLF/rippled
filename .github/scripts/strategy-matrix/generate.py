@@ -256,6 +256,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 }
             )
             # Add TSAN + UBSAN configuration.
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
             configurations.append(
                 {
                     "config_name": config_name + "-tsan-ubsan",
@@ -266,6 +268,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "os": os,
                     "architecture": architecture,
                     "sanitizers": "thread,undefinedbehavior",
+                    "nproc_subtract": 20,
                 }
             )
         else:
@@ -281,6 +284,20 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "",
                 }
             )
+
+    # TEMPORARY: Only build previously-failing sanitizer variants to save CI.
+    # Remove this filter once these configs pass.
+    sanitizer_only = [
+        c
+        for c in configurations
+        if c["sanitizers"]
+        and (
+            ("gcc-13" in c["config_name"] and "asan" in c["config_name"])
+            or ("clang-20" in c["config_name"] and "tsan" in c["config_name"])
+        )
+    ]
+    if sanitizer_only:
+        return sanitizer_only
 
     return configurations
 
