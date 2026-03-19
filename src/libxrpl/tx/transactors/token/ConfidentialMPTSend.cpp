@@ -40,11 +40,10 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
 
     // Check the length of the ZKProof
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
-    auto const sizePedersenLinkage = 2 * ecPedersenProofLength;
+    auto const sizeEquality = getEqualityProofSize(recipientCount);
 
     if (ctx.tx[sfZKProof].length() !=
-        sizeEquality + sizePedersenLinkage + ecDoubleBulletproofLength)
+        sizeEquality + doublePedersenProofLength + ecDoubleBulletproofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
@@ -86,7 +85,7 @@ verifySendProofs(
     size_t currentOffset = 0;
 
     // Extract equality proof
-    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
+    auto const sizeEquality = getEqualityProofSize(recipientCount);
     if (remainingLength < sizeEquality)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -183,28 +182,25 @@ verifySendProofs(
 
     // Verify Range Proof
     {
-        Buffer pcRem;
-
         // Derive PC_rem = PC_balance - PC_amount
-        if (auto const ter = computeSendRemainder(
-                ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment], pcRem);
-            !isTesSuccess(ter))
-        {
-            valid = false;
-        }
-        else
+        if (auto pcRem =
+                computeSendRemainder(ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment]))
         {
             // Aggregated commitments: [PC_amount, PC_rem]
             // Prove that both the transfer amount and the remaining balance are in range
             std::vector<Slice> commitments;
             commitments.push_back(ctx.tx[sfAmountCommitment]);
-            commitments.push_back(Slice{pcRem.data(), pcRem.size()});
+            commitments.push_back(Slice{pcRem->data(), pcRem->size()});
 
             if (auto const ter = verifyAggregatedBulletproof(rangeProof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;
             }
+        }
+        else
+        {
+            valid = false;
         }
     }
 
@@ -271,11 +267,6 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !sleSenderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
 
-    // Sanity check: MPToken's auditor field must be present if auditing is
-    // enabled
-    if (requiresAuditor && !sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
-        return tefINTERNAL;
-
     // Check destination's MPToken existence
     auto const sleDestinationMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, destination));
     if (!sleDestinationMPToken)
@@ -286,6 +277,13 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !sleDestinationMPToken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleDestinationMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
+
+    // Sanity check: Both MPTokens' auditor fields must be present if auditing
+    // is enabled
+    if (requiresAuditor &&
+        (!sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance) ||
+         !sleDestinationMPToken->isFieldPresent(sfAuditorEncryptedBalance)))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);

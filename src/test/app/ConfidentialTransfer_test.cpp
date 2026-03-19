@@ -71,7 +71,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     std::string
     getTrivialSendProofHex(size_t nRecipients)
     {
-        size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
+        size_t const sizeEquality = getEqualityProofSize(nRecipients);
         size_t const totalSize =
             sizeEquality + (2 * ecPedersenProofLength) + ecDoubleBulletproofLength;
 
@@ -362,15 +362,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = alice,
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
-                .err = temMALFORMED,
-            });
-
-            // blinding factor length is invalid
-            mptAlice.convert({
-                .account = alice,
-                .amt = 10,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .blindingFactor = makeZeroBuffer(10),
                 .err = temMALFORMED,
             });
 
@@ -2950,14 +2941,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = maxMPTokenAmount + 1,
                 .err = temBAD_AMOUNT,
-            });
-
-            // invalid blinding factor length
-            mptAlice.convertBack({
-                .account = alice,
-                .amt = 30,
-                .blindingFactor = Buffer{},
-                .err = temMALFORMED,
             });
 
             // Balance commitment has correct length but invalid EC point data

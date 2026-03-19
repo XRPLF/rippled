@@ -371,7 +371,7 @@ verifyMultiCiphertextEqualityProof(
     if (recipients.size() != nRecipients)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (proof.size() != secp256k1_mpt_proof_equality_shared_r_size(nRecipients))
+    if (proof.size() != getEqualityProofSize(nRecipients))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ctx = secp256k1Context();
@@ -700,12 +700,12 @@ verifyAggregatedBulletproof(
     return tesSUCCESS;
 }
 
-TER
-computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out)
+std::optional<Buffer>
+computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment)
 {
     if (balanceCommitment.size() != ecPedersenCommitmentLength ||
         amountCommitment.size() != ecPedersenCommitmentLength)
-        return tecINTERNAL;
+        return std::nullopt;
 
     auto const ctx = secp256k1Context();
 
@@ -714,7 +714,7 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
             ctx, &pcBalance, balanceCommitment.data(), ecPedersenCommitmentLength);
         res != 1)
     {
-        return tecINTERNAL;
+        return std::nullopt;
     }
 
     secp256k1_pubkey pcAmount;
@@ -722,13 +722,13 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
             ctx, &pcAmount, amountCommitment.data(), ecPedersenCommitmentLength);
         res != 1)
     {
-        return tecINTERNAL;
+        return std::nullopt;
     }
 
     // Negate PC_amount point to get -PC_amount
     if (auto res = secp256k1_ec_pubkey_negate(ctx, &pcAmount); res != 1)
     {
-        return tecINTERNAL;
+        return std::nullopt;
     }
 
     // Compute pcRem = pcBalance + (-pcAmount)
@@ -736,27 +736,28 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
     secp256k1_pubkey pcRem;
     if (auto res = secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2); res != 1)
     {
-        return tecINTERNAL;
+        return std::nullopt;
     }
 
     // Serialize result to compressed format
+    Buffer out;
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
     if (auto res = secp256k1_ec_pubkey_serialize(
             ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED);
-        res != 1)
+        res != 1 || outLen != ecPedersenCommitmentLength)
     {
-        return tecINTERNAL;
+        return std::nullopt;
     }
 
-    return tesSUCCESS;
+    return out;
 }
 
-TER
-computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& out)
+std::optional<Buffer>
+computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
 {
     if (commitment.size() != ecPedersenCommitmentLength || amount == 0)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
 
     auto const ctx = secp256k1Context();
 
@@ -766,7 +767,7 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
             ctx, &pcBalance, commitment.data(), ecPedersenCommitmentLength);
         res != 1)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 
     // Convert amount to 32-byte big-endian scalar
@@ -778,13 +779,13 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
     secp256k1_pubkey mG;
     if (auto res = secp256k1_ec_pubkey_create(ctx, &mG, mScalar); res != 1)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 
     // Negate mG to get -mG
     if (auto res = secp256k1_ec_pubkey_negate(ctx, &mG); res != 1)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 
     // Compute pcRem = pcBalance + (-mG)
@@ -792,19 +793,20 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount, Buffer& ou
     secp256k1_pubkey pcRem;
     if (auto res = secp256k1_ec_pubkey_combine(ctx, &pcRem, summands, 2); res != 1)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 
     // Serialize result to compressed format
+    Buffer out;
     out.alloc(ecPedersenCommitmentLength);
     size_t outLen = ecPedersenCommitmentLength;
     if (auto res = secp256k1_ec_pubkey_serialize(
             ctx, out.data(), &outLen, &pcRem, SECP256K1_EC_COMPRESSED);
         res != 1 || outLen != ecPedersenCommitmentLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return std::nullopt;  // LCOV_EXCL_LINE
     }
 
-    return tesSUCCESS;
+    return out;
 }
 }  // namespace xrpl

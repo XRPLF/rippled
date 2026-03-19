@@ -56,7 +56,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // Sanity check: issuer must be the same as account
+    // Sanity check: account must be the same as issuer
     if (sleIssuance->getAccountID(sfIssuer) != account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -123,7 +123,7 @@ ConfidentialMPTClawback::doApply()
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
-    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = *encZeroForHolder;
+    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = std::move(*encZeroForHolder);
     (*sleHolderMPToken)[sfIssuerEncryptedBalance] = std::move(*encZeroForIssuer);
     incrementConfidentialVersion(*sleHolderMPToken);
 

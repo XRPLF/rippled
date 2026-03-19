@@ -32,6 +32,9 @@ namespace xrpl {
  */
 class ConfidentialMPTSend : public Transactor
 {
+    /// Size of two Pedersen linkage proofs (amount + balance)
+    static constexpr std::size_t doublePedersenProofLength = 2 * ecPedersenProofLength;
+
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 

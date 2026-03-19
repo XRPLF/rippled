@@ -22,9 +22,6 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
         return temBAD_AMOUNT;
 
-    if (ctx.tx[sfBlindingFactor].size() != ecBlindingFactorLength)
-        return temMALFORMED;
-
     if (ctx.tx.isFieldPresent(sfHolderEncryptionKey))
     {
         if (!isValidCompressedECPoint(ctx.tx[sfHolderEncryptionKey]))
@@ -35,13 +32,14 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
         if (!ctx.tx.isFieldPresent(sfZKProof))
             return temMALFORMED;
 
-        // verify schnorr proof length when registerring holder ec public key
+        // verify schnorr proof length when registering holder ec public key
         if (ctx.tx[sfZKProof].size() != ecSchnorrProofLength)
             return temMALFORMED;
     }
     else
     {
-        // zkp should not be present if public key was already set
+        // Either both sfHolderEncryptionKey and sfZKProof should be present, or both should be
+        // absent.
         if (ctx.tx.isFieldPresent(sfZKProof))
             return temMALFORMED;
     }
@@ -66,17 +64,14 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
+        !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    // issuer has not uploaded their pub key yet
-    if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
-        return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
@@ -142,9 +137,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
                 (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
     }
 
+    auto const blindingFactor = ctx.tx[sfBlindingFactor];
     return verifyRevealedAmount(
         amount,
-        ctx.tx[sfBlindingFactor],
+        Slice(blindingFactor.data(), blindingFactor.size()),
         {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
         {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
         auditor);
