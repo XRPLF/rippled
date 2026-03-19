@@ -215,11 +215,6 @@ SponsorshipSet::doApply()
         // Create
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sponsorAccSle, preFeeBalance_, reserveSponsorAccSle, 1);
-            !isTesSuccess(ret))
-            return tecUNFUNDED;
-
         (*newSle)[sfOwner] = sponsorAccountID;
         (*newSle)[sfSponsee] = sponseeAccountID;
         if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
@@ -230,6 +225,17 @@ SponsorshipSet::doApply()
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
             (*newSle)[sfFeeAmount] = *feeAmount;
         }
+
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                ctx_.tx,
+                sponsorAccSle,
+                STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
+                reserveSponsorAccSle,
+                1);
+            !isTesSuccess(ret))
+            return tecUNFUNDED;
+
         if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
         if (reserveCount && *reserveCount > 0)
@@ -267,8 +273,7 @@ SponsorshipSet::doApply()
         auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
-        if (feeAmountDelta > beast::zero &&
-            feeAmountDelta > (*sponsorAccSle)[sfBalance])
+        if (feeAmountDelta > beast::zero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
         // transfer feeAmount to ledger entry
