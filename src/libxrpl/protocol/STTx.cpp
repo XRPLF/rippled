@@ -199,8 +199,10 @@ STTx::getSeqProxy() const
 
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
+    {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
         return SeqProxy::sequence(seq);
+    }
 
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
@@ -209,6 +211,20 @@ std::uint32_t
 STTx::getSeqValue() const
 {
     return getSeqProxy().value();
+}
+
+AccountID
+STTx::getFeePayer() const
+{
+    // If sfDelegate is present, the delegate account is the payer
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::checkPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+
+    // Default payer
+    return getAccountID(sfAccount);
 }
 
 void
@@ -246,10 +262,10 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject) const
         return signingPubKey.empty() ? checkMultiSign(rules, sigObject)
                                      : checkSingleSign(sigObject);
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return Unexpected("Internal signature check failure.");
     }
-    return Unexpected("Internal signature check failure.");
 }
 
 Expected<void, std::string>
@@ -323,8 +339,8 @@ STTx::getJson(JsonOptions options, bool binary) const
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
-        else
-            return Json::Value{dataBin};
+
+        return Json::Value{dataBin};
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
@@ -351,7 +367,7 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 {
     Serializer s;
     add(s);
-    return getMetaSQL(s, inLedger, txnSqlValidated, escapedMetaData);
+    return getMetaSQL(s, inLedger, TxnSql::txnSqlValidated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere
@@ -359,7 +375,7 @@ std::string
 STTx::getMetaSQL(
     Serializer rawTxn,
     std::uint32_t inLedger,
-    char status,
+    TxnSql status,
     std::string const& escapedMetaData) const
 {
     static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
@@ -370,8 +386,8 @@ STTx::getMetaSQL(
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
-        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
-        escapedMetaData);
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
+        safe_cast<char>(status) % rTxn % escapedMetaData);
 }
 
 static Expected<void, std::string>
@@ -486,9 +502,11 @@ multiSignHelper(
             errorWhat = e.what();
         }
         if (!validSig)
+        {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 errorWhat.value_or("") + ".");
+        }
     }
     // All signatures verified.
     return {};
@@ -562,7 +580,7 @@ STTx::getBatchTransactionIDs() const
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
     // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.size() == 0)
+    if (batchTxnIds_.empty())
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))
             batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
@@ -694,9 +712,9 @@ invalidMPTAmountInTx(STObject const& tx)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
                     (field.getSType() == STI_AMOUNT &&
-                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                     safe_downcast<STAmount const&>(field).holds<MPTIssue>()) ||
                     (field.getSType() == STI_ISSUE &&
-                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
+                     safe_downcast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;

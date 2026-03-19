@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/tx/paths/OfferStream.h>
-#include <xrpl/tx/transactors/PermissionedDEXHelpers.h>
+#include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 
 namespace xrpl {
 
@@ -95,8 +95,10 @@ accountFundsHelper(
     beast::Journal j)
 {
     if (issue.account == id)
+    {
         // self funded
         return amtDefault;
+    }
 
     return toAmount<IOUAmount>(
         accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));

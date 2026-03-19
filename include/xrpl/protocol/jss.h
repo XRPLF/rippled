@@ -25,6 +25,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(AcceptedCredentials);  // out: AccountObjects
+JSS(ACCOUNT_SET_FLAGS);    // out: RPC server_definitions
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
@@ -111,6 +112,7 @@ JSS(accounts);                // in: LedgerEntry, Subscribe,
                               //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);       // in: Subscribe, Unsubscribe
 JSS(action);
+JSS(active);                  // out: OverlayImpl
 JSS(acquiring);               // out: LedgerRequest
 JSS(address);                 // out: PeerImp
 JSS(affected);                // out: AcceptedLedgerTx
@@ -187,6 +189,7 @@ JSS(closed_ledger);           // out: NetworkOPs
 JSS(cluster);                 // out: PeerImp
 JSS(code);                    // out: errors
 JSS(command);                 // in: RPCHandler
+JSS(common);                  // out: RPC server_definitions
 JSS(complete);                // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);        // out: NetworkOPs, PeerImp
 JSS(consensus);               // out: NetworkOPs, LedgerConsensus
@@ -298,6 +301,7 @@ JSS(id);                      // websocket.
 JSS(ident);                   // in: AccountCurrencies, AccountInfo,
                               //     OwnerInfo
 JSS(ignore_default);          // in: AccountLines
+JSS(in);                      // out: OverlayImpl
 JSS(inLedger);                // out: tx/Transaction
 JSS(inbound);                 // out: PeerImp
 JSS(index);                   // in: LedgerEntry
@@ -356,6 +360,8 @@ JSS(ledger_min);              // in, out: AccountTx*
 JSS(ledger_time);             // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);      // out: RPC server_definitions
                               // matches definitions.json format
+JSS(LEDGER_ENTRY_FLAGS);      // out: RPC server_definitions
+JSS(LEDGER_ENTRY_FORMATS);    // out: RPC server_definitions
 JSS(levels);                  // LogLevels
 JSS(limit);                   // in/out: AccountTx*, AccountOffers,
                               //         AccountLines, AccountObjects
@@ -457,8 +463,10 @@ JSS(open);                    // out: handlers/Ledger
 JSS(open_ledger_cost);        // out: SubmitTransaction
 JSS(open_ledger_fee);         // out: TxQ
 JSS(open_ledger_level);       // out: TxQ
+JSS(optionality);             // out: server_definitions
 JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
+JSS(out);                     // out: OverlayImpl
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);             // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS(page_index);
@@ -616,6 +624,8 @@ JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
                               // matches definitions.json format
+JSS(TRANSACTION_FLAGS);       // out: RPC server_definitions
+JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
 JSS(TYPES);                   // out: RPC server_definitions
                               // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)
