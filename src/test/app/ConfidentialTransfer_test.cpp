@@ -536,6 +536,85 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testSet(FeatureBitset features)
+    {
+        testcase("Set");
+        using namespace test::jtx;
+
+        // Set keys on issuance that already has confidential amounts enabled
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
+        }
+
+        // Enable confidential amounts flag only (no keys)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+            });
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+            });
+        }
+
+        // Set keys when enabling confidential amounts in the same tx
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+            });
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(auditor);
+
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
+
+            // Verify lsfMPTCanConfidentialAmount flag is set
+            BEAST_EXPECT(mptAlice.checkFlags(
+                lsfMPTCanTransfer | lsfMPTCanLock | lsfMPTCanConfidentialAmount));
+
+            // Verify keys are persisted on the issuance
+            auto const sle = env.le(keylet::mptIssuance(mptAlice.issuanceID()));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->isFieldPresent(sfIssuerEncryptionKey));
+            BEAST_EXPECT(sle->isFieldPresent(sfAuditorEncryptionKey));
+        }
+    }
+
+    void
     testSetPreflight(FeatureBitset features)
     {
         testcase("Set preflight");
@@ -632,6 +711,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = temMALFORMED,
             });
 
+            // Cannot set keys while clearing confidential amount
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .err = temINVALID_FLAG,
+            });
+
             // Cannot set Holder and auditor Keys in the same transaction
             mptAlice.set({
                 .account = alice,
@@ -665,29 +752,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .err = tecNO_PERMISSION,
-            });
-        }
-
-        // Can set issuer key when enabling confidential amounts in the same tx
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            MPTTester mptAlice(env, alice, {.holders = {}});
-
-            // Create without tfMPTCanConfidentialAmount but allow mutation
-            // (don't set tmfMPTCannotMutateCanConfidentialAmount)
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
-            });
-
-            mptAlice.generateKeyPair(alice);
-
-            // Set issuer key and enable confidential amounts at the same time
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
-                .issuerPubKey = mptAlice.getPubKey(alice),
             });
         }
 
@@ -778,28 +842,60 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
-        // Can set auditor key when enabling confidential amounts in the same tx
+        // Cannot set keys when mutation of canConfidentialAmount is disallowed
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            // Create with tmfMPTCannotMutateCanConfidentialAmount
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
+            });
+
+            mptAlice.generateKeyPair(alice);
+
+            // Trying to enable confidential amounts and set keys fails
+            // because the issuance cannot mutate canConfidentialAmount
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Set issuer key first, then auditor key in a separate tx
         {
             Env env{*this, features};
             Account const alice("alice");
             Account const auditor("auditor");
             MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
 
-            // Create without tfMPTCanConfidentialAmount but allow mutation
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(auditor);
 
-            // Set issuer and auditor keys while enabling confidential amounts
+            // Set issuer key only
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            // Set auditor key in a separate tx - requires issuer key in tx
+            // (preflight enforces auditor key requires issuer key)
+            // This fails because issuer key is already set on ledger
+            mptAlice.set({
+                .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .auditorPubKey = mptAlice.getPubKey(auditor),
+                .err = tecNO_PERMISSION,
             });
         }
     }
@@ -6139,6 +6235,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testMergeInboxPreflight(features);
         testMergeInboxPreclaim(features);
 
+        testSet(features);
         testSetPreflight(features);
         testSetPreclaim(features);
 

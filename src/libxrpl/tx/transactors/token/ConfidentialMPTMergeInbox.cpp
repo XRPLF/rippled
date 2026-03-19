@@ -47,7 +47,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
         return tecNO_PERMISSION;
 
-    // Check freeze
+    // Check lock
     auto const account = ctx.tx[sfAccount];
     MPTIssue const mptIssue(ctx.tx[sfMPTokenIssuanceID]);
     if (auto const ter = checkFrozen(ctx.view, account, mptIssue); !isTesSuccess(ter))

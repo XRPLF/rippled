@@ -137,6 +137,11 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
         return temMALFORMED;
 
+    // Cannot set keys while clearing confidential amount
+    if ((hasIssuerElGamalKey || hasAuditorElGamalKey) && mutableFlags &&
+        (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        return temINVALID_FLAG;
+
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
         return temMALFORMED;
 
@@ -292,19 +297,19 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // Check if the transaction is enabling confidential amounts
-    bool const settingConfidential =
+    bool const enablesConfidentialAmount =
         mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount);
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
     if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !settingConfidential)
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !enablesConfidentialAmount)
     {
         return tecNO_PERMISSION;
     }
 
     if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !settingConfidential)
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !enablesConfidentialAmount)
     {
         return tecNO_PERMISSION;
     }
