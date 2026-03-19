@@ -189,7 +189,7 @@ public:
         BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfDomain));
 
         // The upper limit on the length is 256 bytes
-        // (defined as DOMAIN_BYTES_MAX in SetAccount)
+        // (defined as DOMAIN_BYTES_MAX in AccountSet)
         // test the edge cases: 255, 256, 257.
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)

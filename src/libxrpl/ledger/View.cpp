@@ -3234,7 +3234,7 @@ cleanupOnAccountDelete(
             {
                 // Directory node has an invalid index.  Bail out.
                 // LCOV_EXCL_START
-                JLOG(j.fatal()) << "DeleteAccount: Directory node in ledger " << view.seq()
+                JLOG(j.fatal()) << "AccountDelete: Directory node in ledger " << view.seq()
                                 << " has index to object that is missing: " << to_string(dirEntry);
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
@@ -3269,7 +3269,7 @@ cleanupOnAccountDelete(
             if (uDirEntry == 0)
             {
                 // LCOV_EXCL_START
-                JLOG(j.error()) << "DeleteAccount iterator re-validation failed.";
+                JLOG(j.error()) << "AccountDelete iterator re-validation failed.";
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
