@@ -17,6 +17,8 @@
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
+#include <map>
+
 namespace xrpl {
 
 /** Performs early sanity checks on the txid */
@@ -1133,25 +1135,24 @@ Transactor::operator()()
         //        awkward and very limiting. A more general purpose approach
         //        should be used, making it possible to do more useful work
         //        when transactions fail with a `tec` code.
-        std::vector<uint256> removedOffers;
-        std::vector<uint256> removedTrustLines;
-        std::vector<uint256> expiredNFTokenOffers;
-        std::vector<uint256> expiredCredentials;
 
-        bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLines = (result == tecINCOMPLETE);
-        bool const doNFTokenOffers = (result == tecEXPIRED);
-        bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        // Build a map of ledger entry types to collect, based on the
+        // result code. Only deleted objects of these types will be
+        // re-applied after the context is reset.
+        std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+        if ((result == tecOVERSIZE) || (result == tecKILLED))
+            deletedObjects.emplace(ltOFFER, std::vector<uint256>{});
+        if (result == tecINCOMPLETE)
+            deletedObjects.emplace(ltRIPPLE_STATE, std::vector<uint256>{});
+        if (result == tecEXPIRED)
         {
-            ctx_.visit([doOffers,
-                        &removedOffers,
-                        doLines,
-                        &removedTrustLines,
-                        doNFTokenOffers,
-                        &expiredNFTokenOffers,
-                        doCredentials,
-                        &expiredCredentials](
+            deletedObjects.emplace(ltNFTOKEN_OFFER, std::vector<uint256>{});
+            deletedObjects.emplace(ltCREDENTIAL, std::vector<uint256>{});
+        }
+
+        if (!deletedObjects.empty())
+        {
+            ctx_.visit([&deletedObjects](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -1162,25 +1163,22 @@ Transactor::operator()()
                         before && after,
                         "xrpl::Transactor::operator()::visit : non-null SLE "
                         "inputs");
-                    if (doOffers && before && after && (before->getType() == ltOFFER) &&
-                        (before->getFieldAmount(sfTakerPays) == after->getFieldAmount(sfTakerPays)))
+                    if (before && after)
                     {
-                        // Removal of offer found or made unfunded
-                        removedOffers.push_back(index);
+                        auto const type = before->getType();
+                        auto it = deletedObjects.find(type);
+                        if (it != deletedObjects.end())
+                        {
+                            // For offers, only collect unfunded removals
+                            // (where TakerPays is unchanged)
+                            if (type == ltOFFER &&
+                                before->getFieldAmount(sfTakerPays) !=
+                                    after->getFieldAmount(sfTakerPays))
+                                return;
+
+                            it->second.push_back(index);
+                        }
                     }
-
-                    if (doLines && before && after && (before->getType() == ltRIPPLE_STATE))
-                    {
-                        // Removal of obsolete AMM trust line
-                        removedTrustLines.push_back(index);
-                    }
-
-                    if (doNFTokenOffers && before && after &&
-                        (before->getType() == ltNFTOKEN_OFFER))
-                        expiredNFTokenOffers.push_back(index);
-
-                    if (doCredentials && before && after && (before->getType() == ltCREDENTIAL))
-                        expiredCredentials.push_back(index);
                 }
             });
         }
@@ -1194,18 +1192,31 @@ Transactor::operator()()
             fee = resetResult.second;
         }
 
-        // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.journal("View"));
+        // Re-apply the collected deletions
+        auto const viewJ = ctx_.registry.journal("View");
+        for (auto const& [type, ids] : deletedObjects)
+        {
+            if (ids.empty())
+                continue;
 
-        if (result == tecEXPIRED)
-            removeExpiredNFTokenOffers(view(), expiredNFTokenOffers, ctx_.registry.journal("View"));
-
-        if (result == tecINCOMPLETE)
-            removeDeletedTrustLines(view(), removedTrustLines, ctx_.registry.journal("View"));
-
-        if (result == tecEXPIRED)
-            removeExpiredCredentials(view(), expiredCredentials, ctx_.registry.journal("View"));
+            switch (type)
+            {
+                case ltOFFER:
+                    removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltNFTOKEN_OFFER:
+                    removeExpiredNFTokenOffers(view(), ids, viewJ);
+                    break;
+                case ltRIPPLE_STATE:
+                    removeDeletedTrustLines(view(), ids, viewJ);
+                    break;
+                case ltCREDENTIAL:
+                    removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                default:
+                    break;
+            }
+        }
 
         applied = isTecClaim(result);
     }
