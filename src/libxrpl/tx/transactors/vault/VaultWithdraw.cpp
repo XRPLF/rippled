@@ -114,57 +114,18 @@ VaultWithdraw::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
 
     MPTIssue const share{mptIssuanceID};
-    STAmount sharesRedeemed = {share};
-    STAmount assetsWithdrawn;
     auto const& rules = ctx_.view().rules();
-    try
-    {
-        if (amount.asset() == vaultAsset)
-        {
-            // Fixed assets, variable shares.
-            {
-                auto const maybeShares =
-                    vault::assetsToSharesWithdraw(rules, vault, sleIssuance, amount);
-                if (!maybeShares)
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-                sharesRedeemed = *maybeShares;
-            }
 
-            if (sharesRedeemed == beast::zero)
-                return tecPRECISION_LOSS;
-            auto const maybeAssets =
-                vault::sharesToAssetsWithdraw(rules, vault, sleIssuance, sharesRedeemed);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else if (amount.asset() == share)
-        {
-            // Fixed shares, variable assets.
-            sharesRedeemed = amount;
-            auto const maybeAssets =
-                vault::sharesToAssetsWithdraw(rules, vault, sleIssuance, sharesRedeemed);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else
-        {
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        }
-    }
-    catch (std::overflow_error const&)
-    {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultWithdraw: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-            << ", amount=" << amount.value();
-        return tecPATH_DRY;
-    }
+    auto const result = [&]() -> Expected<vault::ExchangeResult, TER> {
+        if (amount.asset() == vaultAsset)
+            return vault::computeWithdrawByAssets(rules, vault, sleIssuance, amount, j_);
+        if (amount.asset() == share)
+            return vault::computeWithdrawByShares(rules, vault, sleIssuance, amount, j_);
+        return Unexpected(tefINTERNAL);  // LCOV_EXCL_LINE
+    }();
+    if (!result)
+        return result.error();
+    auto const& [assetsWithdrawn, sharesRedeemed] = *result;
 
     if (accountHolds(
             view(),

@@ -185,47 +185,12 @@ VaultDeposit::doApply()
         }
     }
 
-    STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+    // Compute exchange before transferring any amounts.
     auto const& rules = ctx_.view().rules();
-    try
-    {
-        // Compute exchange before transferring any amounts.
-        {
-            auto const maybeShares =
-                vault::assetsToSharesDeposit(rules, vault, sleIssuance, amount);
-            if (!maybeShares)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            sharesCreated = *maybeShares;
-        }
-        if (sharesCreated == beast::zero)
-            return tecPRECISION_LOSS;
-
-        auto const maybeAssets =
-            vault::sharesToAssetsDeposit(rules, vault, sleIssuance, sharesCreated);
-        if (!maybeAssets)
-        {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-        if (*maybeAssets > amount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assetsDeposited = *maybeAssets;
-    }
-    catch (std::overflow_error const&)
-    {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultDeposit: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
-        return tecPATH_DRY;
-    }
+    auto const result = vault::computeDeposit(rules, vault, sleIssuance, amount, j_);
+    if (!result)
+        return result.error();
+    auto const& [assetsDeposited, sharesCreated] = *result;
 
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
