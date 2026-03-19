@@ -277,6 +277,74 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoredOwnerCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoringOwnerCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoringAccountCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setAccountID(sfSponsor, A2.id());
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
         for (auto const& keyletInfo : directAccountKeylets)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum
@@ -1649,6 +1717,10 @@ class Invariants_test : public beast::unit_test::suite
             {
                 "pseudo-account has a sponsorship field",
                 [](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
             },
             {
                 "pseudo-account has a sponsorship field",
