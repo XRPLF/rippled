@@ -9,7 +9,7 @@ namespace xrpl {
 
 class Ticket_test : public beast::unit_test::suite
 {
-    /// @brief Validate metadata for a successful CreateTicket transaction.
+    /// @brief Validate metadata for a successful TicketCreate transaction.
     ///
     /// @param env current jtx env (tx and meta are extracted using it)
     void

@@ -14,8 +14,11 @@ repos:
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: end-of-file-fixer
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: mixed-line-ending
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
@@ -25,6 +28,7 @@ repos:
       - id: clang-format
         args: [--style=file]
         "types_or": [c++, c, proto]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
   - repo: https://github.com/BlankSpruce/gersemi
     rev: 0.26.0
@@ -45,7 +49,7 @@ repos:
     rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
     hooks:
       - id: cspell # Spell check changed files
-        exclude: .config/cspell.config.yaml
+        exclude: (.config/cspell.config.yaml|^include/xrpl/protocol_autogen/(transactions|ledger_entries)/)
       - id: cspell # Spell check the commit message
         name: check commit message spelling
         args:
@@ -77,5 +81,6 @@ repos:
 exclude: |
   (?x)^(
       external/.*|
-      .github/scripts/levelization/results/.*\.txt
+      .github/scripts/levelization/results/.*\.txt|
+      src/tests/libxrpl/protocol_autogen/(transactions|ledger_entries)/.*
   )$

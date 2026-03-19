@@ -166,6 +166,29 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
+      - name: Check protocol autogen files are up-to-date
+        env:
+          MESSAGE: |
+
+            The generated protocol wrapper classes are out of date.
+
+            This typically happens when your branch is behind develop and
+            the macro files or generator scripts have changed.
+
+            To fix this:
+              1. Update your branch from develop (merge or rebase)
+              2. Build with code generation enabled (XRPL_NO_CODEGEN=OFF)
+              3. Commit and push the regenerated files
+        run: |
+          set -e
+          DIFF=$(git status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
+          if [ -n "${DIFF}" ]; then
+            echo "::error::Generated protocol files are out of date"
+            git diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
+            echo "${MESSAGE}"
+            exit 1
+          fi
+
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
         run: |
