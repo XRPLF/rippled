@@ -81,7 +81,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
             [&](auto branchNum, auto indexNum) { cloneHashes[branchNum] = thisHashes[indexNum]; });
     }
 
-    spinlock sl(lock_);
+    Spinlock sl(lock_);
     std::lock_guard lock(sl);
 
     if (thisIsSparse)
@@ -312,7 +312,7 @@ SHAMapInnerNode::getChildPointer(int branch)
 
     auto const index = *getChildIndex(branch);
 
-    packed_spinlock sl(lock_, index);
+    PackedSpinlock sl(lock_, index);
     std::lock_guard lock(sl);
     return hashesAndChildren_.getChildren()[index].get();
 }
@@ -327,7 +327,7 @@ SHAMapInnerNode::getChild(int branch)
 
     auto const index = *getChildIndex(branch);
 
-    packed_spinlock sl(lock_, index);
+    PackedSpinlock sl(lock_, index);
     std::lock_guard lock(sl);
     return hashesAndChildren_.getChildren()[index];
 }
@@ -360,7 +360,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
         "xrpl::SHAMapInnerNode::canonicalizeChild : node and branch inputs "
         "hash do match");
 
-    packed_spinlock sl(lock_, childIndex);
+    PackedSpinlock sl(lock_, childIndex);
     std::lock_guard lock(sl);
 
     if (children[childIndex])

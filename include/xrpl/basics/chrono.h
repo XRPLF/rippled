@@ -84,10 +84,10 @@ to_string_iso(NetClock::time_point tp)
 
     The epoch is unspecified.
 */
-using Stopwatch = beast::abstract_clock<std::chrono::steady_clock>;
+using Stopwatch = beast::AbstractClock<std::chrono::steady_clock>;
 
 /** A manual Stopwatch for unit tests. */
-using TestStopwatch = beast::manual_clock<std::chrono::steady_clock>;
+using TestStopwatch = beast::ManualClock<std::chrono::steady_clock>;
 
 /** Returns an instance of a wall clock. */
 inline Stopwatch&
@@ -95,7 +95,7 @@ stopwatch()
 {
     using Clock = beast::basic_seconds_clock;
     using Facade = Clock::Clock;
-    return beast::get_abstract_clock<Facade, Clock>();
+    return beast::getAbstractClock<Facade, Clock>();
 }
 
 }  // namespace xrpl

@@ -71,7 +71,7 @@ spinPause() noexcept
         https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class packed_spinlock
+class PackedSpinlock
 {
     // clang-format off
     static_assert(std::is_unsigned_v<T>);
@@ -87,9 +87,9 @@ private:
     T const mask_;
 
 public:
-    packed_spinlock(packed_spinlock const&) = delete;
-    packed_spinlock&
-    operator=(packed_spinlock const&) = delete;
+    PackedSpinlock(PackedSpinlock const&) = delete;
+    PackedSpinlock&
+    operator=(PackedSpinlock const&) = delete;
 
     /** A single spinlock packed inside the specified atomic
 
@@ -99,8 +99,7 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    packed_spinlock(std::atomic<T>& lock, int index)
-        : bits_(lock), mask_(static_cast<T>(1) << index)
+    PackedSpinlock(std::atomic<T>& lock, int index) : bits_(lock), mask_(static_cast<T>(1) << index)
     {
         XRPL_ASSERT(
             index >= 0 && (mask_ != 0),
@@ -108,7 +107,7 @@ public:
     }
 
     [[nodiscard]] bool
-    try_lock()
+    tryLock()
     {
         return (bits_.fetch_or(mask_, std::memory_order_acquire) & mask_) == 0;
     }
@@ -116,7 +115,7 @@ public:
     void
     lock()
     {
-        while (!try_lock())
+        while (!tryLock())
         {
             // The use of relaxed memory ordering here is intentional and
             // serves to help reduce cache coherency traffic during times
@@ -147,7 +146,7 @@ public:
         https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class spinlock
+class Spinlock
 {
     static_assert(std::is_unsigned_v<T>);
     static_assert(std::atomic<T>::is_always_lock_free);
@@ -156,9 +155,9 @@ private:
     std::atomic<T>& lock_;
 
 public:
-    spinlock(spinlock const&) = delete;
-    spinlock&
-    operator=(spinlock const&) = delete;
+    Spinlock(Spinlock const&) = delete;
+    Spinlock&
+    operator=(Spinlock const&) = delete;
 
     /** Grabs the
 
@@ -167,12 +166,12 @@ public:
         @note For performance reasons, you should strive to have `lock` be
               on a cacheline by itself.
      */
-    spinlock(std::atomic<T>& lock) : lock_(lock)
+    Spinlock(std::atomic<T>& lock) : lock_(lock)
     {
     }
 
     [[nodiscard]] bool
-    try_lock()
+    tryLock()
     {
         T expected = 0;
 
@@ -186,7 +185,7 @@ public:
     void
     lock()
     {
-        while (!try_lock())
+        while (!tryLock())
         {
             // The use of relaxed memory ordering here is intentional and
             // serves to help reduce cache coherency traffic during times

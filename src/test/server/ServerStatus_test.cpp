@@ -27,7 +27,7 @@
 namespace xrpl {
 namespace test {
 
-class ServerStatus_test : public beast::unit_test::suite, public beast::test::enable_yield_to
+class ServerStatus_test : public beast::unit_test::suite, public beast::test::EnableYieldTo
 {
     class MyFields : public boost::beast::http::fields
     {
@@ -141,7 +141,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
-        io_context& ios = get_io_context();
+        io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
@@ -429,7 +429,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         auto reqString = boost::lexical_cast<std::string>(req);
         reqString.erase(reqString.find_last_of("13"), std::string::npos);
 
-        io_context& ios = get_io_context();
+        io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
@@ -552,7 +552,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         auto const ip = env.app().config()["port_rpc"].get<std::string>("ip").value();
 
         boost::system::error_code ec;
-        io_context& ios = get_io_context();
+        io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
 
         Json::Value jr;
@@ -655,7 +655,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::system::error_code ec;
 
-        io_context& ios = get_io_context();
+        io_context& ios = getIoContext();
         ip::tcp::resolver r{ios};
 
         auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);
@@ -1119,7 +1119,7 @@ public:
             testAdminRequest(it, false, false);
         }
 
-        yield_to([&](boost::asio::yield_context& yield) {
+        yieldTo([&](boost::asio::yield_context& yield) {
             testWSClientToHttpServer(yield);
             testStatusRequest(yield);
             testTruncatedWSUpgrade(yield);

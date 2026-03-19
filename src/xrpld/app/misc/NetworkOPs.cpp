@@ -230,7 +230,7 @@ public:
               ledgerMaster,
               *localTX_,
               registry.getInboundTransactions(),
-              beast::get_abstract_clock<std::chrono::steady_clock>(),
+              beast::getAbstractClock<std::chrono::steady_clock>(),
               validatorKeys,
               registry_.logs().journal("LedgerConsensus"))
         , validatorPK_(

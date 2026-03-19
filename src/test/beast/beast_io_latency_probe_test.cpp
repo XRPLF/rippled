@@ -15,7 +15,7 @@
 
 using namespace std::chrono_literals;
 
-class io_latency_probe_test : public beast::unit_test::suite, public beast::test::enable_yield_to
+class io_latency_probe_test : public beast::unit_test::suite, public beast::test::EnableYieldTo
 {
     using MyTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
@@ -138,9 +138,9 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        TestSampler ioProbe{100ms, get_io_context()};
+        TestSampler ioProbe{100ms, getIoContext()};
         ioProbe.startOne();
-        MyTimer timer{get_io_context(), 1s};
+        MyTimer timer{getIoContext(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -169,9 +169,9 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             static_cast<size_t>(duration_cast<milliseconds>(probeDuration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        TestSampler ioProbe{interval, get_io_context()};
+        TestSampler ioProbe{interval, getIoContext()};
         ioProbe.start();
-        MyTimer timer{get_io_context(), probeDuration};
+        MyTimer timer{getIoContext(), probeDuration};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -190,7 +190,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        TestSampler ioProbe{100ms, get_io_context()};
+        TestSampler ioProbe{100ms, getIoContext()};
         ioProbe.probe.cancel_async();
         except<std::logic_error>([&ioProbe]() { ioProbe.startOne(); });
         except<std::logic_error>([&ioProbe]() { ioProbe.start(); });
@@ -200,7 +200,7 @@ public:
     void
     run() override
     {
-        yield_to([&](boost::asio::yield_context& yield) {
+        yieldTo([&](boost::asio::yield_context& yield) {
             testSampleOne(yield);
             testSampleOngoing(yield);
             testCanceled(yield);

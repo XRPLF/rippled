@@ -13,7 +13,7 @@ namespace xrpl {
 class InboundLedgers
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     virtual ~InboundLedgers() = default;
 

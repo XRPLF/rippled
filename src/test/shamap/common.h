@@ -96,7 +96,7 @@ public:
         tnCache_->reset();
     }
 
-    beast::manual_clock<std::chrono::steady_clock>
+    beast::ManualClock<std::chrono::steady_clock>
     clock()
     {
         return clock_;

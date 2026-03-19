@@ -14,7 +14,7 @@ namespace test {
 namespace csf {
 class Validations_test : public beast::unit_test::suite
 {
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock> const;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock> const;
 
     // Helper to convert steady_clock to a reasonable NetClock
     // This allows a single manual clock in the unit tests
@@ -184,7 +184,7 @@ class Validations_test : public beast::unit_test::suite
     class TestHarness
     {
         ValidationParms p_;
-        beast::manual_clock<std::chrono::steady_clock> clock_;
+        beast::ManualClock<std::chrono::steady_clock> clock_;
         TestValidations tv_;
         PeerID nextNodeId_{0};
 
@@ -908,7 +908,7 @@ class Validations_test : public beast::unit_test::suite
         using Seq = Ledger::Seq;
         using namespace std::chrono;
 
-        beast::manual_clock<steady_clock> clock;
+        beast::ManualClock<steady_clock> clock;
         SeqEnforcer<Seq> enforcer;
 
         ValidationParms p;

@@ -70,7 +70,7 @@ enum class OperatingMode {
 class NetworkOPs : public InfoSub::Source
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     enum class FailHard : unsigned char { no, yes };
     static inline FailHard

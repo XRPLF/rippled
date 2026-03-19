@@ -52,7 +52,7 @@ public:
     {
         auto const index = hasher_(id) % cache_.size();
 
-        packed_spinlock sl(locks_, index % 64);
+        PackedSpinlock sl(locks_, index % 64);
 
         {
             std::lock_guard lock(sl);

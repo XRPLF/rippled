@@ -295,7 +295,7 @@ public:
         template <
             class Compare = std::less<typename Base::Key>,
             class Allocator = std::allocator<typename Base::Value>>
-        using Cont = detail::aged_ordered_container<
+        using Cont = detail::AgedOrderedContainer<
             Base::is_multi::value,
             Base::is_map::value,
             typename Base::Key,
@@ -313,7 +313,7 @@ public:
             class Hash = std::hash<typename Base::Key>,
             class KeyEqual = std::equal_to<typename Base::Key>,
             class Allocator = std::allocator<typename Base::Value>>
-        using Cont = detail::aged_unordered_container<
+        using Cont = detail::AgedUnorderedContainer<
             Base::is_multi::value,
             Base::is_map::value,
             typename Base::Key,
@@ -330,7 +330,7 @@ public:
     {
         using Key = std::string;
         using Clock = std::chrono::steady_clock;
-        using ManualClock = manual_clock<Clock>;
+        using ManualClock = ManualClock<Clock>;
     };
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
@@ -1389,7 +1389,7 @@ AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values 
     // Just in case the passed in container was not empty.
     c.clear();
 
-    // c.clock() returns an abstract_clock, so dynamic_cast to manual_clock.
+    // c.clock() returns an abstract_clock, so dynamic_cast to ManualClock.
     // VFALCO NOTE This is sketchy
     using ManualClock = TestTraitsBase::ManualClock;
     ManualClock& clk(dynamic_cast<ManualClock&>(c.clock()));
@@ -1673,8 +1673,8 @@ AgedAssociativeContainerTestBase::testObservers()
     testcase("observers");
 
     typename Traits::template Cont<> c(clock);
-    c.key_comp();
-    c.value_comp();
+    c.keyComp();
+    c.valueComp();
 
     pass();
 }
@@ -1733,45 +1733,45 @@ public:
     using T = int;
 
     static_assert(
-        std::is_same<aged_set<Key>, detail::aged_ordered_container<false, false, Key, void>>::value,
+        std::is_same<aged_set<Key>, detail::AgedOrderedContainer<false, false, Key, void>>::value,
         "bad alias: aged_set");
 
     static_assert(
-        std::is_same<aged_multiset<Key>, detail::aged_ordered_container<true, false, Key, void>>::
+        std::is_same<aged_multiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>::
             value,
         "bad alias: aged_multiset");
 
     static_assert(
-        std::is_same<aged_map<Key, T>, detail::aged_ordered_container<false, true, Key, T>>::value,
+        std::is_same<aged_map<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>::value,
         "bad alias: aged_map");
 
     static_assert(
-        std::is_same<aged_multimap<Key, T>, detail::aged_ordered_container<true, true, Key, T>>::
+        std::is_same<aged_multimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>::
             value,
         "bad alias: aged_multimap");
 
     static_assert(
         std::is_same<
             aged_unordered_set<Key>,
-            detail::aged_unordered_container<false, false, Key, void>>::value,
+            detail::AgedUnorderedContainer<false, false, Key, void>>::value,
         "bad alias: aged_unordered_set");
 
     static_assert(
         std::is_same<
             aged_unordered_multiset<Key>,
-            detail::aged_unordered_container<true, false, Key, void>>::value,
+            detail::AgedUnorderedContainer<true, false, Key, void>>::value,
         "bad alias: aged_unordered_multiset");
 
     static_assert(
         std::is_same<
             aged_unordered_map<Key, T>,
-            detail::aged_unordered_container<false, true, Key, T>>::value,
+            detail::AgedUnorderedContainer<false, true, Key, T>>::value,
         "bad alias: aged_unordered_map");
 
     static_assert(
         std::is_same<
             aged_unordered_multimap<Key, T>,
-            detail::aged_unordered_container<true, true, Key, T>>::value,
+            detail::AgedUnorderedContainer<true, true, Key, T>>::value,
         "bad alias: aged_unordered_multimap");
 
     void

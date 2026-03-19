@@ -10,7 +10,7 @@
 namespace xrpl {
 namespace Resource {
 
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list

@@ -13,7 +13,7 @@
 namespace xrpl {
 namespace PeerFinder {
 
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 /** Represents a set of addresses. */
 using IPAddresses = std::vector<beast::IP::Endpoint>;

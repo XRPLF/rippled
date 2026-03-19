@@ -44,7 +44,7 @@ public:
     using mutex_type = Mutex;
     using key_type = Key;
     using mapped_type = T;
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
     using shared_weak_combo_pointer_type = SharedWeakUnionPointerType;
     using shared_pointer_type = SharedPointerType;
 

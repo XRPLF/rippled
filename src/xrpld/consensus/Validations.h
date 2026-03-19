@@ -537,7 +537,7 @@ public:
     template <class... Ts>
     Validations(
         ValidationParms const& p,
-        beast::abstract_clock<std::chrono::steady_clock>& c,
+        beast::AbstractClock<std::chrono::steady_clock>& c,
         Ts&&... ts)
         : byLedger_(c), bySequence_(c), parms_(p), adaptor_(std::forward<Ts>(ts)...)
     {

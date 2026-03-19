@@ -19,7 +19,7 @@ class InboundLedger final : public TimeoutCounter,
                             public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {

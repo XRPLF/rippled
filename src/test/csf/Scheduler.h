@@ -27,7 +27,7 @@ namespace csf {
 class Scheduler
 {
 public:
-    using clock_type = beast::manual_clock<std::chrono::steady_clock>;
+    using clock_type = beast::ManualClock<std::chrono::steady_clock>;
 
     using duration = typename clock_type::duration;
 

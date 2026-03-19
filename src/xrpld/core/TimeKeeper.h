@@ -8,7 +8,7 @@
 namespace xrpl {
 
 /** Manages various times used by the server. */
-class TimeKeeper : public beast::abstract_clock<NetClock>
+class TimeKeeper : public beast::AbstractClock<NetClock>
 {
 private:
     std::atomic<std::chrono::seconds> closeOffset_{};
