@@ -651,9 +651,9 @@ Config::loadFromString(std::string const& fileContents)
     {
         PATH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
 
-        if (PATH_WORKERS < 1)
+        if (PATH_WORKERS < 2)
             Throw<std::runtime_error>("Invalid " SECTION_PATH_WORKERS
-                                      ": must be greater than or equal to 1.");
+                                      ": must be greater than or equal to 2.");
     }
 
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
