@@ -64,7 +64,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 if os["distro_version"] == "bookworm":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
@@ -236,10 +236,12 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # names get truncated.
         # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
         # GCC-Asan rippled-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if (
-            os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-        ):
+        if os[
+            "distro_version"
+        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
+            "clang-20",
+            "gcc-13",
+        ]:
             # Add ASAN + UBSAN configuration.
             configurations.append(
                 {
@@ -258,14 +260,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             if activate_tsan:
                 configurations.append(
                     {
-                        "config_name": config_name + "-tsan",
+                        "config_name": config_name + "-tsan-ubsan",
                         "cmake_args": cmake_args,
                         "cmake_target": cmake_target,
                         "build_only": build_only,
                         "build_type": build_type,
                         "os": os,
                         "architecture": architecture,
-                        "sanitizers": "thread",
+                        "sanitizers": "thread,undefinedbehavior",
                     }
                 )
         else:

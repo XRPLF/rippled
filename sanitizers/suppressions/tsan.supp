@@ -36,6 +36,12 @@ deadlock:pthread_create
 deadlock:pthread_rwlock_rdlock
 deadlock:boost::asio
 
+# Known lock-order-inversion between getMasterMutex() and RCLConsensus::mutex_.
+# NetworkOPsImp::processHeartbeatTimer acquires master → consensus, while
+# RCLConsensus::startRound (via acceptLedger) acquires consensus → master.
+# Requires a larger lock-ordering redesign to fix properly.
+deadlock:RCLConsensus
+
 # Signal/crash suppressions for GCC TSAN instrumentation issues
 signal:std::__cxx11::basic_stringbuf
 signal:basic_stringbuf
