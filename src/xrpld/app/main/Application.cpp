@@ -1115,12 +1115,10 @@ private:
 bool
 ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 {
-    // NOTE: IO threads are intentionally NOT started here.
-    // All setup work is non-blocking (it enqueues async work to the
-    // io_context but doesn't require it to be processed yet).
-    // IO threads are started at the beginning of start() to avoid
-    // data races between the main thread doing setup and IO threads
-    // processing enqueued work concurrently.
+    // NOTE: The main io_context threads are NOT started until start().
+    // However, subsystem-specific threads (resource manager, nodestore
+    // read threads) are started here because they use their own
+    // threading and do not contend with io_context setup work.
 
     m_resourceManager->start();
     m_nodeStore->startReadThreads();

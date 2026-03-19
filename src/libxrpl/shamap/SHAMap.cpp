@@ -139,7 +139,8 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
-    auto obj = f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_);
+    auto obj =
+        f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_.load(std::memory_order_relaxed));
     return finishFetch(hash, obj);
 }
 
@@ -155,7 +156,8 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
             if (full_)
             {
                 full_ = false;
-                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.as_uint256());
+                f_.missingNodeAcquireBySeq(
+                    ledgerSeq_.load(std::memory_order_relaxed), hash.as_uint256());
             }
             return {};
         }
@@ -188,7 +190,12 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
             auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
             if (node)
             {
-                filter->gotNode(true, hash, ledgerSeq_, std::move(*nodeData), node->getType());
+                filter->gotNode(
+                    true,
+                    hash,
+                    ledgerSeq_.load(std::memory_order_relaxed),
+                    std::move(*nodeData),
+                    node->getType());
                 if (backed_)
                     canonicalize(hash, node);
             }
@@ -369,7 +376,7 @@ SHAMap::descendAsync(
         {
             f_.db().asyncFetch(
                 hash.as_uint256(),
-                ledgerSeq_,
+                ledgerSeq_.load(std::memory_order_relaxed),
                 [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
                     cb(node, hash);
@@ -911,7 +918,11 @@ SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) co
 
     Serializer s;
     node->serializeWithPrefix(s);
-    f_.db().store(t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
+    f_.db().store(
+        t,
+        std::move(s.modData()),
+        node->getHash().as_uint256(),
+        ledgerSeq_.load(std::memory_order_relaxed));
     return node;
 }
 

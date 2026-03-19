@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/sanitizers.h>
 
 #include <cstddef>
 
@@ -8,17 +9,7 @@ namespace xrpl {
 
 // Sanitizers significantly increase stack frame sizes
 // (TSAN ~3-5x, ASAN ~2-3x), requiring larger coroutine stacks.
-#if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__)
-inline constexpr std::size_t coroStackSize = megabytes(4);
-#elif defined(__has_feature)
-#if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
-inline constexpr std::size_t coroStackSize = megabytes(4);
-#else
-inline constexpr std::size_t coroStackSize = megabytes(1);
-#endif
-#else
-inline constexpr std::size_t coroStackSize = megabytes(1);
-#endif
+inline constexpr std::size_t coroStackSize = XRPL_SANITIZER_ACTIVE ? megabytes(4) : megabytes(2);
 
 template <class F>
 JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
