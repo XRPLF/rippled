@@ -534,6 +534,8 @@ SponsorshipTransfer::doApply()
             // increment new sponsoring count
             auto const newSponsorAccountID = tx.getAccountID(sfSponsor);
             auto const newSponsorSle = view().peek(keylet::account(newSponsorAccountID));
+            if (!newSponsorSle)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
             setSponsorFieldU32(newSponsorSle, sfSponsoringAccountCount, 1);
             view().update(newSponsorSle);
 

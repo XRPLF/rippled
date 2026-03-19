@@ -2936,7 +2936,6 @@ public:
             auto const MPT = mptGw["MPT"];
             env(pay(gw, alice, MPT(10'000)));
             env.close();
-            return;
 
             // create Escrow from alice to bob
             auto const seq = env.seq(alice);
