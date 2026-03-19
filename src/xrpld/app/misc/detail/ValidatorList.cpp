@@ -181,7 +181,7 @@ ValidatorList::load(
     {
         // Want truncated result when dividing an odd integer
         listThreshold_ = (publisherLists_.size() < 3) ? 1  //
-                                                      : publisherLists_.size() / 2 + 1;
+                                                      : (publisherLists_.size() / 2) + 1;
         JLOG(j_.debug()) << "Validator list threshold computed as " << listThreshold_;
     }
 
@@ -1484,7 +1484,7 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    return publisherLists_.size() + static_cast<size_type>(!localPublisherList.list.empty());
+    return publisherLists_.size() + static_cast<size_t>(!localPublisherList.list.empty());
 }
 
 std::size_t

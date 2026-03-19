@@ -524,7 +524,7 @@ public:
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }

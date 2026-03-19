@@ -346,7 +346,7 @@ public:
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
-        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + deleteInterval / 2));
+        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (deleteInterval / 2)));
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + deleteInterval / 2);
 

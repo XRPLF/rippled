@@ -1222,7 +1222,7 @@ OverlayImpl::relay(
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
     auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-        (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
+        ((total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100);
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 

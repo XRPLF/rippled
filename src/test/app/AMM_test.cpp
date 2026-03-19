@@ -2731,13 +2731,13 @@ private:
 
                 // 10th Interval after close, price for 1st interval.
                 env(ammAlice.bid({.account = carol}));
-                env.close(seconds(10 * AUCTION_SLOT_INTERVAL_DURATION + 1));
+                env.close(seconds((10 * AUCTION_SLOT_INTERVAL_DURATION) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
 
                 // 20th Interval (expired) after close, price for 10th interval.
                 env(ammAlice.bid({.account = bob}));
                 env.close(
-                    seconds(AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION + 1));
+                    seconds((AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{127'33875, -5}));
 
                 // 0 Interval.
@@ -4110,7 +4110,7 @@ private:
                 fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
                 env(trust(alice, EUR(200)));
                 for (int i = 0; i < 30; ++i)
-                    env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+                    env(offer(alice, EUR(1.0 + (0.01 * i)), XRP(1)));
                 // This is worse quality offer than 30 offers above.
                 // It will not be consumed because of AMM offers limit.
                 env(offer(alice, EUR(140), XRP(100)));
@@ -4150,7 +4150,7 @@ private:
                 fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
                 env(trust(alice, EUR(200)));
                 for (int i = 0; i < 29; ++i)
-                    env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+                    env(offer(alice, EUR(1.0 + (0.01 * i)), XRP(1)));
                 // This is worse quality offer than 30 offers above.
                 // It will not be consumed because of AMM offers limit.
                 env(offer(alice, EUR(140), XRP(100)));
@@ -5154,7 +5154,7 @@ private:
                 all);
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
+            for (auto i = 0; i < (maxDeletableAMMTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);

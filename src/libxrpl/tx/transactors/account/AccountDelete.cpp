@@ -20,7 +20,7 @@ namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !(ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials));
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC

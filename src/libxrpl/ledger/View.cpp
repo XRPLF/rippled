@@ -800,7 +800,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
+        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
 
     return parityRate;
 }

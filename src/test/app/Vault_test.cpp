@@ -1897,7 +1897,7 @@ class Vault_test : public beast::unit_test::suite
                     env.close();
                 }
             },
-            {.requireAuth = false, .initialXRP = acctReserve + incReserve * 4 + 1});
+            {.requireAuth = false, .initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([this](
                      Env& env,
@@ -2744,7 +2744,7 @@ class Vault_test : public beast::unit_test::suite
                 env(vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
-                     .amount = asset(Number(1000 + 37 * 5, -1))}));
+                     .amount = asset(Number(1000 + (37 * 5), -1))}));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
@@ -2807,7 +2807,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase(
             [&, this](
@@ -2842,7 +2842,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([&, this](
                      Env& env,

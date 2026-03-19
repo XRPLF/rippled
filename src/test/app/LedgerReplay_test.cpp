@@ -361,7 +361,7 @@ struct TestPeerSet : public PeerSet
             dropRate = 100;
         }
 
-        if ((rand() % 100 + 1) <= dropRate)
+        if (((rand() % 100) + 1) <= dropRate)
             return;
 
         switch (type)
@@ -1292,7 +1292,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int totalReplay = 5;
         NetworkOfTwo net(
             *this,
-            {totalReplay * 3 + 1},
+            {(totalReplay * 3) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1343,7 +1343,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         // cover
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
-        deltaStatuses = std::vector<TaskStatus>(totalReplay * 3 - 1, TaskStatus::Completed);
+        deltaStatuses = std::vector<TaskStatus>((totalReplay * 3) - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash,
             totalReplay * 3,
@@ -1455,7 +1455,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
         int rounds = 4;
         NetworkOfTwo net(
             *this,
-            {totalReplay * rounds + 1},
+            {(totalReplay * rounds) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);

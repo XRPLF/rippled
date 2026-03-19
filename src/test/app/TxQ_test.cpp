@@ -551,16 +551,16 @@ public:
         // The lowest fee ticket is baseFee * 2.1, trying to replace it
         env(noop(alice),
             ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1 * 1.25 - 1),
+            fee((baseFee * 2.1 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt1 + 18), fee((baseFee * 2.1 * 1.25) + 1), queued);
 
         // New lowest fee ticket is baseFee * 2.2
         env(noop(alice),
             ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2 * 1.25 - 1),
+            fee((baseFee * 2.2 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt250 - 4), fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
         env.require(owners(alice, 227), tickets(alice, 227));
@@ -858,7 +858,7 @@ public:
             ++seqCarol;
         }
         // clang-format off
-        checkMetrics(*this, env, 6, 6, 4, 3, baseFeeLevel.fee() * aliceFeeMultiplier + 1);
+        checkMetrics(*this, env, 6, 6, 4, 3, (baseFeeLevel.fee() * aliceFeeMultiplier) + 1);
         // clang-format on
 
         // Carol submits high enough to beat Bob's average fee which kicks
@@ -2632,7 +2632,7 @@ public:
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
-        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee(baseFee * 20 + 1), ter(terQUEUED));
+        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee((baseFee * 20) + 1), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 11), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 12), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 13), last_ledger_seq(11), ter(terQUEUED));
@@ -4083,7 +4083,7 @@ public:
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
         auto prepareFee = [&](uint64_t multiplier) {
-            return fee(txFee - multiplier * baseFee / 10);
+            return fee(txFee - (multiplier * baseFee / 10));
         };
 
         uint64_t multiplier = 0;

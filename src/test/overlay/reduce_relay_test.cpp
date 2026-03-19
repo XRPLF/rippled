@@ -1499,7 +1499,7 @@ vp_base_squelch_max_selected_peers=2
                     {
                         // make unique message hash to make the
                         // slot's internal hash router accept the message
-                        std::uint64_t mid = m * 1000 + peer;
+                        std::uint64_t mid = (m * 1000) + peer;
                         uint256 const message{mid};
                         slots.updateSlotAndSquelch(
                             message, validator, peer, protocol::MessageType::mtVALIDATION);

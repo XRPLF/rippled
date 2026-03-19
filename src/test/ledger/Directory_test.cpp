@@ -273,7 +273,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                env(offer_cancel(alice, firstOfferSeq + page * dirNodeMaxEntries + i));
+                env(offer_cancel(alice, firstOfferSeq + (page * dirNodeMaxEntries) + i));
                 env.close();
             }
         }

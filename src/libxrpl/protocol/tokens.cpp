@@ -263,7 +263,7 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
+    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = alphabetReverse[*psz];
@@ -383,7 +383,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             {
                 break;
             }
-            auto const src_i_end = input.size() - i * 8;
+            auto const src_i_end = input.size() - (i * 8);
             if (src_i_end >= 8)
             {
                 std::memcpy(&base_2_64_coeff_buf[num_coeff], &input[src_i_end - 8], 8);
@@ -450,7 +450,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             to_skip = count_leading_zeros(b58_be_s);
             skip_zeros = false;
-            if (out.size() < (i + 1) * 10 - to_skip)
+            if (out.size() < ((i + 1) * 10) - to_skip)
             {
                 return Unexpected(TokenCodecErrc::outputTooSmall);
             }
@@ -521,7 +521,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
-            unsigned char c = input[partial_coeff_len + j * 10 + i];
+            unsigned char c = input[partial_coeff_len + (j * 10) + i];
             auto cur_val = ::xrpl::alphabetReverse[c];
             if (cur_val < 0)
             {
@@ -586,7 +586,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             cur_out_i += 1;
         }
     }
-    if ((cur_out_i + 8 * (cur_result_size - 1)) > out.size())
+    if ((cur_out_i + (8 * (cur_result_size - 1))) > out.size())
     {
         return Unexpected(TokenCodecErrc::outputTooSmall);
     }

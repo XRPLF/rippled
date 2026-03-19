@@ -3875,10 +3875,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {0, 0, 1, BTC(20), {{"ann", 0, drops(3900000'000000 - 4 * baseFee), BTC(20.0), USD(3000)}, {"abe", 0, drops(4100000'000000 - 3 * baseFee), BTC( 0), USD(750)}}},  // no BTC xfer fee
-            {0, 1, 0, BTC(20), {{"bev", 0, drops(4100000'000000 - 4 * baseFee), BTC( 7.5), USD(2000)}, {"bob", 0, drops(3900000'000000 - 3 * baseFee), BTC(10), USD(  0)}}},  // no USD xfer fee
-            {0, 0, 0, BTC(20), {{"cam", 0, drops(4000000'000000 - 5 * baseFee), BTC(20.0), USD(2000)}                                                     }},  // no xfer fee
-            {0, 1, 0, BTC( 5), {{"deb", 1, drops(4040000'000000 - 4 * baseFee), BTC( 0.0), USD(2000)}, {"dan", 1, drops(3960000'000000 - 3 * baseFee), BTC( 4), USD(  0)}}},  // no USD xfer fee
+            {0, 0, 1, BTC(20), {{"ann", 0, drops(3900000'000000 - (4 * baseFee)), BTC(20.0), USD(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), BTC( 0), USD(750)}}},  // no BTC xfer fee
+            {0, 1, 0, BTC(20), {{"bev", 0, drops(4100000'000000 - (4 * baseFee)), BTC( 7.5), USD(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), BTC(10), USD(  0)}}},  // no USD xfer fee
+            {0, 0, 0, BTC(20), {{"cam", 0, drops(4000000'000000 - (5 * baseFee)), BTC(20.0), USD(2000)}                                                     }},  // no xfer fee
+            {0, 1, 0, BTC( 5), {{"deb", 1, drops(4040000'000000 - (4 * baseFee)), BTC( 0.0), USD(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), BTC( 4), USD(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -4026,8 +4026,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
-            {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
+            {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), BTC(0), USD(1375)}}}, // no BTC xfer fee
+            {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 
