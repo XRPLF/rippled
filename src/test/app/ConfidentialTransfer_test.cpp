@@ -71,7 +71,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     std::string
     getTrivialSendProofHex(size_t nRecipients)
     {
-        size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
+        size_t const sizeEquality = getEqualityProofSize(nRecipients);
         size_t const totalSize =
             sizeEquality + (2 * ecPedersenProofLength) + ecDoubleBulletproofLength;
 

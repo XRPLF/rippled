@@ -371,7 +371,7 @@ verifyMultiCiphertextEqualityProof(
     if (recipients.size() != nRecipients)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (proof.size() != secp256k1_mpt_proof_equality_shared_r_size(nRecipients))
+    if (proof.size() != getEqualityProofSize(nRecipients))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ctx = secp256k1Context();

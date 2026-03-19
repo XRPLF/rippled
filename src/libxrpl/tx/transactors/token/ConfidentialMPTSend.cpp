@@ -40,11 +40,10 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
 
     // Check the length of the ZKProof
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
-    auto const sizePedersenLinkage = 2 * ecPedersenProofLength;
+    auto const sizeEquality = getEqualityProofSize(recipientCount);
 
     if (ctx.tx[sfZKProof].length() !=
-        sizeEquality + sizePedersenLinkage + ecDoubleBulletproofLength)
+        sizeEquality + doublePedersenProofLength + ecDoubleBulletproofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
@@ -86,7 +85,7 @@ verifySendProofs(
     size_t currentOffset = 0;
 
     // Extract equality proof
-    auto const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(recipientCount);
+    auto const sizeEquality = getEqualityProofSize(recipientCount);
     if (remainingLength < sizeEquality)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -268,11 +267,6 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !sleSenderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
 
-    // Sanity check: MPToken's auditor field must be present if auditing is
-    // enabled
-    if (requiresAuditor && !sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance))
-        return tefINTERNAL;
-
     // Check destination's MPToken existence
     auto const sleDestinationMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, destination));
     if (!sleDestinationMPToken)
@@ -283,6 +277,13 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !sleDestinationMPToken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleDestinationMPToken->isFieldPresent(sfIssuerEncryptedBalance))
         return tecNO_PERMISSION;
+
+    // Sanity check: Both MPTokens' auditor fields must be present if auditing
+    // is enabled
+    if (requiresAuditor &&
+        (!sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance) ||
+         !sleDestinationMPToken->isFieldPresent(sfAuditorEncryptedBalance)))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);

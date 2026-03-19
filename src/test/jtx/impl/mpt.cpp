@@ -827,7 +827,7 @@ MPTTester::getConfidentialSendProof(
             return std::nullopt;
     }
 
-    size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
+    size_t const sizeEquality = getEqualityProofSize(nRecipients);
     Buffer equalityProof(sizeEquality);
 
     if (secp256k1_mpt_prove_equality_shared_r(

@@ -25,8 +25,9 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    Slice publicKey;        ///< The recipient's ElGamal public key (64 bytes).
-    Slice encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
+    Slice publicKey;        ///< The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+    Slice encryptedAmount;  ///< The encrypted amount ciphertext
+                            ///< (size=xrpl::ecGamalEncryptedTotalLength).
 };
 
 /// Holds two secp256k1 public key components representing an ElGamal ciphertext (C1, C2).
@@ -73,8 +74,8 @@ addCommonZKPFields(
     Serializer& s,
     std::uint16_t txType,
     AccountID const& account,
-    std::uint32_t sequence,
-    uint192 const& issuanceID);
+    uint192 const& issuanceID,
+    std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTSend transactions.
@@ -227,9 +228,10 @@ homomorphicSubtract(Slice const& a, Slice const& b);
  * using the provided blinding factor r.
  *
  * @param amt            The plaintext amount to encrypt.
- * @param pubKeySlice    The recipient's ElGamal public key (64 bytes).
- * @param blindingFactor The 32-byte randomness used as blinding factor r.
- * @return The 66-byte ciphertext, or std::nullopt on failure.
+ * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param blindingFactor The randomness used as blinding factor r
+ * (size=xrpl::ecBlindingFactorLength).
+ * @return The ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt on failure.
  */
 std::optional<Buffer>
 encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor);
@@ -240,10 +242,11 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
  * Creates a deterministic encryption of zero that is unique to the account
  * and MPT issuance. Used to initialize confidential balance fields.
  *
- * @param pubKeySlice The holder's ElGamal public key (64 bytes).
+ * @param pubKeySlice The holder's ElGamal public key (size=xrpl::ecPubKeyLength).
  * @param account     The account ID of the token holder.
  * @param mptId       The MPToken Issuance ID.
- * @return The 66-byte canonical zero ciphertext, or std::nullopt on failure.
+ * @return The canonical zero ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt
+ * on failure.
  */
 std::optional<Buffer>
 encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, MPTID const& mptId);
@@ -254,8 +257,8 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * Proves that the submitter knows the secret key corresponding to the
  * provided public key, without revealing the secret key itself.
  *
- * @param pubKeySlice The ElGamal public key (64 bytes).
- * @param proofSlice  The Schnorr proof (65 bytes).
+ * @param pubKeySlice The ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param proofSlice  The Schnorr proof (size=xrpl::ecSchnorrProofLength).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if valid, or an error code otherwise.
  */
@@ -269,9 +272,9 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
  * ciphertext was correctly constructed using ElGamal encryption.
  *
  * @param amount         The revealed plaintext amount.
- * @param blindingFactor The 32-byte blinding factor used in encryption.
- * @param pubKeySlice    The recipient's ElGamal public key (64 bytes).
- * @param ciphertext     The ciphertext to verify (66 bytes).
+ * @param blindingFactor The blinding factor used in encryption (size=xrpl::ecBlindingFactorLength).
+ * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param ciphertext     The ciphertext to verify (size=xrpl::ecGamalEncryptedTotalLength).
  * @return tesSUCCESS if the encryption is valid, or an error code otherwise.
  */
 TER
@@ -302,7 +305,8 @@ checkEncryptedAmountFormat(STObject const& object);
  * issuer, and optionally the auditor using their respective public keys.
  *
  * @param amount         The revealed plaintext amount.
- * @param blindingFactor The 32-byte blinding factor used in all encryptions.
+ * @param blindingFactor The blinding factor used in all encryptions
+ * (size=xrpl::ecBlindingFactorLength).
  * @param holder         The holder's public key and encrypted amount.
  * @param issuer         The issuer's public key and encrypted amount.
  * @param auditor        Optional auditor's public key and encrypted amount.
@@ -329,6 +333,22 @@ constexpr std::size_t
 getConfidentialRecipientCount(bool hasAuditor)
 {
     return hasAuditor ? 4 : 3;
+}
+
+/**
+ * @brief Returns the size of a multi-ciphertext equality proof.
+ *
+ * Computes the byte size required for a zero-knowledge proof that demonstrates
+ * multiple ciphertexts encrypt the same plaintext value. The size depends on
+ * the number of recipients.
+ *
+ * @param nRecipients The number of recipients (typically 3 or 4).
+ * @return The proof size in bytes.
+ */
+inline std::size_t
+getEqualityProofSize(std::size_t nRecipients)
+{
+    return secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
 }
 
 /**
