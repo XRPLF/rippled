@@ -383,6 +383,7 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
+        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::zero);
 
         view().insert(sleDst);
     }
