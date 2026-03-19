@@ -70,8 +70,8 @@ class PerfLog_test : public beast::unit_test::suite
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        path
-        logFile() const
+        static path
+        logFile()
         {
             return logDir() / "perf_log.txt";
         }

@@ -63,7 +63,7 @@ private:
     std::shared_ptr<SLE const>
     findIssuer(AccountID const& issuerID, ReadView const& view);
 
-    bool
+    static bool
     validateIssuerChanges(
         std::shared_ptr<SLE const> const& issuer,
         IssuerChanges const& changes,

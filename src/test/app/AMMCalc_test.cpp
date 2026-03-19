@@ -179,7 +179,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
     }
 
-    void
+    static void
     swapOut(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);
@@ -242,7 +242,7 @@ class AMMCalc_test : public beast::unit_test::suite
         std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
-    void
+    static void
     swapIn(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);

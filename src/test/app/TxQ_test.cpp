@@ -73,7 +73,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         return std::max(expectedMedFeeLevel, minEscalationFeeLevel).fee();
     }
 
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel)
     {
         return calcMedFeeLevel(feeLevel, feeLevel);

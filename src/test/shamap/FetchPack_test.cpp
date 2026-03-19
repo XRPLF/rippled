@@ -75,7 +75,7 @@ public:
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
-    void
+    static void
     add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
         while ((n--) != 0u)
