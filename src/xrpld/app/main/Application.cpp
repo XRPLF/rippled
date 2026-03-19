@@ -263,7 +263,7 @@ public:
     static int
     maxUpdatePfLimit(std::unique_ptr<Config> const& config)
     {
-        return std::max(1, jobQueueThreads(config) / 2);
+        return std::max(2, (jobQueueThreads(config) * 3) / 4);
     }
 
     //--------------------------------------------------------------------------

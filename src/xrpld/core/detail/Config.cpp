@@ -676,12 +676,12 @@ Config::loadFromString(std::string const& fileContents)
             Throw<std::runtime_error>("Invalid " SECTION_WORKERS
                                       ": must be between 1 and 1024 inclusive.");
 
-        auto const maxUpdatePfLimit = std::max(1, WORKERS / 2);
+        auto const maxUpdatePfLimit = std::max(2, (WORKERS * 3) / 4);
         if (PATH_WORKERS > maxUpdatePfLimit)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_PATH_WORKERS
-                ": must be less than or equal to half of " SECTION_WORKERS
-                " (minimum maximum of 1).");
+                ": must be less than or equal to 3/4 of " SECTION_WORKERS
+                " (minimum maximum of 2).");
     }
 
     if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
