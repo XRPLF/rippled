@@ -313,6 +313,43 @@ public:
             BEAST_EXPECT(ret[jss::median] == "74");
             BEAST_EXPECT(ret[jss::time] == 946695000);
         }
+
+        // Duplicate oracle entries should be deduplicated
+        {
+            Env env(*this);
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+
+            Account const owner{"owner"};
+            env.fund(XRP(1'000), owner);
+            Oracle oracle(
+                env,
+                {.owner = owner,
+                 .series = {{"XRP", "USD", 740, 1}},
+                 .fee = baseFee});
+
+            // Query with the oracle listed once
+            OraclesData single = {{owner, oracle.documentID()}};
+            auto const retSingle =
+                Oracle::aggregatePrice(env, "XRP", "USD", single);
+
+            // Query with the same oracle listed twice
+            OraclesData duplicated = {
+                {owner, oracle.documentID()},
+                {owner, oracle.documentID()}};
+            auto const retDup =
+                Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
+
+            // Results should be identical - duplicates must not be
+            // double-counted
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::mean] ==
+                retDup[jss::entire_set][jss::mean]);
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::size] ==
+                retDup[jss::entire_set][jss::size]);
+            BEAST_EXPECT(retDup[jss::entire_set][jss::size].asUInt() == 1);
+            BEAST_EXPECT(retSingle[jss::median] == retDup[jss::median]);
+        }
     }
 
     void
