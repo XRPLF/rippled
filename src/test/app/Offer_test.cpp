@@ -11,13 +11,13 @@ namespace test {
 
 class OfferBaseUtil_test : public beast::unit_test::suite
 {
-    XRPAmount
+    static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
         return env.current()->fees().accountReserve(count);
     }
 
-    std::uint32_t
+    static std::uint32_t
     lastClose(jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();

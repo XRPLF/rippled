@@ -53,7 +53,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     // Helper function returns the close time of the parent ledger.
-    std::uint32_t
+    static std::uint32_t
     lastClose(test::jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();

@@ -66,7 +66,7 @@ public:
         beast::Journal mJournal;
     };
 
-    boost::intrusive_ptr<Item>
+    static boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;

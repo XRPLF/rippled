@@ -199,7 +199,7 @@ Message::getBuffer(Compressed tryCompressed)
 }
 
 int
-Message::getType(std::uint8_t const* in) const
+Message::getType(std::uint8_t const* in)
 {
     int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;

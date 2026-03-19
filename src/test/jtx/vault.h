@@ -38,7 +38,7 @@ struct Vault
         uint256 id;
     };
 
-    Json::Value
+    static Json::Value
     set(SetArgs const& args);
 
     struct DeleteArgs
@@ -47,7 +47,7 @@ struct Vault
         uint256 id;
     };
 
-    Json::Value
+    static Json::Value
     del(DeleteArgs const& args);
 
     struct DepositArgs
@@ -57,7 +57,7 @@ struct Vault
         STAmount amount;
     };
 
-    Json::Value
+    static Json::Value
     deposit(DepositArgs const& args);
 
     struct WithdrawArgs
@@ -67,7 +67,7 @@ struct Vault
         STAmount amount;
     };
 
-    Json::Value
+    static Json::Value
     withdraw(WithdrawArgs const& args);
 
     struct ClawbackArgs
@@ -78,7 +78,7 @@ struct Vault
         std::optional<STAmount> amount{};
     };
 
-    Json::Value
+    static Json::Value
     clawback(ClawbackArgs const& args);
 };
 

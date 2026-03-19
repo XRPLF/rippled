@@ -890,7 +890,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
      * @param numReEnable number of ReEnable candidates expected
      * @return true if the number of candidates meets expectation
      */
-    bool
+    static bool
     checkCandidateSizes(
         NegativeUNLVote& vote,
         hash_set<NodeID> const& unl,

@@ -24,7 +24,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     static constexpr FeeLevel64 baseFeeLevel{256};
     static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 
-    void
+    static void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
@@ -32,7 +32,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
             env(noop(account));
     }
 
-    auto
+    static auto
     openLedgerCost(jtx::Env& env)
     {
         using namespace jtx;
@@ -52,7 +52,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Get a fee level of a transaction made by an account
     // This fee level is used to ensure we can place transaction into TxQ
-    auto
+    static auto
     txFeeLevelByAccount(jtx::Env& env, jtx::Account const& account)
     {
         using namespace jtx;
@@ -65,7 +65,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Calculating expected median fee level based on known fee levels of median
     // transaction levels.
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel1, FeeLevel64 const feeLevel2)
     {
         FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;

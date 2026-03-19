@@ -260,7 +260,7 @@ public:
         env.close();
     }
 
-    Json::Value
+    static Json::Value
     trust_explicit_amt(jtx::Account const& a, STAmount const& amt)
     {
         Json::Value jv;

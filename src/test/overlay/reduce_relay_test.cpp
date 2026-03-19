@@ -785,7 +785,7 @@ public:
         }
     }
 
-    void
+    static void
     for_rand(std::uint32_t min, std::uint32_t max, std::function<void(std::uint32_t)> f)
     {
         auto size = max - min;
@@ -879,7 +879,7 @@ protected:
     }
 
     /** Send squelch (if duration is set) or unsquelch (if duration not set) */
-    Peer::id_t
+    static Peer::id_t
     sendSquelch(
         PublicKey const& validator,
         PeerWPtr const& peerPtr,

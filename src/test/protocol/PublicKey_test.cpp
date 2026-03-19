@@ -46,7 +46,7 @@ public:
         }
     }
 
-    blob
+    static blob
     sig(std::string const& hex)
     {
         blob b;

@@ -48,7 +48,7 @@ private:
     bool
     isValidEntry(std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after);
 
-    STAmount
+    static STAmount
     calculateBalanceChange(
         std::shared_ptr<SLE const> const& before,
         std::shared_ptr<SLE const> const& after,
@@ -71,7 +71,7 @@ private:
         beast::Journal const& j,
         bool enforce);
 
-    bool
+    static bool
     validateFrozenState(
         BalanceChange const& change,
         bool high,

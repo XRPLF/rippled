@@ -63,8 +63,8 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-        path
-        logDir() const
+        static path
+        logDir()
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
@@ -76,8 +76,8 @@ class PerfLog_test : public beast::unit_test::suite
             return logDir() / "perf_log.txt";
         }
 
-        std::chrono::milliseconds
-        logInterval() const
+        static std::chrono::milliseconds
+        logInterval()
         {
             return std::chrono::milliseconds{10};
         }

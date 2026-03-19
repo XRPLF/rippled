@@ -271,7 +271,7 @@ public:
                 m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
-    HostAndPort
+    static HostAndPort
     parseName(std::string const& str)
     {
         // first attempt to parse as an endpoint (IP addr + port).

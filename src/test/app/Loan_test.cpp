@@ -746,7 +746,7 @@ protected:
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
 
-    void
+    static void
     topUpBorrower(
         jtx::Env& env,
         BrokerInfo const& broker,
@@ -1468,7 +1468,7 @@ protected:
         }
     }
 
-    std::string
+    static std::string
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())

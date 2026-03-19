@@ -218,6 +218,7 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
 }
 
 PrettyAmount
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Env::balance(Account const& account, Asset const& asset) const
 {
     return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());

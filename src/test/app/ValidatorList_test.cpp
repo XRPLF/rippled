@@ -98,7 +98,7 @@ private:
                 masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
-    std::string
+    static std::string
     makeList(
         std::vector<Validator> const& validators,
         std::size_t sequence,
@@ -122,7 +122,7 @@ private:
         return base64_encode(data);
     }
 
-    std::string
+    static std::string
     signList(std::string const& blob, std::pair<PublicKey, SecretKey> const& keys)
     {
         auto const data = base64_decode(blob);

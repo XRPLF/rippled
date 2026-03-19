@@ -149,6 +149,7 @@ private:
     using parseFuncPtr = Json::Value (RPCParser::*)(Json::Value const& jvParams);
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAsIs(Json::Value const& jvParams)
     {
         Json::Value v(Json::objectValue);
@@ -160,6 +161,7 @@ private:
     }
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseInternal(Json::Value const& jvParams)
     {
         Json::Value v(Json::objectValue);
@@ -176,6 +178,7 @@ private:
     }
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseManifest(Json::Value const& jvParams)
     {
         if (jvParams.size() == 1)
@@ -196,6 +199,7 @@ private:
 
     // fetch_info [clear]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseFetchInfo(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -286,6 +290,7 @@ private:
     //
     // Mnemonic: taker pays --> offer --> taker gets
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseBookOffers(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -352,6 +357,7 @@ private:
 
     // can_delete [<ledgerid>|<ledgerhash>|now|always|never]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseCanDelete(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -374,6 +380,7 @@ private:
 
     // connect <ip[:port]> [port]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseConnect(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -402,6 +409,7 @@ private:
     // deposit_authorized <source_account> <destination_account>
     // [<ledger> [<credentials>, ...]]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseDepositAuthorized(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -424,6 +432,7 @@ private:
 
     // Return an error for attempting to subscribe/unsubscribe via RPC.
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseEvented(Json::Value const& jvParams)
     {
         return rpcError(rpcNO_EVENTS);
@@ -431,6 +440,7 @@ private:
 
     // feature [<feature>] [accept|reject]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseFeature(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -464,6 +474,7 @@ private:
 
     // get_counts [<min_count>]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseGetCounts(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -477,6 +488,7 @@ private:
     // sign_for <account> <secret> <json> offline
     // sign_for <account> <secret> <json>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSignFor(Json::Value const& jvParams)
     {
         bool const bOffline = 4 == jvParams.size() && jvParams[3u].asString() == "offline";
@@ -606,6 +618,7 @@ private:
 
     // ledger [id|index|current|closed|validated] [full|tx]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLedger(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -635,6 +648,7 @@ private:
 
     // ledger_header <id>|<index>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLedgerId(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -655,6 +669,7 @@ private:
 
     // ledger_entry [id] [<index>]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLedgerEntry(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -672,6 +687,7 @@ private:
     // specified severity log_level <partition> <severity>:    Set specified
     // partition to specified severity
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseLogLevel(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -720,6 +736,7 @@ private:
 
     // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelAuthorize(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
@@ -763,6 +780,7 @@ private:
 
     // channel_verify <public_key> <channel_id> <drops> <signature>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelVerify(Json::Value const& jvParams)
     {
         std::string const strPk = jvParams[0u].asString();
@@ -791,6 +809,7 @@ private:
     }
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw2(Json::Value const& jvParams, char const* const acc2Field)
     {
         std::array<char const* const, 2> accFields{{jss::account, acc2Field}};
@@ -828,6 +847,7 @@ private:
 
     // TODO: Get index from an alternate syntax: rXYZ:<index>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw1(Json::Value const& jvParams)
     {
         std::string strIdent = jvParams[0u].asString();
@@ -848,6 +868,7 @@ private:
     }
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseVault(Json::Value const& jvParams)
     {
         std::string strVaultID = jvParams[0u].asString();
@@ -866,6 +887,7 @@ private:
 
     // peer_reservations_add <public_key> [<name>]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parsePeerReservationsAdd(Json::Value const& jvParams)
     {
         Json::Value jvRequest;
@@ -879,6 +901,7 @@ private:
 
     // peer_reservations_del <public_key>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parsePeerReservationsDel(Json::Value const& jvParams)
     {
         Json::Value jvRequest;
@@ -914,6 +937,7 @@ private:
     // simulate <tx_blob> [binary]
     // simulate <tx_json> [binary]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSimulate(Json::Value const& jvParams)
     {
         Json::Value txJSON;
@@ -945,6 +969,7 @@ private:
     // submit <private_key> <json>
     // submit <tx_blob>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSignSubmit(Json::Value const& jvParams)
     {
         Json::Value txJSON;
@@ -994,6 +1019,7 @@ private:
     //
     // submit_multisigned <json>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseSubmitMultiSigned(Json::Value const& jvParams)
     {
         if (1 == jvParams.size())
@@ -1013,6 +1039,7 @@ private:
 
     // transaction_entry <tx_hash> <ledger_hash/ledger_index>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
@@ -1038,6 +1065,7 @@ private:
 
     // tx <transaction_id>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTx(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -1070,6 +1098,7 @@ private:
 
     // tx_history <index>
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseTxHistory(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -1086,6 +1115,7 @@ private:
     // (e.g. .bash_history) and it may be leaked via the process status command
     // (i.e. ps).
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseValidationCreate(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -1100,6 +1130,7 @@ private:
     // <passphrase> is only for testing. Master seeds should only be generated
     // randomly.
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseWalletPropose(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -1115,6 +1146,7 @@ private:
     // ]]
 
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseGatewayBalances(Json::Value const& jvParams)
     {
         unsigned int index = 0;
@@ -1157,6 +1189,7 @@ private:
 
     // server_definitions [hash]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseServerDefinitions(Json::Value const& jvParams)
     {
         Json::Value jvRequest{Json::objectValue};
@@ -1171,6 +1204,7 @@ private:
 
     // server_info [counters]
     Json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseServerInfo(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);

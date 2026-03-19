@@ -223,15 +223,15 @@ public:
 
     using DirectStepI<DirectIPaymentStep>::check;
 
-    bool
-    verifyPrevStepDebtDirection(DebtDirection) const
+    static bool
+    verifyPrevStepDebtDirection(DebtDirection)
     {
         // A payment doesn't care whether or not prevStepRedeems.
         return true;
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
+    static bool
+    verifyDstQualityIn(std::uint32_t dstQIn)
     {
         // Payments have no particular expectations for what dstQIn will be.
         return true;
@@ -274,8 +274,8 @@ public:
 
     using DirectStepI<DirectIOfferCrossingStep>::check;
 
-    bool
-    verifyPrevStepDebtDirection(DebtDirection prevStepDir) const
+    static bool
+    verifyPrevStepDebtDirection(DebtDirection prevStepDir)
     {
         // During offer crossing we rely on the fact that prevStepRedeems
         // will *always* issue.  That's because:
@@ -287,16 +287,16 @@ public:
         return issues(prevStepDir);
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
+    static bool
+    verifyDstQualityIn(std::uint32_t dstQIn)
     {
         // Due to a couple of factors dstQIn is always QUALITY_ONE for
         // offer crossing.  If that changes we need to know.
         return dstQIn == QUALITY_ONE;
     }
 
-    std::uint32_t
-    quality(ReadView const& sb, QualityDirection qDir) const;
+    static std::uint32_t
+    quality(ReadView const& sb, QualityDirection qDir);
 
     // Compute the maximum value that can flow from src->dst at
     // the best available quality.
@@ -307,8 +307,8 @@ public:
 
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
-    TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
+    static TER
+    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
     std::string
     logString() const override
@@ -361,7 +361,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
 }
 
 std::uint32_t
-DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir) const
+DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 {
     // If offer crossing then ignore trust line Quality fields.  This
     // preserves a long-standing tradition.
@@ -446,7 +446,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 }
 
 TER
-DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&) const
+DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not

@@ -19,7 +19,7 @@ namespace xrpl {
 
 class Transaction_test : public beast::unit_test::suite
 {
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace test::jtx;

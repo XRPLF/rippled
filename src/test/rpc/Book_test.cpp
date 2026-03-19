@@ -14,7 +14,7 @@ namespace test {
 
 class Book_test : public beast::unit_test::suite
 {
-    std::string
+    static std::string
     getBookDir(
         jtx::Env& env,
         Issue const& in,

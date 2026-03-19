@@ -44,7 +44,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     createGossip(Gossip& gossip)
     {
         std::uint8_t const v(10 + rand_int(9));

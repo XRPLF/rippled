@@ -1591,7 +1591,7 @@ TxQ::getRequiredFeeLevel(
     OpenView& view,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
-    std::lock_guard<std::mutex> const& lock) const
+    std::lock_guard<std::mutex> const& lock)
 {
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }

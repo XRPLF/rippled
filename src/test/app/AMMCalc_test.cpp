@@ -161,7 +161,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return {{pairs, *swap, *rate, fee}};
     }
 
-    std::string
+    static std::string
     toString(STAmount const& a)
     {
         std::stringstream str;
@@ -169,7 +169,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return str.str();
     }
 
-    STAmount
+    static STAmount
     mulratio(STAmount const& amt, std::uint32_t a, std::uint32_t b, bool round)
     {
         if (a == b)
