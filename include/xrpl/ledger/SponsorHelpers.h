@@ -6,17 +6,33 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
 
-bool
-isReserveSponsored(STTx const& tx);
+inline bool
+isReserveSponsored(STTx const& tx)
+{
+    return tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve;
+}
 
-bool
-isSponsorReserveCoSigning(STTx const& tx);
+inline bool
+isSponsorReserveCoSigning(STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfSponsorSignature))
+        return false;
+    return isReserveSponsored(tx);
+}
 
-std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx);
+inline std::optional<AccountID>
+getTxReserveSponsorAccountID(STTx const& tx)
+{
+    if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
+    {
+        return tx.getAccountID(sfSponsor);
+    }
+    return {};
+}
 
 inline std::shared_ptr<SLE>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
@@ -36,10 +52,15 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
     return {};
 }
 
-std::optional<AccountID>
+inline std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(
     std::shared_ptr<SLE const> const& sle,
-    SF_ACCOUNT const& field = sfSponsor);
+    SF_ACCOUNT const& field = sfSponsor)
+{
+    if (sle->isFieldPresent(field))
+        return sle->getAccountID(field);
+    return {};
+}
 
 inline std::shared_ptr<SLE>
 getLedgerEntryReserveSponsor(
@@ -65,13 +86,29 @@ getLedgerEntryReserveSponsor(
     return {};
 }
 
-void
+inline void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
     std::shared_ptr<SLE> const& sponsorSle,
-    SF_ACCOUNT const& field = sfSponsor);
+    SF_ACCOUNT const& field = sfSponsor)
+{
+    XRPL_ASSERT(
+        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
+        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
+    if (sponsorSle)
+        sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
+}
 
-void
-removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor);
+inline void
+removeSponsorFromLedgerEntry(std::shared_ptr<SLE> const& sle, SF_ACCOUNT const& field = sfSponsor)
+{
+    XRPL_ASSERT(
+        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
+            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
+        "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
+    if (sle->isFieldPresent(field))
+        sle->makeFieldAbsent(field);
+}
 
 }  // namespace xrpl
