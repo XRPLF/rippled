@@ -148,7 +148,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!receiverIssuer)
     {
         auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;

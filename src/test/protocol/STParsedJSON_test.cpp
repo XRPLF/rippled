@@ -894,7 +894,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfPublicKey));
             auto const& blob =
                 obj.object->getFieldVL(sfPublicKey);  // NOLINT(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(blob.size() == 0);
+            BEAST_EXPECT(blob.empty());
         }
 
         // Test lowercase hex string for blob
@@ -975,7 +975,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfHashes));
             auto const& vec =
                 obj.object->getFieldV256(sfHashes);  // NOLINT(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(vec.size() == 0);
+            BEAST_EXPECT(vec.empty());
         }
 
         // Test array with invalid hex string (should fail)

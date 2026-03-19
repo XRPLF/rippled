@@ -33,8 +33,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     }
 
     if (any(flags & SF_SIGBAD))
+    {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
+    }
 
     if (!any(flags & SF_SIGGOOD))
     {
@@ -49,14 +51,18 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
 
     // Signature is now known good
     if (any(flags & SF_LOCALBAD))
+    {
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
+    }
 
     if (any(flags & SF_LOCALGOOD))
+    {
         // ...and the local checks
         // are known good.
         return {Validity::Valid, ""};
+    }
 
     // Do the local checks
     std::string reason;
@@ -172,7 +178,9 @@ applyBatchTransactions(
                 break;
         }
         else if (mode & tfOnlyOne)
+        {
             break;
+        }
     }
 
     return applied != 0;

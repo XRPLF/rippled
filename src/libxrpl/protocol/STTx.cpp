@@ -202,8 +202,10 @@ STTx::getSeqProxy() const
 
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
+    {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
         return SeqProxy::sequence(seq);
+    }
 
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
@@ -341,8 +343,8 @@ STTx::getJson(JsonOptions options, bool binary) const
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
-        else
-            return Json::Value{dataBin};
+
+        return Json::Value{dataBin};
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
@@ -505,6 +507,7 @@ multiSignHelper(
             errorWhat = e.what();
         }
         if (!validSig)
+        {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 (errorWhat ? ": " + *errorWhat : "") + ".");

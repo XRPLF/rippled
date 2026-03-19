@@ -104,7 +104,7 @@ undefined:src/xrpld/app/misc/NetworkOPs.cpp
 undefined:src/libxrpl/json/json_value.cpp
 undefined:src/xrpld/app/paths/detail/StrandFlow.h
 undefined:src/xrpld/app/tx/detail/NFTokenMint.cpp
-undefined:src/xrpld/app/tx/detail/SetOracle.cpp
+undefined:src/xrpld/app/tx/detail/OracleSet.cpp
 undefined:src/xrpld/core/detail/JobQueue.cpp
 undefined:src/xrpld/core/detail/Workers.cpp
 undefined:src/xrpld/rpc/detail/Role.cpp
@@ -154,7 +154,7 @@ unsigned-integer-overflow:src/xrpld/app/misc/detail/AmendmentTable.cpp
 unsigned-integer-overflow:src/xrpld/app/misc/NetworkOPs.cpp
 unsigned-integer-overflow:src/xrpld/app/paths/detail/StrandFlow.h
 unsigned-integer-overflow:src/xrpld/app/tx/detail/NFTokenMint.cpp
-unsigned-integer-overflow:src/xrpld/app/tx/detail/SetOracle.cpp
+unsigned-integer-overflow:src/xrpld/app/tx/detail/OracleSet.cpp
 unsigned-integer-overflow:src/xrpld/rpc/detail/Role.cpp
 unsigned-integer-overflow:src/xrpld/rpc/handlers/GetAggregatePrice.cpp
 unsigned-integer-overflow:xrpl/basics/base_uint.h
@@ -188,8 +188,8 @@ undefined:src/test/app/Loan_test.cpp
 
 # Source tree restructured paths (libxrpl/tx/transactors/)
 # These duplicate the xrpld/app/tx/detail entries above for the new layout
-unsigned-integer-overflow:src/libxrpl/tx/transactors/oracle/SetOracle.cpp
-undefined:src/libxrpl/tx/transactors/oracle/SetOracle.cpp
+unsigned-integer-overflow:src/libxrpl/tx/transactors/oracle/OracleSet.cpp
+undefined:src/libxrpl/tx/transactors/oracle/OracleSet.cpp
 unsigned-integer-overflow:src/libxrpl/tx/transactors/nft/NFTokenMint.cpp
 undefined:src/libxrpl/tx/transactors/nft/NFTokenMint.cpp
 

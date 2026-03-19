@@ -195,9 +195,11 @@ NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+    {
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
+    }
 
     // It should be impossible for the InnerBatchTxn flag to be set without
     // featureBatchV1_1 being enabled
@@ -551,9 +553,13 @@ Transactor::ticketDelete(
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
     {
         if (*ticketCount == 1)
+        {
             sleAccount->makeFieldAbsent(sfTicketCount);
+        }
         else
+        {
             ticketCount = *ticketCount - 1;
+        }
     }
     else
     {
@@ -598,11 +604,11 @@ Transactor::apply()
         preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         result = payFee();
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         if (sle->isFieldPresent(sfAccountTxnID))
@@ -627,10 +633,12 @@ Transactor::checkSign(
         auto const sle = view.read(keylet::account(idAccount));
 
         if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        {
             // Pseudo-accounts can't sign transactions. This check is gated on
             // the Lending Protocol amendment because that's the project it was
             // added under, and it doesn't justify another amendment
             return tefBAD_AUTH;
+        }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
@@ -943,7 +951,7 @@ removeDeletedTrustLines(
     for (auto const& index : trustLines)
     {
         if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
-            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) != tesSUCCESS)
+            !isTesSuccess(deleteAMMTrustLine(view, sleState, std::nullopt, viewJ)))
         {
             JLOG(viewJ.error()) << "removeDeletedTrustLines: failed to delete AMM trustline";
         }
@@ -1052,7 +1060,7 @@ Transactor::operator()()
     }
 
     auto result = ctx_.preclaimResult;
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
         result = apply();
 
     // No transaction can return temUNKNOWN from apply,

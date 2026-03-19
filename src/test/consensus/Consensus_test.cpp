@@ -157,7 +157,7 @@ public:
         BEAST_EXPECT(peer->prevLedgerID() == lcl.id());
         BEAST_EXPECT(lcl.seq() == Ledger::Seq{1});
         BEAST_EXPECT(lcl.txs().size() == 1);
-        BEAST_EXPECT(lcl.txs().find(Tx{1}) != lcl.txs().end());
+        BEAST_EXPECT(lcl.txs().contains(Tx{1}));
         BEAST_EXPECT(peer->prevProposers == 0);
     }
 
@@ -193,7 +193,7 @@ public:
                 BEAST_EXPECT(peer->prevProposers == peers.size() - 1);
                 // All transactions were accepted
                 for (std::uint32_t i = 0; i < peers.size(); ++i)
-                    BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                    BEAST_EXPECT(lcl.txs().contains(Tx{i}));
             }
         }
     }
@@ -244,12 +244,12 @@ public:
                     BEAST_EXPECT(peer->prevProposers == network.size() - 1);
                     BEAST_EXPECT(peer->prevRoundTime == network[0]->prevRoundTime);
 
-                    BEAST_EXPECT(lcl.txs().find(Tx{0}) == lcl.txs().end());
+                    BEAST_EXPECT(not lcl.txs().contains(Tx{0}));
                     for (std::uint32_t i = 2; i < network.size(); ++i)
-                        BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                        BEAST_EXPECT(lcl.txs().contains(Tx{i}));
 
                     // Tx 0 didn't make it
-                    BEAST_EXPECT(peer->openTxs.find(Tx{0}) != peer->openTxs.end());
+                    BEAST_EXPECT(peer->openTxs.contains(Tx{0}));
                 }
             }
         }
@@ -297,21 +297,25 @@ public:
                         // Closed ledger has all but transaction 0,1
                         auto const& lcl = peer->lastClosedLedger;
                         BEAST_EXPECT(lcl.seq() == Ledger::Seq{1});
-                        BEAST_EXPECT(lcl.txs().find(Tx{0}) == lcl.txs().end());
-                        BEAST_EXPECT(lcl.txs().find(Tx{1}) == lcl.txs().end());
+                        BEAST_EXPECT(not lcl.txs().contains(Tx{0}));
+                        BEAST_EXPECT(not lcl.txs().contains(Tx{1}));
                         for (std::uint32_t i = slow.size(); i < network.size(); ++i)
-                            BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                            BEAST_EXPECT(lcl.txs().contains(Tx{i}));
 
                         // Tx 0-1 didn't make it
-                        BEAST_EXPECT(peer->openTxs.find(Tx{0}) != peer->openTxs.end());
-                        BEAST_EXPECT(peer->openTxs.find(Tx{1}) != peer->openTxs.end());
+                        BEAST_EXPECT(peer->openTxs.contains(Tx{0}));
+                        BEAST_EXPECT(peer->openTxs.contains(Tx{1}));
                     }
 
                     Peer const* slowPeer = slow[0];
                     if (isParticipant)
+                    {
                         BEAST_EXPECT(slowPeer->prevProposers == network.size() - 1);
+                    }
                     else
+                    {
                         BEAST_EXPECT(slowPeer->prevProposers == fast.size());
+                    }
 
                     for (Peer* peer : fast)
                     {
@@ -726,7 +730,9 @@ public:
             // Since the overlapped nodes have a UNL that is the union of the
             // two cliques, the maximum sized UNL list is the number of peers
             if (overlap > 0.4 * numPeers)
+            {
                 BEAST_EXPECT(sim.synchronized());
+            }
             else
             {
                 // Even if we do fork, there shouldn't be more than 3 ledgers
@@ -1100,7 +1106,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // I'm in the majority, my vote should not change
             BEAST_EXPECT(!proposingTrue.updateVote(5, true, p));
@@ -1118,7 +1124,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // Right now, the vote is 51%. The requirement is about to jump to
             // 65%
@@ -1212,7 +1218,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // Threshold jumps to 95%
             BEAST_EXPECT(proposingTrue.updateVote(220, true, p));
@@ -1253,7 +1259,7 @@ public:
                 BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
                 BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
                 BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-                BEAST_EXPECT(clog->str() == "");
+                BEAST_EXPECT(clog->str().empty());
             }
 
             auto expectStalled = [this, &clog](
@@ -1301,7 +1307,7 @@ public:
 
                 // true vote has changed recently, so not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, 0, j, clog));
-                BEAST_EXPECT(clog->str() == "");
+                BEAST_EXPECT(clog->str().empty());
                 // remaining votes have been unchanged in so long that we only
                 // need to hit the second round at 95% to be stalled, regardless
                 // of peers
@@ -1314,7 +1320,7 @@ public:
 
                 // true vote has changed recently, so not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged, j, clog));
-                BEAST_EXPECTS(clog->str() == "", clog->str());
+                BEAST_EXPECTS(clog->str().empty(), clog->str());
                 // remaining votes have been unchanged in so long that we only
                 // need to hit the second round at 95% to be stalled, regardless
                 // of peers
@@ -1340,7 +1346,7 @@ public:
                 // true vote changed 2 rounds ago, and peers are changing, so
                 // not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, 0, j, clog));
-                BEAST_EXPECTS(clog->str() == "", clog->str());
+                BEAST_EXPECTS(clog->str().empty(), clog->str());
                 // still stalled
                 BEAST_EXPECT(proposingFalse.stalled(p, true, 0, j, clog));
                 expectStalled(98, false, 11 + i, 0, 2, __LINE__);

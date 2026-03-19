@@ -190,7 +190,7 @@ public:
             ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
-                getHash(ledgers[i]).length());
+                !getHash(ledgers[i]).empty());
         }
 
         ledgerCheck(env, deleteInterval + 1, 2);
@@ -229,7 +229,7 @@ public:
                 store.getLastRotated() == lastRotated || i == lastRotated + deleteInterval - 2);
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
-                getHash(ledgers[i]).length());
+                !getHash(ledgers[i]).empty());
         }
 
         store.rendezvous();

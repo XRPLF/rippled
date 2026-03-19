@@ -105,7 +105,9 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         for (STObject const& signer : signers)
         {
             if (signer.isFieldPresent(sfTxnSignature))
+            {
                 signerCount += 1;
+            }
             else if (signer.isFieldPresent(sfSigners))
             {
                 auto const& nestedSigners = signer.getFieldArray(sfSigners);
@@ -320,7 +322,7 @@ Batch::preflight(PreflightContext const& ctx)
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
                 xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
-            preflightResult.ter != tesSUCCESS)
+            !isTesSuccess(preflightResult.ter))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn preflight failed: " << transHuman(preflightResult.ter)

@@ -140,9 +140,13 @@ STObject::set(SOTemplate const& type)
     for (auto const& elem : type)
     {
         if (elem.style() != soeREQUIRED)
+        {
             v_.emplace_back(detail::nonPresentObject, elem.sField());
+        }
         else
+        {
             v_.emplace_back(detail::defaultObject, elem.sField());
+        }
     }
 }
 
@@ -268,7 +272,7 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
@@ -290,16 +294,22 @@ STObject::getFullText() const
         ret += " = {";
     }
     else
+    {
         ret = "{";
+    }
 
     for (auto const& elem : v_)
     {
         if (elem->getSType() != STI_NOTPRESENT)
         {
             if (!first)
+            {
                 ret += ", ";
+            }
             else
+            {
                 first = false;
+            }
 
             ret += elem->getFullText();
         }

@@ -34,12 +34,10 @@ lpTokensOut(
         auto const t = lptAMMBalance * (r - c) / (1 + c);
         return toSTAmount(lptAMMBalance.issue(), t);
     }
-    else
-    {
-        // minimize tokens out
-        auto const frac = (r - c) / (1 + c);
-        return multiply(lptAMMBalance, frac, Number::downward);
-    }
+
+    // minimize tokens out
+    auto const frac = (r - c) / (1 + c);
+    return multiply(lptAMMBalance, frac, Number::downward);
 }
 
 /* Equation 4 solves equation 3 for b:
@@ -72,12 +70,10 @@ ammAssetIn(
     {
         return toSTAmount(asset1Balance.issue(), asset1Balance * solveQuadraticEq(a, b, c));
     }
-    else
-    {
-        // maximize deposit
-        auto const frac = solveQuadraticEq(a, b, c);
-        return multiply(asset1Balance, frac, Number::upward);
-    }
+
+    // maximize deposit
+    auto const frac = solveQuadraticEq(a, b, c);
+    return multiply(asset1Balance, frac, Number::upward);
 }
 
 /* Equation 7:
@@ -99,12 +95,10 @@ lpTokensIn(
         auto const t = lptAMMBalance * (c - root2(c * c - 4 * fr)) / 2;
         return toSTAmount(lptAMMBalance.issue(), t);
     }
-    else
-    {
-        // maximize tokens in
-        auto const frac = (c - root2(c * c - 4 * fr)) / 2;
-        return multiply(lptAMMBalance, frac, Number::upward);
-    }
+
+    // maximize tokens in
+    auto const frac = (c - root2(c * c - 4 * fr)) / 2;
+    return multiply(lptAMMBalance, frac, Number::upward);
 }
 
 /* Equation 8 solves equation 7 for b:
@@ -131,12 +125,10 @@ ammAssetOut(
         auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
         return toSTAmount(assetBalance.issue(), b);
     }
-    else
-    {
-        // minimize withdraw
-        auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
-        return multiply(assetBalance, frac, Number::downward);
-    }
+
+    // minimize withdraw
+    auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
+    return multiply(assetBalance, frac, Number::downward);
 }
 
 Number
@@ -194,29 +186,37 @@ adjustAmountsByLPTokens(
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
             auto const amount2Actual = toSTAmount(amount2->issue(), fr * *amount2);
             if (!ammRoundingEnabled)
+            {
                 return std::make_tuple(
                     amountActual < amount ? amountActual : amount,
                     amount2Actual < amount2 ? amount2Actual : amount2,
                     lpTokensActual);
-            else
-                return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
+            }
+
+            return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
         auto const amountActual = [&]() {
             if (isDeposit == IsDeposit::Yes)
+            {
                 return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            else if (!ammRoundingEnabled)
+            }
+            if (!ammRoundingEnabled)
+            {
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
-            else
-                return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
+            }
+
+            return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
         if (!ammRoundingEnabled)
+        {
             return amountActual < amount
                 ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
                 : std::make_tuple(amount, std::nullopt, lpTokensActual);
-        else
-            return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
+        }
+
+        return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
     XRPL_ASSERT(
@@ -241,9 +241,11 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
     // use numerically stable citardauq formula for quadratic equation solution
     // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     if (b > 0)
+    {
         return (2 * c) / (-b - root2(d));
-    else
-        return (2 * c) / (-b + root2(d));
+    }
+
+    return (2 * c) / (-b + root2(d));
 }
 
 STAmount

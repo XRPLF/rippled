@@ -347,9 +347,12 @@ class Feature_test : public beast::unit_test::suite
                 (*it).isMember(jss::enabled) && (*it)[jss::enabled].asBool() == expectEnabled,
                 (*it)[jss::name].asString() + " enabled");
             if (expectEnabled)
+            {
                 BEAST_EXPECTS(
                     !(*it).isMember(jss::vetoed), (*it)[jss::name].asString() + " vetoed");
+            }
             else
+            {
                 BEAST_EXPECTS(
                     (*it).isMember(jss::vetoed) && (*it)[jss::vetoed].isBool() == !expectObsolete &&
                         (!(*it)[jss::vetoed].isBool() ||
@@ -357,6 +360,7 @@ class Feature_test : public beast::unit_test::suite
                         ((*it)[jss::vetoed].isBool() ||
                          (*it)[jss::vetoed].asString() == "Obsolete"),
                     (*it)[jss::name].asString() + " vetoed");
+            }
             BEAST_EXPECTS(
                 (*it).isMember(jss::supported) && (*it)[jss::supported].asBool() == expectSupported,
                 (*it)[jss::name].asString() + " supported");

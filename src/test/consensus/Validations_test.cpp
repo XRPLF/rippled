@@ -942,9 +942,13 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 vals.getNodesAfter(this->genesisLedger, genesisLedger.id()) == trustedVals.size());
             if (trustedVals.empty())
+            {
                 BEAST_EXPECT(vals.getPreferred(this->genesisLedger) == std::nullopt);
+            }
             else
+            {
                 BEAST_EXPECT(vals.getPreferred(this->genesisLedger)->second == testID);
+            }
             BEAST_EXPECT(vals.getTrustedForLedger(testID, testSeq) == trustedVals);
             BEAST_EXPECT(vals.numTrustedForLedger(testID) == trustedVals.size());
         };
