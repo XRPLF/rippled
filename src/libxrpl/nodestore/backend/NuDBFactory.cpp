@@ -29,22 +29,6 @@ namespace NodeStore {
 class NuDBBackend : public Backend
 {
 public:
-    // "appnum" is an application-defined constant stored in the header of a
-    // NuDB database. We used it to identify shard databases before that code
-    // was removed. For now, its only use is a sanity check that the database
-    // was created by xrpld.
-    static constexpr std::uint64_t appnum = 1;
-
-    beast::Journal const j_;
-    size_t const keyBytes_;
-    std::size_t const burstSize_;
-    std::string const name_;
-    std::size_t const blockSize_;
-    nudb::store db_;
-    std::atomic<bool> deletePath_;
-    Scheduler& scheduler_;
-    boost::asio::thread_pool threadPool_;
-
     NuDBBackend(
         size_t keyBytes,
         Section const& keyValues,
@@ -543,8 +527,6 @@ public:
     }
 
 private:
-    std::atomic<int> pendingWrites_{0};
-
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
@@ -585,6 +567,23 @@ private:
             Throw<std::runtime_error>(s.str());
         }
     }
+
+    // "appnum" is an application-defined constant stored in the header of a
+    // NuDB database. We used it to identify shard databases before that code
+    // was removed. For now, its only use is a sanity check that the database
+    // was created by xrpld.
+    static constexpr std::uint64_t appnum = 1;
+
+    beast::Journal const j_;
+    size_t const keyBytes_;
+    std::size_t const burstSize_;
+    std::string const name_;
+    std::size_t const blockSize_;
+    nudb::store db_;
+    std::atomic<bool> deletePath_;
+    Scheduler& scheduler_;
+    std::atomic<int> pendingWrites_{0};
+    boost::asio::thread_pool threadPool_;
 };
 
 //------------------------------------------------------------------------------
