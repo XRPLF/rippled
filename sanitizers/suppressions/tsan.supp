@@ -49,6 +49,12 @@ deadlock:RCLConsensus
 deadlock:LedgerReplayTask
 deadlock:LedgerDeltaAcquire
 
+# Data race on LedgerHeader::validated (bool mutable).
+# This is a monotonic flag (false→true, never back) set by LedgerMaster
+# worker threads and read by test/RPC code. Benign but technically UB.
+# Proper fix: make validated std::atomic<bool>.
+race:Ledger::setValidated
+
 # Signal/crash suppressions for GCC TSAN instrumentation issues
 signal:std::__cxx11::basic_stringbuf
 signal:basic_stringbuf
