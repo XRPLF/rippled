@@ -1840,11 +1840,17 @@ class MPToken_test : public beast::unit_test::suite
                 if (withAmount)
                     jv[field.fieldName] = USD(10).value().getJson(JsonOptions::none);
                 if (field == sfAsset)
+                {
                     jv[jss::Asset] = to_json(mpt.get<MPTIssue>());
+                }
                 else if (field == sfAsset2)
+                {
                     jv[jss::Asset2] = to_json(mpt.get<MPTIssue>());
+                }
                 else
+                {
                     jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                }
             };
             // All transactions with sfAmount, which don't support MPT.
             // Transactions with amount fields, which can't be MPT.

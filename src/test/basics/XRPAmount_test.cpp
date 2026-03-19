@@ -16,11 +16,17 @@ public:
             XRPAmount const x(i);
 
             if (i < 0)
+            {
                 BEAST_EXPECT(x.signum() < 0);
+            }
             else if (i > 0)
+            {
                 BEAST_EXPECT(x.signum() > 0);
+            }
             else
+            {
                 BEAST_EXPECT(x.signum() == 0);
+            }
         }
     }
 
@@ -121,7 +127,7 @@ public:
         // since some of them are templated, but not used anywhere else.
         auto make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
 
-        XRPAmount defaulted;
+        XRPAmount defaulted{};
         (void)defaulted;
         XRPAmount test{0};
         BEAST_EXPECT(test.drops() == 0);
@@ -154,7 +160,7 @@ public:
         BEAST_EXPECT(test.drops() == 200);
         auto testOther = test.dropsAs<std::uint32_t>();
         BEAST_EXPECT(testOther);
-        BEAST_EXPECT(*testOther == 200);
+        BEAST_EXPECT(*testOther == 200);  // NOLINT(bugprone-unchecked-optional-access)
         test = std::numeric_limits<std::uint64_t>::max();
         testOther = test.dropsAs<std::uint32_t>();
         BEAST_EXPECT(!testOther);

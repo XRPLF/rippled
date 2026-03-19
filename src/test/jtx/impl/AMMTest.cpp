@@ -82,18 +82,17 @@ AMMTestBase::AMMTestBase()
 
 void
 AMMTestBase::testAMM(
-    std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+    std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
     std::optional<std::pair<STAmount, STAmount>> const& pool,
     std::uint16_t tfee,
     std::optional<jtx::ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
-    testAMM(
-        std::move(cb), TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
+    testAMM(cb, TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
 }
 
 void
-AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg const& arg)
+AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg)
 {
     using namespace jtx;
 
@@ -130,11 +129,17 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg 
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
         if (!asset1.native() && !asset2.native())
+        {
             fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
+        {
             fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        }
         else if (asset2.native())
+        {
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        }
 
         AMM ammAlice(
             env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
@@ -264,6 +269,7 @@ AMMTest::find_paths(
                 Json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 paths = po.object->getFieldPathSet(sfPaths);
             }
         }

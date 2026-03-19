@@ -2,15 +2,6 @@
 #
 # ASAN_OPTIONS="print_stacktrace=1:detect_container_overflow=0:suppressions=sanitizers/suppressions/asan.supp:halt_on_error=0"
 
-# Leaks in Doctest tests: xrpl.test.*
-interceptor_name:src/libxrpl/net/HTTPClient.cpp
-interceptor_name:src/libxrpl/net/RegisterSSLCerts.cpp
-interceptor_name:src/tests/libxrpl/net/HTTPClient.cpp
-interceptor_name:xrpl/net/AutoSocket.h
-interceptor_name:xrpl/net/HTTPClient.h
-interceptor_name:xrpl/net/HTTPClientSSLContext.h
-interceptor_name:xrpl/net/RegisterSSLCerts.h
-
 # Suppress false positive stack-buffer errors in thread stack allocation
 # Related to ASan's __asan_handle_no_return warnings (github.com/google/sanitizers/issues/189)
 # These occur during multi-threaded test initialization on macOS

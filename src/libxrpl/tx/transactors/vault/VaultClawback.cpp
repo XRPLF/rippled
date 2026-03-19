@@ -27,8 +27,10 @@ VaultClawback::preflight(PreflightContext const& ctx)
     {
         // Note, zero amount is valid, it means "all". It is also the default.
         if (*amount < beast::zero)
+        {
             return temBAD_AMOUNT;
-        else if (isXRP(amount->asset()))
+        }
+        if (isXRP(amount->asset()))
         {
             JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
             return temMALFORMED;
