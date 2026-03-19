@@ -1,0 +1,7 @@
+name: Check PR commits
+
+on: pull_request
+
+jobs:
+  check_commits:
+    uses: XRPLF/actions/.github/workflows/check-pr-commits.yml@481048b78b94ac3343d1292b4ef125a813879f2b
