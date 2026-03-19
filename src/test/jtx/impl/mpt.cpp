@@ -1246,7 +1246,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
     std::optional<Buffer> auditorAmt;
     if (arg.auditorEncryptedAmt)
         auditorAmt = arg.auditorEncryptedAmt;
-    else if (auditor_.has_value())
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
         auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
 
     jv[sfSenderEncryptedAmount] = strHex(senderAmt);
@@ -1309,6 +1309,20 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const balanceBlindingFactor = generateBlindingFactor();
     if (arg.balanceCommitment)
         balanceCommitment = *arg.balanceCommitment;
+    else if (*prevSenderSpending == 0)
+    {
+        // getPedersenCommitment(0,...) returns a fake off-curve point that
+        // fails isValidCompressedECPoint in preflight. For spending=0,
+        // PC = 0*H + r*G = r*G — compute it directly, so we can past test
+        secp256k1_pubkey pt;
+        auto const sCtx = secp256k1Context();
+        if (secp256k1_ec_pubkey_create(sCtx, &pt, balanceBlindingFactor.data()) != 1)
+            Throw<std::runtime_error>("Failed to create balance commitment for zero balance");
+        balanceCommitment = Buffer(ecPedersenCommitmentLength);
+        size_t len = ecPedersenCommitmentLength;
+        secp256k1_ec_pubkey_serialize(
+            sCtx, balanceCommitment.data(), &len, &pt, SECP256K1_EC_COMPRESSED);
+    }
     else
         balanceCommitment = getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
 
@@ -1358,10 +1372,11 @@ MPTTester::send(MPTConfidentialSend const& arg)
         std::optional<Buffer> proof;
 
         // Skip proof generation if encrypted balance is missing (e.g.,
-        // feature disabled), or when the sender and destination are the
-        // same (malformed case causing pcm to be zero). This prevents a
-        // crash and allows certain error cases to be tested.
-        if (arg.account != arg.dest && prevEncryptedSenderSpending)
+        // feature disabled), when the sender and destination are the same
+        // (malformed case causing pcm to be zero), or when spending balance
+        // is 0 (getPedersenCommitment returns a fake commitment for 0 that
+        // causes getBalanceLinkageProof to throw).
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
                 *arg.account,
@@ -1481,6 +1496,172 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 [&]() -> bool { return *postDestAuditor == *prevDestAuditor + *arg.amt; }));
         }
     }
+}
+
+Json::Value
+MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialMPTSend;
+
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+
+    if (arg.dest)
+        jv[sfDestination] = arg.dest->human();
+    else
+        Throw<std::runtime_error>("Destination not specified");
+
+    if (!arg.amt)
+        Throw<std::runtime_error>("Amount not specified for testing purposes");
+
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    Buffer const blindingFactor =
+        arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+
+    auto const senderAmt = arg.senderEncryptedAmt
+        ? *arg.senderEncryptedAmt
+        : encryptAmount(*arg.account, *arg.amt, blindingFactor);
+    auto const destAmt = arg.destEncryptedAmt ? *arg.destEncryptedAmt
+                                              : encryptAmount(*arg.dest, *arg.amt, blindingFactor);
+    auto const issuerAmt = arg.issuerEncryptedAmt
+        ? *arg.issuerEncryptedAmt
+        : encryptAmount(issuer_, *arg.amt, blindingFactor);
+
+    std::optional<Buffer> auditorAmt;
+    if (arg.auditorEncryptedAmt)
+        auditorAmt = arg.auditorEncryptedAmt;
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+
+    jv[sfSenderEncryptedAmount] = strHex(senderAmt);
+    jv[sfDestinationEncryptedAmount] = strHex(destAmt);
+    jv[sfIssuerEncryptedAmount] = strHex(issuerAmt);
+    if (auditorAmt)
+        jv[sfAuditorEncryptedAmount] = strHex(*auditorAmt);
+
+    if (arg.credentials)
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : *arg.credentials)
+            arr.append(hash);
+    }
+
+    auto const prevSenderSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    if (!prevSenderSpending)
+        Throw<std::runtime_error>("Failed to get sender spending balance");
+
+    Buffer amountCommitment, balanceCommitment;
+    auto const amountBlindingFactor = generateBlindingFactor();
+    if (arg.amountCommitment)
+        amountCommitment = *arg.amountCommitment;
+    else
+        amountCommitment = getPedersenCommitment(*arg.amt, amountBlindingFactor);
+
+    jv[sfAmountCommitment] = strHex(amountCommitment);
+
+    auto const balanceBlindingFactor = generateBlindingFactor();
+    if (arg.balanceCommitment)
+        balanceCommitment = *arg.balanceCommitment;
+    else if (*prevSenderSpending == 0)
+    {
+        // getPedersenCommitment(0,...) returns a fake off-curve point that
+        // fails isValidCompressedECPoint in preflight.  For spending=0,
+        // PC = 0*H + r*G = r*G — compute it directly.
+        secp256k1_pubkey pt;
+        auto const sCtx = secp256k1Context();
+        if (secp256k1_ec_pubkey_create(sCtx, &pt, balanceBlindingFactor.data()) != 1)
+            Throw<std::runtime_error>("Failed to create balance commitment for zero balance");
+        balanceCommitment = Buffer(ecPedersenCommitmentLength);
+        size_t len = ecPedersenCommitmentLength;
+        secp256k1_ec_pubkey_serialize(
+            sCtx, balanceCommitment.data(), &len, &pt, SECP256K1_EC_COMPRESSED);
+    }
+    else
+        balanceCommitment = getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
+
+    jv[sfBalanceCommitment] = strHex(balanceCommitment);
+
+    if (arg.proof)
+        jv[sfZKProof.jsonName] = *arg.proof;
+    else
+    {
+        auto const version = getMPTokenVersion(*arg.account);
+        auto const ctxHash =
+            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
+
+        auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
+        std::vector<ConfidentialRecipient> recipients;
+
+        auto const senderPubKey = getPubKey(*arg.account);
+        auto const destPubKey = getPubKey(*arg.dest);
+        auto const issuerPubKey = getPubKey(issuer_);
+
+        if (senderPubKey)
+            recipients.push_back({Slice(*senderPubKey), senderAmt});
+        if (destPubKey)
+            recipients.push_back({Slice(*destPubKey), destAmt});
+        if (issuerPubKey)
+            recipients.push_back({Slice(*issuerPubKey), issuerAmt});
+
+        std::optional<Buffer> auditorPubKey;
+        if (auditorAmt)
+        {
+            if (!auditor_)
+                Throw<std::runtime_error>("Auditor not registered");
+            auditorPubKey = getPubKey(*auditor_);
+            if (auditorPubKey)
+                recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
+        }
+
+        auto const prevEncryptedSenderSpending =
+            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        std::optional<Buffer> proof;
+        // Skip proof generation when spending balance is 0: getPedersenCommitment
+        // returns a fake commitment for 0 that causes getBalanceLinkageProof to throw.
+        // The dummy zero proof will cause ledger rejection as expected.
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
+        {
+            proof = getConfidentialSendProof(
+                *arg.account,
+                *arg.amt,
+                recipients,
+                blindingFactor,
+                nRecipients,
+                ctxHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = *arg.amt,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = amountBlindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSenderSpending,
+                 .encryptedAmt = *prevEncryptedSenderSpending,
+                 .blindingFactor = balanceBlindingFactor});
+        }
+
+        if (proof)
+            jv[sfZKProof.jsonName] = strHex(*proof);
+        else
+        {
+            size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
+            size_t const dummySize =
+                sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(dummySize));
+        }
+    }
+
+    return jv;
 }
 
 void
@@ -1672,6 +1853,26 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
 
     return decryptAmount(decryptor, *encryptedAmt);
 };
+
+Json::Value
+MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
+{
+    Json::Value jv;
+    if (arg.account)
+        jv[sfAccount] = arg.account->human();
+    else
+        Throw<std::runtime_error>("Account not specified");
+    if (arg.id)
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
+    return jv;
+}
 
 void
 MPTTester::mergeInbox(MPTMergeInbox const& arg)

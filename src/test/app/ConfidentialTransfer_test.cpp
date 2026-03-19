@@ -5882,7 +5882,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
-    // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
+        // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
     void
@@ -6088,6 +6088,398 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.mergeInbox({.account = bob, .ticketSeq = 1, .err = tefNO_TICKET});
     }
 
+    // Set up an MPT environment suitable for batch testing.
+    // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
+    // 'carolAmt' in confidential spending; dave is initialised with pubkey but
+    // zero spending/inbox.
+    void
+    setupBatchEnv(
+        test::jtx::MPTTester& mpt,
+        test::jtx::Account const& alice,
+        test::jtx::Account const& bob,
+        test::jtx::Account const& carol,
+        test::jtx::Account const& dave,
+        std::uint64_t bobAmt,
+        std::uint64_t carolAmt)
+    {
+        using namespace test::jtx;
+        mpt.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mpt.authorize({.account = bob});
+        mpt.authorize({.account = carol});
+        mpt.authorize({.account = dave});
+
+        if (bobAmt > 0)
+            mpt.pay(alice, bob, bobAmt);
+        if (carolAmt > 0)
+            mpt.pay(alice, carol, carolAmt);
+
+        mpt.generateKeyPair(alice);
+        mpt.generateKeyPair(bob);
+        mpt.generateKeyPair(carol);
+        mpt.generateKeyPair(dave);
+
+        mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
+
+        if (bobAmt > 0)
+        {
+            mpt.convert({.account = bob, .amt = bobAmt, .holderPubKey = mpt.getPubKey(bob)});
+            mpt.mergeInbox({.account = bob});
+        }
+        else
+        {
+            mpt.convert({.account = bob, .amt = 0, .holderPubKey = mpt.getPubKey(bob)});
+        }
+
+        if (carolAmt > 0)
+        {
+            mpt.convert({.account = carol, .amt = carolAmt, .holderPubKey = mpt.getPubKey(carol)});
+            mpt.mergeInbox({.account = carol});
+        }
+        else
+        {
+            mpt.convert({.account = carol, .amt = 0, .holderPubKey = mpt.getPubKey(carol)});
+        }
+
+        // dave: register pubkey only (0 spending/inbox)
+        mpt.convert({.account = dave, .amt = 0, .holderPubKey = mpt.getPubKey(dave)});
+    }
+
+    // A sends B 100, B merges inbox, B sends C 50, all in a single batch.
+    // Inner 3 (B sends C) fails because B's proof is built with spending=0
+    //
+    // Also tests Bob sending to two recipients (Carol and Dave) in a single
+    // batch.  Even though Bob has enough balance for both, the second send's
+    // balance-linkage proof becomes stale once inner 1 updates Bob's encrypted
+    // spending, so fails
+    void
+    testBatchConfidentialSend(FeatureBitset features)
+    {
+        testcase("Batch confidential send - merge inbox dependency");
+        using namespace test::jtx;
+
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            // bob = A (100 spending), carol = B (0), dave = C (0)
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
+
+            // Build the batch:
+            //   Inner 1 (bob→carol 100)  : valid proof, bob spending=100
+            //   Inner 2 (carol mergeInbox): valid JV
+            //   Inner 3 (carol→dave 50)  : INVALID
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            // 3 signers, Bob, Carol, Dave
+            auto const batchFee = batch::calcBatchFee(env, 1, 3);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
+            auto jv2 = mpt.mergeInboxJV({.account = carol});
+            auto jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 50}, carolSeq + 1);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::inner(jv3, carolSeq + 1),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // AllOrNothing: inner 3 fails
+            // bob's spending must remain 100; carol's inbox must remain 0.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+        }
+
+        // Bob sends to two recipients (Carol and Dave) in one batch.
+        // Bob has 150 — enough for both sends individually.  However, inner 1
+        // mutates Bob's encrypted spending on the ledger; inner 2 was built
+        // against the old enc(150) so its balance-linkage proof is stale.
+        //
+        // (tfAllOrNothing): inner 2 stale → entire batch rejected.
+        // (tfIndependent):  inner 1 applies, inner 2 fails (stale).
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 150, 0);
+
+            // tfAllOrNothing — stale inner 2 rejects the whole batch.
+            {
+                auto const bobSeq = env.seq(bob);
+                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+                auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+                auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
+
+                env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                    batch::inner(jv1, bobSeq + 1),
+                    batch::inner(jv2, bobSeq + 2),
+                    ter(tesSUCCESS));
+                env.close();
+
+                // Nothing applied: bob stays 150, carol and dave inbox stay 0.
+                BEAST_EXPECT(
+                    mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 150);
+                BEAST_EXPECT(
+                    mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            }
+
+            // Sub-case B: tfIndependent — inner 1 applies, inner 2 fails (stale).
+            {
+                auto const bobSeq = env.seq(bob);
+                auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+                auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+                auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
+
+                env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
+                    batch::inner(jv1, bobSeq + 1),
+                    batch::inner(jv2, bobSeq + 2),
+                    ter(tesSUCCESS));
+                env.close();
+
+                // inner 1 applied: bob 150→100, carol inbox 0→50
+                BEAST_EXPECT(
+                    mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+                BEAST_EXPECT(
+                    mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 50);
+                // inner 2 stale proof: dave gets nothing
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+            }
+        }
+    }
+
+    void
+    testBatchAllOrNothing(FeatureBitset features)
+    {
+        testcase("Batch confidential MPT - all or nothing");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+        // bob=100 spending, carol=60 spending, dave=0
+        setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+        // bob sends dave 10, carol sends dave 5 — independent, both valid.
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Both applied: bob 100→90, carol 60→55, dave inbox 0→15
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+        }
+    }
+
+    void
+    testBatchOnlyOne(FeatureBitset features)
+    {
+        testcase("Batch confidential MPT - only one");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+        // bob=100 spending, carol=60 spending, dave=0
+        setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+        // bob sends dave 200 (invalid), carol sends dave 300 (invalid)
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Both proofs fail range check (amount > balance)
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // No success found → nothing applied; balances unchanged
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+        }
+
+        // bob sends dave 200 (invalid), carol sends dave 5 (valid)
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Only carol's send applied: carol 60→55, dave inbox 0→5, bob unchanged
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 5);
+        }
+    }
+
+    void
+    testBatchUntilFailure(FeatureBitset features)
+    {
+        testcase("Batch confidential MPT - until failure");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+        // bob=100 spending, carol=60 spending, dave=0
+        setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+        // first fails → none applied
+        // bob sends dave 200 (invalid — stops immediately)
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 60);
+        }
+
+        // bob sends dave 10, carol sends dave 5 — both valid and independent
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Both applied: bob 100→90, carol 60→55, dave inbox 0→15
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+        }
+    }
+
+    void
+    testBatchIndependent(FeatureBitset features)
+    {
+        testcase("Batch confidential MPT - independent");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+
+        MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+        // bob=100 spending, carol=60 spending, dave=0
+        setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
+
+        // bob sends dave 10 (valid), carol sends dave 300
+        // (invalid), carol sends dave 5 (valid). Carol's
+        // state is still 60 because the preceding send failed).
+        {
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const batchFee = batch::calcBatchFee(env, 1, 3);
+
+            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+            // Range proof fails (300 > 60); dummy proof → tecBAD_PROOF
+            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
+            // Built from carol's actual state (spending=60); valid proof.
+            // carol's version is unchanged after jv2 fails, so context hash matches.
+            auto jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq + 1);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
+                batch::inner(jv1, bobSeq + 1),
+                batch::inner(jv2, carolSeq),
+                batch::inner(jv3, carolSeq + 1),
+                batch::sig(carol),
+                ter(tesSUCCESS));
+            env.close();
+
+            // inner 1 (bob→dave 10) applied: bob 100→90
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
+            // inner 2 failed (carol not changed), inner 3 applied: carol 60→55
+            BEAST_EXPECT(
+                mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
+            // dave inbox: 10 (from bob) + 5 (from carol inner 3) = 15
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 15);
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -6145,6 +6537,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testWithTickets(features);
         testConvertTicketProofBinding(features);
         testTicketErrors(features);
+
+        // Batch Tests
+        testBatchConfidentialSend(features);
+        testBatchAllOrNothing(features);
+        testBatchOnlyOne(features);
+        testBatchUntilFailure(features);
+        testBatchIndependent(features);
     }
 
 public:

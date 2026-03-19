@@ -230,6 +230,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> destEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
     std::optional<std::vector<std::string>> credentials = std::nullopt;
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
@@ -349,8 +350,14 @@ public:
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
+    Json::Value
+    mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
+
     void
     send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
+
+    Json::Value
+    sendJV(MPTConfidentialSend const& arg, std::uint32_t seq);
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
