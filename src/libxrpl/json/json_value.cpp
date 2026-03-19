@@ -745,7 +745,7 @@ Value::isConvertibleTo(ValueType other) const
                 other == realValue || other == stringValue || other == booleanValue;
 
         case booleanValue:
-            return (other == nullValue && value_.bool_ == false) || other == intValue ||
+            return (other == nullValue && !value_.bool_) || other == intValue ||
                 other == uintValue || other == realValue || other == stringValue ||
                 other == booleanValue;
 

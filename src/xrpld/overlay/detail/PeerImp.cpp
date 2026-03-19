@@ -1509,7 +1509,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
     else if (
-        !m->has_ledgerhash() && !m->has_ledgerseq() && !(ltype && *ltype == protocol::ltCLOSED))
+        !m->has_ledgerhash() && !m->has_ledgerseq() && (!ltype || *ltype != protocol::ltCLOSED))
     {
         badData("Invalid request");
         return;

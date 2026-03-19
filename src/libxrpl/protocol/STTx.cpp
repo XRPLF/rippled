@@ -574,7 +574,7 @@ STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
-        getFieldArray(sfRawTransactions).size() != 0,
+        !getFieldArray(sfRawTransactions).empty(),
         "STTx::getBatchTransactionIDs : empty raw transactions");
 
     // The list of inner ids is built once, then reused on subsequent calls.

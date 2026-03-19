@@ -3196,7 +3196,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
             bool const issuerHigh = issuerId > account;
             return line->isFlag(issuerHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
-        return sleIssuer->isFlag(lsfDefaultRipple) == false;
+        return !sleIssuer->isFlag(lsfDefaultRipple);
     };
 
     // Fail if rippling disabled on both trust lines

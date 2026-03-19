@@ -72,7 +72,7 @@ class AMMCalc_test : public beast::unit_test::suite
             // input is rate * 100, no fraction
             std::uint32_t rate = 10'000'000 * std::stoi(match[2].str());
             // true if delimited - )
-            return {{currency, rate, match[3] != "" ? true : false}};
+            return {{currency, rate, match[3] != ""}};
         }
         return std::nullopt;
     }
@@ -94,7 +94,7 @@ class AMMCalc_test : public beast::unit_test::suite
         if (p == end_)
             return std::nullopt;
         std::string const s = *p;
-        bool const amm = s[0] == 'O' ? false : true;
+        bool const amm = s[0] != 'O';
         auto const a1 = getAmt(p++);
         if (!a1 || p == end_)
             return std::nullopt;

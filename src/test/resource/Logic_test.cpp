@@ -182,7 +182,7 @@ public:
                 }
             }
         }
-        if (readmitted == false)
+        if (!readmitted)
         {
             fail("Dropped Consumer left on blacklist too long");
             return;

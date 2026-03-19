@@ -17,10 +17,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !(authCredPresent && !ctx.rules.enabled(featureCredentials));
 }
 
 NotTEC

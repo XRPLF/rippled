@@ -232,9 +232,7 @@ public:
     bool
     supportsFeature(ProtocolFeature f) const override
     {
-        if (f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_)
-            return true;
-        return false;
+        return f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_;
     }
     std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
@@ -752,9 +750,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -771,9 +767,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -1066,10 +1060,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             auto http_resp = xrpl::makeResponse(
                 true, http_request, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
             auto const clientResult = peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
-            if (clientResult != expecting)
-                return false;
-
-            return true;
+            return clientResult == expecting;
         };
 
         BEAST_EXPECT(handshake(false, false, false));

@@ -877,10 +877,7 @@ STObject::operator==(STObject const& obj) const
             ++fields;
     }
 
-    if (fields != matches)
-        return false;
-
-    return true;
+    return fields == matches;
 }
 
 void

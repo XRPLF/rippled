@@ -505,14 +505,11 @@ canAdd(STAmount const& a, STAmount const& b)
         XRPAmount A = a.xrp();
         XRPAmount B = b.xrp();
 
-        if ((B > XRPAmount{0} &&
+        return !(
+            (B > XRPAmount{0} &&
              A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} - B) ||
             (B < XRPAmount{0} &&
-             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - B))
-        {
-            return false;
-        }
-        return true;
+             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} - B));
     }
 
     // IOU case (precision check)
@@ -530,15 +527,11 @@ canAdd(STAmount const& a, STAmount const& b)
     {
         MPTAmount A = a.mpt();
         MPTAmount B = b.mpt();
-        if ((B > MPTAmount{0} &&
+        return !(
+            (B > MPTAmount{0} &&
              A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
             (B < MPTAmount{0} &&
-             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B))
-        {
-            return false;
-        }
-
-        return true;
+             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B));
     }
     // LCOV_EXCL_START
     UNREACHABLE("STAmount::canAdd : unexpected STAmount type");

@@ -615,7 +615,7 @@ Pathfinder::getBestPaths(
             ++pathsIterator;
 
         auto iPathsLeft = maxPaths - bestPaths.size();
-        if (!(iPathsLeft > 0 || fullLiquidityPath.empty()))
+        if (iPathsLeft <= 0 && !fullLiquidityPath.empty())
             break;
 
         if (path.empty())

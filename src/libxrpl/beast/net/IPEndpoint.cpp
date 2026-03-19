@@ -145,7 +145,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
     if (readTo == ']' && is.rdbuf()->in_avail() > 0)
     {
         is.get(i);
-        if (!(isspace(static_cast<unsigned char>(i)) || i == ':'))
+        if (!isspace(static_cast<unsigned char>(i)) && i != ':')
         {
             is.unget();
             is.setstate(std::ios_base::failbit);

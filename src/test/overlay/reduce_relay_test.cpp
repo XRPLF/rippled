@@ -886,7 +886,7 @@ protected:
         std::optional<std::uint32_t> duration)
     {
         protocol::TMSquelch squelch;
-        bool res = duration ? true : false;
+        bool res = static_cast<bool>(duration);
         squelch.set_squelch(res);
         squelch.set_validatorpubkey(validator.data(), validator.size());
         if (res)
@@ -1004,8 +1004,8 @@ protected:
                 // take place because there is no peers in Squelched state in
                 // any of the slots where the peer is in Selected state
                 // (allCounting is true)
-                bool handled = (event.isSelected_ == false && !event.handled_) ||
-                    (event.isSelected_ == true && (event.handled_ || allCounting));
+                bool handled = (!event.isSelected_ && !event.handled_) ||
+                    (event.isSelected_ && (event.handled_ || allCounting));
                 BEAST_EXPECT(handled);
                 event.state_ = State::Off;
                 event.isSelected_ = false;

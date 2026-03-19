@@ -546,11 +546,10 @@ private:
                 jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0" &&
                 jv.isMember(jss::id) && jv.isMember(jss::method))
             {
-                if (jv.isMember(jss::params) &&
+                return !(
+                    jv.isMember(jss::params) &&
                     !(jv[jss::params].isNull() || jv[jss::params].isArray() ||
-                      jv[jss::params].isObject()))
-                    return false;
-                return true;
+                      jv[jss::params].isObject()));
             }
         }
         return false;
