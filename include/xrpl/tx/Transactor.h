@@ -129,7 +129,7 @@ protected:
     beast::Journal const j_;
 
     AccountID const account_;
-    XRPAmount preFeeBalance_;  // Balance before fees.
+    XRPAmount preFeeBalance_{};  // Balance before fees.
 
     virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
@@ -227,7 +227,7 @@ public:
     checkSponsor(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     ticketDelete(
         ApplyView& view,

@@ -33,15 +33,19 @@ getMaxSourceAmount(
     std::optional<STAmount> const& sendMax)
 {
     if (sendMax)
+    {
         return *sendMax;
-    else if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    }
+    if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    {
         return dstAmount;
-    else
-        return STAmount(
-            Issue{dstAmount.get<Issue>().currency, account},
-            dstAmount.mantissa(),
-            dstAmount.exponent(),
-            dstAmount < beast::zero);
+    }
+
+    return STAmount(
+        Issue{dstAmount.get<Issue>().currency, account},
+        dstAmount.mantissa(),
+        dstAmount.exponent(),
+        dstAmount < beast::zero);
 }
 
 bool
@@ -243,7 +247,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
+    if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
@@ -294,7 +298,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        else if (ctx.view.open() && partialPaymentAllowed)
+        if (ctx.view.open() && partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -305,7 +309,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (txFlags & tfSponsorCreatedAccount)
+        if (txFlags & tfSponsorCreatedAccount)
         {
             // The minimum amount when creating a Sponsored Account is 1 drop.
             // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment
@@ -475,12 +479,16 @@ Payment::doApply()
 
         // TODO: is this right?  If the amount is the correct amount, was
         // the delivered amount previously set?
-        if (rc.result() == tesSUCCESS && rc.actualAmountOut != dstAmount)
+        if (isTesSuccess(rc.result()) && rc.actualAmountOut != dstAmount)
         {
             if (deliverMin && rc.actualAmountOut < *deliverMin)
+            {
                 rc.setResult(tecPATH_PARTIAL);
+            }
             else
+            {
                 ctx_.deliver(rc.actualAmountOut);
+            }
         }
 
         auto terResult = rc.result();
@@ -493,19 +501,19 @@ Payment::doApply()
             terResult = tecPATH_DRY;
         return terResult;
     }
-    else if (mptDirect)
+    if (mptDirect)
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, account_); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); ter != tesSUCCESS)
+        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
             return ter;
 
         if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
-            ter != tesSUCCESS)
+            !isTesSuccess(ter))
             return ter;
 
         if (auto err = verifyDepositPreauth(
@@ -553,7 +561,7 @@ Payment::doApply()
 
         PaymentSandbox pv(&view());
         auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
-        if (res == tesSUCCESS)
+        if (isTesSuccess(res))
         {
             pv.apply(ctx_.rawView());
 
@@ -564,7 +572,9 @@ Payment::doApply()
                 ctx_.deliver(amountDeliver);
         }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
+        {
             res = tecPATH_PARTIAL;
+        }
 
         return res;
     }

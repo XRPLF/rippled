@@ -101,7 +101,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
                 return err;
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     // Source MPToken must exist (if asset is an MPT)
@@ -202,8 +204,10 @@ VaultDeposit::doApply()
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount)
+        }
+        if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";

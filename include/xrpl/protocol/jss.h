@@ -112,6 +112,7 @@ JSS(accounts);                // in: LedgerEntry, Subscribe,
                               //     handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);       // in: Subscribe, Unsubscribe
 JSS(action);
+JSS(active);                  // out: OverlayImpl
 JSS(acquiring);               // out: LedgerRequest
 JSS(address);                 // out: PeerImp
 JSS(affected);                // out: AcceptedLedgerTx
@@ -300,6 +301,7 @@ JSS(id);                      // websocket.
 JSS(ident);                   // in: AccountCurrencies, AccountInfo,
                               //     OwnerInfo
 JSS(ignore_default);          // in: AccountLines
+JSS(in);                      // out: OverlayImpl
 JSS(inLedger);                // out: tx/Transaction
 JSS(inbound);                 // out: PeerImp
 JSS(index);                   // in: LedgerEntry
@@ -464,6 +466,7 @@ JSS(open_ledger_level);       // out: TxQ
 JSS(optionality);             // out: server_definitions
 JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
+JSS(out);                     // out: OverlayImpl
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);             // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS(page_index);

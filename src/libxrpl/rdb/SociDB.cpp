@@ -81,9 +81,13 @@ void
 open(soci::session& s, std::string const& beName, std::string const& connectionString)
 {
     if (beName == "sqlite")
+    {
         s.open(soci::sqlite3, connectionString);
+    }
     else
+    {
         Throw<std::runtime_error>("Unsupported soci backend: " + beName);
+    }
 }
 
 static sqlite_api::sqlite3*
@@ -143,18 +147,26 @@ void
 convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, reinterpret_cast<char const*>(&from[0]), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 void
 convert(std::string const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, from.data(), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 namespace {

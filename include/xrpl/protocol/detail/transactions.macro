@@ -76,7 +76,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
 
 /** This transaction type adjusts various account settings. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/SetAccount.h>
+#   include <xrpl/tx/transactors/account/AccountSet.h>
 #endif
 TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
     Delegation::notDelegable,
@@ -124,7 +124,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 
 /** This transaction type creates an offer to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/dex/CreateOffer.h>
+#   include <xrpl/tx/transactors/dex/OfferCreate.h>
 #endif
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     Delegation::delegable,
@@ -140,7 +140,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
 
 /** This transaction type cancels existing offers to trade one asset for another. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/dex/CancelOffer.h>
+#   include <xrpl/tx/transactors/dex/OfferCancel.h>
 #endif
 TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
     Delegation::delegable,
@@ -154,7 +154,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
 
 /** This transaction type creates a new set of tickets. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/system/CreateTicket.h>
+#   include <xrpl/tx/transactors/system/TicketCreate.h>
 #endif
 TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegable,
@@ -170,7 +170,7 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
 // The SignerEntries are optional because a SignerList is deleted by
 // setting the SignerQuorum to zero and omitting SignerEntries.
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/SetSignerList.h>
+#   include <xrpl/tx/transactors/account/SignerListSet.h>
 #endif
 TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     Delegation::notDelegable,
@@ -183,7 +183,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/payment_channel/PayChanCreate.h>
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegable,
@@ -200,7 +200,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
 
 /** This transaction type funds an existing unidirectional XRP payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/payment_channel/PayChanFund.h>
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 #endif
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
     Delegation::delegable,
@@ -214,7 +214,7 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
 
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/payment_channel/PayChanClaim.h>
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
 #endif
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
     Delegation::delegable,
@@ -231,7 +231,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
 
 /** This transaction type creates a new check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/check/CreateCheck.h>
+#   include <xrpl/tx/transactors/check/CheckCreate.h>
 #endif
 TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     Delegation::delegable,
@@ -247,7 +247,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
 
 /** This transaction type cashes an existing check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/check/CashCheck.h>
+#   include <xrpl/tx/transactors/check/CheckCash.h>
 #endif
 TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     Delegation::delegable,
@@ -261,7 +261,7 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
 
 /** This transaction type cancels an existing check. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/check/CancelCheck.h>
+#   include <xrpl/tx/transactors/check/CheckCancel.h>
 #endif
 TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
     Delegation::delegable,
@@ -288,7 +288,7 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
 
 /** This transaction type modifies a trustline between two accounts. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/token/SetTrust.h>
+#   include <xrpl/tx/transactors/token/TrustSet.h>
 #endif
 TRANSACTION(ttTRUST_SET, 20, TrustSet,
     Delegation::delegable,
@@ -302,7 +302,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
 
 /** This transaction type deletes an existing account. */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/account/DeleteAccount.h>
+#   include <xrpl/tx/transactors/account/AccountDelete.h>
 #endif
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegable,
@@ -650,7 +650,7 @@ TRANSACTION(ttDID_DELETE, 50, DIDDelete,
 
 /** This transaction type creates an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/oracle/SetOracle.h>
+#   include <xrpl/tx/transactors/oracle/OracleSet.h>
 #endif
 TRANSACTION(ttORACLE_SET, 51, OracleSet,
     Delegation::delegable,
@@ -667,7 +667,7 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet,
 
 /** This transaction type deletes an Oracle instance */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/oracle/DeleteOracle.h>
+#   include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #endif
 TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
     Delegation::delegable,

@@ -54,7 +54,7 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
         return *err;
 
@@ -145,9 +145,13 @@ doAccountNFTs(RPC::JsonContext& context)
         }
 
         if (auto npm = (*cp)[~sfNextPageMin])
+        {
             cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
+        }
         else
+        {
             cp = nullptr;
+        }
     }
 
     if (markerSet && !markerFound)
@@ -238,9 +242,13 @@ getAccountObjects(
             jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
+            {
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            }
             else
+            {
                 cp = nullptr;
+            }
 
             if (--mlimit == 0)
             {
@@ -449,13 +457,13 @@ doAccountObjects(RPC::JsonContext& context)
             rpcStatus.inject(result);
             return result;
         }
-        else if (type != ltANY)
+        if (type != ltANY)
         {
             typeFilter = std::vector<LedgerEntryType>({type});
         }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
         return *err;
 

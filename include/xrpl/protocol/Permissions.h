@@ -65,7 +65,7 @@ public:
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    std::optional<std::reference_wrapper<uint256 const>> const
+    std::optional<std::reference_wrapper<uint256 const>>
     getTxFeature(TxType txType) const;
 
     bool

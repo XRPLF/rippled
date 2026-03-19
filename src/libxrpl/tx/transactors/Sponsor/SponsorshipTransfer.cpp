@@ -7,7 +7,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/oracle/SetOracle.h>
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
 #include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 
 namespace xrpl {
@@ -177,7 +177,7 @@ getLedgerEntryOwnerCount(T const& sle)
     switch (sle->getType())
     {
         case ltORACLE: {
-            return SetOracle::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+            return OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
         }
         default:
             return 1;

@@ -58,7 +58,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 

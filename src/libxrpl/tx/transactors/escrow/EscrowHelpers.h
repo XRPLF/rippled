@@ -44,7 +44,6 @@ escrowUnlockApplyHelper<Issue>(
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
-    bool const issuerHigh = issuer > receiver;
 
     if (senderIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -52,7 +51,7 @@ escrowUnlockApplyHelper<Issue>(
     if (receiverIssuer)
         return tesSUCCESS;
 
-    if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
+    if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
         auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
@@ -136,12 +135,12 @@ escrowUnlockApplyHelper<Issue>(
         // if the issuer is the high, then we use the low limit
         // otherwise we use the high limit
         STAmount const lineLimit =
-            sleRippleState->getFieldAmount(issuerHigh ? sfLowLimit : sfHighLimit);
+            sleRippleState->getFieldAmount(recvLow ? sfLowLimit : sfHighLimit);
 
         STAmount lineBalance = sleRippleState->getFieldAmount(sfBalance);
 
         // flip the sign of the line balance if the issuer is not high
-        if (!issuerHigh)
+        if (!recvLow)
             lineBalance.negate();
 
         // add the final amount to the line balance
@@ -156,7 +155,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!receiverIssuer)
     {
         auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;

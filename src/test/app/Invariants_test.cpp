@@ -71,7 +71,7 @@ class Invariants_test : public beast::unit_test::suite
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None)
     {
-        return doInvariantCheck(
+        doInvariantCheck(
             test::jtx::Env(*this, defaultAmendments()),
             expect_logs,
             precheck,
@@ -105,11 +105,12 @@ class Invariants_test : public beast::unit_test::suite
         if (setTxAccount != TxAccount::None)
             tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? A1.id() : A2.id());
 
-        return doInvariantCheck(std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
+        doInvariantCheck(std::move(env), A1, A2, expect_logs, precheck, fee, tx, ters);
     }
 
     void
     doInvariantCheck(
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         test::jtx::Env&& env,
         test::jtx::Account const& A1,
         test::jtx::Account const& A2,
@@ -139,7 +140,7 @@ class Invariants_test : public beast::unit_test::suite
             BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
 
-            if (terActual != tesSUCCESS)
+            if (!isTesSuccess(terActual))
             {
                 BEAST_EXPECTS(
                     messages.starts_with("Invariant failed:") ||
@@ -394,22 +395,21 @@ class Invariants_test : public beast::unit_test::suite
                 for (auto const& trustKeylet :
                      {keylet::line(ammAcctID, A1["USD"]), keylet::line(A1, ammIssue)})
                 {
-                    if (auto const line = ac.view().peek(trustKeylet); !line)
+                    auto const line = ac.view().peek(trustKeylet);
+                    if (!line)
                     {
                         return false;
                     }
-                    else
-                    {
-                        STAmount const lowLimit = line->at(sfLowLimit);
-                        STAmount const highLimit = line->at(sfHighLimit);
-                        BEAST_EXPECT(
-                            trustDelete(
-                                ac.view(),
-                                line,
-                                lowLimit.getIssuer(),
-                                highLimit.getIssuer(),
-                                ac.journal) == tesSUCCESS);
-                    }
+
+                    STAmount const lowLimit = line->at(sfLowLimit);
+                    STAmount const highLimit = line->at(sfHighLimit);
+                    BEAST_EXPECT(
+                        trustDelete(
+                            ac.view(),
+                            line,
+                            lowLimit.getIssuer(),
+                            highLimit.getIssuer(),
+                            ac.journal) == tesSUCCESS);
                 }
 
                 auto const ammSle = ac.view().peek(keylet::amm(ammKey));
@@ -2274,14 +2274,16 @@ class Invariants_test : public beast::unit_test::suite
         };
         struct Adjustments
         {
-            std::optional<int> assetsTotal = {};
-            std::optional<int> assetsAvailable = {};
-            std::optional<int> lossUnrealized = {};
-            std::optional<int> assetsMaximum = {};
-            std::optional<int> sharesTotal = {};
-            std::optional<int> vaultAssets = {};
-            std::optional<AccountAmount> accountAssets = {};
-            std::optional<AccountAmount> accountShares = {};
+            // NOLINTBEGIN(readability-redundant-member-init)
+            std::optional<int> assetsTotal = std::nullopt;
+            std::optional<int> assetsAvailable = std::nullopt;
+            std::optional<int> lossUnrealized = std::nullopt;
+            std::optional<int> assetsMaximum = std::nullopt;
+            std::optional<int> sharesTotal = std::nullopt;
+            std::optional<int> vaultAssets = std::nullopt;
+            std::optional<AccountAmount> accountAssets = std::nullopt;
+            std::optional<AccountAmount> accountShares = std::nullopt;
+            // NOLINTEND(readability-redundant-member-init)
         };
         auto constexpr adjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
             auto sleVault = ac.peek(keylet);
@@ -2303,8 +2305,10 @@ class Invariants_test : public beast::unit_test::suite
             if (args.assetsTotal)
                 (*sleVault)[sfAssetsTotal] = *(*sleVault)[sfAssetsTotal] + *args.assetsTotal;
             if (args.assetsAvailable)
+            {
                 (*sleVault)[sfAssetsAvailable] =
                     *(*sleVault)[sfAssetsAvailable] + *args.assetsAvailable;
+            }
             ac.update(sleVault);
 
             if (args.sharesTotal)
@@ -2337,7 +2341,9 @@ class Invariants_test : public beast::unit_test::suite
                     ac.update(sleMPToken);
                 }
                 else
+                {
                     return false;  // Not supporting testing with IOU
+                }
             }
 
             if (args.accountAssets)
@@ -2361,7 +2367,9 @@ class Invariants_test : public beast::unit_test::suite
                     ac.update(sleMPToken);
                 }
                 else
+                {
                     return false;  // Not supporting testing with IOU
+                }
             }
 
             if (args.accountShares)

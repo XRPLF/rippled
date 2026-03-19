@@ -44,7 +44,7 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
     while (!sit.empty())
     {
-        int type, field;
+        int type = 0, field = 0;
         sit.getFieldID(type, field);
 
         if ((type == STI_ARRAY) && (field == 1))
