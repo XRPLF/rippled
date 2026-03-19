@@ -647,6 +647,14 @@ Config::loadFromString(std::string const& fileContents)
         PATH_SEARCH_FAST = beast::lexicalCastThrow<int>(strTemp);
     if (getSingleSection(secConfig, SECTION_PATH_SEARCH_MAX, strTemp, j_))
         PATH_SEARCH_MAX = beast::lexicalCastThrow<int>(strTemp);
+    if (getSingleSection(secConfig, SECTION_PATH_WORKERS, strTemp, j_))
+    {
+        PATH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+
+        if (PATH_WORKERS < 1)
+            Throw<std::runtime_error>("Invalid " SECTION_PATH_WORKERS
+                                      ": must be greater than or equal to 1.");
+    }
 
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE = strTemp;
@@ -667,6 +675,13 @@ Config::loadFromString(std::string const& fileContents)
         if (WORKERS < 1 || WORKERS > 1024)
             Throw<std::runtime_error>("Invalid " SECTION_WORKERS
                                       ": must be between 1 and 1024 inclusive.");
+
+        auto const maxUpdatePfLimit = std::max(1, WORKERS / 2);
+        if (PATH_WORKERS > maxUpdatePfLimit)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_PATH_WORKERS
+                ": must be less than or equal to half of " SECTION_WORKERS
+                " (minimum maximum of 1).");
     }
 
     if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))

@@ -47,6 +47,7 @@ struct ConfigSection
 #define SECTION_PATH_SEARCH "path_search"
 #define SECTION_PATH_SEARCH_FAST "path_search_fast"
 #define SECTION_PATH_SEARCH_MAX "path_search_max"
+#define SECTION_PATH_WORKERS "path_workers"
 #define SECTION_PEER_PRIVATE "peer_private"
 #define SECTION_PEERS_MAX "peers_max"
 #define SECTION_PEERS_IN_MAX "peers_in_max"
