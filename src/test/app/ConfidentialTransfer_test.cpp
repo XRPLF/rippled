@@ -6057,7 +6057,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         env.require(mptbalance(mptAlice, bob, 70));
     }
 
-    // Exercises ticket-specific error codes for CT transactions:
+    // Exercises ticket-specific error codes for confidential transfer transactions:
     // terPRE_TICKET when the ticket doesn't exist yet, and tefNO_TICKET when
     // the ticket has already been consumed or was never created.
     void
@@ -6086,8 +6086,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Give bob an inbox balance so MergeInbox has something to merge.
         mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob)});
 
-        // Use MergeInbox as the CT transaction under test so that ticket errors
-        // are isolated from cryptographic verification.
+        // Use MergeInbox as the confidential transfer transaction under test
+        // so that ticket errors are isolated from cryptographic verification.
 
         // terPRE_TICKET: ticket sequence is far in the future and hasn't been created.
         mptAlice.mergeInbox(

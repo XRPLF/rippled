@@ -528,20 +528,18 @@ private:
     TER
     submit(A const& arg, Json::Value const& jv)
     {
+        auto const expectedFlags = txflags(arg.flags.value_or(0));
+        auto const expectedTer = ter(arg.err.value_or(tesSUCCESS));
         if constexpr (requires { arg.ticketSeq; })
         {
             if (arg.ticketSeq)
-                env_(
-                    jv,
-                    txflags(arg.flags.value_or(0)),
-                    ter(arg.err.value_or(tesSUCCESS)),
-                    ticket::use(*arg.ticketSeq));
+                env_(jv, expectedFlags, expectedTer, ticket::use(*arg.ticketSeq));
             else
-                env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+                env_(jv, expectedFlags, expectedTer);
         }
         else
         {
-            env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+            env_(jv, expectedFlags, expectedTer);
         }
         auto const err = env_.ter();
         if (close_)

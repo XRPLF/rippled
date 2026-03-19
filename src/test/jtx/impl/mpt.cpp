@@ -1105,8 +1105,8 @@ MPTTester::convert(MPTConvert const& arg)
         // if fillSchnorrProof is explicitly set, follow its value;
         // otherwise, default to generating the proof only if holder pub key is
         // present.
-        auto const seqForHash = arg.ticketSeq.value_or(env_.seq(*arg.account));
-        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seqForHash);
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seq);
 
         auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
@@ -1320,9 +1320,9 @@ MPTTester::send(MPTConfidentialSend const& arg)
     else
     {
         auto const version = getMPTokenVersion(*arg.account);
-        auto const seqForHash = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
         auto const ctxHash =
-            getSendContextHash(arg.account->id(), *id_, seqForHash, arg.dest->id(), version);
+            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
         auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
@@ -1808,9 +1808,9 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
-        auto const seqForHash = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
         uint256 const contextHash =
-            getConvertBackContextHash(arg.account->id(), *id_, seqForHash, version);
+            getConvertBackContextHash(arg.account->id(), *id_, seq, version);
         auto const prevEncryptedSpendingBalance =
             getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
