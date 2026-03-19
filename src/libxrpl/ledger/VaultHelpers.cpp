@@ -10,6 +10,10 @@ namespace xrpl::vault {
 
 namespace detail {
 
+// Deposit uses NAV = assetsTotal - interestUnrealized (excludes loss).
+// Withdraw uses NAV = assetsTotal - interestUnrealized - lossUnrealized.
+// See XLS-0065 §3.1.7.1 "Share Valuation" for rationale.
+
 STAmount
 assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
 {
@@ -100,9 +104,6 @@ sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount c
 
 }  // namespace detail
 
-// v1 math is intentionally not factored out like v2. Since Single Asset Vault
-// is already released, refactoring v1 risks introducing behavioral changes in
-// production code that we cannot gate behind an amendment.
 namespace {
 namespace v1 {
 
@@ -181,10 +182,22 @@ validateVaultState(SLE::const_ref vault, SLE::const_ref issuance, beast::Journal
 
     Number const interestUnrealized = vault->at(sfInterestUnrealized);
     Number const lossUnrealized = vault->at(sfLossUnrealized);
-    Number const nav = assetTotal - interestUnrealized - lossUnrealized;
-    if (nav < 0)
+
+    // Deposit NAV excludes loss; withdrawal NAV excludes both.
+    // Deposit NAV <= 0 means all vault value is unrealized interest, which should be impossible.
+    Number const depositNAV = assetTotal - interestUnrealized;
+    if (depositNAV <= 0)
     {
-        JLOG(j.error()) << "vault state: NAV < 0"
+        JLOG(j.error()) << "vault state: deposit NAV <= 0"
+                        << " (assetsTotal=" << assetTotal
+                        << ", interestUnrealized=" << interestUnrealized << ")";
+        return tecINTERNAL;
+    }
+
+    Number const withdrawNAV = depositNAV - lossUnrealized;
+    if (withdrawNAV < 0)
+    {
+        JLOG(j.error()) << "vault state: withdrawal NAV < 0"
                         << " (assetsTotal=" << assetTotal
                         << ", interestUnrealized=" << interestUnrealized
                         << ", lossUnrealized=" << lossUnrealized << ")";
@@ -192,18 +205,15 @@ validateVaultState(SLE::const_ref vault, SLE::const_ref issuance, beast::Journal
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    if (nav > 0 && shareTotal <= 0)
+    if (withdrawNAV > 0 && shareTotal <= 0)
     {
         JLOG(j.error()) << "vault state: no outstanding shares with positive NAV"
-                        << " (NAV=" << nav << ", shareTotal=" << shareTotal << ")";
+                        << " (NAV=" << withdrawNAV << ", shareTotal=" << shareTotal << ")";
         return tecINTERNAL;
     }
 
     return tesSUCCESS;
 }
-
-// Dispatch to v1 or v2 math based on amendment.
-// v1 is frozen — no refactoring to preserve existing behaviour.
 
 STAmount
 assetsToSharesDeposit(

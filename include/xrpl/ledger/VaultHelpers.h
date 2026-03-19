@@ -50,6 +50,26 @@ computeDeposit(
     STAmount const& assets,
     beast::Journal j);
 
+/** Compute a withdrawal given a fixed asset amount.
+ *
+ *  Converts assets → shares → assets (round-trip) to determine the
+ *  exact shares to redeem and assets to return.
+ *
+ *  The intermediate shares value is stored as an MPT (integer), which
+ *  uses banker's rounding (round-to-nearest, even on tie). When shares
+ *  round up, the back-calculated assets may exceed the requested amount.
+ *
+ *  Example (scale=1, vault=87.5 IOU, 875 shares):
+ *    assetsToSharesWithdraw(3.75) → round(37.5) = 38 shares
+ *    sharesToAssetsWithdraw(38)   → 3.8 IOU  (> 3.75 requested)
+ *
+ *  This matches v1 behaviour. See XLS-0065 §3.1.7.1.
+ *
+ *  @return ExchangeResult{assets, shares} on success.
+ *  @return tecPRECISION_LOSS if computed shares are zero.
+ *  @return tecPATH_DRY on arithmetic overflow.
+ *  @return tecINTERNAL on invalid input or vault state.
+ */
 [[nodiscard]] Expected<ExchangeResult, TER>
 computeWithdrawByAssets(
     Rules const& rules,
