@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <xrpl/basics/sanitizers.h>
-
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
@@ -23,8 +21,19 @@ namespace test {
 
 // Sanitizers significantly increase stack frame sizes
 // (TSAN ~3-5x, ASAN ~2-3x), requiring larger coroutine stacks.
-inline constexpr std::size_t yieldStackSize =
-    XRPL_SANITIZER_ACTIVE ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
+// Note: This duplicates the detection logic from xrpl/basics/sanitizers.h
+// because xrpl.beast cannot depend on xrpl.basics (levelization constraint).
+#if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__)
+inline constexpr std::size_t yieldStackSize = 4 * 1024 * 1024;
+#elif defined(__has_feature)
+#if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
+inline constexpr std::size_t yieldStackSize = 4 * 1024 * 1024;
+#else
+inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+#endif
+#else
+inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+#endif
 
 /** Mix-in to support tests using asio coroutines.
 

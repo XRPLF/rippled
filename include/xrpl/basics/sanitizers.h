@@ -18,9 +18,9 @@
 #elif defined(__has_feature)
 #if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
 #define XRPL_SANITIZER_ACTIVE 1
+#else
+#define XRPL_SANITIZER_ACTIVE 0
 #endif
-#endif
-
-#ifndef XRPL_SANITIZER_ACTIVE
+#else
 #define XRPL_SANITIZER_ACTIVE 0
 #endif
