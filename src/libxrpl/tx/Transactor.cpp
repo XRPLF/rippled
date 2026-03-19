@@ -17,6 +17,7 @@
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
+#include <algorithm>
 #include <map>
 
 namespace xrpl {
@@ -1136,23 +1137,24 @@ Transactor::operator()()
         //        should be used, making it possible to do more useful work
         //        when transactions fail with a `tec` code.
 
-        // Build a map of ledger entry types to collect, based on the
+        // Build a list of ledger entry types to collect, based on the
         // result code. Only deleted objects of these types will be
         // re-applied after the context is reset.
-        std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+        std::vector<LedgerEntryType> typesToCollect;
         if ((result == tecOVERSIZE) || (result == tecKILLED))
-            deletedObjects.emplace(ltOFFER, std::vector<uint256>{});
+            typesToCollect.push_back(ltOFFER);
         if (result == tecINCOMPLETE)
-            deletedObjects.emplace(ltRIPPLE_STATE, std::vector<uint256>{});
+            typesToCollect.push_back(ltRIPPLE_STATE);
         if (result == tecEXPIRED)
         {
-            deletedObjects.emplace(ltNFTOKEN_OFFER, std::vector<uint256>{});
-            deletedObjects.emplace(ltCREDENTIAL, std::vector<uint256>{});
+            typesToCollect.push_back(ltNFTOKEN_OFFER);
+            typesToCollect.push_back(ltCREDENTIAL);
         }
 
-        if (!deletedObjects.empty())
+        std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+        if (!typesToCollect.empty())
         {
-            ctx_.visit([&deletedObjects](
+            ctx_.visit([&typesToCollect, &deletedObjects](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -1166,8 +1168,7 @@ Transactor::operator()()
                     if (before && after)
                     {
                         auto const type = before->getType();
-                        auto it = deletedObjects.find(type);
-                        if (it != deletedObjects.end())
+                        if (std::ranges::find(typesToCollect, type) != typesToCollect.end())
                         {
                             // For offers, only collect unfunded removals
                             // (where TakerPays is unchanged)
@@ -1176,7 +1177,7 @@ Transactor::operator()()
                                     after->getFieldAmount(sfTakerPays))
                                 return;
 
-                            it->second.push_back(index);
+                            deletedObjects[type].push_back(index);
                         }
                     }
                 }
