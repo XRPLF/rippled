@@ -1886,8 +1886,10 @@ ApplicationImp::loadOldLedger(
             std::uint32_t index = 0;
 
             if (beast::lexicalCastChecked(index, ledgerID))
+            {
                 loadLedger =
                     loadByIndex(index, Rules{config_->features}, config_->FEES.toFees(), *this);
+            }
         }
 
         if (!loadLedger)
