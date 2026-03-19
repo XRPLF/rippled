@@ -154,7 +154,7 @@ insertNFTokenID(
     {
         std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        if (result.size() > 0)
+        if (!result.empty())
             response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)

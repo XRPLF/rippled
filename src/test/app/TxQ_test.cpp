@@ -2757,14 +2757,18 @@ public:
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
+            {
                 envs(
                     noop(alice),
                     fee(baseFee * 100),
                     seq(none),
                     json(jss::LastLedgerSequence, lastLedgerSeq),
                     ter(terQUEUED))(submitParams);
+            }
             else
+            {
                 envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
+            }
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {

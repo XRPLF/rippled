@@ -386,23 +386,29 @@ TxQ::canBeHeld(
     // transaction fills the _first_ sequence hole for the account.
     auto const txSeqProx = tx.getSeqProxy();
     if (txSeqProx.isTicket())
+    {
         // Tickets always follow sequence-based transactions, so a ticket
         // cannot unblock a sequence-based transaction.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // This is the next queuable sequence-based SeqProxy for the account.
     SeqProxy const nextQueuable = nextQueuableSeqImpl(sleAccount, lock);
     if (txSeqProx != nextQueuable)
+    {
         // The provided transaction does not fill the next open sequence gap.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // Make sure they are not just topping off the account's queued
     // sequence-based transactions.
     if (auto const nextTxIter = txQAcct.transactions.upper_bound(nextQueuable);
         nextTxIter != txQAcct.transactions.end() && nextTxIter->first.isSeq())
+    {
         // There is a next transaction and it is sequence based.  They are
         // filling a real gap.  Allow it.
         return tesSUCCESS;
+    }
 
     return telCAN_NOT_QUEUE_FULL;
 }
@@ -718,9 +724,11 @@ TxQ::apply(
     if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
+        {
             // The ticket number is low enough that it should already be
             // in the ledger if it were ever going to exist.
             return {tefNO_TICKET, false};
+        }
 
         // We don't queue transactions that use Tickets unless
         // we can find the Ticket in the ledger.
@@ -762,9 +770,11 @@ TxQ::apply(
         TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
+        {
             // Even though there may be transactions in the queue, there are
             // none that we should pay attention to.
             return {};
+        }
 
         return {TxIter{firstIter, acctTxs.end()}};
     }();
@@ -928,7 +938,7 @@ TxQ::apply(
             //
             //  o Additional transactions with Sequences should
             //    follow preceding sequence-based transactions with no
-            //    gaps (except for those required by CreateTicket
+            //    gaps (except for those required by TicketCreate
             //    transactions).
 
             // Find the entry in the queue that precedes the new
@@ -949,9 +959,13 @@ TxQ::apply(
                 if (txSeqProx.isSeq())
                 {
                     if (txSeqProx < acctSeqProx)
+                    {
                         return {tefPAST_SEQ, false};
-                    else if (txSeqProx > acctSeqProx)
+                    }
+                    if (txSeqProx > acctSeqProx)
+                    {
                         return {terPRE_SEQ, false};
+                    }
                 }
             }
             else if (!replacedTxIter)
@@ -1301,9 +1315,13 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
     for (auto txQAccountIter = byAccount_.begin(); txQAccountIter != byAccount_.end();)
     {
         if (txQAccountIter->second.empty())
+        {
             txQAccountIter = byAccount_.erase(txQAccountIter);
+        }
         else
+        {
             ++txQAccountIter;
+        }
     }
 }
 
@@ -1393,9 +1411,13 @@ TxQ::accept(Application& app, OpenView& view)
                 candidateIter->retriesRemaining <= 0)
             {
                 if (candidateIter->retriesRemaining <= 0)
+                {
                     account.retryPenalty = true;
+                }
                 else
+                {
                     account.dropPenalty = true;
+                }
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
@@ -1406,9 +1428,13 @@ TxQ::accept(Application& app, OpenView& view)
                                  << transToken(txnResult) << ". Leave in queue."
                                  << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
+                {
                     candidateIter->retriesRemaining = 1;
+                }
                 else
+                {
                     --candidateIter->retriesRemaining;
+                }
                 candidateIter->lastResult = txnResult;
                 if (account.dropPenalty && account.transactions.size() > 1 && isFull<95>())
                 {
@@ -1447,7 +1473,9 @@ TxQ::accept(Application& app, OpenView& view)
                     }
                 }
                 else
+                {
                     ++candidateIter;
+                }
             }
         }
         else
@@ -1462,9 +1490,13 @@ TxQ::accept(Application& app, OpenView& view)
     // reordered.
     LedgerHash const& parentHash = view.header().parentHash;
     if (parentHash == parentHash_)
+    {
         JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
+    }
     else
+    {
         parentHash_ = parentHash;
+    }
 
     [[maybe_unused]] auto const startingSize = byFee_.size();
     // byFee_ doesn't "own" the candidate objects inside it, so it's
@@ -1532,12 +1564,14 @@ TxQ::nextQueuableSeqImpl(
     TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
 
     if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
+    {
         // Either...
         //   o There are no queued sequence-based transactions equal to or
         //     following acctSeqProx or
         //   o acctSeqProx is not currently in the queue.
         // So acctSeqProx is as good as it gets.
         return acctSeqProx;
+    }
 
     // There are sequence-based transactions queued that follow acctSeqProx.
     // Locate the first opening to put a transaction into.

@@ -95,7 +95,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-static PathTable mPathTable;
+PathTable mPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
@@ -574,17 +574,29 @@ Pathfinder::getBestPaths(
         bool useExtraPath = false;
 
         if (pathsIterator == mPathRanks.end())
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator == extraPathRanks.end())
+        {
             usePath = true;
+        }
         else if (extraPathsIterator->quality < pathsIterator->quality)
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator->quality > pathsIterator->quality)
+        {
             usePath = true;
+        }
         else if (extraPathsIterator->liquidity > pathsIterator->liquidity)
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator->liquidity < pathsIterator->liquidity)
+        {
             usePath = true;
+        }
         else
         {
             // Risk is high they have identical liquidity
@@ -1020,9 +1032,13 @@ Pathfinder::addLink(
                         int count = candidates.size();
                         // allow more paths from source
                         if ((count > 10) && (uEndAccount != mSrcAccount))
+                        {
                             count = 10;
+                        }
                         else if (count > 50)
+                        {
                             count = 50;
+                        }
 
                         auto it = candidates.begin();
                         while (count-- != 0)
@@ -1090,7 +1106,9 @@ Pathfinder::addLink(
                             addUniquePath(mCompletePaths, newPath);
                         }
                         else
+                        {
                             incompletePaths.push_back(newPath);
+                        }
                     }
                     else if (!currentPath.hasSeen(
                                  book.out.account, book.out.currency, book.out.account))

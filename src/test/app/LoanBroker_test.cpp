@@ -91,12 +91,24 @@ class LoanBroker_test : public beast::unit_test::suite
     {
         {
             auto const& asset = vault.asset.raw();
-            testcase << "Lifecycle: "
-                     << (asset.native()                ? "XRP "
-                             : asset.holds<Issue>()    ? "IOU "
-                             : asset.holds<MPTIssue>() ? "MPT "
-                                                       : "Unknown ")
-                     << label;
+            std::string_view assetLabel;
+            if (asset.native())
+            {
+                assetLabel = "XRP ";
+            }
+            else if (asset.holds<Issue>())
+            {
+                assetLabel = "IOU ";
+            }
+            else if (asset.holds<MPTIssue>())
+            {
+                assetLabel = "MPT ";
+            }
+            else
+            {
+                assetLabel = "Unknown ";
+            }
+            testcase << "Lifecycle: " << assetLabel << label;
         }
 
         using namespace jtx;
@@ -877,8 +889,10 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)), ter(tecFROZEN));
         }
         else
+        {
             // Fund the cover deposit
             env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)));
+        }
         env.close();
 
         if (brokerTest == CoverWithdraw)
@@ -999,7 +1013,9 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, brokerKeylet.key), ter(tesSUCCESS));
         }
         else
+        {
             env(del(alice, brokerKeylet.key));
+        }
 
         if (brokerTest == Set)
         {

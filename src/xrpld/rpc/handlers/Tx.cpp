@@ -153,7 +153,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
             uint32_t netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
+                result.ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID);
         }
     }
 
@@ -192,7 +192,9 @@ populateJsonResponse(
             constexpr auto optionsJson =
                 JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
+            {
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+            }
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
@@ -258,8 +260,10 @@ doTxJson(RPC::JsonContext& context)
     TxArgs args;
 
     if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
+    {
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     if (context.params.isMember(jss::transaction))
     {
@@ -286,7 +290,9 @@ doTxJson(RPC::JsonContext& context)
         args.ctid = {lgr_seq, txn_idx};
     }
     else
+    {
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
 

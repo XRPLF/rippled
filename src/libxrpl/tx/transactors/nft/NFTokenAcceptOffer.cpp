@@ -271,8 +271,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     // this nftoken
     auto const& offer = bo ? bo : so;
     if (!offer)
+    {
         // Purely defensive, should be caught in preflight.
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const& tokenID = offer->at(sfNFTokenID);
     auto const& amount = offer->at(sfAmount);

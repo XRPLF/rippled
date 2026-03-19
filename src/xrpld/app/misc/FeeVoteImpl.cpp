@@ -177,9 +177,13 @@ FeeVoteImpl::doVoting(
             {
                 auto const vote = field->xrp();
                 if (isLegalAmountSigned(vote))
+                {
                     value.addVote(vote);
+                }
                 else
+                {
                     value.noVote();
+                }
             }
             else
             {
@@ -207,12 +211,16 @@ FeeVoteImpl::doVoting(
                 auto const vote = *field;
                 if (vote <= std::numeric_limits<XRPType>::max() &&
                     isLegalAmountSigned(XRPAmount{unsafe_cast<XRPType>(vote)}))
+                {
                     value.addVote(XRPAmount{unsafe_cast<XRPType>(vote)});
+                }
                 else
+                {
                     // Invalid amounts will be treated as if they're
                     // not provided. Don't throw because this value is
                     // provided by an external entity.
                     value.noVote();
+                }
             }
             else
             {

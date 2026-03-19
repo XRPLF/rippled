@@ -33,15 +33,19 @@ getMaxSourceAmount(
     std::optional<STAmount> const& sendMax)
 {
     if (sendMax)
+    {
         return *sendMax;
-    else if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    }
+    if (dstAmount.native() || dstAmount.holds<MPTIssue>())
+    {
         return dstAmount;
-    else
-        return STAmount(
-            Issue{dstAmount.get<Issue>().currency, account},
-            dstAmount.mantissa(),
-            dstAmount.exponent(),
-            dstAmount < beast::zero);
+    }
+
+    return STAmount(
+        Issue{dstAmount.get<Issue>().currency, account},
+        dstAmount.mantissa(),
+        dstAmount.exponent(),
+        dstAmount < beast::zero);
 }
 
 bool
@@ -282,7 +286,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        else if (ctx.view.open() && partialPaymentAllowed)
+        if (ctx.view.open() && partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -293,7 +297,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().reserve))
+        if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -438,9 +442,13 @@ Payment::doApply()
         if (isTesSuccess(rc.result()) && rc.actualAmountOut != dstAmount)
         {
             if (deliverMin && rc.actualAmountOut < *deliverMin)
+            {
                 rc.setResult(tecPATH_PARTIAL);
+            }
             else
+            {
                 ctx_.deliver(rc.actualAmountOut);
+            }
         }
 
         auto terResult = rc.result();
@@ -453,7 +461,7 @@ Payment::doApply()
             terResult = tecPATH_DRY;
         return terResult;
     }
-    else if (mptDirect)
+    if (mptDirect)
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
@@ -524,7 +532,9 @@ Payment::doApply()
                 ctx_.deliver(amountDeliver);
         }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
+        {
             res = tecPATH_PARTIAL;
+        }
 
         return res;
     }

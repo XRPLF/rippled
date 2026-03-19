@@ -183,8 +183,10 @@ class ElementComboIter
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
+        {
             if (has(s))
                 return true;
+        }
         return false;
     }
 
@@ -194,8 +196,10 @@ class ElementComboIter
         size_t result = 0;
 
         for (auto const s : sb)
+        {
             if (has(s))
                 result++;
+        }
         return result;
     }
 
@@ -275,13 +279,17 @@ public:
             return currencyF();
         }();
         if (!has(SB::boundary))
+        {
             col.emplace_back(acc, cur, iss);
+        }
         else
+        {
             col.emplace_back(
                 STPathElement::Type::typeBoundary,
                 acc.value_or(AccountID{}),
                 cur.value_or(Currency{}),
                 iss.value_or(AccountID{}));
+        }
     }
 };
 
@@ -368,11 +376,17 @@ struct ExistingElementPool
         for (size_t id = 0; id < numCur; ++id)
         {
             if (id < 10)
+            {
                 snprintf(buf, bufSize, "CC%zu", id);
+            }
             else if (id < 100)
+            {
                 snprintf(buf, bufSize, "C%zu", id);
+            }
             else
+            {
                 snprintf(buf, bufSize, "%zu", id);
+            }
             currencies.emplace_back(to_currency(buf));
             currencyNames.emplace_back(buf);
         }
@@ -407,8 +421,10 @@ struct ExistingElementPool
         std::vector<IOU> ious;
         ious.reserve(numAct * numCur);
         for (auto const& a : accounts)
+        {
             for (auto const& cn : currencyNames)
                 ious.emplace_back(a[cn]);
+        }
 
         // create offers from every currency to every other currency
         for (auto takerPays = ious.begin(), ie = ious.end(); takerPays != ie; ++takerPays)

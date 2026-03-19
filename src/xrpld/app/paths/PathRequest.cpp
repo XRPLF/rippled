@@ -406,10 +406,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
             jvStatus = rpcError(rpcDOMAIN_MALFORMED);
             return PFR_PJ_INVALID;
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     return PFR_PJ_NOCHANGE;
@@ -461,9 +459,13 @@ PathRequest::getPathFinder(
         domain,
         app_);
     if (pathfinder->findPaths(level, continueCallback))
+    {
         pathfinder->computePathRanks(max_paths_, continueCallback);
+    }
     else
+    {
         pathfinder.reset();  // It's a bad request - clear it.
+    }
     return currency_map[currency] = std::move(pathfinder);
 }
 
@@ -652,9 +654,13 @@ PathRequest::doUpdate(
     {
         // first pass
         if (loaded || fast)
+        {
             iLevel = app_.config().PATH_SEARCH_FAST;
+        }
         else
+        {
             iLevel = app_.config().PATH_SEARCH;
+        }
     }
     else if ((iLevel == app_.config().PATH_SEARCH_FAST) && !fast)
     {

@@ -24,9 +24,13 @@ ValidPermissionedDEX::visitEntry(
     if (after && after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
+        {
             domains_.insert(after->getFieldH256(sfDomainID));
+        }
         else
+        {
             regularOffers_ = true;
+        }
 
         // if a hybrid offer is missing domain or additional book, there's
         // something wrong

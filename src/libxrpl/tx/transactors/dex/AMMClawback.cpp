@@ -156,6 +156,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
+    {
         // Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -174,7 +175,9 @@ AMMClawback::applyGuts(Sandbox& sb)
                 WithdrawAll::Yes,
                 preFeeBalance_,
                 ctx_.journal);
+    }
     else
+    {
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             equalWithdrawMatchingOneAmount(
                 sb,
@@ -186,6 +189,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 holdLPtokens,
                 *clawAmount);
+    }
 
     if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
@@ -235,6 +239,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
 
     if (lpTokensWithdraw > holdLPtokens)
+    {
         // if lptoken balance less than what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
@@ -253,6 +258,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             WithdrawAll::Yes,
             preFeeBalance_,
             ctx_.journal);
+    }
 
     auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))

@@ -16,9 +16,13 @@ finishFlow(PaymentSandbox& sb, Issue const& srcIssue, Issue const& dstIssue, Flo
 {
     path::RippleCalc::Output result;
     if (isTesSuccess(f.ter))
+    {
         f.sandbox->apply(sb);
+    }
     else
+    {
         result.removableOffers = std::move(f.removableOffers);
+    }
 
     result.setResult(f.ter);
     result.actualAmountIn = toSTAmount(f.in, srcIssue);

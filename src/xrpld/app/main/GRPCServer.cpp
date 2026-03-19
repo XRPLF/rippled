@@ -205,9 +205,11 @@ Role
 GRPCServerImpl::CallData<Request, Response>::getRole(bool isUnlimited)
 {
     if (isUnlimited)
+    {
         return Role::IDENTIFIED;
-    else
-        return Role::USER;
+    }
+
+    return Role::USER;
 }
 
 template <class Request, class Response>

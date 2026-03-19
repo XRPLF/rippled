@@ -335,18 +335,20 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
+            {
                 return sfLowQualityIn;
-            else
-                return sfHighQualityIn;
+            }
+
+            return sfHighQualityIn;
         }
-        else
+
+        // compute src quality out
+        if (this->src_ < this->dst_)
         {
-            // compute src quality out
-            if (this->src_ < this->dst_)
-                return sfLowQualityOut;
-            else
-                return sfHighQualityOut;
+            return sfLowQualityOut;
         }
+
+        return sfHighQualityOut;
     }();
 
     if (!sle->isFieldPresent(field))
@@ -756,15 +758,13 @@ DirectStepI<TDerived>::qualities(
     {
         return qualitiesSrcRedeems(sb);
     }
-    else
-    {
-        auto const prevStepDebtDirection = [&] {
-            if (prevStep_)
-                return prevStep_->debtDirection(sb, strandDir);
-            return DebtDirection::issues;
-        }();
-        return qualitiesSrcIssues(sb, prevStepDebtDirection);
-    }
+
+    auto const prevStepDebtDirection = [&] {
+        if (prevStep_)
+            return prevStep_->debtDirection(sb, strandDir);
+        return DebtDirection::issues;
+    }();
+    return qualitiesSrcIssues(sb, prevStepDebtDirection);
 }
 
 template <class TDerived>

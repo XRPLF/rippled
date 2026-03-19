@@ -81,9 +81,13 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         if (!any(flags & (SF_CF_INVALID | SF_CF_VALID)))
         {
             if (checkCondition(*fb, *cb))
+            {
                 router.setFlags(id, SF_CF_VALID);
+            }
             else
+            {
                 router.setFlags(id, SF_CF_INVALID);
+            }
         }
     }
 
@@ -246,9 +250,13 @@ EscrowFinish::doApply()
                 return tecINTERNAL;
 
             if (checkCondition(*fb, *cb))
+            {
                 flags = SF_CF_VALID;
+            }
             else
+            {
                 flags = SF_CF_INVALID;
+            }
 
             ctx_.registry.getHashRouter().setFlags(id, flags);
             // LCOV_EXCL_STOP
@@ -315,7 +323,9 @@ EscrowFinish::doApply()
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
+    {
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))

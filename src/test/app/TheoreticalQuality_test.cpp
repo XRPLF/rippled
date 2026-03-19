@@ -57,10 +57,15 @@ struct RippleCalcTestParams
                         auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
+                        {
                             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -148,7 +153,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};

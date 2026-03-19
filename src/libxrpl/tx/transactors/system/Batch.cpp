@@ -105,9 +105,13 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         for (STObject const& signer : signers)
         {
             if (signer.isFieldPresent(sfTxnSignature))
+            {
                 signerCount += 1;
+            }
             else if (signer.isFieldPresent(sfSigners))
+            {
                 signerCount += signer.getFieldArray(sfSigners).size();
+            }
         }
     }
 

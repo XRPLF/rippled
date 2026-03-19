@@ -264,9 +264,13 @@ toStrand(
         auto const next = &normPath[i + 1];
 
         if (cur->isAccount())
+        {
             curIssue.account = cur->getAccountID();
+        }
         else if (cur->hasIssuer())
+        {
             curIssue.account = cur->getIssuerID();
+        }
 
         if (cur->hasCurrency())
         {
@@ -314,14 +318,12 @@ toStrand(
                 {
                     if (i != normPath.size() - 2)
                         return {temBAD_PATH, Strand{}};
-                    else
-                    {
-                        // Last step. insert xrp endpoint step
-                        auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
-                        if (!isTesSuccess(msr.first))
-                            return {msr.first, Strand{}};
-                        result.push_back(std::move(msr.second));
-                    }
+
+                    // Last step. insert xrp endpoint step
+                    auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
+                    if (!isTesSuccess(msr.first))
+                        return {msr.first, Strand{}};
+                    result.push_back(std::move(msr.second));
                 }
                 else
                 {
@@ -347,7 +349,9 @@ toStrand(
 
         auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
         if (isTesSuccess(s.first))
+        {
             result.emplace_back(std::move(s.second));
+        }
         else
         {
             JLOG(j.debug()) << "toStep failed: " << s.first;

@@ -19,15 +19,21 @@ ValidMPTIssuance::visitEntry(
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
+        {
             mptIssuancesDeleted_++;
+        }
         else if (!before)
+        {
             mptIssuancesCreated_++;
+        }
     }
 
     if (after && after->getType() == ltMPTOKEN)
     {
         if (isDelete)
+        {
             mptokensDeleted_++;
+        }
         else if (!before)
         {
             mptokensCreated_++;
@@ -44,7 +50,7 @@ ValidMPTIssuance::finalize(
     TER const result,
     XRPAmount const _fee,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (isTesSuccess(result))
     {
@@ -122,26 +128,25 @@ ValidMPTIssuance::finalize(
                                    "succeeded but created MPT issuances";
                 return false;
             }
-            else if (mptIssuancesDeleted_ > 0)
+            if (mptIssuancesDeleted_ > 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                    "succeeded but deleted issuances";
                 return false;
             }
-            else if (lendingProtocolEnabled && mptokensCreated_ + mptokensDeleted_ > 1)
+            if (lendingProtocolEnabled && mptokensCreated_ + mptokensDeleted_ > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
                                    "but created/deleted bad number mptokens";
                 return false;
             }
-            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+            if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
                                    "succeeded but created/deleted mptokens";
                 return false;
             }
-            else if (
-                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
+            if (!submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be

@@ -150,7 +150,9 @@ EscrowCancel::doApply()
 
     // Transfer amount back to the owner
     if (isXRP(amount))
+    {
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))

@@ -1027,8 +1027,10 @@ applyCreateAccountAttestations(
 
         XChainCreateAccountAttestations curAtts = [&] {
             if (sleClaimID)
+            {
                 return XChainCreateAccountAttestations{
                     sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+            }
             return XChainCreateAccountAttestations{};
         }();
 
@@ -1203,8 +1205,10 @@ attestationDoApply(ApplyContext& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
+    {
         // Should already be checked in preflight
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1233,11 +1237,17 @@ attestationDoApply(ApplyContext& ctx)
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1598,11 +1608,17 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     {
@@ -1631,9 +1647,13 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     auto const otherChainAmount = [&]() -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
+        {
             r.setIssue(bridgeSpec.issuingChainIssue());
+        }
         else
+        {
             r.setIssue(bridgeSpec.lockingChainIssue());
+        }
         return r;
     }();
 
@@ -1696,11 +1716,17 @@ XChainClaim::doApply()
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1823,11 +1849,17 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     if (isLockingChain)
@@ -2095,11 +2127,17 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::locking;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::issuing;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 

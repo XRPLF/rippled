@@ -83,7 +83,7 @@ requestRole(
 
     if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
     {
-        if (user.size())
+        if (!user.empty())
             return Role::IDENTIFIED;
         return Role::PROXY;
     }
@@ -137,9 +137,11 @@ extractIpAddrFromField(std::string_view field)
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
             if (firstNonSpace == std::string_view::npos)
+            {
                 // We know there's at least one leading space.  So if we got
                 // npos, then it must be all spaces.  Return empty string_view.
                 return {};
+            }
 
             ret = ret.substr(firstNonSpace);
         }
@@ -151,9 +153,11 @@ extractIpAddrFromField(std::string_view field)
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
+                {
                     // We know there's at least one leading space.  So if we
                     // got npos, then it must be all spaces.
                     return {};
+                }
 
                 ret = ret.substr(0, lastNonSpace + 1);
             }

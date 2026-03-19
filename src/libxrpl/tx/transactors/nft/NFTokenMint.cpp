@@ -47,11 +47,16 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask = ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
-        // if featureDynamicNFT enabled then new flag allowing mutable URI available
-        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMask : tfNFTokenMintMaskWithoutMutable
-        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
-                                               : tfNFTokenMintOldMask;
+    std::uint32_t const nfTokenMintMask = [&]() -> std::uint32_t {
+        if (ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine))
+        {
+            // if featureDynamicNFT enabled then new flag allowing mutable URI available
+            return ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMask
+                                                        : tfNFTokenMintMaskWithoutMutable;
+        }
+        return ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
+                                                    : tfNFTokenMintOldMask;
+    }();
 
     return nfTokenMintMask;
 }
@@ -76,7 +81,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > maxTokenURILength)
             return temMALFORMED;
     }
 
@@ -202,8 +207,10 @@ NFTokenMint::doApply()
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
         if (root == nullptr)
+        {
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
+        }
 
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
@@ -259,8 +266,10 @@ NFTokenMint::doApply()
         InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
     if (nfTokenTemplate == nullptr)
+    {
         // Should never happen.
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const nftokenID = createNFTokenID(
         extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),

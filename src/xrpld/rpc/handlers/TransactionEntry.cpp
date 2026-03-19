@@ -59,8 +59,10 @@ doTransactionEntry(RPC::JsonContext& context)
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
+                {
                     jvResult[jss::ledger_hash] =
                         to_string(context.ledgerMaster.getHashBySeq(lpLedger->seq()));
+                }
 
                 bool const validated = context.ledgerMaster.isValidated(*lpLedger);
 
@@ -73,7 +75,9 @@ doTransactionEntry(RPC::JsonContext& context)
                 }
             }
             else
+            {
                 jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+            }
 
             RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 

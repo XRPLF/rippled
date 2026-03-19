@@ -158,9 +158,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // For readability two separate `if` rather than `||` of two conditions
         if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
             !ctx.view.rules().enabled(featureDynamicMPT))
+        {
             return tecNO_PERMISSION;
-        else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
+        }
+        if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
+        {
             return tecNO_PERMISSION;
+        }
     }
 
     // ensure it is issued by the tx submitter
@@ -240,9 +244,13 @@ MPTokenIssuanceSet::doApply()
     std::shared_ptr<SLE> sle;
 
     if (holderID)
+    {
         sle = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
+    }
     else
+    {
         sle = view().peek(keylet::mptIssuance(mptIssuanceID));
+    }
 
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -251,18 +259,26 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t flagsOut = flagsIn;
 
     if (txFlags & tfMPTLock)
+    {
         flagsOut |= lsfMPTLocked;
+    }
     else if (txFlags & tfMPTUnlock)
+    {
         flagsOut &= ~lsfMPTLocked;
+    }
 
     if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
         for (auto const& f : mptMutabilityFlags)
         {
             if (mutableFlags & f.setFlag)
+            {
                 flagsOut |= f.canMutateFlag;
+            }
             else if (mutableFlags & f.clearFlag)
+            {
                 flagsOut &= ~f.canMutateFlag;
+            }
         }
 
         if (mutableFlags & tmfMPTClearCanTransfer)
@@ -283,17 +299,25 @@ MPTokenIssuanceSet::doApply()
         // - If the field is present, it must be non-zero.
         // Therefore, when TransferFee is 0, the field should be removed.
         if (transferFee == 0)
+        {
             sle->makeFieldAbsent(sfTransferFee);
+        }
         else
+        {
             sle->setFieldU16(sfTransferFee, *transferFee);
+        }
     }
 
     if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
     {
         if (metadata->empty())
+        {
             sle->makeFieldAbsent(sfMPTokenMetadata);
+        }
         else
+        {
             sle->setFieldVL(sfMPTokenMetadata, *metadata);
+        }
     }
 
     if (domainID)

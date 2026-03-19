@@ -74,6 +74,7 @@ private:
     {
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
             ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero)
+        {
             ammLiquidity_.emplace(
                 ctx.view,
                 (*ammSle)[sfAccount],
@@ -82,6 +83,7 @@ private:
                 out,
                 ctx.ammContext,
                 ctx.j);
+        }
     }
 
 public:
@@ -491,11 +493,14 @@ public:
         // when calculating the upper bound quality and the quality function
         // because single path AMM's offer quality is not constant.
         if (!rules.enabled(fixAMMv1_1))
+        {
             return ofrQ;
-        else if (
-            offerType == OfferType::CLOB ||
+        }
+        if (offerType == OfferType::CLOB ||
             (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
+        {
             return ofrQ;
+        }
 
         auto rate = [&](AccountID const& id) {
             if (isXRP(id) || id == this->strandDst_)
@@ -674,9 +679,13 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // Note that offer.quality() returns a (non-optional) Quality.  So
         // ofrQ is always safe to use below this point in the lambda.
         if (!ofrQ)
+        {
             ofrQ = offer.quality();
+        }
         else if (*ofrQ != offer.quality())
+        {
             return false;
+        }
 
         if (static_cast<TDerived const*>(this)->limitSelfCrossQuality(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
@@ -704,8 +713,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     if (auto const key = offer.key())
                         offers.permRmOffer(*key);
                     if (!offerAttempted)
+                    {
                         // Change quality only if no previous offers were tried.
                         ofrQ = std::nullopt;
+                    }
                     // Returning true causes offers.step() to delete the offer.
                     return true;
                 }
@@ -881,24 +892,34 @@ auto
 BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
     -> std::optional<std::pair<Quality, OfferType>>
 {
-    if (auto const res = tip(view); !res)
+    auto const res = tip(view);
+    if (!res)
+    {
         return std::nullopt;
-    else if (auto const q = std::get_if<Quality>(&(*res)))
+    }
+    if (auto const q = std::get_if<Quality>(&(*res)))
+    {
         return std::make_pair(*q, OfferType::CLOB);
-    else
-        return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
+    }
+
+    return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
 }
 
 template <class TIn, class TOut, class TDerived>
 std::optional<QualityFunction>
 BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
 {
-    if (auto const res = tip(view); !res)
+    auto const res = tip(view);
+    if (!res)
+    {
         return std::nullopt;
-    else if (auto const q = std::get_if<Quality>(&(*res)))
+    }
+    if (auto const q = std::get_if<Quality>(&(*res)))
+    {
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
-    else
-        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
+    }
+
+    return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
 }
 
 template <class TCollection>
@@ -954,33 +975,31 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // we need to consume the offer
             return true;
         }
-        else
-        {
-            auto ofrAdjAmt = ofrAmt;
-            auto stpAdjAmt = stpAmt;
-            auto ownerGivesAdj = ownerGives;
-            limitStepOut(
-                offer,
-                ofrAdjAmt,
-                stpAdjAmt,
-                ownerGivesAdj,
-                transferRateIn,
-                transferRateOut,
-                remainingOut);
-            remainingOut = beast::zero;
-            savedIns.insert(stpAdjAmt.in);
-            savedOuts.insert(remainingOut);
-            result.in = sum(savedIns);
-            result.out = out;
-            this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
 
-            // Explicitly check whether the offer is funded.  Given that we have
-            // (stpAmt.out > remainingOut), it's natural to assume the offer
-            // will still be funded after consuming remainingOut but that is
-            // not always the case.  If the mantissas of two IOU amounts differ
-            // by less than ten, then subtracting them leaves a zero.
-            return offer.fully_consumed();
-        }
+        auto ofrAdjAmt = ofrAmt;
+        auto stpAdjAmt = stpAmt;
+        auto ownerGivesAdj = ownerGives;
+        limitStepOut(
+            offer,
+            ofrAdjAmt,
+            stpAdjAmt,
+            ownerGivesAdj,
+            transferRateIn,
+            transferRateOut,
+            remainingOut);
+        remainingOut = beast::zero;
+        savedIns.insert(stpAdjAmt.in);
+        savedOuts.insert(remainingOut);
+        result.in = sum(savedIns);
+        result.out = out;
+        this->consumeOffer(sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+
+        // Explicitly check whether the offer is funded.  Given that we have
+        // (stpAmt.out > remainingOut), it's natural to assume the offer
+        // will still be funded after consuming remainingOut but that is
+        // not always the case.  If the mantissas of two IOU amounts differ
+        // by less than ten, then subtracting them leaves a zero.
+        return offer.fully_consumed();
     };
 
     {

@@ -66,8 +66,10 @@ DelegateSet::doApply()
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
         if (permissions.empty())
+        {
             // if permissions array is empty, delete the ledger object.
             return deleteDelegate(view(), sle, account_, j_);
+        }
 
         sle->setFieldArray(sfPermissions, permissions);
         ctx_.view().update(sle);

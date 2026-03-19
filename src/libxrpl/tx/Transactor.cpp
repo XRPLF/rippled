@@ -191,9 +191,11 @@ NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+    {
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
+    }
 
     // It should be impossible for the InnerBatchTxn flag to be set without
     // featureBatch being enabled
@@ -547,9 +549,13 @@ Transactor::ticketDelete(
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
     {
         if (*ticketCount == 1)
+        {
             sleAccount->makeFieldAbsent(sfTicketCount);
+        }
         else
+        {
             ticketCount = *ticketCount - 1;
+        }
     }
     else
     {
@@ -623,10 +629,12 @@ Transactor::checkSign(
         auto const sle = view.read(keylet::account(idAccount));
 
         if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        {
             // Pseudo-accounts can't sign transactions. This check is gated on
             // the Lending Protocol amendment because that's the project it was
             // added under, and it doesn't justify another amendment
             return tefBAD_AUTH;
+        }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);

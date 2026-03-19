@@ -120,7 +120,7 @@ ValidNFTokenPage::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (badLink_)
     {
@@ -196,7 +196,7 @@ NFTokenCountTracking::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!hasPrivilege(tx, changeNFTCounts))
     {
