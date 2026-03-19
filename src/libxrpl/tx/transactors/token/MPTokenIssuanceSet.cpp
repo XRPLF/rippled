@@ -291,14 +291,20 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
+    // Check if the transaction is enabling confidential amounts
+    bool const settingConfidential =
+        mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount);
+
+    // Encryption keys can only be set if confidential amounts are already
+    // enabled on the issuance OR if the transaction is enabling it
     if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !settingConfidential)
     {
         return tecNO_PERMISSION;
     }
 
     if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
+        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !settingConfidential)
     {
         return tecNO_PERMISSION;
     }

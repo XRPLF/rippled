@@ -640,32 +640,166 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = temMALFORMED,
             });
         }
+    }
 
-        // issuance has disabled confidential transfer
+    void
+    testSetPreclaim(FeatureBitset features)
+    {
+        testcase("Set preclaim");
+        using namespace test::jtx;
+
+        // Cannot set issuer key if confidential amounts not enabled
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+            });
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Can set issuer key when enabling confidential amounts in the same tx
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            MPTTester mptAlice(env, alice, {.holders = {}});
+
+            // Create without tfMPTCanConfidentialAmount but allow mutation
+            // (don't set tmfMPTCannotMutateCanConfidentialAmount)
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+            });
+
+            mptAlice.generateKeyPair(alice);
+
+            // Set issuer key and enable confidential amounts at the same time
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+        }
+
+        // Cannot update issuer public key once set
         {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            // no tfMPTCanConfidentialAmount flag enabled
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            // First set issuer key - should succeed
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            // Try to update issuer key - should fail
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(bob),
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Cannot update issuer and auditor public keys once set
+        // Note: trying to set only auditor key fails in preflight (temMALFORMED)
+        // so we must provide both keys, which fails on issuer key check first
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {bob}, .auditor = auditor});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(auditor);
+
+            // Set issuer and auditor keys - should succeed
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
+
+            // Try to update both keys - fails on issuer key check first
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(bob),
+                .auditorPubKey = mptAlice.getPubKey(alice),
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Cannot set auditor key if confidential amounts not enabled
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
+
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanLock,
             });
 
-            mptAlice.authorize({
-                .account = bob,
-            });
-            mptAlice.pay(alice, bob, 100);
-
             mptAlice.generateKeyPair(alice);
-            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(auditor);
 
             mptAlice.set({
                 .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
                 .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Can set auditor key when enabling confidential amounts in the same tx
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
+
+            // Create without tfMPTCanConfidentialAmount but allow mutation
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock,
+            });
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(auditor);
+
+            // Set issuer and auditor keys while enabling confidential amounts
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
             });
         }
     }
@@ -1337,6 +1471,116 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.mergeInbox({
                 .account = bob,
                 .err = tecNO_PERMISSION,
+            });
+        }
+
+        // holder is locked
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // lock bob
+            mptAlice.set({
+                .account = alice,
+                .holder = bob,
+                .flags = tfMPTLock,
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+                .err = tecLOCKED,
+            });
+
+            // unlock bob
+            mptAlice.set({
+                .account = alice,
+                .holder = bob,
+                .flags = tfMPTUnlock,
+            });
+
+            // should succeed now
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+        }
+
+        // holder not authorized
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTRequireAuth,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // unauthorize bob
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+                .flags = tfMPTUnauthorize,
+            });
+
+            mptAlice.mergeInbox({
+                .account = bob,
+                .err = tecNO_AUTH,
+            });
+
+            // authorize bob again
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+
+            // should succeed now
+            mptAlice.mergeInbox({
+                .account = bob,
             });
         }
     }
@@ -5896,6 +6140,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testMergeInboxPreclaim(features);
 
         testSetPreflight(features);
+        testSetPreclaim(features);
 
         // ConfidentialMPTSend
         testSend(features);

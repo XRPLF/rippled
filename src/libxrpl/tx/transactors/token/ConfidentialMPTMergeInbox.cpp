@@ -1,3 +1,4 @@
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -45,6 +46,16 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
         return tecNO_PERMISSION;
+
+    // Check freeze
+    auto const account = ctx.tx[sfAccount];
+    MPTIssue const mptIssue(ctx.tx[sfMPTokenIssuanceID]);
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue); !isTesSuccess(ter))
+        return ter;
+
+    // Check auth
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
+        return ter;
 
     return tesSUCCESS;
 }
