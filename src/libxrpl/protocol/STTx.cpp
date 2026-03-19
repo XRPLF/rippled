@@ -728,7 +728,7 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
         reason = "Raw Transactions array exceeds max entries.";
         return false;
     }
-    for (auto raw : rawTxns)
+    for (STObject raw : rawTxns)
     {
         try
         {
