@@ -210,9 +210,6 @@ SponsorshipSet::doApply()
 
     auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
 
-    if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
-        return tecUNFUNDED;
-
     if (!sponsorObjSle)
     {
         // Create
@@ -225,6 +222,9 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfOwner] = sponsorAccountID;
         (*newSle)[sfSponsee] = sponseeAccountID;
+        if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
+            return tecUNFUNDED;
+
         if (feeAmount && *feeAmount > XRPAmount(0))
         {
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
@@ -266,6 +266,10 @@ SponsorshipSet::doApply()
     {
         auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].value_or(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
+
+        if (feeAmountDelta > beast::zero &&
+            feeAmountDelta > (*sponsorAccSle)[sfBalance])
+            return tecUNFUNDED;
 
         // transfer feeAmount to ledger entry
         if (feeAmountDelta != beast::zero)

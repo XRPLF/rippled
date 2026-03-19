@@ -214,6 +214,35 @@ public:
             fee(XRP(1)),
             ter(tesSUCCESS));
         env.close();
+
+        // delta-based balance check
+        // After create: sponsor balance ~ 0, feeAmount = XRP(1000)
+
+        // Decreasing feeAmount should succeed (refund, negative delta)
+        adjustAccountXRPBalance(env, sponsor, XRP(500));
+        env(sponsor::set_fee(sponsor, 0, XRP(800)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tesSUCCESS));
+        env.close();
+        // balance was 500, delta = 800-1000 = -200 (refund), balance = 500+200-1 = 699
+
+        // Increasing feeAmount within delta budget should succeed
+        adjustAccountXRPBalance(env, sponsor, XRP(500));
+        env(sponsor::set_fee(sponsor, 0, XRP(850)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tesSUCCESS));
+        env.close();
+        // balance was 500, delta = 850-800 = 50, balance = 500-50-1 = 449
+
+        // Increasing feeAmount where delta exceeds balance should fail
+        adjustAccountXRPBalance(env, sponsor, XRP(310));
+        env(sponsor::set_fee(sponsor, 0, XRP(1200)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tecUNFUNDED));
+        env.close();
     }
 
     void
