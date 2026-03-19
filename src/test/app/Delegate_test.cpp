@@ -1670,8 +1670,6 @@ class Delegate_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             auto const reserve = env.current()->fees().accountReserve(1);
 
-            // Alice starts with exactly (Reserve + 1.0 XRP).
-            // She can afford a 1.0 XRP payment, if fee is paid by others, eg. delegate account.
             env.fund(reserve + XRP(1.0), alice);
             env.fund(XRP(1000), bob);
             env.fund(XRP(1000), carol);
@@ -1697,6 +1695,40 @@ class Delegate_test : public beast::unit_test::suite
             env.require(balance(alice, alicePrePay - paymentAmount));
             env.require(balance(bob, bobPrePay - highFee));
             env.require(balance(carol, carolPrePay + paymentAmount));
+        }
+
+        // Delegated account can pay the fee even if it dips them below their reserve.
+        {
+            Env env(*this);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            Account carol{"carol"};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const baseReserve = env.current()->fees().accountReserve(0);
+
+            env.fund(env.current()->fees().accountReserve(1) + baseFee + XRP(1), alice);
+            env.fund(baseReserve, bob);
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const alicePreTx = env.balance(alice, XRP);
+            auto const bobPreTx = env.balance(bob, XRP);
+
+            // After paying for this transaction, bob's balance will
+            // dip below the base reserve
+            env(pay(alice, carol, XRP(1)), delegate::as(bob));
+            env.close();
+
+            // Bob's balance is now less than the base reserve.
+            BEAST_EXPECT(env.balance(bob, XRP) < baseReserve);
+            env.require(balance(bob, bobPreTx - drops(baseFee)));
+
+            // Alice's balance only decreased by the 1.0 XRP she sent.
+            env.require(balance(alice, alicePreTx - XRP(1)));
         }
 
         // Delegatee has enough balance to pay but delegator does not have enough reserve
