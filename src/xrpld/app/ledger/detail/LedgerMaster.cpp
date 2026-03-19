@@ -1454,7 +1454,7 @@ LedgerMaster::newOrderBookDB()
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
 {
-    auto const maxPathFindThreads = std::max(1, app_.config().WORKERS);
+    auto const maxPathFindThreads = std::max(1, app_.config().PATH_WORKERS);
 
     if (
         !app_.isStopping() && mPathFindThread < maxPathFindThreads &&
