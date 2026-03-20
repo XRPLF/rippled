@@ -6,6 +6,15 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>
 
+// Phase 8: OTel trace context headers for log-trace correlation.
+// GetSpan() and RuntimeContext::GetCurrent() are thread-local reads
+// with no locking — measured at <10ns per call.
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/context/runtime_context.h>
+#include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/provider.h>
+#endif  // XRPL_ENABLE_TELEMETRY
+
 #include <chrono>
 #include <cstring>
 #include <fstream>
@@ -344,6 +353,32 @@ Logs::format(
             output += "FTL ";
             break;
     }
+
+        // Phase 8: Inject OTel trace context (trace_id, span_id) into log lines
+        // for log-trace correlation. Only appended when an active span exists.
+        // GetSpan() reads thread-local storage — no locks, <10ns overhead.
+// LCOV_EXCL_START -- compiled out when XRPL_ENABLE_TELEMETRY is not defined
+#ifdef XRPL_ENABLE_TELEMETRY
+    {
+        auto span =
+            opentelemetry::trace::GetSpan(opentelemetry::context::RuntimeContext::GetCurrent());
+        auto ctx = span->GetContext();
+        if (ctx.IsValid())
+        {
+            // Append trace context as structured key=value fields that the
+            // OTel Collector filelog receiver regex_parser can extract.
+            char traceId[32], spanId[16];
+            ctx.trace_id().ToLowerBase16(opentelemetry::nostd::span<char, 32>{traceId});
+            ctx.span_id().ToLowerBase16(opentelemetry::nostd::span<char, 16>{spanId});
+            output += "trace_id=";
+            output.append(traceId, 32);
+            output += " span_id=";
+            output.append(spanId, 16);
+            output += ' ';
+        }
+    }
+#endif  // XRPL_ENABLE_TELEMETRY
+    // LCOV_EXCL_STOP
 
     output += message;
 

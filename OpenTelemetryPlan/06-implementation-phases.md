@@ -54,6 +54,15 @@ gantt
 
     section Phase 5
     Documentation & Deploy    :p5, after p4, 1w
+
+    section Phase 6
+    StatsD Metrics Bridge     :p6, after p5, 1w
+
+    section Phase 7
+    Native OTel Metrics       :p7, after p6, 2w
+
+    section Phase 8
+    Log-Trace Correlation     :p8, after p7, 1w
 ```
 
 ---
@@ -539,6 +548,114 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ---
 
+## 6.8.1 Phase 8: Log-Trace Correlation and Centralized Log Ingestion (Week 13)
+
+### Motivation
+
+rippled's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+
+#### Gains
+
+1. **One-click trace-to-log navigation** — Click a trace in Tempo/Jaeger and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
+2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
+3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
+4. **Zero new dependencies in rippled** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+5. **Negligible overhead** — `GetSpan()` + `GetContext()` are thread-local reads (<10ns/call). At ~1000 JLOG calls/min, this adds <10us/min.
+
+#### Losses / Risks
+
+1. **Log format change** — Existing log parsers that rely on a fixed format will need updating to handle the optional `trace_id=... span_id=...` fields.
+2. **Loki resource usage** — Log ingestion adds storage and memory overhead to the observability stack (mitigated by retention policies).
+3. **Filelog receiver complexity** — The regex parser must be kept in sync with the log format; a format change in `Logs::format()` could break parsing.
+
+#### Decision
+
+The correlation value far outweighs the risks. The log format change is backward-compatible (fields are appended only when a span is active), and the filelog receiver regex is straightforward to maintain.
+
+### Architecture
+
+Phase 8 has two independent sub-phases that can be developed in parallel:
+
+- **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail rippled's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+
+#### Trace ID Injection Flow
+
+```mermaid
+flowchart LR
+    subgraph rippled["rippled process"]
+        JLOG["JLOG(j.info())"]
+        Format["Logs::format()"]
+        OTelCtx["OTel Context<br/>(thread-local)"]
+        JLOG --> Format
+        OTelCtx -.->|"GetSpan()→GetContext()"| Format
+    end
+
+    subgraph output["Log Output"]
+        LogLine["2024-01-15T10:30:45.123Z<br/>LedgerMaster:NFO<br/>trace_id=abc123...<br/>span_id=def456...<br/>Validated ledger 42"]
+    end
+
+    Format --> LogLine
+
+    style rippled fill:#1a237e,stroke:#0d1642,color:#fff
+    style output fill:#1b5e20,stroke:#0d3d14,color:#fff
+    style JLOG fill:#283593,stroke:#1a237e,color:#fff
+    style Format fill:#283593,stroke:#1a237e,color:#fff
+    style OTelCtx fill:#283593,stroke:#1a237e,color:#fff
+    style LogLine fill:#2e7d32,stroke:#1b5e20,color:#fff
+```
+
+#### Loki Ingestion Pipeline
+
+```mermaid
+flowchart LR
+    subgraph collector["OTel Collector"]
+        FR["filelog receiver<br/>tails debug.log"]
+        RP["regex_parser<br/>extracts trace_id,<br/>span_id, severity"]
+        BP["batch processor"]
+        LE["otlp/loki exporter"]
+        FR --> RP --> BP --> LE
+    end
+
+    LogFile["rippled<br/>debug.log"] --> FR
+    LE --> Loki["Grafana Loki<br/>:3100"]
+    Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
+
+    style collector fill:#e65100,stroke:#bf360c,color:#fff
+    style FR fill:#f57c00,stroke:#e65100,color:#fff
+    style RP fill:#f57c00,stroke:#e65100,color:#fff
+    style BP fill:#f57c00,stroke:#e65100,color:#fff
+    style LE fill:#f57c00,stroke:#e65100,color:#fff
+    style LogFile fill:#1a237e,stroke:#0d1642,color:#fff
+    style Loki fill:#4a148c,stroke:#2e0d57,color:#fff
+    style Tempo fill:#4a148c,stroke:#2e0d57,color:#fff
+```
+
+### Tasks
+
+| Task | Description                                    |
+| ---- | ---------------------------------------------- |
+| 8.1  | Inject trace_id into Logs::format()            |
+| 8.2  | Add Loki to Docker Compose stack               |
+| 8.3  | Add filelog receiver to OTel Collector         |
+| 8.4  | Configure Grafana trace-to-log correlation     |
+| 8.5  | Update integration tests                       |
+| 8.6  | Update documentation (runbook, reference docs) |
+
+**Parallel work**: Task 8.2 (Loki infra) can run in parallel with Task 8.1 (code change). Tasks 8.3–8.6 are sequential.
+
+### Exit Criteria
+
+- [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
+- [ ] Log lines outside spans have no trace context (no empty fields)
+- [ ] Loki ingests rippled logs via OTel Collector filelog receiver
+- [ ] Grafana Tempo → Loki one-click correlation works
+- [ ] Grafana Loki → Tempo reverse lookup works via derived field
+- [ ] Integration test verifies trace_id presence in logs
+- [ ] No performance regression from trace_id injection (< 0.1% overhead)
+
+---
+
 ## 6.9 Risk Assessment
 
 ```mermaid
@@ -825,6 +942,7 @@ Clear, measurable criteria for each phase.
 | Phase 5 | Production deployment        | Operators trained           | End of Week 9  |
 | Phase 6 | StatsD metrics in Prometheus | 3 dashboards operational    | End of Week 10 |
 | Phase 7 | All metrics via OTLP         | No StatsD dependency        | End of Week 12 |
+| Phase 8 | trace_id in logs + Loki      | Tempo↔Loki correlation      | End of Week 13 |
 
 ---
 

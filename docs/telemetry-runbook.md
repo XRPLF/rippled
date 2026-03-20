@@ -17,6 +17,7 @@ This starts:
 - **OTel Collector** on ports 4317 (gRPC) and 4318 (HTTP)
 - **Jaeger** UI on http://localhost:16686
 - **Prometheus** on http://localhost:9090
+- **Loki** on http://localhost:3100 (log aggregation)
 - **Grafana** on http://localhost:3000
 
 ### 2. Enable telemetry in rippled
@@ -358,6 +359,50 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | `peer.proposal.receive`     | `{span_name="peer.proposal.receive"}`     | Peer Network (Rate, Trusted/Untrusted)        |
 | `peer.validation.receive`   | `{span_name="peer.validation.receive"}`   | Peer Network (Rate, Trusted/Untrusted)        |
 
+## Log-Trace Correlation (Phase 8)
+
+When rippled is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+
+```
+2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+```
+
+This enables bidirectional navigation between logs and traces in Grafana:
+
+- **Tempo -> Loki**: Click "Logs for this trace" on any trace in Grafana Tempo to see all log lines from that trace.
+- **Loki -> Tempo**: Click the `TraceID` derived field link on any log line containing `trace_id=` to jump to the full trace in Tempo.
+
+### Log Ingestion Pipeline
+
+Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
+
+### LogQL Query Examples
+
+```logql
+# Find all logs for a specific trace
+{job="rippled"} |= "trace_id=abc123def456789012345678abcdef01"
+
+# Error logs with trace context (log lines with ERR severity that have a trace_id)
+{job="rippled"} |= "ERR" |= "trace_id="
+
+# All logs from a specific partition that were emitted during a span
+{job="rippled"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+
+# Logs from the last hour containing trace context
+{job="rippled"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+
+# Count of traced vs untraced log lines
+count_over_time({job="rippled"} |= "trace_id=" [5m])
+```
+
+### Verifying Log Correlation
+
+1. Start the observability stack and rippled with telemetry enabled.
+2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
+3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="rippled"} |= "trace_id="`.
+5. Click the TraceID link to navigate to the corresponding trace in Tempo.
+
 ## Troubleshooting
 
 ### No traces appearing in Jaeger
@@ -386,6 +431,20 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 - Verify endpoint URL matches collector address
 - Check firewall rules for ports 4317/4318
 - If using TLS, verify certificate path with `tls_ca_cert`
+
+### No trace_id in log output
+
+- Verify rippled was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify `enabled=1` in the `[telemetry]` config section
+- Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
+- Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
+
+### No logs in Loki
+
+- Verify the log file mount in docker-compose.yml points to the correct rippled log directory
+- Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
+- Verify Loki is running: `curl http://localhost:3100/ready`
+- Check the filelog receiver glob pattern matches your log file paths
 
 ## Performance Tuning
 

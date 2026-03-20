@@ -1,0 +1,396 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "RPC and pathfinding metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "RPC Request Rate (StatsD)",
+      "description": "Rate of RPC requests as counted by the beast::insight counter. Sourced from rpc.requests (ServerHandler.cpp:108) which increments on every HTTP and WebSocket RPC request. Compare with the span-based rpc.request rate in the RPC Performance dashboard for cross-validation.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_rpc_requests_total[5m])",
+          "legendFormat": "Requests / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Time (StatsD)",
+      "description": "P95 and P50 of RPC response time from the beast::insight timer. Sourced from the rpc.time event (ServerHandler.cpp:110) which records elapsed milliseconds for each RPC response. This measures the full HTTP handler time, not just command execution. Compare with span-based rpc.request duration.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.95\"}",
+          "legendFormat": "P95 Response Time"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.5\"}",
+          "legendFormat": "P50 Response Time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Size",
+      "description": "P95 and P50 of RPC response payload size in bytes. Sourced from the rpc.size event (ServerHandler.cpp:109) which records the byte length of each RPC JSON response. Large responses may indicate expensive queries (e.g. account_tx with many results) or API misuse.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_size{quantile=\"0.95\"}",
+          "legendFormat": "P95 Response Size"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_size{quantile=\"0.5\"}",
+          "legendFormat": "P50 Response Size"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Size (Bytes)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Time Distribution",
+      "description": "Distribution of RPC response times from the beast::insight timer showing P50, P90, P95, and P99 quantiles. Sourced from the rpc.time event (ServerHandler.cpp:110). Useful for detecting bimodal latency or long-tail requests.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.5\"}",
+          "legendFormat": "P50"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.9\"}",
+          "legendFormat": "P90"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.95\"}",
+          "legendFormat": "P95"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_rpc_time{quantile=\"0.99\"}",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Fast Duration",
+      "description": "P95 and P50 of fast pathfinding execution time. Sourced from the pathfind_fast event (PathRequests.h:23) which records the duration of the fast pathfinding algorithm. Fast pathfinding uses a simplified search that trades accuracy for speed.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_pathfind_fast{quantile=\"0.95\"}",
+          "legendFormat": "P95 Fast Pathfind"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_pathfind_fast{quantile=\"0.5\"}",
+          "legendFormat": "P50 Fast Pathfind"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Full Duration",
+      "description": "P95 and P50 of full pathfinding execution time. Sourced from the pathfind_full event (PathRequests.h:24) which records the duration of the exhaustive pathfinding search. Full pathfinding is more expensive and can take significantly longer than fast mode.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_pathfind_full{quantile=\"0.95\"}",
+          "legendFormat": "P95 Full Pathfind"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_pathfind_full{quantile=\"0.5\"}",
+          "legendFormat": "P50 Full Pathfind"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Resource Warnings Rate",
+      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h:33) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp:706 (Phase 6 Task 6.1).",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_warn_total[5m])",
+          "legendFormat": "Warnings / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Resource Drops Rate",
+      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h:34) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp:706 (Phase 6 Task 6.1).",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_drop_total[5m])",
+          "legendFormat": "Drops / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "statsd", "rpc", "pathfinding", "telemetry"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "rippled RPC & Pathfinding (StatsD)",
+  "uid": "rippled-statsd-rpc"
+}

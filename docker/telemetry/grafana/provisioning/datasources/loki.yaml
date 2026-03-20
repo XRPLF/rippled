@@ -1,0 +1,24 @@
+# Grafana Loki data source provisioning for rippled log-trace correlation.
+#
+# Phase 8: Log-Trace Correlation and Centralized Log Ingestion
+#
+# Loki ingests rippled logs via OTel Collector's filelog receiver.
+# The derivedFields config links trace_id values in log lines back to
+# Tempo traces, enabling one-click log-to-trace navigation in Grafana.
+#
+# See: OpenTelemetryPlan/Phase8_taskList.md (Tasks 8.2, 8.4)
+
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    jsonData:
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: "trace_id=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"

@@ -1,0 +1,415 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Node health metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Validated Ledger Age",
+      "description": "Age of the most recently validated ledger in seconds. Sourced from the LedgerMaster.Validated_Ledger_Age gauge (LedgerMaster.h:373) which is updated every collection interval via the insight hook. Values above 20s indicate the node is falling behind the network.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_LedgerMaster_Validated_Ledger_Age",
+          "legendFormat": "Validated Age"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Published Ledger Age",
+      "description": "Age of the most recently published ledger in seconds. Sourced from the LedgerMaster.Published_Ledger_Age gauge (LedgerMaster.h:374). Published ledger age should track close to validated ledger age. A growing gap indicates publish pipeline backlog.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_LedgerMaster_Published_Ledger_Age",
+          "legendFormat": "Published Age"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Operating Mode Duration",
+      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp:774-778). A healthy node should spend the vast majority of time in Full mode.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Full_duration",
+          "legendFormat": "Full"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Tracking_duration",
+          "legendFormat": "Tracking"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Syncing_duration",
+          "legendFormat": "Syncing"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Connected_duration",
+          "legendFormat": "Connected"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Disconnected_duration",
+          "legendFormat": "Disconnected"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Duration (Sec)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Operating Mode Transitions",
+      "description": "Count of transitions into each operating mode. Sourced from State_Accounting.*_transitions gauges (NetworkOPs.cpp:780-786). Frequent transitions out of Full mode indicate instability. Transitions to Disconnected or Syncing warrant investigation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Full_transitions",
+          "legendFormat": "Full"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Tracking_transitions",
+          "legendFormat": "Tracking"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Syncing_transitions",
+          "legendFormat": "Syncing"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Connected_transitions",
+          "legendFormat": "Connected"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Disconnected_transitions",
+          "legendFormat": "Disconnected"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Transitions",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "I/O Latency",
+      "description": "P95 and P50 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp:438) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ios_latency{quantile=\"0.95\"}",
+          "legendFormat": "P95 I/O Latency"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ios_latency{quantile=\"0.5\"}",
+          "legendFormat": "P50 I/O Latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Job Queue Depth",
+      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_job_count",
+          "legendFormat": "Job Queue Depth"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Jobs",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Fetch Rate",
+      "description": "Rate of ledger fetch requests initiated by the node. Sourced from the ledger_fetches counter (InboundLedgers.cpp:44) which increments each time the node requests a ledger from a peer. High rates indicate the node is catching up or missing ledgers.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_ledger_fetches_total[5m])",
+          "legendFormat": "Fetches / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger History Mismatches",
+      "description": "Rate of ledger history hash mismatches. Sourced from the ledger.history.mismatch counter (LedgerHistory.cpp:16) which increments when a built ledger hash does not match the expected validated hash. Non-zero values indicate consensus divergence or database corruption.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_ledger_history_mismatch_total[5m])",
+          "legendFormat": "Mismatches / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.01
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "statsd", "node-health", "telemetry"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "rippled Node Health (StatsD)",
+  "uid": "rippled-statsd-node-health"
+}

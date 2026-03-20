@@ -453,6 +453,87 @@ Pre-configured datasources:
 
 - **Tempo**: Trace data at `http://tempo:3200`
 - **Prometheus**: Metrics at `http://prometheus:9090`
+- **Loki**: Log data at `http://loki:3100` (via Grafana Explore)
+
+---
+
+## Test 3: Log-Trace Correlation (Phase 8)
+
+Phase 8 injects `trace_id` and `span_id` into rippled's log output when
+a log line is emitted within an active OTel span. This test verifies the
+end-to-end log-trace correlation pipeline.
+
+### Step 1: Verify trace_id in log output
+
+After running Test 1 or Test 2 (which generate RPC spans), check the
+rippled debug.log for trace context:
+
+```bash
+grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' /path/to/debug.log
+```
+
+Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
+severity code and the message. Example:
+
+```
+2024-01-15T10:30:45.123Z RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+```
+
+Lines emitted outside of an active span (background tasks, startup) will
+NOT have trace context — this is expected.
+
+### Step 2: Cross-check trace_id in Jaeger
+
+Extract a `trace_id` from the log and verify it exists in Jaeger:
+
+```bash
+TRACE_ID=$(grep -o 'trace_id=[a-f0-9]\{32\}' /path/to/debug.log | head -1 | cut -d= -f2)
+echo "Checking trace: $TRACE_ID"
+curl -s "http://localhost:16686/api/traces/$TRACE_ID" | jq '.data | length'
+```
+
+Expected result: `1` (the trace exists in Jaeger).
+
+### Step 3: Verify Loki log ingestion
+
+The OTel Collector's filelog receiver tails rippled's debug.log and
+exports parsed entries to Loki. Verify Loki has received entries:
+
+```bash
+# Query Loki for any rippled logs
+curl -sG "http://localhost:3100/loki/api/v1/query" \
+  --data-urlencode 'query={job="rippled"}' \
+  --data-urlencode 'limit=5' | jq '.data.result | length'
+```
+
+Expected: > 0 results.
+
+### Step 4: Verify Grafana Tempo-to-Loki correlation
+
+1. Open Grafana at http://localhost:3000
+2. Navigate to **Explore** -> select **Tempo** datasource
+3. Search for a trace (e.g., operation `rpc.command.server_info`)
+4. Click **"Logs for this trace"** in the trace detail view
+5. Verify that Loki log lines appear, filtered by the trace's `trace_id`
+
+### Step 5: Verify Grafana Loki-to-Tempo correlation
+
+1. In Grafana **Explore**, select **Loki** datasource
+2. Query: `{job="rippled"} |= "trace_id="`
+3. In the log results, click the **TraceID** derived field link
+4. Verify it navigates to the full trace in Tempo
+
+### Expected results
+
+| Check                          | Expected                                 |
+| ------------------------------ | ---------------------------------------- |
+| `trace_id=` in debug.log       | Present in log lines within active spans |
+| `span_id=` in debug.log        | Present alongside trace_id               |
+| Logs without active span       | No trace_id/span_id fields               |
+| trace_id in Jaeger             | Matches a valid trace                    |
+| Loki log ingestion             | Logs visible via LogQL                   |
+| Tempo -> Loki "Logs for trace" | Shows correlated log lines               |
+| Loki -> Tempo TraceID link     | Navigates to correct trace               |
 
 ---
 
@@ -494,6 +575,44 @@ Pre-configured datasources:
    ```
 2. Check submit response for error codes
 3. In standalone mode, remember to call `ledger_accept` after submitting
+
+### No trace_id in log output (Phase 8)
+
+1. Verify rippled was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
+2. Verify `enabled=1` in the `[telemetry]` config section
+3. Log lines only contain trace context when emitted inside an active span.
+   Background logs (startup, periodic tasks outside spans) will not have
+   `trace_id`/`span_id`.
+4. Ensure the trace category is enabled (e.g., `trace_rpc=1` for RPC logs)
+
+### No logs in Loki (Phase 8)
+
+1. Verify the log file mount in docker-compose.yml:
+   ```yaml
+   volumes:
+     - /tmp/xrpld-integration:/var/log/rippled:ro
+   ```
+2. Check OTel Collector logs for filelog receiver errors:
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "filelog\|loki\|error"
+   ```
+3. Verify Loki is running:
+   ```bash
+   curl -s http://localhost:3100/ready
+   ```
+4. Verify the filelog receiver glob pattern matches your log files:
+   The default pattern is `/var/log/rippled/*/debug.log`
+
+### Grafana trace-log links not working (Phase 8)
+
+1. Verify `tracesToLogs` is configured in the Tempo datasource provisioning
+   (`docker/telemetry/grafana/provisioning/datasources/tempo.yaml`)
+2. Verify `derivedFields` is configured in the Loki datasource provisioning
+   (`docker/telemetry/grafana/provisioning/datasources/loki.yaml`)
+3. Restart Grafana after changing provisioning files:
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml restart grafana
+   ```
 
 ### Spanmetrics not appearing in Prometheus
 

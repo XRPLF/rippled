@@ -1,0 +1,470 @@
+{
+  "annotations": { "list": [] },
+  "description": "Network traffic and peer metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Active Peers",
+      "description": "Number of active inbound and outbound peer connections. Sourced from Peer_Finder.Active_Inbound_Peers and Peer_Finder.Active_Outbound_Peers gauges (PeerfinderManager.cpp:214-215). A healthy mainnet node typically has 10-21 outbound and 0-85 inbound peers depending on configuration.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_Peer_Finder_Active_Inbound_Peers",
+          "legendFormat": "Inbound Peers"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_Peer_Finder_Active_Outbound_Peers",
+          "legendFormat": "Outbound Peers"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Peers",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Disconnects",
+      "description": "Cumulative count of peer disconnections. Sourced from the Overlay.Peer_Disconnects gauge (OverlayImpl.h:557). A rising trend indicates network instability, aggressive peer management, or resource exhaustion causing connection drops.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_Overlay_Peer_Disconnects",
+          "legendFormat": "Disconnects"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Disconnects",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Total Network Bytes",
+      "description": "Total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h:535-548). Provides a high-level view of network bandwidth consumption.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_total_Bytes_In",
+          "legendFormat": "Bytes In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_total_Bytes_Out",
+          "legendFormat": "Bytes Out"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Bytes",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Total Network Messages",
+      "description": "Total messages sent and received across all peer connections. Sourced from the total.Messages_In and total.Messages_Out traffic category gauges (OverlayImpl.h:535-548). Shows the overall message throughput of the overlay network.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_total_Messages_In",
+          "legendFormat": "Messages In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_total_Messages_Out",
+          "legendFormat": "Messages Out"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Traffic",
+      "description": "Bytes and messages for transaction-related overlay traffic. Includes the transactions traffic category (OverlayImpl/TrafficCount.h). Spikes indicate high transaction volume on the network or transaction flooding.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_transactions_Messages_In",
+          "legendFormat": "TX Messages In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_transactions_Messages_Out",
+          "legendFormat": "TX Messages Out"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_transactions_duplicate_Messages_In",
+          "legendFormat": "TX Duplicate In"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Proposal Traffic",
+      "description": "Messages for consensus proposal overlay traffic. Includes proposals, proposals_untrusted, and proposals_duplicate categories (TrafficCount.h). High untrusted or duplicate counts may indicate UNL misconfiguration or network spam.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_proposals_Messages_In",
+          "legendFormat": "Proposals In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_proposals_Messages_Out",
+          "legendFormat": "Proposals Out"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_proposals_untrusted_Messages_In",
+          "legendFormat": "Untrusted In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_proposals_duplicate_Messages_In",
+          "legendFormat": "Duplicate In"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Validation Traffic",
+      "description": "Messages for validation overlay traffic. Includes validations, validations_untrusted, and validations_duplicate categories (TrafficCount.h). Monitoring trusted vs untrusted validation traffic helps detect UNL health issues.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_validations_Messages_In",
+          "legendFormat": "Validations In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_validations_Messages_Out",
+          "legendFormat": "Validations Out"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_validations_untrusted_Messages_In",
+          "legendFormat": "Untrusted In"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rippled_validations_duplicate_Messages_In",
+          "legendFormat": "Duplicate In"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Overlay Traffic by Category (Bytes In)",
+      "description": "Top traffic categories by inbound bytes. Includes all 57 overlay traffic categories from TrafficCount.h. Shows which protocol message types consume the most bandwidth. Categories include transactions, proposals, validations, ledger data, getobject, and overlay overhead.",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "topk(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_transactions_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Transactions" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_proposals_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Proposals" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_validations_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Validations" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_overhead_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Overhead" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_overhead_overlay_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Overhead Overlay" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "rippled_ping_Bytes_In" },
+            "properties": [{ "id": "displayName", "value": "Ping" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "rippled_status_Bytes_In" },
+            "properties": [{ "id": "displayName", "value": "Status" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_getObject_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Get Object" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_haveTxSet_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Have Tx Set" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledgerData_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Ledger Data" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_share_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Ledger Share" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_get_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Ledger Data Get" }]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_share_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Ledger Data Share" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_Account_State_Node_get_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Account State Node Get" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_Account_State_Node_share_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Account State Node Share" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_Transaction_Node_get_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Transaction Node Get" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_Transaction_Node_share_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Transaction Node Share" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_data_Transaction_Set_candidate_get_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Tx Set Candidate Get" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_Account_State_node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Account State Node Share (Legacy)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_Transaction_Set_candidate_share_Bytes_In"
+            },
+            "properties": [
+              { "id": "displayName", "value": "Tx Set Candidate Share" }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_ledger_Transaction_node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Transaction Node Share (Legacy)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rippled_set_get_Bytes_In"
+            },
+            "properties": [{ "id": "displayName", "value": "Set Get" }]
+          }
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "statsd", "network", "telemetry"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "rippled Network Traffic (StatsD)",
+  "uid": "rippled-statsd-network"
+}
