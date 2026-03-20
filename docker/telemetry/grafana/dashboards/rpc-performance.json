@@ -371,6 +371,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled RPC Performance",
+  "title": "RPC Performance",
   "uid": "rippled-rpc-perf"
 }

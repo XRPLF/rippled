@@ -159,7 +159,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -222,6 +222,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled Peer Network",
+  "title": "Peer Network",
   "uid": "rippled-peer-net"
 }

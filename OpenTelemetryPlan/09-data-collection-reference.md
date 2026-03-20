@@ -1,0 +1,553 @@
+# Observability Data Collection Reference
+
+> **Audience**: Developers and operators. This is the single source of truth for all telemetry data collected by rippled's observability stack.
+>
+> **Related docs**: [docs/telemetry-runbook.md](../docs/telemetry-runbook.md) (operator runbook with alerting and troubleshooting) | [03-implementation-strategy.md](./03-implementation-strategy.md) (code structure and performance optimization) | [04-code-samples.md](./04-code-samples.md) (C++ instrumentation examples)
+
+## Data Flow Overview
+
+```mermaid
+graph LR
+    subgraph rippledNode["rippled Node"]
+        A["Trace Macros<br/>XRPL_TRACE_SPAN<br/>(OTLP/HTTP exporter)"]
+        B["beast::insight<br/>StatsD metrics<br/>(UDP sender)"]
+    end
+
+    subgraph collector["OTel Collector  :4317 / :4318 / :8125"]
+        direction TB
+        R1["OTLP Receiver<br/>:4317 gRPC  |  :4318 HTTP"]
+        R2["StatsD Receiver<br/>:8125 UDP"]
+        BP["Batch Processor<br/>timeout 1s, batch 100"]
+        SM["SpanMetrics Connector<br/>derives RED metrics<br/>from trace spans"]
+
+        R1 --> BP
+        BP --> SM
+    end
+
+    subgraph backends["Trace Backends  (choose one or both)"]
+        D["Jaeger  :16686<br/>Trace search &<br/>visualization"]
+        T["Grafana Tempo<br/>(preferred for production)<br/>S3/GCS long-term storage"]
+    end
+
+    subgraph metrics["Metrics Stack"]
+        E["Prometheus  :9090<br/>scrapes :8889<br/>span-derived + StatsD metrics"]
+    end
+
+    subgraph viz["Visualization"]
+        F["Grafana  :3000<br/>10 dashboards"]
+    end
+
+    A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
+    B -->|"UDP :8125<br/>(gauges, counters, timers)"| R2
+
+    BP -->|"OTLP/gRPC :4317"| D
+    BP -->|"OTLP/gRPC"| T
+
+    SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
+    R2 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* summaries"| E
+
+    E -->|"Prometheus<br/>data source"| F
+    D -->|"Jaeger<br/>data source"| F
+    T -->|"Tempo<br/>data source"| F
+
+    style A fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style B fill:#d9534f,color:#fff,stroke:#b52d2d
+    style R1 fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style R2 fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style BP fill:#449d44,color:#fff,stroke:#2d6e2d
+    style SM fill:#449d44,color:#fff,stroke:#2d6e2d
+    style D fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style T fill:#e8953a,color:#000,stroke:#b5732a
+    style E fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style F fill:#5bc0de,color:#000,stroke:#3aa8c1
+    style rippledNode fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style collector fill:#1a3320,color:#ccc,stroke:#5cb85c
+    style backends fill:#332a1a,color:#ccc,stroke:#f0ad4e
+    style metrics fill:#332a1a,color:#ccc,stroke:#f0ad4e
+    style viz fill:#1a2d33,color:#ccc,stroke:#5bc0de
+```
+
+There are two independent telemetry pipelines entering a single **OTel Collector**:
+
+1. **OpenTelemetry Traces** — Distributed spans with attributes, exported via OTLP/HTTP (:4318) to the collector's **OTLP Receiver**. The **Batch Processor** groups spans (1s timeout, batch size 100) before forwarding to trace backends. The **SpanMetrics Connector** derives RED metrics (rate, errors, duration) from every span and feeds them into the metrics pipeline.
+2. **beast::insight StatsD** — System-level gauges, counters, and timers emitted as StatsD UDP packets to port :8125, ingested by the collector's **StatsD Receiver**, and exported alongside span-derived metrics to Prometheus.
+
+**Trace backends** — The collector exports traces via OTLP/gRPC to one or both:
+
+- **Jaeger** (development) — Provides trace search UI at `:16686`. Easy single-binary setup.
+- **Grafana Tempo** (production) — Preferred for production. Supports S3/GCS object storage for cost-effective long-term trace retention and integrates natively with Grafana.
+
+> **Further reading**: [00-tracing-fundamentals.md](./00-tracing-fundamentals.md) for core OpenTelemetry concepts (traces, spans, context propagation, sampling). [07-observability-backends.md](./07-observability-backends.md) for production backend selection, collector placement, and sampling strategies.
+
+---
+
+## 1. OpenTelemetry Spans
+
+### 1.1 Complete Span Inventory (16 spans)
+
+> **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
+
+#### RPC Spans
+
+Controlled by `trace_rpc=1` in `[telemetry]` config.
+
+| Span Name            | Parent        | Source File       | Description                                                              |
+| -------------------- | ------------- | ----------------- | ------------------------------------------------------------------------ |
+| `rpc.request`        | —             | ServerHandler.cpp | Top-level HTTP RPC request entry point                                   |
+| `rpc.process`        | `rpc.request` | ServerHandler.cpp | RPC processing pipeline                                                  |
+| `rpc.ws_message`     | —             | ServerHandler.cpp | WebSocket message handling                                               |
+| `rpc.command.<name>` | `rpc.process` | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
+
+**Where to find**: Jaeger → Service: `rippled` → Operation: `rpc.request` or `rpc.command.*`
+
+**Grafana dashboard**: _RPC Performance_ (`rippled-rpc-perf`)
+
+#### Transaction Spans
+
+Controlled by `trace_transactions=1` in `[telemetry]` config.
+
+| Span Name    | Parent         | Source File     | Description                                                       |
+| ------------ | -------------- | --------------- | ----------------------------------------------------------------- |
+| `tx.process` | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)        |
+| `tx.receive` | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
+| `tx.apply`   | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
+
+**Where to find**: Jaeger → Operation: `tx.process` or `tx.receive`
+
+**Grafana dashboard**: _Transaction Overview_ (`rippled-transactions`)
+
+#### Consensus Spans
+
+Controlled by `trace_consensus=1` in `[telemetry]` config.
+
+| Span Name                   | Parent | Source File      | Description                                   |
+| --------------------------- | ------ | ---------------- | --------------------------------------------- |
+| `consensus.proposal.send`   | —      | RCLConsensus.cpp | Node broadcasts its transaction set proposal  |
+| `consensus.ledger_close`    | —      | RCLConsensus.cpp | Ledger close event triggered by consensus     |
+| `consensus.accept`          | —      | RCLConsensus.cpp | Consensus accepts a ledger (round complete)   |
+| `consensus.validation.send` | —      | RCLConsensus.cpp | Validation message sent after ledger accepted |
+| `consensus.accept.apply`    | —      | RCLConsensus.cpp | Ledger application with close time details    |
+
+**Where to find**: Jaeger → Operation: `consensus.*`
+
+**Grafana dashboard**: _Consensus Health_ (`rippled-consensus`)
+
+#### Ledger Spans
+
+Controlled by `trace_ledger=1` in `[telemetry]` config.
+
+| Span Name         | Parent | Source File      | Description                                    |
+| ----------------- | ------ | ---------------- | ---------------------------------------------- |
+| `ledger.build`    | —      | BuildLedger.cpp  | Build new ledger from accepted transaction set |
+| `ledger.validate` | —      | LedgerMaster.cpp | Ledger promoted to validated status            |
+| `ledger.store`    | —      | LedgerMaster.cpp | Ledger stored to database/history              |
+
+**Where to find**: Jaeger → Operation: `ledger.*`
+
+**Grafana dashboard**: _Ledger Operations_ (`rippled-ledger-ops`)
+
+#### Peer Spans
+
+Controlled by `trace_peer=1` in `[telemetry]` config. **Disabled by default** (high volume).
+
+| Span Name                 | Parent | Source File | Description                           |
+| ------------------------- | ------ | ----------- | ------------------------------------- |
+| `peer.proposal.receive`   | —      | PeerImp.cpp | Consensus proposal received from peer |
+| `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
+
+**Where to find**: Jaeger → Operation: `peer.*`
+
+**Grafana dashboard**: _Peer Network_ (`rippled-peer-net`)
+
+---
+
+### 1.2 Complete Attribute Inventory (22 attributes)
+
+> **See also**: [02-design-decisions.md §2.4.2](./02-design-decisions.md#242-span-attributes-by-category) for attribute design rationale and privacy considerations.
+
+Every span can carry key-value attributes that provide context for filtering and aggregation.
+
+#### RPC Attributes
+
+| Attribute                | Type   | Set On          | Description                                      |
+| ------------------------ | ------ | --------------- | ------------------------------------------------ |
+| `xrpl.rpc.command`       | string | `rpc.command.*` | RPC command name (e.g., `server_info`, `ledger`) |
+| `xrpl.rpc.version`       | int64  | `rpc.command.*` | API version number                               |
+| `xrpl.rpc.role`          | string | `rpc.command.*` | Caller role: `"admin"` or `"user"`               |
+| `xrpl.rpc.status`        | string | `rpc.command.*` | Result: `"success"` or `"error"`                 |
+| `xrpl.rpc.duration_ms`   | int64  | `rpc.command.*` | Command execution time in milliseconds           |
+| `xrpl.rpc.error_message` | string | `rpc.command.*` | Error details (only set on failure)              |
+
+**Jaeger query**: Tag `xrpl.rpc.command=server_info` to find all `server_info` calls.
+
+**Prometheus label**: `xrpl_rpc_command` (dots converted to underscores by SpanMetrics).
+
+#### Transaction Attributes
+
+| Attribute            | Type    | Set On                     | Description                                          |
+| -------------------- | ------- | -------------------------- | ---------------------------------------------------- |
+| `xrpl.tx.hash`       | string  | `tx.process`, `tx.receive` | Transaction hash (hex-encoded)                       |
+| `xrpl.tx.local`      | boolean | `tx.process`               | `true` if locally submitted, `false` if peer-relayed |
+| `xrpl.tx.path`       | string  | `tx.process`               | Submission path: `"sync"` or `"async"`               |
+| `xrpl.tx.suppressed` | boolean | `tx.receive`               | `true` if transaction was suppressed (duplicate)     |
+| `xrpl.tx.status`     | string  | `tx.receive`               | Transaction status (e.g., `"known_bad"`)             |
+
+**Jaeger query**: Tag `xrpl.tx.hash=<hash>` to trace a specific transaction across nodes.
+
+**Prometheus label**: `xrpl_tx_local` (used as SpanMetrics dimension).
+
+#### Consensus Attributes
+
+| Attribute                            | Type    | Set On                                                                                              | Description                                                   |
+| ------------------------------------ | ------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `xrpl.consensus.round`               | int64   | `consensus.proposal.send`                                                                           | Consensus round number                                        |
+| `xrpl.consensus.mode`                | string  | `consensus.proposal.send`, `consensus.ledger_close`                                                 | Node mode: `"syncing"`, `"tracking"`, `"full"`, `"proposing"` |
+| `xrpl.consensus.proposers`           | int64   | `consensus.proposal.send`, `consensus.accept`                                                       | Number of proposers in the round                              |
+| `xrpl.consensus.proposing`           | boolean | `consensus.validation.send`                                                                         | Whether this node was a proposer                              |
+| `xrpl.consensus.ledger.seq`          | int64   | `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply` | Ledger sequence number                                        |
+| `xrpl.consensus.close_time`          | int64   | `consensus.accept.apply`                                                                            | Agreed-upon ledger close time (epoch seconds)                 |
+| `xrpl.consensus.close_time_correct`  | boolean | `consensus.accept.apply`                                                                            | Whether validators reached agreement on close time            |
+| `xrpl.consensus.close_resolution_ms` | int64   | `consensus.accept.apply`                                                                            | Close time rounding granularity in milliseconds               |
+| `xrpl.consensus.state`               | string  | `consensus.accept.apply`                                                                            | Consensus outcome: `"finished"` or `"moved_on"`               |
+| `xrpl.consensus.round_time_ms`       | int64   | `consensus.accept.apply`                                                                            | Total consensus round duration in milliseconds                |
+
+**Jaeger query**: Tag `xrpl.consensus.mode=proposing` to find rounds where node was proposing.
+
+**Prometheus label**: `xrpl_consensus_mode` (used as SpanMetrics dimension).
+
+#### Ledger Attributes
+
+| Attribute                 | Type  | Set On                                                        | Description                                    |
+| ------------------------- | ----- | ------------------------------------------------------------- | ---------------------------------------------- |
+| `xrpl.ledger.seq`         | int64 | `ledger.build`, `ledger.validate`, `ledger.store`, `tx.apply` | Ledger sequence number                         |
+| `xrpl.ledger.validations` | int64 | `ledger.validate`                                             | Number of validations received for this ledger |
+| `xrpl.ledger.tx_count`    | int64 | `ledger.build`, `tx.apply`                                    | Transactions in the ledger                     |
+| `xrpl.ledger.tx_failed`   | int64 | `ledger.build`, `tx.apply`                                    | Failed transactions in the ledger              |
+
+**Jaeger query**: Tag `xrpl.ledger.seq=12345` to find all spans for a specific ledger.
+
+#### Peer Attributes
+
+| Attribute                      | Type    | Set On                                                           | Description                                          |
+| ------------------------------ | ------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| `xrpl.peer.id`                 | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
+| `xrpl.peer.proposal.trusted`   | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
+| `xrpl.peer.validation.trusted` | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
+
+**Prometheus labels**: `xrpl_peer_proposal_trusted`, `xrpl_peer_validation_trusted` (SpanMetrics dimensions).
+
+---
+
+### 1.3 SpanMetrics — Derived Prometheus Metrics
+
+> **See also**: [01-architecture-analysis.md](./01-architecture-analysis.md) §1.8.2 for how span-derived metrics map to operational insights.
+
+The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in rippled is needed.
+
+| Prometheus Metric                                  | Type      | Description                                                                    |
+| -------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
+| `traces_span_metrics_calls_total`                  | Counter   | Total span invocations                                                         |
+| `traces_span_metrics_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
+| `traces_span_metrics_duration_milliseconds_count`  | Histogram | Observation count                                                              |
+| `traces_span_metrics_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
+
+**Standard labels on every metric**: `span_name`, `status_code`, `service_name`, `span_kind`
+
+**Additional dimension labels** (configured in `otel-collector-config.yaml`):
+
+| Span Attribute                 | Prometheus Label               | Applies To                |
+| ------------------------------ | ------------------------------ | ------------------------- |
+| `xrpl.rpc.command`             | `xrpl_rpc_command`             | `rpc.command.*`           |
+| `xrpl.rpc.status`              | `xrpl_rpc_status`              | `rpc.command.*`           |
+| `xrpl.consensus.mode`          | `xrpl_consensus_mode`          | `consensus.ledger_close`  |
+| `xrpl.tx.local`                | `xrpl_tx_local`                | `tx.process`              |
+| `xrpl.peer.proposal.trusted`   | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`   |
+| `xrpl.peer.validation.trusted` | `xrpl_peer_validation_trusted` | `peer.validation.receive` |
+
+**Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
+
+---
+
+## 2. StatsD Metrics (beast::insight)
+
+> **See also**: [02-design-decisions.md](./02-design-decisions.md) for the beast::insight coexistence design. [06-implementation-phases.md](./06-implementation-phases.md) for the Phase 6 metric inventory.
+
+These are system-level metrics emitted by rippled's `beast::insight` framework via StatsD UDP. They cover operational data that doesn't map to individual trace spans.
+
+### Configuration
+
+```ini
+[insight]
+server=statsd
+address=127.0.0.1:8125
+prefix=rippled
+```
+
+### 2.1 Gauges
+
+| Prometheus Metric                                   | Source File           | Description                              | Typical Range                   |
+| --------------------------------------------------- | --------------------- | ---------------------------------------- | ------------------------------- |
+| `rippled_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger      | 0–10 (healthy), >30 (stale)     |
+| `rippled_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger      | 0–10 (healthy)                  |
+| `rippled_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state | Monotonic                       |
+| `rippled_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state    | Monotonic                       |
+| `rippled_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state      | Monotonic                       |
+| `rippled_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state     | Monotonic                       |
+| `rippled_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state         | Monotonic (should dominate)     |
+| `rippled_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected     | Low                             |
+| `rippled_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected        | Low                             |
+| `rippled_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing          | Low                             |
+| `rippled_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking         | Low                             |
+| `rippled_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full             | Low (should be 1 after startup) |
+| `rippled_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections          | 0–85                            |
+| `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
+| `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
+| `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                  | 0–100 (healthy)                 |
+
+**Grafana dashboard**: _Node Health (StatsD)_ (`rippled-statsd-node-health`)
+
+### 2.2 Counters
+
+| Prometheus Metric                 | Source File        | Description                                   |
+| --------------------------------- | ------------------ | --------------------------------------------- |
+| `rippled_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `rippled_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `rippled_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `rippled_warn`                    | Logic.h            | Resource manager warnings issued              |
+| `rippled_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+
+**Note**: `rippled_warn` and `rippled_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
+
+**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`rippled-statsd-rpc`)
+
+### 2.3 Histograms (from StatsD timers)
+
+| Prometheus Metric       | Source File       | Unit  | Description                    |
+| ----------------------- | ----------------- | ----- | ------------------------------ |
+| `rippled_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
+| `rippled_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
+| `rippled_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
+| `rippled_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
+| `rippled_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
+
+Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
+
+**Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
+
+### 2.4 Overlay Traffic Metrics
+
+For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), four gauges are emitted:
+
+- `rippled_{category}_Bytes_In`
+- `rippled_{category}_Bytes_Out`
+- `rippled_{category}_Messages_In`
+- `rippled_{category}_Messages_Out`
+
+**Key categories**:
+
+| Category                                                          | Description                |
+| ----------------------------------------------------------------- | -------------------------- |
+| `total`                                                           | All traffic aggregated     |
+| `overhead` / `overhead_overlay`                                   | Protocol overhead          |
+| `transactions` / `transactions_duplicate`                         | Transaction relay          |
+| `proposals` / `proposals_untrusted` / `proposals_duplicate`       | Consensus proposals        |
+| `validations` / `validations_untrusted` / `validations_duplicate` | Consensus validations      |
+| `ledger_data_get` / `ledger_data_share`                           | Ledger data exchange       |
+| `ledger_data_Transaction_Node_get/share`                          | Transaction node data      |
+| `ledger_data_Account_State_Node_get/share`                        | Account state node data    |
+| `ledger_data_Transaction_Set_candidate_get/share`                 | Transaction set candidates |
+| `getObject` / `haveTxSet` / `ledgerData`                          | Object requests            |
+| `ping` / `status`                                                 | Keepalive and status       |
+| `set_get`                                                         | Set requests               |
+
+**Grafana dashboards**: _Network Traffic_ (`rippled-statsd-network`), _Overlay Traffic Detail_ (`rippled-statsd-overlay-detail`), _Ledger Data & Sync_ (`rippled-statsd-ledger-sync`)
+
+---
+
+## 3. Grafana Dashboard Reference
+
+> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8 for Grafana data source provisioning (Tempo, Jaeger, Prometheus) and TraceQL query examples.
+
+### 3.1 Span-Derived Dashboards (5)
+
+| Dashboard            | UID                    | Data Source              | Key Panels                                                                         |
+| -------------------- | ---------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| RPC Performance      | `rippled-rpc-perf`     | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands |
+| Transaction Overview | `rippled-transactions` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap    |
+| Consensus Health     | `rippled-consensus`    | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap     |
+| Ledger Operations    | `rippled-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison |
+| Peer Network         | `rippled-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown     |
+
+### 3.2 StatsD Dashboards (5)
+
+| Dashboard              | UID                             | Data Source         | Key Panels                                                                        |
+| ---------------------- | ------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| Node Health            | `rippled-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
+| Network Traffic        | `rippled-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
+| RPC & Pathfinding      | `rippled-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
+| Overlay Traffic Detail | `rippled-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
+| Ledger Data & Sync     | `rippled-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
+
+### 3.3 Accessing the Dashboards
+
+1. Open Grafana at **http://localhost:3000**
+2. Navigate to **Dashboards → rippled** folder
+3. All 10 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
+
+---
+
+## 4. Jaeger Trace Search Guide
+
+> **See also**: [08-appendix.md](./08-appendix.md) §8.2 for span hierarchy visualizations. [05-configuration-reference.md](./05-configuration-reference.md) §5.8.5 for TraceQL examples when using Grafana Tempo instead of Jaeger.
+
+### Finding Traces by Type
+
+| What to Find             | Jaeger Search Parameters                                   |
+| ------------------------ | ---------------------------------------------------------- |
+| All RPC calls            | Service: `rippled`, Operation: `rpc.request`               |
+| Specific RPC command     | Operation: `rpc.command.server_info` (or any command name) |
+| Slow RPC calls           | Operation: `rpc.command.*`, Min Duration: `100ms`          |
+| Failed RPC calls         | Tag: `xrpl.rpc.status=error`                               |
+| Specific transaction     | Tag: `xrpl.tx.hash=<hex_hash>`                             |
+| Local transactions only  | Tag: `xrpl.tx.local=true`                                  |
+| Consensus rounds         | Operation: `consensus.accept`                              |
+| Rounds by mode           | Tag: `xrpl.consensus.mode=proposing`                       |
+| Specific ledger          | Tag: `xrpl.ledger.seq=12345`                               |
+| Peer proposals (trusted) | Tag: `xrpl.peer.proposal.trusted=true`                     |
+
+### Trace Structure
+
+A typical RPC trace shows the span hierarchy:
+
+```
+rpc.request (ServerHandler)
+  └── rpc.process (ServerHandler)
+       └── rpc.command.server_info (RPCHandler)
+```
+
+A consensus round produces independent spans (not parent-child):
+
+```
+consensus.ledger_close        (close event)
+consensus.proposal.send       (broadcast proposal)
+ledger.build                  (build new ledger)
+  └── tx.apply                (apply transaction set)
+consensus.accept              (accept result)
+consensus.validation.send     (send validation)
+ledger.validate               (promote to validated)
+ledger.store                  (persist to DB)
+```
+
+---
+
+## 5. Prometheus Query Examples
+
+> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8.7 for correlating Prometheus StatsD metrics with trace-derived metrics.
+
+### Span-Derived Metrics
+
+```promql
+# RPC request rate by command (last 5 minutes)
+sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))
+
+# RPC p95 latency by command
+histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
+
+# Consensus round duration p95
+histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name="consensus.accept"}[5m])))
+
+# Transaction processing rate (local vs relay)
+sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))
+
+# Trusted vs untrusted proposal rate
+sum by (xrpl_peer_proposal_trusted) (rate(traces_span_metrics_calls_total{span_name="peer.proposal.receive"}[5m]))
+```
+
+### StatsD Metrics
+
+```promql
+# Validated ledger age (should be < 10s)
+rippled_LedgerMaster_Validated_Ledger_Age
+
+# Active peer count
+rippled_Peer_Finder_Active_Inbound_Peers + rippled_Peer_Finder_Active_Outbound_Peers
+
+# RPC response time p95
+histogram_quantile(0.95, rippled_rpc_time_bucket)
+
+# Total network bytes in (rate)
+rate(rippled_total_Bytes_In[5m])
+
+# Operating mode (should be "Full" after startup)
+rippled_State_Accounting_Full_duration
+```
+
+---
+
+## 6. Known Issues
+
+| Issue                                                              | Impact                                           | Status                                                               |
+| ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
+| `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
+| `rippled_job_count` may not emit in standalone mode                | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `rippled_rpc_requests` depends on `[insight]` config               | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
+| Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
+
+---
+
+## 7. Privacy and Data Collection
+
+The telemetry system is designed with privacy in mind:
+
+- **No private keys** are ever included in spans or metrics
+- **No account balances** or financial data is traced
+- **Transaction hashes** are included (public on-ledger data) but not transaction contents
+- **Peer IDs** are internal identifiers, not IP addresses
+- **All telemetry is opt-in** — disabled by default at build time (`-Dtelemetry=OFF`)
+- **Sampling** reduces data volume — `sampling_ratio=0.01` recommended for production
+- **Data stays local** — the default stack sends data to `localhost` only
+
+---
+
+## 8. Configuration Quick Reference
+
+> **Full reference**: [05-configuration-reference.md](./05-configuration-reference.md) §5.1 for all `[telemetry]` options with defaults, the config parser implementation, and collector YAML configurations (dev and production).
+
+### Minimal Setup (development)
+
+```ini
+[telemetry]
+enabled=1
+
+[insight]
+server=statsd
+address=127.0.0.1:8125
+prefix=rippled
+```
+
+### Production Setup
+
+```ini
+[telemetry]
+enabled=1
+endpoint=http://otel-collector:4318/v1/traces
+sampling_ratio=0.01
+trace_peer=0
+batch_size=1024
+max_queue_size=4096
+
+[insight]
+server=statsd
+address=otel-collector:8125
+prefix=rippled
+```
+
+### Trace Category Toggle
+
+| Config Key           | Default | Controls                     |
+| -------------------- | ------- | ---------------------------- |
+| `trace_rpc`          | `1`     | `rpc.*` spans                |
+| `trace_transactions` | `1`     | `tx.*` spans                 |
+| `trace_consensus`    | `1`     | `consensus.*` spans          |
+| `trace_ledger`       | `1`     | `ledger.*` spans             |
+| `trace_peer`         | `0`     | `peer.*` spans (high volume) |

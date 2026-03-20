@@ -449,6 +449,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled Consensus Health",
+  "title": "Consensus Health",
   "uid": "rippled-consensus"
 }

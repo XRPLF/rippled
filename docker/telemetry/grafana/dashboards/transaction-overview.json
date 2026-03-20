@@ -379,6 +379,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled Transaction Overview",
+  "title": "Transaction Overview",
   "uid": "rippled-transactions"
 }

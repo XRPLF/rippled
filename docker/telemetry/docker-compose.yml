@@ -26,7 +26,8 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
-      - "8889:8889" # Prometheus metrics (spanmetrics)
+      - "8125:8125/udp" # StatsD UDP (beast::insight metrics)
+      - "8889:8889" # Prometheus metrics (spanmetrics + statsd)
       - "13133:13133" # Health check
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro

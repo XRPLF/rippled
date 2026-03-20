@@ -313,6 +313,11 @@ trace_consensus=1
 trace_peer=1
 trace_ledger=1
 
+[insight]
+server=statsd
+address=127.0.0.1:8125
+prefix=rippled
+
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
 
@@ -535,6 +540,44 @@ if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
 else
     fail "Grafana: not reachable at localhost:3000"
 fi
+
+# ---------------------------------------------------------------------------
+# Step 10b: Verify StatsD metrics in Prometheus
+# ---------------------------------------------------------------------------
+log ""
+log "--- Phase 6: StatsD Metrics (beast::insight) ---"
+log "Waiting 20s for StatsD aggregation + Prometheus scrape..."
+sleep 20
+
+check_statsd_metric() {
+    local metric_name="$1"
+    local result
+    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" \
+        | jq '.data.result | length' 2>/dev/null || echo 0)
+    if [ "$result" -gt 0 ]; then
+        ok "StatsD: $metric_name ($result series)"
+    else
+        fail "StatsD: $metric_name (0 series)"
+    fi
+}
+
+# Node health gauges
+check_statsd_metric "rippled_LedgerMaster_Validated_Ledger_Age"
+check_statsd_metric "rippled_LedgerMaster_Published_Ledger_Age"
+check_statsd_metric "rippled_job_count"
+
+# State accounting
+check_statsd_metric "rippled_State_Accounting_Full_duration"
+
+# Peer finder
+check_statsd_metric "rippled_Peer_Finder_Active_Inbound_Peers"
+check_statsd_metric "rippled_Peer_Finder_Active_Outbound_Peers"
+
+# RPC counters (only if RPC was exercised — should be true from Steps 5-8)
+check_statsd_metric "rippled_rpc_requests"
+
+# Overlay traffic
+check_statsd_metric "rippled_total_Bytes_In"
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

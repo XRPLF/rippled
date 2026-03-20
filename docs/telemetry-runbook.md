@@ -62,20 +62,20 @@ All spans instrumented in rippled, grouped by subsystem:
 
 ### RPC Spans (Phase 2)
 
-| Span Name            | Source File           | Attributes                                              | Description                                        |
-| -------------------- | --------------------- | ------------------------------------------------------- | -------------------------------------------------- |
-| `rpc.request`        | ServerHandler.cpp:271 | —                                                       | Top-level HTTP RPC request                         |
-| `rpc.process`        | ServerHandler.cpp:573 | —                                                       | RPC processing (child of rpc.request)              |
-| `rpc.ws_message`     | ServerHandler.cpp:384 | —                                                       | WebSocket RPC message                              |
-| `rpc.command.<name>` | RPCHandler.cpp:161    | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role` | Per-command span (e.g., `rpc.command.server_info`) |
+| Span Name            | Source File           | Attributes                                                                                                                   | Description                                        |
+| -------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `rpc.request`        | ServerHandler.cpp:271 | —                                                                                                                            | Top-level HTTP RPC request                         |
+| `rpc.process`        | ServerHandler.cpp:573 | —                                                                                                                            | RPC processing (child of rpc.request)              |
+| `rpc.ws_message`     | ServerHandler.cpp:384 | —                                                                                                                            | WebSocket RPC message                              |
+| `rpc.command.<name>` | RPCHandler.cpp:161    | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`, `xrpl.rpc.status`, `xrpl.rpc.duration_ms`, `xrpl.rpc.error_message` | Per-command span (e.g., `rpc.command.server_info`) |
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File         | Attributes                                      | Description                           |
-| ------------ | ------------------- | ----------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`                                  | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed` | Transaction set applied per ledger    |
+| Span Name    | Source File         | Attributes                                                             | Description                           |
+| ------------ | ------------------- | ---------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                        | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `xrpl.tx.suppressed`, `xrpl.tx.status` | Transaction received from peer relay  |
+| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.seq`, `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`     | Transaction set applied per ledger    |
 
 ### Consensus Spans (Phase 4)
 
@@ -105,11 +105,11 @@ All spans instrumented in rippled, grouped by subsystem:
 
 ### Ledger Spans (Phase 5)
 
-| Span Name         | Source File          | Attributes                                   | Description                   |
-| ----------------- | -------------------- | -------------------------------------------- | ----------------------------- |
-| `ledger.build`    | BuildLedger.cpp:31   | `xrpl.ledger.seq`                            | Ledger build during consensus |
-| `ledger.validate` | LedgerMaster.cpp:915 | `xrpl.ledger.seq`, `xrpl.ledger.validations` | Ledger promoted to validated  |
-| `ledger.store`    | LedgerMaster.cpp:409 | `xrpl.ledger.seq`                            | Ledger stored in history      |
+| Span Name         | Source File          | Attributes                                                         | Description                   |
+| ----------------- | -------------------- | ------------------------------------------------------------------ | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp:31   | `xrpl.ledger.seq`, `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed` | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp:915 | `xrpl.ledger.seq`, `xrpl.ledger.validations`                       | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp:409 | `xrpl.ledger.seq`                                                  | Ledger stored in history      |
 
 ### Peer Spans (Phase 5)
 
@@ -161,9 +161,63 @@ Configured in `otel-collector-config.yaml`:
 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
 ```
 
+## StatsD Metrics (beast::insight)
+
+rippled has a built-in metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
+
+### Configuration
+
+Add to `xrpld.cfg`:
+
+```ini
+[insight]
+server=statsd
+address=127.0.0.1:8125
+prefix=rippled
+```
+
+The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
+
+### Metric Reference
+
+#### Gauges
+
+| Prometheus Metric                             | Source                    | Description                                                                |
+| --------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `rippled_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `rippled_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `rippled_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `rippled_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `rippled_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `rippled_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `rippled_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `rippled_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `rippled_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `rippled_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+
+#### Counters
+
+| Prometheus Metric                 | Source                | Description                    |
+| --------------------------------- | --------------------- | ------------------------------ |
+| `rippled_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `rippled_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `rippled_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `rippled_warn`                    | Logic.h:33            | Resource manager warning count |
+| `rippled_drop`                    | Logic.h:34            | Resource manager drop count    |
+
+#### Histograms (from StatsD timers)
+
+| Prometheus Metric       | Source                | Description                    |
+| ----------------------- | --------------------- | ------------------------------ |
+| `rippled_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
+| `rippled_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
+| `rippled_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
+| `rippled_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
+| `rippled_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
+
 ## Grafana Dashboards
 
-Five dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`rippled-rpc-perf`)
 
@@ -229,6 +283,45 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Validation Receive Rate          | timeseries | `peer.validation.receive` rate    | —                              |
 | Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
+
+### Node Health — StatsD (`rippled-statsd-node-health`)
+
+| Panel                      | Type       | PromQL                                                 | Labels Used |
+| -------------------------- | ---------- | ------------------------------------------------------ | ----------- |
+| Validated Ledger Age       | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`            | —           |
+| Published Ledger Age       | stat       | `rippled_LedgerMaster_Published_Ledger_Age`            | —           |
+| Operating Mode Duration    | timeseries | `rippled_State_Accounting_*_duration`                  | —           |
+| Operating Mode Transitions | timeseries | `rippled_State_Accounting_*_transitions`               | —           |
+| I/O Latency                | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)` | —           |
+| Job Queue Depth            | timeseries | `rippled_job_count`                                    | —           |
+| Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —           |
+| Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —           |
+
+### Network Traffic — StatsD (`rippled-statsd-network`)
+
+| Panel                  | Type       | PromQL                                 | Labels Used |
+| ---------------------- | ---------- | -------------------------------------- | ----------- |
+| Active Peers           | timeseries | `rippled_Peer_Finder_Active_*_Peers`   | —           |
+| Peer Disconnects       | timeseries | `rippled_Overlay_Peer_Disconnects`     | —           |
+| Total Network Bytes    | timeseries | `rippled_total_Bytes_In/Out`           | —           |
+| Total Network Messages | timeseries | `rippled_total_Messages_In/Out`        | —           |
+| Transaction Traffic    | timeseries | `rippled_transactions_Messages_In/Out` | —           |
+| Proposal Traffic       | timeseries | `rippled_proposals_Messages_In/Out`    | —           |
+| Validation Traffic     | timeseries | `rippled_validations_Messages_In/Out`  | —           |
+| Traffic by Category    | bargauge   | `topk(10, rippled_*_Bytes_In)`         | —           |
+
+### RPC & Pathfinding — StatsD (`rippled-statsd-rpc`)
+
+| Panel                     | Type       | PromQL                                                   | Labels Used |
+| ------------------------- | ---------- | -------------------------------------------------------- | ----------- |
+| RPC Request Rate          | stat       | `rate(rippled_rpc_requests[5m])`                         | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, rippled_rpc_time_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, rippled_rpc_size_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `rippled_rpc_time_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_fast_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_full_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(rippled_warn[5m])`                                 | —           |
+| Resource Drops Rate       | stat       | `rate(rippled_drop[5m])`                                 | —           |
 
 ### Span → Metric → Dashboard Summary
 
