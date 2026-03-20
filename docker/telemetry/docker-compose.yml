@@ -1,0 +1,80 @@
+# Docker Compose stack for rippled OpenTelemetry observability.
+#
+# Provides services for local development:
+#   - otel-collector: receives OTLP traces from rippled, batches and
+#     forwards them to Jaeger and Tempo. Listens on ports 4317 (gRPC)
+#     and 4318 (HTTP).
+#   - jaeger: all-in-one tracing backend with UI on port 16686.
+#   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
+#     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
+#   - grafana: dashboards on port 3000, pre-configured with Jaeger, Tempo
+#     datasources.
+#
+# Usage:
+#   docker compose -f docker/telemetry/docker-compose.yml up -d
+#
+# Configure rippled to export traces by adding to xrpld.cfg:
+#   [telemetry]
+#   enabled=1
+#   endpoint=http://localhost:4318/v1/traces
+
+version: "3.8"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "13133:13133" # Health check
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    depends_on:
+      - jaeger
+      - tempo
+    networks:
+      - rippled-telemetry
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC
+    networks:
+      - rippled-telemetry
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "3200:3200" # Tempo HTTP API (health, query)
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - rippled-telemetry
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - jaeger
+      - tempo
+    networks:
+      - rippled-telemetry
+
+volumes:
+  tempo-data:
+
+networks:
+  rippled-telemetry:
+    driver: bridge

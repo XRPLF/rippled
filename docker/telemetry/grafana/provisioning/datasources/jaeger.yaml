@@ -1,0 +1,12 @@
+# Grafana datasource provisioning for the rippled telemetry stack.
+# Auto-configures Jaeger as a trace data source on Grafana startup.
+# Access Grafana at http://localhost:3000, then use Explore -> Jaeger
+# to browse rippled traces.
+
+apiVersion: 1
+
+datasources:
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686

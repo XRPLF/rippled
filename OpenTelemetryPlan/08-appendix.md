@@ -182,6 +182,7 @@ flowchart TB
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics      |
 | [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
 | [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
+| [presentation.md](./presentation.md)                             | Slide deck for OTel plan overview            |
 
 ### Task Lists
 

@@ -1,0 +1,39 @@
+# OpenTelemetry Collector configuration for rippled development.
+#
+# Pipeline: OTLP receiver -> batch processor -> debug + Jaeger + Tempo.
+# rippled sends traces via OTLP/HTTP to port 4318. The collector batches
+# them and forwards to both Jaeger and Tempo via OTLP/gRPC on the Docker
+# network. Jaeger provides a standalone UI at :16686; Tempo is queryable
+# via Grafana Explore using TraceQL.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp/jaeger, otlp/tempo]

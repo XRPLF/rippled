@@ -31,7 +31,6 @@
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/MallocTrim.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
@@ -53,6 +52,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -148,6 +148,7 @@ public:
 
     beast::Journal m_journal;
     std::unique_ptr<perf::PerfLog> perfLog_;
+    std::unique_ptr<telemetry::Telemetry> telemetry_;
     Application::MutexType m_masterMutex;
 
     // Required by the SHAMapStore
@@ -258,6 +259,14 @@ public:
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
+
+        , telemetry_(
+              telemetry::make_Telemetry(
+                  telemetry::setup_Telemetry(
+                      config_->section("telemetry"),
+                      "",  // Updated later via setServiceInstanceId()
+                      BuildInfo::getVersionString()),
+                  logs_->journal("Telemetry")))
 
         , m_txMaster(*this)
 
@@ -623,6 +632,12 @@ public:
     getPerfLog() override
     {
         return *perfLog_;
+    }
+
+    telemetry::Telemetry&
+    getTelemetry() override
+    {
+        return *telemetry_;
     }
 
     NodeCache&
@@ -1061,8 +1076,6 @@ public:
                                     << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim("doSweep", m_journal);
-
         // Set timer to do another sweep later.
         setSweepTimer();
     }
@@ -1267,6 +1280,14 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     m_orderBookDB->setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
+
+    // Now that the node identity is known, inject it into the telemetry
+    // resource attributes — but only if the user didn't already set a
+    // custom service_instance_id in [telemetry].  The Telemetry object
+    // was constructed with an empty serviceInstanceId because
+    // nodeIdentity_ is not available in the member initializer list.
+    if (!config_->section("telemetry").exists("service_instance_id"))
+        telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {
@@ -1480,6 +1501,7 @@ ApplicationImp::start(bool withTimers)
 
     ledgerCleaner_->start();
     perfLog_->start();
+    telemetry_->start();
 }
 
 void
@@ -1570,6 +1592,7 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     m_nodeStore->stop();
     perfLog_->stop();
+    telemetry_->stop();
 
     JLOG(m_journal.info()) << "Done.";
 }

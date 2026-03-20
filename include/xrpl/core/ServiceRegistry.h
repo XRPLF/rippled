@@ -18,6 +18,9 @@ class Manager;
 namespace perf {
 class PerfLog;
 }
+namespace telemetry {
+class Telemetry;
+}
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
@@ -217,6 +220,9 @@ public:
 
     virtual perf::PerfLog&
     getPerfLog() = 0;
+
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 
     // Configuration and state
     virtual bool
