@@ -170,23 +170,13 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
+    if (!Permission::getInstance().checkGranularSandbox(tx))
+        return terNO_DELEGATE_PERMISSION;
+
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
 
-    auto const uSetFlag = tx.getFieldU32(sfSetFlag);
-    auto const uClearFlag = tx.getFieldU32(sfClearFlag);
-    auto const uTxFlags = tx.getFlags();
-    // We don't support any flag based granular permission under
-    // AccountSet transaction. If any delegated account is trying to
-    // update the flag on behalf of another account, it is not
-    // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || ((uTxFlags & tfUniversalMask) != 0u))
-        return terNO_DELEGATE_PERMISSION;
-
     if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfWalletLocator) || tx.isFieldPresent(sfNFTokenMinter))
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfMessageKey) && !granularPermissions.contains(AccountMessageKeySet))

@@ -122,12 +122,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    std::uint32_t const txFlags = tx.getFlags();
-
-    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
-    // TrustlineUnfreeze granular permission. Setting other flags returns
-    // error.
-    if ((txFlags & tfTrustSetPermissionMask) != 0u)
+    if (!Permission::getInstance().checkGranularSandbox(tx))
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
@@ -146,6 +141,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
+    std::uint32_t const txFlags = tx.getFlags();
     if (((txFlags & tfSetfAuth) != 0u) && !granularPermissions.contains(TrustlineAuthorize))
         return terNO_DELEGATE_PERMISSION;
     if (((txFlags & tfSetFreeze) != 0u) && !granularPermissions.contains(TrustlineFreeze))

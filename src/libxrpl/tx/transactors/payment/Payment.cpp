@@ -254,6 +254,9 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
+    if (!Permission::getInstance().checkGranularSandbox(tx))
+        return terNO_DELEGATE_PERMISSION;
+
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 

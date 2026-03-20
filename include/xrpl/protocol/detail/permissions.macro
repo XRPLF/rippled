@@ -1,13 +1,12 @@
-#if !defined(PERMISSION)
-#error "undefined macro: PERMISSION"
+#if !defined(PERMISSION) || !defined(GRANULAR_TEMPLATE)
+#error "undefined macro: PERMISSION or GRANULAR_TEMPLATE"
 #endif
 
 /**
- * PERMISSION(name, type, txType, value)
+ * PERMISSION(name, txType, value)
  *
  * This macro defines a permission:
  * name: the name of the permission.
- * type: the GranularPermissionType enum.
  * txType: the corresponding TxType for this permission.
  * value: the uint32 numeric value for the enum type.
  */
@@ -47,3 +46,36 @@ PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
 
 /** This permission grants the delegated account the ability to unlock MPToken. */
 PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
+
+/**
+ * GRANULAR_TEMPLATE(txType, allowedFlags, fields)
+ *
+ * This macro defines a the permitted flags and fields for delegation:
+ * txType: the transaction type.
+ * allowedFlags: permitted flags for delegation.
+ * allowedFields: permitted fields for delegation.
+ */
+GRANULAR_TEMPLATE(ttTRUST_SET, tfSetfAuth | tfSetFreeze | tfClearFreeze,
+    ({{sfLimitAmount, soeREQUIRED}}))
+
+GRANULAR_TEMPLATE(ttACCOUNT_SET, 0,
+    ({{sfDomain, soeOPTIONAL},
+      {sfEmailHash, soeOPTIONAL},
+      {sfMessageKey, soeOPTIONAL},
+      {sfTransferRate, soeOPTIONAL},
+      {sfTickSize, soeOPTIONAL}}))
+
+GRANULAR_TEMPLATE(ttPAYMENT, tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+   ({{sfDestination, soeREQUIRED},
+      {sfAmount, soeREQUIRED},
+      {sfSendMax, soeOPTIONAL},
+      {sfPaths, soeDEFAULT},
+      {sfInvoiceID, soeOPTIONAL},
+      {sfDestinationTag, soeOPTIONAL},
+      {sfDeliverMin, soeOPTIONAL},
+      {sfCredentialIDs, soeOPTIONAL},
+      {sfDomainID, soeOPTIONAL}}))
+
+GRANULAR_TEMPLATE(ttMPTOKEN_ISSUANCE_SET, tfMPTLock | tfMPTUnlock,
+    ({{sfMPTokenIssuanceID, soeREQUIRED},
+      {sfHolder, soeOPTIONAL}}))
