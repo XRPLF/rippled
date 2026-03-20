@@ -35,6 +35,8 @@ connectors:
       - name: xrpl.rpc.status
       - name: xrpl.consensus.mode
       - name: xrpl.tx.local
+      - name: xrpl.peer.proposal.trusted
+      - name: xrpl.peer.validation.trusted
 
 exporters:
   debug:

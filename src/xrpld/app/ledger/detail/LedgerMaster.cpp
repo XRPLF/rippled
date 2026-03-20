@@ -12,6 +12,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/UptimeClock.h>
@@ -408,6 +409,10 @@ LedgerMaster::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
+    XRPL_TRACE_LEDGER(app_.getTelemetry(), "ledger.store");  // LCOV_EXCL_LINE
+    XRPL_TRACE_SET_ATTR(                                                      // LCOV_EXCL_LINE
+        "xrpl.ledger.seq", static_cast<int64_t>(ledger->header().seq));  // LCOV_EXCL_LINE
+
     bool validated = ledger->header().validated;
     // Returns true if we already had the ledger
     return mLedgerHistory.insert(std::move(ledger), validated);
@@ -922,6 +927,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         JLOG(m_journal.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
         return;
     }
+
+    XRPL_TRACE_LEDGER(app_.getTelemetry(), "ledger.validate");  // LCOV_EXCL_LINE
+    XRPL_TRACE_SET_ATTR(                                                             // LCOV_EXCL_LINE
+        "xrpl.ledger.seq", static_cast<int64_t>(ledger->header().seq));         // LCOV_EXCL_LINE
+    XRPL_TRACE_SET_ATTR("xrpl.ledger.validations", static_cast<int64_t>(tvc));  // LCOV_EXCL_LINE
 
     JLOG(m_journal.info()) << "Advancing accepted ledger to " << ledger->header().seq
                            << " with >= " << minVal << " validations";
