@@ -138,7 +138,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
             BEAST_EXPECT(status == ok);
 
@@ -158,7 +158,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
 
             BEAST_EXPECT(status == notFound);
         }

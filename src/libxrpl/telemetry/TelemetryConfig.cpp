@@ -9,6 +9,8 @@
 
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <algorithm>
+
 namespace xrpl {
 namespace telemetry {
 
@@ -32,7 +34,7 @@ setup_Telemetry(
     setup.useTls = section.value_or<int>("use_tls", 0) != 0;
     setup.tlsCertPath = section.value_or<std::string>("tls_ca_cert", "");
 
-    setup.samplingRatio = section.value_or<double>("sampling_ratio", 1.0);
+    setup.samplingRatio = std::clamp(section.value_or<double>("sampling_ratio", 1.0), 0.0, 1.0);
 
     setup.batchSize = section.value_or<std::uint32_t>("batch_size", 512u);
     setup.batchDelay =

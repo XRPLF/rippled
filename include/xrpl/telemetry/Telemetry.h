@@ -157,6 +157,10 @@ public:
     virtual bool
     shouldTracePeer() const = 0;
 
+    /** @return true if ledger close/accept should be traced. */
+    virtual bool
+    shouldTraceLedger() const = 0;
+
 #ifdef XRPL_ENABLE_TELEMETRY
     /** Get or create a named tracer instance.
 

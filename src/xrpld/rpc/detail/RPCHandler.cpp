@@ -175,10 +175,13 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         auto ret = method(context, result);
         auto end = std::chrono::system_clock::now();
 
+        [[maybe_unused]] auto const durationMs =
+            std::chrono::duration<double, std::milli>(end - start).count();
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
         XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");
+        XRPL_TRACE_SET_ATTR("xrpl.rpc.duration_ms", durationMs);
         return ret;
     }
     catch (std::exception& e)
@@ -187,6 +190,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.info()) << "Caught throw: " << e.what();
         XRPL_TRACE_EXCEPTION(e);
         XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
+        XRPL_TRACE_SET_ATTR("xrpl.rpc.error_message", e.what());
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;

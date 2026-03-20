@@ -76,6 +76,12 @@ public:
         return false;
     }
 
+    bool
+    shouldTraceLedger() const override
+    {
+        return false;
+    }
+
 #ifdef XRPL_ENABLE_TELEMETRY
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view) override

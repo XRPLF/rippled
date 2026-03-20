@@ -93,6 +93,12 @@ public:
         return false;
     }
 
+    bool
+    shouldTraceLedger() const override
+    {
+        return false;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
@@ -239,6 +245,12 @@ public:
     shouldTracePeer() const override
     {
         return setup_.tracePeer;
+    }
+
+    bool
+    shouldTraceLedger() const override
+    {
+        return setup_.traceLedger;
     }
 
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>

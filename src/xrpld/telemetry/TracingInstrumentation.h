@@ -81,6 +81,30 @@ namespace telemetry {
         _xrpl_guard_.emplace((_tel_obj_).startSpan(_span_name_)); \
     }
 
+/** Conditionally start a span for peer message tracing.
+    The span is only created if shouldTracePeer() returns true.
+    @param _tel_obj_    Telemetry instance reference.
+    @param _span_name_  Span name string.
+*/
+#define XRPL_TRACE_PEER(_tel_obj_, _span_name_)                   \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_;     \
+    if ((_tel_obj_).shouldTracePeer())                            \
+    {                                                             \
+        _xrpl_guard_.emplace((_tel_obj_).startSpan(_span_name_)); \
+    }
+
+/** Conditionally start a span for ledger tracing.
+    The span is only created if shouldTraceLedger() returns true.
+    @param _tel_obj_    Telemetry instance reference.
+    @param _span_name_  Span name string.
+*/
+#define XRPL_TRACE_LEDGER(_tel_obj_, _span_name_)                 \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_;     \
+    if ((_tel_obj_).shouldTraceLedger())                          \
+    {                                                             \
+        _xrpl_guard_.emplace((_tel_obj_).startSpan(_span_name_)); \
+    }
+
 /** Set a key-value attribute on the current span (if it exists).
     Must be used after one of the XRPL_TRACE_* span macros.
 */
@@ -109,6 +133,8 @@ namespace telemetry {
 #define XRPL_TRACE_RPC(_tel_obj_, _span_name_) ((void)0)
 #define XRPL_TRACE_TX(_tel_obj_, _span_name_) ((void)0)
 #define XRPL_TRACE_CONSENSUS(_tel_obj_, _span_name_) ((void)0)
+#define XRPL_TRACE_PEER(_tel_obj_, _span_name_) ((void)0)
+#define XRPL_TRACE_LEDGER(_tel_obj_, _span_name_) ((void)0)
 #define XRPL_TRACE_SET_ATTR(key, value) ((void)0)
 #define XRPL_TRACE_EXCEPTION(e) ((void)0)
 
