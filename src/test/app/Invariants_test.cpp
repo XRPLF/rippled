@@ -61,6 +61,13 @@ class Invariants_test : public beast::unit_test::suite
         test::jtx::Account const& b,
         ApplyContext& ac)>;
 
+    static FeatureBitset
+    defaultAmendments()
+    {
+        return ripple::test::jtx::testable_amendments() |
+            featureInvariantsV1_1 | fixSecurity3_1_3;
+    }
+
     /** Run a specific test case to put the ledger into a state that will be
      * detected by an invariant. Simulates the actions of a transaction that
      * would violate an invariant.
@@ -115,6 +122,10 @@ class Invariants_test : public beast::unit_test::suite
             env.current()->fees().base,
             tapNONE,
             jlog};
+
+        // Invariants normally run in the Transaction's "apply" (operator())
+        // context, and can access global Rules. (Not dependent on amendments.)
+        CurrentTransactionRulesGuard const rg(ov.rules());
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
@@ -3987,6 +3998,8 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testInvariantOverwrite(defaultAmendments());
+        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
     }
 };
 

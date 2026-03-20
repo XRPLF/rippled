@@ -404,6 +404,8 @@ NoZeroEscrow::visitEntry(
             bad_ = true;
     };
 
+    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         auto const outstanding = (*after)[sfOutstandingAmount];
@@ -412,6 +414,11 @@ NoZeroEscrow::visitEntry(
         {
             checkAmount(*locked);
             bad_ = outstanding < *locked;
+            bool const isBad = outstanding < *locked;
+            if (overwriteFixEnabled)
+                bad_ |= isBad;
+            else
+                bad_ = isBad;
         }
     }
 
@@ -431,7 +438,7 @@ NoZeroEscrow::finalize(
     STTx const& txn,
     TER const,
     XRPAmount const,
-    ReadView const& rv,
+    ReadView const&,
     beast::Journal const& j)
 {
     if (bad_)
@@ -682,14 +689,20 @@ NoXRPTrustLines::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
+    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        xrpTrustLine_ =
-            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+        bool const isXrp =
+            after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
+        if (overwriteFixEnabled)
+            xrpTrustLine_ |= isXrp;
+        else
+            xrpTrustLine_ = isXrp;
     }
 }
 
@@ -718,6 +731,9 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
+        bool const overwriteFixEnabled =
+            isFeatureEnabled(fixSecurity3_1_3, true);
+
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
         bool const lowFreeze = uFlags & lsfLowFreeze;
         bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
@@ -725,8 +741,12 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
         bool const highFreeze = uFlags & lsfHighFreeze;
         bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
 
-        deepFreezeWithoutFreeze_ =
+        bool const bad =
             (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
+        if (overwriteFixEnabled)
+            deepFreezeWithoutFreeze_ |= bad;
+        else
+            deepFreezeWithoutFreeze_ = bad;
     }
 }
 

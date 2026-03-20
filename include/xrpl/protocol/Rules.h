@@ -28,8 +28,14 @@
 
 namespace ripple {
 
+/** Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ * @param resultIfNoRules What to return if called from outside a Transactor
+ * context.
+ */
 bool
-isFeatureEnabled(uint256 const& feature);
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules = false);
 
 class DigestAwareReadView;
 
