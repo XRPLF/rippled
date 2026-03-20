@@ -512,7 +512,8 @@ checkEncryptedAmountFormat(STObject const& object)
 }
 
 TER
-verifyAmountPcmLinkage(
+verifyPcmLinkage(
+    PcmLinkageType type,
     Slice const& proof,
     Slice const& encAmt,
     Slice const& pubKeySlice,
@@ -548,7 +549,13 @@ verifyAmountPcmLinkage(
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    if (auto res = secp256k1_elgamal_pedersen_link_verify(
+    // For amount linkage (randomness r): order is C1, C2, Pk, Pcm.
+    // For balance linkage (secret key s): order is Pk, C2, C1, Pcm
+    // (swaps Pk <-> C1 to accommodate the different algebraic structure).
+    int res;
+    if (type == PcmLinkageType::amount)
+    {
+        res = secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),
             &pair->c1,
@@ -556,54 +563,10 @@ verifyAmountPcmLinkage(
             &pubKey,
             &pcm,
             contextHash.data());
-        res != 1)
-    {
-        return tecBAD_PROOF;
     }
-
-    return tesSUCCESS;
-}
-
-TER
-verifyBalancePcmLinkage(
-    Slice const& proof,
-    Slice const& encAmt,
-    Slice const& pubKeySlice,
-    Slice const& pcmSlice,
-    uint256 const& contextHash)
-{
-    if (proof.length() != ecPedersenProofLength)
-        return tecINTERNAL;
-
-    auto const pair = makeEcPair(encAmt);
-    if (!pair)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (pubKeySlice.size() != ecPubKeyLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (pcmSlice.size() != ecPedersenCommitmentLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    secp256k1_pubkey pubKey;
-    if (auto res = secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
-        res != 1)
+    else
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-    }
-
-    secp256k1_pubkey pcm;
-    if (auto res = secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pcm, pcmSlice.data(), ecPedersenCommitmentLength);
-        res != 1)
-    {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-    }
-
-    // Note: c2, c1 order - the linkage proof expects the message-containing
-    // component (c2 = m*G + r*Pk) before the blinding component (c1 = r*G).
-    if (auto res = secp256k1_elgamal_pedersen_link_verify(
+        res = secp256k1_elgamal_pedersen_link_verify(
             secp256k1Context(),
             proof.data(),
             &pubKey,
@@ -611,10 +574,10 @@ verifyBalancePcmLinkage(
             &pair->c1,
             &pcm,
             contextHash.data());
-        res != 1)
-    {
-        return tecBAD_PROOF;
     }
+
+    if (res != 1)
+        return tecBAD_PROOF;
 
     return tesSUCCESS;
 }
