@@ -624,7 +624,7 @@ private:
         TER result);
 
     void
-    pubServer();
+    pubServer(bool force = true);
     void
     pubConsensus(ConsensusPhase phase);
 
@@ -2171,7 +2171,7 @@ trunc32(std::uint64_t v)
 };
 
 void
-NetworkOPsImp::pubServer()
+NetworkOPsImp::pubServer(bool force)
 {
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
     //             list into a local array while holding the lock then release
@@ -2187,6 +2187,13 @@ NetworkOPsImp::pubServer()
             registry_.openLedger().current()->fees().base,
             registry_.getTxQ().getMetrics(*registry_.openLedger().current()),
             registry_.getFeeTrack()};
+
+        // Skip sending if the fee state hasn't changed since the last
+        // notification, unless forced (e.g. by an operating mode change).
+        // This prevents duplicate notifications when multiple pubServer jobs
+        // are queued before any of them run.
+        if (!force && f == mLastFeeSummary)
+            return;
 
         jvObj[jss::type] = "serverStatus";
         jvObj[jss::server_status] = strOperatingMode();
@@ -3069,7 +3076,7 @@ NetworkOPsImp::reportFeeChange()
     // only schedule the job if something has changed
     if (f != mLastFeeSummary)
     {
-        m_job_queue.addJob(jtCLIENT_FEE_CHANGE, "PubFee", [this]() { pubServer(); });
+        m_job_queue.addJob(jtCLIENT_FEE_CHANGE, "PubFee", [this]() { pubServer(false); });
     }
 }
 
