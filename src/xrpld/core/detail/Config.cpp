@@ -1033,27 +1033,6 @@ Config::loadFromString(std::string const& fileContents)
             Throw<std::runtime_error>(
                 "The minimum number of required peers (network_quorum) exceeds "
                 "the maximum number of allowed peers (peers_max)");
-_delete", 0) == 0)
-            {
-                Throw<std::runtime_error>(
-                    "RWDB (in-memory backend) requires online_delete when not in "
-                    "standalone mode");
-            }
-that the
-    // value specified for network_quorum is achievable:
-    {
-        auto pm = PEERS_MAX;
-
-        // FIXME this apparently magic value is actually defined as a constant
-        //       elsewhere (see defaultMaxPeers) but we handle this check here.
-        if (pm == 0)
-            pm = 21;
-
-        if (NETWORK_QUORUM > pm)
-        {
-            Throw<std::runtime_error>(
-                "The minimum number of required peers (network_quorum) exceeds "
-                "the maximum number of allowed peers (peers_max)");
         }
     }
 }
