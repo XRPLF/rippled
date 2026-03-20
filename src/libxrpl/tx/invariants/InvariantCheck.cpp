@@ -323,7 +323,7 @@ NoZeroEscrow::visitEntry(
         if (auto const locked = (*after)[~sfLockedAmount])
         {
             checkAmount(*locked);
-            bad_ = outstanding < *locked;
+            bad_ |= outstanding < *locked;
         }
     }
 
@@ -598,7 +598,7 @@ NoXRPTrustLines::visitEntry(
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        xrpTrustLine_ = after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
+        xrpTrustLine_ |= after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
             after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
     }
 }
@@ -635,7 +635,8 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
         bool const highFreeze = uFlags & lsfHighFreeze;
         bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
 
-        deepFreezeWithoutFreeze_ = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
+        deepFreezeWithoutFreeze_ |=
+            (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
     }
 }
 

@@ -498,6 +498,26 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleNew);
                 return true;
             });
+
+        // Regression: two trust lines where the first is bad (XRP) and the
+        // second is valid. Plain assignment would overwrite the earlier true.
+        doInvariantCheck(
+            {{"an XRP trust line was created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // First: bad XRP trust line
+                auto const sleBad =
+                    std::make_shared<SLE>(keylet::line(A1, A2, xrpIssue().currency));
+                ac.view().insert(sleBad);
+
+                // Second: valid USD trust line — must NOT clear the flag
+                Account const A3{"A3"};
+                auto const sleGood =
+                    std::make_shared<SLE>(keylet::line(A1, A3, A1["USD"].currency));
+                sleGood->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleGood->setFieldAmount(sfHighLimit, A1["USD"](0));
+                ac.view().insert(sleGood);
+                return true;
+            });
     }
 
     void
@@ -574,6 +594,31 @@ class Invariants_test : public beast::unit_test::suite
                 uFlags |= lsfLowFreeze | lsfHighDeepFreeze;
                 sleNew->setFieldU32(sfFlags, uFlags);
                 ac.view().insert(sleNew);
+                return true;
+            });
+
+        // Regression: two trust lines where the first has deep freeze without
+        // freeze, and the second is valid. Plain assignment would overwrite
+        // the earlier true.
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // First: bad — lowDeepFreeze without lowFreeze
+                auto const sleBad = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
+                sleBad->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleBad->setFieldAmount(sfHighLimit, A1["USD"](0));
+                sleBad->setFieldU32(sfFlags, lsfLowDeepFreeze);
+                ac.view().insert(sleBad);
+
+                // Second: valid — no deep freeze flags at all
+                Account const A3{"A3"};
+                auto const sleGood =
+                    std::make_shared<SLE>(keylet::line(A1, A3, A1["EUR"].currency));
+                sleGood->setFieldAmount(sfLowLimit, A1["EUR"](0));
+                sleGood->setFieldAmount(sfHighLimit, A1["EUR"](0));
+                sleGood->setFieldU32(sfFlags, 0u);
+                ac.view().insert(sleGood);
                 return true;
             });
     }
@@ -926,6 +971,25 @@ class Invariants_test : public beast::unit_test::suite
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
+                sleNew->setFieldU64(sfLockedAmount, 10);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT OutstandingAmount exceeds max, but locked <= outstanding
+        // (regression: plain assignment would overwrite earlier bad_ = true)
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                // outstanding exceeds maxMPTokenAmount → checkAmount sets bad_
+                sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
+                // locked is valid and <= outstanding → must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
                 return true;
