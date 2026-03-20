@@ -217,7 +217,7 @@ STObject::set(SerialIter& sit, int depth)
     v_.clear();
 
     // Consume data in the pipe until we run out or reach the end
-    while (sit.empty() == 0u)
+    while (!sit.empty())
     {
         int type = 0;
         int field = 0;
@@ -914,7 +914,8 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields != 0u))
+        if ((base.getSType() != STI_NOTPRESENT) &&
+            base.getFName().shouldInclude(static_cast<bool>(whichFields)))
         {
             sf.push_back(&base);
         }
