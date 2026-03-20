@@ -8,6 +8,7 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
+#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
@@ -1354,6 +1355,9 @@ PeerImp::handleTransaction(
     bool eraseTxQueue,
     bool batch)
 {
+    XRPL_TRACE_TX(app_.getTelemetry(), "tx.receive");
+    XRPL_TRACE_SET_ATTR("xrpl.peer.id", static_cast<int64_t>(id_));
+
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
@@ -1372,6 +1376,7 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+        XRPL_TRACE_SET_ATTR("xrpl.tx.hash", to_string(txID).c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1405,9 +1410,11 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
+            XRPL_TRACE_SET_ATTR("xrpl.tx.suppressed", true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
+                XRPL_TRACE_SET_ATTR("xrpl.tx.status", "known_bad");
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
