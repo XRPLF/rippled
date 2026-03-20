@@ -932,7 +932,6 @@ class Freeze_test : public beast::unit_test::suite
     {
         testcase("Longer paths payment on frozen trust lines");
         using namespace test::jtx;
-        using path = test::jtx::Path;
 
         Env env(*this, features);
         Account g1{"G1"};
@@ -1575,7 +1574,6 @@ class Freeze_test : public beast::unit_test::suite
     {
         testcase("AMM payments on frozen trust lines");
         using namespace test::jtx;
-        using path = test::jtx::Path;
 
         Env env(*this, features);
         Account g1{"G1"};

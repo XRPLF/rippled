@@ -1078,7 +1078,7 @@ public:
     size_t
     getNumberOfThreads() const override
     {
-        return getNumberOfThreads();
+        return BasicApp::getNumberOfThreads();
     }
 
 private:
