@@ -62,5 +62,14 @@ if(telemetry)
         xrpl.test.telemetry
         PRIVATE opentelemetry-cpp::opentelemetry-cpp
     )
+else()
+    # MetricsRegistry lives in xrpld; compile its .cpp directly into the test
+    # target so the no-op path can be tested without linking all of xrpld.
+    # When telemetry=ON, XRPL_ENABLE_TELEMETRY is globally defined and the
+    # .cpp pulls in xrpld symbols we cannot satisfy here.
+    target_sources(
+        xrpl.test.telemetry
+        PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/MetricsRegistry.cpp
+    )
 endif()
 add_dependencies(xrpl.tests xrpl.test.telemetry)

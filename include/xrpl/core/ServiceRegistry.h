@@ -20,7 +20,8 @@ class PerfLog;
 }
 namespace telemetry {
 class Telemetry;
-}
+class MetricsRegistry;
+}  // namespace telemetry
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
@@ -223,6 +224,12 @@ public:
 
     virtual telemetry::Telemetry&
     getTelemetry() = 0;
+
+    /** Return the MetricsRegistry, or nullptr if telemetry is disabled.
+        Used by PerfLog and other hot paths to record OTel metrics.
+    */
+    virtual telemetry::MetricsRegistry*
+    getMetricsRegistry() = 0;
 
     // Configuration and state
     virtual bool

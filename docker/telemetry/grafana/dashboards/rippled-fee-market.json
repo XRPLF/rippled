@@ -1,0 +1,343 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Fee market dynamics: TxQ depth/capacity, fee escalation levels, and load factor breakdown. Sourced from OTel MetricsRegistry observable gauges (Phase 9).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Transaction Queue Depth",
+      "description": "Current number of transactions waiting in the queue vs. maximum capacity. Sourced from MetricsRegistry txq_metrics observable gauge with metric=txq_count and metric=txq_max_size.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_count\"}",
+          "legendFormat": "Queue Depth [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_max_size\"}",
+          "legendFormat": "Max Capacity [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Transactions",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transactions Per Ledger",
+      "description": "Transactions in the current open ledger vs. expected per-ledger count. Sourced from txq_metrics with metric=txq_in_ledger and metric=txq_per_ledger.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_in_ledger\"}",
+          "legendFormat": "In Ledger [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_per_ledger\"}",
+          "legendFormat": "Expected Per Ledger [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Transactions",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Fee Escalation Levels",
+      "description": "Fee levels that control transaction queue admission. Reference fee level is the baseline; open ledger fee level triggers escalation. Sourced from txq_metrics observable gauge.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_reference_fee_level\"}",
+          "legendFormat": "Reference Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_min_processing_fee_level\"}",
+          "legendFormat": "Min Processing Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_med_fee_level\"}",
+          "legendFormat": "Median Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_txq_metrics{exported_instance=~\"$node\", metric=\"txq_open_ledger_fee_level\"}",
+          "legendFormat": "Open Ledger Fee Level [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Fee Level",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 2
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Load Factor Breakdown",
+      "description": "Decomposed load factor components: server (max of local, net, cluster), fee escalation, fee queue, and combined. Values are unitless multipliers where 1.0 = no load. Sourced from load_factor_metrics observable gauge.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor\"}",
+          "legendFormat": "Combined Load Factor [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_server\"}",
+          "legendFormat": "Server [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_fee_escalation\"}",
+          "legendFormat": "Fee Escalation [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_fee_queue\"}",
+          "legendFormat": "Fee Queue [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Multiplier",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Load Factor Components",
+      "description": "Individual load factor contributors: local server load, network load, and cluster load. Only differ from 1.0 under load conditions. Sourced from load_factor_metrics observable gauge.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_local\"}",
+          "legendFormat": "Local [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_net\"}",
+          "legendFormat": "Network [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_load_factor_metrics{exported_instance=~\"$node\", metric=\"load_factor_cluster\"}",
+          "legendFormat": "Cluster [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Multiplier",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "otel", "fee-market"],
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Fee Market & TxQ",
+  "uid": "rippled-fee-market",
+  "version": 1
+}

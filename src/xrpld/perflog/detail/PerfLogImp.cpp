@@ -1,9 +1,11 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobTypes.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_writer.h>
 
 #include <atomic>
@@ -316,6 +318,10 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     }
     std::lock_guard lock(counters_.methodsMutex_);
     counters_.methods_[requestId] = {counter->first.c_str(), steady_clock::now()};
+
+    // Task 9.4: Record RPC start in OTel metrics pipeline.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->recordRpcStarted(method);
 }
 
 void
@@ -371,6 +377,10 @@ PerfLogImp::jobQueue(JobType const type)
     }
     std::lock_guard lock(counter->second.mutex);
     ++counter->second.value.queued;
+
+    // Task 9.5: Record job enqueue in OTel metrics pipeline.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->recordJobQueued(JobTypes::name(type));
 }
 
 void
@@ -397,6 +407,10 @@ PerfLogImp::jobStart(
     std::lock_guard lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {type, startTime};
+
+    // Task 9.5: Record job start in OTel metrics pipeline.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->recordJobStarted(JobTypes::name(type), dur.count());
 }
 
 void
@@ -419,6 +433,10 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     std::lock_guard lock(counters_.jobsMutex_);
     if (instance >= 0 && instance < counters_.jobs_.size())
         counters_.jobs_[instance] = {jtINVALID, steady_time_point()};
+
+    // Task 9.5: Record job finish in OTel metrics pipeline.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->recordJobFinished(JobTypes::name(type), dur.count());
 }
 
 void

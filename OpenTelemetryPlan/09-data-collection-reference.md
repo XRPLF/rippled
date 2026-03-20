@@ -11,6 +11,7 @@ graph LR
     subgraph rippledNode["rippled Node"]
         A["Trace Macros<br/>XRPL_TRACE_SPAN<br/>(OTLP/HTTP exporter)"]
         B["beast::insight<br/>OTel native metrics<br/>(OTLP/HTTP exporter)"]
+        C["MetricsRegistry<br/>OTel SDK metrics<br/>(OTLP/HTTP exporter)"]
     end
 
     subgraph collector["OTel Collector  :4317 / :4318"]
@@ -32,11 +33,12 @@ graph LR
     end
 
     subgraph viz["Visualization"]
-        F["Grafana  :3000<br/>10 dashboards"]
+        F["Grafana  :3000<br/>13 dashboards"]
     end
 
     A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
     B -->|"OTLP/HTTP :4318<br/>(gauges, counters, histograms)"| R1
+    C -->|"OTLP/HTTP :4318<br/>(counters, histograms,<br/>observable gauges)"| R1
 
     BP -->|"OTLP/gRPC :4317"| D
 
@@ -560,6 +562,337 @@ Grafana Loki (v2.9.0) serves as the log storage backend. It receives log entries
 # Count traced log lines over time
 count_over_time({job="rippled"} |= "trace_id=" [5m])
 ```
+
+---
+
+## 5b. Future: Internal Metric Gap Fill (Phase 9)
+
+> **Status**: Planned, not yet implemented.
+> **Plan details**: [06-implementation-phases.md §6.8.2](./06-implementation-phases.md) — motivation, architecture, third-party context
+> **Task breakdown**: [Phase9_taskList.md](./Phase9_taskList.md) — per-task implementation details
+
+Phase 9 fills ~50+ metrics that exist inside rippled but currently lack time-series export. Uses a hybrid approach: `beast::insight` extensions for NodeStore I/O, OTel `ObservableGauge` async callbacks for new categories.
+
+### New Metric Categories
+
+#### NodeStore I/O (via beast::insight)
+
+| Prometheus Metric                    | Type  | Description                         |
+| ------------------------------------ | ----- | ----------------------------------- |
+| `rippled_nodestore_reads_total`      | Gauge | Cumulative read operations          |
+| `rippled_nodestore_reads_hit`        | Gauge | Cache-served reads                  |
+| `rippled_nodestore_writes`           | Gauge | Cumulative write operations         |
+| `rippled_nodestore_written_bytes`    | Gauge | Cumulative bytes written            |
+| `rippled_nodestore_read_bytes`       | Gauge | Cumulative bytes read               |
+| `rippled_nodestore_read_duration_us` | Gauge | Cumulative read time (microseconds) |
+| `rippled_nodestore_write_load`       | Gauge | Current write load score            |
+| `rippled_nodestore_read_queue`       | Gauge | Items in read queue                 |
+
+#### Cache Hit Rates (via OTel MetricsRegistry)
+
+| Prometheus Metric               | Type  | Description                          |
+| ------------------------------- | ----- | ------------------------------------ |
+| `rippled_cache_SLE_hit_rate`    | Gauge | SLE cache hit rate (0.0-1.0)         |
+| `rippled_cache_ledger_hit_rate` | Gauge | Ledger object cache hit rate         |
+| `rippled_cache_AL_hit_rate`     | Gauge | AcceptedLedger cache hit rate        |
+| `rippled_cache_treenode_size`   | Gauge | SHAMap TreeNode cache size (entries) |
+| `rippled_cache_fullbelow_size`  | Gauge | FullBelow cache size                 |
+
+#### Transaction Queue (via OTel MetricsRegistry)
+
+| Prometheus Metric                      | Type  | Description                      |
+| -------------------------------------- | ----- | -------------------------------- |
+| `rippled_txq_count`                    | Gauge | Current transactions in queue    |
+| `rippled_txq_max_size`                 | Gauge | Maximum queue capacity           |
+| `rippled_txq_in_ledger`                | Gauge | Transactions in open ledger      |
+| `rippled_txq_per_ledger`               | Gauge | Expected transactions per ledger |
+| `rippled_txq_open_ledger_fee_level`    | Gauge | Open ledger fee escalation level |
+| `rippled_txq_med_fee_level`            | Gauge | Median fee level in queue        |
+| `rippled_txq_reference_fee_level`      | Gauge | Reference fee level              |
+| `rippled_txq_min_processing_fee_level` | Gauge | Minimum fee to get processed     |
+
+#### PerfLog Per-RPC Method (via OTel Metrics SDK)
+
+| Prometheus Metric                       | Type      | Labels            | Description                 |
+| --------------------------------------- | --------- | ----------------- | --------------------------- |
+| `rippled_rpc_method_started_total`      | Counter   | `method="<name>"` | RPC calls started           |
+| `rippled_rpc_method_finished_total`     | Counter   | `method="<name>"` | RPC calls completed         |
+| `rippled_rpc_method_errored_total`      | Counter   | `method="<name>"` | RPC calls errored           |
+| `rippled_rpc_method_duration_us_bucket` | Histogram | `method="<name>"` | Execution time distribution |
+
+#### PerfLog Per-Job Type (via OTel Metrics SDK)
+
+| Prometheus Metric                        | Type      | Labels              | Description     |
+| ---------------------------------------- | --------- | ------------------- | --------------- |
+| `rippled_job_queued_total`               | Counter   | `job_type="<name>"` | Jobs queued     |
+| `rippled_job_started_total`              | Counter   | `job_type="<name>"` | Jobs started    |
+| `rippled_job_finished_total`             | Counter   | `job_type="<name>"` | Jobs completed  |
+| `rippled_job_queued_duration_us_bucket`  | Histogram | `job_type="<name>"` | Queue wait time |
+| `rippled_job_running_duration_us_bucket` | Histogram | `job_type="<name>"` | Execution time  |
+
+#### Counted Object Instances (via OTel MetricsRegistry)
+
+| Prometheus Metric      | Type  | Labels          | Description                     |
+| ---------------------- | ----- | --------------- | ------------------------------- |
+| `rippled_object_count` | Gauge | `type="<name>"` | Live instances of internal type |
+
+Tracked types: `Transaction`, `Ledger`, `NodeObject`, `STTx`, `STLedgerEntry`, `InboundLedger`, `Pathfinder`, `PathRequest`, `HashRouterEntry`
+
+#### Fee Escalation & Load Factors (via OTel MetricsRegistry)
+
+| Prometheus Metric                    | Type  | Description                          |
+| ------------------------------------ | ----- | ------------------------------------ |
+| `rippled_load_factor`                | Gauge | Combined transaction cost multiplier |
+| `rippled_load_factor_server`         | Gauge | Server + cluster + network load      |
+| `rippled_load_factor_local`          | Gauge | Local server load only               |
+| `rippled_load_factor_net`            | Gauge | Network-wide load estimate           |
+| `rippled_load_factor_cluster`        | Gauge | Cluster peer load                    |
+| `rippled_load_factor_fee_escalation` | Gauge | Open ledger fee escalation           |
+| `rippled_load_factor_fee_queue`      | Gauge | Queue entry fee level                |
+
+### New Grafana Dashboards (Phase 9)
+
+| Dashboard          | UID                  | Data Source | Key Panels                                                        |
+| ------------------ | -------------------- | ----------- | ----------------------------------------------------------------- |
+| Fee Market & TxQ   | `rippled-fee-market` | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown, escalation |
+| Job Queue Analysis | `rippled-job-queue`  | Prometheus  | Per-job rates, queue wait times, execution times, queue depth     |
+
+---
+
+## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
+
+> **Status**: Planned, not yet implemented.
+> **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
+> **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
+
+Phase 10 builds a 5-node validator docker-compose harness with RPC load generators, transaction submitters, and automated validation scripts that verify all spans, metrics, dashboards, and log-trace correlation work end-to-end. Includes a benchmark suite comparing telemetry-ON vs telemetry-OFF overhead.
+
+### Validated Telemetry Inventory
+
+| Category           | Expected Count | Validation Method                |
+| ------------------ | -------------- | -------------------------------- |
+| Trace spans        | 16             | Jaeger/Tempo API query           |
+| Span attributes    | 22             | Per-span attribute assertion     |
+| StatsD metrics     | 255+           | Prometheus query                 |
+| Phase 9 metrics    | 50+            | Prometheus query                 |
+| SpanMetrics RED    | 4 per span     | Prometheus query                 |
+| Grafana dashboards | 10             | Dashboard API "no data" check    |
+| Log-trace links    | Present        | Loki query + Tempo reverse check |
+
+---
+
+## 5d. Future: Third-Party Data Collection Pipelines (Phase 11)
+
+> **Status**: Planned, not yet implemented.
+> **Plan details**: [06-implementation-phases.md §6.8.4](./06-implementation-phases.md) — motivation, architecture, consumer gap analysis
+> **Task breakdown**: [Phase11_taskList.md](./Phase11_taskList.md) — per-task implementation details
+
+Phase 11 builds a custom OTel Collector receiver (Go) that polls rippled's admin RPCs and exports `xrpl_*` metrics for external consumers. No rippled code changes.
+
+### Exported Metrics (via Custom OTel Collector Receiver)
+
+#### Node Health (from server_info)
+
+| Prometheus Metric                       | Type  | Description                                     |
+| --------------------------------------- | ----- | ----------------------------------------------- |
+| `xrpl_server_state`                     | Gauge | Operating mode (0=disconnected ... 5=proposing) |
+| `xrpl_server_state_duration_seconds`    | Gauge | Seconds in current state                        |
+| `xrpl_uptime_seconds`                   | Gauge | Consecutive seconds running                     |
+| `xrpl_io_latency_ms`                    | Gauge | I/O subsystem latency                           |
+| `xrpl_amendment_blocked`                | Gauge | 1 if amendment-blocked, 0 otherwise             |
+| `xrpl_peers_count`                      | Gauge | Connected peers                                 |
+| `xrpl_validated_ledger_seq`             | Gauge | Latest validated ledger sequence                |
+| `xrpl_validated_ledger_age_seconds`     | Gauge | Seconds since last validated close              |
+| `xrpl_last_close_proposers`             | Gauge | Proposers in last consensus round               |
+| `xrpl_last_close_converge_time_seconds` | Gauge | Last consensus round duration                   |
+| `xrpl_load_factor`                      | Gauge | Transaction cost multiplier                     |
+| `xrpl_state_duration_seconds`           | Gauge | Per-state duration (`state` label)              |
+| `xrpl_state_transitions_total`          | Gauge | Per-state transition count (`state` label)      |
+
+#### Peer Topology (from peers)
+
+| Prometheus Metric           | Type  | Description                         |
+| --------------------------- | ----- | ----------------------------------- |
+| `xrpl_peers_inbound_count`  | Gauge | Inbound peer connections            |
+| `xrpl_peers_outbound_count` | Gauge | Outbound peer connections           |
+| `xrpl_peer_latency_p50_ms`  | Gauge | Median peer latency                 |
+| `xrpl_peer_latency_p95_ms`  | Gauge | p95 peer latency                    |
+| `xrpl_peer_version_count`   | Gauge | Peers per version (`version` label) |
+| `xrpl_peer_diverged_count`  | Gauge | Peers with diverged tracking status |
+
+#### Validator & Amendment (from validators, feature)
+
+| Prometheus Metric                     | Type  | Description                             |
+| ------------------------------------- | ----- | --------------------------------------- |
+| `xrpl_trusted_validators_count`       | Gauge | UNL validator count                     |
+| `xrpl_amendment_enabled_count`        | Gauge | Enabled amendments                      |
+| `xrpl_amendment_majority_count`       | Gauge | Amendments with majority                |
+| `xrpl_amendment_unsupported_majority` | Gauge | 1 if unsupported amendment has majority |
+| `xrpl_validator_list_active`          | Gauge | 1 if validator list is active           |
+
+#### Fee Market (from fee)
+
+| Prometheus Metric                | Type  | Description                           |
+| -------------------------------- | ----- | ------------------------------------- |
+| `xrpl_fee_open_ledger_fee_drops` | Gauge | Minimum fee for open ledger inclusion |
+| `xrpl_fee_median_fee_drops`      | Gauge | Median fee level                      |
+| `xrpl_fee_queue_size`            | Gauge | Current transaction queue depth       |
+| `xrpl_fee_current_ledger_size`   | Gauge | Transactions in current open ledger   |
+
+#### DEX & AMM (optional, from book_offers, amm_info)
+
+| Prometheus Metric          | Type  | Labels                | Description            |
+| -------------------------- | ----- | --------------------- | ---------------------- |
+| `xrpl_amm_tvl_drops`       | Gauge | `pool="<id>"`         | Total value locked     |
+| `xrpl_amm_trading_fee`     | Gauge | `pool="<id>"`         | Pool trading fee (bps) |
+| `xrpl_orderbook_bid_depth` | Gauge | `pair="<base/quote>"` | Total bid volume       |
+| `xrpl_orderbook_ask_depth` | Gauge | `pair="<base/quote>"` | Total ask volume       |
+| `xrpl_orderbook_spread`    | Gauge | `pair="<base/quote>"` | Best bid-ask spread    |
+
+### Phase 9: OTel SDK-Exported Metrics (MetricsRegistry)
+
+Phase 9 introduces the `MetricsRegistry` class (`src/xrpld/telemetry/MetricsRegistry.h/.cpp`)
+which registers metrics directly with the OpenTelemetry Metrics SDK. These are exported
+via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
+
+#### NodeStore I/O (Observable Gauge — `nodestore_state`)
+
+| Prometheus Metric                                      | Type  | Labels   | Description                          |
+| ------------------------------------------------------ | ----- | -------- | ------------------------------------ |
+| `rippled_nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations |
+| `rippled_nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Reads served from cache              |
+| `rippled_nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations          |
+| `rippled_nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written             |
+| `rippled_nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                |
+| `rippled_nodestore_state{metric="write_load"}`         | Gauge | `metric` | Current write load score             |
+| `rippled_nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue         |
+
+#### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
+
+| Prometheus Metric                                     | Type  | Labels   | Description                   |
+| ----------------------------------------------------- | ----- | -------- | ----------------------------- |
+| `rippled_cache_metrics{metric="SLE_hit_rate"}`        | Gauge | `metric` | SLE cache hit rate (0.0-1.0)  |
+| `rippled_cache_metrics{metric="ledger_hit_rate"}`     | Gauge | `metric` | Ledger cache hit rate         |
+| `rippled_cache_metrics{metric="AL_hit_rate"}`         | Gauge | `metric` | AcceptedLedger cache hit rate |
+| `rippled_cache_metrics{metric="treenode_cache_size"}` | Gauge | `metric` | SHAMap TreeNode cache entries |
+| `rippled_cache_metrics{metric="treenode_track_size"}` | Gauge | `metric` | Tracked tree nodes            |
+| `rippled_cache_metrics{metric="fullbelow_size"}`      | Gauge | `metric` | FullBelow cache entries       |
+
+#### Transaction Queue (Observable Gauge — `txq_metrics`)
+
+| Prometheus Metric                                            | Type  | Labels   | Description                      |
+| ------------------------------------------------------------ | ----- | -------- | -------------------------------- |
+| `rippled_txq_metrics{metric="txq_count"}`                    | Gauge | `metric` | Transactions currently in queue  |
+| `rippled_txq_metrics{metric="txq_max_size"}`                 | Gauge | `metric` | Maximum queue capacity           |
+| `rippled_txq_metrics{metric="txq_in_ledger"}`                | Gauge | `metric` | Transactions in open ledger      |
+| `rippled_txq_metrics{metric="txq_per_ledger"}`               | Gauge | `metric` | Expected transactions per ledger |
+| `rippled_txq_metrics{metric="txq_reference_fee_level"}`      | Gauge | `metric` | Reference fee level              |
+| `rippled_txq_metrics{metric="txq_min_processing_fee_level"}` | Gauge | `metric` | Minimum fee to get processed     |
+| `rippled_txq_metrics{metric="txq_med_fee_level"}`            | Gauge | `metric` | Median fee level in queue        |
+| `rippled_txq_metrics{metric="txq_open_ledger_fee_level"}`    | Gauge | `metric` | Open ledger fee escalation level |
+
+#### Per-RPC Method Metrics (Synchronous Counters/Histogram)
+
+| Prometheus Metric                   | Type      | Labels            | Description                      |
+| ----------------------------------- | --------- | ----------------- | -------------------------------- |
+| `rippled_rpc_method_started_total`  | Counter   | `method="<name>"` | RPC calls started                |
+| `rippled_rpc_method_finished_total` | Counter   | `method="<name>"` | RPC calls completed successfully |
+| `rippled_rpc_method_errored_total`  | Counter   | `method="<name>"` | RPC calls that errored           |
+| `rippled_rpc_method_duration_us`    | Histogram | `method="<name>"` | Execution time distribution (us) |
+
+#### Per-Job-Type Metrics (Synchronous Counters/Histogram)
+
+| Prometheus Metric                 | Type      | Labels              | Description                       |
+| --------------------------------- | --------- | ------------------- | --------------------------------- |
+| `rippled_job_queued_total`        | Counter   | `job_type="<name>"` | Jobs enqueued                     |
+| `rippled_job_started_total`       | Counter   | `job_type="<name>"` | Jobs started                      |
+| `rippled_job_finished_total`      | Counter   | `job_type="<name>"` | Jobs completed                    |
+| `rippled_job_queued_duration_us`  | Histogram | `job_type="<name>"` | Queue wait time distribution (us) |
+| `rippled_job_running_duration_us` | Histogram | `job_type="<name>"` | Execution time distribution (us)  |
+
+#### Counted Object Instances (Observable Gauge — `object_count`)
+
+| Prometheus Metric                              | Type  | Labels          | Description                    |
+| ---------------------------------------------- | ----- | --------------- | ------------------------------ |
+| `rippled_object_count{type="Transaction"}`     | Gauge | `type="<name>"` | Live Transaction objects       |
+| `rippled_object_count{type="Ledger"}`          | Gauge | `type="<name>"` | Live Ledger objects            |
+| `rippled_object_count{type="NodeObject"}`      | Gauge | `type="<name>"` | Live NodeObject instances      |
+| `rippled_object_count{type="STTx"}`            | Gauge | `type="<name>"` | Serialized transaction objects |
+| `rippled_object_count{type="STLedgerEntry"}`   | Gauge | `type="<name>"` | Serialized ledger entries      |
+| `rippled_object_count{type="InboundLedger"}`   | Gauge | `type="<name>"` | Ledgers being fetched          |
+| `rippled_object_count{type="Pathfinder"}`      | Gauge | `type="<name>"` | Active pathfinding operations  |
+| `rippled_object_count{type="PathRequest"}`     | Gauge | `type="<name>"` | Active path requests           |
+| `rippled_object_count{type="HashRouterEntry"}` | Gauge | `type="<name>"` | Hash router entries            |
+
+#### Load Factor Breakdown (Observable Gauge — `load_factor_metrics`)
+
+| Prometheus Metric                                                  | Type  | Labels   | Description                             |
+| ------------------------------------------------------------------ | ----- | -------- | --------------------------------------- |
+| `rippled_load_factor_metrics{metric="load_factor"}`                | Gauge | `metric` | Combined transaction cost multiplier    |
+| `rippled_load_factor_metrics{metric="load_factor_server"}`         | Gauge | `metric` | Server + cluster + network contribution |
+| `rippled_load_factor_metrics{metric="load_factor_local"}`          | Gauge | `metric` | Local server load only                  |
+| `rippled_load_factor_metrics{metric="load_factor_net"}`            | Gauge | `metric` | Network-wide load estimate              |
+| `rippled_load_factor_metrics{metric="load_factor_cluster"}`        | Gauge | `metric` | Cluster peer load                       |
+| `rippled_load_factor_metrics{metric="load_factor_fee_escalation"}` | Gauge | `metric` | Open ledger fee escalation              |
+| `rippled_load_factor_metrics{metric="load_factor_fee_queue"}`      | Gauge | `metric` | Queue entry fee level                   |
+
+#### Prometheus Query Examples (Phase 9)
+
+```promql
+# NodeStore cache hit ratio
+rippled_nodestore_state{metric="node_reads_hit"} / rippled_nodestore_state{metric="node_reads_total"}
+
+# RPC error rate for server_info
+rate(rippled_rpc_method_errored_total{method="server_info"}[5m])
+
+# Job queue wait time p95
+histogram_quantile(0.95, sum by (le) (rate(rippled_job_queued_duration_us_bucket[5m])))
+
+# TxQ utilization percentage
+rippled_txq_metrics{metric="txq_count"} / rippled_txq_metrics{metric="txq_max_size"}
+
+# High load factor alert candidate
+rippled_load_factor_metrics{metric="load_factor"} > 5
+```
+
+### New Grafana Dashboards (Phase 9)
+
+| Dashboard              | UID                  | Data Source | Key Panels                                                |
+| ---------------------- | -------------------- | ----------- | --------------------------------------------------------- |
+| Fee Market & TxQ       | `rippled-fee-market` | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown     |
+| Job Queue Analysis     | `rippled-job-queue`  | Prometheus  | Per-job rates, queue wait times, execution times          |
+| RPC Performance (OTel) | `rippled-rpc-perf`   | Prometheus  | Per-method call rates, error rates, latency distributions |
+
+### Updated Grafana Dashboards (Phase 9)
+
+| Dashboard            | UID                          | New Panels Added                                       |
+| -------------------- | ---------------------------- | ------------------------------------------------------ |
+| Node Health (StatsD) | `rippled-statsd-node-health` | NodeStore I/O, cache hit rates, object instance counts |
+
+### New Grafana Dashboards (Phase 11)
+
+| Dashboard          | UID                           | Data Source | Key Panels                                                             |
+| ------------------ | ----------------------------- | ----------- | ---------------------------------------------------------------------- |
+| Validator Health   | `rippled-validator-health`    | Prometheus  | Server state timeline, proposer count, converge time, amendment voting |
+| Network Topology   | `rippled-network-topology`    | Prometheus  | Peer count, version distribution, latency distribution, diverged peers |
+| Fee Market (Ext)   | `rippled-fee-market-external` | Prometheus  | Fee levels, queue depth, load factor breakdown, escalation timeline    |
+| DEX & AMM Overview | `rippled-dex-amm`             | Prometheus  | AMM TVL, order book depth, spread trends, trading fee revenue          |
+
+### Prometheus Alerting Rules (Phase 11)
+
+| Alert Name                         | Severity | Condition                                                   | For |
+| ---------------------------------- | -------- | ----------------------------------------------------------- | --- |
+| `XRPLServerNotFull`                | Critical | `xrpl_server_state < 4` for 15m                             | 15m |
+| `XRPLAmendmentBlocked`             | Critical | `xrpl_amendment_blocked == 1`                               | 1m  |
+| `XRPLNoPeers`                      | Critical | `xrpl_peers_count == 0`                                     | 5m  |
+| `XRPLLedgerStale`                  | Critical | `xrpl_validated_ledger_age_seconds > 120`                   | 2m  |
+| `XRPLHighIOLatency`                | Critical | `xrpl_io_latency_ms > 100`                                  | 5m  |
+| `XRPLUnsupportedAmendmentMajority` | Critical | `xrpl_amendment_unsupported_majority == 1`                  | 1m  |
+| `XRPLLowPeerCount`                 | Warning  | `xrpl_peers_count < 10`                                     | 15m |
+| `XRPLHighLoadFactor`               | Warning  | `xrpl_load_factor > 10`                                     | 10m |
+| `XRPLSlowConsensus`                | Warning  | `xrpl_last_close_converge_time_seconds > 6`                 | 5m  |
+| `XRPLValidatorListExpiring`        | Warning  | `(xrpl_validator_list_expiration_seconds - time()) < 86400` | 1h  |
+| `XRPLStateFlapping`                | Warning  | `rate(xrpl_state_transitions_total{state="full"}[1h]) > 2`  | 30m |
 
 ---
 

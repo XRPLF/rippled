@@ -29,6 +29,7 @@
 #include <xrpld/overlay/make_Overlay.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/shamap/NodeFamily.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/ResolverAsio.h>
@@ -149,6 +150,9 @@ public:
     beast::Journal m_journal;
     std::unique_ptr<perf::PerfLog> perfLog_;
     std::unique_ptr<telemetry::Telemetry> telemetry_;
+    /// OTel metrics registry for gap-fill metrics (counters, histograms,
+    /// observable gauges). Created after telemetry_ during setup().
+    std::unique_ptr<telemetry::MetricsRegistry> metricsRegistry_;
     Application::MutexType m_masterMutex;
 
     // Required by the SHAMapStore
@@ -638,6 +642,12 @@ public:
     getTelemetry() override
     {
         return *telemetry_;
+    }
+
+    telemetry::MetricsRegistry*
+    getMetricsRegistry() override
+    {
+        return metricsRegistry_.get();
     }
 
     NodeCache&
@@ -1289,6 +1299,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     if (!config_->section("telemetry").exists("service_instance_id"))
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
+    // Create the OTel MetricsRegistry for gap-fill metrics (counters,
+    // histograms, observable gauges).  It is started later in start().
+    metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
+        telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
+
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {
         JLOG(m_journal.fatal()) << "Invalid entry in cluster configuration.";
@@ -1502,6 +1517,24 @@ ApplicationImp::start(bool withTimers)
     ledgerCleaner_->start();
     perfLog_->start();
     telemetry_->start();
+
+    // Start the metrics pipeline after telemetry; the endpoint uses the
+    // same base URL but the /v1/metrics path.
+    if (metricsRegistry_)
+    {
+        auto const& section = config_->section("telemetry");
+        std::string endpoint = "http://localhost:4318/v1/metrics";
+        set(endpoint, "metrics_endpoint", section);
+
+        // Pass the service_instance_id so the MeterProvider Resource
+        // carries it, giving Prometheus an exported_instance label.
+        std::string instanceId;
+        set(instanceId, "service_instance_id", section);
+        if (instanceId.empty() && nodeIdentity_)
+            instanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
+
+        metricsRegistry_->start(endpoint, instanceId);
+    }
 }
 
 void
@@ -1592,6 +1625,10 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     m_nodeStore->stop();
     perfLog_->stop();
+    // Stop metrics pipeline before telemetry — gauge callbacks reference
+    // Application services that may be shutting down.
+    if (metricsRegistry_)
+        metricsRegistry_->stop();
     // Telemetry must stop last among trace-producing components.
     // serverHandler_, overlay_, and jobQueue_ are already stopped above,
     // so no threads should be calling startSpan() at this point.

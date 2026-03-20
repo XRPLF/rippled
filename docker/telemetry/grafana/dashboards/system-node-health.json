@@ -52,7 +52,8 @@
                 "value": 20
               }
             ]
-          }
+          },
+          "custom": {}
         },
         "overrides": []
       }
@@ -100,7 +101,8 @@
                 "value": 20
               }
             ]
-          }
+          },
+          "custom": {}
         },
         "overrides": []
       }
@@ -351,7 +353,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "ops",
+          "custom": {}
         },
         "overrides": []
       }
@@ -395,6 +398,324 @@
                 "value": 0.01
               }
             ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "--- OTel: NodeStore I/O ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "NodeStore Read/Write Totals",
+      "description": "Cumulative NodeStore read and write operation counts. Sourced from MetricsRegistry nodestore_state observable gauge with metric=node_reads_total, node_writes, node_reads_hit.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_total\"}",
+          "legendFormat": "Reads Total [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_reads_hit\"}",
+          "legendFormat": "Reads Hit (cache) [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"node_writes\"}",
+          "legendFormat": "Writes Total [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Operations",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "NodeStore Write Load & Read Queue",
+      "description": "Instantaneous write load score and read queue depth. High write load indicates backend pressure. High read queue indicates prefetch thread saturation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"write_load\"}",
+          "legendFormat": "Write Load [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_nodestore_state{exported_instance=~\"$node\", metric=\"read_queue\"}",
+          "legendFormat": "Read Queue [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Count",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "--- OTel: Cache Hit Rates ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Cache Hit Rates",
+      "description": "Hit rates for SLE cache, Ledger cache, and AcceptedLedger cache. Values from 0.0 to 1.0. Low values indicate cache thrashing. Sourced from MetricsRegistry cache_metrics observable gauge.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"SLE_hit_rate\"}",
+          "legendFormat": "SLE Hit Rate [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"ledger_hit_rate\"}",
+          "legendFormat": "Ledger Hit Rate [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"AL_hit_rate\"}",
+          "legendFormat": "AcceptedLedger Hit Rate [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Hit Rate",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Cache Sizes",
+      "description": "TreeNode cache size, TreeNode track size, and FullBelow cache size. Sourced from MetricsRegistry cache_metrics observable gauge.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_cache_size\"}",
+          "legendFormat": "TreeNode Cache [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"treenode_track_size\"}",
+          "legendFormat": "TreeNode Track [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_cache_metrics{exported_instance=~\"$node\", metric=\"fullbelow_size\"}",
+          "legendFormat": "FullBelow [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Entries",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "--- OTel: Object Instance Counts ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Object Instance Counts",
+      "description": "Live instance counts for key internal object types tracked by CountedObject<T>. Sourced from MetricsRegistry object_count observable gauge. High counts may indicate memory pressure or object leaks.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["last", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(15, rippled_object_count{exported_instance=~\"$node\", type=~\"$type\"})",
+          "legendFormat": "{{type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Instances",
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
@@ -402,7 +723,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "node-health", "telemetry"],
+  "tags": ["rippled", "statsd", "otel", "node-health", "telemetry"],
   "templating": {
     "list": [
       {
@@ -411,6 +732,26 @@
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
         "query": "label_values(rippled_LedgerMaster_Validated_Ledger_Age, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "type",
+        "label": "Object Type",
+        "description": "Filter by internal object type (CountedObject<T> class name)",
+        "type": "query",
+        "query": "label_values(rippled_object_count, type)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

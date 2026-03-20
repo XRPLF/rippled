@@ -63,6 +63,15 @@ gantt
 
     section Phase 8
     Log-Trace Correlation     :p8, after p7, 1w
+
+    section Phase 9 (Future)
+    Internal Metric Gap Fill  :p9, after p8, 2.5w
+
+    section Phase 10 (Future)
+    Workload Validation       :p10, after p9, 2w
+
+    section Phase 11 (Future)
+    Third-Party Collection    :p11, after p10, 3w
 ```
 
 ---
@@ -656,6 +665,266 @@ flowchart LR
 
 ---
 
+## 6.8.2 Phase 9: Internal Metric Instrumentation Gap Fill (Weeks 14-15) — Future Enhancement
+
+> **Status**: Planned, not yet implemented.
+
+### Motivation
+
+Phases 1-8 establish trace spans, StatsD metrics bridge, native OTel metrics, and log-trace correlation. However, ~50+ metrics that exist inside rippled's `get_counts`, `server_info`, TxQ, PerfLog, and `CountedObject` systems have **no time-series export path**. These are the metrics that exchanges, payment processors, analytics providers, validators, and researchers need most — NodeStore I/O performance, cache hit rates, per-RPC-method counters, transaction queue depth, fee escalation levels, and live object instance counts.
+
+### Architecture
+
+Hybrid approach — two instrumentation strategies based on proximity to existing code:
+
+```mermaid
+flowchart TB
+    subgraph rippled["rippled process"]
+        subgraph existing["Existing beast::insight registrations"]
+            NS["NodeStore I/O<br/>(Database.cpp)"]
+        end
+        subgraph newreg["New OTel MetricsRegistry"]
+            CR["Cache Hit Rates<br/>(async gauge callbacks)"]
+            TQ["TxQ Metrics<br/>(async gauge callbacks)"]
+            PL["PerfLog RPC/Job<br/>(counters + histograms)"]
+            CO["CountedObjects<br/>(async gauge callbacks)"]
+            LF["Load Factors<br/>(async gauge callbacks)"]
+        end
+    end
+
+    subgraph export["Export Pipelines"]
+        BI["beast::insight<br/>OTelCollector (Phase 7)"]
+        OS["OTel Metrics SDK<br/>PeriodicMetricReader"]
+    end
+
+    NS --> BI
+    CR --> OS
+    TQ --> OS
+    PL --> OS
+    CO --> OS
+    LF --> OS
+
+    BI --> OTLP["OTLP/HTTP :4318<br/>/v1/metrics"]
+    OS --> OTLP
+
+    style rippled fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style existing fill:#2a4a6b,color:#fff,stroke:#4a90d9
+    style newreg fill:#2a4a6b,color:#fff,stroke:#4a90d9
+    style export fill:#1a3320,color:#ccc,stroke:#5cb85c
+    style NS fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style CR fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style TQ fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style PL fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style CO fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style LF fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style BI fill:#449d44,color:#fff,stroke:#2d6e2d
+    style OS fill:#449d44,color:#fff,stroke:#2d6e2d
+    style OTLP fill:#f0ad4e,color:#000,stroke:#c78c2e
+```
+
+- **beast::insight extensions** (blue): NodeStore I/O metrics added near existing `Database.cpp` registrations — exported via Phase 7's `OTelCollector`.
+- **OTel MetricsRegistry** (green): New centralized class using `ObservableGauge` async callbacks for cache, TxQ, PerfLog, CountedObjects, and load factors — polled at 10s intervals by `PeriodicMetricReader`.
+
+### Third-Party Consumer Context
+
+| Consumer Category      | Key Metrics They Need From Phase 9                              |
+| ---------------------- | --------------------------------------------------------------- |
+| Exchanges              | Fee escalation levels, TxQ depth, settlement latency            |
+| Payment Processors     | Load factors, io_latency, transaction throughput                |
+| Analytics Providers    | NodeStore I/O, cache hit rates, counted objects                 |
+| Validators / Operators | Per-job execution times, PerfLog RPC counters, consensus timing |
+| Academic Researchers   | Consensus performance time-series, fee market dynamics          |
+| Institutional Custody  | Server health scores, reserve calculations, node availability   |
+
+### Tasks
+
+| Task | Description                               |
+| ---- | ----------------------------------------- |
+| 9.1  | NodeStore I/O metrics                     |
+| 9.2  | Cache hit rate metrics + MetricsRegistry  |
+| 9.3  | TxQ metrics                               |
+| 9.4  | PerfLog per-RPC metrics                   |
+| 9.5  | PerfLog per-job metrics                   |
+| 9.6  | Counted object instance metrics           |
+| 9.7  | Fee escalation & load factor metrics      |
+| 9.8  | New Grafana dashboards (2 new, 2 updated) |
+| 9.9  | Update documentation                      |
+| 9.10 | Integration tests                         |
+
+See [Phase9_taskList.md](./Phase9_taskList.md) for detailed per-task breakdown.
+
+### Exit Criteria
+
+- [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline
+- [ ] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK
+- [ ] 2 new Grafana dashboards operational (Fee Market, Job Queue)
+- [ ] No performance regression (< 0.5% CPU overhead from new callbacks)
+- [ ] Documentation updated with full new metric inventory
+
+---
+
+## 6.8.3 Phase 10: Synthetic Workload Generation & Telemetry Validation (Weeks 16-17) — Future Enhancement
+
+> **Status**: Planned, not yet implemented.
+
+### Motivation
+
+Before the telemetry stack (Phases 1-9) can be considered production-ready, we need automated proof that all 16 spans, 22 attributes, 300+ metrics, 10 Grafana dashboards, and log-trace correlation work correctly under realistic load. This phase establishes a reusable CI-integrated validation suite and performance benchmark baseline.
+
+### Architecture
+
+```mermaid
+flowchart LR
+    subgraph harness["Docker Compose Workload Harness"]
+        direction TB
+        V1["Validator 1"] ~~~ V2["Validator 2"] ~~~ V3["Validator 3"]
+        V4["Validator 4"] ~~~ V5["Validator 5"]
+    end
+
+    subgraph generators["Workload Generators"]
+        RPC["RPC Load Generator<br/>(configurable RPS,<br/>command distribution)"]
+        TX["Transaction Submitter<br/>(Payment, Offer, NFT,<br/>Escrow, AMM mix)"]
+    end
+
+    subgraph validation["Validation Suite"]
+        SV["Span Validator<br/>(Jaeger/Tempo API)"]
+        MV["Metric Validator<br/>(Prometheus API)"]
+        LV["Log-Trace Validator<br/>(Loki API)"]
+        DV["Dashboard Validator<br/>(Grafana API)"]
+        BM["Benchmark Suite<br/>(CPU, memory, latency<br/>ON vs OFF comparison)"]
+    end
+
+    generators --> harness
+    harness --> validation
+
+    style harness fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style generators fill:#1a3320,color:#ccc,stroke:#5cb85c
+    style validation fill:#332a1a,color:#ccc,stroke:#f0ad4e
+    style V1 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style V2 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style V3 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style V4 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style V5 fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style RPC fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style TX fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style SV fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style MV fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style LV fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style DV fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style BM fill:#f0ad4e,color:#000,stroke:#c78c2e
+```
+
+### Tasks
+
+| Task | Description                            |
+| ---- | -------------------------------------- |
+| 10.1 | Multi-node test harness (5 validators) |
+| 10.2 | RPC load generator                     |
+| 10.3 | Transaction submitter (6+ tx types)    |
+| 10.4 | Telemetry validation suite             |
+| 10.5 | Performance benchmark suite            |
+| 10.6 | CI integration                         |
+| 10.7 | Documentation                          |
+
+See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown.
+
+### Exit Criteria
+
+- [ ] 5-node validator cluster starts and reaches consensus in docker-compose
+- [ ] Validation suite confirms all 16 spans, 22 attributes, 300+ metrics
+- [ ] All 10 Grafana dashboards render data (no empty panels)
+- [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
+- [ ] CI workflow runs validation on telemetry branch changes
+
+---
+
+## 6.8.4 Phase 11: Third-Party Data Collection Pipelines (Weeks 18-20) — Future Enhancement
+
+> **Status**: Planned, not yet implemented.
+
+### Motivation
+
+rippled has no native Prometheus/OTLP metrics export for data accessible only via JSON-RPC (`server_info`, `get_counts`, `fee`, `peers`, `validators`, `feature`). Every external consumer — exchanges, payment processors, analytics providers, validators, compliance firms, DeFi protocols, researchers, custodians, and CBDC platforms — must build custom JSON-RPC polling and conversion pipelines. This phase centralizes that work into a reusable custom OTel Collector receiver.
+
+### Architecture
+
+```mermaid
+flowchart LR
+    subgraph receiver["Custom OTel Collector Receiver (Go)"]
+        direction TB
+        SI["server_info<br/>collector"]
+        GC["get_counts<br/>collector"]
+        FE["fee<br/>collector"]
+        PE["peers<br/>collector"]
+        VA["validators<br/>collector"]
+        DX["DEX/AMM<br/>collector<br/>(optional)"]
+    end
+
+    rippled["rippled<br/>Admin RPC<br/>:5005"] -->|"JSON-RPC<br/>poll every 30s"| receiver
+
+    receiver -->|"xrpl_* metrics"| PROM["Prometheus<br/>:9090"]
+    receiver -->|"OTLP export"| OTLP["Any OTLP-<br/>compatible<br/>backend"]
+
+    PROM --> GF["Grafana<br/>4 new dashboards"]
+    PROM --> AL["Prometheus<br/>Alerting Rules"]
+
+    style receiver fill:#1a3320,color:#ccc,stroke:#5cb85c
+    style SI fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style GC fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style FE fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style PE fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style VA fill:#5cb85c,color:#fff,stroke:#3d8b3d
+    style DX fill:#449d44,color:#fff,stroke:#2d6e2d
+    style rippled fill:#4a90d9,color:#fff,stroke:#2a6db5
+    style PROM fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style OTLP fill:#f0ad4e,color:#000,stroke:#c78c2e
+    style GF fill:#5bc0de,color:#000,stroke:#3aa8c1
+    style AL fill:#d9534f,color:#fff,stroke:#b52d2d
+```
+
+### Third-Party Consumer Gap Analysis
+
+| Consumer Category      | Data Unlocked by Phase 11                                    |
+| ---------------------- | ------------------------------------------------------------ |
+| Exchanges              | Real-time fee estimates, TxQ capacity, server health scores  |
+| Payment Processors     | Settlement latency percentiles, corridor health              |
+| Analytics Providers    | Validator metrics, network topology, amendment voting status |
+| DeFi / AMM             | AMM pool TVL, DEX order book depth, trade volumes            |
+| Validators / Operators | Per-peer latency, version distribution, UNL health, alerting |
+| Compliance             | Transaction volume trends, network growth metrics            |
+| Academic Researchers   | Consensus performance time-series, decentralization metrics  |
+| CBDC / Tokenization    | Token supply tracking, trust line adoption, freeze status    |
+| Institutional Custody  | Multi-sig status, escrow tracking, reserve calculations      |
+| Wallet Providers       | Server health for node selection, fee prediction data        |
+
+### Tasks
+
+| Task  | Description                           |
+| ----- | ------------------------------------- |
+| 11.1  | OTel Collector receiver scaffold (Go) |
+| 11.2  | server_info / server_state collector  |
+| 11.3  | get_counts collector                  |
+| 11.4  | Peer topology collector               |
+| 11.5  | Validator & amendment collector       |
+| 11.6  | Fee & TxQ collector                   |
+| 11.7  | DEX & AMM collector (optional)        |
+| 11.8  | Prometheus alerting rules             |
+| 11.9  | New Grafana dashboards (4)            |
+| 11.10 | Integration with Phase 10 validation  |
+| 11.11 | Documentation                         |
+
+See [Phase11_taskList.md](./Phase11_taskList.md) for detailed per-task breakdown.
+
+### Exit Criteria
+
+- [ ] Custom OTel Collector receiver exports all `xrpl_*` metrics to Prometheus
+- [ ] 4 new Grafana dashboards operational (Validator Health, Network Topology, Fee Market, DEX/AMM)
+- [ ] Prometheus alerting rules fire correctly for simulated failures
+- [ ] Receiver handles rippled restart/unavailability gracefully
+- [ ] Go receiver has unit tests with >80% coverage
+
+---
+
 ## 6.9 Risk Assessment
 
 ```mermaid
@@ -853,14 +1122,13 @@ quadrantChart
 
 ---
 
-
-## 6.13 Definition of Done
+## 6.12 Definition of Done
 
 > **TxQ** = Transaction Queue | **HA** = High Availability
 
 Clear, measurable criteria for each phase.
 
-### 6.13.1 Phase 1: Core Infrastructure
+### 6.12.1 Phase 1: Core Infrastructure
 
 
 | Criterion       | Measurement                                                | Target                       |
@@ -873,8 +1141,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: All criteria met, PR merged, no regressions in CI.
 
-
-### 6.13.2 Phase 2: RPC Tracing
+### 6.12.2 Phase 2: RPC Tracing
 
 
 | Criterion          | Measurement                        | Target                     |
@@ -888,7 +1155,7 @@ Clear, measurable criteria for each phase.
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
 
-### 6.13.3 Phase 3: Transaction Tracing
+### 6.12.3 Phase 3: Transaction Tracing
 
 
 | Criterion        | Measurement                     | Target                             |
@@ -901,8 +1168,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Transaction traces span 3+ nodes in test network, performance within bounds.
 
-
-### 6.13.4 Phase 4: Consensus Tracing
+### 6.12.4 Phase 4: Consensus Tracing
 
 
 | Criterion            | Measurement                   | Target                    |
@@ -915,8 +1181,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
-
-### 6.13.5 Phase 5: Production Deployment
+### 6.12.5 Phase 5: Production Deployment
 
 
 | Criterion    | Measurement                  | Target                     |
@@ -930,23 +1195,25 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: Telemetry running in production, operators trained, alerts active.
 
+### 6.12.6 Success Metrics Summary
 
-### 6.13.6 Success Metrics Summary
-
-| Phase   | Primary Metric               | Secondary Metric            | Deadline       |
-| ------- | ---------------------------- | --------------------------- | -------------- |
-| Phase 1 | SDK compiles and runs        | Zero overhead when disabled | End of Week 2  |
-| Phase 2 | 100% RPC coverage            | <1ms latency overhead       | End of Week 4  |
-| Phase 3 | Cross-node traces work       | <5% throughput impact       | End of Week 6  |
-| Phase 4 | Consensus fully traced       | No consensus timing impact  | End of Week 8  |
-| Phase 5 | Production deployment        | Operators trained           | End of Week 9  |
-| Phase 6 | StatsD metrics in Prometheus | 3 dashboards operational    | End of Week 10 |
-| Phase 7 | All metrics via OTLP         | No StatsD dependency        | End of Week 12 |
-| Phase 8 | trace_id in logs + Loki      | Tempo↔Loki correlation      | End of Week 13 |
+| Phase    | Primary Metric                   | Secondary Metric            | Deadline       | Status             |
+| -------- | -------------------------------- | --------------------------- | -------------- | ------------------ |
+| Phase 1  | SDK compiles and runs            | Zero overhead when disabled | End of Week 2  | Active             |
+| Phase 2  | 100% RPC coverage                | <1ms latency overhead       | End of Week 4  | Active             |
+| Phase 3  | Cross-node traces work           | <5% throughput impact       | End of Week 6  | Active             |
+| Phase 4  | Consensus fully traced           | No consensus timing impact  | End of Week 8  | Active             |
+| Phase 5  | Production deployment            | Operators trained           | End of Week 9  | Active             |
+| Phase 6  | StatsD metrics in Prometheus     | 3 dashboards operational    | End of Week 10 | Active             |
+| Phase 7  | All metrics via OTLP             | No StatsD dependency        | End of Week 12 | Active             |
+| Phase 8  | trace_id in logs + Loki          | Tempo↔Loki correlation      | End of Week 13 | Active             |
+| Phase 9  | 50+ new internal metrics in Prom | 2 new dashboards            | End of Week 15 | Future Enhancement |
+| Phase 10 | Full telemetry stack validated   | < 3% CPU overhead proven    | End of Week 17 | Future Enhancement |
+| Phase 11 | Third-party metrics via receiver | 4 new dashboards + alerting | End of Week 20 | Future Enhancement |
 
 ---
 
-## 6.14 Recommended Implementation Order
+## 6.13 Recommended Implementation Order
 
 Based on ROI analysis, implement in this exact order:
 

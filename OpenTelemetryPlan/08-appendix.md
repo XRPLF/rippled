@@ -43,6 +43,18 @@
 | **LoadManager**   | Dynamic fee escalation based on network load                  |
 | **SHAMap**        | SHA-256 hash-based map (Merkle trie variant) for ledger state |
 
+### Phase 9–11 Terms
+
+| Term                        | Definition                                                                |
+| --------------------------- | ------------------------------------------------------------------------- |
+| **MetricsRegistry**         | Centralized class for OTel async gauge registrations (Phase 9)            |
+| **ObservableGauge**         | OTel Metrics SDK async instrument polled via callback at fixed intervals  |
+| **PeriodicMetricReader**    | OTel SDK component that invokes gauge callbacks at configurable intervals |
+| **CountedObject**           | rippled template that tracks live instance counts via atomic counters     |
+| **TxQ**                     | Transaction queue managing fee escalation and ordering                    |
+| **Load Factor**             | Combined multiplier affecting transaction cost (local, cluster, network)  |
+| **OTel Collector Receiver** | Custom Go plugin that polls rippled RPC and emits OTel metrics (Phase 11) |
+
 ---
 
 ## 8.2 Span Hierarchy Visualization
@@ -162,7 +174,8 @@ flowchart TB
 | ------- | ---------- | ------ | -------------------------------------------------------------- |
 | 1.0     | 2026-02-12 | -      | Initial implementation plan                                    |
 | 1.1     | 2026-02-13 | -      | Refactored into modular documents                              |
-| 1.2     | 2026-03-24 | -      | Review fixes: accuracy corrections, cross-document consistency |
+| 1.2     | 2026-03-09 | -      | Added Phases 9–11 (future enhancement plans)                   |
+| 1.3     | 2026-03-24 | -      | Review fixes: accuracy corrections, cross-document consistency |
 
 ---
 
@@ -197,7 +210,56 @@ flowchart TB
 | [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests               |
 | [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration                       |
 | [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                               |
+| [Phase9_taskList.md](./Phase9_taskList.md)                                 | Internal metric instrumentation gap fill (future)   |
+| [Phase10_taskList.md](./Phase10_taskList.md)                               | Synthetic workload generation & validation (future) |
+| [Phase11_taskList.md](./Phase11_taskList.md)                               | Third-party data collection pipelines (future)      |
 | [presentation.md](./presentation.md)                                       | Presentation slides for OpenTelemetry plan overview |
+
+> **Note**: Phases 1 and 6 do not have separate task list files. Phase 1 tasks are documented in [06-implementation-phases.md §6.2](./06-implementation-phases.md). Phase 6 tasks are documented in [06-implementation-phases.md §6.7](./06-implementation-phases.md).
+
+---
+
+## 8.6 Phase 9–11 Cross-Reference Guide
+
+This guide maps Phase 9–11 content to its location across the documentation.
+
+### Phase 9: Internal Metric Instrumentation Gap Fill
+
+| Content                         | Location                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| Plan & architecture             | [06-implementation-phases.md §6.8.2](./06-implementation-phases.md)      |
+| Task list (10 tasks)            | [Phase9_taskList.md](./Phase9_taskList.md)                               |
+| Future metric definitions (~50) | [09-data-collection-reference.md §5b](./09-data-collection-reference.md) |
+| New class: `MetricsRegistry`    | `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (planned)                   |
+| New dashboards                  | `rippled-fee-market`, `rippled-job-queue` (planned)                      |
+
+**Metric categories**: NodeStore I/O, Cache Hit Rates, TxQ, PerfLog Per-RPC, PerfLog Per-Job, Counted Objects, Fee Escalation & Load Factors.
+
+### Phase 10: Synthetic Workload Generation & Telemetry Validation
+
+| Content              | Location                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| Plan & architecture  | [06-implementation-phases.md §6.8.3](./06-implementation-phases.md)      |
+| Task list (7 tasks)  | [Phase10_taskList.md](./Phase10_taskList.md)                             |
+| Validation inventory | [09-data-collection-reference.md §5c](./09-data-collection-reference.md) |
+| Test harness         | `docker/telemetry/docker-compose.workload.yaml` (planned)                |
+| CI workflow          | `.github/workflows/telemetry-validation.yml` (planned)                   |
+
+**Validates**: 16 spans, 22 attributes, 300+ metrics, 10 dashboards, log-trace correlation.
+
+### Phase 11: Third-Party Data Collection Pipelines
+
+| Content                           | Location                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| Plan & architecture               | [06-implementation-phases.md §6.8.4](./06-implementation-phases.md)      |
+| Task list (11 tasks)              | [Phase11_taskList.md](./Phase11_taskList.md)                             |
+| External metric definitions (~30) | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
+| Custom OTel Collector receiver    | `docker/telemetry/otel-rippled-receiver/` (planned)                      |
+| Prometheus alerting rules (11)    | [09-data-collection-reference.md §5d](./09-data-collection-reference.md) |
+| New dashboards (4)                | Validator Health, Network Topology, Fee Market (External), DEX & AMM     |
+
+**Consumer categories**: Exchanges, Payment Processors, DeFi/AMM, NFT Marketplaces, Analytics Providers, Wallets, Compliance, Academic Researchers, Institutional Custody, CBDC Bridge Operators.
+>>>>>>> 58b5170180 (Phase 9: Metric gap fill - nodestore, cache, TxQ, load factor dashboards)
 
 ---
 

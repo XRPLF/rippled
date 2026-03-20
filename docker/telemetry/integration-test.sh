@@ -355,6 +355,7 @@ trace_transactions=1
 trace_consensus=1
 trace_peer=1
 trace_ledger=1
+metrics_endpoint=http://localhost:4318/v1/metrics
 
 [insight]
 server=otel
@@ -638,6 +639,53 @@ if echo "$statsd_port_check" | grep -qi "refused\|error\|connection"; then
 else
     fail "StatsD port 8125 appears to be listening (should not be needed)"
 fi
+
+# ---------------------------------------------------------------------------
+# Step 10c: Verify Phase 9 OTel SDK Metrics
+# ---------------------------------------------------------------------------
+log ""
+log "--- Phase 9: OTel SDK Metrics (MetricsRegistry) ---"
+log "Waiting 15s for OTel metric export + Prometheus scrape..."
+sleep 15
+
+check_otel_metric() {
+    local metric_name="$1"
+    local result
+    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" \
+        | jq '.data.result | length' 2>/dev/null || echo 0)
+    if [ "$result" -gt 0 ]; then
+        ok "OTel: $metric_name ($result series)"
+    else
+        fail "OTel: $metric_name (0 series)"
+    fi
+}
+
+# Task 9.1: NodeStore I/O
+check_otel_metric 'rippled_nodestore_state{metric="node_reads_total"}'
+check_otel_metric 'rippled_nodestore_state{metric="write_load"}'
+
+# Task 9.2: Cache hit rates
+check_otel_metric 'rippled_cache_metrics{metric="SLE_hit_rate"}'
+check_otel_metric 'rippled_cache_metrics{metric="treenode_cache_size"}'
+
+# Task 9.3: TxQ metrics
+check_otel_metric 'rippled_txq_metrics{metric="txq_count"}'
+check_otel_metric 'rippled_txq_metrics{metric="txq_reference_fee_level"}'
+
+# Task 9.4: Per-RPC metrics
+check_otel_metric "rippled_rpc_method_started_total"
+check_otel_metric "rippled_rpc_method_finished_total"
+
+# Task 9.5: Per-job metrics
+check_otel_metric "rippled_job_queued_total"
+check_otel_metric "rippled_job_finished_total"
+
+# Task 9.6: Counted object instances
+check_otel_metric "rippled_object_count"
+
+# Task 9.7: Load factor breakdown
+check_otel_metric 'rippled_load_factor_metrics{metric="load_factor"}'
+check_otel_metric 'rippled_load_factor_metrics{metric="load_factor_server"}'
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary
