@@ -1313,7 +1313,7 @@ public:
             auto resp = env.rpc("json", "account_objects", to_string(params));
             auto& accountObjects = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
-            BEAST_EXPECT(accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(accountObjects.size() == accountObjectSize - (limit * 2));
             BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
         }
 

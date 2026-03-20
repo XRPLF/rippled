@@ -362,7 +362,7 @@ public:
     {
         for (auto id : peers)
         {
-            assert(links_.find(id) != links_.end());
+            assert(links_.contains(id));
             f(*links_[id], message_);
         }
     }
@@ -637,7 +637,7 @@ public:
     getSelectedPeer(PublicKey const& validator)
     {
         auto selected = slots_.getSelected(validator);
-        assert(selected.size());
+        assert(!selected.empty());
         return *selected.begin();
     }
 

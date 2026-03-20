@@ -522,7 +522,8 @@ struct Credentials_test : public beast::unit_test::suite
                     directory::adjustOwnerNode);
                 BEAST_EXPECT(res1);
 
-                auto const jv = credentials::create(issuer, subject, credType);
+                auto const jv = credentials::create(
+                    issuer, subject, credType);  // NOLINT(readability-suspicious-call-argument)
                 env(jv, ter(tecDIR_FULL));
                 // Free one directory entry by using a ticket
                 env(noop(issuer), ticket::use(issuerSeq + 40));
