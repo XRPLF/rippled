@@ -5,9 +5,10 @@ on:
     types:
       - checks_requested
   pull_request:
-    types: [opened, edited, reopened, synchronize]
+    types: [opened, edited, reopened, synchronize, ready_for_review]
     branches: [develop]
 
 jobs:
   check_title:
-    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@c6311685db43aa07971c4a6764320fecbc2acdcd
+    if: ${{ github.event.pull_request.draft != true }}
+    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@e2c7f400d1e85ae65dad552fd425169fbacca4a3

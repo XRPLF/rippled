@@ -2500,7 +2500,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testCreateOfferDestination(FeatureBitset features)
     {
-        // Explore the CreateOffer Destination field.
+        // Explore the OfferCreate Destination field.
         testcase("Create offer destination");
 
         using namespace test::jtx;
@@ -2915,7 +2915,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testCreateOfferExpiration(FeatureBitset features)
     {
-        // Explore the CreateOffer Expiration field.
+        // Explore the OfferCreate Expiration field.
         testcase("Create offer expiration");
 
         using namespace test::jtx;

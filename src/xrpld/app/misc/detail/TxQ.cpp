@@ -938,7 +938,7 @@ TxQ::apply(
             //
             //  o Additional transactions with Sequences should
             //    follow preceding sequence-based transactions with no
-            //    gaps (except for those required by CreateTicket
+            //    gaps (except for those required by TicketCreate
             //    transactions).
 
             // Find the entry in the queue that precedes the new

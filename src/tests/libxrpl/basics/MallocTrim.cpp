@@ -89,7 +89,7 @@ TEST(parseStatmRSSkB, standard_format)
 
     // Test empty string
     {
-        std::string statm = "";
+        std::string statm;
         long result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }

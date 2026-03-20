@@ -1973,7 +1973,7 @@ private:
         // Withdraw all tokens.
         testAMM([&](AMM& ammAlice, Env& env) {
             env(trust(carol_, STAmount{ammAlice.lptIssue(), 10'000}));
-            // Can SetTrust only for AMM LP tokens
+            // Can TrustSet only for AMM LP tokens
             env(trust(carol_, STAmount{Issue{EUR.currency, ammAlice.ammAccount()}, 10'000}),
                 Ter(tecNO_PERMISSION));
             env.close();
@@ -2262,7 +2262,12 @@ private:
 
             // Account is not LP
             ammAlice.vote(
-                carol_, 1'000, std::nullopt, std::nullopt, std::nullopt, Ter(tecAMM_INVALID_TOKENS));
+                carol_,
+                1'000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(tecAMM_INVALID_TOKENS));
         });
 
         // Invalid AMM
@@ -4411,7 +4416,7 @@ private:
             AMM amm(env, c, tsta(5'000), tstb(5'000));
             auto const ammIss = Issue(tsta.currency, amm.ammAccount());
 
-            // Can SetTrust only for AMM LP tokens
+            // Can TrustSet only for AMM LP tokens
             env(trust(d, STAmount{ammIss, 10'000}), Ter(tecNO_PERMISSION));
             env.close();
 
@@ -4844,7 +4849,8 @@ private:
             AMM ammAlice(env, alice_, USD(1'005), EUR(1'000), false, 1'000);
             env(pay(bob_, ed, USD(10)), Path(~USD), sendmax(EUR(15)), txflags(tfNoRippleDirect));
             BEAST_EXPECT(expectHolding(env, ed, USD(2'010)));
-            BEAST_EXPECT(expectHolding(env, bob_, STAmount{EUR, UINT64_C(1'989'993923296712), -12}));
+            BEAST_EXPECT(
+                expectHolding(env, bob_, STAmount{EUR, UINT64_C(1'989'993923296712), -12}));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(1'004), STAmount{EUR, UINT64_C(1'001'006076703288), -12}, ammAlice.tokens()));
             BEAST_EXPECT(expectOffers(env, carol_, 0));
@@ -4955,13 +4961,13 @@ private:
                 BEAST_EXPECT(!ammAlice.ammExists());
                 if (!features[fixAMMv1_1])
                 {
-                    BEAST_EXPECT(
-                        expectHolding(env, alice_, STAmount{USD, UINT64_C(30'000'0000000013), -10}));
+                    BEAST_EXPECT(expectHolding(
+                        env, alice_, STAmount{USD, UINT64_C(30'000'0000000013), -10}));
                 }
                 else if (features[fixAMMv1_3])
                 {
-                    BEAST_EXPECT(
-                        expectHolding(env, alice_, STAmount{USD, UINT64_C(30'000'0000000003), -10}));
+                    BEAST_EXPECT(expectHolding(
+                        env, alice_, STAmount{USD, UINT64_C(30'000'0000000003), -10}));
                 }
                 else
                 {
@@ -5104,7 +5110,7 @@ private:
             amm.withdrawAll(gw_);
             BEAST_EXPECT(amm.ammExists());
 
-            // Bid,Vote,Deposit,Withdraw,SetTrust failing with
+            // Bid,Vote,Deposit,Withdraw,TrustSet failing with
             // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
             env(amm.bid({
                     .account = alice_,
@@ -5567,7 +5573,10 @@ private:
                     if (i > 0)
                         amm.emplace(env, ed, eth(1'000), USD(1'000));
 
-                    env(pay(carol_, bob_, USD(100)), Path(~USD), Path(~can, ~USD), sendmax(eth(600)));
+                    env(pay(carol_, bob_, USD(100)),
+                        Path(~USD),
+                        Path(~can, ~USD),
+                        sendmax(eth(600)));
                     env.close();
 
                     BEAST_EXPECT(expectHolding(env, bob_, USD(2'100)));
@@ -6819,7 +6828,13 @@ private:
         {
             testAMM(
                 [&](AMM& ammAlice, Env& env) {
-                    fund(env, gw_, {bob_}, XRP(10'000'000), {GBP(100'000), EUR(100'000)}, Fund::Acct);
+                    fund(
+                        env,
+                        gw_,
+                        {bob_},
+                        XRP(10'000'000),
+                        {GBP(100'000), EUR(100'000)},
+                        Fund::Acct);
                     env.close();
 
                     ammAlice.deposit(DepositArg{.account = bob_, .asset1In = deposit});
@@ -6858,7 +6873,13 @@ private:
         {
             testAMM(
                 [&](AMM& ammAlice, Env& env) {
-                    fund(env, gw_, {bob_}, XRP(10'000'000), {GBP(100'000), EUR(100'000)}, Fund::Acct);
+                    fund(
+                        env,
+                        gw_,
+                        {bob_},
+                        XRP(10'000'000),
+                        {GBP(100'000), EUR(100'000)},
+                        Fund::Acct);
                     env.close();
 
                     STAmount const depositEuro{EUR, 1, exponent};
