@@ -20,6 +20,13 @@ original object.
 class TaggedCache_test : public beast::unit_test::suite
 {
 public:
+    // Mutable value type for testing fetch_and_modify
+    struct MutableValue
+    {
+        int counter = 0;
+        std::string name;
+    };
+
     void
     run() override
     {
@@ -128,6 +135,54 @@ public:
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
             BEAST_EXPECT(c.getTrackSize() == 0);
+        }
+
+        // Test fetch_and_modify: insert on miss, modify on hit
+        {
+            using MutCache = TaggedCache<Key, MutableValue>;
+            MutCache mc("mutable_test", 2, 2s, clock, journal);
+
+            // A. Insert on miss: fetch_and_modify creates entry and mutates it
+            mc.fetch_and_modify(5, [](MutableValue& v) {
+                v.counter = 42;
+                v.name = "initial";
+            });
+
+            BEAST_EXPECT(mc.getCacheSize() == 1);
+            BEAST_EXPECT(mc.getTrackSize() == 1);
+
+            // Verify the mutation persisted
+            auto p1 = mc.fetch(5);
+            BEAST_EXPECT(p1 != nullptr);
+            BEAST_EXPECT(p1->counter == 42);
+            BEAST_EXPECT(p1->name == "initial");
+
+            // B. Modify existing object on hit
+            // Keep strong pointer to verify in-place modification
+            auto p2 = mc.fetch(5);
+            BEAST_EXPECT(p2 != nullptr);
+            BEAST_EXPECT(p1.get() == p2.get());  // Same object
+
+            // Modify through fetch_and_modify
+            mc.fetch_and_modify(5, [](MutableValue& v) {
+                v.counter += 10;
+                v.name = "modified";
+            });
+
+            // Verify no new entry was created
+            BEAST_EXPECT(mc.getCacheSize() == 1);
+            BEAST_EXPECT(mc.getTrackSize() == 1);
+
+            // Verify the same object was mutated (strong pointer sees change)
+            BEAST_EXPECT(p1->counter == 52);
+            BEAST_EXPECT(p1->name == "modified");
+            BEAST_EXPECT(p2->counter == 52);  // Original pointer sees mutation
+
+            // Verify via fresh fetch
+            auto p3 = mc.fetch(5);
+            BEAST_EXPECT(p3 != nullptr);
+            BEAST_EXPECT(p3.get() == p1.get());  // Same object identity
+            BEAST_EXPECT(p3->counter == 52);
         }
     }
 };

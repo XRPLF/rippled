@@ -68,6 +68,67 @@ public:
     }
 
     void
+    testHashIndexInvariant()
+    {
+        testcase("LedgerHistory hash/index invariant");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+        LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
+
+        // Create and insert validated ledgers
+        auto const genesis = makeLedger({}, env, lh, 0s);
+        auto const ledger1 = makeLedger(genesis, env, lh, 4s);
+        auto const ledger2 = makeLedger(ledger1, env, lh, 4s);
+        auto const ledger3 = makeLedger(ledger2, env, lh, 4s);
+
+        // Insert as validated (so they go into by_index)
+        lh.insert(genesis, true);
+        lh.insert(ledger1, true);
+        lh.insert(ledger2, true);
+        lh.insert(ledger3, true);
+
+        // Verify the hash/index invariant holds
+        // Can retrieve by sequence and get correct hash
+        BEAST_EXPECT(lh.getLedgerHash(genesis->header().seq) == genesis->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq) == ledger1->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger2->header().seq) == ledger2->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
+
+        // Can retrieve by sequence and get correct ledger
+        auto fetched1 = lh.getLedgerBySeq(ledger1->header().seq);
+        BEAST_EXPECT(fetched1 != nullptr);
+        BEAST_EXPECT(fetched1->header().hash == ledger1->header().hash);
+
+        auto fetched2 = lh.getLedgerBySeq(ledger2->header().seq);
+        BEAST_EXPECT(fetched2 != nullptr);
+        BEAST_EXPECT(fetched2->header().hash == ledger2->header().hash);
+
+        // Clear ledgers prior to ledger2's sequence
+        lh.clearLedgerCachePrior(ledger2->header().seq);
+
+        // Verify old entries are gone from the in-memory by_index map
+        // Note: getLedgerHash checks by_index directly without DB fallback
+        BEAST_EXPECT(lh.getLedgerHash(genesis->header().seq).isZero());
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq).isZero());
+
+        // Verify newer entries are still present in by_index
+        BEAST_EXPECT(lh.getLedgerHash(ledger2->header().seq) == ledger2->header().hash);
+        BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
+
+        // Verify newer entries remain retrievable and consistent
+        // getLedgerBySeq uses by_index first, then falls back to DB if needed
+        auto fetched2After = lh.getLedgerBySeq(ledger2->header().seq);
+        BEAST_EXPECT(fetched2After != nullptr);
+        BEAST_EXPECT(fetched2After->header().hash == ledger2->header().hash);
+
+        auto fetched3After = lh.getLedgerBySeq(ledger3->header().seq);
+        BEAST_EXPECT(fetched3After != nullptr);
+        BEAST_EXPECT(fetched3After->header().hash == ledger3->header().hash);
+    }
+
+    void
     testHandleMismatch()
     {
         testcase("LedgerHistory mismatch");
@@ -163,6 +224,7 @@ public:
     void
     run() override
     {
+        testHashIndexInvariant();
         testHandleMismatch();
     }
 };
