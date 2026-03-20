@@ -82,6 +82,35 @@ TEST(TracingMacros, conditional_guards)
     }
 }
 
+TEST(TracingMacros, consensus_close_time_attributes)
+{
+    // Verify the consensus.accept.apply attribute pattern compiles and
+    // doesn't crash with NullTelemetry.  Mirrors the real instrumentation
+    // in RCLConsensus::Adaptor::doAccept().
+    telemetry::Telemetry::Setup setup;
+    setup.enabled = false;
+    beast::Journal::Sink& sink = beast::Journal::getNullSink();
+    beast::Journal j(sink);
+    auto tel = telemetry::make_Telemetry(setup, j);
+
+    {
+        XRPL_TRACE_CONSENSUS(*tel, "consensus.accept.apply");
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq", static_cast<int64_t>(42));
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.close_time", static_cast<int64_t>(780000000));
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.close_time_correct", true);
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.close_resolution_ms", static_cast<int64_t>(30000));
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.state", std::string("finished"));
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", true);
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.round_time_ms", static_cast<int64_t>(3500));
+    }
+    // close_time_correct=false path (agreed to disagree)
+    {
+        XRPL_TRACE_CONSENSUS(*tel, "consensus.accept.apply");
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.close_time_correct", false);
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.state", std::string("moved_on"));
+    }
+}
+
 #ifdef XRPL_ENABLE_TELEMETRY
 
 TEST(TracingMacros, span_guard_raii)

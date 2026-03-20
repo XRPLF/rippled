@@ -47,6 +47,19 @@ setup_Telemetry(
     setup.tracePeer = section.value_or<int>("trace_peer", 0) != 0;
     setup.traceLedger = section.value_or<int>("trace_ledger", 1) != 0;
 
+    // Consensus tracing strategy: "deterministic" (shared trace_id derived
+    // from previousLedger.id()) or "attribute" (random trace_id with
+    // ledger_id stored as a span attribute).
+    setup.consensusTraceStrategy =
+        section.value_or<std::string>("consensus_trace_strategy", "deterministic");
+
+    if (setup.consensusTraceStrategy != "deterministic" &&
+        setup.consensusTraceStrategy != "attribute")
+    {
+        // Fall back to default if the value is unrecognised.
+        setup.consensusTraceStrategy = "deterministic";
+    }
+
     return setup;
 }
 

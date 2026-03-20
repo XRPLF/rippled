@@ -11,6 +11,12 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <xrpld/telemetry/TracingInstrumentation.h>
+
+#include <xrpl/telemetry/SpanGuard.h>
+#endif
+
 #include <algorithm>
 #include <chrono>
 #include <deque>
@@ -600,6 +606,44 @@ private:
 
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /** Span for the establish phase of consensus.
+     *
+     *  Created when the ledger closes and we enter phaseEstablish;
+     *  cleared (ended) when consensus is reached and we move to the
+     *  accept phase. This span is a child of the round span that
+     *  lives in the Adaptor (via thread-local OTel context propagation).
+     */
+    std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
+
+    /** Create the establish-phase span if not yet active.
+     *
+     * Called on each phaseEstablish() invocation. Creates a
+     * "consensus.establish" span on the first call and stores it in
+     * establishSpan_.  Subsequent calls are no-ops while the span is
+     * still live.
+     */
+    void
+    startEstablishTracing();
+
+    /** Update establish span attributes for the current iteration.
+     *
+     * Overwrites convergence metrics (converge_percent, establish_count,
+     * proposers) on each call so the final span always reflects the last
+     * state before consensus was reached.
+     */
+    void
+    updateEstablishTracing();
+
+    /** End the establish span when transitioning to the accepted phase.
+     *
+     * Resets establishSpan_, which triggers the SpanGuard destructor and
+     * ends the span.
+     */
+    void
+    endEstablishTracing();
+#endif
 
     // Journal for debugging
     beast::Journal const j_;
@@ -1301,6 +1345,10 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     // can only establish consensus if we already took a stance
     XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
 
+#ifdef XRPL_ENABLE_TELEMETRY
+    startEstablishTracing();
+#endif
+
     ++peerUnchangedCounter_;
     ++establishCounter_;
 
@@ -1317,6 +1365,10 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
                << "ms, "
                << "previous round duration: " << prevRoundTime_.count() << "ms, "
                << "avMIN_CONSENSUS_TIME: " << parms.avMIN_CONSENSUS_TIME.count() << "ms. ";
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    updateEstablishTracing();
+#endif
 
     // Give everyone a chance to take an initial position
     if (result_->roundTime.read() < parms.ledgerMIN_CONSENSUS)
@@ -1345,6 +1397,11 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    endEstablishTracing();
+#endif
+
     phase_ = ConsensusPhase::accepted;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
     adaptor_.onAccept(
@@ -1356,6 +1413,40 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
         getJson(true),
         adaptor_.validating());
 }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+template <class Adaptor>
+void
+Consensus<Adaptor>::startEstablishTracing()
+{
+    if (!establishSpan_ && adaptor_.getTelemetry().shouldTraceConsensus())
+    {
+        establishSpan_.emplace(adaptor_.getTelemetry().startSpan("consensus.establish"));
+    }
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::updateEstablishTracing()
+{
+    if (establishSpan_)
+    {
+        establishSpan_->setAttribute(
+            "xrpl.consensus.converge_percent", static_cast<int64_t>(convergePercent_));
+        establishSpan_->setAttribute(
+            "xrpl.consensus.establish_count", static_cast<int64_t>(establishCounter_));
+        establishSpan_->setAttribute(
+            "xrpl.consensus.proposers", static_cast<int64_t>(currPeerPositions_.size()));
+    }
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::endEstablishTracing()
+{
+    establishSpan_.reset();
+}
+#endif  // XRPL_ENABLE_TELEMETRY
 
 template <class Adaptor>
 void
@@ -1419,6 +1510,31 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
 {
     // We must have a position if we are updating it
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
+
+    /// @brief Scoped span tracking a single position-update pass.
+    /// Records the number of active disputes, current convergence
+    /// percentage, and total proposers. Dispute resolution events are
+    /// recorded as span events with the affected transaction ID and vote.
+    XRPL_TRACE_CONSENSUS(adaptor_.getTelemetry(), "consensus.update_positions");
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.disputes_count", static_cast<int64_t>(result_->disputes.size()));
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.converge_percent", static_cast<int64_t>(convergePercent_));
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.proposers_total", static_cast<int64_t>(currPeerPositions_.size()));
+
+    /// Count peers that agree with our current position and record as
+    /// an attribute on the update_positions span.
+    {
+        int agreedCount = 0;
+        auto const ourPos = result_->position.position();
+        for (auto const& [nodeId, peerPos] : currPeerPositions_)
+        {
+            if (peerPos.proposal().position() == ourPos)
+                ++agreedCount;
+        }
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.proposers_agreed", static_cast<int64_t>(agreedCount));
+    }
+
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1465,6 +1581,15 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
             if (dispute.updateVote(
                     convergePercent_, mode_.get() == ConsensusMode::proposing, parms))
             {
+                /// Record dispute resolution event with transaction ID,
+                /// new vote direction, and current yay/nay counts.
+                XRPL_TRACE_ADD_EVENT(
+                    "dispute.resolve",
+                    {{"xrpl.dispute.tx_id", to_string(txId)},
+                     {"xrpl.dispute.our_vote", dispute.getOurVote()},
+                     {"xrpl.dispute.yays", static_cast<int64_t>(dispute.getYays())},
+                     {"xrpl.dispute.nays", static_cast<int64_t>(dispute.getNays())}});
+
                 if (!mutableSet)
                     mutableSet.emplace(result_->txns);
 
@@ -1600,6 +1725,12 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
 
+    /// @brief Scoped span tracking a single consensus-check pass.
+    /// Records the number of agreeing/disagreeing peers, convergence
+    /// percentage, and the resulting ConsensusState (Yes/No/MovedOn/Expired).
+    /// Also captures the current avalanche threshold percentage.
+    XRPL_TRACE_CONSENSUS(adaptor_.getTelemetry(), "consensus.check");
+
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
 
@@ -1620,11 +1751,22 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
             ++disagree;
         }
     }
+
+    /// Record agreement counts and convergence progress on the span.
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.agree_count", static_cast<int64_t>(agree));
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.disagree_count", static_cast<int64_t>(disagree));
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.converge_percent", static_cast<int64_t>(convergePercent_));
+
     auto currentFinished = adaptor_.proposersFinished(previousLedger_, prevLedgerID_);
 
     JLOG(j_.debug()) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
+
+    /// Record the minimum consensus threshold percentage (typically 80%).
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.threshold_percent", static_cast<int64_t>(parms.minCONSENSUS_PCT));
+
     // Stalling is BAD. It means that we have a consensus on the close time, so
     // peers are talking, but we have disputed transactions that peers are
     // unable or unwilling to come to agreement on one way or the other.
@@ -1656,6 +1798,27 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         mode_.get() == ConsensusMode::proposing,
         j_,
         clog);
+
+    /// Record the consensus check outcome as a string attribute.
+    {
+        char const* stateStr = "unknown";
+        switch (result_->state)
+        {
+            case ConsensusState::No:
+                stateStr = "no";
+                break;
+            case ConsensusState::MovedOn:
+                stateStr = "moved_on";
+                break;
+            case ConsensusState::Yes:
+                stateStr = "yes";
+                break;
+            case ConsensusState::Expired:
+                stateStr = "expired";
+                break;
+        }
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.result", stateStr);
+    }
 
     if (result_->state == ConsensusState::No)
     {

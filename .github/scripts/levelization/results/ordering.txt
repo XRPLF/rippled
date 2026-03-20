@@ -95,6 +95,7 @@ test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.ledger
 test.csf > xrpl.protocol
+test.csf > xrpl.telemetry
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
@@ -241,9 +242,11 @@ xrpld.app > xrpl.shamap
 xrpld.app > xrpl.telemetry
 xrpld.app > xrpl.tx
 xrpld.consensus > xrpl.basics
+xrpld.consensus > xrpld.telemetry
 xrpld.consensus > xrpl.json
 xrpld.consensus > xrpl.ledger
 xrpld.consensus > xrpl.protocol
+xrpld.consensus > xrpl.telemetry
 xrpld.core > xrpl.basics
 xrpld.core > xrpl.core
 xrpld.core > xrpl.json

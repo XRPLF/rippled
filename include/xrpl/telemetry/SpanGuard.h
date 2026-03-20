@@ -123,6 +123,25 @@ public:
         span_->AddEvent(std::string(name));
     }
 
+    /** Add a named event with key-value attributes to the span.
+
+        Allows attaching structured metadata to a point-in-time event on
+        the span timeline (e.g., "dispute.resolve" with transaction ID
+        and vote result attributes).
+
+        @param name        Event name (e.g., "dispute.resolve").
+        @param attributes  Key-value pairs describing the event.
+    */
+    void
+    addEvent(
+        std::string_view name,
+        std::initializer_list<
+            std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+            attributes)
+    {
+        span_->AddEvent(std::string(name), attributes);
+    }
+
     /** Record an exception as a span event following OTel semantic
         conventions, and mark the span status as error.
 

@@ -13,7 +13,9 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/trace/noop.h>
+#include <opentelemetry/trace/span_context.h>
 #endif
 
 namespace xrpl {
@@ -82,6 +84,12 @@ public:
         return false;
     }
 
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
+    }
+
 #ifdef XRPL_ENABLE_TELEMETRY
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view) override
@@ -102,6 +110,20 @@ public:
     startSpan(
         std::string_view,
         opentelemetry::context::Context const&,
+        opentelemetry::trace::SpanKind) override
+    {
+        return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(
+            new opentelemetry::trace::NoopSpan(nullptr));
+    }
+
+    /** No-op: returns a NoopSpan, ignoring links. */
+    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    startSpan(
+        std::string_view,
+        opentelemetry::context::Context const&,
+        std::vector<std::pair<
+            opentelemetry::trace::SpanContext,
+            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&,
         opentelemetry::trace::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>(

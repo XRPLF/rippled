@@ -15,6 +15,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/sdk/resource/semantic_conventions.h>
@@ -26,6 +27,9 @@
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/provider.h>
+#include <opentelemetry/trace/span_context.h>
+
+#include <map>
 
 namespace xrpl {
 namespace telemetry {
@@ -99,6 +103,12 @@ public:
         return false;
     }
 
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
@@ -116,6 +126,19 @@ public:
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, opentelemetry::context::Context const&, trace_api::SpanKind)
         override
+    {
+        return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
+    }
+
+    /** No-op: returns a NoopSpan, ignoring links. */
+    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    startSpan(
+        std::string_view,
+        opentelemetry::context::Context const&,
+        std::vector<std::pair<
+            trace_api::SpanContext,
+            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&,
+        trace_api::SpanKind) override
     {
         return opentelemetry::nostd::shared_ptr<trace_api::Span>(new trace_api::NoopSpan(nullptr));
     }
@@ -253,6 +276,12 @@ public:
         return setup_.traceLedger;
     }
 
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name) override
     {
@@ -281,6 +310,41 @@ public:
         opts.kind = kind;
         opts.parent = parentContext;
         return tracer->StartSpan(std::string(name), opts);
+    }
+
+    /** Start a span with explicit parent context and span links.
+
+        Links are passed as the third argument to Tracer::StartSpan(),
+        which accepts any type satisfying is_span_context_kv_iterable
+        (a container of pairs where .first is SpanContext and .second is
+        a key-value iterable).
+
+        @param name           Span name.
+        @param parentContext  The parent span's context.
+        @param links          Span links for follows-from relationships.
+        @param kind           The span kind.
+        @return A shared pointer to the new Span.
+    */
+    opentelemetry::nostd::shared_ptr<trace_api::Span>
+    startSpan(
+        std::string_view name,
+        opentelemetry::context::Context const& parentContext,
+        std::vector<std::pair<
+            trace_api::SpanContext,
+            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&
+            links,
+        trace_api::SpanKind kind) override
+    {
+        auto tracer = getTracer("rippled");
+        trace_api::StartSpanOptions opts;
+        opts.kind = kind;
+        opts.parent = parentContext;
+        // Links are passed as a separate parameter to StartSpan;
+        // the SDK wraps them in a SpanContextKeyValueIterableView.
+        // Empty attributes map is passed explicitly to select the
+        // template overload that accepts (name, attributes, links, opts).
+        std::map<std::string, opentelemetry::common::AttributeValue> emptyAttrs;
+        return tracer->StartSpan(std::string(name), emptyAttrs, links, opts);
     }
 };
 

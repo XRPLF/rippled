@@ -27,10 +27,15 @@
 #include <string_view>
 
 #ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_context.h>
 #include <opentelemetry/trace/tracer.h>
+
+#include <utility>
+#include <vector>
 #endif
 
 namespace xrpl {
@@ -104,6 +109,17 @@ public:
 
         /** Enable tracing for ledger close/accept. */
         bool traceLedger = true;
+
+        /** Cross-node correlation strategy for consensus tracing.
+
+            "deterministic" derives trace_id from previousLedger.id() so all
+            nodes participating in the same consensus round share the same
+            trace_id, enabling cross-node trace correlation in the backend.
+
+            "attribute" uses normal random trace_id with the ledger_id stored
+            as a span attribute; correlation must be done via attribute queries.
+        */
+        std::string consensusTraceStrategy = "deterministic";
     };
 
     virtual ~Telemetry() = default;
@@ -161,6 +177,18 @@ public:
     virtual bool
     shouldTraceLedger() const = 0;
 
+    /** @return The consensus trace correlation strategy.
+
+        "deterministic" derives trace_id from previousLedger.id() so all
+        nodes participating in the same consensus round share the same
+        trace_id, enabling cross-node trace correlation in the backend.
+
+        "attribute" uses normal random trace_id with the ledger_id stored
+        as a span attribute; correlation must be done via attribute queries.
+    */
+    virtual std::string const&
+    getConsensusTraceStrategy() const = 0;
+
 #ifdef XRPL_ENABLE_TELEMETRY
     /** Get or create a named tracer instance.
 
@@ -198,6 +226,30 @@ public:
     startSpan(
         std::string_view name,
         opentelemetry::context::Context const& parentContext,
+        opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
+
+    /** Start a new span with an explicit parent context and span links.
+
+        Span links establish follows-from relationships without implying
+        a parent-child hierarchy. Common uses include linking consensus
+        round N+1 to round N, or linking a validation span back to the
+        round that produced it.
+
+        @param name           Span name.
+        @param parentContext  The parent span's context.
+        @param links          Vector of (SpanContext, attributes) pairs
+                              for follows-from relationships.
+        @param kind           The span kind (defaults to kInternal).
+        @return A shared pointer to the new Span.
+    */
+    virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>
+    startSpan(
+        std::string_view name,
+        opentelemetry::context::Context const& parentContext,
+        std::vector<std::pair<
+            opentelemetry::trace::SpanContext,
+            std::vector<std::pair<std::string, opentelemetry::common::AttributeValue>>>> const&
+            links,
         opentelemetry::trace::SpanKind kind = opentelemetry::trace::SpanKind::kInternal) = 0;
 #endif
 };

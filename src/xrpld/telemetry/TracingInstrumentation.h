@@ -123,6 +123,26 @@ namespace telemetry {
         _xrpl_guard_->recordException(e); \
     }
 
+/** Add a named event with attributes to the current trace span.
+
+    Uses the `_xrpl_guard_` local variable created by XRPL_TRACE_* macros.
+    Example:
+    @code
+        XRPL_TRACE_ADD_EVENT("dispute.resolve", {
+            {"xrpl.tx.id", std::string(tx_id)},
+            {"xrpl.dispute.our_vote", our_vote}
+        });
+    @endcode
+*/
+#define XRPL_TRACE_ADD_EVENT(name, ...)                \
+    do                                                 \
+    {                                                  \
+        if (_xrpl_guard_.has_value())                  \
+        {                                              \
+            _xrpl_guard_->addEvent(name, __VA_ARGS__); \
+        }                                              \
+    } while (0)
+
 }  // namespace telemetry
 }  // namespace xrpl
 
@@ -137,5 +157,6 @@ namespace telemetry {
 #define XRPL_TRACE_LEDGER(_tel_obj_, _span_name_) ((void)0)
 #define XRPL_TRACE_SET_ATTR(key, value) ((void)0)
 #define XRPL_TRACE_EXCEPTION(e) ((void)0)
+#define XRPL_TRACE_ADD_EVENT(name, ...) ((void)0)
 
 #endif  // XRPL_ENABLE_TELEMETRY

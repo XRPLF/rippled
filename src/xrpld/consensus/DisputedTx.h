@@ -58,6 +58,20 @@ public:
         return ourVote_;
     }
 
+    //! Number of peers voting to include the transaction.
+    [[nodiscard]] int
+    getYays() const
+    {
+        return yays_;
+    }
+
+    //! Number of peers voting to exclude the transaction.
+    [[nodiscard]] int
+    getNays() const
+    {
+        return nays_;
+    }
+
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
     bool
