@@ -76,7 +76,22 @@ JobQueue::Coro::resume()
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(static_cast<bool>(coro_), "xrpl::JobQueue::Coro::resume : is runnable");
+    // A late resume() can arrive after the coroutine has already completed.
+    // This is an expected (if rare) outcome of the race condition documented
+    // in JobQueue.h:354-377 where post() schedules a resume job before the
+    // coroutine yields — the mutex serializes access, but by the time this
+    // resume() acquires the lock the coroutine may have already run to
+    // completion. Calling operator() on a completed boost::coroutine2 is
+    // undefined behavior, so we must check and return early.
+    if (!coro_)
+    {
+        detail::getLocalValues().release();
+        detail::getLocalValues().reset(saved);
+        std::lock_guard lk(mutex_run_);
+        running_ = false;
+        cv_.notify_all();
+        return;
+    }
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
