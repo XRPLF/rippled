@@ -25,6 +25,14 @@ doAMMInfo(RPC::JsonContext&);
 Json::Value
 doBookOffers(RPC::JsonContext&);
 Json::Value
+doCLAMMInfo(RPC::JsonContext&);
+Json::Value
+doCLAMMPositions(RPC::JsonContext&);
+Json::Value
+doCLAMMTicks(RPC::JsonContext&);
+Json::Value
+doCLAMMQuote(RPC::JsonContext&);
+Json::Value
 doBookChanges(RPC::JsonContext&);
 Json::Value
 doBlackList(RPC::JsonContext&);

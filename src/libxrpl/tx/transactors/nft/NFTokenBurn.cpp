@@ -1,6 +1,9 @@
+#include <xrpl/protocol/CLAMMCore.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/nft.h>
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
@@ -39,6 +42,18 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
                 if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
                     return tecNO_PERMISSION;
             }
+        }
+    }
+
+    // Block burning CLAMM position NFTs -- liquidity must be withdrawn
+    // via CLAMMWithdraw, not destroyed by burning the position token.
+    if (ctx.view.rules().enabled(featureCLAMM))
+    {
+        auto const nfTokenID = ctx.tx[sfNFTokenID];
+        if (nft::getTaxon(nfTokenID) == nft::toTaxon(CLAMM_NFTOKEN_TAXON))
+        {
+            if (ctx.view.read(keylet::clammPosition(nfTokenID)))
+                return tecNO_PERMISSION;
         }
     }
 

@@ -11,6 +11,7 @@
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/CLAMMContext.h>
 
 #include <optional>
 
@@ -587,6 +588,7 @@ struct PayStrand_test : public beast::unit_test::suite
         using XRPS = XRPEndpointStepInfo;
 
         AMMContext ammContext(alice, false);
+        CLAMMContext clammContext(alice, false);
 
         auto test = [&, this](
                         jtx::Env& env,
@@ -606,6 +608,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                clammContext,
                 std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == expTer);
@@ -633,6 +636,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    clammContext,
                     std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
@@ -651,6 +655,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    clammContext,
                     std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
@@ -763,6 +768,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        clammContext,
                         std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -780,6 +786,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        clammContext,
                         std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -797,6 +804,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        clammContext,
                         std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
@@ -919,6 +927,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                clammContext,
                 std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
@@ -947,6 +956,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 OfferCrossing::no,
                 ammContext,
+                clammContext,
                 std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);

@@ -177,6 +177,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfClawTwoAssets, 0x00000001),                                                                                                                  \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(CLAMMClawback,                                                                                                                                 \
+        TF_FLAG2(tfClawTwoAssets, 0x00000001),                                                                                                                 \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(XChainModifyBridge,                                                                                                                            \
         TF_FLAG(tfClearAccountCreateAmount, 0x00010000),                                                                                                       \
         MASK_ADJ(0))                                                                                                                                           \

@@ -7,6 +7,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/CLAMMContext.h>
 
 namespace xrpl {
 
@@ -59,6 +60,7 @@ flow(
         sendMaxIssue = sendMax->issue();
 
     AMMContext ammContext(src, false);
+    CLAMMContext clammContext(src, false);
 
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in
@@ -75,6 +77,7 @@ flow(
         ownerPaysTransferFee,
         offerCrossing,
         ammContext,
+        clammContext,
         domainID,
         j);
 
@@ -86,6 +89,7 @@ flow(
     }
 
     ammContext.setMultiPath(strands.size() > 1);
+    clammContext.setMultiPath(strands.size() > 1);
 
     if (j.trace())
     {
@@ -126,6 +130,7 @@ flow(
                 sendMax,
                 j,
                 ammContext,
+                clammContext,
                 flowDebugInfo));
     }
 
@@ -145,6 +150,7 @@ flow(
                 sendMax,
                 j,
                 ammContext,
+                clammContext,
                 flowDebugInfo));
     }
 
@@ -164,6 +170,7 @@ flow(
                 sendMax,
                 j,
                 ammContext,
+                clammContext,
                 flowDebugInfo));
     }
 
@@ -182,6 +189,7 @@ flow(
             sendMax,
             j,
             ammContext,
+            clammContext,
             flowDebugInfo));
 }
 

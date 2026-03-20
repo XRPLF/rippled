@@ -117,6 +117,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    CLAMMContext& clammContext,
     std::optional<uint256> const& domainID,
     beast::Journal j)
 {
@@ -246,6 +247,7 @@ toStrand(
             seenDirectIssues,
             seenBookOuts,
             ammContext,
+            clammContext,
             domainID,
             j};
     };
@@ -426,6 +428,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    CLAMMContext& clammContext,
     std::optional<uint256> const& domainID,
     beast::Journal j)
 {
@@ -452,6 +455,7 @@ toStrands(
             ownerPaysTransferFee,
             offerCrossing,
             ammContext,
+            clammContext,
             domainID,
             j);
         auto const ter = sp.first;
@@ -496,6 +500,7 @@ toStrands(
             ownerPaysTransferFee,
             offerCrossing,
             ammContext,
+            clammContext,
             domainID,
             j);
         auto ter = sp.first;
@@ -542,6 +547,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
     AMMContext& ammContext_,
+    CLAMMContext& clammContext_,
     std::optional<uint256> const& domainID_,
     beast::Journal j_)
     : view(view_)
@@ -559,6 +565,7 @@ StrandContext::StrandContext(
     , seenDirectIssues(seenDirectIssues_)
     , seenBookOuts(seenBookOuts_)
     , ammContext(ammContext_)
+    , clammContext(clammContext_)
     , domainID(domainID_)
     , j(j_)
 {

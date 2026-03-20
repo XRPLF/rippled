@@ -17,6 +17,7 @@ class PaymentSandbox;
 class ReadView;
 class ApplyView;
 class AMMContext;
+class CLAMMContext;
 
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
@@ -382,6 +383,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    CLAMMContext& clammContext,
     std::optional<uint256> const& domainID,
     beast::Journal j);
 
@@ -424,6 +426,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    CLAMMContext& clammContext,
     std::optional<uint256> const& domainID,
     beast::Journal j);
 
@@ -531,6 +534,7 @@ struct StrandContext
     */
     boost::container::flat_set<Issue>& seenBookOuts;
     AMMContext& ammContext;
+    CLAMMContext& clammContext;
     std::optional<uint256> domainID;  // the domain the order book will use
     beast::Journal const j;
 
@@ -552,6 +556,7 @@ struct StrandContext
             seenDirectIssues_,                             ///< For detecting currency loops
         boost::container::flat_set<Issue>& seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
+        CLAMMContext& clammContext_,
         std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
 };

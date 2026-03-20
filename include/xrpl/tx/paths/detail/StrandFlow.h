@@ -12,6 +12,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 #include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/CLAMMContext.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -544,6 +545,7 @@ flow(
     std::optional<STAmount> const& sendMaxST,
     beast::Journal j,
     AMMContext& ammContext,
+    CLAMMContext& clammContext,
     path::detail::FlowDebugInfo* flowDebugInfo = nullptr)
 {
     // Used to track the strand that offers the best quality (output/input
@@ -619,6 +621,7 @@ flow(
         activeStrands.activateNext(sb, limitQuality);
 
         ammContext.setMultiPath(activeStrands.size() > 1);
+        clammContext.setMultiPath(activeStrands.size() > 1);
 
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
@@ -650,6 +653,7 @@ flow(
             // the previous strand execution failed. It has to be reset
             // since this strand might not have AMM liquidity.
             ammContext.clear();
+            clammContext.clear();
             if (offerCrossing && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
@@ -722,6 +726,7 @@ flow(
 
             best->sb.apply(sb);
             ammContext.update();
+            clammContext.update();
         }
         else
         {

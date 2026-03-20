@@ -250,12 +250,12 @@ TransfersNotFrozen::validateFrozenState(
         return true;
     }
 
-    // AMMClawbacks are allowed to override some freeze rules
+    // Transactions with overrideFreeze privilege bypass some freeze rules
     if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
-                        << " a frozen trustline for AMMClawback " << tx.getTransactionID();
+                        << " a frozen trustline (overrideFreeze) " << tx.getTransactionID();
         return true;
     }
 

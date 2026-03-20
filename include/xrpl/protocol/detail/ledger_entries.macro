@@ -150,6 +150,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
     {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
     {sfLoanBrokerID,         soeOPTIONAL}, // pseudo-account designator
+    {sfCLAMMID,              soeOPTIONAL}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -601,6 +602,82 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     // number of digits after the decimal point (excluding
     // trailing zeros).
     {sfLoanScale,                soeDEFAULT},
+}))
+
+/** A ledger object which tracks a CLAMM pool (Concentrated Liquidity AMM).
+
+    \sa keylet::clamm
+ */
+LEDGER_ENTRY(ltCLAMM, 0x008A, CLAMM, clamm, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAsset,                soeREQUIRED},
+    {sfAsset2,               soeREQUIRED},
+    {sfFeeTier,              soeREQUIRED},
+    {sfTickSpacing,          soeREQUIRED},
+    {sfTradingFee,           soeDEFAULT},
+    {sfCurrentTick,          soeREQUIRED},
+    {sfSqrtPrice,            soeREQUIRED},
+    {sfLiquidityAmount,      soeDEFAULT},
+    {sfFeeGrowthGlobal0,     soeDEFAULT},
+    {sfFeeGrowthGlobal1,     soeDEFAULT},
+    {sfProtocolFees0,        soeDEFAULT},
+    {sfProtocolFees1,        soeDEFAULT},
+    {sfAuctionSlot,          soeOPTIONAL},
+    {sfVoteSlots,            soeOPTIONAL},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeOPTIONAL},
+    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+}))
+
+/** A ledger object which tracks a tick in a CLAMM pool.
+
+    \sa keylet::clammTick
+ */
+LEDGER_ENTRY(ltCLAMM_TICK, 0x008B, CLAMMTick, clamm_tick, ({
+    {sfPoolID,               soeREQUIRED},
+    {sfTickIndex,            soeREQUIRED},
+    {sfLiquidityGross,       soeDEFAULT},
+    {sfLiquidityNet,         soeDEFAULT},
+    {sfFeeGrowthOutside0,    soeDEFAULT},
+    {sfFeeGrowthOutside1,    soeDEFAULT},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which tracks a liquidity position in a CLAMM pool.
+
+    \sa keylet::clammPosition
+ */
+LEDGER_ENTRY(ltCLAMM_POSITION, 0x008C, CLAMMPosition, clamm_position, ({
+    {sfPoolID,               soeREQUIRED},
+    {sfNFTokenID,            soeREQUIRED},
+    {sfOwner,                soeREQUIRED},
+    {sfLowerTick,            soeREQUIRED},
+    {sfUpperTick,            soeREQUIRED},
+    {sfLiquidityAmount,      soeREQUIRED},
+    {sfFeeGrowthInside0Last, soeDEFAULT},
+    {sfFeeGrowthInside1Last, soeDEFAULT},
+    {sfTokensOwed0,          soeDEFAULT},
+    {sfTokensOwed1,          soeDEFAULT},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which stores a bitmap of initialized ticks in a CLAMM pool.
+    Each entry represents a 256-bit word where each bit indicates whether
+    a compressed tick is initialized, enabling efficient next-tick lookup.
+
+    \sa keylet::clammTickBitmap
+ */
+LEDGER_ENTRY(ltCLAMM_TICK_BITMAP, 0x008D, CLAMMTickBitmap, clamm_tick_bitmap, ({
+    {sfPoolID,               soeREQUIRED},
+    {sfTickIndex,            soeREQUIRED},
+    {sfDigest,               soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 #undef EXPAND

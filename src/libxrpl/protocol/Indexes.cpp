@@ -79,6 +79,10 @@ enum class LedgerNameSpace : std::uint16_t {
     VAULT = 'V',
     LOAN_BROKER = 'l',  // lower-case L
     LOAN = 'L',
+    CLAMM = 0x434C,              // 'CL'
+    CLAMM_TICK = 0x4354,         // 'CT'
+    CLAMM_POSITION = 0x4350,     // 'CP'
+    CLAMM_TICK_BITMAP = 0x4342,  // 'CB'
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -528,6 +532,44 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+clamm(Asset const& issue1, Asset const& issue2, std::uint8_t feeTier) noexcept
+{
+    auto const& [minI, maxI] = std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
+    return clamm(indexHash(
+        LedgerNameSpace::CLAMM,
+        minI.account,
+        minI.currency,
+        maxI.account,
+        maxI.currency,
+        feeTier));
+}
+
+Keylet
+clammTick(uint256 const& poolID, std::int32_t tickIndex) noexcept
+{
+    return {
+        ltCLAMM_TICK,
+        indexHash(LedgerNameSpace::CLAMM_TICK, poolID, std::uint32_t(tickIndex))};
+}
+
+Keylet
+clammPosition(uint256 const& nfTokenID) noexcept
+{
+    return {ltCLAMM_POSITION, indexHash(LedgerNameSpace::CLAMM_POSITION, nfTokenID)};
+}
+
+Keylet
+clammTickBitmap(uint256 const& poolID, std::int16_t wordPosition) noexcept
+{
+    return {
+        ltCLAMM_TICK_BITMAP,
+        indexHash(
+            LedgerNameSpace::CLAMM_TICK_BITMAP,
+            poolID,
+            std::uint16_t(wordPosition))};
 }
 
 }  // namespace keylet

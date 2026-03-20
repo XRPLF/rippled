@@ -342,6 +342,29 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+/** CLAMM pool entry */
+Keylet
+clamm(Asset const& issue1, Asset const& issue2, std::uint8_t feeTier) noexcept;
+
+inline Keylet
+clamm(uint256 const& id) noexcept
+{
+    return {ltCLAMM, id};
+}
+
+/** CLAMM tick entry */
+Keylet
+clammTick(uint256 const& poolID, std::int32_t tickIndex) noexcept;
+
+/** CLAMM position entry */
+Keylet
+clammPosition(uint256 const& nfTokenID) noexcept;
+
+/** CLAMM tick bitmap entry */
+Keylet
+clammTickBitmap(uint256 const& poolID, std::int16_t wordPosition) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -10,6 +10,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/CLAMMContext.h>
 
 namespace xrpl {
 namespace test {
@@ -213,6 +214,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
     {
         PaymentSandbox sb(closed.get(), tapNONE);
         AMMContext ammContext(rcp.srcAccount, false);
+        CLAMMContext clammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
             if (rcp.sendMax)
@@ -234,6 +236,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             false,
             OfferCrossing::no,
             ammContext,
+            clammContext,
             std::nullopt,
             dummyJ);
 

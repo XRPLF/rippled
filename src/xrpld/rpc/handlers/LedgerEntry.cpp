@@ -122,6 +122,125 @@ parseAMM(
 }
 
 static Expected<uint256, Json::Value>
+parseCLAMM(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    if (auto const value =
+            LedgerEntryHelpers::hasRequired(params, {jss::asset, jss::asset2});
+        !value)
+    {
+        return Unexpected(value.error());
+    }
+
+    auto const asset =
+        LedgerEntryHelpers::requiredIssue(params, jss::asset, "malformedRequest");
+    if (!asset)
+        return Unexpected(asset.error());
+
+    auto const asset2 =
+        LedgerEntryHelpers::requiredIssue(params, jss::asset2, "malformedRequest");
+    if (!asset2)
+        return Unexpected(asset2.error());
+
+    if (!params.isMember("fee_tier") || !params["fee_tier"].isIntegral())
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "fee_tier must be an integer");
+    }
+    auto const feeTier =
+        static_cast<std::uint8_t>(params["fee_tier"].asUInt());
+
+    return keylet::clamm(*asset, *asset2, feeTier).key;
+}
+
+static Expected<uint256, Json::Value>
+parseCLAMMTick(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const poolID = LedgerEntryHelpers::parse<uint256>(params["pool_id"]);
+    if (!poolID)
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "pool_id must be a hex string");
+    }
+
+    if (!params.isMember("tick_index") || !params["tick_index"].isIntegral())
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "tick_index must be an integer");
+    }
+    auto const tickIndex = params["tick_index"].asInt();
+
+    return keylet::clammTick(*poolID, tickIndex).key;
+}
+
+static Expected<uint256, Json::Value>
+parseCLAMMPosition(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const nfTokenID = LedgerEntryHelpers::parse<uint256>(params["nftoken_id"]);
+    if (!nfTokenID)
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "nftoken_id must be a hex string");
+    }
+
+    return keylet::clammPosition(*nfTokenID).key;
+}
+
+static Expected<uint256, Json::Value>
+parseCLAMMTickBitmap(
+    Json::Value const& params,
+    Json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const poolID = LedgerEntryHelpers::parse<uint256>(params["pool_id"]);
+    if (!poolID)
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest", fieldName, "pool_id must be a hex string");
+    }
+
+    if (!params.isMember("word_position") || !params["word_position"].isIntegral())
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "malformedRequest",
+            fieldName,
+            "word_position must be an integer");
+    }
+    auto const wordPos =
+        static_cast<std::int16_t>(params["word_position"].asInt());
+
+    return keylet::clammTickBitmap(*poolID, wordPos).key;
+}
+
+static Expected<uint256, Json::Value>
 parseBridge(
     Json::Value const& params,
     Json::StaticString const fieldName,

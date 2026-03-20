@@ -1058,6 +1058,155 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
+/** This transaction type creates a CLAMM pool */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMCreate.h>
+#endif
+TRANSACTION(ttCLAMM_CREATE, 85, CLAMMCreate,
+    Delegation::delegable,
+    featureCLAMM,
+    createPseudoAcct,
+    ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfFeeTier, soeREQUIRED},
+    {sfInitialSqrtPrice, soeREQUIRED},
+}))
+
+/** This transaction type deposits liquidity into a CLAMM pool */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMDeposit.h>
+#endif
+TRANSACTION(ttCLAMM_DEPOSIT, 86, CLAMMDeposit,
+    Delegation::delegable,
+    featureCLAMM,
+    changeNFTCounts,
+    ({
+    {sfPoolID, soeOPTIONAL},
+    {sfAsset, soeOPTIONAL},
+    {sfAsset2, soeOPTIONAL},
+    {sfFeeTier, soeOPTIONAL},
+    {sfLowerTick, soeREQUIRED},
+    {sfUpperTick, soeREQUIRED},
+    {sfAmount, soeOPTIONAL},
+    {sfAmount2, soeOPTIONAL},
+    {sfLiquidityAmount, soeOPTIONAL},
+    {sfMinLiquidity, soeOPTIONAL},
+    {sfNFTokenID, soeOPTIONAL},
+}))
+
+/** This transaction type withdraws liquidity from a CLAMM pool */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMWithdraw.h>
+#endif
+TRANSACTION(ttCLAMM_WITHDRAW, 87, CLAMMWithdraw,
+    Delegation::delegable,
+    featureCLAMM,
+    changeNFTCounts | mayDeleteAcct | overrideFreeze,
+    ({
+    {sfNFTokenID, soeREQUIRED},
+    {sfLiquidityAmount, soeOPTIONAL},
+    {sfMinAmount, soeOPTIONAL},
+    {sfMinAmount2, soeOPTIONAL},
+}))
+
+/** This transaction type executes a swap against a CLAMM pool */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMSwap.h>
+#endif
+TRANSACTION(ttCLAMM_SWAP, 88, CLAMMSwap,
+    Delegation::delegable,
+    featureCLAMM,
+    noPriv,
+    ({
+    {sfPoolID, soeOPTIONAL},
+    {sfAsset, soeOPTIONAL},
+    {sfAsset2, soeOPTIONAL},
+    {sfFeeTier, soeOPTIONAL},
+    {sfAmount, soeREQUIRED},
+    {sfDeliverMin, soeOPTIONAL},
+    {sfSqrtPriceLimit, soeOPTIONAL},
+}))
+
+/** This transaction type collects fees from a CLAMM position */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMCollectFees.h>
+#endif
+TRANSACTION(ttCLAMM_COLLECT_FEES, 89, CLAMMCollectFees,
+    Delegation::delegable,
+    featureCLAMM,
+    overrideFreeze,
+    ({
+    {sfNFTokenID, soeREQUIRED},
+    {sfMaxAmount, soeOPTIONAL},
+    {sfMaxAmount2, soeOPTIONAL},
+}))
+
+/** This transaction type votes on CLAMM pool trading fee */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMVote.h>
+#endif
+TRANSACTION(ttCLAMM_VOTE, 90, CLAMMVote,
+    Delegation::delegable,
+    featureCLAMM,
+    noPriv,
+    ({
+    {sfPoolID, soeOPTIONAL},
+    {sfAsset, soeOPTIONAL},
+    {sfAsset2, soeOPTIONAL},
+    {sfFeeTier, soeOPTIONAL},
+    {sfTradingFee, soeREQUIRED},
+    {sfDiscountedFee, soeOPTIONAL},
+}))
+
+/** This transaction type bids for CLAMM pool auction slot */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMBid.h>
+#endif
+TRANSACTION(ttCLAMM_BID, 91, CLAMMBid,
+    Delegation::delegable,
+    featureCLAMM,
+    noPriv,
+    ({
+    {sfPoolID, soeOPTIONAL},
+    {sfAsset, soeOPTIONAL},
+    {sfAsset2, soeOPTIONAL},
+    {sfFeeTier, soeOPTIONAL},
+    {sfBidMin, soeOPTIONAL},
+    {sfBidMax, soeOPTIONAL},
+    {sfAuthAccounts, soeOPTIONAL},
+}))
+
+/** This transaction type deletes an empty CLAMM pool */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMDelete.h>
+#endif
+TRANSACTION(ttCLAMM_DELETE, 92, CLAMMDelete,
+    Delegation::delegable,
+    featureCLAMM,
+    mustDeleteAcct,
+    ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfFeeTier, soeREQUIRED},
+}))
+
+/** This transaction type claws back tokens from CLAMM positions */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/CLAMMClawback.h>
+#endif
+TRANSACTION(ttCLAMM_CLAWBACK, 93, CLAMMClawback,
+    Delegation::delegable,
+    featureCLAMM,
+    changeNFTCounts | mayDeleteAcct | overrideFreeze,
+    ({
+    {sfHolder, soeREQUIRED},
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfFeeTier, soeREQUIRED},
+    {sfAmount, soeOPTIONAL},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

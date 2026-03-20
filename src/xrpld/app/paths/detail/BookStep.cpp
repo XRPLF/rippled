@@ -1,5 +1,7 @@
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
+#include <xrpld/app/paths/CLAMMLiquidity.h>
+#include <xrpld/app/paths/CLAMMOffer.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -26,7 +28,7 @@ template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
 protected:
-    enum class OfferType { AMM, CLOB };
+    enum class OfferType { AMM, CLAMM, CLOB };
 
     static constexpr uint32_t MaxOffersToConsume{1000};
     Book book_;
@@ -49,6 +51,7 @@ protected:
     // if AMM offer quality is better than CLOB offer
     // quality or there is no CLOB offer.
     std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
+    std::optional<CLAMMLiquidity<TIn, TOut>> clammLiquidity_;
     beast::Journal const j_;
 
     struct Cache
@@ -82,6 +85,15 @@ public:
                 out,
                 ctx.ammContext,
                 ctx.j);
+
+        // Discover CLAMM pools (up to 4 fee tiers)
+        if (clammEnabled(ctx.view.rules()))
+        {
+            CLAMMLiquidity<TIn, TOut> clammLiq(
+                ctx.view, in, out, ctx.clammContext, ctx.j);
+            if (!clammLiq.empty())
+                clammLiquidity_.emplace(std::move(clammLiq));
+        }
     }
 
     Book const&
@@ -194,7 +206,7 @@ private:
         DebtDirection prevStepDebtDir,
         Callback& callback) const;
 
-    // Offer is either TOffer or AMMOffer
+    // Offer is TOffer, AMMOffer, or CLAMMOffer
     template <template <typename, typename> typename Offer>
     void
     consumeOffer(
@@ -210,18 +222,21 @@ private:
     std::optional<AMMOffer<TIn, TOut>>
     getAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
-    // If seated then it is either order book tip quality or AMMOffer,
+    std::optional<CLAMMOffer<TIn, TOut>>
+    getCLAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
+
+    // If seated then it is either order book tip quality, AMMOffer, or CLAMMOffer,
     // whichever is a better quality.
-    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>, CLAMMOffer<TIn, TOut>>>
     tip(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality,
     // whichever is a better quality. OfferType is AMM
     // if AMM quality is better.
     std::optional<std::pair<Quality, OfferType>>
     tipOfferQuality(ReadView const& view) const;
-    // If seated then it is either AMM or CLOB quality function,
+    // If seated then it is either AMM, CLAMM, or CLOB quality function,
     // whichever is a better quality.
-    std::optional<QualityFunction>
+    std::optional<std::pair<QualityFunction, OfferType>>
     tipOfferQualityF(ReadView const& view) const;
 };
 
@@ -431,8 +446,10 @@ public:
     std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
-        if (this->ammLiquidity_ && !this->ammLiquidity_->multiPath() &&
-            qualityThreshold_ > lobQuality)
+        auto const hasSinglePathPool =
+            (this->ammLiquidity_ && !this->ammLiquidity_->multiPath()) ||
+            (this->clammLiquidity_ && !this->clammLiquidity_->multiPath());
+        if (hasSinglePathPool && qualityThreshold_ > lobQuality)
             return std::nullopt;
         return lobQuality;
     }
@@ -485,9 +502,15 @@ public:
         // because single path AMM's offer quality is not constant.
         if (!rules.enabled(fixAMMv1_1))
             return ofrQ;
+        else if (offerType == OfferType::CLOB)
+            return ofrQ;
         else if (
-            offerType == OfferType::CLOB ||
-            (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
+            offerType == OfferType::AMM && this->ammLiquidity_ &&
+            this->ammLiquidity_->multiPath())
+            return ofrQ;
+        else if (
+            offerType == OfferType::CLAMM && this->clammLiquidity_ &&
+            this->clammLiquidity_->multiPath())
             return ofrQ;
 
         auto rate = [&](AccountID const& id) {
@@ -536,7 +559,7 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(ReadView const& v, DebtDirectio
     if (!res)
         return {std::nullopt, dir};
 
-    auto const waiveFee = (std::get<OfferType>(*res) == OfferType::AMM) ? WaiveTransferFee::Yes
+    auto const waiveFee = (std::get<OfferType>(*res) != OfferType::CLOB) ? WaiveTransferFee::Yes
                                                                         : WaiveTransferFee::No;
 
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
@@ -550,26 +573,30 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    std::optional<QualityFunction> const res = tipOfferQualityF(v);
+    auto const res = tipOfferQualityF(v);
     if (!res)
         return {std::nullopt, dir};
 
-    // AMM
-    if (!res->isConst())
+    auto const& [qf, offerType] = *res;
+
+    // AMM (non-constant quality function)
+    if (!qf.isConst())
     {
         auto static const qOne = Quality{STAmount::uRateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, qOne, prevStepDir, WaiveTransferFee::Yes, OfferType::AMM, v.rules());
+            v, qOne, prevStepDir, WaiveTransferFee::Yes, offerType, v.rules());
         if (q == qOne)
-            return {res, dir};
-        QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
-        qf.combine(*res);
-        return {qf, dir};
+            return {qf, dir};
+        QualityFunction adjusted{q, QualityFunction::CLOBLikeTag{}};
+        adjusted.combine(qf);
+        return {adjusted, dir};
     }
 
-    // CLOB
+    // CLOB or CLAMM (constant quality function)
+    auto const waiveFee =
+        (offerType != OfferType::CLOB) ? WaiveTransferFee::Yes : WaiveTransferFee::No;
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir, WaiveTransferFee::No, OfferType::CLOB, v.rules());
+        v, *(qf.quality()), prevStepDir, waiveFee, offerType, v.rules());
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -742,26 +769,41 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         return callback(offer, ofrAmt, stpAmt, ownerGives, ofrInRate, ofrOutRate);
     };
 
-    // At any payment engine iteration, AMM offer can only be consumed once.
-    auto tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
-        // amm doesn't support domain yet
+    // At any payment engine iteration, each pool offer can only be consumed
+    // once. Try both AMM and CLAMM, executing the better quality one.
+    auto tryPoolOffers = [&](std::optional<Quality> const& lobQuality) -> bool {
+        // Pool offers don't support domain yet.
         if (book_.domain)
             return true;
 
         // If offer crossing then use either LOB quality or nullopt
-        // to prevent AMM being blocked by a lower quality LOB.
+        // to prevent pool offers being blocked by a lower quality LOB.
         auto const qualityThreshold = [&]() -> std::optional<Quality> {
             if (sb.rules().enabled(fixAMMv1_1) && lobQuality)
                 return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
             return lobQuality;
         }();
+
         auto ammOffer = getAMMOffer(sb, qualityThreshold);
-        return !ammOffer || execOffer(*ammOffer);
+        auto clammOffer = getCLAMMOffer(sb, qualityThreshold);
+
+        if (ammOffer && clammOffer)
+        {
+            // Execute the better quality pool offer; prefer CLAMM on tie.
+            if (clammOffer->quality() >= ammOffer->quality())
+                return execOffer(*clammOffer);
+            return execOffer(*ammOffer);
+        }
+        if (ammOffer)
+            return execOffer(*ammOffer);
+        if (clammOffer)
+            return execOffer(*clammOffer);
+        return true;
     };
 
     if (offers.step())
     {
-        if (tryAMM(offers.tip().quality()))
+        if (tryPoolOffers(offers.tip().quality()))
         {
             do
             {
@@ -772,8 +814,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     }
     else
     {
-        // Might have AMM offer if there are no LOB offers.
-        tryAMM(std::nullopt);
+        // Might have pool offers even if there are no LOB offers.
+        tryPoolOffers(std::nullopt);
     }
 
     return {offers.permToRemove(), counter.count()};
@@ -793,9 +835,12 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         // purposely written as separate if statements so we get logging even
         // when the amendment isn't active.
-        if (sb.rules().enabled(fixAMMOverflowOffer))
+        if (sb.rules().enabled(fixAMMOverflowOffer) ||
+            sb.rules().enabled(featureCLAMM))
         {
-            Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.");
+            Throw<FlowException>(
+                tecINVARIANT_FAILED,
+                "AMM/CLAMM pool product invariant failed.");
         }
     }
 
@@ -832,7 +877,18 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+std::optional<CLAMMOffer<TIn, TOut>>
+BookStep<TIn, TOut, TDerived>::getCLAMMOffer(
+    ReadView const& view,
+    std::optional<Quality> const& clobQuality) const
+{
+    if (clammLiquidity_)
+        return clammLiquidity_->getOffer(view, clobQuality);
+    return std::nullopt;
+}
+
+template <class TIn, class TOut, class TDerived>
+std::optional<std::variant<Quality, AMMOffer<TIn, TOut>, CLAMMOffer<TIn, TOut>>>
 BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
@@ -861,11 +917,34 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
             return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
         return std::nullopt;
     }();
-    // AMM quality is better or no LOB offer
-    if (auto const ammOffer = getAMMOffer(view, qualityThreshold);
-        ammOffer && ((lobQuality && ammOffer->quality() > lobQuality) || !lobQuality))
-        return ammOffer;
-    // LOB quality is better or nullopt
+
+    auto const ammOffer = getAMMOffer(view, qualityThreshold);
+    auto const clammOffer = getCLAMMOffer(view, qualityThreshold);
+
+    // Pick the best quality among AMM, CLAMM, and LOB.
+    // Pool offers (AMM/CLAMM) must beat LOB quality to be selected.
+    std::optional<Quality> bestPoolQ;
+    bool preferCLAMM = false;
+
+    if (ammOffer && (!lobQuality || ammOffer->quality() > lobQuality))
+        bestPoolQ = ammOffer->quality();
+
+    if (clammOffer && (!lobQuality || clammOffer->quality() > lobQuality))
+    {
+        if (!bestPoolQ || clammOffer->quality() >= *bestPoolQ)
+        {
+            bestPoolQ = clammOffer->quality();
+            preferCLAMM = true;
+        }
+    }
+
+    if (bestPoolQ)
+    {
+        if (preferCLAMM)
+            return *clammOffer;
+        return *ammOffer;
+    }
+
     return lobQuality;
 }
 
@@ -878,20 +957,29 @@ BookStep<TIn, TOut, TDerived>::tipOfferQuality(ReadView const& view) const
         return std::nullopt;
     else if (auto const q = std::get_if<Quality>(&(*res)))
         return std::make_pair(*q, OfferType::CLOB);
+    else if (auto const* amm = std::get_if<AMMOffer<TIn, TOut>>(&(*res)))
+        return std::make_pair(amm->quality(), OfferType::AMM);
     else
-        return std::make_pair(std::get<AMMOffer<TIn, TOut>>(*res).quality(), OfferType::AMM);
+        return std::make_pair(
+            std::get<CLAMMOffer<TIn, TOut>>(*res).quality(), OfferType::CLAMM);
 }
 
 template <class TIn, class TOut, class TDerived>
-std::optional<QualityFunction>
+auto
 BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
+    -> std::optional<std::pair<QualityFunction, OfferType>>
 {
     if (auto const res = tip(view); !res)
         return std::nullopt;
     else if (auto const q = std::get_if<Quality>(&(*res)))
-        return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
+        return std::make_pair(
+            QualityFunction{*q, QualityFunction::CLOBLikeTag{}}, OfferType::CLOB);
+    else if (auto const* amm = std::get_if<AMMOffer<TIn, TOut>>(&(*res)))
+        return std::make_pair(amm->getQualityFunc(), OfferType::AMM);
     else
-        return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
+        return std::make_pair(
+            std::get<CLAMMOffer<TIn, TOut>>(*res).getQualityFunc(),
+            OfferType::CLAMM);
 }
 
 template <class TCollection>
