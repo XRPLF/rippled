@@ -41,6 +41,8 @@ libxrpl.shamap > xrpl.basics
 libxrpl.shamap > xrpl.nodestore
 libxrpl.shamap > xrpl.protocol
 libxrpl.shamap > xrpl.shamap
+libxrpl.telemetry > xrpl.basics
+libxrpl.telemetry > xrpl.telemetry
 libxrpl.tx > xrpl.basics
 libxrpl.tx > xrpl.conditions
 libxrpl.tx > xrpl.core
@@ -225,6 +227,7 @@ xrpl.server > xrpl.shamap
 xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
+xrpl.telemetry > xrpl.basics
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
@@ -243,6 +246,7 @@ xrpld.app > xrpl.rdb
 xrpld.app > xrpl.resource
 xrpld.app > xrpl.server
 xrpld.app > xrpl.shamap
+xrpld.app > xrpl.telemetry
 xrpld.app > xrpl.tx
 xrpld.consensus > xrpl.basics
 xrpld.consensus > xrpl.json

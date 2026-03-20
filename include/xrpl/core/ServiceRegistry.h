@@ -18,22 +18,24 @@ class Manager;
 namespace perf {
 class PerfLog;
 }  // namespace perf
+namespace telemetry {
+class Telemetry;
+}  // namespace telemetry
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
 
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
+template <class Key,
+          class T,
+          bool IsKeyCache,
+          class SharedWeakUnionPointer,
+          class SharedPointerType,
+          class Hash,
+          class KeyEqual,
+          class Mutex>
 class TaggedCache;
 class STLedgerEntry;
-using SLE = STLedgerEntry;
+using SLE        = STLedgerEntry;
 using CachedSLEs = TaggedCache<uint256, SLE const>;
 
 // Forward declarations
@@ -91,7 +93,7 @@ using NodeCache = TaggedCache<SHAMapHash, Blob>;
 class ServiceRegistry
 {
 public:
-    ServiceRegistry() = default;
+    ServiceRegistry()          = default;
     virtual ~ServiceRegistry() = default;
 
     // Core infrastructure services
@@ -217,6 +219,9 @@ public:
 
     virtual perf::PerfLog&
     getPerfLog() = 0;
+
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 
     // Configuration and state
     [[nodiscard]] virtual bool

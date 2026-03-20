@@ -1,0 +1,59 @@
+# Grafana Tempo configuration for rippled telemetry stack.
+#
+# Runs in single-binary mode for local development.
+# Receives traces via OTLP/gRPC from the OTel Collector and stores
+# them locally. Queryable via Grafana Explore using the Tempo datasource.
+#
+# Search filters are configured on the Grafana datasource side
+# (grafana/provisioning/datasources/tempo.yaml). Tempo auto-indexes
+# all span attributes for search in single-binary mode.
+#
+# For production, replace local storage with S3/GCS backend and adjust
+# retention via the compactor settings. See:
+# https://grafana.com/docs/tempo/latest/configuration/
+
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 1h
+
+# Enable metrics generator for service graph and span metrics.
+# Produces RED metrics (rate, errors, duration) per service/span,
+# feeding Grafana's service map visualization.
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
