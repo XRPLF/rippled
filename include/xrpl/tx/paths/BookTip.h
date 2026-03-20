@@ -22,7 +22,7 @@ private:
     uint256 m_dir;
     uint256 m_index;
     std::shared_ptr<SLE> m_entry;
-    Quality m_quality;
+    Quality m_quality{};
 
 public:
     /** Create the iterator. */

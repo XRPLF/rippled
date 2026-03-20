@@ -222,9 +222,13 @@ Change::applyAmendment()
     }
 
     if (newMajorities.empty())
+    {
         amendmentObject->makeFieldAbsent(sfMajorities);
+    }
     else
+    {
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
+    }
 
     view().update(amendmentObject);
 

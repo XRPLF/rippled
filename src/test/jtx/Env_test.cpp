@@ -533,14 +533,14 @@ public:
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        BEAST_EXPECT(!jt1.get<int>());
-        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt1.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        BEAST_EXPECT(!jt2.get<int>());
-        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt2.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt1.get<int>());
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
@@ -707,8 +707,10 @@ public:
         auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
+            {
                 if (!supported[i])
                     return bitsetIndexToFeature(i);
+            }
 
             return std::nullopt;
         }();
@@ -721,7 +723,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (env.app().config().features.find(f) != env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {

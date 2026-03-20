@@ -1283,8 +1283,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     auto issuer = c[jss::Issuer].asString();
 
                     if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
+                    {
                         readCreds.emplace_back(
                             pubKey2Acc.at(issuer), c["CredentialType"].asString());
+                    }
                 }
 
                 BEAST_EXPECT(std::ranges::is_sorted(readCreds));

@@ -41,6 +41,13 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
         return tecNO_TARGET;
 
+    // Deleting the delegate object is invalid if it doesn’t exist.
+    if (ctx.tx.getFieldArray(sfPermissions).empty() &&
+        !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])))
+    {
+        return tecNO_ENTRY;
+    }
+
     return tesSUCCESS;
 }
 
@@ -59,38 +66,40 @@ DelegateSet::doApply()
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
         if (permissions.empty())
+        {
             // if permissions array is empty, delete the ledger object.
             return deleteDelegate(view(), sle, account_, j_);
+        }
 
         sle->setFieldArray(sfPermissions, permissions);
         ctx_.view().update(sle);
         return tesSUCCESS;
     }
 
+    auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
+    if (permissions.empty())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     STAmount const reserve{
         ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-    if (mPriorBalance < reserve)
+    if (preFeeBalance_ < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-    auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    if (!permissions.empty())
-    {
-        sle = std::make_shared<SLE>(delegateKey);
-        sle->setAccountID(sfAccount, account_);
-        sle->setAccountID(sfAuthorize, authAccount);
+    sle = std::make_shared<SLE>(delegateKey);
+    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAuthorize, authAccount);
 
-        sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    sle->setFieldArray(sfPermissions, permissions);
+    auto const page =
+        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+    if (!page)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        (*sle)[sfOwnerNode] = *page;
-        ctx_.view().insert(sle);
-        adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
-    }
+    (*sle)[sfOwnerNode] = *page;
+    ctx_.view().insert(sle);
+    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
 
     return tesSUCCESS;
 }

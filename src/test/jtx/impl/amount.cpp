@@ -62,9 +62,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
         if (n < c)
         {
             if (amount.value().negative())
+            {
                 os << "-" << n << " drops";
+            }
             else
+            {
                 os << n << " drops";
+            }
             return os;
         }
         auto const d = double(n) / dropsPerXRP.drops();

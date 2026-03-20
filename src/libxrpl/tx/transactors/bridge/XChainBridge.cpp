@@ -267,8 +267,9 @@ onNewAttestations(
     bool changed = false;
     for (auto att = attBegin; att != attEnd; ++att)
     {
-        if (checkAttestationPublicKey(
-                view, signersList, att->attestationSignerAccount, att->publicKey, j) != tesSUCCESS)
+        auto const ter = checkAttestationPublicKey(
+            view, signersList, att->attestationSignerAccount, att->publicKey, j);
+        if (!isTesSuccess(ter))
         {
             // The checkAttestationPublicKey is not strictly necessary here (it
             // should be checked in a preclaim step), but it would be bad to let
@@ -337,7 +338,7 @@ enum class DepositAuthPolicy { normal, dstCanBypass };
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance;
+    STAmount preFeeBalance_;
     STAmount postFeeBalance;
 };
 
@@ -423,7 +424,7 @@ transferHelper(
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance;
+                return submittingAccountInfo->preFeeBalance_;
             }();
 
             if (availableBalance < amt + reserve)
@@ -508,15 +509,15 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return mainFundsTer == tesSUCCESS && rewardTer == tesSUCCESS &&
-            (!rmSleTer || *rmSleTer == tesSUCCESS);
+        return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
+            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
+            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
     TER
     ter() const
     {
-        if ((!mainFundsTer || *mainFundsTer == tesSUCCESS) &&
-            (!rewardTer || *rewardTer == tesSUCCESS) && (!rmSleTer || *rmSleTer == tesSUCCESS))
+        if (isTesSuccess())
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
@@ -530,11 +531,11 @@ struct FinalizeClaimHelperResult
 
         // Only after the tecINTERNAL and tef are checked, return the first
         // non-success error code.
-        if (mainFundsTer && mainFundsTer != tesSUCCESS)
+        if (mainFundsTer && !xrpl::isTesSuccess(*mainFundsTer))
             return *mainFundsTer;
-        if (rewardTer && rewardTer != tesSUCCESS)
+        if (rewardTer && !xrpl::isTesSuccess(*rewardTer))
             return *rewardTer;
-        if (rmSleTer && rmSleTer != tesSUCCESS)
+        if (rmSleTer && !xrpl::isTesSuccess(*rmSleTer))
             return *rmSleTer;
         return tesSUCCESS;
     }
@@ -981,7 +982,7 @@ applyCreateAccountAttestations(
     struct ScopeResult
     {
         OnNewAttestationResult newAttResult;
-        bool createCID;
+        bool createCID{};
         XChainCreateAccountAttestations curAtts;
     };
 
@@ -1026,8 +1027,10 @@ applyCreateAccountAttestations(
 
         XChainCreateAccountAttestations curAtts = [&] {
             if (sleClaimID)
+            {
                 return XChainCreateAccountAttestations{
                     sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+            }
             return XChainCreateAccountAttestations{};
         }();
 
@@ -1202,16 +1205,18 @@ attestationDoApply(ApplyContext& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
+    {
         // Should already be checked in preflight
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
     struct ScopeResult
     {
-        STXChainBridge::ChainType srcChain;
+        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
         std::unordered_map<AccountID, std::uint32_t> signersList;
-        std::uint32_t quorum;
+        std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
     };
@@ -1232,11 +1237,17 @@ attestationDoApply(ApplyContext& ctx)
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1597,11 +1608,17 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     {
@@ -1630,9 +1647,13 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     auto const otherChainAmount = [&]() -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
+        {
             r.setIssue(bridgeSpec.issuingChainIssue());
+        }
         else
+        {
             r.setIssue(bridgeSpec.lockingChainIssue());
+        }
         return r;
     }();
 
@@ -1695,11 +1716,17 @@ XChainClaim::doApply()
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1822,11 +1849,17 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     if (isLockingChain)
@@ -1852,7 +1885,8 @@ XChainCommit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    if (!psb.read(keylet::account(account)))
+    auto const sleAccount = psb.read(keylet::account(account));
+    if (!sleAccount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
@@ -1863,7 +1897,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2093,11 +2127,17 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::locking;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::issuing;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 
@@ -2132,7 +2172,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, mPriorBalance, mSourceBalance};
+        account_, preFeeBalance_, (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

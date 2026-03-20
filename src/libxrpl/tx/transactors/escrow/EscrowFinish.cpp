@@ -81,9 +81,13 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         if (!any(flags & (SF_CF_INVALID | SF_CF_VALID)))
         {
             if (checkCondition(*fb, *cb))
+            {
                 router.setFlags(id, SF_CF_VALID);
+            }
             else
+            {
                 router.setFlags(id, SF_CF_INVALID);
+            }
         }
     }
 
@@ -126,7 +130,7 @@ escrowFinishPreclaimHelper<Issue>(
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
@@ -158,7 +162,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
@@ -246,9 +250,13 @@ EscrowFinish::doApply()
                 return tecINTERNAL;
 
             if (checkCondition(*fb, *cb))
+            {
                 flags = SF_CF_VALID;
+            }
             else
+            {
                 flags = SF_CF_INVALID;
+            }
 
             ctx_.registry.getHashRouter().setFlags(id, flags);
             // LCOV_EXCL_STOP
@@ -315,7 +323,9 @@ EscrowFinish::doApply()
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
+    {
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
@@ -332,7 +342,7 @@ EscrowFinish::doApply()
                         ctx_.view(),
                         lockedRate,
                         sled,
-                        mPriorBalance,
+                        preFeeBalance_,
                         amount,
                         issuer,
                         account,

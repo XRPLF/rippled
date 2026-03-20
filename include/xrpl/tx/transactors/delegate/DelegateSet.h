@@ -36,7 +36,7 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     deleteDelegate(
         ApplyView& view,

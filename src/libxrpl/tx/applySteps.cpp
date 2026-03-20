@@ -353,6 +353,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     {
         auto secondFlight = [&]() {
             if (preflightResult.parentBatchId)
+            {
                 return preflight(
                     registry,
                     view.rules(),
@@ -360,6 +361,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
                     preflightResult.tx,
                     preflightResult.flags,
                     preflightResult.j);
+            }
 
             return preflight(
                 registry,
@@ -392,7 +394,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 
     try
     {
-        if (ctx->preflightResult != tesSUCCESS)
+        if (!isTesSuccess(ctx->preflightResult))
             return {*ctx, ctx->preflightResult};
         return {*ctx, invoke_preclaim(*ctx)};
     }

@@ -272,9 +272,11 @@ initAuthenticated(
                 if (!cert_set)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
+                    {
                         LogicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
+                    }
 
                     cert_set = true;
                 }

@@ -108,17 +108,40 @@ target_link_libraries(
 )
 
 # Level 05
+## Set up code generation for protocol_autogen module
+include(XrplProtocolAutogen)
+# Must call setup_protocol_autogen before add_module so that:
+# 1. Stale generated files are cleared before GLOB runs
+# 2. Output file list is known for custom commands
+setup_protocol_autogen()
+
+add_module(xrpl protocol_autogen)
+target_link_libraries(
+    xrpl.libxrpl.protocol_autogen
+    PUBLIC xrpl.libxrpl.protocol
+)
+
+# Ensure code generation runs before compiling protocol_autogen
+if(TARGET protocol_autogen_generate)
+    add_dependencies(xrpl.libxrpl.protocol_autogen protocol_autogen_generate)
+endif()
+
+# Level 06
 add_module(xrpl core)
 target_link_libraries(
     xrpl.libxrpl.core
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
 )
 
-# Level 06
+# Level 07
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-# Level 07
+# Level 08
 add_module(xrpl net)
 target_link_libraries(
     xrpl.libxrpl.net
@@ -171,6 +194,7 @@ target_link_libraries(
         xrpl.libxrpl.basics
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
         xrpl.libxrpl.rdb
         xrpl.libxrpl.server
         xrpl.libxrpl.shamap
@@ -206,6 +230,7 @@ target_link_modules(
     net
     nodestore
     protocol
+    protocol_autogen
     rdb
     resource
     server

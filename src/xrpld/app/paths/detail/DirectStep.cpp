@@ -66,7 +66,7 @@ protected:
     std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
-public:
+private:
     DirectStepI(
         StrandContext const& ctx,
         AccountID const& src,
@@ -81,6 +81,7 @@ public:
     {
     }
 
+public:
     AccountID const&
     src() const
     {
@@ -195,6 +196,8 @@ private:
         }
         return false;
     }
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -209,7 +212,15 @@ private:
 class DirectIPaymentStep : public DirectStepI<DirectIPaymentStep>
 {
 public:
-    using DirectStepI<DirectIPaymentStep>::DirectStepI;
+    DirectIPaymentStep(
+        StrandContext const& ctx,
+        AccountID const& src,
+        AccountID const& dst,
+        Currency const& c)
+        : DirectStepI<DirectIPaymentStep>(ctx, src, dst, c)
+    {
+    }
+
     using DirectStepI<DirectIPaymentStep>::check;
 
     bool
@@ -252,7 +263,15 @@ public:
 class DirectIOfferCrossingStep : public DirectStepI<DirectIOfferCrossingStep>
 {
 public:
-    using DirectStepI<DirectIOfferCrossingStep>::DirectStepI;
+    DirectIOfferCrossingStep(
+        StrandContext const& ctx,
+        AccountID const& src,
+        AccountID const& dst,
+        Currency const& c)
+        : DirectStepI<DirectIOfferCrossingStep>(ctx, src, dst, c)
+    {
+    }
+
     using DirectStepI<DirectIOfferCrossingStep>::check;
 
     bool
@@ -316,18 +335,20 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
         {
             // compute dst quality in
             if (this->dst_ < this->src_)
+            {
                 return sfLowQualityIn;
-            else
-                return sfHighQualityIn;
+            }
+
+            return sfHighQualityIn;
         }
-        else
+
+        // compute src quality out
+        if (this->src_ < this->dst_)
         {
-            // compute src quality out
-            if (this->src_ < this->dst_)
-                return sfLowQualityOut;
-            else
-                return sfHighQualityOut;
+            return sfLowQualityOut;
         }
+
+        return sfHighQualityOut;
     }();
 
     if (!sle->isFieldPresent(field))
@@ -737,15 +758,13 @@ DirectStepI<TDerived>::qualities(
     {
         return qualitiesSrcRedeems(sb);
     }
-    else
-    {
-        auto const prevStepDebtDirection = [&] {
-            if (prevStep_)
-                return prevStep_->debtDirection(sb, strandDir);
-            return DebtDirection::issues;
-        }();
-        return qualitiesSrcIssues(sb, prevStepDebtDirection);
-    }
+
+    auto const prevStepDebtDirection = [&] {
+        if (prevStep_)
+            return prevStep_->debtDirection(sb, strandDir);
+        return DebtDirection::issues;
+    }();
+    return qualitiesSrcIssues(sb, prevStepDebtDirection);
 }
 
 template <class TDerived>
@@ -803,7 +822,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
     }
 
@@ -814,7 +833,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         if (auto prevSrc = ctx.prevStep->directStepSrcAcct())
         {
             auto const ter = checkNoRipple(ctx.view, *prevSrc, src_, dst_, currency_, j_);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
         }
     }
@@ -897,7 +916,7 @@ make_DirectStepI(
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};

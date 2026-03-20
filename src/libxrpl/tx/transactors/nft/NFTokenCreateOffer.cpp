@@ -42,7 +42,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
 
     uint256 const nftokenID = ctx.tx[sfNFTokenID];
-    std::uint32_t const txFlags = {ctx.tx.getFlags()};
+    std::uint32_t const txFlags = ctx.tx.getFlags();
 
     if (!nft::findToken(
             ctx.view, ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
@@ -74,7 +74,7 @@ NFTokenCreateOffer::doApply()
         ctx_.tx[~sfExpiration],
         ctx_.tx.getSeqProxy(),
         ctx_.tx[sfNFTokenID],
-        mPriorBalance,
+        preFeeBalance_,
         j_,
         ctx_.tx.getFlags());
 }

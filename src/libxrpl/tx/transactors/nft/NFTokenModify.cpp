@@ -13,7 +13,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > maxTokenURILength)
             return temMALFORMED;
     }
 
