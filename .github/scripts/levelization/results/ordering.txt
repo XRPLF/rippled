@@ -176,7 +176,6 @@ test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
-tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
