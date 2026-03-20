@@ -337,7 +337,9 @@ public:
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetchBatch : non-null database");
 
         if (hashes.empty())
+        {
             return {{}, ok};
+        }
 
         // Use MultiGet for parallel reads to allow RocksDB to fetch multiple keys concurrently,
         // significantly improving throughput compared to sequential fetch() calls.
@@ -386,12 +388,16 @@ public:
     storeBatch(Batch const& batch) override
     {
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::storeBatch : non-null database");
-        rocksdb::WriteBatch wb;
 
+        if (batch.empty())
+        {
+            return;
+        }
+
+        rocksdb::WriteBatch wb;
         for (auto const& e : batch)
         {
             EncodedBlob encoded(e);
-
             wb.Put(
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
@@ -420,7 +426,6 @@ public:
         options.low_pri = false;
 
         auto ret = m_db->Write(options, &wb);
-
         if (!ret.ok())
             Throw<std::runtime_error>("storeBatch failed: " + ret.ToString());
     }

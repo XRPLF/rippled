@@ -216,13 +216,15 @@ public:
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
+        if (hashes.empty())
+        {
+            return {{}, ok};
+        }
+
         std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
 
-        // Determine the number of threads to use for data compression from the number of available
-        // cores and the size of the batch. We would like each thread to at least process 4 items,
-        // except for the last thread that might process fewer items.
-        auto const numThreads = std::min(
-            std::max(static_cast<unsigned int>(hashes.size()) / 4u, 1u), numHardwareThreads);
+        // Calculate optimal parallelization parameters.
+        auto const [numThreads, numItems] = calculateBatchParallelization(hashes.size());
 
         // If we need only one thread, just do it sequentially.
         if (numThreads == 1u)
@@ -242,19 +244,19 @@ public:
         std::latch taskCompletion(numThreads);
 
         // Submit fetch tasks to the thread pool.
-        auto const itemsPerThread = (hashes.size() + numThreads - 1) / numThreads;
         for (auto t = 0u; t < numThreads; ++t)
         {
-            auto const startIdx = t * itemsPerThread;
+            auto const startIdx = t * numItems;
             XRPL_ASSERT(
                 startIdx < hashes.size(),
                 "xrpl::NuDBFactory::fetchBatch : startIdx < hashes.size()");
             if (startIdx >= hashes.size())
             {
+                // This should never happen, but is kept as a safety check.
                 taskCompletion.count_down();
                 continue;
             }
-            auto const endIdx = std::min(startIdx + itemsPerThread, hashes.size());
+            auto const endIdx = std::min<std::size_t>(startIdx + numItems, hashes.size());
 
             auto task = [this, &hashes, &results, &taskCompletion, startIdx, endIdx]() {
                 // Fetch the items assigned to this task.
@@ -322,17 +324,19 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
+        if (batch.empty())
+        {
+            return;
+        }
+
         BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
 
         pendingWrites_ += static_cast<int>(batch.size());
 
-        // Determine the number of threads to use for data compression from the number of available
-        // cores and the size of the batch. We would like each thread to at least process 4 items,
-        // except for the last thread that might process fewer items.
-        auto const numThreads = std::min(
-            std::max(static_cast<unsigned int>(batch.size()) / 4u, 1u), numHardwareThreads);
+        // Calculate optimal parallelization parameters.
+        auto const [numThreads, numItems] = calculateBatchParallelization(batch.size());
 
         // If we need only one thread, just do it sequentially.
         if (numThreads == 1u)
@@ -371,18 +375,18 @@ public:
         std::latch taskCompletion(numThreads);
 
         // Submit compression tasks to the thread pool.
-        auto const itemsPerThread = (batch.size() + numThreads - 1) / numThreads;
         for (auto t = 0u; t < numThreads; ++t)
         {
-            auto const startIdx = t * itemsPerThread;
+            auto const startIdx = t * numItems;
             XRPL_ASSERT(
                 startIdx < batch.size(), "xrpl::NuDBFactory::storeBatch : startIdx < batch.size()");
             if (startIdx >= batch.size())
             {
+                // This should never happen, but is kept as a safety check.
                 taskCompletion.count_down();
                 continue;
             }
-            auto const endIdx = std::min(startIdx + itemsPerThread, batch.size());
+            auto const endIdx = std::min<std::size_t>(startIdx + numItems, batch.size());
 
             auto task =
                 [&batch, &compressed, &taskCompletion, startIdx, endIdx, keyBytes = keyBytes_]() {
@@ -527,6 +531,33 @@ public:
     }
 
 private:
+    /** Calculate optimal parallelization parameters for batch operations.
+
+        Determines the number of items per thread and actual number of tasks needed for parallel
+        batch processing, ensuring no thread has an invalid start index.
+
+        @param batchSize Number of items to process
+        @return A pair of (actualTasks, numItems) where actualTasks is the exact number of threads
+                to create and numItems is the number of items per thread.
+    */
+    std::pair<unsigned int, unsigned int>
+    calculateBatchParallelization(std::size_t batchSize) const
+    {
+        // Estimate the number of threads using ceiling division: aim for at least 4 items per
+        // thread, but don't exceed the number of available hardware threads.
+        auto const numThreads =
+            std::min(static_cast<unsigned int>((batchSize + 3) / 4), numHardwareThreads);
+
+        // Calculate items per thread.
+        auto const numItems = (batchSize + numThreads - 1) / numThreads;
+
+        // Calculate actual tasks needed. After rounding up numItems, we may need fewer threads than
+        // initially estimated.
+        auto const actualTasks = (batchSize + numItems - 1) / numItems;
+
+        return {actualTasks, numItems};
+    }
+
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
