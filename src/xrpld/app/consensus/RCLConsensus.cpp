@@ -341,7 +341,7 @@ RCLConsensus::Adaptor::onClose(
     XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.ledger_close");
     XRPL_TRACE_SET_ATTR(
         "xrpl.consensus.ledger.seq", static_cast<int64_t>(ledger.ledger_->header().seq + 1));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode", to_string(mode).c_str());
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode", toDisplayString(mode).c_str());
 
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
     bool const proposing = mode == ConsensusMode::proposing;
@@ -983,8 +983,8 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     // trace backend. Each transition (e.g. observing -> proposing) appears
     // as a child of the current consensus.round span.
     XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.mode_change");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.old", to_string(before).c_str());
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.new", to_string(after).c_str());
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.old", toDisplayString(before).c_str());
+    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode.new", toDisplayString(after).c_str());
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
@@ -1218,7 +1218,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     // Set standard attributes on the round span.
     roundSpan_->setAttribute("xrpl.consensus.ledger_id", to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute("xrpl.consensus.ledger.seq", static_cast<int64_t>(prevLgr.seq() + 1));
-    roundSpan_->setAttribute("xrpl.consensus.mode", to_string(mode_.load()).c_str());
+    roundSpan_->setAttribute("xrpl.consensus.mode", toDisplayString(mode_.load()).c_str());
     roundSpan_->setAttribute("xrpl.consensus.trace_strategy", strategy.c_str());
     roundSpan_->setAttribute("xrpl.consensus.round_id", static_cast<int64_t>(prevLgr.seq() + 1));
 

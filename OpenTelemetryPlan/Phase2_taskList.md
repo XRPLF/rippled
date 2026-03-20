@@ -228,3 +228,36 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 | 2.8  | RPC span attribute enrichment (node health) | 0         | 1              | 2.5        |
 
 **Parallel work**: Tasks 2.1, 2.2, 2.3 can run in parallel. Task 2.4 depends on 2.3. Task 2.5 can run in parallel with 2.4. Task 2.6 depends on all others. Task 2.8 depends on 2.5 (existing span creation must be in place).
+
+---
+
+## Known Issues / Future Work
+
+### Thread safety of TelemetryImpl::stop() vs startSpan()
+
+`TelemetryImpl::stop()` resets `sdkProvider_` (a `std::shared_ptr`) without
+synchronization. `getTracer()` reads the same member from RPC handler threads.
+This is a data race if any thread calls `startSpan()` concurrently with `stop()`.
+
+**Current mitigation**: `Application::stop()` shuts down `serverHandler_`,
+`overlay_`, and `jobQueue_` before calling `telemetry_->stop()`, so no callers
+remain. See comments in `Telemetry.cpp:stop()` and `Application.cpp`.
+
+**TODO**: Add an `std::atomic<bool> stopped_` flag checked in `getTracer()` to
+make this robust against future shutdown order changes.
+
+### Macro incompatibility: XRPL_TRACE_SPAN vs XRPL_TRACE_SET_ATTR
+
+`XRPL_TRACE_SPAN` and `XRPL_TRACE_SPAN_KIND` declare `_xrpl_guard_` as a bare
+`SpanGuard`, but `XRPL_TRACE_SET_ATTR` and `XRPL_TRACE_EXCEPTION` call
+`_xrpl_guard_.has_value()` which requires `std::optional<SpanGuard>`. Using
+`XRPL_TRACE_SPAN` followed by `XRPL_TRACE_SET_ATTR` in the same scope would
+fail to compile.
+
+**Current mitigation**: No call site currently uses `XRPL_TRACE_SPAN` — all
+production code uses the conditional macros (`XRPL_TRACE_RPC`, `XRPL_TRACE_TX`,
+etc.) which correctly wrap the guard in `std::optional`.
+
+**TODO**: Either make `XRPL_TRACE_SPAN`/`XRPL_TRACE_SPAN_KIND` also wrap in
+`std::optional`, or document that `XRPL_TRACE_SET_ATTR` is only compatible with
+the conditional macros.

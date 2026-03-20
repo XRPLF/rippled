@@ -91,6 +91,10 @@ message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
   optional uint32 trace_flags = 3;  // bit 0 = sampled
+  // TODO: trace_state is reserved for W3C tracestate vendor-specific
+  // key-value pairs but is not yet read or written by
+  // TraceContextPropagator. Wire it when cross-vendor trace
+  // propagation is needed.
   optional string trace_state = 4;  // W3C tracestate header value
 }
 

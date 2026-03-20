@@ -1,9 +1,12 @@
 # OpenTelemetry Collector configuration for rippled development.
 #
-# Pipeline: OTLP receiver -> batch processor -> debug + Tempo.
+# Pipelines:
+#   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
+#   metrics: spanmetrics connector -> Prometheus exporter
+#
 # rippled sends traces via OTLP/HTTP to port 4318. The collector batches
-# them and forwards to Tempo via OTLP/gRPC on the Docker network. Tempo
-# is queryable via Grafana Explore using TraceQL.
+# them, forwards to Tempo, and derives RED metrics via the spanmetrics
+# connector, which Prometheus scrapes on port 8889.
 
 receivers:
   otlp:
@@ -18,6 +21,21 @@ processors:
     timeout: 1s
     send_batch_size: 100
 
+connectors:
+  spanmetrics:
+    # Expose service.instance.id (node public key) as a Prometheus label so
+    # Grafana dashboards can filter metrics by individual node.
+    resource_metrics_key_attributes:
+      - service.instance.id
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+    dimensions:
+      - name: xrpl.rpc.command
+      - name: xrpl.rpc.status
+      - name: xrpl.consensus.mode
+      - name: xrpl.tx.local
+
 exporters:
   debug:
     verbosity: detailed
@@ -25,10 +43,15 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, otlp/tempo]
+      exporters: [debug, otlp/tempo, spanmetrics]
+    metrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]

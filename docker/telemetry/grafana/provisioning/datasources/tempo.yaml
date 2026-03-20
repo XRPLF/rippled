@@ -37,9 +37,9 @@ datasources:
             operator: "="
             scope: resource
             type: static
-          # service.instance.id: unique node identifier — defaults to the
-          #   node's public key (e.g., nHB1X37...). Distinguishes individual
-          #   nodes in a multi-node cluster or network.
+          # service.instance.id: unique node identifier — configurable via
+          #   the service_instance_id setting in [telemetry], defaults to the
+          #   node's public key. E.g. "Node-1" or "nHB1X37...".
           - id: node-id
             tag: service.instance.id
             operator: "="

@@ -273,3 +273,28 @@
 - [ ] Trace context in Protocol Buffer messages
 - [ ] HashRouter deduplication visible in traces
 - [ ] <5% overhead on transaction throughput
+
+---
+
+## Known Issues / Future Work
+
+### Propagation utilities not yet wired into P2P flow
+
+`extractFromProtobuf()` and `injectToProtobuf()` in `TraceContextPropagator.h`
+are implemented and tested but not called from production code. To enable
+cross-node distributed traces:
+
+- Call `injectToProtobuf()` in `PeerImp` when sending `TMTransaction` /
+  `TMProposeSet` messages
+- Call `extractFromProtobuf()` in the corresponding message handlers to
+  reconstruct the parent span context, then pass it to `startSpan()` as the
+  parent
+
+This was deferred to validate single-node tracing performance first.
+
+### Unused trace_state proto field
+
+The `TraceContext.trace_state` field (field 4) in `xrpl.proto` is reserved for
+W3C `tracestate` vendor-specific key-value pairs but is not read or written by
+`TraceContextPropagator`. Wire it when cross-vendor trace propagation is needed.
+No wire cost since proto `optional` fields are zero-cost when absent.

@@ -27,7 +27,7 @@ TEST(TracingMacros, macros_with_null_telemetry)
     }
     {
         XRPL_TRACE_CONSENSUS(*tel, "consensus.test");
-        XRPL_TRACE_SET_ATTR("xrpl.consensus.mode", "proposing");
+        XRPL_TRACE_SET_ATTR("xrpl.consensus.mode", "Proposing");
     }
     {
         XRPL_TRACE_PEER(*tel, "peer.test");
