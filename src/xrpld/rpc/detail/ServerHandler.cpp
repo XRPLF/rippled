@@ -7,6 +7,8 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
+#include <xrpld/rpc/json_body.h>
+#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
@@ -301,6 +303,8 @@ buffers_to_string(ConstBufferSequence const& bs)
 void
 ServerHandler::onRequest(Session& session)
 {
+    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");
+
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
@@ -416,6 +420,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
 {
+    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.ws_message");
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
@@ -608,6 +613,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
+    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.process");
     auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;

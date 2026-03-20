@@ -281,6 +281,7 @@ xrpld.perflog > xrpl.protocol
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpl.core
 xrpld.rpc > xrpld.core
+xrpld.rpc > xrpld.telemetry
 xrpld.rpc > xrpl.json
 xrpld.rpc > xrpl.ledger
 xrpld.rpc > xrpl.net
@@ -295,3 +296,4 @@ xrpld.shamap > xrpl.basics
 xrpld.shamap > xrpld.core
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
+xrpld.telemetry > xrpl.telemetry
