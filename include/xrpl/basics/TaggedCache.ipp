@@ -595,6 +595,31 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class Callback>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    fetch_and_modify(key_type const& key, Callback&& callback)
+{
+    static_assert(
+        !IsKeyCache, "fetch_and_modify is only supported for value caches, not key-only caches");
+
+    std::lock_guard lock(m_mutex);
+
+    auto entry = std::make_shared<T>();
+    canonicalize(key, entry, []() { return false; });
+
+    callback(*entry);
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l)

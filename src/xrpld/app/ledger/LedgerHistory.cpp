@@ -412,32 +412,31 @@ LedgerHistory::builtLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
-    auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
-
-    if (entry->validated && !entry->built)
-    {
-        if (entry->validated.value() != hash)
+    m_consensus_validated.fetch_and_modify(index, [&](cv_entry& entry) {
+        if (entry.validated && !entry.built)
         {
-            JLOG(j_.error()) << "MISMATCH: seq=" << index
-                             << " validated:" << entry->validated.value() << " then:" << hash;
-            handleMismatch(
-                hash,
-                entry->validated.value(),
-                consensusHash,
-                entry->validatedConsensusHash,
-                consensus);
+            if (entry.validated.value() != hash)
+            {
+                JLOG(j_.error()) << "MISMATCH: seq=" << index
+                                 << " validated:" << entry.validated.value() << " then:" << hash;
+                handleMismatch(
+                    hash,
+                    entry.validated.value(),
+                    consensusHash,
+                    entry.validatedConsensusHash,
+                    consensus);
+            }
+            else
+            {
+                // We validated a ledger and then built it locally
+                JLOG(j_.debug()) << "MATCH: seq=" << index << " late";
+            }
         }
-        else
-        {
-            // We validated a ledger and then built it locally
-            JLOG(j_.debug()) << "MATCH: seq=" << index << " late";
-        }
-    }
 
-    entry->built.emplace(hash);
-    entry->builtConsensusHash.emplace(consensusHash);
-    entry->consensus.emplace(std::move(consensus));
+        entry.built.emplace(hash);
+        entry.builtConsensusHash.emplace(consensusHash);
+        entry.consensus.emplace(std::move(consensus));
+    });
 }
 
 void
@@ -449,31 +448,30 @@ LedgerHistory::validatedLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
-    auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize_replace_client(index, entry);
-
-    if (entry->built && !entry->validated)
-    {
-        if (entry->built.value() != hash)
+    m_consensus_validated.fetch_and_modify(index, [&](cv_entry& entry) {
+        if (entry.built && !entry.validated)
         {
-            JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry->built.value()
-                             << " then:" << hash;
-            handleMismatch(
-                entry->built.value(),
-                hash,
-                entry->builtConsensusHash,
-                consensusHash,
-                entry->consensus.value());
+            if (entry.built.value() != hash)
+            {
+                JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
+                                 << " then:" << hash;
+                handleMismatch(
+                    entry.built.value(),
+                    hash,
+                    entry.builtConsensusHash,
+                    consensusHash,
+                    entry.consensus.value());
+            }
+            else
+            {
+                // We built a ledger locally and then validated it
+                JLOG(j_.debug()) << "MATCH: seq=" << index;
+            }
         }
-        else
-        {
-            // We built a ledger locally and then validated it
-            JLOG(j_.debug()) << "MATCH: seq=" << index;
-        }
-    }
 
-    entry->validated.emplace(hash);
-    entry->validatedConsensusHash = consensusHash;
+        entry.validated.emplace(hash);
+        entry.validatedConsensusHash = consensusHash;
+    });
 }
 
 /** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index

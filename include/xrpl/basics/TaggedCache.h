@@ -161,6 +161,21 @@ public:
     fetch(key_type const& digest, Handler const& h);
     // End CachedSLEs functions.
 
+    /** Fetch or create an entry and execute a callback while holding the lock.
+
+        The entry for the given key is fetched from the cache or created if it
+        doesn't exist. The callback is then invoked with a reference to the
+        entry while the cache mutex is still held, allowing safe modification
+        of the cached object.
+
+        @param key The key to fetch or create
+        @param callback Function to call with the entry under lock.
+                        Signature: void(T&)
+    */
+    template <class Callback>
+    void
+    fetch_and_modify(key_type const& key, Callback&& callback);
+
 private:
     SharedPointerType
     initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
