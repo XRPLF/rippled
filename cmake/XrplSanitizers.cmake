@@ -25,19 +25,19 @@
      * -O1: Minimum optimization for reasonable performance
      * -fsanitize=<types>: Enables sanitizer instrumentation
      * -fsanitize-ignorelist=<path>: (Clang only) Compile-time ignorelist
-     * -mcmodel=large/medium: (GCC only) Code model for large binaries
+     * -mcmodel=medium: (GCC only) Code model for large binaries
      * -Wno-stringop-overflow: (GCC only) Suppresses false positive warnings
      * -Wno-tsan: (For GCC TSAN combination only) Suppresses atomic_thread_fence warnings
 
    - SANITIZERS_LINK_FLAGS: Linker flags for sanitizer runtime libraries.
      Includes:
      * -fsanitize=<types>: Links sanitizer runtime libraries
-     * -mcmodel=large/medium: (GCC only) Matches compile-time code model
+     * -mcmodel=medium: (GCC only) Matches compile-time code model
 
    - SANITIZERS_RELOCATION_FLAGS: (GCC only) Code model flags for linking.
      Used to handle large instrumented binaries on x86_64:
-     * -mcmodel=large: For AddressSanitizer (prevents relocation errors)
-     * -mcmodel=medium: For ThreadSanitizer (large model is incompatible)
+     * -mcmodel=medium: For both ASAN and TSAN (large model collides with
+     *   ASAN shadow memory; is incompatible with TSAN)
 #]===================================================================]
 
 include(CompilationEnv)
@@ -124,8 +124,10 @@ if(enable_ubsan)
     endif()
 endif()
 
-# Configure code model for GCC on amd64 Use large code model for ASAN to avoid relocation errors Use medium code model
-# for TSAN (large is not compatible with TSAN)
+# Configure code model for GCC on amd64. Use medium code model for both ASAN and TSAN.
+# Large model inflates code with 64-bit absolute addresses, pushing the binary past 2GB
+# where it collides with ASAN's fixed shadow memory layout. Medium model keeps code
+# compact (RIP-relative) while allowing data beyond 2GB.
 set(SANITIZERS_RELOCATION_FLAGS)
 
 # Compiler-specific configuration
@@ -145,9 +147,9 @@ if(is_gcc)
     list(APPEND SANITIZERS_COMPILE_FLAGS "-Wno-stringop-overflow")
 
     if(is_amd64 AND enable_asan)
-        message(STATUS "  Using large code model (-mcmodel=large)")
-        list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=large")
-        list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=large")
+        message(STATUS "  Using medium code model (-mcmodel=medium)")
+        list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=medium")
+        list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=medium")
     elseif(enable_tsan)
         # GCC doesn't support atomic_thread_fence with tsan. Suppress warnings.
         list(APPEND SANITIZERS_COMPILE_FLAGS "-Wno-tsan")
