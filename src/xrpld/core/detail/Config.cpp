@@ -678,11 +678,11 @@ Config::loadFromString(std::string const& fileContents)
     }
 
     auto const effectiveWorkers = [&]() {
-        if (WORKERS)
-            return WORKERS;
-
         if (standalone() && !FORCE_MULTI_THREAD)
             return 1;
+
+        if (WORKERS)
+            return WORKERS;
 
         auto count = static_cast<int>(std::thread::hardware_concurrency());
 
