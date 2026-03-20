@@ -234,17 +234,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add ASAN, TSAN, and UBSAN sanitizer jobs for specific bookworm distros.
-        # Each sanitizer runs independently to keep binary size under ASAN's
-        # 2GB shadow memory limit (combining ASAN+UBSAN inflates data sections
-        # past 2GB, see https://github.com/google/sanitizers/issues/856).
-        if os[
-            "distro_version"
-        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "clang-20",
-            "gcc-13",
-        ]:
-            # Add ASAN configuration.
+        # Add sanitizer jobs for specific bookworm distros.
+        # GCC sanitizers run independently because combining ASAN+UBSAN inflates
+        # GCC data sections past ASAN's 2GB shadow memory limit
+        # (see https://github.com/google/sanitizers/issues/856).
+        # Clang doesn't have this issue, so ASAN+UBSAN and TSAN+UBSAN stay combined.
+        compiler_id = f"{os['compiler_name']}-{os['compiler_version']}"
+        if os["distro_version"] == "bookworm" and compiler_id == "gcc-13":
+            # Add separate ASAN, TSAN, and UBSAN configurations for GCC.
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -257,7 +254,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address",
                 }
             )
-            # Add TSAN configuration.
             # TSAN instrumentation significantly increases memory usage during
             # compilation, so reduce build parallelism to avoid OOM on CI runners.
             configurations.append(
@@ -273,7 +269,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "nproc_subtract": 20,
                 }
             )
-            # Add UBSAN configuration.
             configurations.append(
                 {
                     "config_name": config_name + "-ubsan",
@@ -284,6 +279,35 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "os": os,
                     "architecture": architecture,
                     "sanitizers": "undefinedbehavior",
+                }
+            )
+        elif os["distro_version"] == "bookworm" and compiler_id == "clang-20":
+            # Add combined ASAN+UBSAN and TSAN+UBSAN configurations for Clang.
+            configurations.append(
+                {
+                    "config_name": config_name + "-asan-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "address,undefinedbehavior",
+                }
+            )
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
+            configurations.append(
+                {
+                    "config_name": config_name + "-tsan-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "thread,undefinedbehavior",
+                    "nproc_subtract": 20,
                 }
             )
         else:
