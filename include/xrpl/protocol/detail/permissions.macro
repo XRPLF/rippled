@@ -48,7 +48,7 @@ PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
 PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
 
 /**
- * GRANULAR_TEMPLATE(txType, allowedFlags, fields)
+ * GRANULAR_TEMPLATE(txType, allowedFlags, allowedFields)
  *
  * This macro defines a the permitted flags and fields for delegation:
  * txType: the transaction type.
