@@ -197,8 +197,6 @@ VaultDelete::doApply()
     // Destroy the vault.
     view().erase(vault);
 
-    associateAsset(*vault, asset);
-
     return tesSUCCESS;
 }
 
