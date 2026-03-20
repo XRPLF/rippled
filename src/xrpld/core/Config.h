@@ -178,7 +178,7 @@ public:
     int PATH_SEARCH = 2;
     int PATH_SEARCH_FAST = 2;
     int PATH_SEARCH_MAX = 3;
-    int PATH_WORKERS = 1;
+    int PATH_WORKERS = 2;
 
     // Validation
     std::optional<std::size_t> VALIDATION_QUORUM;  // validations to consider ledger authoritative
