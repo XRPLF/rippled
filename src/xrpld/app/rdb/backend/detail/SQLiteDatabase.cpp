@@ -617,7 +617,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
 }
 
 SQLiteDatabase
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
+setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
     return {registry, config, jobQueue};
 }

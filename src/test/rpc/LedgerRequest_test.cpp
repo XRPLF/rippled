@@ -326,12 +326,12 @@ public:
     testNonAdmin()
     {
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        env.set_retries(0);
+        env.setRetries(0);
         auto const result = env.rpc("ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
         // rather than a noPermission JSON error.  The JSONRPCClient just eats

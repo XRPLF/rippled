@@ -180,7 +180,7 @@ printHelp(po::options_description const& desc)
 class MultiSelector
 {
 private:
-    std::vector<beast::unit_test::selector> selectors_;
+    std::vector<beast::unit_test::Selector> selectors_;
 
 public:
     explicit MultiSelector(std::string const& patterns = "")
@@ -191,12 +191,12 @@ public:
         std::for_each(v.begin(), v.end(), [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(beast::unit_test::selector::automatch, s);
+                selectors_.emplace_back(beast::unit_test::Selector::Automatch, s);
         });
     }
 
     bool
-    operator()(beast::unit_test::suite_info const& s)
+    operator()(beast::unit_test::SuiteInfo const& s)
     {
         for (auto& sel : selectors_)
         {
@@ -650,7 +650,7 @@ run(int argc, char** argv)
     else if (vm.contains("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LOAD_FILE;
+        config->START_UP = StartUpType::LoadFile;
     }
     else if (vm.contains("load") || config->FAST_LOAD)
     {
@@ -774,7 +774,7 @@ run(int argc, char** argv)
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
         auto app =
-            make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;

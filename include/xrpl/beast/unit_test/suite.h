@@ -38,7 +38,7 @@ make_reason(String const& reason, char const* file, int line)
 
 class thread;
 
-enum abort_t { no_abort_on_fail, abort_on_fail };
+enum AbortT { NoAbortOnFail, AbortOnFail };
 
 /** A testsuite class.
 
@@ -56,7 +56,7 @@ private:
 
     // This exception is thrown internally to stop the current suite
     // in the event of a failure, if the option to stop is set.
-    struct abort_exception : public std::exception
+    struct AbortException : public std::exception
     {
         char const*
         what() const noexcept override
@@ -105,7 +105,7 @@ private:
         }
     };
 
-    class scoped_testcase;
+    class ScopedTestcase;
 
     class testcase_t
     {
@@ -128,13 +128,13 @@ private:
             @param abort Determines if suite continues running after a failure.
         */
         void
-        operator()(std::string const& name, abort_t abort = no_abort_on_fail);
+        operator()(std::string const& name, AbortT abort = NoAbortOnFail);
 
-        scoped_testcase
-        operator()(abort_t abort);
+        ScopedTestcase
+        operator()(AbortT abort);
 
         template <class T>
-        scoped_testcase
+        ScopedTestcase
         operator<<(T const& t);
     };
 
@@ -155,7 +155,7 @@ public:
     static suite*
     this_suite()
     {
-        return *p_this_suite();
+        return *pThisSuite();
     }
 
     suite() : log(*this), testcase(*this)
@@ -298,10 +298,10 @@ private:
     friend class thread;
 
     static suite**
-    p_this_suite()
+    pThisSuite()
     {
-        static suite* pts = nullptr;
-        return &pts;
+        static suite* pTs = nullptr;
+        return &pTs;
     }
 
     /** Runs the suite. */
@@ -309,7 +309,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort();
+    propagateAbort();
 
     template <class = void>
     void
@@ -319,31 +319,31 @@ private:
 //------------------------------------------------------------------------------
 
 // Helper for streaming testcase names
-class suite::scoped_testcase
+class suite::ScopedTestcase
 {
 private:
     suite& suite_;
     std::stringstream& ss_;
 
 public:
-    scoped_testcase&
-    operator=(scoped_testcase const&) = delete;
+    ScopedTestcase&
+    operator=(ScopedTestcase const&) = delete;
 
-    ~scoped_testcase()
+    ~ScopedTestcase()
     {
         auto const& name = ss_.str();
         if (!name.empty())
             suite_.runner_->testcase(name);
     }
 
-    scoped_testcase(suite& self, std::stringstream& ss) : suite_(self), ss_(ss)
+    ScopedTestcase(suite& self, std::stringstream& ss) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
     }
 
     template <class T>
-    scoped_testcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
+    ScopedTestcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
@@ -351,7 +351,7 @@ public:
     }
 
     template <class T>
-    scoped_testcase&
+    ScopedTestcase&
     operator<<(T const& t)
     {
         ss_ << t;
@@ -362,21 +362,21 @@ public:
 //------------------------------------------------------------------------------
 
 inline void
-suite::testcase_t::operator()(std::string const& name, abort_t abort)
+suite::testcase_t::operator()(std::string const& name, AbortT abort)
 {
-    suite_.abort_ = abort == abort_on_fail;
+    suite_.abort_ = abort == AbortOnFail;
     suite_.runner_->testcase(name);
 }
 
-inline suite::scoped_testcase
-suite::testcase_t::operator()(abort_t abort)
+inline suite::ScopedTestcase
+suite::testcase_t::operator()(AbortT abort)
 {
-    suite_.abort_ = abort == abort_on_fail;
+    suite_.abort_ = abort == AbortOnFail;
     return {suite_, ss_};
 }
 
 template <class T>
-inline suite::scoped_testcase
+inline suite::ScopedTestcase
 suite::testcase_t::operator<<(T const& t)
 {
     return {suite_, ss_, t};
@@ -388,15 +388,15 @@ template <class>
 void
 suite::operator()(runner& r)
 {
-    *p_this_suite() = this;
+    *pThisSuite() = this;
     try
     {
         run(r);
-        *p_this_suite() = nullptr;
+        *pThisSuite() = nullptr;
     }
     catch (...)
     {
-        *p_this_suite() = nullptr;
+        *pThisSuite() = nullptr;
         throw;
     }
 }
@@ -496,7 +496,7 @@ template <class>
 void
 suite::pass()
 {
-    propagate_abort();
+    propagateAbort();
     runner_->pass();
 }
 
@@ -505,12 +505,12 @@ template <class>
 void
 suite::fail(std::string const& reason)
 {
-    propagate_abort();
+    propagateAbort();
     runner_->fail(reason);
     if (abort_)
     {
         aborted_ = true;
-        BOOST_THROW_EXCEPTION(abort_exception());
+        BOOST_THROW_EXCEPTION(AbortException());
     }
 }
 
@@ -522,10 +522,10 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort()
+suite::propagateAbort()
 {
     if (abort_ && aborted_)
-        BOOST_THROW_EXCEPTION(abort_exception());
+        BOOST_THROW_EXCEPTION(AbortException());
 }
 
 template <class>
@@ -538,7 +538,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (AbortException const&)
     {
         // ends the suite
     }

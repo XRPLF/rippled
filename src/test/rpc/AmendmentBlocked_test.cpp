@@ -60,7 +60,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::kNONE);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -76,7 +76,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        env(signers(bob, 1, {{alice, 1}}), sig(bob));
+        env(signers(bob, 1, {{alice, 1}}), Sig(bob));
         env(regkey(alice, ali));
         env.close();
 
@@ -125,7 +125,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::kNONE);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -141,7 +141,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        env(signers(bob, 1, {{alice, 1}}), sig(bob));
+        env(signers(bob, 1, {{alice, 1}}), Sig(bob));
         env(regkey(alice, ali));
         env.close();
 

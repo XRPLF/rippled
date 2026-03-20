@@ -18,7 +18,7 @@ JsonPropertyStream::top() const
 }
 
 void
-JsonPropertyStream::map_begin()
+JsonPropertyStream::mapBegin()
 {
     // top is array
     Json::Value& top(*stack_.back());
@@ -27,7 +27,7 @@ JsonPropertyStream::map_begin()
 }
 
 void
-JsonPropertyStream::map_begin(std::string const& key)
+JsonPropertyStream::mapBegin(std::string const& key)
 {
     // top is a map
     Json::Value& top(*stack_.back());
@@ -36,7 +36,7 @@ JsonPropertyStream::map_begin(std::string const& key)
 }
 
 void
-JsonPropertyStream::map_end()
+JsonPropertyStream::mapEnd()
 {
     stack_.pop_back();
 }
@@ -90,7 +90,7 @@ JsonPropertyStream::add(std::string const& key, std::string const& v)
 }
 
 void
-JsonPropertyStream::array_begin()
+JsonPropertyStream::arrayBegin()
 {
     // top is array
     Json::Value& top(*stack_.back());
@@ -99,7 +99,7 @@ JsonPropertyStream::array_begin()
 }
 
 void
-JsonPropertyStream::array_begin(std::string const& key)
+JsonPropertyStream::arrayBegin(std::string const& key)
 {
     // top is a map
     Json::Value& top(*stack_.back());
@@ -108,7 +108,7 @@ JsonPropertyStream::array_begin(std::string const& key)
 }
 
 void
-JsonPropertyStream::array_end()
+JsonPropertyStream::arrayEnd()
 {
     stack_.pop_back();
 }

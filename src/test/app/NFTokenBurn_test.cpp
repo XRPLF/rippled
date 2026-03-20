@@ -303,7 +303,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, becky.acct) == 0);
         BEAST_EXPECT(nftCount(env, minter.acct) == 0);
 
-        // When all nfts are burned none of the accounts should have
+        // When all nfts are burned kNONE of the accounts should have
         // an ownerCount.
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, becky) == 0);
@@ -1110,7 +1110,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         // Attempt to delete alice's account, but fail because she owns NFTs.
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(alice, minter), fee(acctDelFee), ter(tecHAS_OBLIGATIONS));
+        env(acctdelete(alice, minter), Fee(acctDelFee), Ter(tecHAS_OBLIGATIONS));
         env.close();
 
         // minter sells the last 32 NFTs back to alice.
@@ -1154,7 +1154,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
     }
 
 protected:
-    FeatureBitset const allFeatures_{test::jtx::testable_amendments()};
+    FeatureBitset const allFeatures_{test::jtx::testableAmendments()};
 
     void
     testWithFeats(FeatureBitset features)

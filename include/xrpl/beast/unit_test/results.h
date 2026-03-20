@@ -13,7 +13,7 @@ namespace beast {
 namespace unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
-class case_results
+class CaseResults
 {
 public:
     /** Holds the result of evaluating one test condition. */
@@ -32,13 +32,13 @@ public:
     };
 
 private:
-    class tests_t : public detail::const_container<std::vector<test>>
+    class TestsT : public detail::ConstContainer<std::vector<test>>
     {
     private:
         std::size_t failed_;
 
     public:
-        tests_t() : failed_(0)
+        TestsT() : failed_(0)
         {
         }
 
@@ -72,7 +72,7 @@ private:
         }
     };
 
-    class log_t : public detail::const_container<std::vector<std::string>>
+    class log_t : public detail::ConstContainer<std::vector<std::string>>
     {
     public:
         /** Insert a string into the log. */
@@ -86,7 +86,7 @@ private:
     std::string name_;
 
 public:
-    explicit case_results(std::string const& name = "") : name_(name)
+    explicit CaseResults(std::string const& name = "") : name_(name)
     {
     }
 
@@ -98,7 +98,7 @@ public:
     }
 
     /** Memberspace for a container of test condition outcomes. */
-    tests_t tests;
+    TestsT tests;
 
     /** Memberspace for a container of testcase log messages. */
     log_t log;
@@ -107,7 +107,7 @@ public:
 //--------------------------------------------------------------------------
 
 /** Holds the set of testcase results in a suite. */
-class suite_results : public detail::const_container<std::vector<case_results>>
+class SuiteResults : public detail::ConstContainer<std::vector<CaseResults>>
 {
 private:
     std::string name_;
@@ -115,7 +115,7 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results(std::string const& name = "") : name_(name)
+    explicit SuiteResults(std::string const& name = "") : name_(name)
     {
     }
 
@@ -143,7 +143,7 @@ public:
     /** Insert a set of testcase results. */
     /** @{ */
     void
-    insert(case_results&& r)
+    insert(CaseResults&& r)
     {
         cont().emplace_back(std::move(r));
         total_ += r.tests.total();
@@ -151,7 +151,7 @@ public:
     }
 
     void
-    insert(case_results const& r)
+    insert(CaseResults const& r)
     {
         cont().push_back(r);
         total_ += r.tests.total();
@@ -164,7 +164,7 @@ public:
 
 // VFALCO TODO Make this a template class using scoped allocators
 /** Holds the results of running a set of testsuites. */
-class results : public detail::const_container<std::vector<suite_results>>
+class Results : public detail::ConstContainer<std::vector<SuiteResults>>
 {
 private:
     std::size_t cases_;
@@ -172,7 +172,7 @@ private:
     std::size_t failed_;
 
 public:
-    results() : cases_(0), total_(0), failed_(0)
+    Results() : cases_(0), total_(0), failed_(0)
     {
     }
 
@@ -200,7 +200,7 @@ public:
     /** Insert a set of suite results. */
     /** @{ */
     void
-    insert(suite_results&& r)
+    insert(SuiteResults&& r)
     {
         cases_ += r.size();
         total_ += r.total();
@@ -209,7 +209,7 @@ public:
     }
 
     void
-    insert(suite_results const& r)
+    insert(SuiteResults const& r)
     {
         cases_ += r.size();
         total_ += r.total();

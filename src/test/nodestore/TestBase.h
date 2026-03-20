@@ -48,9 +48,9 @@ class TestBase : public beast::unit_test::suite
 public:
     // Tunable parameters
     //
-    static std::size_t const minPayloadBytes = 1;
-    static std::size_t const maxPayloadBytes = 2000;
-    static int const numObjectsToTest = 2000;
+    static std::size_t const kMIN_PAYLOAD_BYTES = 1;
+    static std::size_t const kMAX_PAYLOAD_BYTES = 2000;
+    static int const kNUM_OBJECTS_TO_TEST = 2000;
 
 public:
     // Create a predictable batch of objects
@@ -83,7 +83,7 @@ public:
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);
 
-            Blob blob(rand_int(rng, minPayloadBytes, maxPayloadBytes));
+            Blob blob(rand_int(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
             beast::rngfill(blob.data(), blob.size(), rng);
 
             batch.push_back(NodeObject::createObject(type, std::move(blob), hash));

@@ -207,7 +207,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::testable_amendments());
+        jtx::Env env(*this, jtx::testableAmendments());
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -512,7 +512,7 @@ struct NetworkHistory
     };
 
     NetworkHistory(beast::unit_test::suite& suite, Parameter const& p)
-        : env(suite, jtx::testable_amendments()), param(p), validations(env.app().getValidations())
+        : env(suite, jtx::testableAmendments()), param(p), validations(env.app().getValidations())
     {
         createNodes();
         if (!param.numLedgers)
@@ -701,11 +701,11 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         auto txSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
         PublicKey toDisableKey(derivePublicKey(KeyType::ed25519, randomSecretKey()));
         PublicKey toReEnableKey(derivePublicKey(KeyType::ed25519, randomSecretKey()));
-        LedgerIndex seq(1234);
+        LedgerIndex Seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
-        vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
+        vote.addTx(Seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
         BEAST_EXPECT(countTx(txSet) == 1);
-        vote.addTx(seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
+        vote.addTx(Seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
         BEAST_EXPECT(countTx(txSet) == 2);
         // content of a tx is implicitly tested after applied to a ledger
         // in later test cases

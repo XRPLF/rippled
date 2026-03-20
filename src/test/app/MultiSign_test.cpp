@@ -59,21 +59,21 @@ public:
         auto const fee = env.current()->fees().base;
         env.fund(XRP(250) - drops(1), alice);
         env.close();
-        env.require(owners(alice, 0));
+        env.require(Owners(alice, 0));
 
         {
             // Attach a signer list to alice.  Should fail.
             Json::Value signersList = signers(alice, 1, {{bogie_, 1}});
-            env(signersList, ter(tecINSUFFICIENT_RESERVE));
+            env(signersList, Ter(tecINSUFFICIENT_RESERVE));
             env.close();
-            env.require(owners(alice, 0));
+            env.require(Owners(alice, 0));
 
             // Fund alice enough to set the signer list, then attach signers.
             env(pay(env.master, alice, fee + drops(1)));
             env.close();
             env(signersList);
             env.close();
-            env.require(owners(alice, 1));
+            env.require(Owners(alice, 1));
         }
         {
             // Pay alice enough to almost make the reserve for the biggest
@@ -92,21 +92,21 @@ public:
                  {phase_, 1},
                  {shade_, 1},
                  {spook_, 1}});
-            env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
+            env(bigSigners, Ter(tecINSUFFICIENT_RESERVE));
             env.close();
-            env.require(owners(alice, 1));
+            env.require(Owners(alice, 1));
 
             // Fund alice one more drop (plus the fee) and succeed.
             env(pay(env.master, alice, fee + drops(1)));
             env.close();
             env(bigSigners);
             env.close();
-            env.require(owners(alice, 1));
+            env.require(Owners(alice, 1));
         }
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::none));
+        env(signers(alice, jtx::kNONE));
         env.close();
-        env.require(owners(alice, 0));
+        env.require(Owners(alice, 0));
     }
 
     void
@@ -121,10 +121,10 @@ public:
         env.close();
 
         // Add alice as a multisigner for herself.  Should fail.
-        env(signers(alice, 1, {{alice, 1}}), ter(temBAD_SIGNER));
+        env(signers(alice, 1, {{alice, 1}}), Ter(temBAD_SIGNER));
 
         // Add a signer with a weight of zero.  Should fail.
-        env(signers(alice, 1, {{bogie_, 0}}), ter(temBAD_WEIGHT));
+        env(signers(alice, 1, {{bogie_, 0}}), Ter(temBAD_WEIGHT));
 
         // Add a signer where the weight is too big.  Should fail since
         // the weight field is only 16 bits.  The jtx framework can't do
@@ -144,10 +144,10 @@ public:
                  {phase_, 1},
                  {demon_, 1},
                  {spook_, 1}}),
-            ter(temBAD_SIGNER));
+            Ter(temBAD_SIGNER));
 
         // Set a quorum of zero.  Should fail.
-        env(signers(alice, 0, {{bogie_, 1}}), ter(temMALFORMED));
+        env(signers(alice, 0, {{bogie_, 1}}), Ter(temMALFORMED));
 
         // Make a signer list where the quorum can't be met.  Should fail.
         env(signers(
@@ -161,7 +161,7 @@ public:
                  {phase_, 1},
                  {shade_, 1},
                  {spook_, 1}}),
-            ter(temBAD_QUORUM));
+            Ter(temBAD_QUORUM));
 
         // clang-format off
         // Make a signer list that's too big.  Should fail.
@@ -169,7 +169,7 @@ public:
         env(signers(
                 alice,
                 1,
-                std::vector<signer>{{bogie_, 1}, {demon_, 1}, {ghost_, 1},
+                std::vector<Signer>{{bogie_, 1}, {demon_, 1}, {ghost_, 1},
                                           {haunt_, 1}, {jinni_, 1}, {phase_, 1},
                                           {shade_, 1}, {spook_, 1}, {spare, 1},
                                           {acc10_, 1}, {acc11_, 1}, {acc12_, 1},
@@ -180,10 +180,10 @@ public:
                                           {acc25_, 1}, {acc26_, 1}, {acc27_, 1},
                                           {acc28_, 1}, {acc29_, 1}, {acc30_, 1},
                                           {acc31_, 1}, {acc32_, 1}, {acc33_, 1}}),
-            ter(temMALFORMED));
+            Ter(temMALFORMED));
         // clang-format on
         env.close();
-        env.require(owners(alice, 0));
+        env.require(Owners(alice, 0));
     }
 
     void
@@ -200,51 +200,51 @@ public:
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, demon_), fee(3 * baseFee));
+        env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Either signer alone should work.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee(2 * baseFee));
+        env(noop(alice), Msig(bogie_), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon_), fee(2 * baseFee));
+        env(noop(alice), Msig(demon_), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            msig(demon_, demon_),
-            fee(3 * baseFee),
+            Msig(demon_, demon_),
+            Fee(3 * baseFee),
             rpc("invalidTransaction", "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // A non-signer should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, spook_), fee(3 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop(alice), Msig(bogie_, spook_), Fee(3 * baseFee), Ter(tefBAD_SIGNATURE));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Don't meet the quorum.  Should fail.
         env(signers(alice, 2, {{bogie_, 1}, {demon_, 1}}));
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee(2 * baseFee), ter(tefBAD_QUORUM));
+        env(noop(alice), Msig(bogie_), Fee(2 * baseFee), Ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Meet the quorum.  Should succeed.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, demon_), fee(3 * baseFee));
+        env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -273,19 +273,19 @@ public:
              {shade_, 1},
              {spook_, 1}}));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee(2 * baseFee));
+        env(noop(alice), Msig(bogie_), Fee(2 * baseFee));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // This should fail because the fee is too small.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee((2 * baseFee) - 1), ter(telINSUF_FEE_P));
+        env(noop(alice), Msig(bogie_), Fee((2 * baseFee) - 1), Ter(telINSUF_FEE_P));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -293,8 +293,8 @@ public:
         // This should work.
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            msig(bogie_, demon_, ghost_, haunt_, jinni_, phase_, shade_, spook_),
-            fee(9 * baseFee));
+            Msig(bogie_, demon_, ghost_, haunt_, jinni_, phase_, shade_, spook_),
+            Fee(9 * baseFee));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -302,9 +302,9 @@ public:
         // This should fail because the fee is too small.
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            msig(bogie_, demon_, ghost_, haunt_, jinni_, phase_, shade_, spook_),
-            fee((9 * baseFee) - 1),
-            ter(telINSUF_FEE_P));
+            Msig(bogie_, demon_, ghost_, haunt_, jinni_, phase_, shade_, spook_),
+            Fee((9 * baseFee) - 1),
+            Ter(telINSUF_FEE_P));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -325,9 +325,9 @@ public:
         // Make sure the transaction fails if they are not.
         env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
-        msig phantoms{bogie_, demon_};
+        Msig phantoms{bogie_, demon_};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
         env(noop(alice),
@@ -355,26 +355,26 @@ public:
         env(regkey(alice, alie));
         env.close();
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), sig(alice));
-        env(noop(alice), sig(alie));
+        env(noop(alice), Sig(alice));
+        env(noop(alice), Sig(alie));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
 
         // Attach signers to alice
-        env(signers(alice, 4, {{becky, 3}, {cheri, 4}}), sig(alice));
+        env(signers(alice, 4, {{becky, 3}, {cheri, 4}}), Sig(alice));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // Attempt a multisigned transaction that meets the quorum.
         auto const baseFee = env.current()->fees().base;
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(cheri), fee(2 * baseFee));
+        env(noop(alice), Msig(cheri), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // If we don't meet the quorum the transaction should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefBAD_QUORUM));
+        env(noop(alice), Msig(becky), Fee(2 * baseFee), Ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -387,7 +387,7 @@ public:
 
         // becky's and cheri's master keys should still work.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky, cheri), fee(3 * baseFee));
+        env(noop(alice), Msig(becky, cheri), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -406,7 +406,7 @@ public:
         env.close();
 
         // Attach signers to alice.
-        env(signers(alice, 1, {{becky, 1}, {cheri, 1}}), sig(alice));
+        env(signers(alice, 1, {{becky, 1}, {cheri, 1}}), Sig(alice));
 
         // Give everyone regular keys.
         Account const alie{"alie", KeyType::ed25519};
@@ -418,36 +418,36 @@ public:
         env.close();
 
         // Disable cheri's master key to mix things up.
-        env(fset(cheri, asfDisableMaster), sig(cheri));
+        env(fset(cheri, asfDisableMaster), Sig(cheri));
         env.close();
 
         // Attempt a multisigned transaction that meets the quorum.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), Msig(Reg{cheri, cher}), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // cheri should not be able to multisign using her master key.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(cheri), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+        env(noop(alice), Msig(cheri), Fee(2 * baseFee), Ter(tefMASTER_DISABLED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // becky should be able to multisign using either of her keys.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky), fee(2 * baseFee));
+        env(noop(alice), Msig(becky), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), Msig(Reg{becky, beck}), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Both becky and cheri should be able to sign using regular keys.
         aliceSeq = env.seq(alice);
-        env(noop(alice), fee(3 * baseFee), msig(Reg{becky, beck}, Reg{cheri, cher}));
+        env(noop(alice), Fee(3 * baseFee), Msig(Reg{becky, beck}, Reg{cheri, cher}));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -472,7 +472,7 @@ public:
         env.close();
 
         // Attach signers to alice.
-        env(signers(alice, 2, {{becky, 1}, {cheri, 1}}), sig(alice));
+        env(signers(alice, 2, {{becky, 1}, {cheri, 1}}), Sig(alice));
 
         // Give everyone regular keys.
         Account const beck{"beck", KeyType::secp256k1};
@@ -482,7 +482,7 @@ public:
         env.close();
 
         // Disable cheri's master key to mix things up.
-        env(fset(cheri, asfDisableMaster), sig(cheri));
+        env(fset(cheri, asfDisableMaster), Sig(cheri));
         env.close();
 
         auto const baseFee = env.current()->fees().base;
@@ -685,7 +685,7 @@ public:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), Sig(alice));
 
         // becky is master only without a regular key.
 
@@ -696,44 +696,44 @@ public:
         // daria has a regular key and disables her master key.
         Account const dari{"dari", KeyType::ed25519};
         env(regkey(daria, dari));
-        env(fset(daria, asfDisableMaster), sig(daria));
+        env(fset(daria, asfDisableMaster), Sig(daria));
         env.close();
 
         // Attach signers to alice.
-        env(signers(alice, 1, {{becky, 1}, {cheri, 1}, {daria, 1}, {jinni_, 1}}), sig(alie));
+        env(signers(alice, 1, {{becky, 1}, {cheri, 1}, {daria, 1}, {jinni_, 1}}), Sig(alie));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // Each type of signer should succeed individually.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky), fee(2 * baseFee));
+        env(noop(alice), Msig(becky), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(cheri), fee(2 * baseFee));
+        env(noop(alice), Msig(cheri), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), Msig(Reg{cheri, cher}), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(Reg{daria, dari}), fee(2 * baseFee));
+        env(noop(alice), Msig(Reg{daria, dari}), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(jinni_), fee(2 * baseFee));
+        env(noop(alice), Msig(jinni_), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         //  Should also work if all signers sign.
         aliceSeq = env.seq(alice);
-        env(noop(alice), fee(5 * baseFee), msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni_));
+        env(noop(alice), Fee(5 * baseFee), Msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni_));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -742,18 +742,18 @@ public:
                 alice,
                 0x3FFFC,
                 {{becky, 0xFFFF}, {cheri, 0xFFFF}, {daria, 0xFFFF}, {jinni_, 0xFFFF}}),
-            sig(alie));
+            Sig(alie));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), fee(9 * baseFee), msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni_));
+        env(noop(alice), Fee(9 * baseFee), Msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni_));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Try cheri with both key types.
         aliceSeq = env.seq(alice);
-        env(noop(alice), fee(5 * baseFee), msig(becky, cheri, Reg{daria, dari}, jinni_));
+        env(noop(alice), Fee(5 * baseFee), Msig(becky, cheri, Reg{daria, dari}, jinni_));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -769,14 +769,14 @@ public:
                  {phase_, 0xFFFF},
                  {shade_, 0xFFFF},
                  {spook_, 0xFFFF}}),
-            sig(alie));
+            Sig(alie));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            fee(9 * baseFee),
-            msig(
+            Fee(9 * baseFee),
+            Msig(
                 becky, Reg{cheri, cher}, Reg{daria, dari}, haunt_, jinni_, phase_, shade_, spook_));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -784,16 +784,16 @@ public:
         // One signer short should fail.
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            msig(becky, cheri, haunt_, jinni_, phase_, shade_, spook_),
-            fee(8 * baseFee),
-            ter(tefBAD_QUORUM));
+            Msig(becky, cheri, haunt_, jinni_, phase_, shade_, spook_),
+            Fee(8 * baseFee),
+            Ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Remove alice's signer list and get the owner count back.
-        env(signers(alice, jtx::none), sig(alie));
+        env(signers(alice, jtx::kNONE), Sig(alie));
         env.close();
-        env.require(owners(alice, 0));
+        env.require(Owners(alice, 0));
     }
 
     // We want to always leave an account signable.  Make sure the that we
@@ -826,51 +826,51 @@ public:
 
         // Master key tests.
         // M0: A lone master key cannot be disabled.
-        env(fset(alice, asfDisableMaster), sig(alice), ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a regular key.
         Account const alie{"alie", KeyType::ed25519};
         env(regkey(alice, alie));
 
         // M1: The master key can be disabled if there's a regular key.
-        env(fset(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), Sig(alice));
 
         // R0: A lone regular key cannot be removed.
-        env(regkey(alice, disabled), sig(alie), ter(tecNO_ALTERNATIVE_KEY));
+        env(regkey(alice, kDISABLED), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a signer list.
-        env(signers(alice, 1, {{bogie_, 1}}), sig(alie));
+        env(signers(alice, 1, {{bogie_, 1}}), Sig(alie));
 
         // R1: The regular key can be removed if there's a signer list.
-        env(regkey(alice, disabled), sig(alie));
+        env(regkey(alice, kDISABLED), Sig(alie));
 
         // L0: A lone signer list cannot be removed.
         auto const baseFee = env.current()->fees().base;
-        env(signers(alice, jtx::none), msig(bogie_), fee(2 * baseFee), ter(tecNO_ALTERNATIVE_KEY));
+        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Enable the master key.
-        env(fclear(alice, asfDisableMaster), msig(bogie_), fee(2 * baseFee));
+        env(fclear(alice, asfDisableMaster), Msig(bogie_), Fee(2 * baseFee));
 
         // L1: The signer list can be removed if the master key is enabled.
-        env(signers(alice, jtx::none), msig(bogie_), fee(2 * baseFee));
+        env(signers(alice, jtx::kNONE), Msig(bogie_), Fee(2 * baseFee));
 
         // Add a signer list.
-        env(signers(alice, 1, {{bogie_, 1}}), sig(alice));
+        env(signers(alice, 1, {{bogie_, 1}}), Sig(alice));
 
         // M2: The master key can be disabled if there's a signer list.
-        env(fset(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), Sig(alice));
 
         // Add a regular key.
-        env(regkey(alice, alie), msig(bogie_), fee(2 * baseFee));
+        env(regkey(alice, alie), Msig(bogie_), Fee(2 * baseFee));
 
         // L2: The signer list can be removed if there's a regular key.
-        env(signers(alice, jtx::none), sig(alie));
+        env(signers(alice, jtx::kNONE), Sig(alie));
 
         // Enable the master key.
-        env(fclear(alice, asfDisableMaster), sig(alie));
+        env(fclear(alice, asfDisableMaster), Sig(alie));
 
         // R2: The regular key can be removed if the master key is enabled.
-        env(regkey(alice, disabled), sig(alie));
+        env(regkey(alice, kDISABLED), Sig(alie));
     }
 
     // Verify that the first regular key can be made for free using the
@@ -888,14 +888,14 @@ public:
 
         // Give alice a regular key with a zero fee.  Should succeed.  Once.
         Account const alie{"alie", KeyType::ed25519};
-        env(regkey(alice, alie), sig(alice), fee(0));
+        env(regkey(alice, alie), Sig(alice), Fee(0));
 
         // Try it again and creating the regular key for free should fail.
         Account const liss{"liss", KeyType::secp256k1};
-        env(regkey(alice, liss), sig(alice), fee(0), ter(telINSUF_FEE_P));
+        env(regkey(alice, liss), Sig(alice), Fee(0), Ter(telINSUF_FEE_P));
 
         // But paying to create a regular key should succeed.
-        env(regkey(alice, liss), sig(alice));
+        env(regkey(alice, liss), Sig(alice));
 
         // In contrast, trying to multisign for a regular key with a zero
         // fee should always fail.  Even the first time.
@@ -903,12 +903,12 @@ public:
         env.fund(XRP(1000), becky);
         env.close();
 
-        env(signers(becky, 1, {{alice, 1}}), sig(becky));
-        env(regkey(becky, alie), msig(alice), fee(0), ter(telINSUF_FEE_P));
+        env(signers(becky, 1, {{alice, 1}}), Sig(becky));
+        env(regkey(becky, alie), Msig(alice), Fee(0), Ter(telINSUF_FEE_P));
 
         // Using the master key to sign for a regular key for free should
         // still work.
-        env(regkey(becky, alie), sig(becky), fee(0));
+        env(regkey(becky, alie), Sig(becky), Fee(0));
     }
 
     // See if every kind of transaction can be successfully multi-signed.
@@ -930,70 +930,70 @@ public:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, asfDisableMaster), Sig(alice));
 
         // Attach signers to alice.
-        env(signers(alice, 2, {{becky, 1}, {bogie_, 1}}), sig(alie));
+        env(signers(alice, 2, {{becky, 1}, {bogie_, 1}}), Sig(alie));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // Multisign a ttPAYMENT.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(pay(alice, env.master, XRP(1)), msig(becky, bogie_), fee(3 * baseFee));
+        env(pay(alice, env.master, XRP(1)), Msig(becky, bogie_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Multisign a ttACCOUNT_SET.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky, bogie_), fee(3 * baseFee));
+        env(noop(alice), Msig(becky, bogie_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Multisign a ttREGULAR_KEY_SET.
         aliceSeq = env.seq(alice);
         Account const ace{"ace", KeyType::secp256k1};
-        env(regkey(alice, ace), msig(becky, bogie_), fee(3 * baseFee));
+        env(regkey(alice, ace), Msig(becky, bogie_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Multisign a ttTRUST_SET
         env(trust("alice", usd(100)),
-            msig(becky, bogie_),
-            fee(3 * baseFee),
-            require(lines("alice", 1)));
+            Msig(becky, bogie_),
+            Fee(3 * baseFee),
+            Require(lines("alice", 1)));
         env.close();
-        env.require(owners(alice, 2));
+        env.require(Owners(alice, 2));
 
         // Multisign a ttOFFER_CREATE transaction.
         env(pay(gw, alice, usd(50)));
         env.close();
-        env.require(balance(alice, usd(50)));
-        env.require(balance(gw, alice["USD"](-50)));
+        env.require(Balance(alice, usd(50)));
+        env.require(Balance(gw, alice["USD"](-50)));
 
         std::uint32_t const offerSeq = env.seq(alice);
-        env(offer(alice, XRP(50), usd(50)), msig(becky, bogie_), fee(3 * baseFee));
+        env(offer(alice, XRP(50), usd(50)), Msig(becky, bogie_), Fee(3 * baseFee));
         env.close();
-        env.require(owners(alice, 3));
+        env.require(Owners(alice, 3));
 
         // Now multisign a ttOFFER_CANCEL canceling the offer we just created.
         {
             aliceSeq = env.seq(alice);
-            env(offer_cancel(alice, offerSeq),
-                seq(aliceSeq),
-                msig(becky, bogie_),
-                fee(3 * baseFee));
+            env(offerCancel(alice, offerSeq),
+                Seq(aliceSeq),
+                Msig(becky, bogie_),
+                Fee(3 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-            env.require(owners(alice, 2));
+            env.require(Owners(alice, 2));
         }
 
         // Multisign a ttSIGNER_LIST_SET.
         env(signers(alice, 3, {{becky, 1}, {bogie_, 1}, {demon_, 1}}),
-            msig(becky, bogie_),
-            fee(3 * baseFee));
+            Msig(becky, bogie_),
+            Fee(3 * baseFee));
         env.close();
-        env.require(owners(alice, 2));
+        env.require(Owners(alice, 2));
     }
 
     void
@@ -1016,12 +1016,12 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
         env.close();
-        env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}), sig(alice));
+        env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}), Sig(alice));
 
         auto const baseFee = env.current()->fees().base;
         {
             // Single-sign, but leave an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx tx = env.jt(noop(alice), Sig(alice));
             STTx local = *(tx.stx);
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
@@ -1031,7 +1031,7 @@ public:
         }
         {
             // Single-sign, but invalidate the signature.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx tx = env.jt(noop(alice), Sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto badSig = local.getFieldVL(sfTxnSignature);
@@ -1045,7 +1045,7 @@ public:
         }
         {
             // Single-sign, but invalidate the sequence number.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx tx = env.jt(noop(alice), Sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto seq = local.getFieldU32(sfSequence);
@@ -1058,7 +1058,7 @@ public:
         }
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
             STTx local = *(tx.stx);
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
@@ -1068,7 +1068,7 @@ public:
         }
         {
             // Both multi- and single-sign with an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
             STTx local = *(tx.stx);
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
@@ -1079,7 +1079,7 @@ public:
         }
         {
             // Multisign but invalidate one of the signatures.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto& signer = local.peekFieldArray(sfSigners).back();
@@ -1094,7 +1094,7 @@ public:
         }
         {
             // Multisign with an empty signers array should fail.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
             STTx local = *(tx.stx);
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
@@ -1105,9 +1105,9 @@ public:
         {
             JTx tx = env.jt(
                 noop(alice),
-                fee(2 * baseFee),
+                Fee(2 * baseFee),
 
-                msig(
+                Msig(
                     bogie_,
                     bogie_,
                     bogie_,
@@ -1149,7 +1149,7 @@ public:
         }
         {
             // The account owner may not multisign for themselves.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(alice));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1158,7 +1158,7 @@ public:
         }
         {
             // No duplicate multisignatures allowed.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_, bogie_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, bogie_));
             STTx local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1167,7 +1167,7 @@ public:
         }
         {
             // Multisignatures must be submitted in sorted order.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie_, demon_));
+            JTx tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, demon_));
             STTx local = *(tx.stx);
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
@@ -1193,7 +1193,7 @@ public:
         env.close();
 
         auto const baseFee = env.current()->fees().base;
-        env(noop(alice), msig(becky, demon_), fee(3 * baseFee), ter(tefNOT_MULTI_SIGNING));
+        env(noop(alice), Msig(becky, demon_), Fee(3 * baseFee), Ter(tefNOT_MULTI_SIGNING));
     }
 
     void
@@ -1224,7 +1224,7 @@ public:
         // Because becky has not (yet) disabled her master key, she can
         // multisign a transaction for alice.
         auto const baseFee = env.current()->fees().base;
-        env(noop(alice), msig(becky), fee(2 * baseFee));
+        env(noop(alice), Msig(becky), Fee(2 * baseFee));
         env.close();
 
         // Now becky disables her master key.
@@ -1233,31 +1233,31 @@ public:
 
         // Since becky's master key is disabled she can no longer
         // multisign for alice.
-        env(noop(alice), msig(becky), fee(2 * baseFee), ter(tefMASTER_DISABLED));
+        env(noop(alice), Msig(becky), Fee(2 * baseFee), Ter(tefMASTER_DISABLED));
         env.close();
 
         // Becky cannot 2-level multisign for alice.  2-level multisigning
         // is not supported.
-        env(noop(alice), msig(Reg{becky, bogie_}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop(alice), Msig(Reg{becky, bogie_}), Fee(2 * baseFee), Ter(tefBAD_SIGNATURE));
         env.close();
 
         // Verify that becky cannot sign with a regular key that she has
         // not yet enabled.
         Account const beck{"beck", KeyType::ed25519};
-        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop(alice), Msig(Reg{becky, beck}), Fee(2 * baseFee), Ter(tefBAD_SIGNATURE));
         env.close();
 
         // Once becky gives herself the regular key, she can sign for alice
         // using that regular key.
-        env(regkey(becky, beck), msig(demon_), fee(2 * baseFee));
+        env(regkey(becky, beck), Msig(demon_), Fee(2 * baseFee));
         env.close();
 
-        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), Msig(Reg{becky, beck}), Fee(2 * baseFee));
         env.close();
 
         // The presence of becky's regular key does not influence whether she
         // can 2-level multisign; it still won't work.
-        env(noop(alice), msig(Reg{becky, demon_}), fee(2 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop(alice), Msig(Reg{becky, demon_}), Fee(2 * baseFee), Ter(tefBAD_SIGNATURE));
         env.close();
     }
 
@@ -1360,13 +1360,13 @@ public:
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
-        env(noop(alice), msig(bogie_, demon_), fee(3 * baseFee), ticket::use(aliceTicketSeq++));
+        env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee), ticket::use(aliceTicketSeq++));
         env.close();
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Should also be able to remove the signer list using a ticket.
-        env(signers(alice, jtx::none), ticket::use(aliceTicketSeq++));
+        env(signers(alice, jtx::kNONE), ticket::use(aliceTicketSeq++));
         env.close();
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
@@ -1394,51 +1394,51 @@ public:
         // Attach phantom signers to alice and use them for a transaction.
         env(signers(alice, 1, {{bogie_, 1, bogieTag}, {demon_, 1, demonTag}}));
         env.close();
-        env.require(owners(alice, 1));
+        env.require(Owners(alice, 1));
 
         // This should work.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, demon_), fee(3 * baseFee));
+        env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Either signer alone should work.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee(2 * baseFee));
+        env(noop(alice), Msig(bogie_), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon_), fee(2 * baseFee));
+        env(noop(alice), Msig(demon_), Fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
         env(noop(alice),
-            msig(demon_, demon_),
-            fee(3 * baseFee),
+            Msig(demon_, demon_),
+            Fee(3 * baseFee),
             rpc("invalidTransaction", "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // A non-signer should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, spook_), fee(3 * baseFee), ter(tefBAD_SIGNATURE));
+        env(noop(alice), Msig(bogie_, spook_), Fee(3 * baseFee), Ter(tefBAD_SIGNATURE));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Don't meet the quorum.  Should fail.
         env(signers(alice, 2, {{bogie_, 1}, {demon_, 1}}));
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_), fee(2 * baseFee), ter(tefBAD_QUORUM));
+        env(noop(alice), Msig(bogie_), Fee(2 * baseFee), Ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
         // Meet the quorum.  Should succeed.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie_, demon_), fee(3 * baseFee));
+        env(noop(alice), Msig(bogie_, demon_), Fee(3 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -1457,7 +1457,7 @@ public:
         bool const enabled = features[fixInvalidTxFlags];
         testcase(std::string("SignerListSet flag, fix ") + (enabled ? "enabled" : "disabled"));
 
-        ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
+        Ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
         env(signers(alice, 2, {{bogie_, 1}, {ghost_, 1}}), expected, txflags(tfPassive));
         env.close();
     }
@@ -1519,7 +1519,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = testable_amendments();
+        auto const all = testableAmendments();
 
         testAll(all);
 

@@ -58,14 +58,14 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of A2, no trust line exists
-            env(token::acceptBuyOffer(a2, buyIdx), ter(tecNO_LINE));
+            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
             env(trust(a2, limit));
 
             // test: G1 requires authorization of A2
-            env(token::acceptBuyOffer(a2, buyIdx), ter(tecNO_AUTH));
+            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_AUTH));
             env.close();
         }
         else
@@ -98,7 +98,7 @@ public:
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
 
         // test: check that buyer can't make an offer if they're not authorized.
-        env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), ter(tecUNFUNDED_OFFER));
+        env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), Ter(tecUNFUNDED_OFFER));
         env.close();
 
         // Artificially create an unauthorized trustline with balance. Don't
@@ -115,7 +115,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), ter(tecNO_AUTH));
+            env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), Ter(tecNO_AUTH));
         }
         else
         {
@@ -177,7 +177,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that offer can't be accepted even with balance
-            env(token::acceptBuyOffer(a2, buyIdx), ter(tecNO_AUTH));
+            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_AUTH));
         }
     }
 
@@ -210,11 +210,11 @@ public:
         {
             // test: can't create sell offer if there is no trustline but auth
             // required
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), ter(tecNO_LINE));
+            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), Ter(tecNO_LINE));
 
             env(trust(a2, limit));
             // test: can't create sell offer if not authorized to hold token
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), ter(tecNO_AUTH));
+            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), Ter(tecNO_AUTH));
 
             // Authorizing trustline to make an offer creation possible
             env(trust(g1, usd(0), a2, tfSetfAuth));
@@ -230,7 +230,7 @@ public:
             env.close();
 
             // test: G1 requires authorization of A1, no trust line exists
-            env(token::acceptSellOffer(a1, sellIdx), ter(tecNO_LINE));
+            env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -238,7 +238,7 @@ public:
             env.close();
 
             // test: G1 requires authorization of A1
-            env(token::acceptSellOffer(a1, sellIdx), ter(tecNO_AUTH));
+            env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_AUTH));
             env.close();
         }
         else
@@ -283,7 +283,7 @@ public:
 
         // test: check that buyer can't accept an offer if they're not
         // authorized.
-        env(token::acceptSellOffer(a1, sellIdx), ter(tecINSUFFICIENT_FUNDS));
+        env(token::acceptSellOffer(a1, sellIdx), Ter(tecINSUFFICIENT_FUNDS));
         env.close();
 
         // Creating an artificial unauth trustline
@@ -296,7 +296,7 @@ public:
         env.app().openLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            env(token::acceptSellOffer(a1, sellIdx), ter(tecNO_AUTH));
+            env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_AUTH));
         }
     }
 
@@ -337,7 +337,7 @@ public:
             // test: G1 requires authorization of broker, no trust line exists
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(usd(1)),
-                ter(tecNO_LINE));
+                Ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -347,7 +347,7 @@ public:
             // test: G1 requires authorization of broker
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(usd(1)),
-                ter(tecNO_AUTH));
+                Ter(tecNO_AUTH));
             env.close();
 
             // test: can still be brokered without broker fee.
@@ -419,7 +419,7 @@ public:
             // test: G1 requires authorization of A2
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(usd(1)),
-                ter(tecNO_AUTH));
+                Ter(tecNO_AUTH));
             env.close();
         }
     }
@@ -472,7 +472,7 @@ public:
             // test: G1 requires authorization of broker, no trust line exists
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(usd(1)),
-                ter(tecNO_LINE));
+                Ter(tecNO_LINE));
             env.close();
 
             // trust line created, but not authorized
@@ -482,11 +482,11 @@ public:
             // test: G1 requires authorization of A2
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(usd(1)),
-                ter(tecNO_AUTH));
+                Ter(tecNO_AUTH));
             env.close();
 
             // test: cannot be brokered even without broker fee.
-            env(token::brokerOffers(broker, buyIdx, sellIdx), ter(tecNO_AUTH));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), Ter(tecNO_AUTH));
             env.close();
         }
         else
@@ -540,7 +540,7 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization
-            env(token::acceptSellOffer(a2, sellIdx), ter(tecNO_AUTH));
+            env(token::acceptSellOffer(a2, sellIdx), Ter(tecNO_AUTH));
             env.close();
         }
         else
@@ -557,7 +557,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        static FeatureBitset const kALL{testable_amendments()};
+        static FeatureBitset const kALL{testableAmendments()};
 
         static std::array const kFEATURES = {kALL - fixEnforceNFTokenTrustlineV2, kALL};
 

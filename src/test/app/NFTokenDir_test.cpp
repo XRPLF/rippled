@@ -163,7 +163,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (std::string_view seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::Base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -367,7 +367,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             for (std::string_view seed : seeds)
             {
                 Account const& account =
-                    accounts.emplace_back(Account::base58Seed, std::string(seed));
+                    accounts.emplace_back(Account::Base58Seed, std::string(seed));
                 env.fund(XRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
@@ -597,7 +597,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         accounts.reserve(kSEEDS.size());
         for (std::string_view seed : kSEEDS)
         {
-            Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+            Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
@@ -648,7 +648,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         }
 
         // buyer accepts the last offer which causes a page overflow.
-        env(token::acceptSellOffer(buyer, offerForPageOverflow), ter(tecNO_SUITABLE_NFTOKEN_PAGE));
+        env(token::acceptSellOffer(buyer, offerForPageOverflow), Ter(tecNO_SUITABLE_NFTOKEN_PAGE));
 
         // Verify that all expected NFTs are owned by buyer and findable in
         // the ledger by having buyer create sell offers for all of their NFTs.
@@ -688,7 +688,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         BEAST_EXPECT(nftIDs.empty());
 
         TER const expect = tesSUCCESS;
-        env(token::mint(buyer, 0), txflags(tfTransferable), ter(expect));
+        env(token::mint(buyer, 0), txflags(tfTransferable), Ter(expect));
         env.close();
     }
 
@@ -703,7 +703,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         //
         // All of the NFTs should be acquired by the buyer.
         //
-        // Lastly, none of the remaining NFTs should be acquirable by the
+        // Lastly, kNONE of the remaining NFTs should be acquirable by the
         // buyer.  They would cause page overflow.
 
         testcase("NFToken consecutive packing");
@@ -760,7 +760,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         accounts.reserve(kSEEDS.size());
         for (std::string_view seed : kSEEDS)
         {
-            Account const& account = accounts.emplace_back(Account::base58Seed, std::string(seed));
+            Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
@@ -844,7 +844,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // the transaction succeeded.
         for (uint256 const& offer : overflowOffers)
         {
-            env(token::acceptSellOffer(buyer, offer), ter(tecNO_SUITABLE_NFTOKEN_PAGE));
+            env(token::acceptSellOffer(buyer, offer), Ter(tecNO_SUITABLE_NFTOKEN_PAGE));
             env.close();
         }
 
@@ -1008,7 +1008,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
 
         testWithFeats(all);
     }

@@ -469,7 +469,7 @@ private:
 };
 
 /**
- * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
+ * @brief setupRelationalDatabase Creates and returns a SQLiteDatabase
  *        instance based on configuration. It's recommended to use it as
  *        a singleton, but it's not enforced (e.g. if you have more than one
  *        database).
@@ -479,6 +479,6 @@ private:
  * @return SQLiteDatabase instance.
  */
 SQLiteDatabase
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
+setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue);
 
 }  // namespace xrpl

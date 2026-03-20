@@ -18,14 +18,14 @@ namespace xrpl {
 using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
 inline constexpr ProtocolVersion
-make_protocol(std::uint16_t major, std::uint16_t minor)
+makeProtocol(std::uint16_t major, std::uint16_t minor)
 {
     return {major, minor};
 }
 
 /** Print a protocol version a human-readable string. */
 std::string
-to_string(ProtocolVersion const& p);
+toString(ProtocolVersion const& p);
 
 /** Parse a set of protocol versions.
 

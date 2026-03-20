@@ -19,7 +19,7 @@ parse(Json::Value const& jv)
 {
     STParsedJSONObject p("tx_json", jv);
     if (!p.object)
-        Throw<parse_error>(rpcErrorString(p.error));
+        Throw<ParseError>(rpcErrorString(p.error));
     return std::move(*p.object);
 }
 
@@ -41,7 +41,7 @@ sign(Json::Value& jv, Account const& account)
 }
 
 void
-fill_fee(Json::Value& jv, ReadView const& view)
+fillFee(Json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
@@ -49,16 +49,16 @@ fill_fee(Json::Value& jv, ReadView const& view)
 }
 
 void
-fill_seq(Json::Value& jv, ReadView const& view)
+fillSeq(Json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Sequence))
         return;
     auto const account = parseBase58<AccountID>(jv[jss::Account].asString());
     if (!account)
-        Throw<parse_error>("unexpected invalid Account");
+        Throw<ParseError>("unexpected invalid Account");
     auto const ar = view.read(keylet::account(*account));
     if (!ar)
-        Throw<parse_error>("unexpected missing account root");
+        Throw<ParseError>("unexpected missing account root");
     jv[jss::Sequence] = ar->getFieldU32(sfSequence);
 }
 

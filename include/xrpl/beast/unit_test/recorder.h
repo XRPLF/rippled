@@ -14,15 +14,15 @@ namespace unit_test {
 class recorder : public runner
 {
 private:
-    results results_;
-    suite_results suite_;
-    case_results case_;
+    Results results_;
+    SuiteResults suite_;
+    CaseResults case_;
 
 public:
     recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
-    results const&
+    Results const&
     report() const
     {
         return results_;
@@ -30,44 +30,44 @@ public:
 
 private:
     virtual void
-    on_suite_begin(suite_info const& info) override
+    onSuiteBegin(SuiteInfo const& info) override
     {
-        suite_ = suite_results(info.full_name());
+        suite_ = SuiteResults(info.fullName());
     }
 
     virtual void
-    on_suite_end() override
+    onSuiteEnd() override
     {
         results_.insert(std::move(suite_));
     }
 
     virtual void
-    on_case_begin(std::string const& name) override
+    onCaseBegin(std::string const& name) override
     {
-        case_ = case_results(name);
+        case_ = CaseResults(name);
     }
 
     virtual void
-    on_case_end() override
+    onCaseEnd() override
     {
         if (case_.tests.size() > 0)
             suite_.insert(std::move(case_));
     }
 
     virtual void
-    on_pass() override
+    onPass() override
     {
         case_.tests.pass();
     }
 
     virtual void
-    on_fail(std::string const& reason) override
+    onFail(std::string const& reason) override
     {
         case_.tests.fail(reason);
     }
 
     virtual void
-    on_log(std::string const& s) override
+    onLog(std::string const& s) override
     {
         case_.log.insert(s);
     }

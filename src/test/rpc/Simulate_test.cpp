@@ -42,7 +42,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::kNONE);
         }
         BEAST_EXPECT(txJson[jss::TransactionType] == tx[jss::TransactionType]);
         BEAST_EXPECT(txJson[jss::Account] == tx[jss::Account]);
@@ -138,7 +138,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
+            return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::kNONE);
         }
 
         return txResult[jss::meta];
@@ -734,7 +734,7 @@ class Simulate_test : public beast::unit_test::suite
         static auto const kNEW_DOMAIN = "123ABC";
         Account const alice{"alice"};
         env(regkey(env.master, alice));
-        env(fset(env.master, asfDisableMaster), sig(env.master));
+        env(fset(env.master, asfDisableMaster), Sig(env.master));
         env.close();
 
         {

@@ -15,7 +15,7 @@ namespace unit_test {
 class runner;
 
 /** Associates a unit test type with metadata. */
-class suite_info
+class SuiteInfo
 {
     using run_type = std::function<void(runner&)>;
 
@@ -27,7 +27,7 @@ class suite_info
     run_type run_;
 
 public:
-    suite_info(
+    SuiteInfo(
         std::string name,
         std::string module,
         std::string library,
@@ -70,7 +70,7 @@ public:
 
     /// Return the canonical suite name as a string.
     std::string
-    full_name() const
+    fullName() const
     {
         return library_ + "." + module_ + "." + name_;
     }
@@ -83,7 +83,7 @@ public:
     }
 
     friend bool
-    operator<(suite_info const& lhs, suite_info const& rhs)
+    operator<(SuiteInfo const& lhs, SuiteInfo const& rhs)
     {
         // we want higher priority suites sorted first, thus the negation
         // of priority value here
@@ -94,17 +94,17 @@ public:
 
 //------------------------------------------------------------------------------
 
-/// Convenience for producing suite_info for a given test type.
+/// Convenience for producing SuiteInfo for a given test type.
 template <class Suite>
-suite_info
-make_suite_info(
+SuiteInfo
+makeSuiteInfo(
     std::string name,
     std::string module,
     std::string library,
     bool manual,
     int priority)
 {
-    return suite_info(
+    return SuiteInfo(
         std::move(name), std::move(module), std::move(library), manual, priority, [](runner& r) {
             Suite{}(r);
         });

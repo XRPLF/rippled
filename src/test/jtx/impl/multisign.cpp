@@ -12,7 +12,7 @@ namespace test {
 namespace jtx {
 
 Json::Value
-signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v)
+signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -32,7 +32,7 @@ signers(Account const& account, std::uint32_t quorum, std::vector<signer> const&
 }
 
 Json::Value
-signers(Account const& account, none_t)
+signers(Account const& account, NoneT)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -44,7 +44,7 @@ signers(Account const& account, none_t)
 //------------------------------------------------------------------------------
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
@@ -65,7 +65,7 @@ msig::operator()(Env& env, JTx& jt) const
         {
             st = parse(jtx.jv);
         }
-        catch (parse_error const&)
+        catch (ParseError const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();

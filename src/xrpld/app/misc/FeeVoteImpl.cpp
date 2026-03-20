@@ -294,7 +294,7 @@ FeeVoteImpl::doVoting(
 //------------------------------------------------------------------------------
 
 std::unique_ptr<FeeVote>
-make_FeeVote(FeeSetup const& setup, beast::Journal journal)
+makeFeeVote(FeeSetup const& setup, beast::Journal journal)
 {
     return std::make_unique<FeeVoteImpl>(setup, journal);
 }

@@ -77,7 +77,7 @@ public:
 
     /** Returns `true` if no more funds can flow through this offer. */
     bool
-    fully_consumed() const
+    fullyConsumed() const
     {
         if (amounts_.in <= beast::zero)
             return true;

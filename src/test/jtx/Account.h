@@ -19,13 +19,13 @@ class Account
 {
 private:
     // Tag for access to private contr
-    struct privateCtorTag
+    struct PrivateCtorTag
     {
     };
 
 public:
     /** The master account. */
-    static Account const master;
+    static Account const kMASTER;
 
     Account() = delete;
     Account(Account&&) = default;
@@ -46,7 +46,7 @@ public:
     // This constructor needs to be public so `std::pair` can use it when
     // emplacing into the cache. However, it is logically `private`. This is
     // enforced with the `privateTag` parameter.
-    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
+    Account(std::string name, std::pair<PublicKey, SecretKey> const& keys, Account::PrivateCtorTag);
 
     /** @} */
 
@@ -54,7 +54,7 @@ public:
      * secret key is unavailable, such as for pseudo-accounts. */
     explicit Account(std::string name, AccountID const& id);
 
-    enum AcctStringType { base58Seed, other };
+    enum AcctStringType { Base58Seed, Other };
     /** Create an account from a base58 seed string.  Throws on invalid seed. */
     Account(AcctStringType stringType, std::string base58SeedStr);
 
@@ -132,7 +132,7 @@ operator==(Account const& lhs, Account const& rhs) noexcept
 
 template <class Hasher>
 void
-hash_append(Hasher& h, Account const& v) noexcept
+hash_append(Hasher& h, Account const& v) noexcept  // NOLINT(readability-identifier-naming)
 {
     hash_append(h, v.id());
 }

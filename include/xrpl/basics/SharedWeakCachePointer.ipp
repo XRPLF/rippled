@@ -86,7 +86,7 @@ SharedWeakCachePointer<T>::get() const
 
 template <class T>
 std::size_t
-SharedWeakCachePointer<T>::use_count() const
+SharedWeakCachePointer<T>::useCount() const
 {
     if (auto p = std::get_if<std::shared_ptr<T>>(&combo_))
         return p->use_count();

@@ -40,7 +40,7 @@ doTxHistory(RPC::JsonContext& context)
 
     for (auto const& t : trans)
     {
-        Json::Value txJson = t->getJson(JsonOptions::none);
+        Json::Value txJson = t->getJson(JsonOptions::kNONE);
         RPC::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(txJson);
     }

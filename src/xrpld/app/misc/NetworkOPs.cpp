@@ -217,14 +217,14 @@ public:
         beast::insight::Collector::ptr const& collector)
         : registry_(registry)
         , journal_(journal)
-        , localTX_(make_LocalTxs())
+        , localTX_(makeLocalTxs())
         , mode_(startValid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
         , heartbeatTimer_(ioSvc)
         , clusterTimer_(ioSvc)
         , accountHistoryTxTimer_(ioSvc)
         , consensus_(
               registry_.app(),
-              make_FeeVote(
+              makeFeeVote(
                   setup_FeeVote(registry_.app().config().section("voting")),
                   registry_.logs().journal("FeeVote")),
               ledgerMaster,
@@ -710,7 +710,7 @@ private:
     std::optional<PublicKey> const validatorPK_;
     std::optional<PublicKey> const validatorMasterPK_;
 
-    ConsensusPhase lastConsensusPhase_{ConsensusPhase::open};
+    ConsensusPhase lastConsensusPhase_{ConsensusPhase::Open};
 
     LedgerMaster& ledgerMaster_;
 
@@ -1029,13 +1029,13 @@ NetworkOPsImp::processHeartbeatTimer()
 
     consensus_.timerEntry(registry_.timeKeeper().closeTime(), clog.ss());
 
-    CLOG(clog.ss()) << "consensus phase " << to_string(lastConsensusPhase_);
+    CLOG(clog.ss()) << "consensus phase " << toString(lastConsensusPhase_);
     ConsensusPhase const currPhase = consensus_.phase();
     if (lastConsensusPhase_ != currPhase)
     {
         reportConsensusStateChange(currPhase);
         lastConsensusPhase_ = currPhase;
-        CLOG(clog.ss()) << " changed to " << to_string(lastConsensusPhase_);
+        CLOG(clog.ss()) << " changed to " << toString(lastConsensusPhase_);
     }
     CLOG(clog.ss()) << ". ";
 
@@ -1064,7 +1064,7 @@ NetworkOPsImp::processClusterTimer()
     }
 
     protocol::TMCluster cluster;
-    registry_.cluster().for_each([&cluster](ClusterNode const& node) {
+    registry_.cluster().forEach([&cluster](ClusterNode const& node) {
         protocol::TMClusterNode& n = *cluster.add_clusternodes();
         n.set_publickey(toBase58(TokenType::NodePublic, node.identity()));
         n.set_reporttime(node.getReportTime().time_since_epoch().count());
@@ -1081,7 +1081,7 @@ NetworkOPsImp::processClusterTimer()
         node.set_cost(item.balance);
     }
     registry_.overlay().foreach(
-        send_if(std::make_shared<Message>(cluster, protocol::mtCLUSTER), peer_in_cluster()));
+        sendIf(std::make_shared<Message>(cluster, protocol::mtCLUSTER), PeerInCluster()));
     setClusterTimer();
 }
 
@@ -1093,9 +1093,9 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
     if (mode == OperatingMode::FULL && admin)
     {
         auto const consensusMode = consensus_.mode();
-        if (consensusMode != ConsensusMode::wrongLedger)
+        if (consensusMode != ConsensusMode::WrongLedger)
         {
-            if (consensusMode == ConsensusMode::proposing)
+            if (consensusMode == ConsensusMode::Proposing)
                 return "proposing";
 
             if (consensus_.validating())
@@ -1476,7 +1476,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                 std::size_t count = 0;
                 for (auto txNext = ledgerMaster_.popAcctTransaction(txCur);
-                     txNext && count < maxPoppedTransactions;
+                     txNext && count < kMAX_POPPED_TRANSACTIONS;
                      txNext = ledgerMaster_.popAcctTransaction(txCur), ++count)
                 {
                     if (!batchLock.owns_lock())
@@ -1525,7 +1525,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     // 1. It was submitted locally. (Note that this flag is only
                     //    true on the initial submission.)
                     // 2. The transaction has a LastLedgerSequence, and the
-                    //    LastLedgerSequence is fewer than LocalTxs::holdLedgers
+                    //    LastLedgerSequence is fewer than LocalTxs::kHOLD_LEDGERS
                     //    (5) ledgers into the future. (Remember that an
                     //    unseated optional compares as less than all seated
                     //    values, so it has to be checked explicitly first.)
@@ -1536,7 +1536,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     //    the other conditions, so don't hold it again. Time's
                     //    up!)
                     //
-                    if (e.local || (ledgersLeft && ledgersLeft <= LocalTxs::holdLedgers) ||
+                    if (e.local || (ledgersLeft && ledgersLeft <= LocalTxs::kHOLD_LEDGERS) ||
                         registry_.getHashRouter().setFlags(
                             e.transaction->getID(), HashRouterFlags::HELD))
                     {
@@ -1564,7 +1564,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (addLocal && !enforceFailHard)
             {
-                localTX_->push_back(
+                localTX_->pushBack(
                     ledgerMaster_.getCurrentLedgerIndex(), e.transaction->getSTransaction());
                 e.transaction->setKept();
             }
@@ -1658,7 +1658,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                         if (!jvObjects.isMember(jss::offers))
                             jvObjects[jss::offers] = Json::Value(Json::arrayValue);
 
-                        jvObjects[jss::offers].append(sleCur->getJson(JsonOptions::none));
+                        jvObjects[jss::offers].append(sleCur->getJson(JsonOptions::kNONE));
                         break;
 
                     case ltRIPPLE_STATE:
@@ -1667,7 +1667,7 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
                             jvObjects[jss::ripple_lines] = Json::Value(Json::arrayValue);
                         }
 
-                        jvObjects[jss::ripple_lines].append(sleCur->getJson(JsonOptions::none));
+                        jvObjects[jss::ripple_lines].append(sleCur->getJson(JsonOptions::kNONE));
                         break;
 
                     case ltACCOUNT_ROOT:
@@ -1913,7 +1913,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     s.set_ledgerhash(newLCL->header().hash.begin(), newLCL->header().hash.size());
 
     registry_.overlay().foreach(
-        send_always(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
+        SendAlways(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
 }
 
 bool
@@ -2023,7 +2023,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
     protocol::TMHaveTransactionSet msg;
     msg.set_hash(map->getHash().as_uint256().begin(), 256 / 8);
     msg.set_status(protocol::tsHAVE);
-    registry_.overlay().foreach(send_always(std::make_shared<Message>(msg, protocol::mtHAVE_SET)));
+    registry_.overlay().foreach(SendAlways(std::make_shared<Message>(msg, protocol::mtHAVE_SET)));
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
@@ -2198,7 +2198,7 @@ NetworkOPsImp::pubServer()
             auto const loadFactor = std::max(
                 safe_cast<std::uint64_t>(f.loadFactorServer),
                 mulDiv(f.em->openLedgerFeeLevel, f.loadBaseServer, f.em->referenceFeeLevel)
-                    .value_or(xrpl::muldiv_max));
+                    .value_or(xrpl::kMULDIV_MAX));
 
             jvObj[jss::load_factor] = trunc32(loadFactor);
             jvObj[jss::load_factor_fee_escalation] = f.em->openLedgerFeeLevel.jsonClipped();
@@ -2242,7 +2242,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
     {
         Json::Value jvObj(Json::objectValue);
         jvObj[jss::type] = "consensusPhase";
-        jvObj[jss::consensus] = to_string(phase);
+        jvObj[jss::consensus] = toString(phase);
 
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
@@ -2428,12 +2428,12 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
     JLOG(journal_.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     std::unique_lock lock(validationsMutex_);
-    BypassAccept bypassAccept = BypassAccept::no;
+    BypassAccept bypassAccept = BypassAccept::No;
     try
     {
         if (pendingValidations_.contains(val->getLedgerHash()))
         {
-            bypassAccept = BypassAccept::yes;
+            bypassAccept = BypassAccept::Yes;
         }
         else
         {
@@ -2452,7 +2452,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
         JLOG(journal_.warn()) << "Unknown exception thrown for handling new validation "
                               << val->getLedgerHash();
     }
-    if (bypassAccept == BypassAccept::no)
+    if (bypassAccept == BypassAccept::No)
     {
         pendingValidations_.erase(val->getLedgerHash());
     }
@@ -2705,7 +2705,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                                              escalationMetrics.openLedgerFeeLevel,
                                              loadBaseServer,
                                              escalationMetrics.referenceFeeLevel)
-                                             .value_or(xrpl::muldiv_max);
+                                             .value_or(xrpl::kMULDIV_MAX);
 
     auto const loadFactor =
         std::max(safe_cast<std::uint64_t>(loadFactorServer), loadFactorFeeEscalation);
@@ -3109,11 +3109,11 @@ NetworkOPsImp::transJson(
     // NOTE jvObj is not a finished object for either API version. After
     // it's populated, we need to finish it for a specific API version. This is
     // done in a loop, near the end of this function.
-    jvObj[jss::transaction] = transaction->getJson(JsonOptions::disable_API_prior_V2, false);
+    jvObj[jss::transaction] = transaction->getJson(JsonOptions::kDISABLE_API_PRIOR_V2, false);
 
     if (meta)
     {
-        jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
+        jvObj[jss::meta] = meta->get().getJson(JsonOptions::kNONE);
         RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, transaction, meta->get());
         RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(jvObj[jss::meta], transaction, meta->get());
@@ -4358,7 +4358,7 @@ NetworkOPsImp::getBookPage(
                     }
                 }
 
-                Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
+                Json::Value jvOffer = sleOffer->getJson(JsonOptions::kNONE);
 
                 STAmount saTakerGetsFunded;
                 STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4501,7 +4501,7 @@ NetworkOPsImp::getBookPage(
                 }
             }
 
-            Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
+            Json::Value jvOffer = sleOffer->getJson(JsonOptions::kNONE);
 
             STAmount saTakerGetsFunded;
             STAmount saOwnerFundsLimit = saOwnerFunds;
@@ -4634,7 +4634,7 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<NetworkOPs>
-make_NetworkOPs(
+makeNetworkOPs(
     ServiceRegistry& registry,
     NetworkOPs::clock_type& clock,
     bool standalone,

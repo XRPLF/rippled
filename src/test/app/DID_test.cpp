@@ -24,11 +24,11 @@ struct DID_test : public beast::unit_test::suite
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::setValid(alice), ter(temDISABLED));
+        env(did::setValid(alice), Ter(temDISABLED));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::del(alice), ter(temDISABLED));
+        env(did::del(alice), Ter(temDISABLED));
         env.close();
     }
 
@@ -54,7 +54,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // alice does not have enough XRP to cover the reserve for a DID
-        env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+        env(did::setValid(alice), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -64,7 +64,7 @@ struct DID_test : public beast::unit_test::suite
         env.close();
 
         // alice still does not have enough XRP for the reserve of a DID.
-        env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+        env(did::setValid(alice), Ter(tecINSUFFICIENT_RESERVE));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -101,40 +101,40 @@ struct DID_test : public beast::unit_test::suite
 
         // invalid flags
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::setValid(alice), txflags(0x00010000), ter(temINVALID_FLAG));
+        env(did::setValid(alice), txflags(0x00010000), Ter(temINVALID_FLAG));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // no fields
-        env(did::set(alice), ter(temEMPTY_DID));
+        env(did::set(alice), Ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // all empty fields
-        env(did::set(alice), did::uri(""), did::document(""), did::data(""), ter(temEMPTY_DID));
+        env(did::set(alice), did::uri(""), did::document(""), did::data(""), Ter(temEMPTY_DID));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // uri is too long
         std::string const longString(257, 'a');
-        env(did::set(alice), did::uri(longString), ter(temMALFORMED));
+        env(did::set(alice), did::uri(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // document is too long
-        env(did::set(alice), did::document(longString), ter(temMALFORMED));
+        env(did::set(alice), did::document(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // attestation is too long
-        env(did::set(alice), did::document("data"), did::data(longString), ter(temMALFORMED));
+        env(did::set(alice), did::document("data"), did::data(longString), Ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // some empty fields, some optional fields
         // pre-fix amendment
         auto const fixEnabled = env.current()->rules().enabled(fixEmptyDID);
-        env(did::set(alice), did::uri(""), fixEnabled ? ter(tecEMPTY_DID) : ter(tesSUCCESS));
+        env(did::set(alice), did::uri(""), fixEnabled ? Ter(tecEMPTY_DID) : Ter(tesSUCCESS));
         env.close();
         auto const expectedOwnerReserve = fixEnabled ? 0 : 1;
         BEAST_EXPECT(ownerCount(env, alice) == expectedOwnerReserve);
@@ -160,7 +160,7 @@ struct DID_test : public beast::unit_test::suite
 
         // invalid flags
         BEAST_EXPECT(ownerCount(env, alice) == 0);
-        env(did::del(alice), txflags(0x00010000), ter(temINVALID_FLAG));
+        env(did::del(alice), txflags(0x00010000), Ter(temINVALID_FLAG));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
@@ -168,7 +168,7 @@ struct DID_test : public beast::unit_test::suite
         // doApply
 
         // DID doesn't exist
-        env(did::del(alice), ter(tecNO_ENTRY));
+        env(did::del(alice), Ter(tecNO_ENTRY));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
@@ -253,7 +253,7 @@ struct DID_test : public beast::unit_test::suite
 
         // Try to delete URI, fails because no elements are set
         {
-            env(did::set(alice), did::uri(""), ter(tecEMPTY_DID));
+            env(did::set(alice), did::uri(""), Ter(tecEMPTY_DID));
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             auto const sleDID = env.le(keylet::did(alice.id()));
             BEAST_EXPECT(checkVL((*sleDID)[sfURI], initialURI));
@@ -349,7 +349,7 @@ struct DID_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const emptyDID{fixEmptyDID};
         testEnabled(all);
         testAccountReserve(all);

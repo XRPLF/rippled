@@ -23,7 +23,7 @@ Sim::run(SimDuration const& dur)
         p.targetLedgers = std::numeric_limits<decltype(p.targetLedgers)>::max();
         p.start();
     }
-    scheduler.step_for(dur);
+    scheduler.stepFor(dur);
 }
 
 bool

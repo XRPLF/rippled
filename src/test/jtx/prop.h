@@ -12,10 +12,10 @@ namespace jtx {
 template <class Prop>
 struct prop
 {
-    std::unique_ptr<basic_prop> p_;
+    std::unique_ptr<BasicProp> p_;
 
     template <class... Args>
-    prop(Args&&... args) : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
+    prop(Args&&... args) : p_(std::make_unique<PropType<Prop>>(std::forward<Args>(args)...))
     {
     }
 

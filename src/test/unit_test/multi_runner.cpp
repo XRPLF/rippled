@@ -116,8 +116,8 @@ results::print(S& s)
     }
 
     auto const elapsed = clock_type::now() - start;
-    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", " << amount{cases, "case"} << ", "
-      << amount{total, "test"} << " total, " << amount{failed, "failure"} << std::endl;
+    s << fmtdur(elapsed) << ", " << Amount{suites, "suite"} << ", " << Amount{cases, "case"} << ", "
+      << Amount{total, "test"} << " total, " << Amount{failed, "failure"} << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -533,14 +533,14 @@ multi_runner_child::addFailures(std::size_t failures)
 }
 
 void
-multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
+multi_runner_child::onSuiteBegin(beast::unit_test::SuiteInfo const& info)
 {
-    suite_results_ = detail::suite_results{info.full_name()};
+    suite_results_ = detail::suite_results{info.fullName()};
     messageQueueSend(MessageType::test_start, suite_results_.name);
 }
 
 void
-multi_runner_child::on_suite_end()
+multi_runner_child::onSuiteEnd()
 {
     if (print_log_ || suite_results_.failed > 0)
     {
@@ -556,7 +556,7 @@ multi_runner_child::on_suite_end()
 }
 
 void
-multi_runner_child::on_case_begin(std::string const& name)
+multi_runner_child::onCaseBegin(std::string const& name)
 {
     case_results_ = detail::case_results(name);
 
@@ -572,19 +572,19 @@ multi_runner_child::on_case_begin(std::string const& name)
 }
 
 void
-multi_runner_child::on_case_end()
+multi_runner_child::onCaseEnd()
 {
     suite_results_.add(case_results_);
 }
 
 void
-multi_runner_child::on_pass()
+multi_runner_child::onPass()
 {
     ++case_results_.total;
 }
 
 void
-multi_runner_child::on_fail(std::string const& reason)
+multi_runner_child::onFail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -596,7 +596,7 @@ multi_runner_child::on_fail(std::string const& reason)
 }
 
 void
-multi_runner_child::on_log(std::string const& msg)
+multi_runner_child::onLog(std::string const& msg)
 {
     if (!print_log_)
         return;

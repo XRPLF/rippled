@@ -271,7 +271,7 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         auto const dp = db.dat_path();
         auto const kp = db.key_path();

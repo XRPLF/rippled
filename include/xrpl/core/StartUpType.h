@@ -5,7 +5,7 @@
 
 namespace xrpl {
 
-enum class StartUpType { FRESH, NORMAL, LOAD, LOAD_FILE, REPLAY, NETWORK };
+enum class StartUpType { FRESH, NORMAL, LOAD, LoadFile, REPLAY, NETWORK };
 
 inline std::ostream&
 operator<<(std::ostream& os, StartUpType const& type)

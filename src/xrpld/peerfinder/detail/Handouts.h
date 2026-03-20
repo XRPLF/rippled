@@ -87,7 +87,7 @@ public:
     bool
     full() const
     {
-        return list_.size() >= Tuning::redirectEndpointCount;
+        return list_.size() >= Tuning::kREDIRECT_ENDPOINT_COUNT;
     }
 
     SlotImp::ptr const&
@@ -116,7 +116,7 @@ private:
 template <class>
 RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
 {
-    list_.reserve(Tuning::redirectEndpointCount);
+    list_.reserve(Tuning::kREDIRECT_ENDPOINT_COUNT);
 }
 
 template <class>
@@ -130,7 +130,7 @@ RedirectHandouts::try_insert(Endpoint const& ep)
     //             addresses in a peer HTTP handshake instead of
     //             the tmENDPOINTS message.
     //
-    if (ep.hops > Tuning::maxHops)
+    if (ep.hops > Tuning::kMAX_HOPS)
         return false;
 
     // Don't send them our address
@@ -138,7 +138,7 @@ RedirectHandouts::try_insert(Endpoint const& ep)
         return false;
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remoteEndpoint().address() == ep.address.address())
         return false;
 
     // Make sure the address isn't already in our list
@@ -171,7 +171,7 @@ public:
     bool
     full() const
     {
-        return list_.size() >= Tuning::numberOfEndpoints;
+        return list_.size() >= Tuning::kNUMBER_OF_ENDPOINTS;
     }
 
     void
@@ -200,7 +200,7 @@ private:
 template <class>
 SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
 {
-    list_.reserve(Tuning::numberOfEndpoints);
+    list_.reserve(Tuning::kNUMBER_OF_ENDPOINTS);
 }
 
 template <class>
@@ -210,14 +210,14 @@ SlotHandouts::try_insert(Endpoint const& ep)
     if (full())
         return false;
 
-    if (ep.hops > Tuning::maxHops)
+    if (ep.hops > Tuning::kMAX_HOPS)
         return false;
 
     if (slot_->recent.filter(ep.address, ep.hops))
         return false;
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remoteEndpoint().address() == ep.address.address())
         return false;
 
     // Make sure the address isn't already in our list

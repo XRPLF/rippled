@@ -30,7 +30,7 @@ namespace xrpl {
 
 SecretKey::~SecretKey()
 {
-    secure_erase(buf_, sizeof(buf_));
+    secureErase(buf_, sizeof(buf_));
 }
 
 SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
@@ -88,7 +88,7 @@ deriveDeterministicRootKey(Seed const& seed)
 
         if (secp256k1_ec_seckey_verify(secp256k1Context(), ret.data()) == 1)
         {
-            secure_erase(buf.data(), buf.size());
+            secureErase(buf.data(), buf.size());
             return ret;
         }
     }
@@ -147,7 +147,7 @@ private:
 
             if (secp256k1_ec_seckey_verify(secp256k1Context(), ret.data()) == 1)
             {
-                secure_erase(buf.data(), buf.size());
+                secureErase(buf.data(), buf.size());
                 return ret;
             }
         }
@@ -171,8 +171,8 @@ public:
 
     ~Generator()
     {
-        secure_erase(root_.data(), root_.size());
-        secure_erase(generator_.data(), generator_.size());
+        secureErase(root_.data(), root_.size());
+        secureErase(generator_.data(), generator_.size());
     }
 
     /** Generate the nth key pair. */
@@ -186,7 +186,7 @@ public:
             if (secp256k1_ec_seckey_tweak_add(secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
                 SecretKey sk{Slice{rpk.data(), rpk.size()}};
-                secure_erase(rpk.data(), rpk.size());
+                secureErase(rpk.data(), rpk.size());
                 return sk;
             }
 
@@ -271,7 +271,7 @@ randomSecretKey()
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
     SecretKey sk(Slice{buf, sizeof(buf)});
-    secure_erase(buf, sizeof(buf));
+    secureErase(buf, sizeof(buf));
     return sk;
 }
 
@@ -282,7 +282,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     {
         auto key = sha512Half_s(Slice(seed.data(), seed.size()));
         SecretKey sk{Slice{key.data(), key.size()}};
-        secure_erase(key.data(), key.size());
+        secureErase(key.data(), key.size());
         return sk;
     }
 
@@ -290,7 +290,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
         SecretKey sk{Slice{key.data(), key.size()}};
-        secure_erase(key.data(), key.size());
+        secureErase(key.data(), key.size());
         return sk;
     }
 

@@ -12,7 +12,7 @@ class LedgerHeader_test : public beast::unit_test::suite
     {
         testcase("Current ledger");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 1;
@@ -29,7 +29,7 @@ class LedgerHeader_test : public beast::unit_test::suite
     {
         testcase("Validated ledger");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 1;
@@ -46,7 +46,7 @@ class LedgerHeader_test : public beast::unit_test::suite
     {
         testcase("Command retired from API v2");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;

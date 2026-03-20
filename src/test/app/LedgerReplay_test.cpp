@@ -518,9 +518,9 @@ struct LedgerServer
                     accounts[toIdx],
                     jtx::drops(ledgerMaster.getClosedLedger()->fees().base) +
                         jtx::XRP(param.txAmount)),
-                jtx::seq(jtx::autofill),
-                jtx::fee(jtx::autofill),
-                jtx::sig(jtx::autofill));
+                jtx::Seq(jtx::kAUTOFILL),
+                jtx::Fee(jtx::kAUTOFILL),
+                jtx::Sig(jtx::kAUTOFILL));
         }
         env.close();
     }
@@ -1058,7 +1058,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
-            bool serverResult = peerFeatureEnabled(httpRequest, FEATURE_LEDGER_REPLAY, server);
+            bool serverResult = peerFeatureEnabled(httpRequest, kFEATURE_LEDGER_REPLAY, server);
             if (serverResult != expecting)
                 return false;
 
@@ -1067,7 +1067,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             serverEnv.app().config().LEDGER_REPLAY = server;
             auto httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
-            auto const clientResult = peerFeatureEnabled(httpResp, FEATURE_LEDGER_REPLAY, client);
+            auto const clientResult = peerFeatureEnabled(httpResp, kFEATURE_LEDGER_REPLAY, client);
             if (clientResult != expecting)
                 return false;
 

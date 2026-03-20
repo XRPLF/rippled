@@ -175,9 +175,9 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::for_each : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::forEach : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
     }

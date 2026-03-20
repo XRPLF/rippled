@@ -185,7 +185,7 @@ private:
     inline void
     erase(std::true_type)
     {
-        secure_erase(&h_, sizeof(h_));
+        secureErase(&h_, sizeof(h_));
     }
 };
 

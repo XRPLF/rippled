@@ -97,7 +97,7 @@ insertDeliveredAmount(
         auto amt = getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::kINCLUDE_DATE);
         }
         else
         {
@@ -164,7 +164,7 @@ insertDeliveredAmount(
 
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::kINCLUDE_DATE);
         }
         else
         {

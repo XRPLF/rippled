@@ -22,7 +22,7 @@ class CheckDeliveredAmount
     int numExpectedNotSet_ = 0;
 
     // Increment one of the expected numExpected{Available_, Unavailable_,
-    // NotSet_} values. Which value to increment depends on: 1) If the ledger is
+    // NotSet_} values. Which value to kINCREMENT depends on: 1) If the ledger is
     // before or after the switch time 2) If the tx is a partial payment 3) If
     // the payment is successful or not
     void
@@ -213,12 +213,12 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 // partial payment
                 env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
                 checkDeliveredAmount.adjCountersPartialPayment();
-                env.require(balance(bob, usd(1000)));
+                env.require(Balance(bob, usd(1000)));
 
                 // failed payment
-                env(pay(bob, carol, usd(9999999)), ter(tecPATH_PARTIAL));
+                env(pay(bob, carol, usd(9999999)), Ter(tecPATH_PARTIAL));
                 checkDeliveredAmount.adjCountersFail();
-                env.require(balance(carol, usd(0)));
+                env.require(Balance(carol, usd(0)));
             }
 
             auto wsc = makeWSClient(env.app().config());
@@ -301,12 +301,12 @@ class DeliveredAmount_test : public beast::unit_test::suite
             // partial payment
             env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
             checkDeliveredAmount.adjCountersPartialPayment();
-            env.require(balance(bob, usd(1000)));
+            env.require(Balance(bob, usd(1000)));
 
             // failed payment
-            env(pay(gw, carol, usd(9999999)), ter(tecPATH_PARTIAL));
+            env(pay(gw, carol, usd(9999999)), Ter(tecPATH_PARTIAL));
             checkDeliveredAmount.adjCountersFail();
-            env.require(balance(carol, usd(0)));
+            env.require(Balance(carol, usd(0)));
 
             env.close();
             Json::Value jvParams;
@@ -349,15 +349,15 @@ class DeliveredAmount_test : public beast::unit_test::suite
         env.close();
 
         // Get the hash for the most recent transaction.
-        std::string txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        std::string txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
         Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::none));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::none));
+                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::kNONE));
         }
         else
         {
@@ -368,15 +368,15 @@ class DeliveredAmount_test : public beast::unit_test::suite
         env(pay(bob, carol, mpt(1000)), sendmax(mpt(1200)), txflags(tfPartialPayment));
         env.close();
 
-        txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
+        txHash = env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString();
         meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::none));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::none));
+                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::kNONE));
         }
         else
         {
@@ -390,7 +390,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
 
         testTxDeliveredAmountRPC();
         testAccountDeliveredAmountSubscribe();

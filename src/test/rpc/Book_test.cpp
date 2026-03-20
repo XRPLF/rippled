@@ -79,21 +79,21 @@ public:
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 1)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 1)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 2)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 2)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
@@ -122,10 +122,10 @@ public:
         Json::Value books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
-        env(offer("alice", XRP(500), usd(100)), require(owners("alice", 1)));
+        env(offer("alice", XRP(500), usd(100)), Require(Owners("alice", 1)));
 
         // Create a bid: TakerPays 100/USD, TakerGets 200
-        env(offer("alice", usd(100), XRP(200)), require(owners("alice", 2)));
+        env(offer("alice", usd(100), XRP(200)), Require(Owners("alice", 2)));
         env.close();
 
         {
@@ -152,31 +152,31 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::none));
+                XRP(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
         }
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 3)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 3)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 4)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 4)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
@@ -234,29 +234,29 @@ public:
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 1)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 1)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 2)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 2)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
@@ -284,10 +284,10 @@ public:
         Json::Value books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
-        env(offer("alice", XRP(500), usd(100)), require(owners("alice", 1)));
+        env(offer("alice", XRP(500), usd(100)), Require(Owners("alice", 1)));
 
         // Create a bid: TakerPays 100/USD, TakerGets 200
-        env(offer("alice", usd(100), XRP(200)), require(owners("alice", 2)));
+        env(offer("alice", usd(100), XRP(200)), Require(Owners("alice", 2)));
         env.close();
 
         {
@@ -317,44 +317,44 @@ public:
                 jv[jss::result].isMember(jss::bids) && jv[jss::result][jss::bids].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerGets] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerPays] ==
-                XRP(500).value().getJson(JsonOptions::none));
+                XRP(500).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::none));
+                XRP(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
         }
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 3)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 3)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 4)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 4)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
@@ -419,42 +419,42 @@ public:
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 1)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 1)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 2)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 2)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
 
         {
             // Create an ask: TakerPays 700/CNY, TakerGets 100/JPY
-            env(offer("alice", cny(700), jpy(100)), require(owners("alice", 3)));
+            env(offer("alice", cny(700), jpy(100)), Require(Owners("alice", 3)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/JPY, TakerGets 75/CNY
-            env(offer("alice", jpy(100), cny(75)), require(owners("alice", 4)));
+            env(offer("alice", jpy(100), cny(75)), Require(Owners("alice", 4)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
@@ -485,16 +485,16 @@ public:
         Json::Value books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
-        env(offer("alice", XRP(500), usd(100)), require(owners("alice", 1)));
+        env(offer("alice", XRP(500), usd(100)), Require(Owners("alice", 1)));
 
         // Create an ask: TakerPays 500/CNY, TakerGets 100/JPY
-        env(offer("alice", cny(500), jpy(100)), require(owners("alice", 2)));
+        env(offer("alice", cny(500), jpy(100)), Require(Owners("alice", 2)));
 
         // Create a bid: TakerPays 100/USD, TakerGets 200
-        env(offer("alice", usd(100), XRP(200)), require(owners("alice", 3)));
+        env(offer("alice", usd(100), XRP(200)), Require(Owners("alice", 3)));
 
         // Create a bid: TakerPays 100/JPY, TakerGets 200/CNY
-        env(offer("alice", jpy(100), cny(200)), require(owners("alice", 4)));
+        env(offer("alice", jpy(100), cny(200)), Require(Owners("alice", 4)));
         env.close();
 
         {
@@ -529,58 +529,58 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 2);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::none));
+                XRP(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][1u][jss::TakerGets] ==
-                cny(200).value().getJson(JsonOptions::none));
+                cny(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][1u][jss::TakerPays] ==
-                jpy(100).value().getJson(JsonOptions::none));
+                jpy(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::asks));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::bids));
         }
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 5)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 5)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 6)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 6)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
 
         {
             // Create an ask: TakerPays 700/CNY, TakerGets 100/JPY
-            env(offer("alice", cny(700), jpy(100)), require(owners("alice", 7)));
+            env(offer("alice", cny(700), jpy(100)), Require(Owners("alice", 7)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/JPY, TakerGets 75/CNY
-            env(offer("alice", jpy(100), cny(75)), require(owners("alice", 8)));
+            env(offer("alice", jpy(100), cny(75)), Require(Owners("alice", 8)));
             env.close();
             BEAST_EXPECT(!wsc->getMsg(10ms));
         }
@@ -649,57 +649,57 @@ public:
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 1)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 1)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 2)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 2)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create an ask: TakerPays 700/CNY, TakerGets 100/JPY
-            env(offer("alice", cny(700), jpy(100)), require(owners("alice", 3)));
+            env(offer("alice", cny(700), jpy(100)), Require(Owners("alice", 3)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/JPY, TakerGets 75/CNY
-            env(offer("alice", jpy(100), cny(75)), require(owners("alice", 4)));
+            env(offer("alice", jpy(100), cny(75)), Require(Owners("alice", 4)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
@@ -729,16 +729,16 @@ public:
         Json::Value books;
 
         // Create an ask: TakerPays 500, TakerGets 100/USD
-        env(offer("alice", XRP(500), usd(100)), require(owners("alice", 1)));
+        env(offer("alice", XRP(500), usd(100)), Require(Owners("alice", 1)));
 
         // Create an ask: TakerPays 500/CNY, TakerGets 100/JPY
-        env(offer("alice", cny(500), jpy(100)), require(owners("alice", 2)));
+        env(offer("alice", cny(500), jpy(100)), Require(Owners("alice", 2)));
 
         // Create a bid: TakerPays 100/USD, TakerGets 200
-        env(offer("alice", usd(100), XRP(200)), require(owners("alice", 3)));
+        env(offer("alice", usd(100), XRP(200)), Require(Owners("alice", 3)));
 
         // Create a bid: TakerPays 100/JPY, TakerGets 200/CNY
-        env(offer("alice", jpy(100), cny(200)), require(owners("alice", 4)));
+        env(offer("alice", jpy(100), cny(200)), Require(Owners("alice", 4)));
         env.close();
 
         {
@@ -778,84 +778,84 @@ public:
                 jv[jss::result].isMember(jss::bids) && jv[jss::result][jss::bids].size() == 2);
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerGets] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][0u][jss::TakerPays] ==
-                XRP(500).value().getJson(JsonOptions::none));
+                XRP(500).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][1u][jss::TakerGets] ==
-                jpy(100).value().getJson(JsonOptions::none));
+                jpy(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::asks][1u][jss::TakerPays] ==
-                cny(500).value().getJson(JsonOptions::none));
+                cny(500).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerGets] ==
-                XRP(200).value().getJson(JsonOptions::none));
+                XRP(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][0u][jss::TakerPays] ==
-                usd(100).value().getJson(JsonOptions::none));
+                usd(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][1u][jss::TakerGets] ==
-                cny(200).value().getJson(JsonOptions::none));
+                cny(200).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::bids][1u][jss::TakerPays] ==
-                jpy(100).value().getJson(JsonOptions::none));
+                jpy(100).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(!jv[jss::result].isMember(jss::offers));
         }
 
         {
             // Create an ask: TakerPays 700, TakerGets 100/USD
-            env(offer("alice", XRP(700), usd(100)), require(owners("alice", 5)));
+            env(offer("alice", XRP(700), usd(100)), Require(Owners("alice", 5)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == usd(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == XRP(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/USD, TakerGets 75
-            env(offer("alice", usd(100), XRP(75)), require(owners("alice", 6)));
+            env(offer("alice", usd(100), XRP(75)), Require(Owners("alice", 6)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == XRP(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create an ask: TakerPays 700/CNY, TakerGets 100/JPY
-            env(offer("alice", cny(700), jpy(100)), require(owners("alice", 7)));
+            env(offer("alice", cny(700), jpy(100)), Require(Owners("alice", 7)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == jpy(100).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == cny(700).value().getJson(JsonOptions::kNONE);
             }));
         }
 
         {
             // Create a bid: TakerPays 100/JPY, TakerGets 75/CNY
-            env(offer("alice", jpy(100), cny(75)), require(owners("alice", 8)));
+            env(offer("alice", jpy(100), cny(75)), Require(Owners("alice", 8)));
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == jss::OfferCreate &&
-                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::none) &&
-                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::none);
+                    t[jss::TakerGets] == cny(75).value().getJson(JsonOptions::kNONE) &&
+                    t[jss::TakerPays] == jpy(100).value().getJson(JsonOptions::kNONE);
             }));
         }
 
@@ -945,8 +945,8 @@ public:
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
         BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 5);
-        BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::kNONE));
+        BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::kNONE));
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
         BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
 
@@ -954,9 +954,9 @@ public:
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
             auto const& t = jval[jss::transaction];
             return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] == usd(10).value().getJson(JsonOptions::none) &&
+                t[jss::TakerGets] == usd(10).value().getJson(JsonOptions::kNONE) &&
                 t[jss::owner_funds] == "100" &&
-                t[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::none);
+                t[jss::TakerPays] == XRP(4000).value().getJson(JsonOptions::kNONE);
         }));
 
         env(offer(bob, XRP(2000), usd(5)));
@@ -965,9 +965,9 @@ public:
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jval) {
             auto const& t = jval[jss::transaction];
             return t[jss::TransactionType] == jss::OfferCreate &&
-                t[jss::TakerGets] == usd(5).value().getJson(JsonOptions::none) &&
+                t[jss::TakerGets] == usd(5).value().getJson(JsonOptions::kNONE) &&
                 t[jss::owner_funds] == "50" &&
-                t[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::none);
+                t[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::kNONE);
         }));
 
         jv = wsc->invoke("book_offers", jvParams);
@@ -989,8 +989,8 @@ public:
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
         BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 5);
-        BEAST_EXPECT(jrNextOffer[jss::TakerGets] == usd(5).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(jrNextOffer[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jrNextOffer[jss::TakerGets] == usd(5).value().getJson(JsonOptions::kNONE));
+        BEAST_EXPECT(jrNextOffer[jss::TakerPays] == XRP(2000).value().getJson(JsonOptions::kNONE));
         BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
         BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
 
@@ -1021,8 +1021,8 @@ public:
             return false;
         auto const& t = (*maybeJv)[jss::transaction];
         if (t[jss::TransactionType] != jss::OfferCreate ||
-            t[jss::TakerGets] != takerGets.value().getJson(JsonOptions::none) ||
-            t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::none))
+            t[jss::TakerGets] != takerGets.value().getJson(JsonOptions::kNONE) ||
+            t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::kNONE))
             return false;
         // Make sure no other message is waiting
         return wsc->getMsg(timeout) == std::nullopt;
@@ -1513,7 +1513,7 @@ public:
     {
         testcase("BookOffer Limits");
         using namespace jtx;
-        Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account gw{"gw"};
         env.fund(XRP(200000), gw);
         // Note that calls to env.close() fail without admin permission.
@@ -1557,7 +1557,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
         Env env(*this, all);
@@ -1585,8 +1585,8 @@ public:
             BEAST_EXPECT(jrOffer[jss::Flags] == 0);
             BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
             BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
-            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::kNONE));
+            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
         };
 
@@ -1610,10 +1610,10 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                usd(10).value().getJson(JsonOptions::none));
+                usd(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                XRP(10).value().getJson(JsonOptions::none));
+                XRP(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][sfDomainID.jsonName].asString() ==
                 to_string(domainID));
@@ -1680,7 +1680,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
         Env env(*this, all);
@@ -1708,8 +1708,8 @@ public:
             BEAST_EXPECT(jrOffer[jss::Flags] == lsfHybrid);
             BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
             BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
-            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(jrOffer[jss::TakerGets] == usd(10).value().getJson(JsonOptions::kNONE));
+            BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(jrOffer[sfDomainID.jsonName].asString() == to_string(domainID));
             BEAST_EXPECT(jrOffer[sfAdditionalBooks.jsonName].size() == 1);
         };
@@ -1733,10 +1733,10 @@ public:
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerGets] ==
-                usd(10).value().getJson(JsonOptions::none));
+                usd(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][jss::TakerPays] ==
-                XRP(10).value().getJson(JsonOptions::none));
+                XRP(10).value().getJson(JsonOptions::kNONE));
             BEAST_EXPECT(
                 jv[jss::result][jss::offers][0u][sfDomainID.jsonName].asString() ==
                 to_string(domainID));

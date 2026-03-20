@@ -15,8 +15,8 @@ offer(
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
-    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
+    jv[jss::TakerPays] = takerPays.getJson(JsonOptions::kNONE);
+    jv[jss::TakerGets] = takerGets.getJson(JsonOptions::kNONE);
     if (flags)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;
@@ -24,7 +24,7 @@ offer(
 }
 
 Json::Value
-offer_cancel(Account const& account, std::uint32_t offerSeq)
+offerCancel(Account const& account, std::uint32_t offerSeq)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();

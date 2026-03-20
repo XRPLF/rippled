@@ -38,7 +38,7 @@ namespace xrpl {
 
 /** A listening socket. */
 template <class Handler>
-class Door : public io_list::work, public std::enable_shared_from_this<Door<Handler>>
+class Door : public IoList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
 private:
     using clock_type = std::chrono::steady_clock;
@@ -52,7 +52,7 @@ private:
     using stream_type = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
-    class Detector : public io_list::work, public std::enable_shared_from_this<Detector>
+    class Detector : public IoList::Work, public std::enable_shared_from_this<Detector>
     {
     private:
         Port const& port_;

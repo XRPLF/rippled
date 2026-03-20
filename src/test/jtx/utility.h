@@ -14,10 +14,10 @@ namespace test {
 namespace jtx {
 
 /** Thrown when parse fails. */
-struct parse_error : std::logic_error
+struct ParseError : std::logic_error
 {
     template <class String>
-    explicit parse_error(String const& s) : logic_error(s)
+    explicit ParseError(String const& s) : logic_error(s)
     {
     }
 };
@@ -44,11 +44,11 @@ sign(Json::Value& jv, Account const& account);
 
 /** Set the fee automatically. */
 void
-fill_fee(Json::Value& jv, ReadView const& view);
+fillFee(Json::Value& jv, ReadView const& view);
 
 /** Set the sequence number automatically. */
 void
-fill_seq(Json::Value& jv, ReadView const& view);
+fillSeq(Json::Value& jv, ReadView const& view);
 
 /** Given a rippled unit test rpc command, return the corresponding JSON. */
 Json::Value

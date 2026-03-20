@@ -27,7 +27,7 @@ public:
 
     template <typename Hasher>
     friend void
-    hash_append(Hasher& h, PeerReservation const& x) noexcept
+    hash_append(Hasher& h, PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);
@@ -81,7 +81,7 @@ public:
      * @throw soci::soci_error
      */
     std::optional<PeerReservation>
-    insert_or_assign(PeerReservation const& reservation);
+    insertOrAssign(PeerReservation const& reservation);
 
     /**
      * @return the erased reservation if it existed

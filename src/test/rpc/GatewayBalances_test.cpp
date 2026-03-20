@@ -231,7 +231,7 @@ public:
         using namespace jtx;
 
         // Ensure MPT is enabled
-        FeatureBitset features = testable_amendments() | featureMPTokensV1;
+        FeatureBitset features = testableAmendments() | featureMPTokensV1;
         Env env(*this, features);
 
         Account const alice{"alice"};
@@ -250,7 +250,7 @@ public:
 
         // Bob creates an escrow of MPT to Alice.
         auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
-        env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
+        env(escrow::create(bob, alice, MPT(100)), escrow::kFINISH_TIME(env.now() + 10s));
         env.close();
 
         // Query gateway_balances for Bob.
@@ -266,7 +266,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         for (auto feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);

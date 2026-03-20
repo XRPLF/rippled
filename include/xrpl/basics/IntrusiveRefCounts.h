@@ -71,7 +71,7 @@ struct IntrusiveRefCounts
     expired() const noexcept;
 
     std::size_t
-    use_count() const noexcept;
+    useCount() const noexcept;
 
     // This function MUST be called after a partial destructor finishes running.
     // Calling this function may cause other threads to delete the object
@@ -388,7 +388,7 @@ IntrusiveRefCounts::expired() const noexcept
 }
 
 inline std::size_t
-IntrusiveRefCounts::use_count() const noexcept
+IntrusiveRefCounts::useCount() const noexcept
 {
     RefCountPair const val = refCounts.load(std::memory_order_acquire);
     return val.strong;

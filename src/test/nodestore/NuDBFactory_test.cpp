@@ -38,7 +38,7 @@ private:
             test::SuiteJournal journal("NuDBFactory_test", *this);
 
             auto backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
             if (!BEAST_EXPECT(backend))
                 return false;
@@ -79,7 +79,7 @@ private:
         beast::Journal journal(sink);
 
         DummyScheduler scheduler;
-        auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string logOutput = sink.messages().str();
         BEAST_EXPECT(logOutput.find(expectedMessage) != std::string::npos);
@@ -96,7 +96,7 @@ private:
         beast::Journal journal(sink);
 
         DummyScheduler scheduler;
-        auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string logOutput = sink.messages().str();
         bool hasWarning = logOutput.find("Invalid nudb_block_size") != std::string::npos;
@@ -209,7 +209,7 @@ public:
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (std::exception const& e)
@@ -234,7 +234,7 @@ public:
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
                 fail();
             }
@@ -279,7 +279,7 @@ public:
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 BEAST_EXPECT(shouldWork);
             }
             catch (std::exception const& e)
@@ -304,7 +304,7 @@ public:
         // Test first constructor (without nudb::context)
         {
             auto backend1 =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             BEAST_EXPECT(backend1 != nullptr);
             BEAST_EXPECT(testBackendFunctionality(params, 16384));
         }
@@ -345,7 +345,7 @@ public:
 
             DummyScheduler scheduler;
             auto backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
             // Should log success message for valid values
             std::string logOutput = sink.messages().str();
@@ -369,7 +369,7 @@ public:
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (...)
@@ -401,7 +401,7 @@ public:
             // Store data
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 backend->open();
                 storeBatch(*backend, batch);
                 backend->close();
@@ -410,7 +410,7 @@ public:
             // Retrieve data in new backend instance
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 backend->open();
 
                 Batch copy;

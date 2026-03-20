@@ -80,7 +80,7 @@ private:
     static Key const&
     extract(value_type const& value)
     {
-        return aged_associative_container_extract_t<IsMap>()(value);
+        return AgedAssociativeContainerExtractT<IsMap>()(value);
     }
 
     // VFALCO TODO hoist to remove template argument dependencies

@@ -51,8 +51,8 @@ struct join_test : beast::unit_test::suite
             // vector with one item edge case
             using namespace jtx;
             test(
-                CollectionAndDelimiter(std::vector<Account>{Account::master}, "xxx"),
-                Account::master.human());
+                CollectionAndDelimiter(std::vector<Account>{Account::kMASTER}, "xxx"),
+                Account::kMASTER.human());
         }
         // empty vector edge case
         test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");

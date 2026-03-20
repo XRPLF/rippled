@@ -61,7 +61,7 @@ operator<<(std::ostream& os, Port const& p)
 
     if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
     {
-        os << "secure_gateway nets:";
+        os << "secureGateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)
         {
             os << net.to_string();
@@ -287,7 +287,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 
     populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
-        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section, "secureGateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
 
     set(port.user, "user", section);
     set(port.password, "password", section);

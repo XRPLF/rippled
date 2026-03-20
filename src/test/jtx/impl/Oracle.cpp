@@ -57,9 +57,9 @@ Oracle::remove(RemoveArg const& arg)
 void
 Oracle::submit(
     Json::Value const& jv,
-    std::optional<jtx::msig> const& msig,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& err)
+    std::optional<jtx::Msig> const& msig,
+    std::optional<jtx::Seq> const& seq,
+    std::optional<Ter> const& err)
 {
     if (msig)
     {

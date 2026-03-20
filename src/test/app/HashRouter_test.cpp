@@ -261,7 +261,7 @@ class HashRouter_test : public beast::unit_test::suite
         {
             Config cfg;
             // default
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
         }
@@ -271,7 +271,7 @@ class HashRouter_test : public beast::unit_test::suite
             auto& h = cfg.section("hashrouter");
             h.set("hold_time", "600");
             h.set("relay_time", "15");
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 600s);
             BEAST_EXPECT(setup.relayTime == 15s);
         }
@@ -281,7 +281,7 @@ class HashRouter_test : public beast::unit_test::suite
             auto& h = cfg.section("hashrouter");
             h.set("hold_time", "400");
             h.set("relay_time", "400");
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 400s);
             BEAST_EXPECT(setup.relayTime == 400s);
         }
@@ -293,7 +293,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -312,7 +312,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "120");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -332,7 +332,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "6");
             try
             {
-                setup_HashRouter(cfg);
+                setupHashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -349,7 +349,7 @@ class HashRouter_test : public beast::unit_test::suite
             auto& h = cfg.section("hashrouter");
             h.set("hold_time", "alice");
             h.set("relay_time", "bob");
-            auto const setup = setup_HashRouter(cfg);
+            auto const setup = setupHashRouter(cfg);
             // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);

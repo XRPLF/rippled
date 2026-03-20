@@ -21,7 +21,7 @@ create(Account const& account, std::uint32_t count)
 void
 use::operator()(Env&, JTx& jt) const
 {
-    jt.fill_seq = false;
+    jt.fillSeq = false;
     jt[sfSequence.jsonName] = 0u;
     jt[sfTicketSequence.jsonName] = ticketSeq_;
 }

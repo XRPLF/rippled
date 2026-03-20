@@ -359,9 +359,9 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::for_each : non-null database");
+        XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::forEach : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(db->NewIterator(options));

@@ -9,14 +9,14 @@
 namespace xrpl {
 namespace detail {
 
-class flags_helper
+class FlagsHelper
 {
 protected:
     std::uint32_t mask_;
 
 private:
     void
-    set_args(std::uint32_t flag)
+    setArgs(std::uint32_t flag)
     {
         switch (flag)
         {
@@ -70,18 +70,18 @@ private:
 
     template <class Flag, class... Args>
     void
-    set_args(std::uint32_t flag, Args... args)
+    setArgs(std::uint32_t flag, Args... args)
     {
-        set_args(flag);
+        setArgs(flag);
         if constexpr (sizeof...(args))
-            set_args(args...);
+            setArgs(args...);
     }
 
 protected:
     template <class... Args>
-    flags_helper(Args... args) : mask_(0)
+    FlagsHelper(Args... args) : mask_(0)
     {
-        set_args(args...);
+        setArgs(args...);
     }
 };
 
@@ -104,14 +104,14 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class flags : private detail::flags_helper
+class Flags : private detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
+    Flags(Account const& account, Args... args) : FlagsHelper(args...), account_(account)
     {
     }
 
@@ -120,14 +120,14 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private detail::flags_helper
+class Nflags : private detail::FlagsHelper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
+    Nflags(Account const& account, Args... args) : FlagsHelper(args...), account_(account)
     {
     }
 

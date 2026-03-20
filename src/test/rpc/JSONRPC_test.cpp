@@ -26,7 +26,7 @@ struct TxnTestData
     //   3. sign_for, and
     //   4. submit_multisigned.
     // The JSON is not valid for all of these interfaces, but it should
-    // crash none of them, and should provide reliable error messages.
+    // crash kNONE of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
@@ -2146,7 +2146,7 @@ public:
 
             auto jt = env.jtnofill(
                 noop(alice),
-                msig(
+                Msig(
                     alice,
                     alice,
                     alice,
@@ -2645,7 +2645,7 @@ public:
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
-                env(noop(env.master), fee(47));
+                env(noop(env.master), Fee(47));
             }
 
             Env_ss envs(env);

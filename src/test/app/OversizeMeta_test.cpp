@@ -26,7 +26,7 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
@@ -82,7 +82,7 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
@@ -147,7 +147,7 @@ public:
         using namespace jtx;
         auto const billion = 1000000000ul;
         Env env(*this);
-        env.disable_sigs();
+        env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
         env.fund(XRP(billion), gw, "alice");
@@ -155,7 +155,7 @@ public:
         env(pay(gw, "alice", usd(billion)));
         createOffers(env, usd, n);
         env(pay("alice", gw, usd(billion)));
-        env(offer("alice", usd(1), XRP(1)), ter(std::ignore));
+        env(offer("alice", usd(1), XRP(1)), Ter(std::ignore));
         return env.ter() == tecOVERSIZE;
     }
 

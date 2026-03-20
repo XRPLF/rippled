@@ -20,7 +20,7 @@ public:
     testCurrentLedgerToLimits(bool asAdmin)
     {
         using namespace test::jtx;
-        Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -65,7 +65,7 @@ public:
     testCurrentLedgerBinary()
     {
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -148,7 +148,7 @@ public:
     testMarkerFollow()
     {
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -239,8 +239,8 @@ public:
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
         for (FeatureBitset const& features :
-             {testable_amendments() - fixInnerObjTemplate2,
-              testable_amendments() | fixInnerObjTemplate2})
+             {testableAmendments() - fixInnerObjTemplate2,
+              testableAmendments() | fixInnerObjTemplate2})
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -300,7 +300,7 @@ public:
                 jv[jss::TransactionType] = jss::EscrowCreate;
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
-                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
+                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::kNONE);
                 jv[sfFinishAfter.fieldName] =
                     NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
@@ -311,7 +311,7 @@ public:
                 jv[jss::TransactionType] = jss::PaymentChannelCreate;
                 jv[jss::Account] = Account{"bob6"}.human();
                 jv[jss::Destination] = Account{"bob7"}.human();
-                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
+                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::kNONE);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
                 jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
                 jv[sfCancelAfter.fieldName] =

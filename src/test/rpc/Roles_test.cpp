@@ -33,14 +33,14 @@ class Roles_test : public beast::unit_test::suite
                 makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(no_admin)};
+            Env env{*this, envconfig(noAdmin)};
 
             BEAST_EXPECT(!env.rpc("ping")["result"].isMember("role"));
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(secure_gateway)};
+            Env env{*this, envconfig(secureGateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
@@ -224,14 +224,14 @@ class Roles_test : public beast::unit_test::suite
         }
 
         {
-            Env env{*this, envconfig(admin_localnet)};
+            Env env{*this, envconfig(adminLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
             BEAST_EXPECT(
                 makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
 
         {
-            Env env{*this, envconfig(secure_gateway_localnet)};
+            Env env{*this, envconfig(secureGatewayLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());

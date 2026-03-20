@@ -35,7 +35,7 @@ public:
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env fullyCanonical(*this, test::jtx::testable_amendments());
+            test::jtx::Env fullyCanonical(*this, test::jtx::testableAmendments());
 
             Validity valid =
                 checkValidity(

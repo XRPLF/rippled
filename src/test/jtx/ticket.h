@@ -41,7 +41,7 @@ public:
 }  // namespace ticket
 
 /** Match the number of tickets on the account. */
-using tickets = owner_count<ltTICKET>;
+using tickets = OwnerCount<ltTICKET>;
 
 }  // namespace jtx
 

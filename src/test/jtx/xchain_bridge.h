@@ -86,7 +86,7 @@ claim_attestation(
     bool wasLockingChainSend,
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
-    jtx::signer const& signer);
+    jtx::Signer const& signer);
 
 Json::Value
 create_account_attestation(
@@ -99,7 +99,7 @@ create_account_attestation(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     jtx::Account const& dst,
-    jtx::signer const& signer);
+    jtx::Signer const& signer);
 
 JValueVec
 claim_attestations(
@@ -111,7 +111,7 @@ claim_attestations(
     bool wasLockingChainSend,
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
-    std::vector<jtx::signer> const& signers,
+    std::vector<jtx::Signer> const& signers,
     std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
@@ -126,7 +126,7 @@ create_account_attestations(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     jtx::Account const& dst,
-    std::vector<jtx::signer> const& signers,
+    std::vector<jtx::Signer> const& signers,
     std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
@@ -166,8 +166,8 @@ struct XChainBridgeObjects
     Json::Value jvub;  // standard xrp bridge def for tx, unfunded accounts
 
     FeatureBitset const features;
-    std::vector<signer> const signers;
-    std::vector<signer> const alt_signers;
+    std::vector<Signer> const signers;
+    std::vector<Signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
     std::uint32_t const quorum;

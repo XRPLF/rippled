@@ -62,13 +62,13 @@ public:
     beast::IP::Endpoint
     local_endpoint()
     {
-        return beast::IP::from_asio(lowest_layer().local_endpoint());
+        return beast::IP::fromAsio(lowest_layer().local_endpoint());
     }
 
     beast::IP::Endpoint
     remote_endpoint()
     {
-        return beast::IP::from_asio(lowest_layer().remote_endpoint());
+        return beast::IP::fromAsio(lowest_layer().remote_endpoint());
     }
 
     lowest_layer_type&

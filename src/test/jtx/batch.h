@@ -80,19 +80,19 @@ public:
 };
 
 /** Set a batch signature on a JTx. */
-class sig
+class Sig
 {
 public:
     std::vector<Reg> signers;
 
-    sig(std::vector<Reg> signers_) : signers(std::move(signers_))
+    Sig(std::vector<Reg> s) : signers(std::move(s))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit sig(AccountType&& a0, Accounts&&... aN)
+    explicit Sig(AccountType&& a0, Accounts&&... aN)
         : signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);
@@ -103,21 +103,21 @@ public:
 };
 
 /** Set a batch nested multi-signature on a JTx. */
-class msig
+class Msig
 {
 public:
     Account master;
     std::vector<Reg> signers;
 
-    msig(Account const& masterAccount, std::vector<Reg> signers_)
-        : master(masterAccount), signers(std::move(signers_))
+    Msig(Account const& masterAccount, std::vector<Reg> s)
+        : master(masterAccount), signers(std::move(s))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit msig(Account const& masterAccount, AccountType&& a0, Accounts&&... aN)
+    explicit Msig(Account const& masterAccount, AccountType&& a0, Accounts&&... aN)
         : master(masterAccount)
         , signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {

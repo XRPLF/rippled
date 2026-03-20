@@ -58,7 +58,7 @@ PeerReservationTable::load(DatabaseCon& connection)
 }
 
 std::optional<PeerReservation>
-PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
+PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
     std::optional<PeerReservation> previous;
 
@@ -68,7 +68,7 @@ PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
     if (hint != table_.end())
     {
         // The node already has a reservation. Remove it.
-        // `std::unordered_set` does not have an `insert_or_assign` method,
+        // `std::unordered_set` does not have an `insertOrAssign` method,
         // and sadly makes it impossible for us to implement one efficiently:
         // https://stackoverflow.com/q/49651835/618906
         // Regardless, we don't expect this function to be called often, or

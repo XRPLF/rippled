@@ -20,12 +20,12 @@ struct JsonOptions
 
     enum values : underlying_t {
         // clang-format off
-        none                        = 0b0000'0000,
-        include_date                = 0b0000'0001,
-        disable_API_prior_V2        = 0b0000'0010,
+        kNONE                       = 0b0000'0000,
+        kINCLUDE_DATE               = 0b0000'0001,
+        kDISABLE_API_PRIOR_V2       = 0b0000'0010,
 
-        // IMPORTANT `_all` must be union of all of the above; see also operator~
-        _all                        = 0b0000'0011
+        // IMPORTANT `kALL` must be union of all of the above; see also operator~
+        kALL                        = 0b0000'0011
         // clang-format on
     };
 
@@ -63,22 +63,22 @@ struct JsonOptions
     }
 
     /// Returns JsonOptions binary negation, can be used with & (above) for set
-    /// difference e.g. `(options & ~JsonOptions::include_date)`
+    /// difference e.g. `(options & ~JsonOptions::kINCLUDE_DATE)`
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(_all)};
+        return {~v.value & static_cast<underlying_t>(kALL)};
     }
 };
 
 template <typename T>
     requires requires(T const& t) {
-        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+        { t.getJson(JsonOptions::kNONE) } -> std::convertible_to<Json::Value>;
     }
 Json::Value
 to_json(T const& t)
 {
-    return t.getJson(JsonOptions::none);
+    return t.getJson(JsonOptions::kNONE);
 }
 
 namespace detail {
@@ -146,7 +146,7 @@ public:
     virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
+    virtual Json::Value getJson(JsonOptions = JsonOptions::kNONE) const;
 
     virtual void
     add(Serializer& s) const;

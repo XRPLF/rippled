@@ -16,7 +16,7 @@ namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
-class BasePeer : public io_list::work
+class BasePeer : public IoList::Work
 {
 protected:
     using clock_type = std::chrono::system_clock;

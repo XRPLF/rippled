@@ -95,25 +95,25 @@ private:
     fmtdur(typename clock_type::duration const& d);
 
     virtual void
-    on_suite_begin(suite_info const& info) override;
+    onSuiteBegin(SuiteInfo const& info) override;
 
     virtual void
-    on_suite_end() override;
+    onSuiteEnd() override;
 
     virtual void
-    on_case_begin(std::string const& name) override;
+    onCaseBegin(std::string const& name) override;
 
     virtual void
-    on_case_end() override;
+    onCaseEnd() override;
 
     virtual void
-    on_pass() override;
+    onPass() override;
 
     virtual void
-    on_fail(std::string const& reason) override;
+    onFail(std::string const& reason) override;
 
     virtual void
-    on_log(std::string const& s) override;
+    onLog(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
@@ -175,9 +175,9 @@ reporter<_>::~reporter()
             os_ << std::setw(8) << fmtdur(i.second) << " " << i.first << '\n';
     }
     auto const elapsed = clock_type::now() - results_.start;
-    os_ << fmtdur(elapsed) << ", " << amount{results_.suites, "suite"} << ", "
-        << amount{results_.cases, "case"} << ", " << amount{results_.total, "test"} << " total, "
-        << amount{results_.failed, "failure"} << std::endl;
+    os_ << fmtdur(elapsed) << ", " << Amount{results_.suites, "suite"} << ", "
+        << Amount{results_.cases, "case"} << ", " << Amount{results_.total, "test"} << " total, "
+        << Amount{results_.failed, "failure"} << std::endl;
 }
 
 template <class _>
@@ -195,21 +195,21 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
 
 template <class _>
 void
-reporter<_>::on_suite_begin(suite_info const& info)
+reporter<_>::onSuiteBegin(SuiteInfo const& info)
 {
-    suite_results_ = suite_results{info.full_name()};
+    suite_results_ = suite_results{info.fullName()};
 }
 
 template <class _>
 void
-reporter<_>::on_suite_end()
+reporter<_>::onSuiteEnd()
 {
     results_.add(suite_results_);
 }
 
 template <class _>
 void
-reporter<_>::on_case_begin(std::string const& name)
+reporter<_>::onCaseBegin(std::string const& name)
 {
     case_results_ = case_results(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
@@ -218,21 +218,21 @@ reporter<_>::on_case_begin(std::string const& name)
 
 template <class _>
 void
-reporter<_>::on_case_end()
+reporter<_>::onCaseEnd()
 {
     suite_results_.add(case_results_);
 }
 
 template <class _>
 void
-reporter<_>::on_pass()
+reporter<_>::onPass()
 {
     ++case_results_.total;
 }
 
 template <class _>
 void
-reporter<_>::on_fail(std::string const& reason)
+reporter<_>::onFail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -242,7 +242,7 @@ reporter<_>::on_fail(std::string const& reason)
 
 template <class _>
 void
-reporter<_>::on_log(std::string const& s)
+reporter<_>::onLog(std::string const& s)
 {
     os_ << s;
 }

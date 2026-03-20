@@ -124,7 +124,7 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                Json::Value& obj = nfts.append(o.getJson(JsonOptions::none));
+                Json::Value& obj = nfts.append(o.getJson(JsonOptions::kNONE));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
@@ -230,7 +230,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::none));
+            jvObjects.append(cp->getJson(JsonOptions::kNONE));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -322,7 +322,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::none));
+                jvObjects.append(sleNode->getJson(JsonOptions::kNONE));
             }
 
             if (++i == mlimit)

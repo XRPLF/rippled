@@ -29,7 +29,7 @@ namespace xrpl {
 
 /** Represents an active connection. */
 template <class Handler, class Impl>
-class BaseHTTPPeer : public io_list::work, public Session
+class BaseHTTPPeer : public IoList::Work, public Session
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -155,7 +155,7 @@ protected:
     beast::IP::Endpoint
     remoteAddress() override
     {
-        return beast::IPAddressConversion::from_asio(remote_address_);
+        return beast::IPAddressConversion::fromAsio(remote_address_);
     }
 
     http_request_type&

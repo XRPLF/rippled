@@ -24,13 +24,13 @@ struct LedgerFill
     }
 
     enum Options {
-        dumpTxrp = 1,
-        dumpState = 2,
-        expand = 4,
-        full = 8,
-        binary = 16,
-        ownerFunds = 32,
-        dumpQueue = 64
+        DumpTxrp = 1,
+        DumpState = 2,
+        Expand = 4,
+        Full = 8,
+        Binary = 16,
+        OwnerFunds = 32,
+        DumpQueue = 64
     };
 
     ReadView const& ledger;

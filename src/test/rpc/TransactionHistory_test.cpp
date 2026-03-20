@@ -17,7 +17,7 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         {
             // no params
@@ -41,7 +41,7 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Command retired from API v2");
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;
@@ -86,7 +86,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
             // search for a tx in history matching the last offer
             bool const txFound = [&] {
-                auto const toFind = env.tx()->getJson(JsonOptions::none);
+                auto const toFind = env.tx()->getJson(JsonOptions::kNONE);
                 for (auto tx : result[jss::txs])
                 {
                     tx.removeMember(jss::inLedger);

@@ -106,7 +106,7 @@ struct ConsensusParms
     // As a function of the percent this round's duration is of the prior round,
     // we increase the threshold for yes votes to add a transaction to our
     // position.
-    enum AvalancheState { init, mid, late, stuck };
+    enum AvalancheState { Init, Mid, Late, Stuck };
     struct AvalancheCutoff
     {
         int const consensusTime;
@@ -121,14 +121,14 @@ struct ConsensusParms
     std::map<AvalancheState, AvalancheCutoff> const avalancheCutoffs{
         // {state, {time, percent, nextState}},
         // Initial state: 50% of nodes must vote yes
-        {init, {0, 50, mid}},
+        {Init, {0, 50, Mid}},
         // mid-consensus starts after 50% of the previous round time, and
         // requires 65% yes
-        {mid, {50, 65, late}},
+        {Mid, {50, 65, Late}},
         // late consensus starts after 85% time, and requires 70% yes
-        {late, {85, 70, stuck}},
+        {Late, {85, 70, Stuck}},
         // we're stuck after 2x time, requires 95% yes votes
-        {stuck, {200, 95, stuck}},
+        {Stuck, {200, 95, Stuck}},
     };
 
     //! Percentage of nodes required to reach agreement on ledger close time

@@ -82,14 +82,14 @@ class PerfLogImp : public PerfLog
             microseconds runningDuration{0};
         };
 
-        // rpc_ and jq_ do not need mutex protection because all
+        // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
-        std::unordered_map<std::string, Locked<Rpc>> rpc_;
-        std::unordered_map<JobType, Locked<Jq>> jq_;
-        std::vector<std::pair<JobType, steady_time_point>> jobs_;
-        mutable std::mutex jobsMutex_;
-        std::unordered_map<std::uint64_t, MethodStart> methods_;
-        mutable std::mutex methodsMutex_;
+        std::unordered_map<std::string, Locked<Rpc>> rpc;
+        std::unordered_map<JobType, Locked<Jq>> jq;
+        std::vector<std::pair<JobType, steady_time_point>> jobs;
+        mutable std::mutex jobsMutex;
+        std::unordered_map<std::uint64_t, MethodStart> methods;
+        mutable std::mutex methodsMutex;
 
         Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
         Json::Value

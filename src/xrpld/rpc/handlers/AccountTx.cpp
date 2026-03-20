@@ -295,7 +295,7 @@ populateJsonResponse(
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            JsonOptions::include_date | JsonOptions::disable_API_prior_V2, false);
+                            JsonOptions::kINCLUDE_DATE | JsonOptions::kDISABLE_API_PRIOR_V2, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
@@ -307,14 +307,14 @@ populateJsonResponse(
                     }
                     else
                     {
-                        jvObj[jsonTx] = txn->getJson(JsonOptions::include_date);
+                        jvObj[jsonTx] = txn->getJson(JsonOptions::kINCLUDE_DATE);
                     }
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::include_date);
+                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::kINCLUDE_DATE);
                         insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
                         RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);

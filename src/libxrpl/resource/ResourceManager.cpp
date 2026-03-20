@@ -81,7 +81,7 @@ public:
                             << " doesn't convert to IP endpoint: " << ec.message();
             return newInboundEndpoint(address);
         }
-        return newInboundEndpoint(beast::IPAddressConversion::from_asio(proxiedIp));
+        return newInboundEndpoint(beast::IPAddressConversion::fromAsio(proxiedIp));
     }
 
     Consumer

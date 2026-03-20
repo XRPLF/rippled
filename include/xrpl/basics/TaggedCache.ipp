@@ -714,7 +714,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 {
                     // strong, expired
                     ++cacheRemovals;
-                    if (cit->second.ptr.use_count() == 1)
+                    if (cit->second.ptr.useCount() == 1)
                     {
                         stuffToSweep.emplace_back(std::move(cit->second.ptr));
                         ++mapRemovals;

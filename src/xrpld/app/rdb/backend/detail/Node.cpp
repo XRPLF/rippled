@@ -28,7 +28,7 @@ namespace detail {
 static std::string
 toString(TableType type)
 {
-    static_assert(TableTypeCount == 3, "Need to modify switch statement if enum is modified");
+    static_assert(kTABLE_TYPE_COUNT == 3, "Need to modify switch statement if enum is modified");
 
     switch (type)
     {
@@ -55,7 +55,7 @@ makeLedgerDBs(
 {
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, setup.lgrPragma, LgrDBInit, checkpointerSetup, j)};
+        setup, kLGR_DB_NAME, setup.lgrPragma, kLGR_DB_INIT, checkpointerSetup, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
@@ -64,13 +64,13 @@ makeLedgerDBs(
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
-            setup, TxDBName, setup.txPragma, TxDBInit, checkpointerSetup, j)};
+            setup, kTX_DB_NAME, setup.txPragma, kTX_DB_INIT, checkpointerSetup, j)};
         tx->getSession() << boost::str(
             boost::format("PRAGMA cache_size=-%d;") %
             kilobytes(config.getValueFor(SizedItem::txnDBCache)));
 
         if (!setup.standAlone || setup.startUp == StartUpType::LOAD ||
-            setup.startUp == StartUpType::LOAD_FILE || setup.startUp == StartUpType::REPLAY)
+            setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::REPLAY)
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
@@ -310,7 +310,7 @@ saveValidatedLedger(
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::none);
+                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::kNONE);
                 }
 
                 *db
@@ -952,7 +952,7 @@ getNewestAccountTxsB(
  *        match: the account, the ledger search range, the marker of the first
  *        returned entry, the number of transactions to return, and a flag if
  *        this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @param forward True for ascending order, false for descending.
  * @return Vector of tuples of found transactions, their metadata and account
  *         sequences sorted in the specified order by account sequence, a marker
@@ -1253,7 +1253,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     if (config.useTxTables())
     {
         DatabaseCon::Setup dbSetup = setup_DatabaseCon(config);
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
+        boost::filesystem::path dbPath = dbSetup.dataDir / kTX_DB_NAME;
         boost::system::error_code ec;
         std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
         if (ec)

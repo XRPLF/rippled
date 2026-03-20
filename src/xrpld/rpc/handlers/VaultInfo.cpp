@@ -82,9 +82,9 @@ doVaultInfo(RPC::JsonContext& context)
     }
 
     Json::Value& vault = jvResult[jss::vault];
-    vault = sleVault->getJson(JsonOptions::none);
+    vault = sleVault->getJson(JsonOptions::kNONE);
     auto& share = vault[jss::shares];
-    share = sleIssuance->getJson(JsonOptions::none);
+    share = sleIssuance->getJson(JsonOptions::kNONE);
 
     jvResult[jss::vault] = vault;
     return jvResult;

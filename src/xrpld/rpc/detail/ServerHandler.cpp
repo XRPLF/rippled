@@ -201,7 +201,7 @@ ServerHandler::onHandoff(
         }
 
         auto is{std::make_shared<WSInfoSub>(networkOPs_, ws)};
-        auto const beastRemoteAddress = beast::IPAddressConversion::from_asio(remoteAddress);
+        auto const beastRemoteAddress = beast::IPAddressConversion::fromAsio(remoteAddress);
         is->getConsumer() = requestInboundEndpoint(
             resourceManager_,
             beastRemoteAddress,
@@ -269,7 +269,7 @@ ServerHandler::onRequest(Session& session)
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        httpReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
         session.close(true);
         return;
     }
@@ -277,7 +277,7 @@ ServerHandler::onRequest(Session& session)
     // Check user/password authorization
     if (!authorized(session.port(), buildMap(session.request())))
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        httpReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
         session.close(true);
         return;
     }
@@ -290,7 +290,7 @@ ServerHandler::onRequest(Session& session)
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
+        httpReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
         detachedSession->close(true);
         return;
     }
@@ -429,7 +429,7 @@ ServerHandler::processSession(
             required,
             session->port(),
             jv,
-            beast::IP::from_asio(session->remote_endpoint().address()),
+            beast::IP::fromAsio(session->remote_endpoint().address()),
             is->user());
         if (Role::FORBID == role)
         {
@@ -581,7 +581,7 @@ ServerHandler::processRequest(
         if ((request.size() > RPC::Tuning::maxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
-            HTTPReply(
+            httpReply(
                 400,
                 "Unable to parse request: " + reader.getFormattedErrorMessages(),
                 output,
@@ -597,7 +597,7 @@ ServerHandler::processRequest(
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
-            HTTPReply(400, "Malformed batch request", output, rpcJ);
+            httpReply(400, "Malformed batch request", output, rpcJ);
             return;
         }
         size = jsonOrig[jss::params].size();
@@ -636,7 +636,7 @@ ServerHandler::processRequest(
         {
             if (!batch)
             {
-                HTTPReply(400, jss::invalid_API_version.c_str(), output, rpcJ);
+                httpReply(400, jss::invalid_API_version.c_str(), output, rpcJ);
                 return;
             }
             Json::Value r(Json::objectValue);
@@ -679,7 +679,7 @@ ServerHandler::processRequest(
             {
                 if (!batch)
                 {
-                    HTTPReply(503, "Server is overloaded", output, rpcJ);
+                    httpReply(503, "Server is overloaded", output, rpcJ);
                     return;
                 }
                 Json::Value r = jsonRPC;
@@ -694,7 +694,7 @@ ServerHandler::processRequest(
             usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
-                HTTPReply(403, "Forbidden", output, rpcJ);
+                httpReply(403, "Forbidden", output, rpcJ);
                 return;
             }
             Json::Value r = jsonRPC;
@@ -708,7 +708,7 @@ ServerHandler::processRequest(
             usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
-                HTTPReply(400, "Null method", output, rpcJ);
+                httpReply(400, "Null method", output, rpcJ);
                 return;
             }
             Json::Value r = jsonRPC;
@@ -723,7 +723,7 @@ ServerHandler::processRequest(
             usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
-                HTTPReply(400, "method is not string", output, rpcJ);
+                httpReply(400, "method is not string", output, rpcJ);
                 return;
             }
             Json::Value r = jsonRPC;
@@ -738,7 +738,7 @@ ServerHandler::processRequest(
             usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
-                HTTPReply(400, "method is empty", output, rpcJ);
+                httpReply(400, "method is empty", output, rpcJ);
                 return;
             }
             Json::Value r = jsonRPC;
@@ -764,7 +764,7 @@ ServerHandler::processRequest(
             else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::feeMalformedRPC);
-                HTTPReply(400, "params unparsable", output, rpcJ);
+                httpReply(400, "params unparsable", output, rpcJ);
                 return;
             }
             else
@@ -773,7 +773,7 @@ ServerHandler::processRequest(
                 if (!params.isObjectOrNull())
                 {
                     usage.charge(Resource::feeMalformedRPC);
-                    HTTPReply(400, "params unparsable", output, rpcJ);
+                    httpReply(400, "params unparsable", output, rpcJ);
                     return;
                 }
             }
@@ -791,7 +791,7 @@ ServerHandler::processRequest(
                 usage.charge(Resource::feeMalformedRPC);
                 if (!batch)
                 {
-                    HTTPReply(400, "ripplerpc is not a string", output, rpcJ);
+                    httpReply(400, "ripplerpc is not a string", output, rpcJ);
                     return;
                 }
 
@@ -805,7 +805,7 @@ ServerHandler::processRequest(
 
         /**
          * Clear header-assigned values if not positively identified from a
-         * secure_gateway.
+         * secureGateway.
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
@@ -980,7 +980,7 @@ ServerHandler::processRequest(
         }
     }
 
-    HTTPReply(httpStatus, response, output, rpcJ);
+    httpReply(httpStatus, response, output, rpcJ);
 }
 
 //------------------------------------------------------------------------------

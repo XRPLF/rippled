@@ -25,28 +25,28 @@ public:
         env(pay(gw, "bob", usd(1)));
         env.trust(usd(1), "dan");
         env(pay(gw, "dan", usd(1)));
-        n_offers(env, 2000, "bob", XRP(1), usd(1));
-        n_offers(env, 1, "dan", XRP(1), usd(1));
+        nOffers(env, 2000, "bob", XRP(1), usd(1));
+        nOffers(env, 1, "dan", XRP(1), usd(1));
 
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
         env(offer("alice", usd(1000), XRP(1000)));
-        env.require(balance("alice", usd(1)));
-        env.require(owners("alice", 2));
-        env.require(balance("bob", usd(0)));
-        env.require(owners("bob", 1001));
-        env.require(balance("dan", usd(1)));
-        env.require(owners("dan", 2));
+        env.require(Balance("alice", usd(1)));
+        env.require(Owners("alice", 2));
+        env.require(Balance("bob", usd(0)));
+        env.require(Owners("bob", 1001));
+        env.require(Balance("dan", usd(1)));
+        env.require(Owners("dan", 2));
 
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer("carol", usd(1000), XRP(1000)));
-        env.require(balance("carol", usd(none)));
-        env.require(owners("carol", 1));
-        env.require(balance("bob", usd(0)));
-        env.require(owners("bob", 1));
-        env.require(balance("dan", usd(1)));
-        env.require(owners("dan", 2));
+        env.require(Balance("carol", usd(kNONE)));
+        env.require(Owners("carol", 1));
+        env.require(Balance("bob", usd(0)));
+        env.require(Owners("bob", 1));
+        env.require(Balance("dan", usd(1)));
+        env.require(Owners("dan", 2));
     }
 
     void
@@ -68,23 +68,23 @@ public:
         env.trust(usd(bobOfferCount), "bob");
         env(pay(gw, "bob", usd(bobOfferCount)));
         env.close();
-        n_offers(env, bobOfferCount, "bob", XRP(1), usd(1));
+        nOffers(env, bobOfferCount, "bob", XRP(1), usd(1));
 
         // Alice offers to buy Bob's offers. However she hits the offer
         // crossing limit, so she can't buy them all at once.
         env(offer("alice", usd(bobOfferCount), XRP(bobOfferCount)));
         env.close();
-        env.require(balance("alice", usd(maxConsumed)));
-        env.require(balance("bob", usd(150)));
-        env.require(owners("bob", 150 + 1));
+        env.require(Balance("alice", usd(maxConsumed)));
+        env.require(Balance("bob", usd(150)));
+        env.require(Owners("bob", 150 + 1));
 
         // Carol offers to buy 1000 XRP for 1000 USD. She takes Bob's
         // remaining 150 offers without hitting a limit.
         env(offer("carol", usd(1000), XRP(1000)));
         env.close();
-        env.require(balance("carol", usd(150)));
-        env.require(balance("bob", usd(0)));
-        env.require(owners("bob", 1));
+        env.require(Balance("carol", usd(150)));
+        env.require(Balance("bob", usd(0)));
+        env.require(Owners("bob", 1));
     }
 
     void
@@ -113,34 +113,34 @@ public:
 
         // The payment engine has a limit of 1000 funded or unfunded offers.
         int const carolsOfferCount{700};
-        n_offers(env, 400, "alice", XRP(1), usd(1));
-        n_offers(env, carolsOfferCount, "carol", XRP(1), usd(1));
-        n_offers(env, evitaOfferCount, "evita", XRP(1), usd(1));
+        nOffers(env, 400, "alice", XRP(1), usd(1));
+        nOffers(env, carolsOfferCount, "carol", XRP(1), usd(1));
+        nOffers(env, evitaOfferCount, "evita", XRP(1), usd(1));
 
         // Bob offers to buy 1000 XRP for 1000 USD. He takes all 400 USD from
         // Alice's offers, 1 USD from Carol's and then removes 599 of Carol's
         // offers as unfunded, before hitting the step limit.
         env(offer("bob", usd(1000), XRP(1000)));
-        env.require(balance("bob", usd(401)));
-        env.require(balance("alice", usd(600)));
-        env.require(owners("alice", 1));
-        env.require(balance("carol", usd(0)));
-        env.require(owners("carol", carolsOfferCount - 599));
-        env.require(balance("evita", usd(evitaOfferCount + 1)));
-        env.require(owners("evita", evitaOfferCount + 1));
+        env.require(Balance("bob", usd(401)));
+        env.require(Balance("alice", usd(600)));
+        env.require(Owners("alice", 1));
+        env.require(Balance("carol", usd(0)));
+        env.require(Owners("carol", carolsOfferCount - 599));
+        env.require(Balance("evita", usd(evitaOfferCount + 1)));
+        env.require(Owners("evita", evitaOfferCount + 1));
 
         // Dan offers to buy maxConsumed + 50 XRP USD. He removes all of
         // Carol's remaining offers as unfunded, then takes
         // (maxConsumed - 100) USD from Evita's, hitting the crossing limit.
         env(offer("dan", usd(maxConsumed + 50), XRP(maxConsumed + 50)));
-        env.require(balance("dan", usd(maxConsumed - 100)));
-        env.require(owners("dan", 2));
-        env.require(balance("alice", usd(600)));
-        env.require(owners("alice", 1));
-        env.require(balance("carol", usd(0)));
-        env.require(owners("carol", 1));
-        env.require(balance("evita", usd(150)));
-        env.require(owners("evita", 150));
+        env.require(Balance("dan", usd(maxConsumed - 100)));
+        env.require(Owners("dan", 2));
+        env.require(Balance("alice", usd(600)));
+        env.require(Owners("alice", 1));
+        env.require(Balance("carol", usd(0)));
+        env.require(Owners("carol", 1));
+        env.require(Balance("evita", usd(150)));
+        env.require(Owners("evita", 150));
     }
 
     void
@@ -164,10 +164,10 @@ public:
         env.trust(usd(1000), "evita");
         env(pay(gw, "evita", usd(1000)));
 
-        n_offers(env, 302, "alice", eur(2), XRP(1));
-        n_offers(env, 300, "alice", XRP(1), usd(4));
-        n_offers(env, 497, "carol", XRP(1), usd(3));
-        n_offers(env, 1001, "evita", eur(1), usd(1));
+        nOffers(env, 302, "alice", eur(2), XRP(1));
+        nOffers(env, 300, "alice", XRP(1), usd(4));
+        nOffers(env, 497, "carol", XRP(1), usd(3));
+        nOffers(env, 1001, "evita", eur(1), usd(1));
 
         // Bob offers to buy 2000 USD for 2000 EUR, even though he only has
         // 1000 EUR.
@@ -190,23 +190,23 @@ public:
         env(pay(gw, "bob", eur(1000)));
         env.close();
         env(offer("bob", usd(2000), eur(2000)));
-        env.require(balance("bob", usd(1204)));
-        env.require(balance("bob", eur(397)));
+        env.require(Balance("bob", usd(1204)));
+        env.require(Balance("bob", eur(397)));
 
-        env.require(balance("alice", usd(800)));
-        env.require(balance("alice", eur(602)));
+        env.require(Balance("alice", usd(800)));
+        env.require(Balance("alice", eur(602)));
         env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
+        env.require(Owners("alice", 3));
 
-        env.require(balance("carol", usd(0)));
-        env.require(balance("carol", eur(none)));
+        env.require(Balance("carol", usd(0)));
+        env.require(Balance("carol", eur(kNONE)));
         env.require(offers("carol", 100));
-        env.require(owners("carol", 101));
+        env.require(Owners("carol", 101));
 
-        env.require(balance("evita", usd(999)));
-        env.require(balance("evita", eur(1)));
+        env.require(Balance("evita", usd(999)));
+        env.require(Balance("evita", eur(1)));
         env.require(offers("evita", 1000));
-        env.require(owners("evita", 1002));
+        env.require(Owners("evita", 1002));
 
         // Dan offers to buy 900 EUR for 900 USD.
         //  1. He removes all 100 of Carol's remaining unfunded offers.
@@ -220,23 +220,23 @@ public:
         env.close();
 
         env(offer("dan", usd(900), eur(900)));
-        env.require(balance("dan", usd(850)));
-        env.require(balance("dan", eur(150)));
+        env.require(Balance("dan", usd(850)));
+        env.require(Balance("dan", eur(150)));
 
-        env.require(balance("alice", usd(800)));
-        env.require(balance("alice", eur(602)));
+        env.require(Balance("alice", usd(800)));
+        env.require(Balance("alice", eur(602)));
         env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
+        env.require(Owners("alice", 3));
 
-        env.require(balance("carol", usd(0)));
-        env.require(balance("carol", eur(none)));
+        env.require(Balance("carol", usd(0)));
+        env.require(Balance("carol", eur(kNONE)));
         env.require(offers("carol", 0));
-        env.require(owners("carol", 1));
+        env.require(Owners("carol", 1));
 
-        env.require(balance("evita", usd(149)));
-        env.require(balance("evita", eur(851)));
+        env.require(Balance("evita", usd(149)));
+        env.require(Balance("evita", eur(851)));
         env.require(offers("evita", 150));
-        env.require(owners("evita", 152));
+        env.require(Owners("evita", 152));
     }
 
     void
@@ -281,12 +281,12 @@ public:
 
             // Notice the strand with the 800 unfunded offers has the initial
             // best quality
-            n_offers(env, 2000, alice, eur(2), XRP(1));
-            n_offers(env, 100, alice, XRP(1), usd(4));
-            n_offers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
-            n_offers(env, 1000, alice, XRP(1), usd(3));
+            nOffers(env, 2000, alice, eur(2), XRP(1));
+            nOffers(env, 100, alice, XRP(1), usd(4));
+            nOffers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
+            nOffers(env, 1000, alice, XRP(1), usd(3));
 
-            n_offers(env, 1, alice, eur(500), usd(500));
+            nOffers(env, 1, alice, eur(500), usd(500));
 
             // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000 EUR
             //  1. The best quality is the autobridged offers that take 2 EUR
@@ -333,16 +333,16 @@ public:
             env(offer(bob, usd(4000), eur(4000)));
             env.close();
 
-            env.require(balance(bob, usd(1500)));
-            env.require(balance(bob, eur(900)));
+            env.require(Balance(bob, usd(1500)));
+            env.require(Balance(bob, eur(900)));
             env.require(offers(bob, 1));
-            env.require(owners(bob, 3));
+            env.require(Owners(bob, 3));
 
-            env.require(balance(alice, usd(2503)));
-            env.require(balance(alice, eur(1100)));
+            env.require(Balance(alice, usd(2503)));
+            env.require(Balance(alice, eur(1100)));
             auto const numAOffers = 2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
-            env.require(owners(alice, numAOffers + 2));
+            env.require(Owners(alice, numAOffers + 2));
 
             env.require(offers(carol, 0));
         }
@@ -358,13 +358,13 @@ public:
 
             // Notice the strand with the 800 unfunded offers does not have the
             // initial best quality
-            n_offers(env, 1, alice, eur(1), usd(10));
-            n_offers(env, 2000, alice, eur(2), XRP(1));
-            n_offers(env, 100, alice, XRP(1), usd(4));
-            n_offers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
-            n_offers(env, 1000, alice, XRP(1), usd(3));
+            nOffers(env, 1, alice, eur(1), usd(10));
+            nOffers(env, 2000, alice, eur(2), XRP(1));
+            nOffers(env, 100, alice, XRP(1), usd(4));
+            nOffers(env, 801, carol, XRP(1), usd(3));  // only one offer is funded
+            nOffers(env, 1000, alice, XRP(1), usd(3));
 
-            n_offers(env, 1, alice, eur(499), usd(499));
+            nOffers(env, 1, alice, eur(499), usd(499));
 
             // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000 EUR
             //  1. The best quality is the offer that takes 1 EUR and gives 10
@@ -404,16 +404,16 @@ public:
             env(offer(bob, usd(4000), eur(4000)));
             env.close();
 
-            env.require(balance(bob, usd(1509)));
-            env.require(balance(bob, eur(900)));
+            env.require(Balance(bob, usd(1509)));
+            env.require(Balance(bob, eur(900)));
             env.require(offers(bob, 1));
-            env.require(owners(bob, 3));
+            env.require(Owners(bob, 3));
 
-            env.require(balance(alice, usd(2494)));
-            env.require(balance(alice, eur(1100)));
+            env.require(Balance(alice, usd(2494)));
+            env.require(Balance(alice, eur(1100)));
             auto const numAOffers = 1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
-            env.require(owners(alice, numAOffers + 2));
+            env.require(Owners(alice, numAOffers + 2));
 
             env.require(offers(carol, 0));
         }
@@ -458,17 +458,17 @@ public:
         // offers consumes 998 offers, the second set will consume 998, which is
         // not over the limit and the payment stops. So 2*998, or 1996 is the
         // expected value.
-        n_offers(env, 998, alice, XRP(1.00), usd(1));
-        n_offers(env, 998, alice, XRP(0.99), usd(1));
-        n_offers(env, 998, alice, XRP(0.98), usd(1));
-        n_offers(env, 998, alice, XRP(0.97), usd(1));
-        n_offers(env, 998, alice, XRP(0.96), usd(1));
-        n_offers(env, 998, alice, XRP(0.95), usd(1));
+        nOffers(env, 998, alice, XRP(1.00), usd(1));
+        nOffers(env, 998, alice, XRP(0.99), usd(1));
+        nOffers(env, 998, alice, XRP(0.98), usd(1));
+        nOffers(env, 998, alice, XRP(0.97), usd(1));
+        nOffers(env, 998, alice, XRP(0.96), usd(1));
+        nOffers(env, 998, alice, XRP(0.95), usd(1));
 
-        env(offer(bob, usd(8000), XRP(8000)), ter(tesSUCCESS));
+        env(offer(bob, usd(8000), XRP(8000)), Ter(tesSUCCESS));
         env.close();
 
-        env.require(balance(bob, usd(1996)));
+        env.require(Balance(bob, usd(1996)));
     }
 
     void
@@ -482,7 +482,7 @@ public:
             testOfferOverflow(features);
         };
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testAll(sa);
         testAll(sa - featurePermissionedDEX);
     }

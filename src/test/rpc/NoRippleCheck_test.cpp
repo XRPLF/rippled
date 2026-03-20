@@ -221,7 +221,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::none));
+                gw["USD"](100).value().getJson(JsonOptions::kNONE));
         }
         else
         {
@@ -251,7 +251,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this, admin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, admin ? envconfig() : envconfig(noAdmin)};
 
         auto const alice = Account{"alice"};
         env.fund(XRP(100000), alice);
@@ -291,15 +291,15 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
             env(pay(env.master, gw, XRP(1000)),
-                seq(autofill),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                sig(autofill));
+                Seq(kAUTOFILL),
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
+                Sig(kAUTOFILL));
             env(fset(gw, asfDefaultRipple),
-                seq(autofill),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                sig(autofill));
+                Seq(kAUTOFILL),
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
+                Sig(kAUTOFILL));
             env(trust(alice, gw["USD"](10)),
-                fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
+                Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
             env.close();
         }
 

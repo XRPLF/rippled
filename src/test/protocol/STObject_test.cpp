@@ -75,8 +75,8 @@ public:
 
         if (object1.getSerializer() == object2.getSerializer())
         {
-            log << "O1: " << object1.getJson(JsonOptions::none) << '\n'
-                << "O2: " << object2.getJson(JsonOptions::none) << std::endl;
+            log << "O1: " << object1.getJson(JsonOptions::kNONE) << '\n'
+                << "O2: " << object2.getJson(JsonOptions::kNONE) << std::endl;
             fail("STObject error 4");
         }
         else

@@ -93,7 +93,7 @@ using TestStopwatch = beast::ManualClock<std::chrono::steady_clock>;
 inline Stopwatch&
 stopwatch()
 {
-    using Clock = beast::basic_seconds_clock;
+    using Clock = beast::BasicSecondsClock;
     using Facade = Clock::Clock;
     return beast::getAbstractClock<Facade, Clock>();
 }

@@ -25,8 +25,8 @@ public:
         SecretKey secretKey;
 
         Keys() = delete;
-        Keys(PublicKey const& masterPublic_, PublicKey const& public_, SecretKey const& secret_)
-            : masterPublicKey(masterPublic_), publicKey(public_), secretKey(secret_)
+        Keys(PublicKey const& masterPublic, PublicKey const& public_, SecretKey const& secret)  // NOLINT(readability-identifier-naming) : `public` is a C++ keyword
+            : masterPublicKey(masterPublic), publicKey(public_), secretKey(secret)
         {
         }
     };

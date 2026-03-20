@@ -30,7 +30,7 @@ public:
             collector_ = beast::insight::NullCollector::New();
         }
 
-        groups_ = beast::insight::make_Groups(collector_);
+        groups_ = beast::insight::makeGroups(collector_);
     }
 
     ~CollectorManagerImp() = default;
@@ -51,7 +51,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<CollectorManager>
-make_CollectorManager(Section const& params, beast::Journal journal)
+makeCollectorManager(Section const& params, beast::Journal journal)
 {
     return std::make_unique<CollectorManagerImp>(params, journal);
 }

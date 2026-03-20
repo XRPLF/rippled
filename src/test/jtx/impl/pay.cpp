@@ -13,7 +13,7 @@ pay(AccountID const& account, AccountID const& to, AnyAmount amount)
     amount.to(to);
     Json::Value jv;
     jv[jss::Account] = to_string(account);
-    jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.value.getJson(JsonOptions::kNONE);
     jv[jss::Destination] = to_string(to);
     jv[jss::TransactionType] = jss::Payment;
     jv[jss::Flags] = tfFullyCanonicalSig;

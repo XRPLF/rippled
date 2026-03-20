@@ -23,7 +23,7 @@ public:
         // This is the basis for building tests of invalid states.
         auto makeJtxWithMemo = [&env, &alice]() {
             JTx example = noop(alice);
-            memo const exampleMemo{"tic", "tac", "toe"};
+            Memo const exampleMemo{"tic", "tac", "toe"};
             exampleMemo(env, example);
             return example;
         };

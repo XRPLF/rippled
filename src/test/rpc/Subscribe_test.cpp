@@ -26,7 +26,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -92,7 +92,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -150,7 +150,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this, single_thread_io(envconfig()));
+        Env env(*this, singleThreadIo(envconfig()));
         auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
@@ -288,7 +288,7 @@ public:
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->FEES.reference_fee = 10;
-            cfg = single_thread_io(std::move(cfg));
+            cfg = singleThreadIo(std::move(cfg));
             return cfg;
         }));
         auto wsc = makeWSClient(env.app().config());
@@ -361,7 +361,7 @@ public:
     testManifests()
     {
         using namespace jtx;
-        Env env(*this, single_thread_io(envconfig()));
+        Env env(*this, singleThreadIo(envconfig()));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -395,7 +395,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, single_thread_io(envconfig(validator, "")), features};
+        Env env{*this, singleThreadIo(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -506,7 +506,7 @@ public:
     {
         using namespace jtx;
         testcase("Subscribe by url");
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
 
         Json::Value jv;
         jv[jss::url] = "http://localhost/events";
@@ -537,7 +537,7 @@ public:
         auto const method = subscribe ? "subscribe" : "unsubscribe";
         testcase << "Error cases for " << method;
 
-        Env env{*this, single_thread_io(envconfig())};
+        Env env{*this, singleThreadIo(envconfig())};
         auto wsc = makeWSClient(env.app().config());
 
         {
@@ -573,7 +573,7 @@ public:
         }
 
         {
-            Env envNonadmin{*this, single_thread_io(no_admin(envconfig()))};
+            Env envNonadmin{*this, singleThreadIo(noAdmin(envconfig()))};
             Json::Value jv;
             jv[jss::url] = "no-url";
             auto jr = envNonadmin.rpc("json", method, to_string(jv))[jss::result];
@@ -682,7 +682,7 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             jv[jss::books][0u][jss::taker_gets] = Json::objectValue;
             auto jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
@@ -697,7 +697,7 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "ZZZZ";
             auto jr = wsc->invoke(method, jv)[jss::result];
             // NOTE: this error is slightly incongruous with the
@@ -712,7 +712,7 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = 1;
             auto jr = wsc->invoke(method, jv)[jss::result];
@@ -725,7 +725,7 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             jv[jss::books][0u][jss::taker_gets][jss::currency] = "USD";
             jv[jss::books][0u][jss::taker_gets][jss::issuer] = Account{"gateway"}.human() + "DEAD";
             auto jr = wsc->invoke(method, jv)[jss::result];
@@ -738,9 +738,9 @@ public:
             jv[jss::books] = Json::arrayValue;
             jv[jss::books][0u] = Json::objectValue;
             jv[jss::books][0u][jss::taker_pays] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             jv[jss::books][0u][jss::taker_gets] =
-                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::include_date);
+                Account{"gateway"}["USD"](1).value().getJson(JsonOptions::kINCLUDE_DATE);
             auto jr = wsc->invoke(method, jv)[jss::result];
             BEAST_EXPECT(jr[jss::error] == "badMarket");
             BEAST_EXPECT(jr[jss::error_message] == "No such market.");
@@ -853,9 +853,9 @@ public:
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
                 env(pay(from, to, jtx::XRP(numXRP)),
-                    jtx::seq(jtx::autofill),
-                    jtx::fee(jtx::autofill),
-                    jtx::sig(jtx::autofill));
+                    jtx::Seq(jtx::kAUTOFILL),
+                    jtx::Fee(jtx::kAUTOFILL),
+                    jtx::Sig(jtx::kAUTOFILL));
             }
             for (int i = 0; i < ledgersToClose; ++i)
                 BEAST_EXPECT(env.syncClose());
@@ -951,7 +951,7 @@ public:
              *
              * also test subscribe to the account before it is created
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -994,7 +994,7 @@ public:
              * subscribe genesis account tx history without txns
              * subscribe to bob's account after it is created
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscTxHistory = makeWSClient(env.app().config());
             Json::Value request;
             request[jss::account_history_tx_stream] = Json::objectValue;
@@ -1071,7 +1071,7 @@ public:
              * subscribe account and subscribe account tx history
              * and compare txns streamed
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
@@ -1140,7 +1140,7 @@ public:
              * alice issues USD to carol
              * mix USD and XRP payments
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             auto const usdA = alice["USD"];
 
             std::array<Account, 2> accounts = {alice, carol};
@@ -1179,7 +1179,7 @@ public:
             /*
              * long transaction history
              */
-            Env env(*this, single_thread_io(envconfig()));
+            Env env(*this, singleThreadIo(envconfig()));
             std::array<Account, 2> accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
@@ -1230,10 +1230,10 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
         FeatureBitset const all{
-            jtx::testable_amendments() | featurePermissionedDomains | featureCredentials |
+            jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
             featurePermissionedDEX};
 
-        Env env(*this, single_thread_io(envconfig()), all);
+        Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
@@ -1254,7 +1254,7 @@ public:
         env(offer(alice, XRP(10), usd(10)), domain(domainID), txflags(tfHybrid));
         BEAST_EXPECT(env.syncClose());
 
-        env(pay(bob, carol, usd(5)), path(~usd), sendmax(XRP(5)), domain(domainID));
+        env(pay(bob, carol, usd(5)), Path(~usd), sendmax(XRP(5)), domain(domainID));
         BEAST_EXPECT(env.syncClose());
 
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
@@ -1295,7 +1295,7 @@ public:
         Account const bob{"bob"};
         Account const broker{"broker"};
 
-        Env env{*this, single_thread_io(envconfig()), features};
+        Env env{*this, singleThreadIo(envconfig()), features};
         env.fund(XRP(10000), alice, bob, broker);
         BEAST_EXPECT(env.syncClose());
 
@@ -1471,7 +1471,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();

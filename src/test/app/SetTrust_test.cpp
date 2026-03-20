@@ -182,24 +182,24 @@ public:
                 + drops(3 * txFee) /* and to pay for 3 transactions */,
             creator);
 
-        env(trust(creator, gwA["USD"](100)), require(lines(creator, 1)));
-        env(trust(creator, gwB["USD"](100)), require(lines(creator, 2)));
+        env(trust(creator, gwA["USD"](100)), Require(lines(creator, 1)));
+        env(trust(creator, gwB["USD"](100)), Require(lines(creator, 2)));
 
         if (thirdLineCreatesLE)
         {
             // creator does not have enough for the third trust line
             env(trust(creator, assistor["USD"](100)),
-                ter(tecNO_LINE_INSUF_RESERVE),
-                require(lines(creator, 2)));
+                Ter(tecNO_LINE_INSUF_RESERVE),
+                Require(lines(creator, 2)));
         }
         else
         {
             // First establish opposite trust direction from assistor
-            env(trust(assistor, creator["USD"](100)), require(lines(creator, 3)));
+            env(trust(assistor, creator["USD"](100)), Require(lines(creator, 3)));
 
             // creator does not have enough to create the other direction on
             // the existing trust line ledger entry
-            env(trust(creator, assistor["USD"](100)), ter(tecINSUF_RESERVE_LINE));
+            env(trust(creator, assistor["USD"](100)), Ter(tecINSUF_RESERVE_LINE));
         }
 
         // Fund creator additional amount to cover
@@ -207,11 +207,11 @@ public:
 
         if (thirdLineCreatesLE)
         {
-            env(trust(creator, assistor["USD"](100)), require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), Require(lines(creator, 3)));
         }
         else
         {
-            env(trust(creator, assistor["USD"](100)), require(lines(creator, 3)));
+            env(trust(creator, assistor["USD"](100)), Require(lines(creator, 3)));
 
             Json::Value jv;
             jv["account"] = creator.human();
@@ -243,7 +243,7 @@ public:
         env.close();
 
         // Cannot pay alice without a trustline.
-        env(pay(gw, alice, usd(200)), ter(tecPATH_DRY));
+        env(pay(gw, alice, usd(200)), Ter(tecPATH_DRY));
         env.close();
 
         // Create a ticket.
@@ -265,7 +265,7 @@ public:
     {
         Json::Value jv;
         jv[jss::Account] = a.human();
-        jv[jss::LimitAmount] = amt.getJson(JsonOptions::none);
+        jv[jss::LimitAmount] = amt.getJson(JsonOptions::kNONE);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = 0;
         return jv;
@@ -290,28 +290,28 @@ public:
             if (badFlag & tfTrustSetMask)
             {
                 env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)),
-                    ter(temINVALID_FLAG));
+                    Ter(temINVALID_FLAG));
             }
         }
 
         // trust amount can't be XRP
-        env(trustExplicitAmt(alice, drops(10000)), ter(temBAD_LIMIT));
+        env(trustExplicitAmt(alice, drops(10000)), Ter(temBAD_LIMIT));
 
         // trust amount can't be badCurrency IOU
-        env(trustExplicitAmt(alice, gw[to_string(badCurrency())](100)), ter(temBAD_CURRENCY));
+        env(trustExplicitAmt(alice, gw[to_string(badCurrency())](100)), Ter(temBAD_CURRENCY));
 
         // trust amount can't be negative
-        env(trust(alice, gw["USD"](-1000)), ter(temBAD_LIMIT));
+        env(trust(alice, gw["USD"](-1000)), Ter(temBAD_LIMIT));
 
         // trust amount can't be from invalid issuer
         env(trustExplicitAmt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
-            ter(temDST_NEEDED));
+            Ter(temDST_NEEDED));
 
         // trust cannot be to self
-        env(trust(alice, alice["USD"](100)), ter(temDST_IS_SRC));
+        env(trust(alice, alice["USD"](100)), Ter(temDST_IS_SRC));
 
         // tfSetAuth flag should not be set if not required by lsfRequireAuth
-        env(trust(alice, gw["USD"](100), tfSetfAuth), ter(tefNO_AUTH_REQUIRED));
+        env(trust(alice, gw["USD"](100), tfSetfAuth), Ter(tefNO_AUTH_REQUIRED));
     }
 
     void
@@ -333,7 +333,7 @@ public:
         env.close();
 
         // send a payment for a large quantity through the trust line
-        env(pay(gw, alice, gw["USD"](200)), ter(tecPATH_PARTIAL));
+        env(pay(gw, alice, gw["USD"](200)), Ter(tecPATH_PARTIAL));
         env.close();
 
         // on the other hand, smaller payments should succeed
@@ -366,7 +366,7 @@ public:
         env.close();
 
         // send a payment from alice to bob, validate that the payment fails
-        env(pay(alice, bob, alice["USD"](10)), ter(tecPATH_DRY));
+        env(pay(alice, bob, alice["USD"](10)), Ter(tecPATH_DRY));
         env.close();
     }
 
@@ -390,21 +390,21 @@ public:
         env.close();
 
         // archetypical payment transaction from alice to bob must succeed
-        env(pay(alice, bob, alice["USD"](20)), ter(tesSUCCESS));
+        env(pay(alice, bob, alice["USD"](20)), Ter(tesSUCCESS));
         env.close();
 
         // Issued tokens are fungible. i.e. alice's USD is identical to bob's
         // USD
-        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env(pay(bob, alice, bob["USD"](10)), Ter(tesSUCCESS));
         env.close();
 
         // bob cannot place alice in his debt i.e. alice's balance of the USD
         // tokens cannot go below zero.
-        env(pay(bob, alice, bob["USD"](11)), ter(tecPATH_PARTIAL));
+        env(pay(bob, alice, bob["USD"](11)), Ter(tecPATH_PARTIAL));
         env.close();
 
         // payments that respect the trust line limits of alice should succeed
-        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env(pay(bob, alice, bob["USD"](10)), Ter(tesSUCCESS));
         env.close();
     }
 
@@ -448,10 +448,10 @@ public:
             BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_out] == quality);
         };
 
-        env(tx1, require(lines(toAcct, 1)), require(lines(fromAcct, 1)));
+        env(tx1, Require(lines(toAcct, 1)), Require(lines(fromAcct, 1)));
         checkQuality(createQuality);
 
-        env(tx2, require(lines(toAcct, 1)), require(lines(fromAcct, 1)));
+        env(tx2, Require(lines(toAcct, 1)), Require(lines(fromAcct, 1)));
         checkQuality(!createQuality);
     }
 
@@ -488,11 +488,11 @@ public:
 
                 // withFix: can set trustline
                 // withOutFix: cannot set trustline
-                auto const trustResult = withFix ? ter(tesSUCCESS) : ter(tecNO_PERMISSION);
+                auto const trustResult = withFix ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION);
                 env(trust(gw, distUSD(10000)), txflags(tfSetfAuth), trustResult);
                 env.close();
 
-                auto const txResult = withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                auto const txResult = withFix ? Ter(tesSUCCESS) : Ter(tecPATH_DRY);
                 env(pay(gw, dist, usd(1000)), txResult);
                 env.close();
             }
@@ -513,7 +513,7 @@ public:
         env.close();
 
         // Create a trustline which will fail
-        env(trust(alice, usd(1000)), ter(tecNO_PERMISSION));
+        env(trust(alice, usd(1000)), Ter(tecNO_PERMISSION));
         env.close();
 
         // Unset the flag
@@ -546,12 +546,12 @@ public:
         env.close();
 
         // But now bob can't open a trustline because he didn't already have one
-        env(trust(bob, usd(1000)), ter(tecNO_PERMISSION));
+        env(trust(bob, usd(1000)), Ter(tecNO_PERMISSION));
         env.close();
 
         // The gateway also can't open this trustline because bob has the flag
         // set
-        env(trust(gw, bob["USD"](1000)), ter(tecNO_PERMISSION));
+        env(trust(gw, bob["USD"](1000)), Ter(tecNO_PERMISSION));
         env.close();
 
         // Unset the flag only on the gateway
@@ -595,7 +595,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testWithFeats(sa);
     }
 };

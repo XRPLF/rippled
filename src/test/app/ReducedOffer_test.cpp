@@ -36,7 +36,7 @@ class ReducedOffer_test : public beast::unit_test::suite
         std::initializer_list<std::pair<jtx::Account const&, std::uint32_t>> list)
     {
         for (auto [acct, offerSeq] : list)
-            env(offer_cancel(acct, offerSeq));
+            env(offerCancel(acct, offerSeq));
         env.close();
     }
 
@@ -54,9 +54,9 @@ public:
         auto const usd = gw["USD"];
 
         {
-            Env env{*this, testable_amendments()};
+            Env env{*this, testableAmendments()};
 
-            // Make sure none of the offers we generate are under funded.
+            // Make sure kNONE of the offers we generate are under funded.
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
@@ -85,7 +85,7 @@ public:
                 std::uint32_t const bobOfferSeq = env.seq(bob);
                 STAmount const bobInitialBalance = env.balance(bob);
                 STAmount const bobFee = env.current()->fees().base;
-                env(offer(bob, newOffer.in, newOffer.out, tfSell), fee(bobFee));
+                env(offer(bob, newOffer.in, newOffer.out, tfSell), Fee(bobFee));
                 env.close();
                 STAmount const bobFinalBalance = env.balance(bob);
 
@@ -188,8 +188,8 @@ public:
         auto const usd = gw["USD"];
 
         {
-            // Make sure none of the offers we generate are under funded.
-            Env env{*this, testable_amendments()};
+            // Make sure kNONE of the offers we generate are under funded.
+            Env env{*this, testableAmendments()};
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
@@ -322,7 +322,7 @@ public:
         auto const usd = gw["USD"];
 
         {
-            Env env{*this, testable_amendments()};
+            Env env{*this, testableAmendments()};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -410,7 +410,7 @@ public:
         STAmount const tinyUSD(usd.issue(), /*mantissa*/ 1, /*exponent*/ -81);
 
         {
-            Env env{*this, testable_amendments()};
+            Env env{*this, testableAmendments()};
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -518,10 +518,10 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {testable_amendments() - fixReducedOffersV2,
-              testable_amendments() | fixReducedOffersV2})
+             {testableAmendments() - fixReducedOffersV2,
+              testableAmendments() | fixReducedOffersV2})
         {
-            // Make sure none of the offers we generate are under funded.
+            // Make sure kNONE of the offers we generate are under funded.
             Env env{*this, features};
             env.fund(XRP(10'000'000), gw, alice, bob, carol);
             env.close();
@@ -638,7 +638,7 @@ public:
                 }
             }
 
-            // If fixReducedOffersV2 is enabled, then none of the test cases
+            // If fixReducedOffersV2 is enabled, then kNONE of the test cases
             // should produce a potentially blocking rate.
             //
             // Also verify that if fixReducedOffersV2 is not enabled then

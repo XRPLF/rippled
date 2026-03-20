@@ -404,36 +404,36 @@ ValidatorSite::parseJsonResponse(
     {
         switch (disp)
         {
-            case ListDisposition::accepted:
+            case ListDisposition::Accepted:
                 JLOG(j_.debug()) << "Applied " << count << " new validator list(s) from " << uri;
                 break;
-            case ListDisposition::expired:
+            case ListDisposition::Expired:
                 JLOG(j_.debug()) << "Applied " << count << " expired validator list(s) from "
                                  << uri;
                 break;
-            case ListDisposition::same_sequence:
+            case ListDisposition::SameSequence:
                 JLOG(j_.debug()) << "Ignored " << count
                                  << " validator list(s) with current sequence from " << uri;
                 break;
-            case ListDisposition::pending:
+            case ListDisposition::Pending:
                 JLOG(j_.debug()) << "Processed " << count << " future validator list(s) from "
                                  << uri;
                 break;
-            case ListDisposition::known_sequence:
+            case ListDisposition::KnownSequence:
                 JLOG(j_.debug()) << "Ignored " << count
                                  << " validator list(s) with future known sequence from " << uri;
                 break;
-            case ListDisposition::stale:
+            case ListDisposition::Stale:
                 JLOG(j_.warn()) << "Ignored " << count << "stale validator list(s) from " << uri;
                 break;
-            case ListDisposition::untrusted:
+            case ListDisposition::Untrusted:
                 JLOG(j_.warn()) << "Ignored " << count << " untrusted validator list(s) from "
                                 << uri;
                 break;
-            case ListDisposition::invalid:
+            case ListDisposition::Invalid:
                 JLOG(j_.warn()) << "Ignored " << count << " invalid validator list(s) from " << uri;
                 break;
-            case ListDisposition::unsupported_version:
+            case ListDisposition::UnsupportedVersion:
                 JLOG(j_.warn()) << "Ignored " << count
                                 << " unsupported version validator list(s) from " << uri;
                 break;
@@ -510,7 +510,7 @@ ValidatorSite::onSiteFetch(
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, errMsg});
+                Site::Status{clock_type::now(), ListDisposition::Invalid, errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + kERROR_RETRY_INTERVAL;
 
@@ -603,7 +603,7 @@ ValidatorSite::onTextFetch(
         {
             JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, ex.what()});
+                Site::Status{clock_type::now(), ListDisposition::Invalid, ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }
@@ -637,7 +637,7 @@ ValidatorSite::getJson() const
             if (site.lastRefreshStatus)
             {
                 v[jss::last_refresh_time] = to_string(site.lastRefreshStatus->refreshed);
-                v[jss::last_refresh_status] = to_string(site.lastRefreshStatus->disposition);
+                v[jss::last_refresh_status] = toString(site.lastRefreshStatus->disposition);
                 if (!site.lastRefreshStatus->message.empty())
                     v[jss::last_refresh_message] = site.lastRefreshStatus->message;
             }

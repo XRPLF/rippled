@@ -35,7 +35,7 @@ cancel(jtx::Account const& dest, uint256 const& checkId);
 }  // namespace check
 
 /** Match the number of checks on the account. */
-using checks = owner_count<ltCHECK>;
+using checks = OwnerCount<ltCHECK>;
 
 }  // namespace jtx
 

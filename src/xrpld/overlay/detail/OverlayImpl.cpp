@@ -92,7 +92,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
+    if ((++overlay_.timer_count_ % Tuning::CheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     async_wait();
@@ -172,13 +172,13 @@ OverlayImpl::onHandoff(
     }
 
     auto consumer =
-        resourceManager_.newInboundEndpoint(beast::IPAddressConversion::from_asio(remoteEndpoint));
+        resourceManager_.newInboundEndpoint(beast::IPAddressConversion::fromAsio(remoteEndpoint));
     if (consumer.disconnect(journal))
         return handoff;
 
     auto const [slot, result] = peerFinder_->new_inbound_slot(
-        beast::IPAddressConversion::from_asio(localEndpoint),
-        beast::IPAddressConversion::from_asio(remoteEndpoint));
+        beast::IPAddressConversion::fromAsio(localEndpoint),
+        beast::IPAddressConversion::fromAsio(remoteEndpoint));
 
     if (slot == nullptr)
     {
@@ -231,7 +231,7 @@ OverlayImpl::onHandoff(
             request,
             *sharedValue,
             setup_.networkID,
-            setup_.public_ip,
+            setup_.publicIp,
             remoteEndpoint.address(),
             app_);
 
@@ -384,7 +384,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
     auto const p = std::make_shared<ConnectAttempt>(
         app_,
         io_context_,
-        beast::IPAddressConversion::to_asio_endpoint(remoteEndpoint),
+        beast::IPAddressConversion::toAsioEndpoint(remoteEndpoint),
         usage,
         setup_.context,
         next_id_++,
@@ -645,7 +645,7 @@ OverlayImpl::onManifests(
 
     if (!relay.list().empty())
     {
-        for_each([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
+        forEach([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
                      std::shared_ptr<PeerImp> const& p) { p->send(m2); });
     }
 }
@@ -685,7 +685,7 @@ OverlayImpl::getOverlayInfo() const
     Json::Value jv;
     auto& av = jv[jss::active] = Json::Value(Json::arrayValue);
 
-    for_each([&](std::shared_ptr<PeerImp> const& sp) {
+    forEach([&](std::shared_ptr<PeerImp> const& sp) {
         auto& pv = av.append(Json::Value(Json::objectValue));
         pv[jss::public_key] = base64_encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
@@ -695,7 +695,7 @@ OverlayImpl::getOverlayInfo() const
             pv[jss::ip] = sp->getRemoteAddress().address().to_string();
             if (sp->slot()->inbound())
             {
-                if (auto port = sp->slot()->listening_port())
+                if (auto port = sp->slot()->listeningPort())
                     pv[jss::port] = *port;
             }
             else
@@ -1014,7 +1014,7 @@ OverlayImpl::getActivePeers() const
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
-    for_each([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
+    forEach([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
 
     return ret;
 }
@@ -1061,7 +1061,7 @@ OverlayImpl::getActivePeers(
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
-    for_each([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
+    forEach([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
 }
 
 std::shared_ptr<Peer>
@@ -1097,7 +1097,7 @@ void
 OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-    for_each([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
+    forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1106,7 +1106,7 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
-        for_each([&](std::shared_ptr<PeerImp> const& p) {
+        forEach([&](std::shared_ptr<PeerImp> const& p) {
             if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
@@ -1119,7 +1119,7 @@ void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
-    for_each([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
+    forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1128,7 +1128,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
-        for_each([&](std::shared_ptr<PeerImp> const& p) {
+        forEach([&](std::shared_ptr<PeerImp> const& p) {
             if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
@@ -1326,7 +1326,7 @@ OverlayImpl::sendEndpoints()
 void
 OverlayImpl::sendTxQueue() const
 {
-    for_each([](auto const& p) {
+    forEach([](auto const& p) {
         if (p->txReduceRelayEnabled())
             p->sendTxQueue();
     });
@@ -1388,7 +1388,7 @@ OverlayImpl::updateSlotAndSquelch(
     for (auto id : peers)
     {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+            reportInboundTraffic(TrafficCount::SquelchIgnored, 0);
         });
     }
 }
@@ -1417,7 +1417,7 @@ OverlayImpl::updateSlotAndSquelch(
     }
 
     slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
-        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+        reportInboundTraffic(TrafficCount::SquelchIgnored, 0);
     });
 }
 
@@ -1465,8 +1465,8 @@ setupOverlay(BasicConfig const& config)
         if (!ip.empty())
         {
             boost::system::error_code ec;
-            setup.public_ip = boost::asio::ip::make_address(ip, ec);
-            if (ec || beast::IP::is_private(setup.public_ip))
+            setup.publicIp = boost::asio::ip::make_address(ip, ec);
+            if (ec || beast::IP::is_private(setup.publicIp))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
     }

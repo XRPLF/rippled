@@ -1235,7 +1235,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                 boost::iequals(journalMode, "wal"))
             {
                 result->emplace_back(
-                    boost::str(boost::format(CommonDBPragmaJournal) % journalMode));
+                    boost::str(boost::format(kCOMMON_DB_PRAGMA_JOURNAL) % journalMode));
             }
             else
             {
@@ -1256,7 +1256,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(boost::str(boost::format(CommonDBPragmaSync) % synchronous));
+                result->emplace_back(boost::str(boost::format(kCOMMON_DB_PRAGMA_SYNC) % synchronous));
             }
             else
             {
@@ -1277,7 +1277,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(tempStore, "default") ||
                 boost::iequals(tempStore, "file"))
             {
-                result->emplace_back(boost::str(boost::format(CommonDBPragmaTemp) % tempStore));
+                result->emplace_back(boost::str(boost::format(kCOMMON_DB_PRAGMA_TEMP) % tempStore));
             }
             else
             {
@@ -1285,7 +1285,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
         }
 
-        if (showRiskWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
+        if (showRiskWarning && j && c.LEDGER_HISTORY > kSQLITE_TUNING_CUTOFF)
         {
             JLOG(j->warn()) << "reducing the data integrity guarantees from the "
                                "default [sqlite] behavior is not recommended for "

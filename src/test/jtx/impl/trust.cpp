@@ -16,7 +16,7 @@ trust(Account const& account, STAmount const& amount, std::uint32_t flags)
         Throw<std::runtime_error>("trust() requires IOU");
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
+    jv[jss::LimitAmount] = amount.getJson(JsonOptions::kNONE);
     jv[jss::TransactionType] = jss::TrustSet;
     jv[jss::Flags] = flags;
     return jv;
@@ -34,7 +34,7 @@ trust(Account const& account, STAmount const& amount, Account const& peer, std::
     Json::Value jv;
     jv[jss::Account] = account.human();
     {
-        auto& ja = jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
+        auto& ja = jv[jss::LimitAmount] = amount.getJson(JsonOptions::kNONE);
         ja[jss::issuer] = peer.human();
     }
     jv[jss::TransactionType] = jss::TrustSet;
@@ -47,7 +47,7 @@ claw(Account const& account, STAmount const& amount, std::optional<Account> cons
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
     jv[jss::TransactionType] = jss::Clawback;
 
     if (mptHolder)

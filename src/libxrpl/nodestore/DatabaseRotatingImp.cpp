@@ -164,7 +164,7 @@ DatabaseRotatingImp::fetchNodeObject(
 }
 
 void
-DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
+DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
         std::lock_guard lock(mutex_);
@@ -172,10 +172,10 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     }();
 
     // Iterate the writable backend
-    writable->for_each(f);
+    writable->forEach(f);
 
     // Iterate the archive backend
-    archive->for_each(f);
+    archive->forEach(f);
 }
 
 }  // namespace NodeStore

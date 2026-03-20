@@ -18,7 +18,7 @@ struct SetAuth_test : public beast::unit_test::suite
         Json::Value jv;
         jv[jss::Account] = account.human();
         jv[jss::LimitAmount] =
-            STAmount(Issue{to_currency(currency), dest}).getJson(JsonOptions::none);
+            STAmount(Issue{to_currency(currency), dest}).getJson(JsonOptions::kNONE);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;
@@ -42,16 +42,16 @@ struct SetAuth_test : public beast::unit_test::suite
         env(trust("bob", usd(1000)));
         env(pay(gw, "alice", usd(100)));
         env(pay(gw, "bob", usd(100)),
-            ter(tecPATH_DRY));  // Should be terNO_AUTH
+            Ter(tecPATH_DRY));  // Should be terNO_AUTH
         env(pay("alice", "bob", usd(50)),
-            ter(tecPATH_DRY));  // Should be terNO_AUTH
+            Ter(tecPATH_DRY));  // Should be terNO_AUTH
     }
 
     void
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }

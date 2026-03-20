@@ -500,7 +500,7 @@ public:
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
             jv["SettleDelay"] = settleDelay.count();
             jv["PublicKey"] = strHex(pk.slice());
             return jv;
@@ -526,8 +526,8 @@ public:
         env.close();
 
         // Escrow, in each direction
-        env(escrow::create(alice, becky, XRP(1000)), escrow::finish_time(env.now() + 1s));
-        env(escrow::create(becky, alice, XRP(1000)), escrow::finish_time(env.now() + 1s));
+        env(escrow::create(alice, becky, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
+        env(escrow::create(becky, alice, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
 
         // Pay channels, in each direction
         env(payChan(alice, becky, XRP(1000), 100s, alice.pk()));

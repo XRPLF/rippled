@@ -26,8 +26,8 @@ public:
     void
     failure(clock_type::time_point const& now)
     {
-        failures_ = std::min(failures_ + 1, Tuning::connectionBackoff.size() - 1);
-        when_ = now + std::chrono::minutes(Tuning::connectionBackoff[failures_]);
+        failures_ = std::min(failures_ + 1, Tuning::kCONNECTION_BACKOFF.size() - 1);
+        when_ = now + std::chrono::minutes(Tuning::kCONNECTION_BACKOFF[failures_]);
     }
 
     /** Updates metadata to reflect a successful connection. */

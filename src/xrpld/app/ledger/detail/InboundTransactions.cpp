@@ -257,7 +257,7 @@ make_InboundTransactions(
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(
-        app, collector, std::move(gotSet), make_PeerSetBuilder(app));
+        app, collector, std::move(gotSet), makePeerSetBuilder(app));
 }
 
 }  // namespace xrpl

@@ -23,7 +23,7 @@ public:
     using Seq = typename Ledger::Seq;
     using ID = typename Ledger::ID;
 
-    SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger{std::move(lgr)}
+    SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger_{std::move(lgr)}
     {
     }
 
@@ -44,11 +44,11 @@ public:
     ancestor(Seq const& s) const
     {
         XRPL_ASSERT(s <= seq, "xrpl::SpanTip::ancestor : valid input");
-        return ledger[s];
+        return ledger_[s];
     }
 
 private:
-    Ledger const ledger;
+    Ledger const ledger_;
 };
 
 namespace ledger_trie_detail {
@@ -330,10 +330,10 @@ class LedgerTrie
 
     // The root of the trie. The root is allowed to break the no-single child
     // invariant.
-    std::unique_ptr<Node> root;
+    std::unique_ptr<Node> root_;
 
     // Count of the tip support for each sequence number
-    std::map<Seq, std::uint32_t> seqSupport;
+    std::map<Seq, std::uint32_t> seqSupport_;
 
     /** Find the node in the trie that represents the longest common ancestry
         with the given ledger.
@@ -344,7 +344,7 @@ class LedgerTrie
     std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
-        Node* curr = root.get();
+        Node* curr = root_.get();
 
         // Root is always defined and is in common with all ledgers
         XRPL_ASSERT(curr, "xrpl::LedgerTrie::find : non-null root");
@@ -383,7 +383,7 @@ class LedgerTrie
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
         if (!parent)
-            parent = root.get();
+            parent = root_.get();
         if (ledger.id() == parent->span.tip().id)
             return parent;
         for (auto const& child : parent->children)
@@ -412,7 +412,7 @@ class LedgerTrie
     }
 
 public:
-    LedgerTrie() : root{std::make_unique<Node>()}
+    LedgerTrie() : root_{std::make_unique<Node>()}
     {
     }
 
@@ -497,7 +497,7 @@ public:
             incNode = incNode->parent;
         }
 
-        seqSupport[ledger.seq()] += count;
+        seqSupport_[ledger.seq()] += count;
     }
 
     /** Decrease support for a ledger, removing and compressing if possible.
@@ -519,13 +519,13 @@ public:
         count = std::min(count, loc->tipSupport);
         loc->tipSupport -= count;
 
-        auto const it = seqSupport.find(ledger.seq());
+        auto const it = seqSupport_.find(ledger.seq());
         XRPL_ASSERT(
-            it != seqSupport.end() && it->second >= count,
+            it != seqSupport_.end() && it->second >= count,
             "xrpl::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
-            seqSupport.erase(it->first);
+            seqSupport_.erase(it->first);
 
         Node* decNode = loc;
         while (decNode)
@@ -534,7 +534,7 @@ public:
             decNode = decNode->parent;
         }
 
-        while (loc->tipSupport == 0 && loc != root.get())
+        while (loc->tipSupport == 0 && loc != root_.get())
         {
             Node* parent = loc->parent;
             if (loc->children.empty())
@@ -657,12 +657,12 @@ public:
         if (empty())
             return std::nullopt;
 
-        Node* curr = root.get();
+        Node* curr = root_.get();
 
         bool done = false;
 
         std::uint32_t uncommitted = 0;
-        auto uncommittedIt = seqSupport.begin();
+        auto uncommittedIt = seqSupport_.begin();
 
         while (curr && !done)
         {
@@ -673,7 +673,7 @@ public:
                 // Add any initial uncommitted support prior for ledgers
                 // earlier than nextSeq or earlier than largestIssued
                 Seq nextSeq = curr->span.start() + Seq{1};
-                while (uncommittedIt != seqSupport.end() &&
+                while (uncommittedIt != seqSupport_.end() &&
                        uncommittedIt->first < std::max(nextSeq, largestIssued))
                 {
                     uncommitted += uncommittedIt->second;
@@ -684,7 +684,7 @@ public:
                 while (nextSeq < curr->span.end() && curr->branchSupport > uncommitted)
                 {
                     // Jump to the next seqSupport change
-                    if (uncommittedIt != seqSupport.end() &&
+                    if (uncommittedIt != seqSupport_.end() &&
                         uncommittedIt->first < curr->span.end())
                     {
                         nextSeq = uncommittedIt->first + Seq{1};
@@ -747,7 +747,7 @@ public:
     bool
     empty() const
     {
-        return !root || root->branchSupport == 0;
+        return !root_ || root_->branchSupport == 0;
     }
 
     /** Dump an ascii representation of the trie to the stream
@@ -755,7 +755,7 @@ public:
     void
     dump(std::ostream& o) const
     {
-        dumpImpl(o, root, 0);
+        dumpImpl(o, root_, 0);
     }
 
     /** Dump JSON representation of trie state
@@ -764,9 +764,9 @@ public:
     getJson() const
     {
         Json::Value res;
-        res["trie"] = root->getJson();
+        res["trie"] = root_->getJson();
         res["seq_support"] = Json::objectValue;
-        for (auto const& [seq, sup] : seqSupport)
+        for (auto const& [seq, sup] : seqSupport_)
             res["seq_support"][to_string(seq)] = sup;
         return res;
     }
@@ -779,7 +779,7 @@ public:
         std::map<Seq, std::uint32_t> expectedSeqSupport;
 
         std::stack<Node const*> nodes;
-        nodes.push(root.get());
+        nodes.push(root_.get());
         while (!nodes.empty())
         {
             Node const* curr = nodes.top();
@@ -789,7 +789,7 @@ public:
 
             // Node with 0 tip support must have multiple children
             // unless it is the root node
-            if (curr != root.get() && curr->tipSupport == 0 && curr->children.size() < 2)
+            if (curr != root_.get() && curr->tipSupport == 0 && curr->children.size() < 2)
                 return false;
 
             // branchSupport = tipSupport + sum(child->branchSupport)
@@ -808,7 +808,7 @@ public:
             if (support != curr->branchSupport)
                 return false;
         }
-        return expectedSeqSupport == seqSupport;
+        return expectedSeqSupport == seqSupport_;
     }
 };
 

@@ -96,7 +96,7 @@ class PeerImp : public Peer, public std::enable_shared_from_this<PeerImp>, publi
 {
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
-    enum class Tracking { diverged, unknown, converged };
+    enum class Tracking { Diverged, Unknown, Converged };
 
 private:
     using clock_type = std::chrono::steady_clock;
@@ -114,10 +114,10 @@ private:
     std::string fingerprint_;
     std::string prefix_;
     beast::WrappedSink sink_;
-    beast::WrappedSink p_sink_;
+    beast::WrappedSink pSink_;
     beast::Journal const journal_;
-    beast::Journal const p_journal_;
-    std::unique_ptr<stream_type> stream_ptr_;
+    beast::Journal const pJournal_;
+    std::unique_ptr<stream_type> streamPtr_;
     socket_type& socket_;
     stream_type& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
@@ -127,7 +127,7 @@ private:
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
-    beast::IP::Endpoint const remote_address_;
+    beast::IP::Endpoint const remoteAddress_;
 
     // These are up here to prevent warnings about order of initializations
     //
@@ -184,7 +184,7 @@ private:
     // The following variables are being protected preemptively:
     //
     // o name_
-    // o last_status_
+    // o lastStatus_
     //
     // June 2019
 
@@ -207,15 +207,15 @@ private:
     };
 
     std::mutex mutable recentLock_;
-    protocol::TMStatusChange last_status_;
+    protocol::TMStatusChange lastStatus_;
     Resource::Consumer usage_;
     ChargeWithContext fee_;
     std::shared_ptr<PeerFinder::Slot> const slot_;
-    boost::beast::multi_buffer read_buffer_;
+    boost::beast::multi_buffer readBuffer_;
     http_request_type request_;
     http_response_type response_;
     boost::beast::http::fields const& headers_;
-    std::queue<std::shared_ptr<Message>> send_queue_;
+    std::queue<std::shared_ptr<Message>> sendQueue_;
 
     // Primary shutdown flag set when shutdown is requested
     bool shutdown_ = false;
@@ -229,8 +229,8 @@ private:
     // Indicates a write operation is currently pending
     bool writePending_ = false;
 
-    int large_sendq_ = 0;
-    std::unique_ptr<LoadEvent> load_event_;
+    int largeSendq_ = 0;
+    std::unique_ptr<LoadEvent> loadEvent_;
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
@@ -261,11 +261,11 @@ private:
         operator=(Metrics&&) = delete;
 
         void
-        add_message(std::uint64_t bytes);
+        addMessage(std::uint64_t bytes);
         std::uint64_t
-        average_bytes() const;
+        averageBytes() const;
         std::uint64_t
-        total_bytes() const;
+        totalBytes() const;
 
     private:
         std::shared_mutex mutable mutex_;
@@ -296,7 +296,7 @@ public:
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         Resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<stream_type>&& streamPtr,
         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
@@ -304,7 +304,7 @@ public:
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<stream_type>&& streamPtr,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response,
@@ -319,7 +319,7 @@ public:
     beast::Journal const&
     pJournal() const
     {
-        return p_journal_;
+        return pJournal_;
     }
 
     std::shared_ptr<PeerFinder::Slot> const&
@@ -371,7 +371,7 @@ public:
     beast::IP::Endpoint
     getRemoteAddress() const override
     {
-        return remote_address_;
+        return remoteAddress_;
     }
 
     void
@@ -632,11 +632,11 @@ private:
 
     // Called when protocol message bytes are received
     void
-    onReadMessage(error_code ec, std::size_t bytes_transferred);
+    onReadMessage(error_code ec, std::size_t bytesTransferred);
 
     // Called when protocol messages bytes are sent
     void
-    onWriteMessage(error_code ec, std::size_t bytes_transferred);
+    onWriteMessage(error_code ec, std::size_t bytesTransferred);
 
     /** Called from onMessage(TMTransaction(s)).
        @param m Transaction protocol message
@@ -691,7 +691,7 @@ public:
         std::uint16_t type,
         std::shared_ptr<::google::protobuf::Message> const& m,
         std::size_t size,
-        std::size_t uncompressed_size,
+        std::size_t uncompressedSize,
         bool isCompressed);
 
     void
@@ -801,7 +801,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& streamPtr,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
     http_response_type&& response,
@@ -813,22 +813,22 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , fingerprint_(getFingerprint(slot->remoteEndpoint(), publicKey, to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
     , sink_(app_.journal("Peer"), prefix_)
-    , p_sink_(app_.journal("Protocol"), prefix_)
+    , pSink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
-    , p_journal_(p_sink_)
-    , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
+    , pJournal_(pSink_)
+    , streamPtr_(std::move(streamPtr))
+    , socket_(streamPtr_->next_layer().socket())
+    , stream_(*streamPtr_)
     , strand_(boost::asio::make_strand(socket_.get_executor()))
     , timer_(waitable_timer{socket_.get_executor()})
-    , remote_address_(slot->remote_endpoint())
+    , remoteAddress_(slot->remoteEndpoint())
     , overlay_(overlay)
     , inbound_(false)
     , protocol_(protocol)
-    , tracking_(Tracking::unknown)
+    , tracking_(Tracking::Unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
@@ -840,25 +840,25 @@ PeerImp::PeerImp(
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION)
+          peerFeatureEnabled(headers_, kFEATURE_COMPR, "lz4", app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
     , txReduceRelayEnabled_(
-          peerFeatureEnabled(headers_, FEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
+          peerFeatureEnabled(headers_, kFEATURE_TXRR, app_.config().TX_REDUCE_RELAY_ENABLE))
     , ledgerReplayEnabled_(
-          peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, kFEATURE_LEDGER_REPLAY, app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    read_buffer_.commit(
-        boost::asio::buffer_copy(read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    readBuffer_.commit(
+        boost::asio::buffer_copy(readBuffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
                           << " vp reduce-relay base squelch enabled "
                           << peerFeatureEnabled(
                                  headers_,
-                                 FEATURE_VPRR,
+                                 kFEATURE_VPRR,
                                  app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
                           << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-                          << remote_address_ << " " << id_;
+                          << remoteAddress_ << " " << id_;
 }
 
 template <class FwdIt, class>

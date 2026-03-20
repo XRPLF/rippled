@@ -5869,7 +5869,7 @@ public:
                 ? rpcCallTest.exp[apiVersion - RPC::apiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
-            // Note that, over the long term, none of these tests should
+            // Note that, over the long term, kNONE of these tests should
             // throw.  But, for the moment, some of them do.  So handle it.
             Json::Value got;
             try

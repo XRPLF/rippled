@@ -130,12 +130,12 @@ Json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(transaction_->getJson(options & ~JsonOptions::include_date, binary));
+    Json::Value ret(transaction_->getJson(options & ~JsonOptions::kINCLUDE_DATE, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
     if (ret.isObject() && ledgerIndex_)
     {
-        if (!(options & JsonOptions::disable_API_prior_V2))
+        if (!(options & JsonOptions::kDISABLE_API_PRIOR_V2))
         {
             // Behaviour before API version 2
             ret[jss::inLedger] = ledgerIndex_;
@@ -145,7 +145,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
         // `ledger_index` elements (taking precedence over include_date)
         ret[jss::ledger_index] = ledgerIndex_;
 
-        if (options & JsonOptions::include_date)
+        if (options & JsonOptions::kINCLUDE_DATE)
         {
             auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
             if (ct)

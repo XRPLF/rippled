@@ -63,7 +63,7 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBas
     }
 
     auto checkExtra = [](Json::Value const& v) {
-        static auto const kBRIDGE_JSON = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::none);
+        static auto const kBRIDGE_JSON = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::kNONE);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();

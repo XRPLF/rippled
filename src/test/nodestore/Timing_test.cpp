@@ -34,7 +34,7 @@ namespace NodeStore {
 std::unique_ptr<Backend>
 makeBackend(Section const& config, Scheduler& scheduler, beast::Journal journal)
 {
-    return Manager::instance().make_Backend(config, megabytes(4), scheduler, journal);
+    return Manager::instance().makeBackend(config, megabytes(4), scheduler, journal);
 }
 
 // Fill memory with random bits
@@ -663,7 +663,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::abort_on_fail);
+        testcase("Timing", beast::unit_test::AbortOnFail);
 
         /*  Parameters:
 

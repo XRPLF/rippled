@@ -69,9 +69,9 @@ class Discrepancy_test : public beast::unit_test::suite
         env.close();
 
         test::PathSet payPaths{
-            test::Path{a2["JPY"], a2},
-            test::Path{XRP, a2["JPY"], a2},
-            test::Path{a6, XRP, a2["JPY"], a2}};
+            test::TestPath{a2["JPY"], a2},
+            test::TestPath{XRP, a2["JPY"], a2},
+            test::TestPath{a6, XRP, a2["JPY"], a2}};
 
         env(pay(a1, a1, a2["JPY"](1000)),
             json(payPaths.json()),
@@ -81,7 +81,7 @@ class Discrepancy_test : public beast::unit_test::suite
 
         Json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::kNONE)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t fee{jrr[jss::Fee].asUInt()};
@@ -135,7 +135,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testXRPDiscrepancy(sa - featurePermissionedDEX);
         testXRPDiscrepancy(sa);
     }

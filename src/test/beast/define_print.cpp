@@ -23,18 +23,18 @@ public:
         std::size_t manual = 0;
         std::size_t total = 0;
 
-        auto prefix = [](suite_info const& s) { return s.manual() ? "|M| " : "    "; };
+        auto prefix = [](SuiteInfo const& s) { return s.manual() ? "|M| " : "    "; };
 
         for (auto const& s : global_suites())
         {
-            log << prefix(s) << s.full_name() << '\n';
+            log << prefix(s) << s.fullName() << '\n';
 
             if (s.manual())
                 ++manual;
             ++total;
         }
 
-        log << amount(total, "suite") << " total, " << amount(manual, "manual suite") << std::endl;
+        log << Amount(total, "suite") << " total, " << Amount(manual, "manual suite") << std::endl;
 
         pass();
     }

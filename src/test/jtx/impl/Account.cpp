@@ -9,15 +9,15 @@ namespace jtx {
 
 std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
 
-Account const Account::master(
+Account const Account::kMASTER(
     "master",
     generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")),
-    Account::privateCtorTag{});
+    Account::PrivateCtorTag{});
 
 Account::Account(
     std::string name,
     std::pair<PublicKey, SecretKey> const& keys,
-    Account::privateCtorTag)
+    Account::PrivateCtorTag)
     : name_(std::move(name))
     , pk_(keys.first)
     , sk_(keys.second)
@@ -36,7 +36,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 
     auto const keys = [stringType, &name, type]() {
         // Special handling for base58Seeds.
-        if (stringType == base58Seed)
+        if (stringType == Base58Seed)
         {
             std::optional<Seed> const seed = parseBase58<Seed>(name);
             if (!seed.has_value())
@@ -49,22 +49,22 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
     auto r = cache_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
-        std::forward_as_tuple(std::move(name), keys, privateCtorTag{}));
+        std::forward_as_tuple(std::move(name), keys, PrivateCtorTag{}));
     return r.first->second;
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(Account::other, std::move(name), type))
+    : Account(fromCache(Account::Other, std::move(name), type))
 {
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
-    : Account(fromCache(Account::base58Seed, std::move(base58SeedStr), KeyType::secp256k1))
+    : Account(fromCache(Account::Base58Seed, std::move(base58SeedStr), KeyType::secp256k1))
 {
 }
 
 Account::Account(std::string name, AccountID const& id)
-    : Account(name, randomKeyPair(KeyType::secp256k1), privateCtorTag{})
+    : Account(name, randomKeyPair(KeyType::secp256k1), PrivateCtorTag{})
 {
     // override the randomly generated values
     id_ = id;

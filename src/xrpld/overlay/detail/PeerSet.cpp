@@ -119,7 +119,7 @@ private:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app)
+makePeerSetBuilder(Application& app)
 {
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
@@ -162,7 +162,7 @@ private:
 };
 
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app)
+makeDummyPeerSet(Application& app)
 {
     return std::make_unique<DummyPeerSet>(app);
 }

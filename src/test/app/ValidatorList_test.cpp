@@ -147,7 +147,7 @@ private:
         ListDisposition expectedBest)
     {
         BEAST_EXPECT(
-            result.bestDisposition() > ListDisposition::same_sequence ||
+            result.bestDisposition() > ListDisposition::SameSequence ||
             (result.publisherKey && *result.publisherKey == pubKey));
         BEAST_EXPECT(result.bestDisposition() == expectedBest);
         BEAST_EXPECT(result.worstDisposition() == expectedWorst);
@@ -598,8 +598,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::expired,
-            ListDisposition::accepted);
+            ListDisposition::Expired,
+            ListDisposition::Accepted);
 
         expectTrusted(lists.at(2));
 
@@ -631,8 +631,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::pending,
-            ListDisposition::pending);
+            ListDisposition::Pending,
+            ListDisposition::Pending);
 
         expectUntrusted(lists.at(7));
         expectUntrusted(lists.at(8));
@@ -663,8 +663,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::pending,
-            ListDisposition::pending);
+            ListDisposition::Pending,
+            ListDisposition::Pending);
 
         expectUntrusted(lists.at(6));
         expectTrusted(lists.at(2));
@@ -675,8 +675,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::known_sequence,
-            ListDisposition::known_sequence);
+            ListDisposition::KnownSequence,
+            ListDisposition::KnownSequence);
 
         expectUntrusted(lists.at(6));
         expectUntrusted(lists.at(7));
@@ -686,8 +686,8 @@ private:
         checkResult(
             trustedKeys->applyLists("", version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::invalid,
-            ListDisposition::invalid);
+            ListDisposition::Invalid,
+            ListDisposition::Invalid);
 
         checkResult(
             trustedKeys->applyLists(
@@ -696,8 +696,8 @@ private:
                 {{blob7, sig7, {}}, {blob6, sig6, {}}},
                 siteUri),
             publisherPublic,
-            ListDisposition::invalid,
-            ListDisposition::invalid);
+            ListDisposition::Invalid,
+            ListDisposition::Invalid);
 
         // do not use list from untrusted publisher
         auto const untrustedManifest = base64_encode(makeManifestString(
@@ -706,16 +706,16 @@ private:
         checkResult(
             trustedKeys->applyLists(untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::untrusted,
-            ListDisposition::untrusted);
+            ListDisposition::Untrusted,
+            ListDisposition::Untrusted);
 
         // do not use list with unhandled version
         auto const badVersion = 666;
         checkResult(
             trustedKeys->applyLists(manifest1, badVersion, {{blob2, sig2, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::unsupported_version,
-            ListDisposition::unsupported_version);
+            ListDisposition::UnsupportedVersion,
+            ListDisposition::UnsupportedVersion);
 
         // apply list with highest sequence number
         auto const sequence3 = 3;
@@ -725,8 +725,8 @@ private:
         checkResult(
             trustedKeys->applyLists(manifest1, version, {{blob3, sig3, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::accepted,
-            ListDisposition::accepted);
+            ListDisposition::Accepted,
+            ListDisposition::Accepted);
 
         expectUntrusted(lists.at(1));
         expectUntrusted(lists.at(2));
@@ -746,8 +746,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::stale,
-            ListDisposition::same_sequence);
+            ListDisposition::Stale,
+            ListDisposition::SameSequence);
 
         // apply list with new publisher key updated by manifest. Also send some
         // old lists along with the old manifest
@@ -766,8 +766,8 @@ private:
                 {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}},
                 siteUri),
             publisherPublic,
-            ListDisposition::stale,
-            ListDisposition::accepted);
+            ListDisposition::Stale,
+            ListDisposition::Accepted);
 
         expectUntrusted(lists.at(2));
         expectUntrusted(lists.at(3));
@@ -786,8 +786,8 @@ private:
         checkResult(
             trustedKeys->applyLists(manifest1, version, {{blob5, badSig, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::invalid,
-            ListDisposition::invalid);
+            ListDisposition::Invalid,
+            ListDisposition::Invalid);
 
         expectUntrusted(lists.at(2));
         expectUntrusted(lists.at(3));
@@ -799,8 +799,8 @@ private:
             trustedKeys->applyLists(
                 manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::invalid,
-            ListDisposition::invalid);
+            ListDisposition::Invalid,
+            ListDisposition::Invalid);
 
         expectTrusted(lists.at(4));
         expectUntrusted(lists.at(7));
@@ -850,8 +850,8 @@ private:
             trustedKeys->applyLists(
                 manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig82, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::invalid,
-            ListDisposition::same_sequence);
+            ListDisposition::Invalid,
+            ListDisposition::SameSequence);
 
         expectTrusted(lists.at(8));
 
@@ -869,8 +869,8 @@ private:
         checkResult(
             trustedKeys->applyLists(maxManifest, version, {{blob9, sig9, {}}}, siteUri),
             publisherPublic,
-            ListDisposition::untrusted,
-            ListDisposition::untrusted);
+            ListDisposition::Untrusted,
+            ListDisposition::Untrusted);
 
         BEAST_EXPECT(!trustedKeys->trustedPublisher(publisherPublic));
         for (auto const& [num, list] : lists)
@@ -935,7 +935,7 @@ private:
 
         BEAST_EXPECT(
             trustedKeys->applyLists(manifest, 1, {{blob, sig, {}}}, siteUri).bestDisposition() ==
-            ListDisposition::accepted);
+            ListDisposition::Accepted);
 
         {
             // invalid public key
@@ -1341,7 +1341,7 @@ private:
             auto const sig = signList(blob, pubSigningKeys);
 
             BEAST_EXPECT(
-                ListDisposition::accepted ==
+                ListDisposition::Accepted ==
                 trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
                     .bestDisposition());
 
@@ -1382,7 +1382,7 @@ private:
             auto const sig2 = signList(blob2, pubSigningKeys);
 
             BEAST_EXPECT(
-                ListDisposition::accepted ==
+                ListDisposition::Accepted ==
                 trustedKeys->applyLists(manifest, version, {{blob2, sig2, {}}}, siteUri)
                     .bestDisposition());
 
@@ -1546,7 +1546,7 @@ private:
                 auto const sig = signList(blob, pubSigningKeys);
 
                 BEAST_EXPECT(
-                    ListDisposition::accepted ==
+                    ListDisposition::Accepted ==
                     trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
                         .bestDisposition());
             };
@@ -1659,7 +1659,7 @@ private:
                     auto const sig = signList(blob, pubSigningKeys);
 
                     BEAST_EXPECT(
-                        ListDisposition::accepted ==
+                        ListDisposition::Accepted ==
                         trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
                             .bestDisposition());
                 };
@@ -1881,8 +1881,8 @@ private:
             checkResult(
                 trustedKeys->applyLists(prep1.manifest, prep1.version, prep1.blobs, siteUri),
                 prep1.publisherPublic,
-                ListDisposition::pending,
-                ListDisposition::accepted);
+                ListDisposition::Pending,
+                ListDisposition::Accepted);
 
             // One list still hasn't published, so expiration is still
             // unknown
@@ -1892,8 +1892,8 @@ private:
             checkResult(
                 trustedKeys->applyLists(prep2.manifest, prep2.version, prep2.blobs, siteUri),
                 prep2.publisherPublic,
-                ListDisposition::pending,
-                ListDisposition::accepted);
+                ListDisposition::Pending,
+                ListDisposition::Accepted);
             // We now have loaded both lists, so expiration is known
             BEAST_EXPECT(
                 trustedKeys->expires() &&
@@ -2596,8 +2596,8 @@ private:
                 BEAST_EXPECT(
                     result->applyLists(publishers[i].manifest, 1, {{blob, sig, {}}}, siteUri)
                         .bestDisposition() ==
-                    (publishers[i].revoked ? ListDisposition::untrusted
-                                           : ListDisposition::accepted));
+                    (publishers[i].revoked ? ListDisposition::Untrusted
+                                           : ListDisposition::Accepted));
             }
 
             return result;

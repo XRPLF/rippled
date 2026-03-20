@@ -78,11 +78,11 @@ public:
         BEAST_EXPECT(!net.connect(&pv[0], &pv[1]));
         for (auto& peer : pv)
             peer.start(scheduler, net);
-        BEAST_EXPECT(scheduler.step_for(0s));
-        BEAST_EXPECT(scheduler.step_for(1s));
+        BEAST_EXPECT(scheduler.stepFor(0s));
+        BEAST_EXPECT(scheduler.stepFor(1s));
         BEAST_EXPECT(scheduler.step());
         BEAST_EXPECT(!scheduler.step());
-        BEAST_EXPECT(!scheduler.step_for(1s));
+        BEAST_EXPECT(!scheduler.stepFor(1s));
         net.send(&pv[0], &pv[1], [] {});
         net.send(&pv[1], &pv[0], [] {});
         BEAST_EXPECT(net.disconnect(&pv[0], &pv[1]));

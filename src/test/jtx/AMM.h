@@ -45,9 +45,9 @@ struct CreateArg
     std::uint16_t tfee = 0;
     std::uint32_t fee = 0;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
-    std::optional<jtx::msig> ms = std::nullopt;
-    std::optional<ter> err = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
+    std::optional<jtx::Msig> ms = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
     bool close = true;
 };
 
@@ -60,9 +60,9 @@ struct DepositArg
     std::optional<STAmount> maxEP = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     std::optional<std::uint16_t> tfee = std::nullopt;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
 };
 
 struct WithdrawArg
@@ -74,8 +74,8 @@ struct WithdrawArg
     std::optional<IOUAmount> maxEP = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
-    std::optional<ter> err = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
 };
 
 struct VoteArg
@@ -83,9 +83,9 @@ struct VoteArg
     std::optional<Account> account = std::nullopt;
     std::uint32_t tfee = 0;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
 };
 
 struct BidArg
@@ -114,7 +114,7 @@ class AMM
     std::optional<IOUAmount> bidMin_;
     std::optional<IOUAmount> bidMax_;
     // Multi-signature
-    std::optional<msig> const msig_;
+    std::optional<Msig> const msig_;
     // Transaction fee
     std::uint32_t const fee_;
     AccountID const ammAccount_;
@@ -130,15 +130,15 @@ public:
         std::uint16_t tfee = 0,
         std::uint32_t fee = 0,
         std::optional<std::uint32_t> flags = std::nullopt,
-        std::optional<jtx::seq> seq = std::nullopt,
-        std::optional<jtx::msig> ms = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt,
+        std::optional<jtx::Seq> seq = std::nullopt,
+        std::optional<jtx::Msig> ms = std::nullopt,
+        std::optional<Ter> const& ter = std::nullopt,
         bool close = true);
     AMM(Env& env,
         Account const& account,
         STAmount const& asset1,
         STAmount const& asset2,
-        ter const& ter,
+        Ter const& ter,
         bool log = false,
         bool close = true);
     AMM(Env& env,
@@ -208,7 +208,7 @@ public:
         STAmount const& asset2,
         IOUAmount const& balance,
         std::optional<AccountID> const& account = std::nullopt,
-        std::optional<std::string> const& ledger_index = std::nullopt,
+        std::optional<std::string> const& ledgerIndex = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt) const;
 
     [[nodiscard]] bool
@@ -220,7 +220,7 @@ public:
         LPToken tokens,
         std::optional<STAmount> const& asset1InDetails = std::nullopt,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     deposit(
@@ -229,7 +229,7 @@ public:
         std::optional<STAmount> const& asset2InAmount = std::nullopt,
         std::optional<STAmount> const& maxEP = std::nullopt,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     deposit(
@@ -240,9 +240,9 @@ public:
         std::optional<STAmount> const& maxEP,
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
-        std::optional<jtx::seq> const& seq,
+        std::optional<jtx::Seq> const& seq,
         std::optional<std::uint16_t> const& tfee = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     deposit(DepositArg const& arg);
@@ -253,13 +253,13 @@ public:
         std::optional<LPToken> const& tokens,
         std::optional<STAmount> const& asset1OutDetails = std::nullopt,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     withdrawAll(
         std::optional<Account> const& account,
         std::optional<STAmount> const& asset1OutDetails = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt)
+        std::optional<Ter> const& ter = std::nullopt)
     {
         return withdraw(
             account,
@@ -275,7 +275,7 @@ public:
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
         std::optional<IOUAmount> const& maxEP = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     withdraw(
@@ -286,8 +286,8 @@ public:
         std::optional<IOUAmount> const& maxEP,
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
-        std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<jtx::Seq> const& seq,
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     withdraw(WithdrawArg const& arg);
@@ -297,9 +297,9 @@ public:
         std::optional<Account> const& account,
         std::uint32_t feeVal,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<jtx::Seq> const& seq = std::nullopt,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     void
     vote(VoteArg const& arg);
@@ -349,7 +349,7 @@ public:
     }
 
     void
-    ammDelete(AccountID const& deleter, std::optional<ter> const& ter = std::nullopt);
+    ammDelete(AccountID const& deleter, std::optional<Ter> const& ter = std::nullopt);
 
     void
     setClose(bool close)
@@ -371,24 +371,24 @@ private:
     create(
         std::uint32_t tfee = 0,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<jtx::Seq> const& seq = std::nullopt,
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     deposit(
         std::optional<Account> const& account,
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<jtx::Seq> const& seq = std::nullopt,
+        std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
     withdraw(
         std::optional<Account> const& account,
         Json::Value& jv,
-        std::optional<jtx::seq> const& seq,
+        std::optional<jtx::Seq> const& seq,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<Ter> const& ter = std::nullopt);
 
     void
     log(bool log)
@@ -406,8 +406,8 @@ private:
     void
     submit(
         Json::Value const& jv,
-        std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& ter);
+        std::optional<jtx::Seq> const& seq,
+        std::optional<Ter> const& ter);
 
     [[nodiscard]] bool
     expectAuctionSlot(auto&& cb) const;

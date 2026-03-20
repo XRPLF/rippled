@@ -1194,7 +1194,7 @@ public:
     void
     run() override
     {
-        FeatureBitset const all{test::jtx::testable_amendments()};
+        FeatureBitset const all{test::jtx::testableAmendments()};
 
         testConstruct();
         testGet();

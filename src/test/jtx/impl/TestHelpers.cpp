@@ -40,13 +40,13 @@ ownerCount(Env const& env, Account const& account)
 /* Path finding */
 /******************************************************************************/
 void
-stpath_append_one(STPath& st, Account const& account)
+stpathAppendOne(STPath& st, Account const& account)
 {
     st.push_back(STPathElement({account.id(), std::nullopt, std::nullopt}));
 }
 
 void
-stpath_append_one(STPath& st, STPathElement const& pe)
+stpathAppendOne(STPath& st, STPathElement const& pe)
 {
     st.push_back(pe);
 }
@@ -59,7 +59,7 @@ equal(STAmount const& sa1, STAmount const& sa2)
 
 // Issue path element
 STPathElement
-IPE(Issue const& iss)
+ipe(Issue const& iss)
 {
     return STPathElement(
         STPathElement::typeCurrency | STPathElement::typeIssuer,
@@ -71,7 +71,7 @@ IPE(Issue const& iss)
 /******************************************************************************/
 
 XRPAmount
-txfee(Env const& env, std::uint16_t n)
+txFee(Env const& env, std::uint16_t n)
 {
     return env.current()->fees().base * n;
 }
@@ -80,7 +80,7 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
     auto feeDrops = env.current()->fees().base;
-    return drops(dropsPerXRP * xrpAmount - feeDrops);
+    return drops(kDROPS_PER_XRP * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool
@@ -211,7 +211,7 @@ create(
     jv[jss::TransactionType] = jss::PaymentChannelCreate;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
     jv[jss::SettleDelay] = settleDelay.count();
     jv[sfPublicKey.fieldName] = strHex(pk.slice());
     if (cancelAfter)
@@ -232,7 +232,7 @@ fund(
     jv[jss::TransactionType] = jss::PaymentChannelFund;
     jv[jss::Account] = to_string(account);
     jv[sfChannel.fieldName] = to_string(channel);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
     if (expiration)
         jv[sfExpiration.fieldName] = expiration->time_since_epoch().count();
     return jv;
@@ -252,9 +252,9 @@ claim(
     jv[jss::Account] = to_string(account);
     jv["Channel"] = to_string(channel);
     if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+        jv[jss::Amount] = amount->getJson(JsonOptions::kNONE);
     if (balance)
-        jv["Balance"] = balance->getJson(JsonOptions::none);
+        jv["Balance"] = balance->getJson(JsonOptions::kNONE);
     if (signature)
         jv["Signature"] = strHex(*signature);
     if (pk)
@@ -291,7 +291,7 @@ channelExists(ReadView const& view, uint256 const& chan)
 /******************************************************************************/
 
 void
-n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out)
+nOffers(Env& env, std::size_t n, Account const& account, STAmount const& in, STAmount const& out)
 {
     auto const ownerCount = env.le(account)->getFieldU32(sfOwnerCount);
     for (std::size_t i = 0; i < n; i++)
@@ -299,7 +299,7 @@ n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, ST
         env(offer(account, in, out));
         env.close();
     }
-    env.require(owners(account, ownerCount + n));
+    env.require(Owners(account, ownerCount + n));
 }
 
 /* Pay Strand */
@@ -361,7 +361,7 @@ coverDeposit(
     jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfAmount] = amount.getJson(JsonOptions::kNONE);
     jv[sfFlags] = flags;
     return jv;
 }
@@ -377,7 +377,7 @@ coverWithdraw(
     jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
     jv[sfAccount] = to_string(account);
     jv[sfLoanBrokerID] = to_string(brokerID);
-    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfAmount] = amount.getJson(JsonOptions::kNONE);
     jv[sfFlags] = flags;
     return jv;
 }

@@ -91,7 +91,7 @@ private:
 
     template <class Hasher>
     void
-    hash_append(Hasher& h) const
+    hash_append(Hasher& h) const  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, HashPrefix::proposal);

@@ -19,11 +19,11 @@ public:
 
 protected:
     void
-    map_begin() override;
+    mapBegin() override;
     void
-    map_begin(std::string const& key) override;
+    mapBegin(std::string const& key) override;
     void
-    map_end() override;
+    mapEnd() override;
     void
     add(std::string const& key, short value) override;
     void
@@ -41,11 +41,11 @@ protected:
     void
     add(std::string const& key, std::string const& v) override;
     void
-    array_begin() override;
+    arrayBegin() override;
     void
-    array_begin(std::string const& key) override;
+    arrayBegin(std::string const& key) override;
     void
-    array_end() override;
+    arrayEnd() override;
 
     void
     add(short value) override;

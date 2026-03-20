@@ -54,7 +54,7 @@ public:
         }
 
         {
-            testcase("Membership: Non-empty cluster and none present");
+            testcase("Membership: Non-empty cluster and kNONE present");
 
             std::vector<PublicKey> cluster;
             while (cluster.size() != 32)

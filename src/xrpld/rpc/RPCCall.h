@@ -28,7 +28,7 @@ fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs
 
 void
 fromNetwork(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,

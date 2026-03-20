@@ -509,7 +509,7 @@ toStrands(
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::none);
+                            << "path: " << p.getJson(JsonOptions::kNONE);
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }

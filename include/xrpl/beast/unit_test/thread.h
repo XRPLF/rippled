@@ -55,13 +55,13 @@ public:
     }
 
     std::thread::id
-    get_id() const
+    getId() const
     {
         return t_.get_id();
     }
 
     static unsigned
-    hardware_concurrency() noexcept
+    hardwareConcurrency() noexcept
     {
         return std::thread::hardware_concurrency();
     }
@@ -70,7 +70,7 @@ public:
     join()
     {
         t_.join();
-        s_->propagate_abort();
+        s_->propagateAbort();
     }
 
     void
@@ -94,7 +94,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)
+        catch (suite::AbortException const&)
         {
         }
         catch (std::exception const& e)

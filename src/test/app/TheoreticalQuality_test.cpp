@@ -335,7 +335,7 @@ public:
 
         // Tests are sped up by a factor of 2 if a new environment isn't created
         // on every iteration.
-        Env env(*this, testable_amendments());
+        Env env(*this, testableAmendments());
         for (int i = 0; i < numTestIterations; ++i)
         {
             auto const iterAsStr = std::to_string(i);
@@ -347,7 +347,7 @@ public:
             auto const dan = Account("dan" + iterAsStr);
             std::array<Account, kNUM_ACCOUNTS> accounts{{alice, bob, carol, dan}};
             static_assert(kNUM_ACCOUNTS == 4, "Path is only correct for four accounts");
-            path const accountsPath(accounts[1], accounts[2]);
+            Path const accountsPath(accounts[1], accounts[2]);
             env.fund(XRP(10000), alice, bob, carol, dan);
             env.close();
 
@@ -407,7 +407,7 @@ public:
 
         // Speed up tests by creating the environment outside the loop
         // (factor of 2 speedup on the DirectStep tests)
-        Env env(*this, testable_amendments());
+        Env env(*this, testableAmendments());
         for (int i = 0; i < numTestIterations; ++i)
         {
             auto const iterAsStr = std::to_string(i);
@@ -424,7 +424,7 @@ public:
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
             // alice -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
-            path const bookPath(~eurc);
+            Path const bookPath(~eurc);
 
             env.fund(XRP(10000), alice, bob, carol, dan, oscar);
             env.close();

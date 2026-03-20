@@ -521,12 +521,12 @@ public:
         srcParams.set("path", nodeDb.path());
 
         // Create a batch
-        auto batch = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
         // Write to source db
         {
             std::unique_ptr<Database> src =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
             storeBatch(*src, batch);
         }
 
@@ -535,7 +535,7 @@ public:
         {
             // Re-open the db
             std::unique_ptr<Database> src =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
             beast::temp_dir destDb;
@@ -544,7 +544,7 @@ public:
             destParams.set("path", destDb.path());
 
             std::unique_ptr<Database> dest =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, destParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
 
             testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -589,7 +589,7 @@ public:
         {
             // Open the database
             std::unique_ptr<Database> db =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Write the batch
             storeBatch(*db, batch);
@@ -614,7 +614,7 @@ public:
         {
             // Re-open the database without the ephemeral DB
             std::unique_ptr<Database> db =
-                Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
 
             // Read it back in
             Batch copy;
@@ -630,7 +630,7 @@ public:
         {
             // Verify default earliest ledger sequence
             {
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
                 BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
@@ -639,7 +639,7 @@ public:
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -650,7 +650,7 @@ public:
             {
                 // Set a valid earliest ledger sequence
                 nodeParams.set("earliest_seq", "1");
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
@@ -662,7 +662,7 @@ public:
             {
                 // Set to default earliest ledger sequence
                 nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 = Manager::instance().make_Database(
+                std::unique_ptr<Database> db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)

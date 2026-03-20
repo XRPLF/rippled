@@ -17,33 +17,33 @@ class LedgerReplayClient;
 
 namespace LedgerReplayParameters {
 // timeout value for LedgerReplayTask
-auto constexpr TASK_TIMEOUT = std::chrono::milliseconds{500};
+auto constexpr kTASK_TIMEOUT = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
-// = max( TASK_MAX_TIMEOUTS_MINIMUM,
-//        (# of ledger to replay) * TASK_MAX_TIMEOUTS_MULTIPLIER)
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MULTIPLIER = 2;
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MINIMUM = 10;
+// = max( kTASK_MAX_TIMEOUTS_MINIMUM,
+//        (# of ledger to replay) * kTASK_MAX_TIMEOUTS_MULTIPLIER)
+std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MULTIPLIER = 2;
+std::uint32_t constexpr kTASK_MAX_TIMEOUTS_MINIMUM = 10;
 
 // timeout value for subtasks: LedgerDeltaAcquire and SkipListAcquire
-auto constexpr SUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
+auto constexpr kSUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
 // max of allowed subtask timeouts
-std::uint32_t constexpr SUB_TASK_MAX_TIMEOUTS = 10;
+std::uint32_t constexpr kSUB_TASK_MAX_TIMEOUTS = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+auto constexpr kMAX_NO_FEATURE_PEER_COUNT = 2;
 // subtask timeout value after fallback
-auto constexpr SUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
+auto constexpr kSUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
 
 // for LedgerReplayer to limit the number of LedgerReplayTask
-std::uint32_t constexpr MAX_TASKS = 10;
+std::uint32_t constexpr kMAX_TASKS = 10;
 
 // for LedgerReplayer to limit the number of ledgers to replay in one task
-std::uint32_t constexpr MAX_TASK_SIZE = 256;
+std::uint32_t constexpr kMAX_TASK_SIZE = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
-std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
+std::uint32_t constexpr kMAX_QUEUED_TASKS = 100;
 }  // namespace LedgerReplayParameters
 
 /**

@@ -282,7 +282,7 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels = test::jtx::make_vector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> labels = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at

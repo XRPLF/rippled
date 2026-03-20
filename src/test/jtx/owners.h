@@ -13,10 +13,10 @@ namespace xrpl {
 namespace detail {
 
 std::uint32_t
-owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
+ownedCountOf(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(
+ownedCountHelper(
     test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
@@ -29,33 +29,33 @@ namespace jtx {
 
 // Helper for aliases
 template <LedgerEntryType Type>
-class owner_count
+class OwnerCount
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    owner_count(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    OwnerCount(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
     void
     operator()(Env& env) const
     {
-        detail::owned_count_helper(env, account_.id(), Type, value_);
+        detail::ownedCountHelper(env, account_.id(), Type, value_);
     }
 };
 
 /** Match the number of items in the account's owner directory */
-class owners
+class Owners
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    Owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
@@ -64,10 +64,10 @@ public:
 };
 
 /** Match the number of trust lines in the account's owner directory */
-using lines = owner_count<ltRIPPLE_STATE>;
+using lines = OwnerCount<ltRIPPLE_STATE>;
 
 /** Match the number of offers in the account's owner directory */
-using offers = owner_count<ltOFFER>;
+using offers = OwnerCount<ltOFFER>;
 
 }  // namespace jtx
 }  // namespace test

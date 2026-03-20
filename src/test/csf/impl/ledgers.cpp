@@ -6,7 +6,7 @@ namespace xrpl {
 namespace test {
 namespace csf {
 
-Ledger::Instance const Ledger::genesis;
+Ledger::Instance const Ledger::kGENESIS;
 
 Json::Value
 Ledger::getJson() const
@@ -67,7 +67,7 @@ mismatch(Ledger const& a, Ledger const& b)
 
 LedgerOracle::LedgerOracle()
 {
-    instances_.insert(InstanceEntry{Ledger::genesis, nextID()});
+    instances_.insert(InstanceEntry{Ledger::kGENESIS, nextID()});
 }
 
 Ledger::ID

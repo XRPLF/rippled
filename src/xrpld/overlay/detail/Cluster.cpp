@@ -61,7 +61,7 @@ Cluster::update(
 }
 
 void
-Cluster::for_each(std::function<void(ClusterNode const&)> func) const
+Cluster::forEach(std::function<void(ClusterNode const&)> func) const
 {
     std::lock_guard lock(mutex_);
     for (auto const& ni : nodes_)

@@ -113,7 +113,7 @@ public:
 Groups::~Groups() = default;
 
 std::unique_ptr<Groups>
-make_Groups(Collector::ptr const& collector)
+makeGroups(Collector::ptr const& collector)
 {
     return std::make_unique<detail::GroupsImp>(collector);
 }

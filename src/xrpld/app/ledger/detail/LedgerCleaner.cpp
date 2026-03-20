@@ -423,7 +423,7 @@ private:
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, beast::Journal journal)
+makeLedgerCleaner(Application& app, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }

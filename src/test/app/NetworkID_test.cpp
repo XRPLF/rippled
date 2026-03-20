@@ -49,10 +49,10 @@ public:
                 jv[jss::Destination] = alice.human();
                 jv[jss::TransactionType] = "Payment";
                 jv[jss::Amount] = "10000000000";
-                env(jv, fee(1000), sig(env.master));
+                env(jv, Fee(1000), Sig(env.master));
             }
 
-            env(jv, fee(1000), ter(expectedOutcome));
+            env(jv, Fee(1000), Ter(expectedOutcome));
             env.close();
         };
 

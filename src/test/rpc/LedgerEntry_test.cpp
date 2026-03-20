@@ -1376,7 +1376,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             jv[jss::TransactionType] = jss::EscrowCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
             jv[sfFinishAfter.jsonName] = cancelAfter.time_since_epoch().count() + 2;
             return jv;
         };
@@ -1645,7 +1645,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
             jv[sfSettleDelay.jsonName] = settleDelay.count();
             jv[sfPublicKey.jsonName] = strHex(pk.slice());
             return jv;
@@ -2115,7 +2115,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env(*this, testable_amendments() | featurePermissionedDomains);
+        Env env(*this, testableAmendments() | featurePermissionedDomains);
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -2714,7 +2714,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             // swap door accounts and make sure we get an error value
             Json::Value jvParams;
             // Sidechain door account is "master", not scDoor
-            jvParams[jss::bridge_account] = Account::master.human();
+            jvParams[jss::bridge_account] = Account::kMASTER.human();
             jvParams[jss::bridge] = jvb;
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr =
@@ -2851,7 +2851,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             auto r = jrr[jss::node];
 
             BEAST_EXPECT(r.isMember(jss::Account));
-            BEAST_EXPECT(r[jss::Account] == Account::master.human());
+            BEAST_EXPECT(r[jss::Account] == Account::kMASTER.human());
 
             BEAST_EXPECT(r.isMember(sfXChainAccountCreateCount.jsonName));
             BEAST_EXPECT(r[sfXChainAccountCreateCount.jsonName].asInt() == 1);
@@ -2872,7 +2872,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
                     a[i].isMember(jss::Destination) && a[i][jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationSignerAccount.jsonName) &&
-                    std::any_of(signers.begin(), signers.end(), [&](signer const& s) {
+                    std::any_of(signers.begin(), signers.end(), [&](Signer const& s) {
                         return a[i][sfAttestationSignerAccount.jsonName] == s.account.human();
                     }));
                 BEAST_EXPECT(

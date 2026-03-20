@@ -535,8 +535,8 @@ private:
 private:
     Adaptor& adaptor_;
 
-    ConsensusPhase phase_{ConsensusPhase::accepted};
-    MonitoredMode mode_{ConsensusMode::observing};
+    ConsensusPhase phase_{ConsensusPhase::Accepted};
+    MonitoredMode mode_{ConsensusMode::Observing};
     bool firstRound_ = true;
     bool haveCloseTimeConsensus_ = false;
 
@@ -549,9 +549,9 @@ private:
     // How long has this round been open
     ConsensusTimer openTime_;
 
-    NetClock::duration closeResolution_ = ledgerDefaultTimeResolution;
+    NetClock::duration closeResolution_ = kLEDGER_DEFAULT_TIME_RESOLUTION;
 
-    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::init;
+    ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::Init;
 
     // Time it took for the last consensus round to converge
     std::chrono::milliseconds prevRoundTime_;
@@ -637,7 +637,7 @@ Consensus<Adaptor>::startRound(
     for (NodeID_t const& n : nowUntrusted)
         recentPeerPositions_.erase(n);
 
-    ConsensusMode startMode = proposing ? ConsensusMode::proposing : ConsensusMode::observing;
+    ConsensusMode startMode = proposing ? ConsensusMode::Proposing : ConsensusMode::Observing;
 
     // We were handed the wrong ledger
     if (prevLedger.id() != prevLedgerID)
@@ -649,7 +649,7 @@ Consensus<Adaptor>::startRound(
         }
         else  // Unable to acquire the correct ledger
         {
-            startMode = ConsensusMode::wrongLedger;
+            startMode = ConsensusMode::WrongLedger;
             JLOG(j_.info()) << "Entering consensus with: " << previousLedger_.id();
             JLOG(j_.info()) << "Correct LCL is: " << prevLedgerID;
         }
@@ -666,9 +666,9 @@ Consensus<Adaptor>::startRoundInternal(
     ConsensusMode mode,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    phase_ = ConsensusPhase::open;
-    JLOG(j_.debug()) << "transitioned to ConsensusPhase::open ";
-    CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::open, "
+    phase_ = ConsensusPhase::Open;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::Open ";
+    CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::Open, "
                   "previous ledgerID: "
                << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
     mode_.set(mode, adaptor_);
@@ -677,7 +677,7 @@ Consensus<Adaptor>::startRoundInternal(
     previousLedger_ = prevLedger;
     result_.reset();
     convergePercent_ = 0;
-    closeTimeAvalancheState_ = ConsensusParms::init;
+    closeTimeAvalancheState_ = ConsensusParms::Init;
     haveCloseTimeConsensus_ = false;
     openTime_.reset(clock_.now());
     currPeerPositions_.clear();
@@ -729,7 +729,7 @@ Consensus<Adaptor>::peerProposalInternal(
     PeerPosition_t const& newPeerPos)
 {
     // Nothing to do for now if we are currently working on a ledger
-    if (phase_ == ConsensusPhase::accepted)
+    if (phase_ == ConsensusPhase::Accepted)
         return false;
 
     now_ = now;
@@ -824,7 +824,7 @@ Consensus<Adaptor>::timerEntry(
 {
     CLOG(clog) << "Consensus<Adaptor>::timerEntry. ";
     // Nothing to do if we are currently working on a ledger
-    if (phase_ == ConsensusPhase::accepted)
+    if (phase_ == ConsensusPhase::Accepted)
     {
         CLOG(clog) << "Nothing to do during accepted phase. ";
         return;
@@ -835,18 +835,18 @@ Consensus<Adaptor>::timerEntry(
 
     // Check we are on the proper ledger (this may change phase_)
     auto const phaseOrig = phase_;
-    CLOG(clog) << "Phase " << to_string(phaseOrig) << ". ";
+    CLOG(clog) << "Phase " << toString(phaseOrig) << ". ";
     checkLedger(clog);
     if (phaseOrig != phase_)
     {
-        CLOG(clog) << "Changed phase to << " << to_string(phase_) << ". ";
+        CLOG(clog) << "Changed phase to << " << toString(phase_) << ". ";
     }
 
-    if (phase_ == ConsensusPhase::open)
+    if (phase_ == ConsensusPhase::Open)
         phaseOpen(clog);
-    else if (phase_ == ConsensusPhase::establish)
+    else if (phase_ == ConsensusPhase::Establish)
         phaseEstablish(clog);
-    CLOG(clog) << "timerEntry finishing in phase " << to_string(phase_) << ". ";
+    CLOG(clog) << "timerEntry finishing in phase " << toString(phase_) << ". ";
 }
 
 template <class Adaptor>
@@ -854,7 +854,7 @@ void
 Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet)
 {
     // Nothing to do if we've finished work on a ledger
-    if (phase_ == ConsensusPhase::accepted)
+    if (phase_ == ConsensusPhase::Accepted)
         return;
 
     now_ = now;
@@ -907,7 +907,7 @@ Consensus<Adaptor>::simulate(
     result_->roundTime.tick(consensusDelay.value_or(100ms));
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
-    phase_ = ConsensusPhase::accepted;
+    phase_ = ConsensusPhase::Accepted;
     adaptor_.onForceAccept(
         *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_.get(), getJson(true));
     JLOG(j_.info()) << "Simulation complete";
@@ -922,10 +922,10 @@ Consensus<Adaptor>::getJson(bool full) const
 
     Json::Value ret(Json::objectValue);
 
-    ret["proposing"] = (mode_.get() == ConsensusMode::proposing);
+    ret["proposing"] = (mode_.get() == ConsensusMode::Proposing);
     ret["proposers"] = static_cast<int>(currPeerPositions_.size());
 
-    if (mode_.get() != ConsensusMode::wrongLedger)
+    if (mode_.get() != ConsensusMode::WrongLedger)
     {
         ret["synched"] = true;
         ret["ledger_seq"] = static_cast<std::uint32_t>(previousLedger_.seq()) + 1;
@@ -934,7 +934,7 @@ Consensus<Adaptor>::getJson(bool full) const
     else
         ret["synched"] = false;
 
-    ret["phase"] = to_string(phase_);
+    ret["phase"] = toString(phase_);
 
     if (result_ && !result_->disputes.empty() && !full)
         ret["disputes"] = static_cast<Int>(result_->disputes.size());
@@ -1053,12 +1053,12 @@ Consensus<Adaptor>::handleWrongLedger(
     {
         JLOG(j_.info()) << "Have the consensus ledger " << prevLedgerID_;
         CLOG(clog) << "Have the consensus ledger " << prevLedgerID_ << ". ";
-        startRoundInternal(now_, lgrId, *newLedger, ConsensusMode::switchedLedger, clog);
+        startRoundInternal(now_, lgrId, *newLedger, ConsensusMode::SwitchedLedger, clog);
     }
     else
     {
         CLOG(clog) << "Still on wrong ledger. ";
-        mode_.set(ConsensusMode::wrongLedger, adaptor_);
+        mode_.set(ConsensusMode::WrongLedger, adaptor_);
     }
 }
 
@@ -1075,8 +1075,8 @@ Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
     if (netLgr != prevLedgerID_)
     {
         std::stringstream ss;
-        ss << "View of consensus changed during " << to_string(phase_)
-           << " mode=" << to_string(mode_.get()) << ", " << prevLedgerID_ << " to " << netLgr
+        ss << "View of consensus changed during " << toString(phase_)
+           << " mode=" << toString(mode_.get()) << ", " << prevLedgerID_ << " to " << netLgr
            << ", " << Json::Compact{previousLedger_.getJson()} << ". ";
         JLOG(j_.warn()) << ss.str();
         CLOG(clog) << ss.str();
@@ -1129,7 +1129,7 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
         bool const closeAgree = previousLedger_.closeAgree();
         auto const prevCloseTime = previousLedger_.closeTime();
         auto const prevParentCloseTimePlus1 = previousLedger_.parentCloseTime() + 1s;
-        bool const previousCloseCorrect = (mode != ConsensusMode::wrongLedger) && closeAgree &&
+        bool const previousCloseCorrect = (mode != ConsensusMode::WrongLedger) && closeAgree &&
             (prevCloseTime != prevParentCloseTimePlus1);
 
         auto const lastCloseTime = previousCloseCorrect
@@ -1142,7 +1142,7 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
         CLOG(clog) << "calculating how long since last ledger's close time "
                       "based on mode : "
-                   << to_string(mode) << ", previous closeAgree: " << closeAgree
+                   << toString(mode) << ", previous closeAgree: " << closeAgree
                    << ", previous close time: " << to_string(prevCloseTime)
                    << ", previous parent close time + 1s: " << to_string(prevParentCloseTimePlus1)
                    << ", previous close time seen internally: " << to_string(prevCloseTime_)
@@ -1341,12 +1341,12 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
 
     JLOG(j_.info()) << "Converge cutoff (" << currPeerPositions_.size() << " participants)";
     CLOG(clog) << "Converge cutoff (" << currPeerPositions_.size()
-               << " participants). Transitioned to ConsensusPhase::accepted. ";
+               << " participants). Transitioned to ConsensusPhase::Accepted. ";
     adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
-    phase_ = ConsensusPhase::accepted;
-    JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
+    phase_ = ConsensusPhase::Accepted;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::Accepted";
     adaptor_.onAccept(
         *result_,
         previousLedger_,
@@ -1364,8 +1364,8 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
-    phase_ = ConsensusPhase::establish;
-    JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
+    phase_ = ConsensusPhase::Establish;
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::Establish";
     rawCloseTimes_.self = now_;
     peerUnchangedCounter_ = 0;
     establishCounter_ = 0;
@@ -1378,9 +1378,9 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
         adaptor_.share(result_->txns);
 
     auto const mode = mode_.get();
-    CLOG(clog) << "closeLedger transitioned to ConsensusPhase::establish, mode: " << to_string(mode)
+    CLOG(clog) << "closeLedger transitioned to ConsensusPhase::Establish, mode: " << toString(mode)
                << ", number of peer positions: " << currPeerPositions_.size() << ". ";
-    if (mode == ConsensusMode::proposing)
+    if (mode == ConsensusMode::Proposing)
         adaptor_.propose(result_->position);
 
     // Create disputes with any peer positions we have transactions for
@@ -1463,7 +1463,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
             if (dispute.updateVote(
-                    convergePercent_, mode_.get() == ConsensusMode::proposing, parms))
+                    convergePercent_, mode_.get() == ConsensusMode::Proposing, parms))
             {
                 if (!mutableSet)
                     mutableSet.emplace(result_->txns);
@@ -1504,7 +1504,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
 
         int participants = currPeerPositions_.size();
-        if (mode_.get() == ConsensusMode::proposing)
+        if (mode_.get() == ConsensusMode::Proposing)
         {
             ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
             ++participants;
@@ -1544,7 +1544,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         {
             JLOG(j_.debug()) << "No CT consensus:"
                              << " Proposers:" << currPeerPositions_.size()
-                             << " Mode:" << to_string(mode_.get()) << " Thresh:" << threshConsensus
+                             << " Mode:" << toString(mode_.get()) << " Thresh:" << threshConsensus
                              << " Pos:" << consensusCloseTime.time_since_epoch().count();
             CLOG(clog) << "No close time consensus. ";
         }
@@ -1588,7 +1588,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         }
 
         // Share our new position if we are still participating this round
-        if (!result_->position.isBowOut() && (mode_.get() == ConsensusMode::proposing))
+        if (!result_->position.isBowOut() && (mode_.get() == ConsensusMode::Proposing))
             adaptor_.propose(result_->position);
     }
 }
@@ -1632,7 +1632,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         haveCloseTimeConsensus_ && !result_->disputes.empty() &&
         std::ranges::all_of(result_->disputes, [this, &parms, &clog](auto const& dispute) {
             return dispute.second.stalled(
-                parms, mode_.get() == ConsensusMode::proposing, peerUnchangedCounter_, j_, clog);
+                parms, mode_.get() == ConsensusMode::Proposing, peerUnchangedCounter_, j_, clog);
         });
     if (stalled)
     {
@@ -1653,7 +1653,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         result_->roundTime.read(),
         stalled,
         parms,
-        mode_.get() == ConsensusMode::proposing,
+        mode_.get() == ConsensusMode::Proposing,
         j_,
         clog);
 
@@ -1706,7 +1706,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::leaveConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
-    if (mode_.get() == ConsensusMode::proposing)
+    if (mode_.get() == ConsensusMode::Proposing)
     {
         if (result_ && !result_->position.isBowOut())
         {
@@ -1714,7 +1714,7 @@ Consensus<Adaptor>::leaveConsensus(std::unique_ptr<std::stringstream> const& clo
             adaptor_.propose(result_->position);
         }
 
-        mode_.set(ConsensusMode::observing, adaptor_);
+        mode_.set(ConsensusMode::Observing, adaptor_);
         JLOG(j_.info()) << "Bowing out of consensus";
         CLOG(clog) << "Bowing out of consensus. ";
     }

@@ -53,7 +53,7 @@ static_assert(
     "The list of supported protocols isn't properly sorted.");
 
 std::string
-to_string(ProtocolVersion const& p)
+toString(ProtocolVersion const& p)
 {
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
 }
@@ -89,12 +89,12 @@ parseProtocolVersions(boost::beast::string_view const& value)
             if (!beast::lexicalCastChecked(minor, std::string(m[2])))
                 continue;
 
-            auto const proto = make_protocol(major, minor);
+            auto const proto = makeProtocol(major, minor);
 
             // This is an extra sanity check: we check that the protocol we just
             // decoded corresponds to the token we were parsing.
-            if (to_string(proto) == s)
-                result.push_back(make_protocol(major, minor));
+            if (toString(proto) == s)
+                result.push_back(makeProtocol(major, minor));
         }
     }
 
@@ -146,7 +146,7 @@ supportedProtocolVersions()
         {
             if (!ret.empty())
                 ret += ", ";
-            ret += to_string(v);
+            ret += toString(v);
         }
 
         return ret;

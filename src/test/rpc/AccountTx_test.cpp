@@ -481,16 +481,16 @@ class AccountTx_test : public beast::unit_test::suite
         env.close();
 
         // Trust and Offers
-        env(trust(alice, usd(200)), sig(alie));
+        env(trust(alice, usd(200)), Sig(alie));
         std::uint32_t const offerSeq{env.seq(alice)};
-        env(offer(alice, usd(50), XRP(150)), sig(alie));
+        env(offer(alice, usd(50), XRP(150)), Sig(alie));
         env.close();
 
-        env(offer_cancel(alice, offerSeq), sig(alie));
+        env(offerCancel(alice, offerSeq), Sig(alie));
         env.close();
 
         // SignerListSet
-        env(signers(alice, 1, {{"bogie", 1}, {"demon", 1}}), sig(alie));
+        env(signers(alice, 1, {{"bogie", 1}, {"demon", 1}}), Sig(alie));
 
         // Escrow
         {
@@ -500,7 +500,7 @@ class AccountTx_test : public beast::unit_test::suite
                 escrow[jss::TransactionType] = jss::EscrowCreate;
                 escrow[jss::Account] = account.human();
                 escrow[jss::Destination] = to.human();
-                escrow[jss::Amount] = amount.getJson(JsonOptions::none);
+                escrow[jss::Amount] = amount.getJson(JsonOptions::kNONE);
                 return escrow;
             };
 
@@ -510,14 +510,14 @@ class AccountTx_test : public beast::unit_test::suite
             escrowWithFinish[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
 
             std::uint32_t const escrowFinishSeq{env.seq(alice)};
-            env(escrowWithFinish, sig(alie));
+            env(escrowWithFinish, Sig(alie));
 
             Json::Value escrowWithCancel{escrow(alice, alice, XRP(500))};
             escrowWithCancel[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
             escrowWithCancel[sfCancelAfter.jsonName] = nextTime.time_since_epoch().count() + 1;
 
             std::uint32_t const escrowCancelSeq{env.seq(alice)};
-            env(escrowWithCancel, sig(alie));
+            env(escrowWithCancel, Sig(alie));
             env.close();
 
             {
@@ -526,7 +526,7 @@ class AccountTx_test : public beast::unit_test::suite
                 escrowFinish[jss::Account] = alice.human();
                 escrowFinish[sfOwner.jsonName] = alice.human();
                 escrowFinish[sfOfferSequence.jsonName] = escrowFinishSeq;
-                env(escrowFinish, sig(alie));
+                env(escrowFinish, Sig(alie));
             }
             {
                 Json::Value escrowCancel;
@@ -534,7 +534,7 @@ class AccountTx_test : public beast::unit_test::suite
                 escrowCancel[jss::Account] = alice.human();
                 escrowCancel[sfOwner.jsonName] = alice.human();
                 escrowCancel[sfOfferSequence.jsonName] = escrowCancelSeq;
-                env(escrowCancel, sig(alie));
+                env(escrowCancel, Sig(alie));
             }
             env.close();
         }
@@ -546,10 +546,10 @@ class AccountTx_test : public beast::unit_test::suite
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
-            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::none);
+            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::kNONE);
             payChanCreate[sfSettleDelay.jsonName] = NetClock::duration{100s}.count();
             payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
-            env(payChanCreate, sig(alie));
+            env(payChanCreate, Sig(alie));
             env.close();
 
             std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
@@ -559,8 +559,8 @@ class AccountTx_test : public beast::unit_test::suite
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
                 payChanFund[jss::Account] = alice.human();
                 payChanFund[sfChannel.jsonName] = payChanIndex;
-                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::none);
-                env(payChanFund, sig(alie));
+                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::kNONE);
+                env(payChanFund, Sig(alie));
                 env.close();
             }
             {
@@ -578,23 +578,23 @@ class AccountTx_test : public beast::unit_test::suite
         // Check
         {
             auto const aliceCheckId = keylet::check(alice, env.seq(alice)).key;
-            env(check::create(alice, gw, XRP(300)), sig(alie));
+            env(check::create(alice, gw, XRP(300)), Sig(alie));
 
             auto const gwCheckId = keylet::check(gw, env.seq(gw)).key;
             env(check::create(gw, alice, XRP(200)));
             env.close();
 
-            env(check::cash(alice, gwCheckId, XRP(200)), sig(alie));
-            env(check::cancel(alice, aliceCheckId), sig(alie));
+            env(check::cash(alice, gwCheckId, XRP(200)), Sig(alie));
+            env(check::cancel(alice, aliceCheckId), Sig(alie));
             env.close();
         }
         {
             // Deposit pre-authorization with a Ticket.
             std::uint32_t const tktSeq{env.seq(alice) + 1};
-            env(ticket::create(alice, 1), sig(alie));
+            env(ticket::create(alice, 1), Sig(alie));
             env.close();
 
-            env(deposit::auth(alice, gw), ticket::use(tktSeq), sig(alie));
+            env(deposit::auth(alice, gw), ticket::use(tktSeq), Sig(alie));
             env.close();
         }
 
@@ -683,7 +683,7 @@ class AccountTx_test : public beast::unit_test::suite
         auto const beckyPreDelBalance{env.balance(becky)};
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
-        env(acctdelete(becky, alice), fee(acctDelFee));
+        env(acctdelete(becky, alice), Fee(acctDelFee));
         env.close();
 
         // Verify that becky's account root is gone.
@@ -738,7 +738,7 @@ class AccountTx_test : public beast::unit_test::suite
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
         env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - XRP(1)),
-            ter(tecNO_DST_INSUF_XRP));
+            Ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Actually resurrect becky's account.
@@ -804,7 +804,7 @@ class AccountTx_test : public beast::unit_test::suite
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+            std::string const txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 

@@ -85,7 +85,7 @@ private:
     static Key const&
     extract(value_type const& value)
     {
-        return aged_associative_container_extract_t<IsMap>()(value);
+        return AgedAssociativeContainerExtractT<IsMap>()(value);
     }
 
     // VFALCO TODO hoist to remove template argument dependencies
@@ -846,30 +846,30 @@ public:
     template <
         class K,
         bool maybe_multi = IsMulti,
-        bool maybe_map = IsMap,
-        class = typename std::enable_if<maybe_map && !maybe_multi>::type>
+        bool MaybeMap = IsMap,
+        class = typename std::enable_if<MaybeMap && !maybe_multi>::type>
     typename std::conditional<IsMap, T, void*>::type&
     at(K const& k);
 
     template <
         class K,
         bool maybe_multi = IsMulti,
-        bool maybe_map = IsMap,
-        class = typename std::enable_if<maybe_map && !maybe_multi>::type>
+        bool MaybeMap = IsMap,
+        class = typename std::enable_if<MaybeMap && !maybe_multi>::type>
     typename std::conditional<IsMap, T, void*>::type const&
     at(K const& k) const;
 
     template <
         bool maybe_multi = IsMulti,
-        bool maybe_map = IsMap,
-        class = typename std::enable_if<maybe_map && !maybe_multi>::type>
+        bool MaybeMap = IsMap,
+        class = typename std::enable_if<MaybeMap && !maybe_multi>::type>
     typename std::conditional<IsMap, T, void*>::type&
     operator[](Key const& key);
 
     template <
         bool maybe_multi = IsMulti,
-        bool maybe_map = IsMap,
-        class = typename std::enable_if<maybe_map && !maybe_multi>::type>
+        bool MaybeMap = IsMap,
+        class = typename std::enable_if<MaybeMap && !maybe_multi>::type>
     typename std::conditional<IsMap, T, void*>::type&
     operator[](Key&& key);
 
@@ -978,16 +978,16 @@ public:
     insert(value_type const& value) -> typename std::enable_if<maybe_multi, iterator>::type;
 
     // map, set
-    template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
+    template <bool maybe_multi = IsMulti, bool MaybeMap = IsMap>
     auto
     insert(value_type&& value) ->
-        typename std::enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type;
+        typename std::enable_if<!maybe_multi && !MaybeMap, std::pair<iterator, bool>>::type;
 
     // multimap, multiset
-    template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
+    template <bool maybe_multi = IsMulti, bool MaybeMap = IsMap>
     auto
     insert(value_type&& value) ->
-        typename std::enable_if<maybe_multi && !maybe_map, iterator>::type;
+        typename std::enable_if<maybe_multi && !MaybeMap, iterator>::type;
 
     // map, set
     template <bool maybe_multi = IsMulti>
@@ -1030,9 +1030,9 @@ public:
     }
 
     // map, multimap
-    template <class P, bool maybe_map = IsMap>
+    template <class P, bool MaybeMap = IsMap>
     typename std::enable_if<
-        maybe_map && std::is_constructible<value_type, P&&>::value,
+        MaybeMap && std::is_constructible<value_type, P&&>::value,
         typename std::conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::type
     insert(P&& value)
     {
@@ -1040,9 +1040,9 @@ public:
     }
 
     // map, multimap
-    template <class P, bool maybe_map = IsMap>
+    template <class P, bool MaybeMap = IsMap>
     typename std::enable_if<
-        maybe_map && std::is_constructible<value_type, P&&>::value,
+        MaybeMap && std::is_constructible<value_type, P&&>::value,
         typename std::conditional<IsMulti, iterator, std::pair<iterator, bool>>::type>::type
     insert(const_iterator hint, P&& value)
     {
@@ -2095,7 +2095,7 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <class K, bool maybe_multi, bool maybe_map, class>
+template <class K, bool maybe_multi, bool MaybeMap, class>
 typename std::conditional<IsMap, T, void*>::type&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(K const& k)
 {
@@ -2115,7 +2115,7 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <class K, bool maybe_multi, bool maybe_map, class>
+template <class K, bool maybe_multi, bool MaybeMap, class>
 typename std::conditional<IsMap, T, void*>::type const&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(
     K const& k) const
@@ -2136,7 +2136,7 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool maybe_multi, bool maybe_map, class>
+template <bool maybe_multi, bool MaybeMap, class>
 typename std::conditional<IsMap, T, void*>::type&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator[](
     Key const& key)
@@ -2165,7 +2165,7 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool maybe_multi, bool maybe_map, class>
+template <bool maybe_multi, bool MaybeMap, class>
 typename std::conditional<IsMap, T, void*>::type&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator[](
     Key&& key)
@@ -2273,11 +2273,11 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool maybe_multi, bool maybe_map>
+template <bool maybe_multi, bool MaybeMap>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
     value_type&& value) ->
-    typename std::enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
+    typename std::enable_if<!maybe_multi && !MaybeMap, std::pair<iterator, bool>>::type
 {
     maybe_rehash(1);
     typename cont_type::insert_commit_data d;
@@ -2306,10 +2306,10 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool maybe_multi, bool maybe_map>
+template <bool maybe_multi, bool MaybeMap>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
-    value_type&& value) -> typename std::enable_if<maybe_multi && !maybe_map, iterator>::type
+    value_type&& value) -> typename std::enable_if<maybe_multi && !MaybeMap, iterator>::type
 {
     maybe_rehash(1);
     element* const p(new_element(std::move(value)));

@@ -131,7 +131,7 @@ uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
     uint256 ret;
-    auto metaJson = meta->getJson(JsonOptions::none);
+    auto metaJson = meta->getJson(JsonOptions::kNONE);
     Json::Value a(Json::arrayValue);
     a = metaJson["AffectedNodes"];
 

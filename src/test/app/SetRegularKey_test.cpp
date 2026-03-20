@@ -13,31 +13,31 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env{*this, testable_amendments()};
+        Env env{*this, testableAmendments()};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
 
         env(regkey(alice, bob));
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice));
+        env(noop(alice), Sig(bob));
+        env(noop(alice), Sig(alice));
 
         testcase("Disable master key");
-        env(fset(alice, asfDisableMaster), sig(alice));
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
+        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(noop(alice), Sig(bob));
+        env(noop(alice), Sig(alice), Ter(tefMASTER_DISABLED));
 
         testcase("Re-enable master key");
-        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), Sig(alice), Ter(tefMASTER_DISABLED));
 
-        env(fclear(alice, asfDisableMaster), sig(bob));
-        env(noop(alice), sig(bob));
-        env(noop(alice), sig(alice));
+        env(fclear(alice, asfDisableMaster), Sig(bob));
+        env(noop(alice), Sig(bob));
+        env(noop(alice), Sig(alice));
 
         testcase("Revoke regular key");
-        env(regkey(alice, disabled));
-        env(noop(alice), sig(bob), ter(tefBAD_AUTH));
-        env(noop(alice), sig(alice));
+        env(regkey(alice, kDISABLED));
+        env(noop(alice), Sig(bob), Ter(tefBAD_AUTH));
+        env(noop(alice), Sig(alice));
     }
 
     void
@@ -46,11 +46,11 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key to master key");
-        Env env{*this, testable_amendments()};
+        Env env{*this, testableAmendments()};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
-        env(regkey(alice, alice), ter(temBAD_REGKEY));
+        env(regkey(alice, alice), Ter(temBAD_REGKEY));
     }
 
     void
@@ -68,7 +68,7 @@ public:
         BEAST_EXPECT(
             ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
 
-        env(regkey(alice, bob), sig(alice), fee(0));
+        env(regkey(alice, bob), Sig(alice), Fee(0));
 
         ar = env.le(alice);
         BEAST_EXPECT(
@@ -76,7 +76,7 @@ public:
             ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == lsfPasswordSpent));
 
         // The second SetRegularKey transaction with Fee=0 should fail.
-        env(regkey(alice, bob), sig(alice), fee(0), ter(telINSUF_FEE_P));
+        env(regkey(alice, bob), Sig(alice), Fee(0), Ter(telINSUF_FEE_P));
 
         env.trust(bob["USD"](1), alice);
         env(pay(bob, alice, bob["USD"](1)));
@@ -98,7 +98,7 @@ public:
 
         auto jv = regkey(alice, bob);
         jv[sfFlags.fieldName] = tfUniversalMask;
-        env(jv, ter(temINVALID_FLAG));
+        env(jv, Ter(temINVALID_FLAG));
     }
 
     void
@@ -123,29 +123,29 @@ public:
         env.close();
 
         // Disable alice's master key using a ticket.
-        env(fset(alice, asfDisableMaster), sig(alice), ticket::use(--ticketSeq));
+        env(fset(alice, asfDisableMaster), Sig(alice), ticket::use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the regular key but not the
         // master key.
         std::uint32_t const aliceSeq{env.seq(alice)};
-        env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
-        env(noop(alice), sig(alie), ter(tesSUCCESS));
+        env(noop(alice), Sig(alice), Ter(tefMASTER_DISABLED));
+        env(noop(alice), Sig(alie), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Re-enable the master key using a ticket.
-        env(fclear(alice, asfDisableMaster), sig(alie), ticket::use(--ticketSeq));
+        env(fclear(alice, asfDisableMaster), Sig(alie), ticket::use(--ticketSeq));
         env.close();
 
         // Disable the regular key using a ticket.
-        env(regkey(alice, disabled), sig(alie), ticket::use(--ticketSeq));
+        env(regkey(alice, kDISABLED), Sig(alie), ticket::use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the master key but not the
         // regular key.
-        env(noop(alice), sig(alice), ter(tesSUCCESS));
-        env(noop(alice), sig(alie), ter(tefBAD_AUTH));
+        env(noop(alice), Sig(alice), Ter(tesSUCCESS));
+        env(noop(alice), Sig(alie), Ter(tefBAD_AUTH));
         env.close();
     }
 

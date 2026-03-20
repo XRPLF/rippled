@@ -167,7 +167,7 @@ LoadManager::run()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal)
+makeLoadManager(Application& app, beast::Journal journal)
 {
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }

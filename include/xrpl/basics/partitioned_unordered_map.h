@@ -56,38 +56,38 @@ public:
     struct iterator
     {
         using iterator_category = std::forward_iterator_tag;
-        partition_map_type* map_{nullptr};
+        partition_map_type* map{nullptr};
         typename partition_map_type::iterator ait_;
-        typename map_type::iterator mit_;
+        typename map_type::iterator mit;
 
         iterator() = default;
 
-        iterator(partition_map_type* map) : map_(map)
+        iterator(partition_map_type* m) : map(m)
         {
         }
 
         reference
         operator*() const
         {
-            return *mit_;
+            return *mit;
         }
 
         pointer
         operator->() const
         {
-            return &(*mit_);
+            return &(*mit);
         }
 
         void
         inc()
         {
-            ++mit_;
-            while (mit_ == ait_->end())
+            ++mit;
+            while (mit == ait_->end())
             {
                 ++ait_;
-                if (ait_ == map_->end())
+                if (ait_ == map->end())
                     return;
-                mit_ = ait_->begin();
+                mit = ait_->begin();
             }
         }
 
@@ -111,7 +111,7 @@ public:
         friend bool
         operator==(iterator const& lhs, iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
+            return lhs.map == rhs.map && lhs.ait_ == rhs.ait_ && lhs.mit == rhs.mit;
         }
 
         friend bool
@@ -125,45 +125,45 @@ public:
     {
         using iterator_category = std::forward_iterator_tag;
 
-        partition_map_type* map_{nullptr};
+        partition_map_type* map{nullptr};
         typename partition_map_type::iterator ait_;
-        typename map_type::iterator mit_;
+        typename map_type::iterator mit;
 
         const_iterator() = default;
 
-        const_iterator(partition_map_type* map) : map_(map)
+        const_iterator(partition_map_type* m) : map(m)
         {
         }
 
         const_iterator(iterator const& orig)
         {
-            map_ = orig.map_;
+            map = orig.map;
             ait_ = orig.ait_;
-            mit_ = orig.mit_;
+            mit = orig.mit;
         }
 
         const_reference
         operator*() const
         {
-            return *mit_;
+            return *mit;
         }
 
         const_pointer
         operator->() const
         {
-            return &(*mit_);
+            return &(*mit);
         }
 
         void
         inc()
         {
-            ++mit_;
-            while (mit_ == ait_->end())
+            ++mit;
+            while (mit == ait_->end())
             {
                 ++ait_;
-                if (ait_ == map_->end())
+                if (ait_ == map->end())
                     return;
-                mit_ = ait_->begin();
+                mit = ait_->begin();
             }
         }
 
@@ -187,7 +187,7 @@ public:
         friend bool
         operator==(const_iterator const& lhs, const_iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
+            return lhs.map == rhs.map && lhs.ait_ == rhs.ait_ && lhs.mit == rhs.mit;
         }
 
         friend bool
@@ -208,19 +208,19 @@ private:
     static void
     end(T& it)
     {
-        it.ait_ = it.map_->end();
-        it.mit_ = it.map_->back().end();
+        it.ait_ = it.map->end();
+        it.mit = it.map->back().end();
     }
 
     template <class T>
     static void
     begin(T& it)
     {
-        for (it.ait_ = it.map_->begin(); it.ait_ != it.map_->end(); ++it.ait_)
+        for (it.ait_ = it.map->begin(); it.ait_ != it.map->end(); ++it.ait_)
         {
             if (it.ait_->begin() == it.ait_->end())
                 continue;
-            it.mit_ = it.ait_->begin();
+            it.mit = it.ait_->begin();
             return;
         }
         end(it);
@@ -300,9 +300,9 @@ private:
     void
     find(key_type const& key, T& it) const
     {
-        it.ait_ = it.map_->begin() + partitioner(key);
-        it.mit_ = it.ait_->find(key);
-        if (it.mit_ == it.ait_->end())
+        it.ait_ = it.map->begin() + partitioner(key);
+        it.mit = it.ait_->find(key);
+        if (it.mit == it.ait_->end())
             end(it);
     }
 
@@ -329,10 +329,10 @@ public:
     {
         auto const& key = std::get<0>(keyTuple);
         iterator it(&map_);
-        it.ait_ = it.map_->begin() + partitioner(key);
+        it.ait_ = it.map->begin() + partitioner(key);
         auto [eit, inserted] = it.ait_->emplace(
             std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
-        it.mit_ = eit;
+        it.mit = eit;
         return {it, inserted};
     }
 
@@ -341,9 +341,9 @@ public:
     emplace(T&& key, U&& val)
     {
         iterator it(&map_);
-        it.ait_ = it.map_->begin() + partitioner(key);
+        it.ait_ = it.map->begin() + partitioner(key);
         auto [eit, inserted] = it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
-        it.mit_ = eit;
+        it.mit = eit;
         return {it, inserted};
     }
 
@@ -359,14 +359,14 @@ public:
     {
         iterator it(&map_);
         it.ait_ = position.ait_;
-        it.mit_ = position.ait_->erase(position.mit_);
+        it.mit = position.ait_->erase(position.mit);
 
-        while (it.mit_ == it.ait_->end())
+        while (it.mit == it.ait_->end())
         {
             ++it.ait_;
-            if (it.ait_ == it.map_->end())
+            if (it.ait_ == it.map->end())
                 break;
-            it.mit_ = it.ait_->begin();
+            it.mit = it.ait_->begin();
         }
 
         return it;

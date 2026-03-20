@@ -202,8 +202,8 @@ public:
         // but not given out (since they would exceed maxHops). They
         // are used for automatic connection attempts.
         //
-        using Histogram = std::array<int, 1 + Tuning::maxHops + 1>;
-        using lists_type = std::array<list_type, 1 + Tuning::maxHops + 1>;
+        using Histogram = std::array<int, 1 + Tuning::kMAX_HOPS + 1>;
+        using lists_type = std::array<list_type, 1 + Tuning::kMAX_HOPS + 1>;
 
         template <bool IsConst>
         struct Transform
@@ -371,7 +371,7 @@ Livecache<Allocator>::expire()
 {
     std::size_t n(0);
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::liveCacheSecondsToLive);
+        cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
     for (auto iter(cache_.chronological.begin());
          iter != cache_.chronological.end() && iter.when() <= expired;)
     {
@@ -382,7 +382,7 @@ Livecache<Allocator>::expire()
     }
     if (n > 0)
     {
-        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache expired " << n
+        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache expired " << n
                                << ((n > 1) ? " entries" : " entry");
     }
 }
@@ -398,14 +398,14 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // when redirecting.
     //
     XRPL_ASSERT(
-        ep.hops <= (Tuning::maxHops + 1),
+        ep.hops <= (Tuning::kMAX_HOPS + 1),
         "xrpl::PeerFinder::Livecache::insert : maximum input hops");
     auto result = cache_.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
     {
         hops.insert(e);
-        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache insert " << ep.address
+        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache insert " << ep.address
                                << " at hops " << ep.hops;
         return;
     }
@@ -413,7 +413,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
-        JLOG(journal_.trace()) << beast::leftw(18) << "Livecache drop " << ep.address
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Livecache drop " << ep.address
                                << " at hops +" << excess;
         return;
     }
@@ -424,12 +424,12 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert(e, ep.hops);
-        JLOG(journal_.debug()) << beast::leftw(18) << "Livecache update " << ep.address
+        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache update " << ep.address
                                << " at hops " << ep.hops;
     }
     else
     {
-        JLOG(journal_.trace()) << beast::leftw(18) << "Livecache refresh " << ep.address
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Livecache refresh " << ep.address
                                << " at hops " << ep.hops;
     }
 }
@@ -439,7 +439,7 @@ void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::liveCacheSecondsToLive);
+        cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
     map["size"] = size();
     map["hist"] = hops.histogram();
     beast::PropertyStream::Set set("entries", map);
@@ -498,7 +498,7 @@ void
 Livecache<Allocator>::hops_t::insert(Element& e)
 {
     XRPL_ASSERT(
-        e.endpoint.hops <= Tuning::maxHops + 1,
+        e.endpoint.hops <= Tuning::kMAX_HOPS + 1,
         "xrpl::PeerFinder::Livecache::hops_t::insert : maximum input hops");
     // This has security implications without a shuffle
     lists_[e.endpoint.hops].push_front(e);
@@ -510,7 +510,7 @@ void
 Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
-        numHops <= Tuning::maxHops + 1,
+        numHops <= Tuning::kMAX_HOPS + 1,
         "xrpl::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
 
     auto& list = lists_[e.endpoint.hops];

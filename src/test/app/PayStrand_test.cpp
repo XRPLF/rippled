@@ -127,16 +127,6 @@ ape(AccountID const& a)
     return STPathElement(STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
 };
 
-// Issue path element
-STPathElement
-ipe(Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        xrpAccount(),
-        iss.currency,
-        iss.account);
-};
 
 // Issuer path element
 STPathElement
@@ -858,10 +848,10 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
             env(pay(alice, carol, usd(100)),
-                path(~usd, ~eur, ~usd),
+                Path(~usd, ~eur, ~usd),
                 sendmax(XRP(200)),
                 txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+                Ter(temBAD_PATH_LOOP));
         }
 
         {
@@ -920,7 +910,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(trust(gw, alice["USD"](1000), tfSetfAuth));
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::Auth));
             env(pay(gw, alice, usd(100)));
-            env.require(balance(alice, usd(100)));
+            env.require(Balance(alice, usd(100)));
             test(env, usd, std::nullopt, STPath(), terNO_AUTH);
 
             // Check pure issue redeem still works
@@ -999,8 +989,8 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, bob["USD"](100), bob["EUR"](100)), txflags(tfPassive));
             env(offer(gw, usd(100), eur(100)), txflags(tfPassive));
 
-            Path const p = [&] {
-                Path result;
+            TestPath const p = [&] {
+                TestPath result;
                 result.push_back(allPathElements(gw, bob["USD"]));
                 result.push_back(cpe(eur.currency));
                 return result;
@@ -1012,7 +1002,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 json(paths.json()),
                 sendmax(XRP(10)),
                 txflags(tfNoRippleDirect | tfPartialPayment),
-                ter(temBAD_PATH));
+                Ter(temBAD_PATH));
         }
 
         {
@@ -1028,9 +1018,9 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // payment path: XRP -> XRP/USD -> USD/XRP
             env(pay(alice, carol, XRP(100)),
-                path(~usd, ~XRP),
+                Path(~usd, ~XRP),
                 txflags(tfNoRippleDirect),
-                ter(temBAD_SEND_XRP_PATHS));
+                Ter(temBAD_SEND_XRP_PATHS));
         }
 
         {
@@ -1046,10 +1036,10 @@ struct PayStrand_test : public beast::unit_test::suite
 
             // payment path: XRP -> XRP/USD -> USD/XRP
             env(pay(alice, carol, XRP(100)),
-                path(~usd, ~XRP),
+                Path(~usd, ~XRP),
                 sendmax(XRP(200)),
                 txflags(tfNoRippleDirect),
-                ter(temBAD_SEND_XRP_MAX));
+                Ter(temBAD_SEND_XRP_MAX));
         }
     }
 
@@ -1082,9 +1072,9 @@ struct PayStrand_test : public beast::unit_test::suite
             // payment path: USD -> USD/XRP -> XRP/USD
             env(pay(alice, carol, usd(100)),
                 sendmax(usd(100)),
-                path(~XRP, ~usd),
+                Path(~XRP, ~usd),
                 txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+                Ter(temBAD_PATH_LOOP));
         }
         {
             Env env(*this, features);
@@ -1105,9 +1095,9 @@ struct PayStrand_test : public beast::unit_test::suite
             // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
             env(pay(alice, carol, cny(100)),
                 sendmax(XRP(100)),
-                path(~usd, ~eur, ~usd, ~cny),
+                Path(~usd, ~eur, ~usd, ~cny),
                 txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+                Ter(temBAD_PATH_LOOP));
         }
     }
 
@@ -1199,7 +1189,7 @@ struct PayStrand_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 

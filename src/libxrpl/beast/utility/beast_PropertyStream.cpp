@@ -76,22 +76,22 @@ PropertyStream::Map::Map(PropertyStream& stream) : stream_(stream)
 
 PropertyStream::Map::Map(Set& parent) : stream_(parent.stream())
 {
-    stream_.map_begin();
+    stream_.mapBegin();
 }
 
 PropertyStream::Map::Map(std::string const& key, Map& map) : stream_(map.stream())
 {
-    stream_.map_begin(key);
+    stream_.mapBegin(key);
 }
 
 PropertyStream::Map::Map(std::string const& key, PropertyStream& stream) : stream_(stream)
 {
-    stream_.map_begin(key);
+    stream_.mapBegin(key);
 }
 
 PropertyStream::Map::~Map()
 {
-    stream_.map_end();
+    stream_.mapEnd();
 }
 
 PropertyStream&
@@ -120,17 +120,17 @@ PropertyStream::Map::operator[](std::string const& key)
 
 PropertyStream::Set::Set(std::string const& key, Map& map) : stream_(map.stream())
 {
-    stream_.array_begin(key);
+    stream_.arrayBegin(key);
 }
 
 PropertyStream::Set::Set(std::string const& key, PropertyStream& stream) : stream_(stream)
 {
-    stream_.array_begin(key);
+    stream_.arrayBegin(key);
 }
 
 PropertyStream::Set::~Set()
 {
-    stream_.array_end();
+    stream_.arrayEnd();
 }
 
 PropertyStream&
@@ -248,25 +248,25 @@ PropertyStream::Source::write(PropertyStream& stream, std::string const& path)
 std::pair<PropertyStream::Source*, bool>
 PropertyStream::Source::find(std::string path)
 {
-    bool const deep(peel_trailing_slashstar(&path));
-    bool const rooted(peel_leading_slash(&path));
+    bool const deep(peelTrailingSlashstar(&path));
+    bool const rooted(peelLeadingSlash(&path));
     Source* source(this);
     if (!path.empty())
     {
         if (!rooted)
         {
             std::string const name(peel_name(&path));
-            source = find_one_deep(name);
+            source = findOneDeep(name);
             if (source == nullptr)
                 return std::make_pair(nullptr, deep);
         }
-        source = source->find_path(path);
+        source = source->findPath(path);
     }
     return std::make_pair(source, deep);
 }
 
 bool
-PropertyStream::Source::peel_leading_slash(std::string* path)
+PropertyStream::Source::peelLeadingSlash(std::string* path)
 {
     if (!path->empty() && path->front() == '/')
     {
@@ -277,7 +277,7 @@ PropertyStream::Source::peel_leading_slash(std::string* path)
 }
 
 bool
-PropertyStream::Source::peel_trailing_slashstar(std::string* path)
+PropertyStream::Source::peelTrailingSlashstar(std::string* path)
 {
     bool found(false);
     if (path->empty())
@@ -317,16 +317,16 @@ PropertyStream::Source::peel_name(std::string* path)
 
 // Recursive search through the whole tree until name is found
 PropertyStream::Source*
-PropertyStream::Source::find_one_deep(std::string const& name)
+PropertyStream::Source::findOneDeep(std::string const& name)
 {
-    Source* found = find_one(name);
+    Source* found = findOne(name);
     if (found != nullptr)
         return found;
 
     std::lock_guard _(lock_);
     for (auto& s : children_)
     {
-        found = s.source().find_one_deep(name);
+        found = s.source().findOneDeep(name);
         if (found != nullptr)
             return found;
     }
@@ -334,7 +334,7 @@ PropertyStream::Source::find_one_deep(std::string const& name)
 }
 
 PropertyStream::Source*
-PropertyStream::Source::find_path(std::string path)
+PropertyStream::Source::findPath(std::string path)
 {
     if (path.empty())
         return this;
@@ -344,7 +344,7 @@ PropertyStream::Source::find_path(std::string path)
         std::string const name(peel_name(&path));
         if (name.empty())
             break;
-        source = source->find_one(name);
+        source = source->findOne(name);
     } while (source != nullptr);
     return source;
 }
@@ -352,7 +352,7 @@ PropertyStream::Source::find_path(std::string path)
 // This function only looks at immediate children
 // If no immediate children match, then return nullptr
 PropertyStream::Source*
-PropertyStream::Source::find_one(std::string const& name)
+PropertyStream::Source::findOne(std::string const& name)
 {
     std::lock_guard _(lock_);
     for (auto& s : children_)
@@ -390,85 +390,85 @@ PropertyStream::add(std::string const& key, bool value)
 void
 PropertyStream::add(std::string const& key, char value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, signed char value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, unsigned char value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, short value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, unsigned short value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, int value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, unsigned int value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, long value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, unsigned long value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, long long value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, unsigned long long value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, float value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, double value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
 PropertyStream::add(std::string const& key, long double value)
 {
-    lexical_add(key, value);
+    lexicalAdd(key, value);
 }
 
 void
@@ -487,85 +487,85 @@ PropertyStream::add(bool value)
 void
 PropertyStream::add(char value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(signed char value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(unsigned char value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(short value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(unsigned short value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(int value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(unsigned int value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(long value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(unsigned long value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(long long value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(unsigned long long value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(float value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(double value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 void
 PropertyStream::add(long double value)
 {
-    lexical_add(value);
+    lexicalAdd(value);
 }
 
 }  // namespace beast

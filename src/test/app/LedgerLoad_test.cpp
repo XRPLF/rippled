@@ -109,7 +109,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger file specified for startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LOAD_FILE, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LoadFile, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -129,7 +129,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LOAD_FILE, std::nullopt),
+                envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LoadFile, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -139,7 +139,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             Env env(
                 *this,
                 envconfig(
-                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
+                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LoadFile, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -164,7 +164,7 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    StartUpType::LOAD_FILE,
+                    StartUpType::LoadFile,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);

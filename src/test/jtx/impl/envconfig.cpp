@@ -54,7 +54,7 @@ setupConfigForUnitTests(Config& cfg)
 namespace jtx {
 
 std::unique_ptr<Config>
-no_admin(std::unique_ptr<Config> cfg)
+noAdmin(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
@@ -62,16 +62,16 @@ no_admin(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway(std::unique_ptr<Config> cfg)
+secureGateway(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secure_gateway", getEnvLocalhostAddr());
+    (*cfg)[PORT_RPC].set("secureGateway", getEnvLocalhostAddr());
     return cfg;
 }
 
 std::unique_ptr<Config>
-admin_localnet(std::unique_ptr<Config> cfg)
+adminLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "127.0.0.0/8");
     (*cfg)[PORT_WS].set("admin", "127.0.0.0/8");
@@ -79,16 +79,16 @@ admin_localnet(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-secure_gateway_localnet(std::unique_ptr<Config> cfg)
+secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");
     (*cfg)[PORT_WS].set("admin", "");
-    (*cfg)[PORT_RPC].set("secure_gateway", "127.0.0.0/8");
-    (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)[PORT_RPC].set("secureGateway", "127.0.0.0/8");
+    (*cfg)[PORT_WS].set("secureGateway", "127.0.0.0/8");
     return cfg;
 }
 std::unique_ptr<Config>
-single_thread_io(std::unique_ptr<Config> cfg)
+singleThreadIo(std::unique_ptr<Config> cfg)
 {
     cfg->IO_WORKERS = 1;
     return cfg;
@@ -121,7 +121,7 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& s
     // Check https://man7.org/linux/man-pages/man7/ip.7.html
     // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-    (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
+    (*cfg)[SECTION_PORT_GRPC].set("secureGateway", secureGateway);
     return cfg;
 }
 

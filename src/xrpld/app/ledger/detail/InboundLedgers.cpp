@@ -435,7 +435,7 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp>(app, clock, collector, make_PeerSetBuilder(app));
+    return std::make_unique<InboundLedgersImp>(app, clock, collector, makePeerSetBuilder(app));
 }
 
 }  // namespace xrpl

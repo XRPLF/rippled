@@ -477,7 +477,7 @@ public:
         newPath = path;
         section.set("path", newPath.string());
 
-        auto backend{NodeStore::Manager::instance().make_Backend(
+        auto backend{NodeStore::Manager::instance().makeBackend(
             section,
             megabytes(env.app().config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler,

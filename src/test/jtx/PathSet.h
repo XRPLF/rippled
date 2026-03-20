@@ -62,29 +62,29 @@ isOffer(jtx::Env& env, jtx::Account const& account, Issue const& takerPays, Issu
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
 
-class Path
+class TestPath
 {
 public:
     STPath path;
 
-    Path() = default;
-    Path(Path const&) = default;
-    Path&
-    operator=(Path const&) = default;
-    Path(Path&&) = default;
-    Path&
-    operator=(Path&&) = default;
+    TestPath() = default;
+    TestPath(TestPath const&) = default;
+    TestPath&
+    operator=(TestPath const&) = default;
+    TestPath(TestPath&&) = default;
+    TestPath&
+    operator=(TestPath&&) = default;
 
     template <class First, class... Rest>
-    explicit Path(First&& first, Rest&&... rest)
+    explicit TestPath(First&& first, Rest&&... rest)
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Path&
+    TestPath&
     push_back(Issue const& iss);
-    Path&
+    TestPath&
     push_back(jtx::Account const& acc);
-    Path&
+    TestPath&
     push_back(STPathElement const& pe);
     Json::Value
     json() const;
@@ -95,15 +95,15 @@ private:
     addHelper(First&& first, Rest&&... rest);
 };
 
-inline Path&
-Path::push_back(STPathElement const& pe)
+inline TestPath&
+TestPath::push_back(STPathElement const& pe)
 {
     path.emplace_back(pe);
     return *this;
 }
 
-inline Path&
-Path::push_back(Issue const& iss)
+inline TestPath&
+TestPath::push_back(Issue const& iss)
 {
     path.emplace_back(
         STPathElement::typeCurrency | STPathElement::typeIssuer,
@@ -113,8 +113,8 @@ Path::push_back(Issue const& iss)
     return *this;
 }
 
-inline Path&
-Path::push_back(jtx::Account const& account)
+inline TestPath&
+TestPath::push_back(jtx::Account const& account)
 {
     path.emplace_back(account.id(), beast::zero, beast::zero);
     return *this;
@@ -122,7 +122,7 @@ Path::push_back(jtx::Account const& account)
 
 template <class First, class... Rest>
 void
-Path::addHelper(First&& first, Rest&&... rest)
+TestPath::addHelper(First&& first, Rest&&... rest)
 {
     push_back(std::forward<First>(first));
     if constexpr (sizeof...(rest) > 0)
@@ -130,9 +130,9 @@ Path::addHelper(First&& first, Rest&&... rest)
 }
 
 inline Json::Value
-Path::json() const
+TestPath::json() const
 {
-    return path.getJson(JsonOptions::none);
+    return path.getJson(JsonOptions::kNONE);
 }
 
 class PathSet
@@ -157,7 +157,7 @@ public:
     json() const
     {
         Json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::none);
+        v["Paths"] = paths.getJson(JsonOptions::kNONE);
         return v;
     }
 

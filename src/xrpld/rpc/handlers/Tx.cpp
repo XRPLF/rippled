@@ -190,7 +190,7 @@ populateJsonResponse(
         if (context.apiVersion > 1)
         {
             constexpr auto kOPTIONS_JSON =
-                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+                JsonOptions::kINCLUDE_DATE | JsonOptions::kDISABLE_API_PRIOR_V2;
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
@@ -217,7 +217,7 @@ populateJsonResponse(
         }
         else
         {
-            response = result.txn->getJson(JsonOptions::include_date, args.binary);
+            response = result.txn->getJson(JsonOptions::kINCLUDE_DATE, args.binary);
             if (!args.binary)
                 RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
@@ -235,7 +235,7 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::none);
+                response[jss::meta] = meta->getJson(JsonOptions::kNONE);
                 insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);

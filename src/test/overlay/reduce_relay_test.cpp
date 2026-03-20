@@ -1034,7 +1034,7 @@ protected:
                     auto d = reduce_relay::epoch<milliseconds>(now).count() -
                         std::get<3>(peers[event.peer]);
                     mustHandle = event.isSelected &&
-                        d > milliseconds(reduce_relay::IDLED).count() &&
+                        d > milliseconds(reduce_relay::kIDLED).count() &&
                         network_.overlay().inState(*event.key, reduce_relay::PeerState::Squelched) >
                             0 &&
                         peers.contains(event.peer);
@@ -1053,7 +1053,7 @@ protected:
             }
             if (event.state == State::WaitReset ||
                 (event.state == State::On &&
-                 (now - event.time > (reduce_relay::IDLED + seconds(2)))))
+                 (now - event.time > (reduce_relay::kIDLED + seconds(2)))))
             {
                 bool handled = event.state == State::WaitReset || !event.handled;
                 BEAST_EXPECT(handled);
@@ -1152,7 +1152,7 @@ protected:
                 }
             },
             1,
-            reduce_relay::MAX_MESSAGE_THRESHOLD + 2,
+            reduce_relay::kMAX_MESSAGE_THRESHOLD + 2,
             purge,
             resetClock);
         auto selected = network_.overlay().getSelected(network_.validator(0));
@@ -1231,7 +1231,7 @@ protected:
         doTest("Selected Peer Stops Relaying", log, [this](bool log) {
             ManualClock::advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true, false));
-            ManualClock::advance(reduce_relay::IDLED + seconds(1));
+            ManualClock::advance(reduce_relay::kIDLED + seconds(1));
             std::uint16_t unsquelched = 0;
             network_.overlay().deleteIdlePeers(
                 [&](PublicKey const& key, PeerWPtr const& peer) { unsquelched++; });
@@ -1416,7 +1416,7 @@ vp_base_squelch_max_selected_peers=2
             // bootup
             BEAST_EXPECT(!createSlots(true).baseSquelchReady());
 
-            ManualClock::advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
+            ManualClock::advance(reduce_relay::kWAIT_ON_BOOTUP + minutes{1});
 
             // base squelch enabled and bootup time passed
             BEAST_EXPECT(createSlots(true).baseSquelchReady());
@@ -1453,7 +1453,7 @@ vp_base_squelch_max_selected_peers=2
             peers = network_.overlay().getPeers(network_.validator(0));
             BEAST_EXPECT(std::get<1>(peers[0]) == (nMessages - 1));
             // advance the clock
-            ManualClock::advance(reduce_relay::IDLED + seconds(1));
+            ManualClock::advance(reduce_relay::kIDLED + seconds(1));
             network_.overlay().updateSlotAndSquelch(
                 key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {});
             peers = network_.overlay().getPeers(network_.validator(0));
@@ -1494,7 +1494,7 @@ vp_base_squelch_max_selected_peers=2
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
                 // and switch the slot's state to peer selection.
-                for (int m = 1; m <= reduce_relay::MAX_MESSAGE_THRESHOLD + 2; m++)
+                for (int m = 1; m <= reduce_relay::kMAX_MESSAGE_THRESHOLD + 2; m++)
                 {
                     for (int peer = 0; peer < npeers; peer++)
                     {
@@ -1511,39 +1511,39 @@ vp_base_squelch_max_selected_peers=2
             };
 
             using namespace reduce_relay;
-            // expect max duration less than MAX_UNSQUELCH_EXPIRE_DEFAULT with
+            // expect max duration less than kMAX_UNSQUELCH_EXPIRE_DEFAULT with
             // less than or equal to 60 peers
             run(20);
             BEAST_EXPECT(
-                handler.maxDuration >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+                handler.maxDuration >= kMIN_UNSQUELCH_EXPIRE.count() &&
+                handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count());
             run(60);
             BEAST_EXPECT(
-                handler.maxDuration >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
-            // expect max duration greater than MIN_UNSQUELCH_EXPIRE and less
-            // than MAX_UNSQUELCH_EXPIRE_PEERS with peers greater than 60
+                handler.maxDuration >= kMIN_UNSQUELCH_EXPIRE.count() &&
+                handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+            // expect max duration greater than kMIN_UNSQUELCH_EXPIRE and less
+            // than kMAX_UNSQUELCH_EXPIRE_PEERS with peers greater than 60
             // and less than 360
             run(350);
             // can't make this condition stronger. squelch
             // duration is probabilistic and max condition may still fail.
             // log when the value is low
             BEAST_EXPECT(
-                handler.maxDuration >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
+                handler.maxDuration >= kMIN_UNSQUELCH_EXPIRE.count() &&
+                handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS.count());
             using namespace beast::unit_test::detail;
-            if (handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count())
+            if (handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count())
             {
                 log << make_reason("warning: squelch duration is low", __FILE__, __LINE__)
                     << std::endl
                     << std::flush;
             }
-            // more than 400 is still less than MAX_UNSQUELCH_EXPIRE_PEERS
+            // more than 400 is still less than kMAX_UNSQUELCH_EXPIRE_PEERS
             run(400);
             BEAST_EXPECT(
-                handler.maxDuration >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
-            if (handler.maxDuration <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count())
+                handler.maxDuration >= kMIN_UNSQUELCH_EXPIRE.count() &&
+                handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS.count());
+            if (handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count())
             {
                 log << make_reason("warning: squelch duration is low", __FILE__, __LINE__)
                     << std::endl
@@ -1588,7 +1588,7 @@ vp_base_squelch_max_selected_peers=2
                 // inbound is enabled if the request's header has the feature
                 // enabled and the peer's configuration is enabled
                 auto const inboundEnabled =
-                    peerFeatureEnabled(httpRequest, FEATURE_VPRR, inboundEnable);
+                    peerFeatureEnabled(httpRequest, kFEATURE_VPRR, inboundEnable);
                 BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
                 setEnv(inboundEnable);
@@ -1597,7 +1597,7 @@ vp_base_squelch_max_selected_peers=2
                 // outbound is enabled if the response's header has the feature
                 // enabled and the peer's configuration is enabled
                 auto const outboundEnabled =
-                    peerFeatureEnabled(httpResp, FEATURE_VPRR, outboundEnable);
+                    peerFeatureEnabled(httpResp, kFEATURE_VPRR, outboundEnable);
                 BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
             };
             handshake(1, 1);

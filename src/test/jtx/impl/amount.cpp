@@ -14,7 +14,7 @@ std::ostream&
 operator<<(std::ostream&& os,
     AnyAmount const& amount)
 {
-    if (amount.is_any)
+    if (amount.isAny)
     {
         os << amount.value.getText() << "/" <<
             to_string(amount.value.issue().currency) <<
@@ -57,7 +57,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     if (amount.value().native())
     {
         // measure in hundredths
-        auto const c = dropsPerXRP.drops() / 100;
+        auto const c = kDROPS_PER_XRP.drops() / 100;
         auto const n = amount.value().mantissa();
         if (n < c)
         {
@@ -71,7 +71,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
             }
             return os;
         }
-        auto const d = double(n) / dropsPerXRP.drops();
+        auto const d = double(n) / kDROPS_PER_XRP.drops();
         if (amount.value().negative())
             os << "-";
 
@@ -92,16 +92,16 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
 
 //------------------------------------------------------------------------------
 
-XRP_t const XRP{};
+XrpT const XRP{};
 
 PrettyAmount
-IOU::operator()(epsilon_t) const
+IOU::operator()(EpsilonT) const
 {
     return {STAmount(issue(), 1, -81), account.name()};
 }
 
 PrettyAmount
-IOU::operator()(detail::epsilon_multiple m) const
+IOU::operator()(detail::EpsilonMultiple m) const
 {
     return {STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
 }
@@ -113,7 +113,7 @@ operator<<(std::ostream& os, IOU const& iou)
     return os;
 }
 
-any_t const any{};
+AnyT const kANY{};
 
 }  // namespace jtx
 }  // namespace test

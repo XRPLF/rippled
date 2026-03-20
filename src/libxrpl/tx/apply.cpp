@@ -156,7 +156,7 @@ applyBatchTransactions(
     auto const mode = batchTxn.getFlags();
 
     auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
-        OpenView perTxBatchView(batch_view, batchView);
+        OpenView perTxBatchView(kBatchView, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
         XRPL_ASSERT(
@@ -230,7 +230,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(batch_view, view);
+                OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

@@ -6,12 +6,12 @@ namespace test {
 namespace jtx {
 
 void
-sig::operator()(Env&, JTx& jt) const
+Sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
     if (!subField_)
-        jt.fill_sig = false;
+        jt.fillSig = false;
     if (account_)
     {
         // VFALCO Inefficient pre-C++14

@@ -59,7 +59,7 @@ Env::AppBundle::AppBundle(
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
         config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
-    owned = make_Application(std::move(config), std::move(logs), std::move(tk));
+    owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->logs().threshold(thresh);
     if (!app->setup({}))
@@ -274,26 +274,26 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
-        require(flags(account, asfDefaultRipple));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
+        require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::seq(jtx::autofill),
-            fee(jtx::autofill),
-            sig(jtx::autofill));
-        require(nflags(account, asfDefaultRipple));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
+        require(Nflags(account, asfDefaultRipple));
     }
-    require(jtx::balance(account, amount));
+    require(jtx::Balance(account, amount));
 }
 
 void
@@ -302,14 +302,14 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
+        jtx::Seq(jtx::kAUTOFILL),
+        Fee(jtx::kAUTOFILL),
+        Sig(jtx::kAUTOFILL));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::seq(jtx::autofill),
-        fee(jtx::autofill),
-        sig(jtx::autofill));
+        jtx::Seq(jtx::kAUTOFILL),
+        Fee(jtx::kAUTOFILL),
+        Sig(jtx::kAUTOFILL));
     test.expect(balance(account) == start);
 }
 
@@ -507,7 +507,7 @@ Env::tx() const
 }
 
 void
-Env::autofill_sig(JTx& jt)
+Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
@@ -526,7 +526,7 @@ Env::autofill_sig(JTx& jt)
     }
 
     // If the sig is still needed, get it here.
-    if (!jt.fill_sig)
+    if (!jt.fillSig)
         return;
     auto const account = jv.isMember(sfDelegate.jsonName)
         ? lookup(jv[sfDelegate.jsonName].asString())
@@ -553,12 +553,12 @@ void
 Env::autofill(JTx& jt)
 {
     auto& jv = jt.jv;
-    if (jt.fill_fee)
-        jtx::fill_fee(jv, *current());
-    if (jt.fill_seq)
-        jtx::fill_seq(jv, *current());
+    if (jt.fillFee)
+        jtx::fillFee(jv, *current());
+    if (jt.fillSeq)
+        jtx::fillSeq(jv, *current());
 
-    if (jt.fill_netid)
+    if (jt.fillNetid)
     {
         uint32_t networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
@@ -568,9 +568,9 @@ Env::autofill(JTx& jt)
     // Must come last
     try
     {
-        autofill_sig(jt);
+        autofillSig(jt);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         if (!parseFailureExpected_)
             test.log << "parse failed:\n" << pretty(jv) << std::endl;
@@ -588,9 +588,9 @@ Env::st(JTx const& jt)
     {
         obj = jtx::parse(jt.jv);
     }
-    catch (jtx::parse_error const&)
+    catch (jtx::ParseError const&)
     {
-        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
+        test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
         Rethrow();
     }
 
@@ -614,9 +614,9 @@ Env::ust(JTx const& jt)
     {
         obj = jtx::parse(jt.jv);
     }
-    catch (jtx::parse_error const&)
+    catch (jtx::ParseError const&)
     {
-        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
+        test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
         Rethrow();
     }
 
@@ -631,7 +631,7 @@ Env::ust(JTx const& jt)
 }
 
 Json::Value
-Env::do_rpc(
+Env::doRpc(
     unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
@@ -640,7 +640,7 @@ Env::do_rpc(
 
     for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
     {
-        JLOG(journal.error()) << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
+        JLOG(journal.error()) << "Env::doRpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);

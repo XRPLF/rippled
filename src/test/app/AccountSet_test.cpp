@@ -34,7 +34,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
 
-        Env env(*this, testable_amendments());
+        Env env(*this, testableAmendments());
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
@@ -86,13 +86,13 @@ public:
                 if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
                 {
                     // Good flag
-                    env.require(nflags(alice, flag));
-                    env(fset(alice, flag), sig(alice));
+                    env.require(Nflags(alice, flag));
+                    env(fset(alice, flag), Sig(alice));
                     env.close();
-                    env.require(flags(alice, flag));
-                    env(fclear(alice, flag), sig(alie));
+                    env.require(Flags(alice, flag));
+                    env(fclear(alice, flag), Sig(alie));
                     env.close();
-                    env.require(nflags(alice, flag));
+                    env.require(Nflags(alice, flag));
                     std::uint32_t const nowFlags = (*env.le(alice))[sfFlags];
                     BEAST_EXPECT(nowFlags == origFlags);
                 }
@@ -100,10 +100,10 @@ public:
                 {
                     // Bad flag
                     BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
-                    env(fset(alice, flag), sig(alice));
+                    env(fset(alice, flag), Sig(alice));
                     env.close();
                     BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
-                    env(fclear(alice, flag), sig(alie));
+                    env(fclear(alice, flag), Sig(alie));
                     env.close();
                     BEAST_EXPECT((*env.le(alice))[sfFlags] == origFlags);
                 }
@@ -134,7 +134,7 @@ public:
         // asfAccountTxnID is special and not actually set as a flag,
         // so we check the field presence instead
         BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfAccountTxnID));
-        env(fset(alice, asfAccountTxnID), sig(alice));
+        env(fset(alice, asfAccountTxnID), Sig(alice));
         BEAST_EXPECT(env.le(alice)->isFieldPresent(sfAccountTxnID));
         env(fclear(alice, asfAccountTxnID));
         BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfAccountTxnID));
@@ -154,13 +154,13 @@ public:
         env.memoize("eric");
         env(regkey(alice, "eric"));
 
-        env.require(nflags(alice, asfNoFreeze));
-        env(fset(alice, asfNoFreeze), sig("eric"), ter(tecNEED_MASTER_KEY));
-        env(fset(alice, asfNoFreeze), sig(alice));
-        env.require(flags(alice, asfNoFreeze));
-        env(fclear(alice, asfNoFreeze), sig(alice));
+        env.require(Nflags(alice, asfNoFreeze));
+        env(fset(alice, asfNoFreeze), Sig("eric"), Ter(tecNEED_MASTER_KEY));
+        env(fset(alice, asfNoFreeze), Sig(alice));
+        env.require(Flags(alice, asfNoFreeze));
+        env(fclear(alice, asfNoFreeze), Sig(alice));
         // verify flag is still set (clear does not clear in this case)
-        env.require(flags(alice, asfNoFreeze));
+        env.require(Flags(alice, asfNoFreeze));
     }
 
     void
@@ -207,7 +207,7 @@ public:
             }
             else
             {
-                env(jt, ter(telBAD_DOMAIN));
+                env(jt, Ter(telBAD_DOMAIN));
             }
         }
     }
@@ -234,7 +234,7 @@ public:
 
         using namespace std::string_literals;
         jt[sfMessageKey.fieldName] = strHex("NOT_REALLY_A_PUBKEY"s);
-        env(jt, ter(telBAD_PUBLIC_KEY));
+        env(jt, Ter(telBAD_PUBLIC_KEY));
     }
 
     void
@@ -302,7 +302,7 @@ public:
 
                 for (auto const& r : testData)
                 {
-                    env(rate(alice, r.set), ter(r.code));
+                    env(rate(alice, r.set), Ter(r.code));
                     env.close();
 
                     // If the field is not present expect the default value
@@ -318,7 +318,7 @@ public:
             };
 
         doTests(
-            testable_amendments(),
+            testableAmendments(),
             {{1.0, tesSUCCESS, 1.0},
              {1.1, tesSUCCESS, 1.1},
              {2.0, tesSUCCESS, 2.0},
@@ -360,8 +360,8 @@ public:
             env(pay(alice, bob, usd(1)), sendmax(usd(10)));
             env.close();
 
-            env.require(balance(alice, usd(10) - amountWithRate));
-            env.require(balance(bob, usd(1)));
+            env.require(Balance(alice, usd(10) - amountWithRate));
+            env.require(Balance(bob, usd(1)));
         }
 
         // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
@@ -424,8 +424,8 @@ public:
             env(pay(gw, alice, usd(10)));
             env(pay(alice, bob, amount), sendmax(usd(10)));
 
-            env.require(balance(alice, usd(10) - amountWithRate));
-            env.require(balance(bob, amount));
+            env.require(Balance(alice, usd(10) - amountWithRate));
+            env.require(Balance(bob, amount));
         }
     }
 
@@ -441,33 +441,33 @@ public:
 
         auto jt = fset(alice, asfDisallowXRP);
         jt[jss::ClearFlag] = asfDisallowXRP;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfRequireAuth);
         jt[jss::ClearFlag] = asfRequireAuth;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfRequireDest);
         jt[jss::ClearFlag] = asfRequireDest;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfDisallowXRP);
         jt[sfFlags.fieldName] = tfAllowXRP;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfRequireAuth);
         jt[sfFlags.fieldName] = tfOptionalAuth;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfRequireDest);
         jt[sfFlags.fieldName] = tfOptionalDestTag;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
         jt = fset(alice, asfRequireDest);
         jt[sfFlags.fieldName] = tfAccountSetMask;
-        env(jt, ter(temINVALID_FLAG));
+        env(jt, Ter(temINVALID_FLAG));
 
-        env(fset(alice, asfDisableMaster), sig(alice), ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
     }
 
     void
@@ -491,10 +491,10 @@ public:
         env.close();
         BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(fset(alice, asfRequireAuth), ter(tecOWNERS));
+        env(fset(alice, asfRequireAuth), Ter(tecOWNERS));
 
         // Remove the signer list.  After that asfRequireAuth should succeed.
-        env(signers(alice, test::jtx::none));
+        env(signers(alice, test::jtx::kNONE));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
@@ -514,23 +514,23 @@ public:
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Try using a ticket that alice doesn't have.
-        env(noop(alice), ticket::use(ticketSeq + 1), ter(terPRE_TICKET));
+        env(noop(alice), ticket::use(ticketSeq + 1), Ter(terPRE_TICKET));
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Actually use alice's ticket.  Note that if a transaction consumes
         // a ticket then the account's sequence number does not advance.
         std::uint32_t const aliceSeq{env.seq(alice)};
         env(noop(alice), ticket::use(ticketSeq));
         env.close();
-        env.require(owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), tickets(alice, 0));
         BEAST_EXPECT(aliceSeq == env.seq(alice));
 
         // Try re-using a ticket that alice already used.
-        env(noop(alice), ticket::use(ticketSeq), ter(tefNO_TICKET));
+        env(noop(alice), ticket::use(ticketSeq), Ter(tefNO_TICKET));
         env.close();
     }
 
@@ -545,7 +545,7 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto jtx = env.jt(noop("alice"), ter(temBAD_SIGNATURE));
+        auto jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto stx = std::make_shared<STTx>(*jtx.stx);

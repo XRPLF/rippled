@@ -34,31 +34,31 @@ class STValidation;
    "worse" dispositions */
 enum class ListDisposition {
     /// List is valid
-    accepted = 0,
+    Accepted = 0,
 
     /// List is expired, but has the largest non-pending sequence seen so far
-    expired,
+    Expired,
 
     /// List will be valid in the future
-    pending,
+    Pending,
 
     /// Same sequence as current list
-    same_sequence,
+    SameSequence,
 
     /// Future sequence already seen
-    known_sequence,
+    KnownSequence,
 
     /// Trusted publisher key, but seq is too old
-    stale,
+    Stale,
 
     /// List signed by untrusted publisher key
-    untrusted,
+    Untrusted,
 
     /// List version is not supported
-    unsupported_version,
+    UnsupportedVersion,
 
     /// Invalid format or signature
-    invalid
+    Invalid
 };
 
 /* Entries in this enum are ordered by "desirability".
@@ -66,21 +66,21 @@ enum class ListDisposition {
    "worse" dispositions */
 enum class PublisherStatus {
     // Publisher has provided a valid file
-    available = 0,
+    Available = 0,
 
     // Current list is expired without replacement
-    expired,
+    Expired,
 
     // No file seen yet
-    unavailable,
+    Unavailable,
 
     // Publisher has revoked their manifest key
-    revoked,
+    Revoked,
 
 };
 
 std::string
-to_string(ListDisposition disposition);
+toString(ListDisposition disposition);
 
 /** Changes in trusted nodes after updating validator list
  */
@@ -285,7 +285,7 @@ public:
         // occurred
         std::map<ListDisposition, std::size_t> dispositions;
         std::optional<PublicKey> publisherKey;
-        PublisherStatus status = PublisherStatus::unavailable;
+        PublisherStatus status = PublisherStatus::Unavailable;
         std::size_t sequence = 0;
     };
 
@@ -360,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximumMessageSize);
+        std::size_t maxSize = kMAXIMUM_MESSAGE_SIZE);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -384,7 +384,7 @@ public:
         @param networkOPs NetworkOPs object which will be informed if there
             is a valid VL
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -415,7 +415,7 @@ public:
 
         @param hash Optional hash of the data parameters
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
         information, if list was successfully applied
 
         @par Thread Safety
@@ -743,7 +743,7 @@ private:
         @param hash Optional hash of the data parameters.
             Defaults to uninitialized
 
-        @return `ListDisposition::accepted`, plus some of the publisher
+        @return `ListDisposition::Accepted`, plus some of the publisher
             information, if list was successfully applied
 
         @par Thread Safety
@@ -840,7 +840,7 @@ private:
 
     /** Check response for trusted valid published list
 
-        @return `ListDisposition::accepted` if list can be applied
+        @return `ListDisposition::Accepted` if list can be applied
 
         @par Thread Safety
 

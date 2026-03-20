@@ -76,7 +76,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> invalidDocument = {NoneTag, 1.2, -1, "", "kNONE", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -106,7 +106,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "kNONE", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -115,7 +115,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> invalidTime = {NoneTag, -1, 1.2, "", "kNONE", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(
@@ -169,7 +169,7 @@ public:
         // Aggregate data set includes all price oracle instances, no trimming
         // or time threshold
         {
-            auto const all = testable_amendments();
+            auto const all = testableAmendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
                 for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})

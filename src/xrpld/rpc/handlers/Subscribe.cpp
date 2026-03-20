@@ -55,7 +55,7 @@ doSubscribe(RPC::JsonContext& context)
             JLOG(context.j.debug()) << "doSubscribe: building: " << strUrl;
             try
             {
-                auto rspSub = make_RPCSub(
+                auto rspSub = makeRPCSub(
                     context.app.getOPs(),
                     context.app.getIOContext(),
                     context.app.getJobQueue(),

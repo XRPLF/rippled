@@ -29,7 +29,7 @@ enum class Role { GUEST, USER, IDENTIFIED, ADMIN, PROXY, FORBID };
     which is an array with at least one object. Inside this object
     are the optional keys 'admin_user' and 'admin_password' used to
     validate the credentials. If user is non-blank, it's username
-    passed in the HTTP header by a secure_gateway proxy.
+    passed in the HTTP header by a secureGateway proxy.
 */
 Role
 requestRole(

@@ -24,33 +24,33 @@ public:
             env.close();
             env.trust(usd(100), "alice", "bob", "carol");
             env.close();
-            env(pay("alice", "bob", usd(10)), deliver_min(usd(10)), ter(temBAD_AMOUNT));
+            env(pay("alice", "bob", usd(10)), deliver_min(usd(10)), Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
                 deliver_min(usd(-5)),
                 txflags(tfPartialPayment),
-                ter(temBAD_AMOUNT));
+                Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
                 deliver_min(XRP(5)),
                 txflags(tfPartialPayment),
-                ter(temBAD_AMOUNT));
+                Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
                 deliver_min(Account("carol")["USD"](5)),
                 txflags(tfPartialPayment),
-                ter(temBAD_AMOUNT));
+                Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
                 deliver_min(usd(15)),
                 txflags(tfPartialPayment),
-                ter(temBAD_AMOUNT));
+                Ter(temBAD_AMOUNT));
             env(pay(gw, "carol", usd(50)));
             env(offer("carol", XRP(5), usd(5)));
             env(pay("alice", "bob", usd(10)),
-                paths(XRP),
+                Paths(XRP),
                 deliver_min(usd(7)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
-                ter(tecPATH_PARTIAL));
-            env.require(balance("alice", XRP(10000) - drops(env.current()->fees().base)));
-            env.require(balance("bob", XRP(10000)));
+                Ter(tecPATH_PARTIAL));
+            env.require(Balance("alice", XRP(10000) - drops(env.current()->fees().base)));
+            env.require(Balance("bob", XRP(10000)));
         }
 
         {
@@ -62,11 +62,11 @@ public:
             env(pay(gw, "bob", usd(100)));
             env(offer("bob", XRP(100), usd(100)));
             env(pay("alice", "alice", usd(10000)),
-                paths(XRP),
+                Paths(XRP),
                 deliver_min(usd(100)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(100)));
-            env.require(balance("alice", usd(100)));
+            env.require(Balance("alice", usd(100)));
         }
 
         {
@@ -80,18 +80,18 @@ public:
             env(offer("bob", XRP(1000), usd(100)));
             env(offer("bob", XRP(10000), usd(100)));
             env(pay("alice", "carol", usd(10000)),
-                paths(XRP),
+                Paths(XRP),
                 deliver_min(usd(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(1000)),
-                ter(tecPATH_PARTIAL));
+                Ter(tecPATH_PARTIAL));
             env(pay("alice", "carol", usd(10000)),
-                paths(XRP),
+                Paths(XRP),
                 deliver_min(usd(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(1100)));
-            env.require(balance("bob", usd(0)));
-            env.require(balance("carol", usd(200)));
+            env.require(Balance("bob", usd(0)));
+            env.require(Balance("carol", usd(200)));
         }
 
         {
@@ -106,13 +106,13 @@ public:
             env(offer("bob", XRP(1000), usd(100)));
             env(offer("dan", XRP(100), usd(100)));
             env(pay("alice", "carol", usd(10000)),
-                paths(XRP),
+                Paths(XRP),
                 deliver_min(usd(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(200)));
-            env.require(balance("bob", usd(0)));
-            env.require(balance("carol", usd(200)));
-            env.require(balance("dan", usd(0)));
+            env.require(Balance("bob", usd(0)));
+            env.require(Balance("carol", usd(200)));
+            env.require(Balance("dan", usd(0)));
         }
     }
 
@@ -120,7 +120,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testConvertAllOfAnAsset(sa - featurePermissionedDEX);
         testConvertAllOfAnAsset(sa);
     }

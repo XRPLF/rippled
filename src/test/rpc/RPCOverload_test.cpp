@@ -20,7 +20,7 @@ public:
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    return no_admin(std::move(cfg));
+                    return noAdmin(std::move(cfg));
                 })};
 
         Account const alice{"alice"};

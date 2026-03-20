@@ -44,7 +44,7 @@ ManagerImp::ManagerImp()
 }
 
 std::unique_ptr<Backend>
-ManagerImp::make_Backend(
+ManagerImp::makeBackend(
     Section const& parameters,
     std::size_t burstSize,
     Scheduler& scheduler,
@@ -64,14 +64,14 @@ ManagerImp::make_Backend(
 }
 
 std::unique_ptr<Database>
-ManagerImp::make_Database(
+ManagerImp::makeDatabase(
     std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
 {
-    auto backend{make_Backend(config, burstSize, scheduler, journal)};
+    auto backend{makeBackend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
         scheduler, readThreads, std::move(backend), config, journal);

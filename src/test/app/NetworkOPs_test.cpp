@@ -33,12 +33,12 @@ public:
             env.memoize(env.master);
             env.memoize(alice);
 
-            auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
+            auto const jtx = env.jt(ticket::create(alice, 1), Seq(1),Fee(10));
 
             auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::HELD);
 
-            env(jtx, json(jss::Sequence, 1), ter(terNO_ACCOUNT));
+            env(jtx, json(jss::Sequence, 1), Ter(terNO_ACCOUNT));
 
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::BAD);
 

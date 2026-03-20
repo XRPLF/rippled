@@ -76,7 +76,7 @@ private:
     int high_ = 0;
     std::array<std::size_t, 64> hist_;
 
-    io_list ios_;
+    IoList ios_;
 
 public:
     ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
@@ -95,7 +95,7 @@ public:
     void
     close() override;
 
-    io_list&
+    IoList&
     ios()
     {
         return ios_;

@@ -9,7 +9,7 @@ namespace jtx {
 void
 sendmax::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[jss::SendMax] = amount_.getJson(JsonOptions::none);
+    jt.jv[jss::SendMax] = amount_.getJson(JsonOptions::kNONE);
 }
 
 }  // namespace jtx

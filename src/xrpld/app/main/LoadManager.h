@@ -87,10 +87,10 @@ private:
     bool armed_;
 
     friend std::unique_ptr<LoadManager>
-    make_LoadManager(Application& app, beast::Journal journal);
+    makeLoadManager(Application& app, beast::Journal journal);
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal);
+makeLoadManager(Application& app, beast::Journal journal);
 
 }  // namespace xrpl

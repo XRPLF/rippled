@@ -36,7 +36,7 @@ class LocalTx
 public:
     LocalTx(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
         : txn_(txn)
-        , expire_(index + LocalTxs::holdLedgers)
+        , expire_(index + LocalTxs::kHOLD_LEDGERS)
         , id_(txn->getTransactionID())
         , account_(txn->getAccountID(sfAccount))
         , seqProxy_(txn->getSeqProxy())
@@ -92,7 +92,7 @@ public:
 
     // Add a new transaction to the set of local transactions
     void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
+    pushBack(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
         std::lock_guard lock(lock_);
 
@@ -169,7 +169,7 @@ private:
 };
 
 std::unique_ptr<LocalTxs>
-make_LocalTxs()
+makeLocalTxs()
 {
     return std::make_unique<LocalTxsImp>();
 }

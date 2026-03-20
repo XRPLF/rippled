@@ -111,7 +111,7 @@ requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
     consequencesHelper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
+    return TxConsequences(ctx.tx, TxConsequences::Blocker);
 };
 
 // For Transactor::Custom
@@ -261,7 +261,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == blocker);
+    isBlocker_ = (category == Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)

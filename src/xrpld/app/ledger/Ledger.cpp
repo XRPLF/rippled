@@ -158,7 +158,7 @@ Ledger::Ledger(
 {
     header_.seq = 1;
     header_.drops = INITIAL_XRP;
-    header_.closeTimeResolution = ledgerGenesisTimeResolution;
+    header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
 
     static auto const kID =
         calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
@@ -299,7 +299,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = ledgerDefaultTimeResolution;
+    header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
     defaultFees(config);
     setup();
 }

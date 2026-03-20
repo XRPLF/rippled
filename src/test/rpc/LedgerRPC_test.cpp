@@ -198,7 +198,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         testcase("Ledger Request, Full Option Without Admin");
         using namespace test::jtx;
 
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
 
         //        env.close();
 
@@ -443,16 +443,16 @@ class LedgerRPC_test : public beast::unit_test::suite
         // Put some txs in the queue
         // Alice
         auto aliceSeq = env.seq(alice);
-        env(pay(alice, "george", XRP(1000)), last_ledger_seq(7), ter(terQUEUED));
-        env(offer(alice, XRP(50000), alice["USD"](5000)), seq(aliceSeq + 1), ter(terQUEUED));
-        env(noop(alice), seq(aliceSeq + 2), ter(terQUEUED));
+        env(pay(alice, "george", XRP(1000)), LastLedgerSeq(7), Ter(terQUEUED));
+        env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
+        env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
         // Bob
         auto batch = [&env](Account a) {
             auto aSeq = env.seq(a);
             // Enough fee to get in front of alice in the queue
             for (int i = 0; i < 10; ++i)
             {
-                env(noop(a), fee(1000 + i), seq(aSeq + i), ter(terQUEUED));
+                env(noop(a), Fee(1000 + i), Seq(aSeq + i), Ter(terQUEUED));
             }
         };
         batch(bob);

@@ -15,7 +15,7 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
+    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::kNONE);
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     return jv;
@@ -27,7 +27,7 @@ cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::none);
+    jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::kNONE);
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     return jv;

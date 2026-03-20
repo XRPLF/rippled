@@ -14,15 +14,15 @@ namespace RPC {
 struct Request
 {
     explicit Request(
-        beast::Journal journal_,
-        std::string const& method_,
-        Json::Value& params_,
-        Application& app_)
-        : journal(journal_)
-        , method(method_)
-        , params(params_)
+        beast::Journal journal,
+        std::string const& method,
+        Json::Value& params,
+        Application& app)
+        : journal(journal)
+        , method(method)
+        , params(params)
         , fee(Resource::feeReferenceRPC)
-        , app(app_)
+        , app(app)
     {
     }
 

@@ -174,7 +174,7 @@ namespace NodeStore {
 class Progress
 {
 private:
-    using clock_type = beast::basic_seconds_clock;
+    using clock_type = beast::BasicSecondsClock;
 
     std::size_t const work_;
     clock_type::time_point start_ = clock_type::now();
@@ -265,7 +265,7 @@ public:
     void
     run() override
     {
-        testcase(beast::unit_test::abort_on_fail) << arg();
+        testcase(beast::unit_test::AbortOnFail) << arg();
 
         using namespace nudb;
         using namespace nudb::detail;

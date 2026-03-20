@@ -23,27 +23,27 @@
 namespace xrpl {
 
 std::string
-to_string(ListDisposition disposition)
+toString(ListDisposition disposition)
 {
     switch (disposition)
     {
-        case ListDisposition::accepted:
+        case ListDisposition::Accepted:
             return "accepted";
-        case ListDisposition::expired:
+        case ListDisposition::Expired:
             return "expired";
-        case ListDisposition::same_sequence:
+        case ListDisposition::SameSequence:
             return "same_sequence";
-        case ListDisposition::pending:
+        case ListDisposition::Pending:
             return "pending";
-        case ListDisposition::known_sequence:
+        case ListDisposition::KnownSequence:
             return "known_sequence";
-        case ListDisposition::unsupported_version:
+        case ListDisposition::UnsupportedVersion:
             return "unsupported_version";
-        case ListDisposition::untrusted:
+        case ListDisposition::Untrusted:
             return "untrusted";
-        case ListDisposition::stale:
+        case ListDisposition::Stale:
             return "stale";
-        case ListDisposition::invalid:
+        case ListDisposition::Invalid:
             return "invalid";
     }
     return "unknown";
@@ -67,13 +67,13 @@ ValidatorList::PublisherListStats::PublisherListStats(
 ListDisposition
 ValidatorList::PublisherListStats::bestDisposition() const
 {
-    return dispositions.empty() ? ListDisposition::invalid : dispositions.begin()->first;
+    return dispositions.empty() ? ListDisposition::Invalid : dispositions.begin()->first;
 }
 
 ListDisposition
 ValidatorList::PublisherListStats::worstDisposition() const
 {
-    return dispositions.empty() ? ListDisposition::invalid : dispositions.rbegin()->first;
+    return dispositions.empty() ? ListDisposition::Invalid : dispositions.rbegin()->first;
 }
 
 void
@@ -150,12 +150,12 @@ ValidatorList::load(
         }
 
         auto id = PublicKey(makeSlice(*ret));
-        auto status = PublisherStatus::unavailable;
+        auto status = PublisherStatus::Unavailable;
 
         if (publisherManifests_.revoked(id))
         {
             JLOG(j_.warn()) << "Configured validator list publisher key is revoked: " << key;
-            status = PublisherStatus::revoked;
+            status = PublisherStatus::Revoked;
         }
 
         if (publisherLists_.contains(id))
@@ -499,7 +499,7 @@ splitMessageParts(
             smallMsg.set_manifest(blob.manifest());
 
         XRPL_ASSERT(
-            Message::totalSize(smallMsg) <= maximumMessageSize,
+            Message::totalSize(smallMsg) <= kMAXIMUM_MESSAGE_SIZE,
             "xrpl::splitMessageParts : maximum message size");
 
         messages.emplace_back(
@@ -556,7 +556,7 @@ buildValidatorListMessage(
     msg.set_version(version);
 
     XRPL_ASSERT(
-        Message::totalSize(msg) <= maximumMessageSize,
+        Message::totalSize(msg) <= kMAXIMUM_MESSAGE_SIZE,
         "xrpl::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
     messages.emplace_back(
@@ -622,7 +622,7 @@ ValidatorList::buildValidatorListMessages(
     std::string const& rawManifest,
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::vector<ValidatorList::MessageWithHash>& messages,
-    std::size_t maxSize /*= maximumMessageSize*/)
+    std::size_t maxSize /*= kMAXIMUM_MESSAGE_SIZE*/)
 {
     XRPL_ASSERT(
         !blobInfos.empty(),
@@ -882,7 +882,7 @@ ValidatorList::applyListsAndBroadcast(
     auto const result = applyLists(manifest, version, blobs, std::move(siteUri), hash);
     auto const disposition = result.bestDisposition();
 
-    if (disposition == ListDisposition::accepted)
+    if (disposition == ListDisposition::Accepted)
     {
         bool good = true;
 
@@ -890,7 +890,7 @@ ValidatorList::applyListsAndBroadcast(
         // from the below check.
         for (auto const& [_, listCollection] : publisherLists_)
         {
-            if (listCollection.status != PublisherStatus::available)
+            if (listCollection.status != PublisherStatus::Available)
             {
                 good = false;
                 break;
@@ -901,12 +901,12 @@ ValidatorList::applyListsAndBroadcast(
             networkOPs.clearUNLBlocked();
         }
     }
-    bool broadcast = disposition <= ListDisposition::known_sequence;
+    bool broadcast = disposition <= ListDisposition::KnownSequence;
 
     // this function is only called for PublicKeys which are not specified
     // in the config file (Note: Keys specified in the local config file are
     // stored in ValidatorList::localPublisherList data member).
-    if (broadcast && result.status <= PublisherStatus::expired && result.publisherKey &&
+    if (broadcast && result.status <= PublisherStatus::Expired && result.publisherKey &&
         publisherLists_[*result.publisherKey].maxSequence)
     {
         auto const& pubCollection = publisherLists_[*result.publisherKey];
@@ -934,7 +934,7 @@ ValidatorList::applyLists(
 {
     if (std::count(std::begin(supportedListVersions), std::end(supportedListVersions), version) !=
         1)
-        return PublisherListStats{ListDisposition::unsupported_version};
+        return PublisherListStats{ListDisposition::UnsupportedVersion};
 
     std::lock_guard lock{mutex_};
 
@@ -1083,7 +1083,7 @@ ValidatorList::applyList(
     if (!m)
     {
         JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
-        return PublisherListStats{ListDisposition::invalid};
+        return PublisherListStats{ListDisposition::Invalid};
     }
 
     auto [result, pubKeyOpt] = verify(lock, list, std::move(*m), blob, signature);
@@ -1107,14 +1107,14 @@ ValidatorList::applyList(
     }
 
     PublicKey pubKey = *pubKeyOpt;
-    if (result > ListDisposition::pending)
+    if (result > ListDisposition::Pending)
     {
         if (publisherLists_.contains(pubKey))
         {
             auto const& pubCollection = publisherLists_[pubKey];
             if (pubCollection.maxSequence &&
-                (result == ListDisposition::same_sequence ||
-                 result == ListDisposition::known_sequence))
+                (result == ListDisposition::SameSequence ||
+                 result == ListDisposition::KnownSequence))
             {
                 // We've seen something valid list for this publisher
                 // already, so return what we know about it.
@@ -1129,12 +1129,12 @@ ValidatorList::applyList(
     auto& pubCollection = publisherLists_[pubKey];
     auto const sequence = list[jss::sequence].asUInt();
     auto const accepted =
-        (result == ListDisposition::accepted || result == ListDisposition::expired);
+        (result == ListDisposition::Accepted || result == ListDisposition::Expired);
 
     if (accepted)
     {
-        pubCollection.status = result == ListDisposition::accepted ? PublisherStatus::available
-                                                                   : PublisherStatus::expired;
+        pubCollection.status = result == ListDisposition::Accepted ? PublisherStatus::Available
+                                                                   : PublisherStatus::Expired;
     }
     pubCollection.rawManifest = globalManifest;
     if (!pubCollection.maxSequence || sequence > *pubCollection.maxSequence)
@@ -1246,7 +1246,7 @@ ValidatorList::loadLists()
     {
         boost::system::error_code ec;
 
-        if (publisherCollection.status == PublisherStatus::available)
+        if (publisherCollection.status == PublisherStatus::Available)
             continue;
 
         boost::filesystem::path const filename = getCacheFileName(lock, pubKey);
@@ -1295,7 +1295,7 @@ ValidatorList::verify(
     std::string const& signature)
 {
     if (!publisherLists_.contains(manifest.masterKey))
-        return {ListDisposition::untrusted, {}};
+        return {ListDisposition::Untrusted, {}};
 
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
@@ -1304,7 +1304,7 @@ ValidatorList::verify(
 
     if (revoked && result == ManifestDisposition::accepted)
     {
-        removePublisherList(lock, masterPubKey, PublisherStatus::revoked);
+        removePublisherList(lock, masterPubKey, PublisherStatus::Revoked);
         // If the manifest is revoked, no future list is valid either
         publisherLists_[masterPubKey].remaining.clear();
     }
@@ -1312,16 +1312,16 @@ ValidatorList::verify(
     auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
 
     if (revoked || !signingKey || result == ManifestDisposition::invalid)
-        return {ListDisposition::untrusted, masterPubKey};
+        return {ListDisposition::Untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
     if (!sig || !xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
 
     Json::Reader r;
     if (!r.parse(data, list))
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1337,19 +1337,19 @@ ValidatorList::verify(
         auto const& listCollection = publisherLists_[masterPubKey];
         if (validUntil <= validFrom)
         {
-            return {ListDisposition::invalid, masterPubKey};
+            return {ListDisposition::Invalid, masterPubKey};
         }
         if (sequence < listCollection.current.sequence)
         {
-            return {ListDisposition::stale, masterPubKey};
+            return {ListDisposition::Stale, masterPubKey};
         }
         if (sequence == listCollection.current.sequence)
         {
-            return {ListDisposition::same_sequence, masterPubKey};
+            return {ListDisposition::SameSequence, masterPubKey};
         }
         if (validUntil <= now)
         {
-            return {ListDisposition::expired, masterPubKey};
+            return {ListDisposition::Expired, masterPubKey};
         }
         if (validFrom > now)
         {
@@ -1366,16 +1366,16 @@ ValidatorList::verify(
             return !listCollection.maxSequence || sequence > *listCollection.maxSequence ||
                     (!listCollection.remaining.contains(sequence) &&
                      validFrom < listCollection.remaining.at(*listCollection.maxSequence).validFrom)
-                ? std::make_pair(ListDisposition::pending, masterPubKey)
-                : std::make_pair(ListDisposition::known_sequence, masterPubKey);
+                ? std::make_pair(ListDisposition::Pending, masterPubKey)
+                : std::make_pair(ListDisposition::KnownSequence, masterPubKey);
         }
     }
     else
     {
-        return {ListDisposition::invalid, masterPubKey};
+        return {ListDisposition::Invalid, masterPubKey};
     }
 
-    return {ListDisposition::accepted, masterPubKey};
+    return {ListDisposition::Accepted, masterPubKey};
 }
 
 bool
@@ -1434,7 +1434,7 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
     std::shared_lock readLock{mutex_};
     return identity.size() && publisherLists_.contains(identity) &&
-        publisherLists_.at(identity).status < PublisherStatus::revoked;
+        publisherLists_.at(identity).status < PublisherStatus::Revoked;
 }
 
 std::optional<PublicKey>
@@ -1451,7 +1451,7 @@ ValidatorList::removePublisherList(
     PublisherStatus reason)
 {
     XRPL_ASSERT(
-        reason != PublisherStatus::available && reason != PublisherStatus::unavailable,
+        reason != PublisherStatus::Available && reason != PublisherStatus::Unavailable,
         "xrpl::ValidatorList::removePublisherList : valid reason input");
     auto const iList = publisherLists_.find(publisherKey);
     if (iList == publisherLists_.end())
@@ -1610,7 +1610,7 @@ ValidatorList::getJson() const
     {
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);
-        curr[jss::available] = pubCollection.status == PublisherStatus::available;
+        curr[jss::available] = pubCollection.status == PublisherStatus::Available;
 
         auto appendList = [](PublisherList const& publisherList, Json::Value& target) {
             target[jss::uri] = publisherList.siteUri;
@@ -1707,7 +1707,7 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available)
+        if (plCollection.status != PublisherStatus::Available)
             continue;
         XRPL_ASSERT(
             plCollection.maxSequence != 0,
@@ -1741,7 +1741,7 @@ ValidatorList::getAvailable(
 
     auto const iter = publisherLists_.find(id);
 
-    if (iter == publisherLists_.end() || iter->second.status != PublisherStatus::available)
+    if (iter == publisherLists_.end() || iter->second.status != PublisherStatus::Available)
         return {};
 
     Json::Value value = buildFileData(std::string{pubKey}, iter->second, forceVersion, j_);
@@ -1770,7 +1770,7 @@ ValidatorList::calculateQuorum(
         std::size_t unavailable = 0;
         for (auto const& list : publisherLists_)
         {
-            if (list.second.status != PublisherStatus::available)
+            if (list.second.status != PublisherStatus::Available)
                 unavailable += 1;
         }
         // There are two, subtly different, sides to list threshold:
@@ -1891,8 +1891,8 @@ ValidatorList::updateTrusted(
 
                 auto const oldList = current.list;
                 current = std::move(candidate);
-                if (collection.status != PublisherStatus::available)
-                    collection.status = PublisherStatus::available;
+                if (collection.status != PublisherStatus::Available)
+                    collection.status = PublisherStatus::Available;
                 XRPL_ASSERT(
                     current.sequence == sequence,
                     "xrpl::ValidatorList::updateTrusted : sequence match");
@@ -1918,13 +1918,13 @@ ValidatorList::updateTrusted(
         // Remove if expired
         // ValidatorLists specified in the local config file never expire.
         // Hence, the below steps are not relevant for localPublisherList
-        if (collection.status == PublisherStatus::available &&
+        if (collection.status == PublisherStatus::Available &&
             collection.current.validUntil <= closeTime)
         {
-            removePublisherList(lock, pubKey, PublisherStatus::expired);
+            removePublisherList(lock, pubKey, PublisherStatus::Expired);
             ops.setUNLBlocked();
         }
-        if (collection.status != PublisherStatus::available)
+        if (collection.status != PublisherStatus::Available)
             good = false;
     }
     if (good)

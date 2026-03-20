@@ -22,12 +22,12 @@ public:
 
         // a known message is categorized to a proper category
         auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
-        BEAST_EXPECT(known == TrafficCount::category::base);
+        BEAST_EXPECT(known == TrafficCount::category::Base);
 
         // an unknown message type is categorized as unknown
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
-        BEAST_EXPECT(unknown == TrafficCount::category::unknown);
+        BEAST_EXPECT(unknown == TrafficCount::category::Unknown);
     }
 
     struct TestCase
@@ -107,11 +107,11 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
+        BEAST_EXPECT(TrafficCount::toString(TrafficCount::category::Total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
+            TrafficCount::toString(static_cast<TrafficCount::category>(1000)) == "unknown");
     }
 
     void

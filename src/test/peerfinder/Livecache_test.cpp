@@ -104,7 +104,7 @@ public:
         BEAST_EXPECT(c.size() == 1);
         // verify that advancing to 1 sec before expiration
         // leaves our entry intact
-        clock_.advance(Tuning::liveCacheSecondsToLive - 1s);
+        clock_.advance(Tuning::kLIVE_CACHE_SECONDS_TO_LIVE - 1s);
         c.expire();
         BEAST_EXPECT(c.size() == 1);
         // now advance to the point of expiration
@@ -142,10 +142,10 @@ public:
         testcase("Shuffle");
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::rand_int(Tuning::maxHops + 1));
+            add(beast::IP::randomEP(true), c, xrpl::rand_int(Tuning::kMAX_HOPS + 1));
 
         using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
-        using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;
+        using all_hops = std::array<at_hop, 1 + Tuning::kMAX_HOPS + 1>;
 
         auto cmpEp = [](Endpoint const& a, Endpoint const& b) {
             return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));

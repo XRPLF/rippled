@@ -40,6 +40,6 @@ public:
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, beast::Journal journal);
+makeLedgerCleaner(Application& app, beast::Journal journal);
 
 }  // namespace xrpl

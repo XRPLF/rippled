@@ -999,7 +999,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         // will still be funded after consuming remainingOut but that is
         // not always the case.  If the mantissas of two IOU amounts differ
         // by less than ten, then subtracting them leaves a zero.
-        return offer.fully_consumed();
+        return offer.fullyConsumed();
     };
 
     {
@@ -1161,7 +1161,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         // subtracting them leaves a result of zero. This can cause the check
         // for (stpAmt.in > remainingIn) to incorrectly think an offer will be
         // funded after subtracting remainingIn.
-        return processMore || offer.fully_consumed();
+        return processMore || offer.fullyConsumed();
     };
 
     {

@@ -41,7 +41,7 @@ public:
         std::atomic<std::uint64_t> messagesIn{0};
         std::atomic<std::uint64_t> messagesOut{0};
 
-        TrafficStats(TrafficCount::category cat) : name(TrafficCount::to_string(cat))
+        TrafficStats(TrafficCount::category cat) : name(TrafficCount::toString(cat))
         {
         }
 
@@ -64,118 +64,118 @@ public:
     // of the arrays at the bottom of this file which map array numbers to
     // human-readable, monitoring-tool friendly names.
     enum category : std::size_t {
-        base,  // basic peer overhead, must be first
+        Base,  // basic peer overhead, must be first
 
-        cluster,    // cluster overhead
-        overlay,    // overlay management
-        manifests,  // manifest management
+        Cluster,    // cluster overhead
+        Overlay,    // overlay management
+        Manifests,  // manifest management
 
-        transaction,  // transaction messages
+        Transaction,  // transaction messages
         // The following categories breakdown transaction message type
-        transaction_duplicate,  // duplicate transaction messages
+        TransactionDuplicate,  // duplicate transaction messages
 
-        proposal,  // proposal messages
+        Proposal,  // proposal messages
         // The following categories breakdown proposal message type
-        proposal_untrusted,  // proposals from untrusted validators
-        proposal_duplicate,  // proposals seen previously
+        ProposalUntrusted,  // proposals from untrusted validators
+        ProposalDuplicate,  // proposals seen previously
 
-        validation,  // validation messages
+        Validation,  // validation messages
         // The following categories breakdown validation message type
-        validation_untrusted,  // validations from untrusted validators
-        validation_duplicate,  // validations seen previously
+        ValidationUntrusted,  // validations from untrusted validators
+        ValidationDuplicate,  // validations seen previously
 
-        validatorlist,
+        Validatorlist,
 
-        squelch,
-        squelch_suppressed,  // egress traffic amount suppressed by squelching
-        squelch_ignored,     // the traffic amount that came from peers ignoring
+        Squelch,
+        SquelchSuppressed,  // egress traffic amount suppressed by squelching
+        SquelchIgnored,     // the traffic amount that came from peers ignoring
                              // squelch messages
 
         // TMHaveSet message:
-        get_set,    // transaction sets we try to get
-        share_set,  // transaction sets we get
+        GetSet,    // transaction sets we try to get
+        ShareSet,  // transaction sets we get
 
         // TMLedgerData: transaction set candidate
-        ld_tsc_get,
-        ld_tsc_share,
+        LdTscGet,
+        LdTscShare,
 
         // TMLedgerData: transaction node
-        ld_txn_get,
-        ld_txn_share,
+        LdTxnGet,
+        LdTxnShare,
 
         // TMLedgerData: account state node
-        ld_asn_get,
-        ld_asn_share,
+        LdAsnGet,
+        LdAsnShare,
 
         // TMLedgerData: generic
-        ld_get,
-        ld_share,
+        LdGet,
+        LdShare,
 
         // TMGetLedger: transaction set candidate
-        gl_tsc_share,
-        gl_tsc_get,
+        GlTscShare,
+        GlTscGet,
 
         // TMGetLedger: transaction node
-        gl_txn_share,
-        gl_txn_get,
+        GlTxnShare,
+        GlTxnGet,
 
         // TMGetLedger: account state node
-        gl_asn_share,
-        gl_asn_get,
+        GlAsnShare,
+        GlAsnGet,
 
         // TMGetLedger: generic
-        gl_share,
-        gl_get,
+        GlShare,
+        GlGet,
 
         // TMGetObjectByHash:
-        share_hash_ledger,
-        get_hash_ledger,
+        ShareHashLedger,
+        GetHashLedger,
 
         // TMGetObjectByHash:
-        share_hash_tx,
-        get_hash_tx,
+        ShareHashTx,
+        GetHashTx,
 
         // TMGetObjectByHash: transaction node
-        share_hash_txnode,
-        get_hash_txnode,
+        ShareHashTxnode,
+        GetHashTxnode,
 
         // TMGetObjectByHash: account state node
-        share_hash_asnode,
-        get_hash_asnode,
+        ShareHashAsnode,
+        GetHashAsnode,
 
         // TMGetObjectByHash: CAS
-        share_cas_object,
-        get_cas_object,
+        ShareCasObject,
+        GetCasObject,
 
         // TMGetObjectByHash: fetch packs
-        share_fetch_pack,
-        get_fetch_pack,
+        ShareFetchPack,
+        GetFetchPack,
 
         // TMGetObjectByHash: transactions
-        get_transactions,
+        GetTransactions,
 
         // TMGetObjectByHash: generic
-        share_hash,
-        get_hash,
+        ShareHash,
+        GetHash,
 
         // TMProofPathRequest and TMProofPathResponse
-        proof_path_request,
-        proof_path_response,
+        ProofPathRequest,
+        ProofPathResponse,
 
         // TMReplayDeltaRequest and TMReplayDeltaResponse
-        replay_delta_request,
-        replay_delta_response,
+        ReplayDeltaRequest,
+        ReplayDeltaResponse,
 
         // TMHaveTransactions
-        have_transactions,
+        HaveTransactions,
 
         // TMTransactions
-        requested_transactions,
+        RequestedTransactions,
 
         // The total p2p bytes sent and received on the wire
-        total,
+        Total,
 
-        unknown  // must be last
+        Unknown  // must be last
     };
 
     TrafficCount() = default;
@@ -193,7 +193,7 @@ public:
     addCount(category cat, bool inbound, int bytes)
     {
         XRPL_ASSERT(
-            cat <= category::unknown, "xrpl::TrafficCount::addCount : valid category input");
+            cat <= category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
 
         auto it = counts_.find(cat);
 
@@ -224,65 +224,65 @@ public:
     }
 
     static std::string
-    to_string(category cat)
+    toString(category cat)
     {
         static std::unordered_map<category, std::string> const category_map = {
-            {base, "overhead"},
-            {cluster, "overhead_cluster"},
-            {overlay, "overhead_overlay"},
-            {manifests, "overhead_manifest"},
-            {transaction, "transactions"},
-            {transaction_duplicate, "transactions_duplicate"},
-            {proposal, "proposals"},
-            {proposal_untrusted, "proposals_untrusted"},
-            {proposal_duplicate, "proposals_duplicate"},
-            {validation, "validations"},
-            {validation_untrusted, "validations_untrusted"},
-            {validation_duplicate, "validations_duplicate"},
-            {validatorlist, "validator_lists"},
-            {squelch, "squelch"},
-            {squelch_suppressed, "squelch_suppressed"},
-            {squelch_ignored, "squelch_ignored"},
-            {get_set, "set_get"},
-            {share_set, "set_share"},
-            {ld_tsc_get, "ledger_data_Transaction_Set_candidate_get"},
-            {ld_tsc_share, "ledger_data_Transaction_Set_candidate_share"},
-            {ld_txn_get, "ledger_data_Transaction_Node_get"},
-            {ld_txn_share, "ledger_data_Transaction_Node_share"},
-            {ld_asn_get, "ledger_data_Account_State_Node_get"},
-            {ld_asn_share, "ledger_data_Account_State_Node_share"},
-            {ld_get, "ledger_data_get"},
-            {ld_share, "ledger_data_share"},
-            {gl_tsc_share, "ledger_Transaction_Set_candidate_share"},
-            {gl_tsc_get, "ledger_Transaction_Set_candidate_get"},
-            {gl_txn_share, "ledger_Transaction_node_share"},
-            {gl_txn_get, "ledger_Transaction_node_get"},
-            {gl_asn_share, "ledger_Account_State_node_share"},
-            {gl_asn_get, "ledger_Account_State_node_get"},
-            {gl_share, "ledger_share"},
-            {gl_get, "ledger_get"},
-            {share_hash_ledger, "getobject_Ledger_share"},
-            {get_hash_ledger, "getobject_Ledger_get"},
-            {share_hash_tx, "getobject_Transaction_share"},
-            {get_hash_tx, "getobject_Transaction_get"},
-            {share_hash_txnode, "getobject_Transaction_node_share"},
-            {get_hash_txnode, "getobject_Transaction_node_get"},
-            {share_hash_asnode, "getobject_Account_State_node_share"},
-            {get_hash_asnode, "getobject_Account_State_node_get"},
-            {share_cas_object, "getobject_CAS_share"},
-            {get_cas_object, "getobject_CAS_get"},
-            {share_fetch_pack, "getobject_Fetch_Pack_share"},
-            {get_fetch_pack, "getobject_Fetch Pack_get"},
-            {get_transactions, "getobject_Transactions_get"},
-            {share_hash, "getobject_share"},
-            {get_hash, "getobject_get"},
-            {proof_path_request, "proof_path_request"},
-            {proof_path_response, "proof_path_response"},
-            {replay_delta_request, "replay_delta_request"},
-            {replay_delta_response, "replay_delta_response"},
-            {have_transactions, "have_transactions"},
-            {requested_transactions, "requested_transactions"},
-            {total, "total"}};
+            {Base, "overhead"},
+            {Cluster, "overhead_cluster"},
+            {Overlay, "overhead_overlay"},
+            {Manifests, "overhead_manifest"},
+            {Transaction, "transactions"},
+            {TransactionDuplicate, "transactions_duplicate"},
+            {Proposal, "proposals"},
+            {ProposalUntrusted, "proposals_untrusted"},
+            {ProposalDuplicate, "proposals_duplicate"},
+            {Validation, "validations"},
+            {ValidationUntrusted, "validations_untrusted"},
+            {ValidationDuplicate, "validations_duplicate"},
+            {Validatorlist, "validator_lists"},
+            {Squelch, "squelch"},
+            {SquelchSuppressed, "squelch_suppressed"},
+            {SquelchIgnored, "squelch_ignored"},
+            {GetSet, "set_get"},
+            {ShareSet, "set_share"},
+            {LdTscGet, "ledger_data_Transaction_Set_candidate_get"},
+            {LdTscShare, "ledger_data_Transaction_Set_candidate_share"},
+            {LdTxnGet, "ledger_data_Transaction_Node_get"},
+            {LdTxnShare, "ledger_data_Transaction_Node_share"},
+            {LdAsnGet, "ledger_data_Account_State_Node_get"},
+            {LdAsnShare, "ledger_data_Account_State_Node_share"},
+            {LdGet, "ledger_data_get"},
+            {LdShare, "ledger_data_share"},
+            {GlTscShare, "ledger_Transaction_Set_candidate_share"},
+            {GlTscGet, "ledger_Transaction_Set_candidate_get"},
+            {GlTxnShare, "ledger_Transaction_node_share"},
+            {GlTxnGet, "ledger_Transaction_node_get"},
+            {GlAsnShare, "ledger_Account_State_node_share"},
+            {GlAsnGet, "ledger_Account_State_node_get"},
+            {GlShare, "ledger_share"},
+            {GlGet, "ledger_get"},
+            {ShareHashLedger, "getobject_Ledger_share"},
+            {GetHashLedger, "getobject_Ledger_get"},
+            {ShareHashTx, "getobject_Transaction_share"},
+            {GetHashTx, "getobject_Transaction_get"},
+            {ShareHashTxnode, "getobject_Transaction_node_share"},
+            {GetHashTxnode, "getobject_Transaction_node_get"},
+            {ShareHashAsnode, "getobject_Account_State_node_share"},
+            {GetHashAsnode, "getobject_Account_State_node_get"},
+            {ShareCasObject, "getobject_CAS_share"},
+            {GetCasObject, "getobject_CAS_get"},
+            {ShareFetchPack, "getobject_Fetch_Pack_share"},
+            {GetFetchPack, "getobject_Fetch Pack_get"},
+            {GetTransactions, "getobject_Transactions_get"},
+            {ShareHash, "getobject_share"},
+            {GetHash, "getobject_get"},
+            {ProofPathRequest, "proof_path_request"},
+            {ProofPathResponse, "proof_path_response"},
+            {ReplayDeltaRequest, "replay_delta_request"},
+            {ReplayDeltaResponse, "replay_delta_response"},
+            {HaveTransactions, "have_transactions"},
+            {RequestedTransactions, "requested_transactions"},
+            {Total, "total"}};
 
         if (auto it = category_map.find(cat); it != category_map.end())
             return it->second;
@@ -292,63 +292,63 @@ public:
 
 protected:
     std::unordered_map<category, TrafficStats> counts_{
-        {base, {base}},
-        {cluster, {cluster}},
-        {overlay, {overlay}},
-        {manifests, {manifests}},
-        {transaction, {transaction}},
-        {transaction_duplicate, {transaction_duplicate}},
-        {proposal, {proposal}},
-        {proposal_untrusted, {proposal_untrusted}},
-        {proposal_duplicate, {proposal_duplicate}},
-        {validation, {validation}},
-        {validation_untrusted, {validation_untrusted}},
-        {validation_duplicate, {validation_duplicate}},
-        {validatorlist, {validatorlist}},
-        {squelch, {squelch}},
-        {squelch_suppressed, {squelch_suppressed}},
-        {squelch_ignored, {squelch_ignored}},
-        {get_set, {get_set}},
-        {share_set, {share_set}},
-        {ld_tsc_get, {ld_tsc_get}},
-        {ld_tsc_share, {ld_tsc_share}},
-        {ld_txn_get, {ld_txn_get}},
-        {ld_txn_share, {ld_txn_share}},
-        {ld_asn_get, {ld_asn_get}},
-        {ld_asn_share, {ld_asn_share}},
-        {ld_get, {ld_get}},
-        {ld_share, {ld_share}},
-        {gl_tsc_share, {gl_tsc_share}},
-        {gl_tsc_get, {gl_tsc_get}},
-        {gl_txn_share, {gl_txn_share}},
-        {gl_txn_get, {gl_txn_get}},
-        {gl_asn_share, {gl_asn_share}},
-        {gl_asn_get, {gl_asn_get}},
-        {gl_share, {gl_share}},
-        {gl_get, {gl_get}},
-        {share_hash_ledger, {share_hash_ledger}},
-        {get_hash_ledger, {get_hash_ledger}},
-        {share_hash_tx, {share_hash_tx}},
-        {get_hash_tx, {get_hash_tx}},
-        {share_hash_txnode, {share_hash_txnode}},
-        {get_hash_txnode, {get_hash_txnode}},
-        {share_hash_asnode, {share_hash_asnode}},
-        {get_hash_asnode, {get_hash_asnode}},
-        {share_cas_object, {share_cas_object}},
-        {get_cas_object, {get_cas_object}},
-        {share_fetch_pack, {share_fetch_pack}},
-        {get_fetch_pack, {get_fetch_pack}},
-        {get_transactions, {get_transactions}},
-        {share_hash, {share_hash}},
-        {get_hash, {get_hash}},
-        {proof_path_request, {proof_path_request}},
-        {proof_path_response, {proof_path_response}},
-        {replay_delta_request, {replay_delta_request}},
-        {replay_delta_response, {replay_delta_response}},
-        {have_transactions, {have_transactions}},
-        {requested_transactions, {requested_transactions}},
-        {total, {total}},
-        {unknown, {unknown}},
+        {Base, {Base}},
+        {Cluster, {Cluster}},
+        {Overlay, {Overlay}},
+        {Manifests, {Manifests}},
+        {Transaction, {Transaction}},
+        {TransactionDuplicate, {TransactionDuplicate}},
+        {Proposal, {Proposal}},
+        {ProposalUntrusted, {ProposalUntrusted}},
+        {ProposalDuplicate, {ProposalDuplicate}},
+        {Validation, {Validation}},
+        {ValidationUntrusted, {ValidationUntrusted}},
+        {ValidationDuplicate, {ValidationDuplicate}},
+        {Validatorlist, {Validatorlist}},
+        {Squelch, {Squelch}},
+        {SquelchSuppressed, {SquelchSuppressed}},
+        {SquelchIgnored, {SquelchIgnored}},
+        {GetSet, {GetSet}},
+        {ShareSet, {ShareSet}},
+        {LdTscGet, {LdTscGet}},
+        {LdTscShare, {LdTscShare}},
+        {LdTxnGet, {LdTxnGet}},
+        {LdTxnShare, {LdTxnShare}},
+        {LdAsnGet, {LdAsnGet}},
+        {LdAsnShare, {LdAsnShare}},
+        {LdGet, {LdGet}},
+        {LdShare, {LdShare}},
+        {GlTscShare, {GlTscShare}},
+        {GlTscGet, {GlTscGet}},
+        {GlTxnShare, {GlTxnShare}},
+        {GlTxnGet, {GlTxnGet}},
+        {GlAsnShare, {GlAsnShare}},
+        {GlAsnGet, {GlAsnGet}},
+        {GlShare, {GlShare}},
+        {GlGet, {GlGet}},
+        {ShareHashLedger, {ShareHashLedger}},
+        {GetHashLedger, {GetHashLedger}},
+        {ShareHashTx, {ShareHashTx}},
+        {GetHashTx, {GetHashTx}},
+        {ShareHashTxnode, {ShareHashTxnode}},
+        {GetHashTxnode, {GetHashTxnode}},
+        {ShareHashAsnode, {ShareHashAsnode}},
+        {GetHashAsnode, {GetHashAsnode}},
+        {ShareCasObject, {ShareCasObject}},
+        {GetCasObject, {GetCasObject}},
+        {ShareFetchPack, {ShareFetchPack}},
+        {GetFetchPack, {GetFetchPack}},
+        {GetTransactions, {GetTransactions}},
+        {ShareHash, {ShareHash}},
+        {GetHash, {GetHash}},
+        {ProofPathRequest, {ProofPathRequest}},
+        {ProofPathResponse, {ProofPathResponse}},
+        {ReplayDeltaRequest, {ReplayDeltaRequest}},
+        {ReplayDeltaResponse, {ReplayDeltaResponse}},
+        {HaveTransactions, {HaveTransactions}},
+        {RequestedTransactions, {RequestedTransactions}},
+        {Total, {Total}},
+        {Unknown, {Unknown}},
     };
 };
 

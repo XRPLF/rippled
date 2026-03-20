@@ -51,19 +51,19 @@ public:
     }
 
     beast::IP::Endpoint const&
-    remote_endpoint() const override
+    remoteEndpoint() const override
     {
         return remote_endpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
-    local_endpoint() const override
+    localEndpoint() const override
     {
         return local_endpoint_;
     }
 
     std::optional<PublicKey> const&
-    public_key() const override
+    publicKey() const override
     {
         return public_key_;
     }
@@ -71,11 +71,11 @@ public:
     std::string
     prefix() const
     {
-        return "[" + getFingerprint(remote_endpoint(), public_key()) + "] ";
+        return "[" + getFingerprint(remoteEndpoint(), publicKey()) + "] ";
     }
 
     std::optional<std::uint16_t>
-    listening_port() const override
+    listeningPort() const override
     {
         std::uint32_t const value = listening_port_;
         if (value == unknownPort)

@@ -11,7 +11,7 @@ namespace jtx {
 json::json(std::string const& s)
 {
     if (!Json::Reader().parse(s, jv_))
-        Throw<parse_error>("bad json");
+        Throw<ParseError>("bad json");
 }
 
 json::json(char const* s) : json(std::string(s))

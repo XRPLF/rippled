@@ -55,7 +55,7 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::disable_API_prior_V2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::kDISABLE_API_PRIOR_V2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
@@ -76,14 +76,14 @@ doTransactionEntry(RPC::JsonContext& context)
             }
             else
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::none);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::kNONE);
             }
 
             RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
             auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[jsonMeta] = stobj->getJson(JsonOptions::none);
+                jvResult[jsonMeta] = stobj->getJson(JsonOptions::kNONE);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

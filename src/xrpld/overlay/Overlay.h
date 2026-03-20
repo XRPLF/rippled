@@ -39,14 +39,14 @@ protected:
     }
 
 public:
-    enum class Promote { automatic, never, always };
+    enum class Promote { Automatic, Never, Always };
 
     struct Setup
     {
         explicit Setup() = default;
 
         std::shared_ptr<boost::asio::ssl::context> context;
-        beast::IP::Address public_ip;
+        beast::IP::Address publicIp;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
@@ -72,7 +72,7 @@ public:
     onHandoff(
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        boost::asio::ip::tcp::endpoint remote_address) = 0;
+        boost::asio::ip::tcp::endpoint remoteAddress) = 0;
 
     /** Establish a peer connection to the specified endpoint.
         The call returns immediately, the connection attempt is

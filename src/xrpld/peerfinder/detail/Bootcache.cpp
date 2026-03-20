@@ -76,13 +76,13 @@ Bootcache::load()
         auto const result(this->map_.insert(value_type(endpoint, valence)));
         if (!result.second)
         {
-            JLOG(this->journal_.error()) << beast::leftw(18) << "Bootcache discard " << endpoint;
+            JLOG(this->journal_.error()) << beast::Leftw(18) << "Bootcache discard " << endpoint;
         }
     }));
 
     if (n > 0)
     {
-        JLOG(journal_.info()) << beast::leftw(18) << "Bootcache loaded " << n
+        JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache loaded " << n
                               << ((n > 1) ? " addresses" : " address");
         prune();
     }
@@ -94,7 +94,7 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
     auto const result(map_.insert(value_type(endpoint, 0)));
     if (result.second)
     {
-        JLOG(journal_.trace()) << beast::leftw(18) << "Bootcache insert " << endpoint;
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache insert " << endpoint;
         prune();
         flagForUpdate();
     }
@@ -115,7 +115,7 @@ Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 
     if (result.second)
     {
-        JLOG(journal_.trace()) << beast::leftw(18) << "Bootcache insert " << endpoint;
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache insert " << endpoint;
         prune();
         flagForUpdate();
     }
@@ -140,7 +140,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
         XRPL_ASSERT(result.second, "ripple:PeerFinder::Bootcache::on_success : endpoint inserted");
     }
     Entry const& entry(result.first->right);
-    JLOG(journal_.info()) << beast::leftw(18) << "Bootcache connect " << endpoint << " with "
+    JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache connect " << endpoint << " with "
                           << entry.valence() << ((entry.valence() > 1) ? " successes" : " success");
     flagForUpdate();
 }
@@ -164,7 +164,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));
-    JLOG(journal_.debug()) << beast::leftw(18) << "Bootcache failed " << endpoint << " with " << n
+    JLOG(journal_.debug()) << beast::Leftw(18) << "Bootcache failed " << endpoint << " with " << n
                            << ((n > 1) ? " attempts" : " attempt");
     flagForUpdate();
 }
@@ -193,11 +193,11 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
 void
 Bootcache::prune()
 {
-    if (size() <= Tuning::bootcacheSize)
+    if (size() <= Tuning::BootcacheSize)
         return;
 
     // Calculate the amount to remove
-    auto count((size() * Tuning::bootcachePrunePercent) / 100);
+    auto count((size() * Tuning::BootcachePrunePercent) / 100);
     decltype(count) pruned(0);
 
     // Work backwards because bimap doesn't handle
@@ -208,12 +208,12 @@ Bootcache::prune()
         --iter;
         beast::IP::Endpoint const& endpoint(iter->get_left());
         Entry const& entry(iter->get_right());
-        JLOG(journal_.trace()) << beast::leftw(18) << "Bootcache pruned" << endpoint
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache pruned" << endpoint
                                << " at valence " << entry.valence();
         iter = map_.right.erase(iter);
     }
 
-    JLOG(journal_.debug()) << beast::leftw(18) << "Bootcache pruned " << pruned << " entries total";
+    JLOG(journal_.debug()) << beast::Leftw(18) << "Bootcache pruned " << pruned << " entries total";
 }
 
 // Updates the Store with the current set of entries if needed.
@@ -234,7 +234,7 @@ Bootcache::update()
     store_.save(list);
     // Reset the flag and cooldown timer
     needsUpdate_ = false;
-    whenUpdate_ = clock_.now() + Tuning::bootcacheCooldownTime;
+    whenUpdate_ = clock_.now() + Tuning::kBOOTCACHE_COOLDOWN_TIME;
 }
 
 // Checks the clock and calls update if we are off the cooldown.

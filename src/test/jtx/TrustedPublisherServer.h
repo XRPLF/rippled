@@ -55,7 +55,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
     // Load a signed certificate into the ssl context, and configure
     // the context for use with a server.
     inline void
-    load_server_certificate()
+    loadServerCertificate()
     {
         sslCtx_.set_password_callback(
             [](std::size_t, boost::asio::ssl::context_base::password_purpose) { return "test"; });
@@ -129,7 +129,7 @@ public:
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
     // This constructor is only public so std::make_shared has access.
-    // The function `make_TrustedPublisherServer` should be used to create
+    // The function `makeTrustedPublisherServer` should be used to create
     // instances.
     // The `futures` member is expected to be structured as
     // effective / expiration time point pairs for use in version 2 UNLs
@@ -223,7 +223,7 @@ public:
         if (useSSL_)
         {
             // This holds the self-signed certificate used by the server
-            load_server_certificate();
+            loadServerCertificate();
         }
     }
 
@@ -259,7 +259,7 @@ public:
     }
 
     endpoint_type
-    local_endpoint() const
+    localEndpoint() const
     {
         return acceptor_.local_endpoint();
     }
@@ -275,14 +275,14 @@ public:
      * The following three methods return certs/keys used by
      * server and/or client to do the SSL handshake. These strings
      * were generated using the script below. The server key and cert
-     * are used to configure the server (see load_server_certificate
+     * are used to configure the server (see loadServerCertificate
      * above). The ca.crt should be used to configure the client
      * when ssl verification is enabled.
      *
      *    note:
      *        cert()    ==> server.crt
      *        key()     ==> server.key
-     *        ca_cert() ==> ca.crt
+     *        caCert() ==> ca.crt
      *        dh()      ==> dh.pem
      ```
         #!/usr/bin/env bash
@@ -364,7 +364,7 @@ X1yu/XxHqchM+DOzzVw6wRKaM7Zsk80=
     static std::string const&
     key()
     {
-        static std::string const key{R"pkey(
+        static std::string const kKEY{R"pkey(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAueZ1hgRxwPgfeVx2AdngUYx7zYcaxcGYXyqi7izJqTuBUcVc
 TRC/9Ip67RAEhfcgGudRS/a4Sv1ljwiRknSCcD/ZjzOFDLgbqYGSZNEs+T/qkwmc
@@ -393,11 +393,11 @@ cK55dMILcbHqeIBq/wR6sIhw6IJcaDBfFfrJiKKDilfij2lHxR2FQrEngtTCCRV+
 ZzARzaWhQPvbDqEtLJDWuXZNXfL8/PTIs5NmuKuQ8F4+gQJpkQgwaw==
 -----END RSA PRIVATE KEY-----
 )pkey"};
-        return key;
+        return kKEY;
     }
 
     static std::string const&
-    ca_cert()
+    caCert()
     {
         static std::string const cert{R"cert(
 -----BEGIN CERTIFICATE-----
@@ -443,7 +443,7 @@ xbEQ+TUZ5jbJGSeBqNFKFeuOUQGJ46Io0jBSYd4rSmKUXkvElQwR+n7KF3jy1uAt
     }
 
 private:
-    struct lambda
+    struct Lambda
     {
         int id;
         TrustedPublisherServer& self;
@@ -451,8 +451,8 @@ private:
         boost::asio::executor_work_guard<boost::asio::executor> work;
         bool ssl;
 
-        lambda(int id_, TrustedPublisherServer& self_, socket_type&& sock_, bool ssl_)
-            : id(id_), self(self_), sock(std::move(sock_)), work(sock_.get_executor()), ssl(ssl_)
+        Lambda(int id, TrustedPublisherServer& self_, socket_type&& sock_, bool ssl)
+            : id(id), self(self_), sock(std::move(sock_)), work(sock_.get_executor()), ssl(ssl)
         {
         }
 
@@ -470,7 +470,7 @@ private:
             return;
 
         static int id_ = 0;
-        std::thread{lambda{++id_, *this, std::move(sock_), useSSL_}}.detach();
+        std::thread{Lambda{++id_, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
             sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
                 if (auto p = wp.lock())
@@ -531,10 +531,10 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* refreshPrefix = "/validators2/refresh/";
-                        if (boost::starts_with(path, refreshPrefix))
+                        constexpr char const* kREFRESH_PREFIX = "/validators2/refresh/";
+                        if (boost::starts_with(path, kREFRESH_PREFIX))
                             refresh = boost::lexical_cast<unsigned int>(
-                                path.substr(strlen(refreshPrefix)));
+                                path.substr(strlen(kREFRESH_PREFIX)));
                         res.body() = getList2_(refresh);
                     }
                 }
@@ -549,10 +549,10 @@ private:
                     else
                     {
                         int refresh = 5;
-                        constexpr char const* refreshPrefix = "/validators/refresh/";
-                        if (boost::starts_with(path, refreshPrefix))
+                        constexpr char const* kREFRESH_PREFIX = "/validators/refresh/";
+                        if (boost::starts_with(path, kREFRESH_PREFIX))
                             refresh = boost::lexical_cast<unsigned int>(
-                                path.substr(strlen(refreshPrefix)));
+                                path.substr(strlen(kREFRESH_PREFIX)));
                         res.body() = getList_(refresh);
                     }
                 }
@@ -597,7 +597,7 @@ private:
                     }
                     else if (!boost::starts_with(path, "/redirect_nolo"))
                     {
-                        location << (ssl ? "https://" : "http://") << local_endpoint()
+                        location << (ssl ? "https://" : "http://") << localEndpoint()
                                  << (boost::starts_with(path, "/redirect_forever/")
                                          ? path
                                          : "/validators");
@@ -645,7 +645,7 @@ private:
 };
 
 inline std::shared_ptr<TrustedPublisherServer>
-make_TrustedPublisherServer(
+makeTrustedPublisherServer(
     boost::asio::io_context& ioc,
     std::vector<TrustedPublisherServer::Validator> const& validators,
     NetClock::time_point validUntil,

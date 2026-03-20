@@ -132,7 +132,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    Json::Value getJson(JsonOptions = JsonOptions::none) const override;
+    Json::Value getJson(JsonOptions = JsonOptions::kNONE) const override;
 
     void
     addWithoutSigningFields(Serializer& s) const;

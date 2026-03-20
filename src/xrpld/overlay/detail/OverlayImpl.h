@@ -251,7 +251,7 @@ public:
     //
     template <class UnaryFunc>
     void
-    for_each(UnaryFunc&& f) const
+    forEach(UnaryFunc&& f) const
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {

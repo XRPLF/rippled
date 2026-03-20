@@ -19,8 +19,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
         env(tx1);
         env.close();
@@ -58,10 +58,10 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
-        env(tx2, ter(terPRE_SEQ));
+        env(tx2, Ter(terPRE_SEQ));
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
         env.app().getJobQueue().rendezvous();
@@ -99,12 +99,12 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         std::vector<JTx> tx;
         for (auto i = 0; i < 5; ++i)
         {
-            tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
+            tx.emplace_back(env.jt(noop(alice), Seq(aliceSequence + i), LastLedgerSeq(7)));
         }
 
         for (auto i = 1; i < 5; ++i)
         {
-            env(tx[i], ter(terPRE_SEQ));
+            env(tx[i], Ter(terPRE_SEQ));
             BEAST_EXPECT(env.seq(alice) == aliceSequence);
         }
 

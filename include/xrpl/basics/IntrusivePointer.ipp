@@ -230,10 +230,10 @@ SharedIntrusive<T>::get() const
 
 template <class T>
 std::size_t
-SharedIntrusive<T>::use_count() const
+SharedIntrusive<T>::useCount() const
 {
     if (auto p = unsafeGetRawPtr())
-        return p->use_count();
+        return p->useCount();
     return 0;
 }
 
@@ -527,10 +527,10 @@ SharedWeakUnion<T>::get() const
 
 template <class T>
 std::size_t
-SharedWeakUnion<T>::use_count() const
+SharedWeakUnion<T>::useCount() const
 {
     if (auto p = get())
-        return p->use_count();
+        return p->useCount();
     return 0;
 }
 

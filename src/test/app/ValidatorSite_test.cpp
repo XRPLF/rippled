@@ -174,7 +174,7 @@ private:
             NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
             NetClock::time_point const effective2 = expires - cfg.effectiveOverlap;
             NetClock::time_point const expires2 = effective2 + cfg.expiresFromNow;
-            item.server = make_TrustedPublisherServer(
+            item.server = makeTrustedPublisherServer(
                 env.app().getIOContext(),
                 item.list,
                 expires,
@@ -193,7 +193,7 @@ private:
             }
 
             std::stringstream uri;
-            uri << (cfg.ssl ? "https://" : "http://") << item.server->local_endpoint() << cfg.path;
+            uri << (cfg.ssl ? "https://" : "http://") << item.server->localEndpoint() << cfg.path;
             item.uri = uri.str();
         }
 

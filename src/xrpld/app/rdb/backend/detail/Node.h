@@ -10,7 +10,7 @@ namespace detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
 enum class TableType { Ledgers, Transactions, AccountTransactions };
-constexpr int TableTypeCount = 3;
+constexpr int kTABLE_TYPE_COUNT = 3;
 
 struct DatabasePairValid
 {
@@ -328,7 +328,7 @@ getNewestAccountTxsB(
  *        match: the account, minimum and maximum ledger numbers to search,
  *        marker of first returned entry, number of transactions to return,
  *        flag if this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @return Vector of tuples of found transactions, their metadata and
  *         account sequences sorted in ascending order by account
  *         sequence and marker for next search if search not finished.
@@ -340,7 +340,7 @@ oldestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length);
+    std::uint32_t pageLength);
 
 /**
  * @brief newestAccountTxPage Searches newest transactions for given
@@ -354,7 +354,7 @@ oldestAccountTxPage(
  *        match: the account, minimum and maximum ledger numbers to search,
  *        marker of first returned entry, number of transactions to return,
  *        flag if this number unlimited.
- * @param page_length Total number of transactions to return.
+ * @param pageLength Total number of transactions to return.
  * @return Vector of tuples of found transactions, their metadata and
  *         account sequences sorted in descending order by account
  *         sequence and marker for next search if search not finished.
@@ -366,7 +366,7 @@ newestAccountTxPage(
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    std::uint32_t page_length);
+    std::uint32_t pageLength);
 
 /**
  * @brief getTransaction Returns transaction with given hash. If not found

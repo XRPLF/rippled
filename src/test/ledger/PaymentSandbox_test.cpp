@@ -64,14 +64,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env(offer(snd, usdGw1(2), usdGw2(2)), txflags(tfPassive));
         env(offer(snd, usdGw2(2), usdGw1(2)), txflags(tfPassive));
 
-        PathSet paths(Path(gw1, usdGw2, gw2), Path(gw2, usdGw1, gw1));
+        PathSet paths(TestPath(gw1, usdGw2, gw2), TestPath(gw2, usdGw1, gw1));
 
-        env(pay(snd, rcv, any(usdGw1(4))),
+        env(pay(snd, rcv, kANY(usdGw1(4))),
             json(paths.json()),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        env.require(balance("rcv", usdGw1(0)));
-        env.require(balance("rcv", usdGw2(2)));
+        env.require(Balance("rcv", usdGw1(0)));
+        env.require(Balance("rcv", usdGw2(2)));
     }
 
     void
@@ -366,7 +366,7 @@ public:
             testBalanceHook(features);
         };
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }

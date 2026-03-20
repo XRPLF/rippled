@@ -166,7 +166,7 @@ handleNewValidation(
     {
         if (val->isTrusted())
         {
-            if (bypassAccept == BypassAccept::yes)
+            if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())

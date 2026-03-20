@@ -11,7 +11,7 @@ namespace test {
 namespace jtx {
 
 void
-paths::operator()(Env& env, JTx& jt) const
+Paths::operator()(Env& env, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto const from = env.lookup(jv[jss::Account].asString());
@@ -49,32 +49,32 @@ paths::operator()(Env& env, JTx& jt) const
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (!found.isDefault())
-        jv[jss::Paths] = found.getJson(JsonOptions::none);
+        jv[jss::Paths] = found.getJson(JsonOptions::kNONE);
 }
 
 //------------------------------------------------------------------------------
 
 Json::Value&
-path::create()
+Path::create()
 {
     return jv_.append(Json::objectValue);
 }
 
 void
-path::append_one(Account const& account)
+Path::appendOne(Account const& account)
 {
-    append_one(account.id());
+    appendOne(account.id());
 }
 
 void
-path::append_one(AccountID const& account)
+Path::appendOne(AccountID const& account)
 {
     auto& jv = create();
     jv["account"] = toBase58(account);
 }
 
 void
-path::append_one(IOU const& iou)
+Path::appendOne(IOU const& iou)
 {
     auto& jv = create();
     jv["currency"] = to_string(iou.issue().currency);
@@ -82,7 +82,7 @@ path::append_one(IOU const& iou)
 }
 
 void
-path::append_one(BookSpec const& book)
+Path::appendOne(BookSpec const& book)
 {
     auto& jv = create();
     jv["currency"] = to_string(book.currency);
@@ -90,7 +90,7 @@ path::append_one(BookSpec const& book)
 }
 
 void
-path::operator()(Env& env, JTx& jt) const
+Path::operator()(Env& env, JTx& jt) const
 {
     jt.jv["Paths"].append(jv_);
 }

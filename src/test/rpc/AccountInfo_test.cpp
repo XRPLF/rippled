@@ -618,7 +618,7 @@ public:
         testSignerListsApiVersion2();
         testSignerListsV2();
 
-        FeatureBitset const allFeatures{xrpl::test::jtx::testable_amendments()};
+        FeatureBitset const allFeatures{xrpl::test::jtx::testableAmendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureClawback);
         testAccountFlags(allFeatures - featureClawback - featureTokenEscrow);

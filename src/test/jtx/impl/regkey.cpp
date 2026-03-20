@@ -7,7 +7,7 @@ namespace test {
 namespace jtx {
 
 Json::Value
-regkey(Account const& account, disabled_t)
+regkey(Account const& account, DisabledT)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();

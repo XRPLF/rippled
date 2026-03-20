@@ -46,10 +46,10 @@ struct CreateArg
     std::optional<AnyValue> uri = "URI";
     std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
     bool close = false;
 };
 
@@ -64,10 +64,10 @@ struct UpdateArg
     std::optional<AnyValue> uri = "URI";
     std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> err = std::nullopt;
+    std::optional<Ter> err = std::nullopt;
 };
 
 struct RemoveArg
@@ -75,10 +75,10 @@ struct RemoveArg
     std::optional<AccountID> const& owner = std::nullopt;
     std::optional<AnyValue> const& documentID = std::nullopt;
     std::uint32_t flags = 0;
-    std::optional<jtx::msig> const& msig = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::Msig> const& msig = std::nullopt;
+    std::optional<jtx::Seq> seq = std::nullopt;
     int fee = 10;
-    std::optional<ter> const& err = std::nullopt;
+    std::optional<Ter> const& err = std::nullopt;
 };
 
 // Simulate testStartTime as 10'000s from Ripple epoch time to make
@@ -105,9 +105,9 @@ private:
     void
     submit(
         Json::Value const& jv,
-        std::optional<jtx::msig> const& msig,
-        std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& err);
+        std::optional<jtx::Msig> const& msig,
+        std::optional<jtx::Seq> const& seq,
+        std::optional<Ter> const& err);
 
 public:
     Oracle(Env& env, CreateArg const& arg, bool submit = true);

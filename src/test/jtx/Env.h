@@ -75,9 +75,9 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-testable_amendments()
+testableAmendments()
 {
-    static FeatureBitset const ids = [] {
+    static FeatureBitset const kIDS = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -91,7 +91,7 @@ testable_amendments()
         }
         return FeatureBitset(feats);
     }();
-    return ids;
+    return kIDS;
 }
 
 //------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ class Env
 public:
     beast::unit_test::suite& test;
 
-    Account const& master = Account::master;
+    Account const& master = Account::kMASTER;
 
     /// Used by parseResult() and postConditions()
     struct ParsedResult
@@ -174,7 +174,7 @@ public:
      * and takes ownership the passed Config pointer. Features will be enabled
      * according to rules described below (see next constructor).
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
@@ -182,16 +182,16 @@ public:
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::suite& suite,
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
-        : test(suite_)
-        , bundle_(suite_, std::move(config), std::move(logs), thresh)
+        : test(suite)
+        , bundle_(suite, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->journal("Env")}
     {
-        memoize(Account::master);
+        memoize(Account::kMASTER);
         Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
@@ -207,14 +207,14 @@ public:
      * with_only_features(...) or supported_features_except(...) to create a
      * collection of features appropriate for passing here.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::suite& suite,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, envconfig(), features, std::move(logs))
+        : Env(suite, envconfig(), features, std::move(logs))
     {
     }
 
@@ -225,16 +225,16 @@ public:
      * and takes ownership the passed Config pointer. All supported amendments
      * are enabled by this version of the constructor.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, std::move(config), testable_amendments(), std::move(logs), thresh)
+        : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh)
     {
     }
 
@@ -245,11 +245,11 @@ public:
      * test Env configuration (from envconfig()) and all supported
      * amendments enabled.
      *
-     * @param suite_ the current unit_test::suite
+     * @param suite the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_,
+    Env(beast::unit_test::suite& suite,
         beast::severities::Severity thresh = beast::severities::kError)
-        : Env(suite_, envconfig(), nullptr, thresh)
+        : Env(suite, envconfig(), nullptr, thresh)
     {
     }
 
@@ -453,21 +453,21 @@ public:
     }
 
     void
-    set_parse_failure_expected(bool b)
+    setParseFailureExpected(bool b)
     {
         parseFailureExpected_ = b;
     }
 
     /** Turn off signature checks. */
     void
-    disable_sigs()
+    disableSigs()
     {
         app().checkSigs(false);
     }
 
     // set rpc retries
     void
-    set_retries(unsigned r = 5)
+    setRetries(unsigned r = 5)
     {
         retries_ = r;
     }
@@ -561,7 +561,7 @@ public:
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
-        autofill_sig(jt);
+        autofillSig(jt);
         jt.stx = st(jt);
         return jt;
     }
@@ -799,13 +799,13 @@ protected:
     unsigned retries_ = 5;
 
     Json::Value
-    do_rpc(
+    doRpc(
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
-    autofill_sig(JTx& jt);
+    autofillSig(JTx& jt);
 
     virtual void
     autofill(JTx& jt);
@@ -815,7 +815,7 @@ protected:
         On a parse error, the JSON is logged and
         an exception thrown.
         Throws:
-            parse_error
+            ParseError
     */
     std::shared_ptr<STTx const>
     st(JTx const& jt);
@@ -849,7 +849,7 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+    return doRpc(apiVersion, std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
 template <class... Args>
@@ -870,7 +870,7 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(
+    return doRpc(
         RPC::apiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);

@@ -41,7 +41,7 @@ uri::operator()(Env& env, JTx& jt) const
 void
 amount::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::none);
+    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::kNONE);
 }
 
 uint256
@@ -89,7 +89,7 @@ createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount cons
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
+    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::kNONE);
     jv[jss::TransactionType] = jss::NFTokenCreateOffer;
     return jv;
 }
@@ -183,7 +183,7 @@ brokerOffers(
 void
 brokerFee::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::none);
+    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::kNONE);
 }
 
 Json::Value

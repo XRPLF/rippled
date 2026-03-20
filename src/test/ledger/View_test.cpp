@@ -728,7 +728,7 @@ class View_test : public beast::unit_test::suite
             // Now freeze gw.
             env(fset(gw, asfGlobalFreeze));
             env.close();
-            env(offer(alice, XRP(4), usd(5)), ter(tecFROZEN));
+            env(offer(alice, XRP(4), usd(5)), Ter(tecFROZEN));
             env.close();
 
             // Alice's USD balance should be zero if frozen.
@@ -792,7 +792,7 @@ class View_test : public beast::unit_test::suite
 
             // carol should be able to spend *more* than her XRP balance on
             // a fee by eating into her reserve.
-            env(noop(carol), fee(carolsXRP + XRP(10)));
+            env(noop(carol), Fee(carolsXRP + XRP(10)));
             env.close();
 
             // carol's XRP balance should now show as zero.

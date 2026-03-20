@@ -57,13 +57,13 @@ makeFeaturesRequestHeader(
 {
     std::stringstream str;
     if (comprEnabled)
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
+        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
     if (ledgerReplayEnabled)
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
+        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
     if (txReduceRelayEnabled)
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
+        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
     if (vpReduceRelayEnabled)
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
     return str.str();
 }
 
@@ -76,14 +76,14 @@ makeFeaturesResponseHeader(
     bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
-    if (txReduceRelayEnabled && featureEnabled(headers, FEATURE_TXRR))
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
-    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+    if (comprEnabled && isFeatureValue(headers, kFEATURE_COMPR, "lz4"))
+        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
+    if (ledgerReplayEnabled && featureEnabled(headers, kFEATURE_LEDGER_REPLAY))
+        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
+    if (txReduceRelayEnabled && featureEnabled(headers, kFEATURE_TXRR))
+        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
+    if (vpReduceRelayEnabled && featureEnabled(headers, kFEATURE_VPRR))
+        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
     return str.str();
 }
 
@@ -369,7 +369,7 @@ makeResponse(
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());
     resp.insert("Connection", "Upgrade");
-    resp.insert("Upgrade", to_string(protocol));
+    resp.insert("Upgrade", toString(protocol));
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawlPublic ? "public" : "private");

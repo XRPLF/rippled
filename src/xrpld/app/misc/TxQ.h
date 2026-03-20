@@ -40,7 +40,7 @@ class TxQ
 {
 public:
     /// Fee level for single-signed reference transaction.
-    static constexpr FeeLevel64 baseLevel{256};
+    static constexpr FeeLevel64 kBASE_LEVEL{256};
 
     /**
         Structure used to customize @ref TxQ behavior.
@@ -76,7 +76,7 @@ public:
         std::uint32_t retrySequencePercent = 25;
         /// Minimum value of the escalation multiplier, regardless
         /// of the prior ledger's median fee level.
-        FeeLevel64 minimumEscalationMultiplier = baseLevel * 500;
+        FeeLevel64 minimumEscalationMultiplier = kBASE_LEVEL * 500;
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
         std::uint32_t minimumTxnInLedger = 32;
@@ -174,24 +174,24 @@ public:
     {
         /// Full initialization
         TxDetails(
-            FeeLevel64 feeLevel_,
-            std::optional<LedgerIndex> const& lastValid_,
-            TxConsequences const& consequences_,
-            AccountID const& account_,
-            SeqProxy seqProxy_,
-            std::shared_ptr<STTx const> const& txn_,
-            int retriesRemaining_,
-            TER preflightResult_,
-            std::optional<TER> lastResult_)
-            : feeLevel(feeLevel_)
-            , lastValid(lastValid_)
-            , consequences(consequences_)
-            , account(account_)
-            , seqProxy(seqProxy_)
-            , txn(txn_)
-            , retriesRemaining(retriesRemaining_)
-            , preflightResult(preflightResult_)
-            , lastResult(lastResult_)
+            FeeLevel64 feeLevel,
+            std::optional<LedgerIndex> const& lastValid,
+            TxConsequences const& consequences,
+            AccountID const& account,
+            SeqProxy seqProxy,
+            std::shared_ptr<STTx const> const& txn,
+            int retriesRemaining,
+            TER preflightResult,
+            std::optional<TER> lastResult)
+            : feeLevel(feeLevel)
+            , lastValid(lastValid)
+            , consequences(consequences)
+            , account(account)
+            , seqProxy(seqProxy)
+            , txn(txn)
+            , retriesRemaining(retriesRemaining)
+            , preflightResult(preflightResult)
+            , lastResult(lastResult)
         {
         }
 
@@ -822,19 +822,19 @@ private:
     Build a @ref TxQ::Setup object from application configuration.
 */
 TxQ::Setup
-setup_TxQ(Config const&);
+setupTxQ(Config const&);
 
 template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::baseLevel).value_or(XRPAmount(STAmount::cMaxNativeN));
+    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::cMaxNativeN));
 }
 
 inline FeeLevel64
 toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 {
-    return mulDiv(drops, TxQ::baseLevel, baseFee)
+    return mulDiv(drops, TxQ::kBASE_LEVEL, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 

@@ -117,7 +117,7 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::kNONE);
         jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != transaction->getResult())

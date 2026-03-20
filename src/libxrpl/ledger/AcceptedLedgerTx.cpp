@@ -22,9 +22,9 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     rawMeta_ = std::move(s.modData());
 
     json_ = Json::objectValue;
-    json_[jss::transaction] = txn_->getJson(JsonOptions::none);
+    json_[jss::transaction] = txn_->getJson(JsonOptions::kNONE);
 
-    json_[jss::meta] = meta_.getJson(JsonOptions::none);
+    json_[jss::meta] = meta_.getJson(JsonOptions::kNONE);
     json_[jss::raw_meta] = strHex(rawMeta_);
 
     json_[jss::result] = transHuman(meta_.getResultTER());

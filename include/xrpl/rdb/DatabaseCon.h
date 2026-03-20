@@ -107,7 +107,7 @@ public:
         // Use temporary files or regular DB files?
         : DatabaseCon(
               setup.standAlone && setup.startUp != StartUpType::LOAD &&
-                      setup.startUp != StartUpType::LOAD_FILE &&
+                      setup.startUp != StartUpType::LoadFile &&
                       setup.startUp != StartUpType::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),

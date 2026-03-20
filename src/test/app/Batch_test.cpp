@@ -89,7 +89,7 @@ class Batch_test : public beast::unit_test::suite
     submitBatch(jtx::Env& env, TER const& result, Args&&... args)
     {
         auto batchTxn = env.jt(std::forward<Args>(args)...);
-        env(batchTxn, jtx::ter(result));
+        env(batchTxn, jtx::Ter(result));
 
         auto const ids = batchTxn.stx->getBatchTransactionIDs();
         std::vector<std::string> txIDs;
@@ -162,7 +162,7 @@ class Batch_test : public beast::unit_test::suite
             {
                 auto const seq = env.seq(alice);
                 auto const batchFee = batch::calcBatchFee(env, 0, 2);
-                auto const txResult = withBatch ? ter(tesSUCCESS) : ter(temDISABLED);
+                auto const txResult = withBatch ? Ter(tesSUCCESS) : Ter(temDISABLED);
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                     batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                     batch::inner(pay(alice, bob, XRP(1)), seq + 2),
@@ -175,7 +175,7 @@ class Batch_test : public beast::unit_test::suite
             // temINVALID_FLAG. If the feature is enabled, the transaction fails
             // early in checkValidity()
             {
-                auto const txResult = withBatch ? ter(telENV_RPC_FAILED) : ter(temINVALID_FLAG);
+                auto const txResult = withBatch ? Ter(telENV_RPC_FAILED) : Ter(temINVALID_FLAG);
                 env(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn), txResult);
                 env.close();
             }
@@ -205,7 +205,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_FEE: preflight1
         {
-            env(batch::outer(alice, env.seq(alice), XRP(-1), tfAllOrNothing), ter(temBAD_FEE));
+            env(batch::outer(alice, env.seq(alice), XRP(-1), tfAllOrNothing), Ter(temBAD_FEE));
             env.close();
         }
 
@@ -214,7 +214,7 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
-            env(batch::outer(alice, seq, batchFee, tfInnerBatchTxn), ter(telENV_RPC_FAILED));
+            env(batch::outer(alice, seq, batchFee, tfInnerBatchTxn), Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -222,7 +222,7 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
-            env(batch::outer(alice, seq, batchFee, tfDisallowXRP), ter(temINVALID_FLAG));
+            env(batch::outer(alice, seq, batchFee, tfDisallowXRP), Ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -232,7 +232,7 @@ class Batch_test : public beast::unit_test::suite
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 txflags(tfAllOrNothing | tfOnlyOne),
-                ter(temINVALID_FLAG));
+                Ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -240,7 +240,7 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing), ter(temARRAY_EMPTY));
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing), Ter(temARRAY_EMPTY));
             env.close();
         }
 
@@ -250,7 +250,7 @@ class Batch_test : public beast::unit_test::suite
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                ter(temARRAY_EMPTY));
+                Ter(temARRAY_EMPTY));
             env.close();
         }
 
@@ -269,7 +269,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), seq + 7),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 8),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 9),
-                ter(telENV_RPC_FAILED));
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -282,7 +282,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1));
 
-            env(jt.jv, batch::sig(bob), ter(temREDUNDANT));
+            env(jt.jv, batch::Sig(bob), Ter(temREDUNDANT));
             env.close();
         }
 
@@ -294,7 +294,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(telENV_RPC_FAILED));
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -310,7 +310,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(temINVALID_FLAG));
+            env(jt.jv, batch::Sig(bob), Ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -322,7 +322,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(jt.jv, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temBAD_SIGNATURE));
+                Ter(temBAD_SIGNATURE));
             env.close();
         }
 
@@ -340,7 +340,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(tx1, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temBAD_SIGNER));
+                Ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -356,7 +356,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2));
 
-            env(jt.jv, ter(temBAD_REGKEY));
+            env(jt.jv, Ter(temBAD_REGKEY));
             env.close();
         }
 
@@ -368,7 +368,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 // amount can't be negative
                 batch::inner(pay(alice, bob, XRP(-1)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                Ter(temINVALID_INNER_BATCH));
             env.close();
         }
 
@@ -381,7 +381,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temBAD_FEE));
+                Ter(temBAD_FEE));
             env.close();
         }
 
@@ -394,7 +394,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temBAD_FEE));
+                Ter(temBAD_FEE));
             env.close();
         }
 
@@ -404,7 +404,7 @@ class Batch_test : public beast::unit_test::suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
-            env.set_parse_failure_expected(true);
+            env.setParseFailureExpected(true);
             try
             {
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -412,11 +412,11 @@ class Batch_test : public beast::unit_test::suite
                     batch::inner(pay(alice, bob, XRP(2)), seq + 2));
                 fail("Expected parse_error for fractional fee");
             }
-            catch (jtx::parse_error const&)
+            catch (jtx::ParseError const&)
             {
                 BEAST_EXPECT(true);
             }
-            env.set_parse_failure_expected(false);
+            env.setParseFailureExpected(false);
         }
 
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
@@ -429,7 +429,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temSEQ_AND_TICKET));
+                Ter(temSEQ_AND_TICKET));
             env.close();
         }
 
@@ -441,7 +441,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temSEQ_AND_TICKET));
+                Ter(temSEQ_AND_TICKET));
             env.close();
         }
 
@@ -452,7 +452,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 1),
-                ter(temREDUNDANT));
+                Ter(temREDUNDANT));
             env.close();
         }
 
@@ -463,7 +463,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), 0, seq + 1),
-                ter(temREDUNDANT));
+                Ter(temREDUNDANT));
             env.close();
         }
 
@@ -474,7 +474,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 1),
-                ter(temREDUNDANT));
+                Ter(temREDUNDANT));
             env.close();
         }
 
@@ -487,8 +487,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), seq + 2),
-                batch::sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice),
-                ter(telENV_RPC_FAILED));
+                batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice),
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -499,8 +499,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::sig(alice, bob),
-                ter(temBAD_SIGNER));
+                batch::Sig(alice, bob),
+                Ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -511,8 +511,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::sig(bob, bob),
-                ter(temREDUNDANT));
+                batch::Sig(bob, bob),
+                Ter(temREDUNDANT));
             env.close();
         }
 
@@ -524,8 +524,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), seq + 2),
-                batch::sig(bob),
-                ter(temBAD_SIGNER));
+                batch::Sig(bob),
+                Ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -536,8 +536,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::sig(carol),
-                ter(temBAD_SIGNER));
+                batch::Sig(carol),
+                Ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -561,7 +561,7 @@ class Batch_test : public beast::unit_test::suite
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
                 strHex(Slice{sig.data(), sig.size()});
 
-            env(jt.jv, ter(temBAD_SIGNATURE));
+            env(jt.jv, Ter(temBAD_SIGNATURE));
             env.close();
         }
 
@@ -573,8 +573,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::inner(pay(carol, alice, XRP(5)), env.seq(carol)),
-                batch::sig(bob),
-                ter(temBAD_SIGNER));
+                batch::Sig(bob),
+                Ter(temBAD_SIGNER));
             env.close();
         }
     }
@@ -614,8 +614,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(20)), seq + 2),
-                sig(bob),
-                ter(tefBAD_AUTH));
+                Sig(bob),
+                Ter(tefBAD_AUTH));
             env.close();
         }
 
@@ -629,8 +629,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {dave, carol}),
-                ter(tefNOT_MULTI_SIGNING));
+                batch::Msig(bob, {dave, carol}),
+                Ter(tefNOT_MULTI_SIGNING));
             env.close();
         }
 
@@ -647,8 +647,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, frank}),
-                ter(tefBAD_SIGNATURE));
+                batch::Msig(bob, {carol, frank}),
+                Ter(tefBAD_SIGNATURE));
             env.close();
         }
 
@@ -659,22 +659,22 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, Account("dave", KeyType::ed25519)}),
-                ter(tefBAD_SIGNATURE));
+                batch::Msig(bob, {carol, Account("dave", KeyType::ed25519)}),
+                Ter(tefBAD_SIGNATURE));
             env.close();
         }
 
         // tefMASTER_DISABLED: Master key disabled
         {
             env(regkey(elsa, frank));
-            env(fset(elsa, asfDisableMaster), sig(elsa));
+            env(fset(elsa, asfDisableMaster), Sig(elsa));
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, elsa}),
-                ter(tefMASTER_DISABLED));
+                batch::Msig(bob, {carol, elsa}),
+                Ter(tefMASTER_DISABLED));
             env.close();
         }
 
@@ -685,8 +685,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, phantom}),
-                ter(tefBAD_SIGNATURE));
+                batch::Msig(bob, {carol, phantom}),
+                Ter(tefBAD_SIGNATURE));
             env.close();
         }
 
@@ -698,8 +698,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, Reg{dave, davo}}),
-                ter(tefBAD_SIGNATURE));
+                batch::Msig(bob, {carol, Reg{dave, davo}}),
+                Ter(tefBAD_SIGNATURE));
             env.close();
         }
 
@@ -712,8 +712,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, Reg{dave, davo}}),
-                ter(tefBAD_SIGNATURE));
+                batch::Msig(bob, {carol, Reg{dave, davo}}),
+                Ter(tefBAD_SIGNATURE));
             env.close();
         }
 
@@ -724,8 +724,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol}),
-                ter(tefBAD_QUORUM));
+                batch::Msig(bob, {carol}),
+                Ter(tefBAD_QUORUM));
             env.close();
         }
 
@@ -736,8 +736,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, dave}),
-                ter(tesSUCCESS));
+                batch::Msig(bob, {carol, dave}),
+                Ter(tesSUCCESS));
             env.close();
         }
 
@@ -748,9 +748,9 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {carol, dave}),
-                msig(bob, carol),
-                ter(tesSUCCESS));
+                batch::Msig(bob, {carol, dave}),
+                Msig(bob, carol),
+                Ter(tesSUCCESS));
             env.close();
         }
 
@@ -765,8 +765,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, phantom, XRP(1000)), seq + 1),
                 batch::inner(noop(phantom), ledSeq),
-                batch::sig(Reg{phantom, carol}),
-                ter(tefBAD_AUTH));
+                batch::Sig(Reg{phantom, carol}),
+                Ter(tefBAD_AUTH));
             env.close();
         }
 
@@ -778,8 +778,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1000)), seq + 1),
                 batch::inner(noop(bob), ledSeq),
-                batch::sig(Reg{bob, carol}),
-                ter(tefBAD_AUTH));
+                batch::Sig(Reg{bob, carol}),
+                Ter(tefBAD_AUTH));
             env.close();
         }
 
@@ -791,8 +791,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
-                batch::sig(Reg{bob, carol}),
-                ter(tesSUCCESS));
+                batch::Sig(Reg{bob, carol}),
+                Ter(tesSUCCESS));
             env.close();
         }
 
@@ -803,22 +803,22 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
-                batch::sig(bob),
-                ter(tesSUCCESS));
+                batch::Sig(bob),
+                Ter(tesSUCCESS));
             env.close();
         }
 
         // tefMASTER_DISABLED: Signed With Master Key Disabled
         {
             env(regkey(bob, carol));
-            env(fset(bob, asfDisableMaster), sig(bob));
+            env(fset(bob, asfDisableMaster), Sig(bob));
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
-                batch::sig(bob),
-                ter(tefMASTER_DISABLED));
+                batch::Sig(bob),
+                Ter(tefMASTER_DISABLED));
             env.close();
         }
     }
@@ -849,7 +849,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -864,7 +864,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -879,7 +879,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -894,7 +894,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -909,7 +909,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env(jt.jv, batch::Sig(bob), Ter(telENV_RPC_FAILED));
             env.close();
         }
     }
@@ -936,7 +936,7 @@ class Batch_test : public beast::unit_test::suite
         env(pay(gw, bob, usd(100)));
         env.close();
 
-        env(noop(bob), ter(tesSUCCESS));
+        env(noop(bob), Ter(tesSUCCESS));
         env.close();
 
         // Invalid: Alice Sequence is a past sequence
@@ -955,7 +955,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), preAliceSeq - 10),
                 batch::inner(pay(bob, alice, XRP(5)), preBobSeq),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -997,7 +997,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), preAliceSeq + 10),
                 batch::inner(pay(bob, alice, XRP(5)), preBobSeq),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -1039,7 +1039,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), preAliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), preBobSeq - 10),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -1081,7 +1081,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), preAliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), preBobSeq + 10),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -1123,7 +1123,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), preAliceSeq),
                 batch::inner(pay(bob, alice, XRP(5)), preBobSeq),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -1167,7 +1167,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            env(noop(bob), ter(tesSUCCESS));
+            env(noop(bob), Ter(tesSUCCESS));
             env.close();
 
             // Bad Fee: Should be batch::calcBatchFee(env, 0, 2)
@@ -1176,7 +1176,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(15)), aliceSeq + 2),
-                ter(telINSUF_FEE_P));
+                Ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1190,7 +1190,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
-            env(noop(bob), ter(tesSUCCESS));
+            env(noop(bob), Ter(tesSUCCESS));
             env.close();
 
             env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
@@ -1202,8 +1202,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(15)), aliceSeq + 2),
-                msig(bob, carol),
-                ter(telINSUF_FEE_P));
+                Msig(bob, carol),
+                Ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1217,7 +1217,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
-            env(noop(bob), ter(tesSUCCESS));
+            env(noop(bob), Ter(tesSUCCESS));
             env.close();
 
             env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
@@ -1230,9 +1230,9 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::sig(bob),
-                msig(bob, carol),
-                ter(telINSUF_FEE_P));
+                batch::Sig(bob),
+                Msig(bob, carol),
+                Ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1246,7 +1246,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
-            env(noop(bob), ter(tesSUCCESS));
+            env(noop(bob), Ter(tesSUCCESS));
             env.close();
 
             env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
@@ -1262,9 +1262,9 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::msig(bob, {alice, carol}),
-                msig(bob, carol),
-                ter(telINSUF_FEE_P));
+                batch::Msig(bob, {alice, carol}),
+                Msig(bob, carol),
+                Ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1277,7 +1277,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            env(noop(bob), ter(tesSUCCESS));
+            env(noop(bob), Ter(tesSUCCESS));
             env.close();
 
             // Bad Fee: Should be batch::calcBatchFee(env, 1, 2)
@@ -1287,8 +1287,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::sig(bob),
-                ter(telINSUF_FEE_P));
+                batch::Sig(bob),
+                Ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1306,8 +1306,8 @@ class Batch_test : public beast::unit_test::suite
             auto const ammCreate = [&alice](STAmount const& amount, STAmount const& amount2) {
                 Json::Value jv;
                 jv[jss::Account] = alice.human();
-                jv[jss::Amount] = amount.getJson(JsonOptions::none);
-                jv[jss::Amount2] = amount2.getJson(JsonOptions::none);
+                jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
+                jv[jss::Amount2] = amount2.getJson(JsonOptions::kNONE);
                 jv[jss::TradingFee] = 0;
                 jv[jss::TransactionType] = jss::AMMCreate;
                 return jv;
@@ -1318,7 +1318,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(ammCreate(XRP(10), usd(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2),
-                ter(telINSUF_FEE_P));
+                Ter(telINSUF_FEE_P));
             env.close();
         }
     }
@@ -1352,7 +1352,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
-                ter(telENV_RPC_FAILED));
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -1400,8 +1400,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
-                batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob),
-                ter(telENV_RPC_FAILED));
+                batch::Sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob),
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -1420,7 +1420,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
-                batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
+                batch::Sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
 
             env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
@@ -2344,7 +2344,7 @@ class Batch_test : public beast::unit_test::suite
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::inner(amendTx.getJson(JsonOptions::none), env.seq(alice));
+            auto txn = batch::inner(amendTx.getJson(JsonOptions::kNONE), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2393,7 +2393,7 @@ class Batch_test : public beast::unit_test::suite
             batch::outer(alice, seq, batchFee, tfAllOrNothing),
             batch::inner(pay(alice, bob, XRP(1000)), seq + 1),
             batch::inner(fset(bob, asfAllowTrustLineClawback), ledSeq),
-            batch::sig(bob));
+            batch::Sig(bob));
         env.close();
 
         std::vector<TestLedgerData> testCases = {
@@ -2644,10 +2644,10 @@ class Batch_test : public beast::unit_test::suite
         {
             using namespace loanBroker;
             env(set(lender, vaultKeylet.key),
-                managementFeeRate(TenthBips16(100)),
-                debtMaximum(debtMaximumValue),
-                coverRateMinimum(TenthBips32(percentageToTenthBips(10))),
-                coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+                kMANAGEMENT_FEE_RATE(TenthBips16(100)),
+                kDEBT_MAXIMUM(debtMaximumValue),
+                kCOVER_RATE_MINIMUM(TenthBips32(percentageToTenthBips(10))),
+                kCOVER_RATE_LIQUIDATION(TenthBips32(percentageToTenthBips(25))));
 
             env(coverDeposit(lender, brokerKeylet.key, coverDepositValue));
 
@@ -2671,10 +2671,10 @@ class Batch_test : public beast::unit_test::suite
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Not allowed to include the counterparty signature
-                            sig(sfCounterpartySignature, borrower),
-                            sig(none),
-                            fee(none),
-                            seq(none)),
+                            Sig(sfCounterpartySignature, borrower),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2689,9 +2689,9 @@ class Batch_test : public beast::unit_test::suite
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must be set
-                            sig(none),
-                            fee(none),
-                            seq(none)),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2706,10 +2706,10 @@ class Batch_test : public beast::unit_test::suite
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must sign the outer transaction
-                            counterparty(borrower.id()),
-                            sig(none),
-                            fee(none),
-                            seq(none)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2727,10 +2727,10 @@ class Batch_test : public beast::unit_test::suite
                     batch::inner(
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
-                            counterparty(borrower.id()),
-                            sig(none),
-                            fee(none),
-                            seq(none)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::inner(
                         pay(
@@ -2741,7 +2741,7 @@ class Batch_test : public beast::unit_test::suite
                             loanKeylet.key,
                             STAmount{asset, asset(500).value()}),
                         lenderSeq + 2),
-                    batch::sig(borrower));
+                    batch::Sig(borrower));
             }
             env.close();
             BEAST_EXPECT(env.le(brokerKeylet));
@@ -2759,13 +2759,13 @@ class Batch_test : public beast::unit_test::suite
                     batch::inner(
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
-                            counterparty(borrower.id()),
-                            sig(none),
-                            fee(none),
-                            seq(none)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::inner(manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 2),
-                    batch::sig(borrower));
+                    batch::Sig(borrower));
             }
             env.close();
             BEAST_EXPECT(env.le(brokerKeylet));
@@ -2817,7 +2817,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(check::create(bob, alice, usd(10)), bobSeq),
                 batch::inner(check::cash(alice, chkID, usd(10)), aliceSeq + 1),
-                batch::sig(bob));
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> testCases = {
@@ -2863,7 +2863,7 @@ class Batch_test : public beast::unit_test::suite
                 // tecDST_TAG_NEEDED - alice has enabled asfRequireDest
                 batch::inner(check::create(bob, alice, usd(10)), bobSeq),
                 batch::inner(check::cash(alice, chkID, usd(10)), aliceSeq + 1),
-                batch::sig(bob));
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> testCases = {
@@ -2928,7 +2928,7 @@ class Batch_test : public beast::unit_test::suite
             batch::inner(ticket::create(bob, 10), bobSeq),
             batch::inner(check::create(bob, alice, usd(10)), 0, bobSeq + 1),
             batch::inner(check::cash(alice, chkID, usd(10)), aliceSeq + 1),
-            batch::sig(bob));
+            batch::Sig(bob));
         env.close();
 
         std::vector<TestLedgerData> testCases = {
@@ -2988,7 +2988,7 @@ class Batch_test : public beast::unit_test::suite
             batch::outer(carol, carolSeq, batchFee, tfAllOrNothing),
             batch::inner(check::create(bob, alice, usd(10)), bobSeq),
             batch::inner(check::cash(alice, chkID, usd(10)), aliceSeq),
-            batch::sig(alice, bob));
+            batch::Sig(alice, bob));
         env.close();
 
         std::vector<TestLedgerData> testCases = {
@@ -3185,9 +3185,9 @@ class Batch_test : public beast::unit_test::suite
             auto const carolSeq = env.seq(carol);
 
             // AccountSet Txn
-            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 2));
+            auto const noopTxn = env.jt(noop(alice), Seq(aliceSeq + 2));
             auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
-            env(noopTxn, ter(terPRE_SEQ));
+            env(noopTxn, Ter(terPRE_SEQ));
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -3197,7 +3197,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(carol, carolSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-                batch::sig(alice));
+                batch::Sig(alice));
             env.close();
 
             {
@@ -3231,8 +3231,8 @@ class Batch_test : public beast::unit_test::suite
             auto const aliceSeq = env.seq(alice);
 
             // AccountSet Txn
-            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            env(noopTxn, ter(terPRE_SEQ));
+            auto const noopTxn = env.jt(noop(alice), Seq(aliceSeq + 1));
+            env(noopTxn, Ter(terPRE_SEQ));
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -3279,8 +3279,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
 
-            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            env(noopTxn, ter(tesSUCCESS));
+            auto const noopTxn = env.jt(noop(alice), Seq(aliceSeq + 1));
+            env(noopTxn, Ter(tesSUCCESS));
             env.close();
 
             {
@@ -3317,12 +3317,12 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(carol, carolSeq + 1, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-                batch::sig(alice));
+                batch::Sig(alice));
 
             // AccountSet Txn
-            auto const noopTxn = env.jt(noop(carol), seq(carolSeq));
+            auto const noopTxn = env.jt(noop(carol), Seq(carolSeq));
             auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
-            env(noopTxn, ter(tesSUCCESS));
+            env(noopTxn, Ter(tesSUCCESS));
             env.close();
 
             {
@@ -3372,7 +3372,7 @@ class Batch_test : public beast::unit_test::suite
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
-            env(noopTxn, ter(tesSUCCESS));
+            env(noopTxn, Ter(tesSUCCESS));
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -3482,7 +3482,7 @@ class Batch_test : public beast::unit_test::suite
             uint256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::cash(bob, chkID, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
-            env(objTxn, ter(tecNO_ENTRY));
+            env(objTxn, Ter(tecNO_ENTRY));
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -3530,7 +3530,7 @@ class Batch_test : public beast::unit_test::suite
             uint256 const chkID{getCheckIndex(alice, aliceSeq)};
             auto const objTxn = env.jt(check::create(alice, bob, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
-            env(objTxn, ter(tesSUCCESS));
+            env(objTxn, Ter(tesSUCCESS));
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -3541,7 +3541,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(check::cash(bob, chkID, XRP(10)), bobSeq),
                 batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
                 ticket::use(aliceTicketSeq),
-                batch::sig(bob));
+                batch::Sig(bob));
 
             env.close();
             {
@@ -3586,7 +3586,7 @@ class Batch_test : public beast::unit_test::suite
             // CheckCash Txn
             auto const objTxn = env.jt(check::cash(bob, chkID, XRP(10)));
             auto const objTxnID = to_string(objTxn.stx->getTransactionID());
-            env(objTxn, ter(tecNO_ENTRY));
+            env(objTxn, Ter(tecNO_ENTRY));
 
             env.close();
             {
@@ -3657,7 +3657,7 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        env(noop(bob), ter(tesSUCCESS));
+        env(noop(bob), Ter(tesSUCCESS));
         env.close();
 
         auto const aliceSeq = env.seq(alice);
@@ -3666,9 +3666,9 @@ class Batch_test : public beast::unit_test::suite
         auto const bobSeq = env.seq(bob);
 
         // Alice Pays Bob (Open Ledger)
-        auto const payTxn1 = env.jt(pay(alice, bob, XRP(10)), seq(aliceSeq));
+        auto const payTxn1 = env.jt(pay(alice, bob, XRP(10)), Seq(aliceSeq));
         auto const payTxn1ID = to_string(payTxn1.stx->getTransactionID());
-        env(payTxn1, ter(tesSUCCESS));
+        env(payTxn1, Ter(tesSUCCESS));
 
         // Alice & Bob Atomic Batch
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -3678,12 +3678,12 @@ class Batch_test : public beast::unit_test::suite
             batch::outer(alice, aliceSeq + 1, batchFee, tfAllOrNothing),
             batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 2),
             batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-            batch::sig(bob));
+            batch::Sig(bob));
 
         // Bob pays Alice (Open Ledger)
-        auto const payTxn2 = env.jt(pay(bob, alice, XRP(5)), seq(bobSeq + 1));
+        auto const payTxn2 = env.jt(pay(bob, alice, XRP(5)), Seq(bobSeq + 1));
         auto const payTxn2ID = to_string(payTxn2.stx->getTransactionID());
-        env(payTxn2, ter(terPRE_SEQ));
+        env(payTxn2, Ter(terPRE_SEQ));
         env.close();
 
         std::vector<TestLedgerData> testCases = {
@@ -3747,7 +3747,7 @@ class Batch_test : public beast::unit_test::suite
             env(noop(alice));
             checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
-            env(noop(carol), ter(terQUEUED));
+            env(noop(carol), Ter(terQUEUED));
             checkMetrics(*this, env, 1, std::nullopt, 3, 2);
 
             auto const aliceSeq = env.seq(alice);
@@ -3759,8 +3759,8 @@ class Batch_test : public beast::unit_test::suite
                 env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                     batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                     batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                    batch::sig(bob),
-                    ter(terQUEUED));
+                    batch::Sig(bob),
+                    Ter(terQUEUED));
             }
 
             checkMetrics(*this, env, 2, std::nullopt, 3, 2);
@@ -3770,8 +3770,8 @@ class Batch_test : public beast::unit_test::suite
                 env(batch::outer(alice, aliceSeq, openLedgerFee(env, batchFee), tfAllOrNothing),
                     batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                     batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                    batch::sig(bob),
-                    ter(tesSUCCESS));
+                    batch::Sig(bob),
+                    Ter(tesSUCCESS));
                 env.close();
             }
 
@@ -3811,13 +3811,13 @@ class Batch_test : public beast::unit_test::suite
                 env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                     batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                     batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                    batch::sig(bob),
-                    ter(tesSUCCESS));
+                    batch::Sig(bob),
+                    Ter(tesSUCCESS));
             }
 
             checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
-            env(noop(carol), ter(terQUEUED));
+            env(noop(carol), Ter(terQUEUED));
             checkMetrics(*this, env, 1, std::nullopt, 3, 2);
         }
     }
@@ -3955,7 +3955,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 tx,
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-                batch::sig(bob));
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> testCases = {
@@ -4199,7 +4199,7 @@ class Batch_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
             env(fset(bob, asfRequireDest));
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), seq(aliceSeq));
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq));
 
             Serializer s;
             jtx.stx->add(s);
@@ -4219,7 +4219,7 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), seq(aliceSeq + 1));
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq + 1));
 
             Serializer s;
             jtx.stx->add(s);
@@ -4295,7 +4295,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), seq + 2),
-                batch::sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice));
+                batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice));
             XRPAmount const txBaseFee = getBaseFee(jtx);
             BEAST_EXPECT(txBaseFee == XRPAmount(INITIAL_XRP));
         }
@@ -4354,7 +4354,7 @@ public:
     {
         using namespace test::jtx;
 
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         testWithFeats(sa - fixBatchInnerSigs);
         testWithFeats(sa);
     }

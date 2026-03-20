@@ -38,11 +38,11 @@ private:
         using socket_type = typename Protocol::socket;
         using endpoint_type = typename Protocol::endpoint;
 
-        Checker& checker_;
-        socket_type socket_;
-        Handler handler_;
+        Checker& checker;
+        socket_type socket;
+        Handler handler;
 
-        async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
+        async_op(Checker& owner, boost::asio::io_context& ioContext, Handler&& handler);
 
         ~async_op();
 
@@ -50,7 +50,7 @@ private:
         stop() override;
 
         void
-        operator()(error_code const& ec) override;
+        operator()(error_code const& ec) override;  // NOLINT(readability-identifier-naming)
     };
 
     //--------------------------------------------------------------------------
@@ -60,12 +60,12 @@ private:
 
     std::mutex mutex_;
     std::condition_variable cond_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     list_type list_;
     bool stop_ = false;
 
 public:
-    explicit Checker(boost::asio::io_context& io_context);
+    explicit Checker(boost::asio::io_context& ioContext);
 
     /** Destroy the service.
         Any pending I/O operations will be canceled. This call blocks until
@@ -94,7 +94,7 @@ public:
     */
     template <class Handler>
     void
-    async_connect(beast::IP::Endpoint const& endpoint, Handler&& handler);
+    asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler);
 
 private:
     void
@@ -107,9 +107,9 @@ template <class Protocol>
 template <class Handler>
 Checker<Protocol>::async_op<Handler>::async_op(
     Checker& owner,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     Handler&& handler)
-    : checker_(owner), socket_(io_context), handler_(std::forward<Handler>(handler))
+    : checker(owner), socket(ioContext), handler(std::forward<Handler>(handler))
 {
 }
 
@@ -117,7 +117,7 @@ template <class Protocol>
 template <class Handler>
 Checker<Protocol>::async_op<Handler>::~async_op()
 {
-    checker_.remove(*this);
+    checker.remove(*this);
 }
 
 template <class Protocol>
@@ -126,7 +126,7 @@ void
 Checker<Protocol>::async_op<Handler>::stop()
 {
     error_code ec;
-    socket_.cancel(ec);
+    socket.cancel(ec);
 }
 
 template <class Protocol>
@@ -134,13 +134,13 @@ template <class Handler>
 void
 Checker<Protocol>::async_op<Handler>::operator()(error_code const& ec)
 {
-    handler_(ec);
+    handler(ec);
 }
 
 //------------------------------------------------------------------------------
 
 template <class Protocol>
-Checker<Protocol>::Checker(boost::asio::io_context& io_context) : io_context_(io_context)
+Checker<Protocol>::Checker(boost::asio::io_context& ioContext) : ioContext_(ioContext)
 {
 }
 
@@ -175,16 +175,16 @@ Checker<Protocol>::wait()
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::async_connect(beast::IP::Endpoint const& endpoint, Handler&& handler)
+Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler)
 {
     auto const op =
-        std::make_shared<async_op<Handler>>(*this, io_context_, std::forward<Handler>(handler));
+        std::make_shared<async_op<Handler>>(*this, ioContext_, std::forward<Handler>(handler));
     {
         std::lock_guard lock(mutex_);
         list_.push_back(*op);
     }
-    op->socket_.async_connect(
-        beast::IPAddressConversion::to_asio_endpoint(endpoint),
+    op->socket.async_connect(
+        beast::IPAddressConversion::toAsioEndpoint(endpoint),
         std::bind(&basic_async_op::operator(), op, std::placeholders::_1));
 }
 

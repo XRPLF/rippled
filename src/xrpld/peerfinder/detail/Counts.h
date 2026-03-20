@@ -51,7 +51,7 @@ public:
     {
         // Must be handshaked and in the right state
         XRPL_ASSERT(
-            s.state() == Slot::connected || s.state() == Slot::accept,
+            s.state() == Slot::Connected || s.state() == Slot::Accept,
             "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
@@ -67,9 +67,9 @@ public:
     std::size_t
     attempts_needed() const
     {
-        if (attempts_ >= Tuning::maxConnectAttempts)
+        if (attempts_ >= Tuning::MaxConnectAttempts)
             return 0;
-        return Tuning::maxConnectAttempts - attempts_;
+        return Tuning::MaxConnectAttempts - attempts_;
     }
 
     /** Returns the number of outbound connection attempts. */
@@ -241,13 +241,13 @@ private:
 
         switch (s.state())
         {
-            case Slot::accept:
+            case Slot::Accept:
                 XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 acceptCount_ += n;
                 break;
 
-            case Slot::connect:
-            case Slot::connected:
+            case Slot::Connect:
+            case Slot::Connected:
                 XRPL_ASSERT(
                     !s.inbound(),
                     "xrpl::PeerFinder::Counts::adjust : input is not "
@@ -255,7 +255,7 @@ private:
                 attempts_ += n;
                 break;
 
-            case Slot::active:
+            case Slot::Active:
                 if (s.fixed())
                     fixed_active_ += n;
                 if (!s.fixed() && !s.reserved())
@@ -268,7 +268,7 @@ private:
                 active_ += n;
                 break;
 
-            case Slot::closing:
+            case Slot::Closing:
                 closingCount_ += n;
                 break;
 

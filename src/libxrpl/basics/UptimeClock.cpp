@@ -10,7 +10,7 @@ std::atomic<UptimeClock::rep> UptimeClock::now_{0};  // seconds since start
 std::atomic<bool> UptimeClock::stop_{false};         // stop update thread
 
 // On rippled shutdown, cancel and wait for the update thread
-UptimeClock::update_thread::~update_thread()
+UptimeClock::UpdateThread::~UpdateThread()
 {
     if (joinable())
     {
@@ -22,10 +22,10 @@ UptimeClock::update_thread::~update_thread()
 }
 
 // Launch the update thread
-UptimeClock::update_thread
-UptimeClock::start_clock()
+UptimeClock::UpdateThread
+UptimeClock::startClock()
 {
-    return update_thread{[] {
+    return UpdateThread{[] {
         using namespace std;
         using namespace std::chrono;
 
@@ -48,7 +48,7 @@ UptimeClock::time_point
 UptimeClock::now()
 {
     // start the update thread on first use
-    static auto const kINIT = start_clock();
+    static auto const kINIT = startClock();
 
     // Return the number of seconds since rippled start
     return time_point{duration{now_}};

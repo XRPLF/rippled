@@ -316,8 +316,8 @@ STTx::checkBatchSign(Rules const& rules) const
 Json::Value
 STTx::getJson(JsonOptions options) const
 {
-    Json::Value ret = STObject::getJson(JsonOptions::none);
-    if (!(options & JsonOptions::disable_API_prior_V2))
+    Json::Value ret = STObject::getJson(JsonOptions::kNONE);
+    if (!(options & JsonOptions::kDISABLE_API_PRIOR_V2))
         ret[jss::hash] = to_string(getTransactionID());
     return ret;
 }
@@ -325,7 +325,7 @@ STTx::getJson(JsonOptions options) const
 Json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    bool const v1 = !(options & JsonOptions::disable_API_prior_V2);
+    bool const v1 = !(options & JsonOptions::kDISABLE_API_PRIOR_V2);
 
     if (binary)
     {
@@ -343,7 +343,7 @@ STTx::getJson(JsonOptions options, bool binary) const
         return Json::Value{dataBin};
     }
 
-    Json::Value ret = STObject::getJson(JsonOptions::none);
+    Json::Value ret = STObject::getJson(JsonOptions::kNONE);
     if (v1)
         ret[jss::hash] = to_string(getTransactionID());
 

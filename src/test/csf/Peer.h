@@ -347,7 +347,7 @@ struct Peer
 
     /** Create network connection
 
-        Creates a new outbound connection to another Peer if none exists
+        Creates a new outbound connection to another Peer if kNONE exists
 
         @param o The peer with the inbound connection
         @param dur The fixed delay for messages between the two Peers
@@ -491,7 +491,7 @@ struct Peer
         return Result(
             TxSet{openTxs},
             Proposal(
-                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+                prevLedger.id(), Proposal::kSEQ_JOIN, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -524,7 +524,7 @@ struct Peer
         bool const validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
-            bool const proposing = mode == ConsensusMode::proposing;
+            bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);

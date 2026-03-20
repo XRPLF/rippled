@@ -93,14 +93,14 @@ public:
         // Offers for the good quality path
         env(offer(carol, btc(1), usd(100)));
 
-        PathSet paths(Path(XRP, usd), Path(usd));
+        PathSet paths(TestPath(XRP, usd), TestPath(usd));
 
         env(pay(alice, bob, usd(100)),
             json(paths.json()),
             sendmax(btc(1000)),
             txflags(tfPartialPayment));
 
-        env.require(balance(bob, usd(100)));
+        env.require(Balance(bob, usd(100)));
         BEAST_EXPECT(
             !isOffer(env, carol, btc(1), usd(100)) && isOffer(env, carol, btc(49), XRP(49)));
     }
@@ -127,7 +127,7 @@ public:
 
         auto const offer1Seq = env.seq(alice);
 
-        env(offer(alice, XRP(500), usd(100)), require(offers(alice, 1)));
+        env(offer(alice, XRP(500), usd(100)), Require(offers(alice, 1)));
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(500), usd(100)));
@@ -137,7 +137,7 @@ public:
 
         env(offer(alice, XRP(300), usd(100)),
             json(jss::OfferSequence, offer1Seq),
-            require(offers(alice, 1)));
+            Require(offers(alice, 1)));
         env.close();
 
         BEAST_EXPECT(
@@ -148,7 +148,7 @@ public:
 
         env(offer(alice, XRP(400), usd(200)),
             json(jss::OfferSequence, offer1Seq),
-            require(offers(alice, 2)));
+            Require(offers(alice, 2)));
         env.close();
 
         BEAST_EXPECT(
@@ -156,11 +156,11 @@ public:
 
         // Test cancellation now with OfferCancel tx
         auto const offer4Seq = env.seq(alice);
-        env(offer(alice, XRP(222), usd(111)), require(offers(alice, 3)));
+        env(offer(alice, XRP(222), usd(111)), Require(offers(alice, 3)));
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(222), usd(111)));
-        env(offer_cancel(alice, offer4Seq));
+        env(offerCancel(alice, offer4Seq));
         env.close();
         BEAST_EXPECT(env.seq(alice) == offer4Seq + 2);
 
@@ -173,7 +173,7 @@ public:
         env(offer(alice, XRP(5), usd(2)),
             json(sfExpiration.fieldName, lastClose(env)),
             json(jss::OfferSequence, offer2Seq),
-            ter(tecEXPIRED));
+            Ter(tecEXPIRED));
         env.close();
 
         env.require(offers(alice, 2));
@@ -213,7 +213,7 @@ public:
         for (int i = 0; i < 101; ++i)
             env(offer(carol, usd(1), eur(2)));
 
-        env(pay(alice, bob, eur(epsilon)), path(~eur), sendmax(usd(100)));
+        env(pay(alice, bob, eur(kEPSILON)), Path(~eur), sendmax(usd(100)));
     }
 
     void
@@ -277,7 +277,7 @@ public:
         env(offer(erin, drops(2), usd(1)));
 
         env(pay(alice, bob, usd(1)),
-            path(~usd),
+            Path(~usd),
             sendmax(XRP(102)),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
@@ -285,7 +285,7 @@ public:
 
         // offer was correctly consumed. There is still some
         // liquidity left on that offer.
-        env.require(balance(erin, usd(0.99999)), offers(erin, 1));
+        env.require(Balance(erin, usd(0.99999)), offers(erin, 1));
     }
 
     void
@@ -336,17 +336,17 @@ public:
 
             env.require(
                 offers(carol, 0),
-                balance(
+                Balance(
                     carol,
                     initialCarolUSD));  // offer is removed but not taken
             if (crossBothOffers)
             {
-                env.require(offers(alice, 0), balance(alice, usd(1)));  // alice's offer is crossed
+                env.require(offers(alice, 0), Balance(alice, usd(1)));  // alice's offer is crossed
             }
             else
             {
                 env.require(
-                    offers(alice, 1), balance(alice, usd(0)));  // alice's offer is not crossed
+                    offers(alice, 1), Balance(alice, usd(0)));  // alice's offer is not crossed
             }
         }
 
@@ -376,16 +376,16 @@ public:
             TER const expectedTer = partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
 
             env(pay(alice, bob, usd(5)),
-                path(~usd),
+                Path(~usd),
                 sendmax(XRP(1)),
                 txflags(flags),
-                ter(expectedTer));
+                Ter(expectedTer));
             env.close();
 
             if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
-                env.require(balance(carol,
+                env.require(Balance(carol,
                                     initialCarolUSD));  // offer is removed but not taken
             }
             else
@@ -458,17 +458,17 @@ public:
 
             env.require(
                 offers(carol, 0),
-                balance(
+                Balance(
                     carol,
                     initialCarolUSD));  // offer is removed but not taken
             if (crossBothOffers)
             {
-                env.require(offers(alice, 0), balance(alice, usd(1)));  // alice's offer is crossed
+                env.require(offers(alice, 0), Balance(alice, usd(1)));  // alice's offer is crossed
             }
             else
             {
                 env.require(
-                    offers(alice, 1), balance(alice, usd(0)));  // alice's offer is not crossed
+                    offers(alice, 1), Balance(alice, usd(0)));  // alice's offer is not crossed
             }
         }
 
@@ -501,16 +501,16 @@ public:
             TER const expectedTer = partialPayment ? TER{tesSUCCESS} : TER{tecPATH_PARTIAL};
 
             env(pay(alice, bob, usd(5)),
-                path(~usd),
+                Path(~usd),
                 sendmax(eur(10)),
                 txflags(flags),
-                ter(expectedTer));
+                Ter(expectedTer));
             env.close();
 
             if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
-                env.require(balance(carol,
+                env.require(Balance(carol,
                                     initialCarolUSD));  // offer is removed but not taken
             }
             else
@@ -562,10 +562,10 @@ public:
             env(offer(dan, XRP(50), usD1(50)));
 
             env(pay(alice, carol, usD2(50)),
-                path(~usD1, bob),
+                Path(~usD1, bob),
                 sendmax(XRP(50)),
                 txflags(tfNoRippleDirect),
-                ter(tecPATH_DRY));
+                Ter(tecPATH_DRY));
         }
         {
             // Make sure payment works with default flags
@@ -588,14 +588,14 @@ public:
             env(offer(dan, XRP(50), usD1(50)));
 
             env(pay(alice, carol, usD2(50)),
-                path(~usD1, bob),
+                Path(~usD1, bob),
                 sendmax(XRP(50)),
                 txflags(tfNoRippleDirect));
 
-            env.require(balance(alice, xrpMinusFee(env, 10000 - 50)));
-            env.require(balance(bob, usD1(100)));
-            env.require(balance(bob, usD2(0)));
-            env.require(balance(carol, usD2(50)));
+            env.require(Balance(alice, xrpMinusFee(env, 10000 - 50)));
+            env.require(Balance(bob, usD1(100)));
+            env.require(Balance(bob, usD2(0)));
+            env.require(Balance(carol, usD2(50)));
         }
     }
 
@@ -632,11 +632,11 @@ public:
 
             env.fund(r + f, alice);
 
-            env(trust(alice, usdOffer), ter(tesSUCCESS));
-            env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
-            env(offer(alice, xrpOffer, usdOffer), ter(tecINSUF_RESERVE_OFFER));
+            env(trust(alice, usdOffer), Ter(tesSUCCESS));
+            env(pay(gw, alice, usdOffer), Ter(tesSUCCESS));
+            env(offer(alice, xrpOffer, usdOffer), Ter(tecINSUF_RESERVE_OFFER));
 
-            env.require(balance(alice, r - f), owners(alice, 1));
+            env.require(Balance(alice, r - f), Owners(alice, 1));
         }
 
         // Partial cross:
@@ -653,20 +653,20 @@ public:
 
             env.fund(r + f + xrpOffer, bob);
 
-            env(offer(bob, usdOffer2, xrpOffer2), ter(tesSUCCESS));
+            env(offer(bob, usdOffer2, xrpOffer2), Ter(tesSUCCESS));
             env.fund(r + f, alice);
 
-            env(trust(alice, usdOffer), ter(tesSUCCESS));
-            env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
-            env(offer(alice, xrpOffer, usdOffer), ter(tesSUCCESS));
+            env(trust(alice, usdOffer), Ter(tesSUCCESS));
+            env(pay(gw, alice, usdOffer), Ter(tesSUCCESS));
+            env(offer(alice, xrpOffer, usdOffer), Ter(tesSUCCESS));
 
             env.require(
-                balance(alice, r - f + xrpOffer2),
-                balance(alice, usdOffer2),
-                owners(alice, 1),
-                balance(bob, r + xrpOffer2),
-                balance(bob, usdOffer2),
-                owners(bob, 1));
+                Balance(alice, r - f + xrpOffer2),
+                Balance(alice, usdOffer2),
+                Owners(alice, 1),
+                Balance(bob, r + xrpOffer2),
+                Balance(bob, usdOffer2),
+                Owners(bob, 1));
         }
 
         // Account has enough reserve as is, but not enough
@@ -685,25 +685,25 @@ public:
 
             env.fund(r + f + xrpOffer, bob, carol);
 
-            env(offer(bob, usdOffer2, xrpOffer2), ter(tesSUCCESS));
-            env(offer(carol, usdOffer, xrpOffer), ter(tesSUCCESS));
+            env(offer(bob, usdOffer2, xrpOffer2), Ter(tesSUCCESS));
+            env(offer(carol, usdOffer, xrpOffer), Ter(tesSUCCESS));
 
             env.fund(r + f, alice);
 
-            env(trust(alice, usdOffer), ter(tesSUCCESS));
-            env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
-            env(offer(alice, xrpOffer, usdOffer), ter(tesSUCCESS));
+            env(trust(alice, usdOffer), Ter(tesSUCCESS));
+            env(pay(gw, alice, usdOffer), Ter(tesSUCCESS));
+            env(offer(alice, xrpOffer, usdOffer), Ter(tesSUCCESS));
 
             env.require(
-                balance(alice, r - f + xrpOffer),
-                balance(alice, usd(0)),
-                owners(alice, 1),
-                balance(bob, r + xrpOffer2),
-                balance(bob, usdOffer2),
-                owners(bob, 1),
-                balance(carol, r + xrpOffer2),
-                balance(carol, usdOffer2),
-                owners(carol, 2));
+                Balance(alice, r - f + xrpOffer),
+                Balance(alice, usd(0)),
+                Owners(alice, 1),
+                Balance(bob, r + xrpOffer2),
+                Balance(bob, usdOffer2),
+                Owners(bob, 1),
+                Balance(carol, r + xrpOffer2),
+                Balance(carol, usdOffer2),
+                Owners(carol, 2));
         }
     }
 
@@ -746,46 +746,46 @@ public:
             // bob creates an offer that expires before the next ledger close.
             env(offer(bob, usd(500), XRP(500)),
                 json(sfExpiration.fieldName, lastClose(env) + 1),
-                ter(tesSUCCESS));
+                Ter(tesSUCCESS));
 
             // The offer expires (it's not removed yet).
             env.close();
-            env.require(owners(bob, 1), offers(bob, 1));
+            env.require(Owners(bob, 1), offers(bob, 1));
 
             // bob creates the offer that will be crossed.
-            env(offer(bob, usd(500), XRP(500)), ter(tesSUCCESS));
+            env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
-            env.require(owners(bob, 2), offers(bob, 2));
+            env.require(Owners(bob, 2), offers(bob, 2));
 
-            env(trust(alice, usd(1000)), ter(tesSUCCESS));
-            env(pay(gw, alice, usd(1000)), ter(tesSUCCESS));
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
 
             // Order that can't be filled but will remove bob's expired offer:
             {
                 TER const killedCode{TER{tecKILLED}};
-                env(offer(alice, XRP(1000), usd(1000)), txflags(tfFillOrKill), ter(killedCode));
+                env(offer(alice, XRP(1000), usd(1000)), txflags(tfFillOrKill), Ter(killedCode));
             }
             env.require(
-                balance(alice, startBalance - (f * 2)),
-                balance(alice, usd(1000)),
-                owners(alice, 1),
+                Balance(alice, startBalance - (f * 2)),
+                Balance(alice, usd(1000)),
+                Owners(alice, 1),
                 offers(alice, 0),
-                balance(bob, startBalance - (f * 2)),
-                balance(bob, usd(none)),
-                owners(bob, 1),
+                Balance(bob, startBalance - (f * 2)),
+                Balance(bob, usd(kNONE)),
+                Owners(bob, 1),
                 offers(bob, 1));
 
             // Order that can be filled
-            env(offer(alice, XRP(500), usd(500)), txflags(tfFillOrKill), ter(tesSUCCESS));
+            env(offer(alice, XRP(500), usd(500)), txflags(tfFillOrKill), Ter(tesSUCCESS));
 
             env.require(
-                balance(alice, startBalance - (f * 3) + XRP(500)),
-                balance(alice, usd(500)),
-                owners(alice, 1),
+                Balance(alice, startBalance - (f * 3) + XRP(500)),
+                Balance(alice, usd(500)),
+                Owners(alice, 1),
                 offers(alice, 0),
-                balance(bob, startBalance - (f * 2) - XRP(500)),
-                balance(bob, usd(500)),
-                owners(bob, 1),
+                Balance(bob, startBalance - (f * 2) - XRP(500)),
+                Balance(bob, usd(500)),
+                Owners(bob, 1),
                 offers(bob, 0));
         }
 
@@ -799,49 +799,49 @@ public:
             env.fund(startBalance, gw, alice, bob);
             env.close();
 
-            env(trust(alice, usd(1000)), ter(tesSUCCESS));
-            env(pay(gw, alice, usd(1000)), ter(tesSUCCESS));
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
 
             // No cross:
             {
                 TER const expectedCode = tecKILLED;
                 env(offer(alice, XRP(1000), usd(1000)),
                     txflags(tfImmediateOrCancel),
-                    ter(expectedCode));
+                    Ter(expectedCode));
             }
 
             env.require(
-                balance(alice, startBalance - f - f),
-                balance(alice, usd(1000)),
-                owners(alice, 1),
+                Balance(alice, startBalance - f - f),
+                Balance(alice, usd(1000)),
+                Owners(alice, 1),
                 offers(alice, 0));
 
             // Partially cross:
-            env(offer(bob, usd(50), XRP(50)), ter(tesSUCCESS));
-            env(offer(alice, XRP(1000), usd(1000)), txflags(tfImmediateOrCancel), ter(tesSUCCESS));
+            env(offer(bob, usd(50), XRP(50)), Ter(tesSUCCESS));
+            env(offer(alice, XRP(1000), usd(1000)), txflags(tfImmediateOrCancel), Ter(tesSUCCESS));
 
             env.require(
-                balance(alice, startBalance - f - f - f + XRP(50)),
-                balance(alice, usd(950)),
-                owners(alice, 1),
+                Balance(alice, startBalance - f - f - f + XRP(50)),
+                Balance(alice, usd(950)),
+                Owners(alice, 1),
                 offers(alice, 0),
-                balance(bob, startBalance - f - XRP(50)),
-                balance(bob, usd(50)),
-                owners(bob, 1),
+                Balance(bob, startBalance - f - XRP(50)),
+                Balance(bob, usd(50)),
+                Owners(bob, 1),
                 offers(bob, 0));
 
             // Fully cross:
-            env(offer(bob, usd(50), XRP(50)), ter(tesSUCCESS));
-            env(offer(alice, XRP(50), usd(50)), txflags(tfImmediateOrCancel), ter(tesSUCCESS));
+            env(offer(bob, usd(50), XRP(50)), Ter(tesSUCCESS));
+            env(offer(alice, XRP(50), usd(50)), txflags(tfImmediateOrCancel), Ter(tesSUCCESS));
 
             env.require(
-                balance(alice, startBalance - f - f - f - f + XRP(100)),
-                balance(alice, usd(900)),
-                owners(alice, 1),
+                Balance(alice, startBalance - f - f - f - f + XRP(100)),
+                Balance(alice, usd(900)),
+                Owners(alice, 1),
                 offers(alice, 0),
-                balance(bob, startBalance - f - f - XRP(100)),
-                balance(bob, usd(100)),
-                owners(bob, 1),
+                Balance(bob, startBalance - f - f - XRP(100)),
+                Balance(bob, usd(100)),
+                Owners(bob, 1),
                 offers(bob, 0));
         }
 
@@ -956,59 +956,59 @@ public:
         // Order that has invalid flags
         env(offer(alice, usd(1000), XRP(1000)),
             txflags(tfImmediateOrCancel + 1),
-            ter(temINVALID_FLAG));
-        env.require(balance(alice, startBalance), owners(alice, 0), offers(alice, 0));
+            Ter(temINVALID_FLAG));
+        env.require(Balance(alice, startBalance), Owners(alice, 0), offers(alice, 0));
 
         // Order with incompatible flags
         env(offer(alice, usd(1000), XRP(1000)),
             txflags(tfImmediateOrCancel | tfFillOrKill),
-            ter(temINVALID_FLAG));
-        env.require(balance(alice, startBalance), owners(alice, 0), offers(alice, 0));
+            Ter(temINVALID_FLAG));
+        env.require(Balance(alice, startBalance), Owners(alice, 0), offers(alice, 0));
 
         // Sell and buy the same asset
         {
             // Alice tries an XRP to XRP order:
-            env(offer(alice, XRP(1000), XRP(1000)), ter(temBAD_OFFER));
-            env.require(owners(alice, 0), offers(alice, 0));
+            env(offer(alice, XRP(1000), XRP(1000)), Ter(temBAD_OFFER));
+            env.require(Owners(alice, 0), offers(alice, 0));
 
             // Alice tries an IOU to IOU order:
-            env(trust(alice, usd(1000)), ter(tesSUCCESS));
-            env(pay(gw, alice, usd(1000)), ter(tesSUCCESS));
-            env(offer(alice, usd(1000), usd(1000)), ter(temREDUNDANT));
-            env.require(owners(alice, 1), offers(alice, 0));
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
+            env(offer(alice, usd(1000), usd(1000)), Ter(temREDUNDANT));
+            env.require(Owners(alice, 1), offers(alice, 0));
         }
 
         // Offers with negative amounts
         {
-            env(offer(alice, -usd(1000), XRP(1000)), ter(temBAD_OFFER));
-            env.require(owners(alice, 1), offers(alice, 0));
+            env(offer(alice, -usd(1000), XRP(1000)), Ter(temBAD_OFFER));
+            env.require(Owners(alice, 1), offers(alice, 0));
 
-            env(offer(alice, usd(1000), -XRP(1000)), ter(temBAD_OFFER));
-            env.require(owners(alice, 1), offers(alice, 0));
+            env(offer(alice, usd(1000), -XRP(1000)), Ter(temBAD_OFFER));
+            env.require(Owners(alice, 1), offers(alice, 0));
         }
 
         // Offer with a bad expiration
         {
             env(offer(alice, usd(1000), XRP(1000)),
                 json(sfExpiration.fieldName, std::uint32_t(0)),
-                ter(temBAD_EXPIRATION));
-            env.require(owners(alice, 1), offers(alice, 0));
+                Ter(temBAD_EXPIRATION));
+            env.require(Owners(alice, 1), offers(alice, 0));
         }
 
         // Offer with a bad offer sequence
         {
             env(offer(alice, usd(1000), XRP(1000)),
                 json(jss::OfferSequence, std::uint32_t(0)),
-                ter(temBAD_SEQUENCE));
-            env.require(owners(alice, 1), offers(alice, 0));
+                Ter(temBAD_SEQUENCE));
+            env.require(Owners(alice, 1), offers(alice, 0));
         }
 
         // Use XRP as a currency code
         {
             auto const bad = IOU(gw, badCurrency());
 
-            env(offer(alice, XRP(1000), bad(1000)), ter(temBAD_CURRENCY));
-            env.require(owners(alice, 1), offers(alice, 0));
+            env(offer(alice, XRP(1000), bad(1000)), Ter(temBAD_CURRENCY));
+            env.require(Owners(alice, 1), offers(alice, 0));
         }
     }
 
@@ -1035,55 +1035,55 @@ public:
 
         auto const f = env.current()->fees().base;
 
-        env(trust(alice, usdOffer), ter(tesSUCCESS));
-        env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
+        env(trust(alice, usdOffer), Ter(tesSUCCESS));
+        env(pay(gw, alice, usdOffer), Ter(tesSUCCESS));
         env.close();
         env.require(
-            balance(alice, startBalance - f),
-            balance(alice, usdOffer),
+            Balance(alice, startBalance - f),
+            Balance(alice, usdOffer),
             offers(alice, 0),
-            owners(alice, 1));
+            Owners(alice, 1));
 
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env)),
-            ter(tecEXPIRED));
+            Ter(tecEXPIRED));
 
         env.require(
-            balance(alice, startBalance - f - f),
-            balance(alice, usdOffer),
+            Balance(alice, startBalance - f - f),
+            Balance(alice, usdOffer),
             offers(alice, 0),
-            owners(alice, 1));
+            Owners(alice, 1));
         env.close();
 
         // Add an offer that expires before the next ledger close
         env(offer(alice, xrpOffer, usdOffer),
             json(sfExpiration.fieldName, lastClose(env) + 1),
-            ter(tesSUCCESS));
+            Ter(tesSUCCESS));
         env.require(
-            balance(alice, startBalance - f - f - f),
-            balance(alice, usdOffer),
+            Balance(alice, startBalance - f - f - f),
+            Balance(alice, usdOffer),
             offers(alice, 1),
-            owners(alice, 2));
+            Owners(alice, 2));
 
         // The offer expires (it's not removed yet)
         env.close();
         env.require(
-            balance(alice, startBalance - f - f - f),
-            balance(alice, usdOffer),
+            Balance(alice, startBalance - f - f - f),
+            Balance(alice, usdOffer),
             offers(alice, 1),
-            owners(alice, 2));
+            Owners(alice, 2));
 
         // Add offer - the expired offer is removed
-        env(offer(bob, usdOffer, xrpOffer), ter(tesSUCCESS));
+        env(offer(bob, usdOffer, xrpOffer), Ter(tesSUCCESS));
         env.require(
-            balance(alice, startBalance - f - f - f),
-            balance(alice, usdOffer),
+            Balance(alice, startBalance - f - f - f),
+            Balance(alice, usdOffer),
             offers(alice, 0),
-            owners(alice, 1),
-            balance(bob, startBalance - f),
-            balance(bob, usd(none)),
+            Owners(alice, 1),
+            Balance(bob, startBalance - f),
+            Balance(bob, usd(kNONE)),
             offers(bob, 1),
-            owners(bob, 1));
+            Owners(bob, 1));
     }
 
     void
@@ -1111,37 +1111,37 @@ public:
         // fees are subtracted.
         env.fund(reserve(env, 0), "alice");
         env.close();
-        env(offer("alice", usdOffer, xrpOffer), ter(tecUNFUNDED_OFFER));
-        env.require(balance("alice", reserve(env, 0) - f), owners("alice", 0));
+        env(offer("alice", usdOffer, xrpOffer), Ter(tecUNFUNDED_OFFER));
+        env.require(Balance("alice", reserve(env, 0) - f), Owners("alice", 0));
 
         // Account has just enough for the reserve and the
         // fee.
         env.fund(reserve(env, 0) + f, "bob");
         env.close();
-        env(offer("bob", usdOffer, xrpOffer), ter(tecUNFUNDED_OFFER));
-        env.require(balance("bob", reserve(env, 0)), owners("bob", 0));
+        env(offer("bob", usdOffer, xrpOffer), Ter(tecUNFUNDED_OFFER));
+        env.require(Balance("bob", reserve(env, 0)), Owners("bob", 0));
 
         // Account has enough for the reserve, the fee and
         // the offer, and a bit more, but not enough for the
         // reserve after the offer is placed.
         env.fund(reserve(env, 0) + f + XRP(1), "carol");
         env.close();
-        env(offer("carol", usdOffer, xrpOffer), ter(tecINSUF_RESERVE_OFFER));
-        env.require(balance("carol", reserve(env, 0) + XRP(1)), owners("carol", 0));
+        env(offer("carol", usdOffer, xrpOffer), Ter(tecINSUF_RESERVE_OFFER));
+        env.require(Balance("carol", reserve(env, 0) + XRP(1)), Owners("carol", 0));
 
         // Account has enough for the reserve plus one
         // offer, and the fee.
         env.fund(reserve(env, 1) + f, "dan");
         env.close();
-        env(offer("dan", usdOffer, xrpOffer), ter(tesSUCCESS));
-        env.require(balance("dan", reserve(env, 1)), owners("dan", 1));
+        env(offer("dan", usdOffer, xrpOffer), Ter(tesSUCCESS));
+        env.require(Balance("dan", reserve(env, 1)), Owners("dan", 1));
 
         // Account has enough for the reserve plus one
         // offer, the fee and the entire offer amount.
         env.fund(reserve(env, 1) + f + xrpOffer, "eve");
         env.close();
-        env(offer("eve", usdOffer, xrpOffer), ter(tesSUCCESS));
-        env.require(balance("eve", reserve(env, 1) + xrpOffer), owners("eve", 1));
+        env(offer("eve", usdOffer, xrpOffer), Ter(tesSUCCESS));
+        env.require(Balance("eve", reserve(env, 1) + xrpOffer), Owners("eve", 1));
     }
 
     void
@@ -1192,7 +1192,7 @@ public:
         BEAST_EXPECT(isOffer(env, accountToTest, XRP(1000), usd(50)));
 
         // now make an offer that will cross and auto-bridge, meaning
-        // the outstanding offers will be taken leaving us with none
+        // the outstanding offers will be taken leaving us with kNONE
         env(offer(accountToTest, usd(50), btc(250)));
 
         auto jrr = getBookOffers(env, usd, btc);
@@ -1221,7 +1221,7 @@ public:
         // cancel that lingering second offer so that it doesn't interfere
         // with the next set of offers we test. This will not be needed once
         // the bridging bug is fixed
-        env(offer_cancel(accountToTest, secondLegSeq));
+        env(offerCancel(accountToTest, secondLegSeq));
         env.require(offers(accountToTest, 0));
 
         // PART 2:
@@ -1462,7 +1462,7 @@ public:
         env(offer(env.master, XRP(500), usd(100)));
         env.close();
 
-        env(offer_cancel(env.master, nextOfferSeq));
+        env(offerCancel(env.master, nextOfferSeq));
         BEAST_EXPECT(env.seq(env.master) == nextOfferSeq + 2);
 
         // ledger_accept, call twice and verify no odd behavior
@@ -1486,11 +1486,11 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        env(offer_cancel(env.master, nextOfferSeq));
+        env(offerCancel(env.master, nextOfferSeq));
 
-        env(offer_cancel(env.master, env.seq(env.master)), ter(temBAD_SEQUENCE));
+        env(offerCancel(env.master, env.seq(env.master)), Ter(temBAD_SEQUENCE));
 
-        env(offer_cancel(env.master, env.seq(env.master) + 1), ter(temBAD_SEQUENCE));
+        env(offerCancel(env.master, env.seq(env.master) + 1), Ter(temBAD_SEQUENCE));
 
         env.close();
     }
@@ -1511,21 +1511,21 @@ public:
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
-        env.require(owners(bob, 0));
+        env.require(Owners(bob, 0));
 
         env(trust(alice, usd(100)));
         env(trust(bob, usd(1000)));
 
-        env.require(owners(alice, 1), owners(bob, 1));
+        env.require(Owners(alice, 1), Owners(bob, 1));
 
         env(pay(gw, alice, alice["USD"](100)));
         auto const bobOfferSeq = env.seq(bob);
         env(offer(bob, usd(100), XRP(500)));
 
-        env.require(owners(alice, 1), owners(bob, 2));
+        env.require(Owners(alice, 1), Owners(bob, 2));
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(500).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE));
 
         env(pay(alice, alice, XRP(500)), sendmax(usd(100)));
 
@@ -1542,7 +1542,7 @@ public:
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
 
-        env.require(owners(alice, 1), owners(bob, 1));
+        env.require(Owners(alice, 1), Owners(bob, 1));
     }
 
     void
@@ -1566,7 +1566,7 @@ public:
         env(trust(carol, bob["EUR"](1000)));
 
         auto const bobOfferSeq = env.seq(bob);
-        env(offer(bob, alice["USD"](50), carol["EUR"](200)), ter(tecUNFUNDED_OFFER));
+        env(offer(bob, alice["USD"](50), carol["EUR"](200)), Ter(tecUNFUNDED_OFFER));
 
         env(offer(alice, carol["EUR"](200), alice["USD"](50)));
 
@@ -1604,7 +1604,7 @@ public:
         // The previous payment reduced the remaining offer amount by 200 XRP
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(300).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::kNONE));
 
         // the balance between alice and gw is 160 USD..200 less the 40 taken
         // by the offer
@@ -1622,7 +1622,7 @@ public:
 
         // Alice converts USD to XRP which should fail
         // due to PartialPayment.
-        env(pay(alice, alice, XRP(600)), sendmax(usd(100)), ter(tecPATH_PARTIAL));
+        env(pay(alice, alice, XRP(600)), sendmax(usd(100)), Ter(tecPATH_PARTIAL));
 
         // Alice converts USD to XRP, should succeed because
         // we permit partial payment
@@ -1685,7 +1685,7 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-475");
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
-        BEAST_EXPECT(jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::kNONE));
         BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(250).value().getText());
     }
 
@@ -1730,7 +1730,7 @@ public:
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(250).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::kNONE));
     }
 
     void
@@ -1786,11 +1786,11 @@ public:
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(200).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(20).value().getJson(JsonOptions::none));
+        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(20).value().getJson(JsonOptions::kNONE));
 
         jro = ledgerEntryOffer(env, dan, danOfferSeq);
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerGets] == gw2["EUR"](20).value().getJson(JsonOptions::none));
+            jro[jss::node][jss::TakerGets] == gw2["EUR"](20).value().getJson(JsonOptions::kNONE));
         BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(200).value().getText());
     }
 
@@ -1844,21 +1844,21 @@ public:
         env(offer(bob, usd(10), eur(10)));
         env.close();
 
-        env.require(balance(bob, usd(7)));
-        env.require(balance(bob, eur(6)));
+        env.require(Balance(bob, usd(7)));
+        env.require(Balance(bob, eur(6)));
         env.require(offers(bob, 1));
-        env.require(owners(bob, 3));
+        env.require(Owners(bob, 3));
 
-        env.require(balance(alice, usd(6)));
-        env.require(balance(alice, eur(4)));
+        env.require(Balance(alice, usd(6)));
+        env.require(Balance(alice, eur(4)));
         env.require(offers(alice, 0));
-        env.require(owners(alice, 2));
+        env.require(Owners(alice, 2));
 
-        env.require(balance(carol, usd(0)));
-        env.require(balance(carol, eur(none)));
+        env.require(Balance(carol, usd(0)));
+        env.require(Balance(carol, eur(kNONE)));
 
         env.require(offers(carol, 0));
-        env.require(owners(carol, 1));
+        env.require(Owners(carol, 1));
     }
 
     void
@@ -2102,7 +2102,7 @@ public:
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob["XTS"](1.5).value().getJson(JsonOptions::none);
+        payment[jss::tx_json][jss::SendMax] = bob["XTS"](1.5).value().getJson(JsonOptions::kNONE);
         auto jrr = wsc->invoke("submit", payment);
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -2273,7 +2273,7 @@ public:
             {
                 // Acct creates an offer.  This is the heart of the test.
                 auto const acctOffer = t.offerAmount;
-                env(offer(acct, usd(acctOffer), XRP(acctOffer)), ter(t.tec));
+                env(offer(acct, usd(acctOffer), XRP(acctOffer)), Ter(t.tec));
                 env.close();
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
@@ -2281,7 +2281,7 @@ public:
             BEAST_EXPECT(env.balance(acct, usd.issue()) == t.balanceUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.require(offers(acct, t.offers));
-            env.require(owners(acct, t.owners));
+            env.require(Owners(acct, t.owners));
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
@@ -2311,8 +2311,8 @@ public:
 
             // Give the next loop a clean slate by canceling any left-overs
             // in the offers.
-            env(offer_cancel(acct, acctOfferSeq));
-            env(offer_cancel(gw, gwOfferSeq));
+            env(offerCancel(acct, acctOfferSeq));
+            env(offerCancel(gw, gwOfferSeq));
             env.close();
         }
     }
@@ -2351,7 +2351,7 @@ public:
 
         env(pay(gw, alice, usdOffer));
         env.close();
-        env.require(balance(alice, usdOffer), offers(alice, 0), offers(bob, 0));
+        env.require(Balance(alice, usdOffer), offers(alice, 0), offers(bob, 0));
 
         // The scenario:
         //   o alice has USD but wants XRP.
@@ -2365,10 +2365,10 @@ public:
 
         env.close();
         env.require(
-            balance(alice, usd(0)),
-            balance(bob, usdOffer),
-            balance(alice, aliceXRP + xrpOffer - fee),
-            balance(bob, bobXRP - xrpOffer - fee),
+            Balance(alice, usd(0)),
+            Balance(bob, usdOffer),
+            Balance(alice, aliceXRP + xrpOffer - fee),
+            Balance(bob, bobXRP - xrpOffer - fee),
             offers(alice, 0),
             offers(bob, 0));
 
@@ -2379,8 +2379,8 @@ public:
         env(offer(bob, xrpOffer, usdOffer));
 
         env.close();
-        env.require(balance(alice, usd(999)));
-        env.require(balance(bob, usd(1)));
+        env.require(Balance(alice, usd(999)));
+        env.require(Balance(bob, usd(1)));
         env.require(offers(alice, 0));
         verifyDefaultTrustline(env, bob, usd(1));
         {
@@ -2432,7 +2432,7 @@ public:
         env(pay(gw, bob, eurOffer));
         env.close();
 
-        env.require(balance(alice, usdOffer), balance(bob, eurOffer));
+        env.require(Balance(alice, usdOffer), Balance(bob, eurOffer));
 
         // The scenario:
         //   o alice has USD but wants EUR.
@@ -2442,7 +2442,7 @@ public:
 
         env.close();
         env.require(
-            balance(alice, eurOffer), balance(bob, usdOffer), offers(alice, 0), offers(bob, 0));
+            Balance(alice, eurOffer), Balance(bob, usdOffer), offers(alice, 0), offers(bob, 0));
 
         // Alice's offer crossing created a default EUR trustline and
         // Bob's offer crossing created a default USD trustline:
@@ -2461,10 +2461,10 @@ public:
         env.require(offers(alice, 0));
         env.require(offers(bob, 1));
 
-        env.require(balance(alice, usd(999)));
-        env.require(balance(alice, eur(1)));
-        env.require(balance(bob, usd(1)));
-        env.require(balance(bob, eur(999)));
+        env.require(Balance(alice, usd(999)));
+        env.require(Balance(alice, eur(1)));
+        env.require(Balance(bob, usd(1)));
+        env.require(Balance(bob, eur(999)));
 
         {
             auto bobOffers = offersOnAccount(env, bob);
@@ -2481,10 +2481,10 @@ public:
         env(offer(alice, usd(1), eur(1)));
         env.close();
 
-        env.require(balance(alice, usd(1000)));
-        env.require(balance(alice, eur(none)));
-        env.require(balance(bob, usd(none)));
-        env.require(balance(bob, eur(1000)));
+        env.require(Balance(alice, usd(1000)));
+        env.require(Balance(alice, eur(kNONE)));
+        env.require(Balance(bob, usd(kNONE)));
+        env.require(Balance(bob, eur(1000)));
         env.require(offers(alice, 0));
         env.require(offers(bob, 0));
 
@@ -2503,10 +2503,10 @@ public:
         env.require(offers(alice, 0));
         env.require(offers(bob, 0));
 
-        env.require(balance(alice, usd(0)));
-        env.require(balance(alice, eur(999)));
-        env.require(balance(bob, usd(1000)));
-        env.require(balance(bob, eur(1)));
+        env.require(Balance(alice, usd(0)));
+        env.require(Balance(alice, eur(999)));
+        env.require(Balance(bob, usd(1000)));
+        env.require(Balance(bob, eur(1)));
     }
 
     void
@@ -2554,10 +2554,10 @@ public:
         env.close();
 
         env.require(
-            balance(alice, usd(600)),
-            balance(bob, eur(400)),
-            balance(carol, usd(400)),
-            balance(bob, bobXrpBalance - XRP(400)),
+            Balance(alice, usd(600)),
+            Balance(bob, eur(400)),
+            Balance(carol, usd(400)),
+            Balance(bob, bobXrpBalance - XRP(400)),
             offers(carol, 0));
         verifyDefaultTrustline(env, bob, eur(400));
         verifyDefaultTrustline(env, carol, usd(400));
@@ -2585,10 +2585,10 @@ public:
         env.close();
 
         env.require(
-            balance(alice, usd(0)),
-            balance(bob, eurOffer),
-            balance(carol, usdOffer),
-            balance(bob, bobXrpBalance - XRP(1000)),
+            Balance(alice, usd(0)),
+            Balance(bob, eurOffer),
+            Balance(carol, usdOffer),
+            Balance(bob, bobXrpBalance - XRP(1000)),
             offers(bob, 0),
             offers(carol, 0));
         verifyDefaultTrustline(env, bob, eur(1000));
@@ -2763,7 +2763,7 @@ public:
             std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
 
             // Acct creates a tfSell offer.  This is the heart of the test.
-            env(offer(acct, t.acctGets, t.acctPays, tfSell), ter(t.tec));
+            env(offer(acct, t.acctGets, t.acctPays, tfSell), Ter(t.tec));
             env.close();
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
@@ -2771,7 +2771,7 @@ public:
             BEAST_EXPECT(env.balance(acct, usd.issue()) == t.finalUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.require(offers(acct, t.offers));
-            env.require(owners(acct, t.owners));
+            env.require(Owners(acct, t.owners));
 
             if (t.offers)
             {
@@ -2789,8 +2789,8 @@ public:
 
             // Give the next loop a clean slate by canceling any left-overs
             // in the offers.
-            env(offer_cancel(acct, acctOfferSeq));
-            env(offer_cancel(gw, gwOfferSeq));
+            env(offerCancel(acct, acctOfferSeq));
+            env(offerCancel(gw, gwOfferSeq));
             env.close();
         }
     }
@@ -2826,20 +2826,20 @@ public:
         env.close();
         {
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
-            env(offer(alice, usd(21), XRP(2100), tfSell | tfFillOrKill), ter(killedCode));
+            env(offer(alice, usd(21), XRP(2100), tfSell | tfFillOrKill), Ter(killedCode));
             env.close();
-            env.require(balance(alice, usd(none)));
+            env.require(Balance(alice, usd(kNONE)));
             env.require(offers(alice, 0));
-            env.require(balance(bob, usd(100)));
+            env.require(Balance(bob, usd(100)));
         }
         {
             // alice submits a tfSell | tfFillOrKill offer that crosses.
             // Even though tfSell is present it doesn't matter this time.
             env(offer(alice, usd(20), XRP(2000), tfSell | tfFillOrKill));
             env.close();
-            env.require(balance(alice, usd(20)));
+            env.require(Balance(alice, usd(20)));
             env.require(offers(alice, 0));
-            env.require(balance(bob, usd(80)));
+            env.require(Balance(bob, usd(80)));
         }
         {
             // alice submits a tfSell | tfFillOrKill offer that crosses and
@@ -2848,9 +2848,9 @@ public:
             env.close();
             env(offer(alice, usd(10), XRP(1500), tfSell | tfFillOrKill));
             env.close();
-            env.require(balance(alice, usd(35)));
+            env.require(Balance(alice, usd(35)));
             env.require(offers(alice, 0));
-            env.require(balance(bob, usd(65)));
+            env.require(Balance(bob, usd(65)));
         }
         {
             // alice submits a tfSell | tfFillOrKill offer that doesn't cross.
@@ -2859,11 +2859,11 @@ public:
             // all of the offer is consumed.
 
             // We're using bob's left-over offer for XRP(500), USD(5)
-            env(offer(alice, usd(1), XRP(501), tfSell | tfFillOrKill), ter(killedCode));
+            env(offer(alice, usd(1), XRP(501), tfSell | tfFillOrKill), Ter(killedCode));
             env.close();
-            env.require(balance(alice, usd(35)));
+            env.require(Balance(alice, usd(35)));
             env.require(offers(alice, 0));
-            env.require(balance(bob, usd(65)));
+            env.require(Balance(bob, usd(65)));
         }
         {
             // Alice submits a tfSell | tfFillOrKill offer that finishes
@@ -2872,9 +2872,9 @@ public:
             // We're using bob's left-over offer for XRP(500), USD(5)
             env(offer(alice, usd(1), XRP(500), tfSell | tfFillOrKill));
             env.close();
-            env.require(balance(alice, usd(40)));
+            env.require(Balance(alice, usd(40)));
             env.require(offers(alice, 0));
-            env.require(balance(bob, usd(60)));
+            env.require(Balance(bob, usd(60)));
         }
     }
 
@@ -2922,12 +2922,12 @@ public:
             env(offer(ann, usd(100), XRP(1)));
             env.close();
 
-            env.require(balance(ann, usd(100)));
-            env.require(balance(ann, XRP(99) + reserve(env, 2)));
+            env.require(Balance(ann, usd(100)));
+            env.require(Balance(ann, XRP(99) + reserve(env, 2)));
             env.require(offers(ann, 0));
 
-            env.require(balance(bob, usd(0)));
-            env.require(balance(bob, XRP(101) + reserve(env, 2)));
+            env.require(Balance(bob, usd(0)));
+            env.require(Balance(bob, XRP(101) + reserve(env, 2)));
             env.require(offers(bob, 0));
         }
         {
@@ -2951,12 +2951,12 @@ public:
             env(offer(deb, XRP(1), usd(100)));
             env.close();
 
-            env.require(balance(che, usd(100)));
-            env.require(balance(che, XRP(99) + reserve(env, 2)));
+            env.require(Balance(che, usd(100)));
+            env.require(Balance(che, XRP(99) + reserve(env, 2)));
             env.require(offers(che, 0));
 
-            env.require(balance(deb, usd(0)));
-            env.require(balance(deb, XRP(101) + reserve(env, 2)));
+            env.require(Balance(deb, usd(0)));
+            env.require(Balance(deb, XRP(101) + reserve(env, 2)));
             env.require(offers(deb, 0));
         }
         {
@@ -2984,8 +2984,8 @@ public:
             env(offer(fyn, XRP(2000), usd(5)));
             env.close();
 
-            env.require(balance(eve, usd(105)));
-            env.require(balance(eve, XRP(18000)));
+            env.require(Balance(eve, usd(105)));
+            env.require(Balance(eve, XRP(18000)));
             auto const evesOffers = offersOnAccount(env, eve);
             BEAST_EXPECT(evesOffers.size() == 1);
             if (!evesOffers.empty())
@@ -2995,10 +2995,10 @@ public:
                 BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2000));
                 BEAST_EXPECT(evesOffer[sfTakerPays] == usd(5));
             }
-            env(offer_cancel(eve, eveOfferSeq));  // For later tests
+            env(offerCancel(eve, eveOfferSeq));  // For later tests
 
-            env.require(balance(fyn, usd(93.75)));
-            env.require(balance(fyn, XRP(22000)));
+            env.require(Balance(fyn, usd(93.75)));
+            env.require(Balance(fyn, XRP(22000)));
             env.require(offers(fyn, 0));
         }
         // Start messing with two non-native currencies.
@@ -3034,14 +3034,14 @@ public:
             env(offer(hal, usd(100), eur(100)));
             env.close();
 
-            env.require(balance(gay, usd(0)));
-            env.require(balance(gay, eur(100)));
-            env.require(balance(gay, reserve(env, 3)));
+            env.require(Balance(gay, usd(0)));
+            env.require(Balance(gay, eur(100)));
+            env.require(Balance(gay, reserve(env, 3)));
             env.require(offers(gay, 0));
 
-            env.require(balance(hal, usd(100)));
-            env.require(balance(hal, eur(0)));
-            env.require(balance(hal, reserve(env, 3)));
+            env.require(Balance(hal, usd(100)));
+            env.require(Balance(hal, eur(0)));
+            env.require(Balance(hal, reserve(env, 3)));
             env.require(offers(hal, 0));
         }
         {
@@ -3051,17 +3051,17 @@ public:
             env.fund(reserve(env, 3) + (fee * 3), ivy, joe);
             env.close();
 
-            env(trust(ivy, usd(400)), qualityInPercent(90));
-            env(trust(ivy, eur(400)), qualityInPercent(80));
-            env(trust(joe, usd(400)), qualityInPercent(70));
-            env(trust(joe, eur(400)), qualityInPercent(60));
+            env(trust(ivy, usd(400)), QualityInPercent(90));
+            env(trust(ivy, eur(400)), QualityInPercent(80));
+            env(trust(joe, usd(400)), QualityInPercent(70));
+            env(trust(joe, eur(400)), QualityInPercent(60));
             env.close();
 
             env(pay(gw1, ivy, usd(270)), sendmax(usd(500)));
             env(pay(gw2, joe, eur(150)), sendmax(eur(300)));
             env.close();
-            env.require(balance(ivy, usd(300)));
-            env.require(balance(joe, eur(250)));
+            env.require(Balance(ivy, usd(300)));
+            env.require(Balance(joe, eur(250)));
 
             env(offer(ivy, eur(100), usd(200)));
             env.close();
@@ -3069,14 +3069,14 @@ public:
             env(offer(joe, usd(200), eur(100)));
             env.close();
 
-            env.require(balance(ivy, usd(50)));
-            env.require(balance(ivy, eur(100)));
-            env.require(balance(ivy, reserve(env, 3)));
+            env.require(Balance(ivy, usd(50)));
+            env.require(Balance(ivy, eur(100)));
+            env.require(Balance(ivy, reserve(env, 3)));
             env.require(offers(ivy, 0));
 
-            env.require(balance(joe, usd(200)));
-            env.require(balance(joe, eur(100)));
-            env.require(balance(joe, reserve(env, 3)));
+            env.require(Balance(joe, usd(200)));
+            env.require(Balance(joe, eur(100)));
+            env.require(Balance(joe, reserve(env, 3)));
             env.require(offers(joe, 0));
         }
         {
@@ -3093,24 +3093,24 @@ public:
             env.close();
 
             env(trust(lex, kBux(400)));
-            env(trust(lex, nBux(200)), qualityOutPercent(120));
+            env(trust(lex, nBux(200)), QualityOutPercent(120));
             env(trust(meg, nBux(100)));
             env.close();
             env(pay(ned, lex, nBux(100)));
             env.close();
-            env.require(balance(lex, nBux(100)));
+            env.require(Balance(lex, nBux(100)));
 
-            env(pay(kim, meg, nBux(60)), path(lex, ned), sendmax(kBux(200)));
+            env(pay(kim, meg, nBux(60)), Path(lex, ned), sendmax(kBux(200)));
             env.close();
 
-            env.require(balance(kim, kBux(none)));
-            env.require(balance(kim, nBux(none)));
-            env.require(balance(lex, kBux(72)));
-            env.require(balance(lex, nBux(40)));
-            env.require(balance(meg, kBux(none)));
-            env.require(balance(meg, nBux(60)));
-            env.require(balance(ned, kBux(none)));
-            env.require(balance(ned, nBux(none)));
+            env.require(Balance(kim, kBux(kNONE)));
+            env.require(Balance(kim, nBux(kNONE)));
+            env.require(Balance(lex, kBux(72)));
+            env.require(Balance(lex, nBux(40)));
+            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, nBux(60)));
+            env.require(Balance(ned, kBux(kNONE)));
+            env.require(Balance(ned, nBux(kNONE)));
 
             // Now verify that offer crossing is unaffected by QualityOut.
             env(offer(lex, kBux(30), nBux(30)));
@@ -3119,14 +3119,14 @@ public:
             env(offer(kim, nBux(30), kBux(30)));
             env.close();
 
-            env.require(balance(kim, kBux(none)));
-            env.require(balance(kim, nBux(30)));
-            env.require(balance(lex, kBux(102)));
-            env.require(balance(lex, nBux(10)));
-            env.require(balance(meg, kBux(none)));
-            env.require(balance(meg, nBux(60)));
-            env.require(balance(ned, kBux(-30)));
-            env.require(balance(ned, nBux(none)));
+            env.require(Balance(kim, kBux(kNONE)));
+            env.require(Balance(kim, nBux(30)));
+            env.require(Balance(lex, kBux(102)));
+            env.require(Balance(lex, nBux(10)));
+            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, nBux(60)));
+            env.require(Balance(ned, kBux(-30)));
+            env.require(Balance(ned, nBux(kNONE)));
         }
         {
             // Make sure things work right when we're auto-bridging as well.
@@ -3158,9 +3158,9 @@ public:
             env(offer(qae, usd(100), eur(100)));
             env.close();
 
-            env.require(balance(ova, usd(0)));
-            env.require(balance(ova, eur(0)));
-            env.require(balance(ova, XRP(4) + reserve(env, 3)));
+            env.require(Balance(ova, usd(0)));
+            env.require(Balance(ova, eur(0)));
+            env.require(Balance(ova, XRP(4) + reserve(env, 3)));
 
             // In pre-flow code ova's offer is left empty in the ledger.
             auto const ovasOffers = offersOnAccount(env, ova);
@@ -3174,14 +3174,14 @@ public:
                 BEAST_EXPECT(ovasOffer[sfTakerPays] == XRP(0));
             }
 
-            env.require(balance(pat, usd(0)));
-            env.require(balance(pat, eur(100)));
-            env.require(balance(pat, XRP(0) + reserve(env, 3)));
+            env.require(Balance(pat, usd(0)));
+            env.require(Balance(pat, eur(100)));
+            env.require(Balance(pat, XRP(0) + reserve(env, 3)));
             env.require(offers(pat, 0));
 
-            env.require(balance(qae, usd(100)));
-            env.require(balance(qae, eur(0)));
-            env.require(balance(qae, XRP(2) + reserve(env, 3)));
+            env.require(Balance(qae, usd(100)));
+            env.require(Balance(qae, eur(0)));
+            env.require(Balance(qae, XRP(2) + reserve(env, 3)));
             env.require(offers(qae, 0));
         }
     }
@@ -3224,8 +3224,8 @@ public:
         env(offer(gw, usd(60), XRP(600)));
         env.close();
 
-        env.require(owners(gw, 3));
-        env.require(balance(gw, startBalance + fee));
+        env.require(Owners(gw, 3));
+        env.require(Balance(gw, startBalance + fee));
 
         auto gwOffers = offersOnAccount(env, gw);
         BEAST_EXPECT(gwOffers.size() == 3);
@@ -3241,9 +3241,9 @@ public:
         // will be deleted and this offer will be put on the order book.
         env(offer(gw, XRP(1000), usd(100)));
         env.close();
-        env.require(owners(gw, 1));
+        env.require(Owners(gw, 1));
         env.require(offers(gw, 1));
-        env.require(balance(gw, startBalance));
+        env.require(Balance(gw, startBalance));
 
         gwOffers = offersOnAccount(env, gw);
         BEAST_EXPECT(gwOffers.size() == 1);
@@ -3314,14 +3314,14 @@ public:
                 env(pay(gw2, acct, t.fundEUR));
             env.close();
 
-            env(offer(acct, usd(500), eur(600)), ter(t.firstOfferTec));
+            env(offer(acct, usd(500), eur(600)), Ter(t.firstOfferTec));
             env.close();
             std::uint32_t const firstOfferSeq = env.seq(acct) - 1;
 
             int offerCount = isTesSuccess(t.firstOfferTec) ? 1 : 0;
-            env.require(owners(acct, 2 + offerCount));
-            env.require(balance(acct, t.fundUSD));
-            env.require(balance(acct, t.fundEUR));
+            env.require(Owners(acct, 2 + offerCount));
+            env.require(Balance(acct, t.fundUSD));
+            env.require(Balance(acct, t.fundEUR));
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == offerCount);
@@ -3333,14 +3333,14 @@ public:
                 BEAST_EXPECT(offer[sfTakerPays] == usd(500));
             }
 
-            env(offer(acct, eur(600), usd(500)), ter(t.secondOfferTec));
+            env(offer(acct, eur(600), usd(500)), Ter(t.secondOfferTec));
             env.close();
             std::uint32_t const secondOfferSeq = env.seq(acct) - 1;
 
             offerCount = isTesSuccess(t.secondOfferTec) ? 1 : offerCount;
-            env.require(owners(acct, 2 + offerCount));
-            env.require(balance(acct, t.fundUSD));
-            env.require(balance(acct, t.fundEUR));
+            env.require(Owners(acct, 2 + offerCount));
+            env.require(Balance(acct, t.fundUSD));
+            env.require(Balance(acct, t.fundEUR));
 
             acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == offerCount);
@@ -3361,9 +3361,9 @@ public:
             }
 
             // Remove any offers from acct for the next pass.
-            env(offer_cancel(acct, firstOfferSeq));
+            env(offerCancel(acct, firstOfferSeq));
             env.close();
-            env(offer_cancel(acct, secondOfferSeq));
+            env(offerCancel(acct, secondOfferSeq));
             env.close();
         }
     }
@@ -3404,8 +3404,8 @@ public:
 
         // alice's offer should have been removed, since she's down to her
         // XRP reserve.
-        env.require(balance(alice, XRP(250)));
-        env.require(owners(alice, 1));
+        env.require(Balance(alice, XRP(250)));
+        env.require(Owners(alice, 1));
         env.require(lines(alice, 1));
 
         // However bob's offer should be in the ledger, since it was not
@@ -3449,24 +3449,24 @@ public:
             env.close();
 
             env(trust(bob, aBux(400)));
-            env(trust(bob, dBux(200)), qualityOutPercent(120));
+            env(trust(bob, dBux(200)), QualityOutPercent(120));
             env(trust(cam, dBux(100)));
             env.close();
             env(pay(dan, bob, dBux(100)));
             env.close();
-            env.require(balance(bob, dBux(100)));
+            env.require(Balance(bob, dBux(100)));
 
-            env(pay(ann, cam, dBux(60)), path(bob, dan), sendmax(aBux(200)));
+            env(pay(ann, cam, dBux(60)), Path(bob, dan), sendmax(aBux(200)));
             env.close();
 
-            env.require(balance(ann, aBux(none)));
-            env.require(balance(ann, dBux(none)));
-            env.require(balance(bob, aBux(72)));
-            env.require(balance(bob, dBux(40)));
-            env.require(balance(cam, aBux(none)));
-            env.require(balance(cam, dBux(60)));
-            env.require(balance(dan, aBux(none)));
-            env.require(balance(dan, dBux(none)));
+            env.require(Balance(ann, aBux(kNONE)));
+            env.require(Balance(ann, dBux(kNONE)));
+            env.require(Balance(bob, aBux(72)));
+            env.require(Balance(bob, dBux(40)));
+            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, dBux(60)));
+            env.require(Balance(dan, aBux(kNONE)));
+            env.require(Balance(dan, dBux(kNONE)));
 
             env(offer(bob, aBux(30), dBux(30)));
             env.close();
@@ -3476,19 +3476,19 @@ public:
 
             // This payment caused the assert.
             env(pay(ann, ann, dBux(30)),
-                path(aBux, dBux),
+                Path(aBux, dBux),
                 sendmax(aBux(30)),
-                ter(temBAD_PATH));
+                Ter(temBAD_PATH));
             env.close();
 
-            env.require(balance(ann, aBux(none)));
-            env.require(balance(ann, dBux(0)));
-            env.require(balance(bob, aBux(72)));
-            env.require(balance(bob, dBux(40)));
-            env.require(balance(cam, aBux(none)));
-            env.require(balance(cam, dBux(60)));
-            env.require(balance(dan, aBux(0)));
-            env.require(balance(dan, dBux(none)));
+            env.require(Balance(ann, aBux(kNONE)));
+            env.require(Balance(ann, dBux(0)));
+            env.require(Balance(bob, aBux(72)));
+            env.require(Balance(bob, dBux(40)));
+            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, dBux(60)));
+            env.require(Balance(dan, aBux(0)));
+            env.require(Balance(dan, dBux(kNONE)));
         }
     }
 
@@ -3531,17 +3531,17 @@ public:
         // offer.
         env(offer(cam, aBux(29), bBux(30), tfPassive));
         env.close();
-        env.require(balance(cam, aBux(35)));
-        env.require(balance(cam, bBux(35)));
+        env.require(Balance(cam, aBux(35)));
+        env.require(Balance(cam, bBux(35)));
         env.require(offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(30), aBux(30)));
         env.close();
 
-        env.require(balance(bob, aBux(30)));
-        env.require(balance(cam, aBux(5)));
-        env.require(balance(cam, bBux(65)));
+        env.require(Balance(bob, aBux(30)));
+        env.require(Balance(cam, aBux(5)));
+        env.require(Balance(cam, bBux(65)));
         env.require(offers(cam, 0));
     }
 
@@ -3578,7 +3578,7 @@ public:
 
         // This offer caused the assert.
         env(offer(ann, btc(0.687), drops(20000000000)),
-            ter(tecINSUF_RESERVE_OFFER));
+            Ter(tecINSUF_RESERVE_OFFER));
     }
 
     void
@@ -3789,10 +3789,10 @@ public:
             STAmount{cny.issue(), std::uint64_t(1000000000000000), -20}));
         env.close();
 
-        env.require(balance(alice, aliceCnyOffer));
-        env.require(balance(alice, startXrpBalance - fee - drops(1)));
-        env.require(balance(bob, bobCnyStartBalance - aliceCnyOffer));
-        env.require(balance(bob, startXrpBalance - (fee * 2) + drops(1)));
+        env.require(Balance(alice, aliceCnyOffer));
+        env.require(Balance(alice, startXrpBalance - fee - drops(1)));
+        env.require(Balance(bob, bobCnyStartBalance - aliceCnyOffer));
+        env.require(Balance(bob, startXrpBalance - (fee * 2) + drops(1)));
     }
 
     void
@@ -3935,17 +3935,17 @@ public:
                         }));
                 BEAST_EXPECT(offerCount == actor.offers);
 
-                env.require(balance(actor.acct, actor.xrp));
-                env.require(balance(actor.acct, actor.btc));
-                env.require(balance(actor.acct, actor.usd));
+                env.require(Balance(actor.acct, actor.xrp));
+                env.require(Balance(actor.acct, actor.btc));
+                env.require(Balance(actor.acct, actor.usd));
             }
             // Remove any offers that might be left hanging around.  They
             // could bollix up later loops.
-            env(offer_cancel(leg0, leg0OfferSeq));
+            env(offerCancel(leg0, leg0OfferSeq));
             env.close();
-            env(offer_cancel(leg1, leg1OfferSeq));
+            env(offerCancel(leg1, leg1OfferSeq));
             env.close();
-            env(offer_cancel(self, selfOfferSeq));
+            env(offerCancel(self, selfOfferSeq));
             env.close();
         }
     }
@@ -4084,17 +4084,17 @@ public:
                         }));
                 BEAST_EXPECT(offerCount == actor.offers);
 
-                env.require(balance(actor.acct, actor.xrp));
-                env.require(balance(actor.acct, actor.btc));
-                env.require(balance(actor.acct, actor.usd));
+                env.require(Balance(actor.acct, actor.xrp));
+                env.require(Balance(actor.acct, actor.btc));
+                env.require(Balance(actor.acct, actor.usd));
             }
             // Remove any offers that might be left hanging around.  They
             // could bollix up later loops.
-            env(offer_cancel(leg0, leg0OfferSeq));
+            env(offerCancel(leg0, leg0OfferSeq));
             env.close();
-            env(offer_cancel(leg1, leg1OfferSeq));
+            env(offerCancel(leg1, leg1OfferSeq));
             env.close();
-            env(offer_cancel(self, selfOfferSeq));
+            env(offerCancel(self, selfOfferSeq));
             env.close();
         }
     }
@@ -4132,22 +4132,22 @@ public:
         env.close();
 
         env.require(offers(alice, 1));
-        env.require(balance(alice, gwUSD(0)));
+        env.require(Balance(alice, gwUSD(0)));
 
         env(pay(gw, bob, gwUSD(50)));
         env.close();
 
-        env.require(balance(bob, gwUSD(50)));
+        env.require(Balance(bob, gwUSD(50)));
 
         // Bob's offer should cross Alice's
         env(offer(bob, XRP(4000), gwUSD(40)));
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(balance(alice, gwUSD(40)));
+        env.require(Balance(alice, gwUSD(40)));
 
         env.require(offers(bob, 0));
-        env.require(balance(bob, gwUSD(10)));
+        env.require(Balance(bob, gwUSD(10)));
     }
 
     void
@@ -4190,7 +4190,7 @@ public:
         env.close();
 
         env.require(offers(alice, 1));
-        env.require(balance(alice, gwUSD(none)));
+        env.require(Balance(alice, gwUSD(kNONE)));
         env(fset(gw, asfRequireAuth));
         env.close();
 
@@ -4201,7 +4201,7 @@ public:
 
         env(pay(gw, bob, gwUSD(50)));
         env.close();
-        env.require(balance(bob, gwUSD(50)));
+        env.require(Balance(bob, gwUSD(50)));
 
         // gw now requires authorization and bob has gwUSD(50).  Let's see if
         // bob can cross alice's offer.
@@ -4214,38 +4214,38 @@ public:
 
         env.require(offers(alice, 0));
         // alice's unauthorized offer is deleted & bob's offer not crossed.
-        env.require(balance(alice, gwUSD(none)));
+        env.require(Balance(alice, gwUSD(kNONE)));
         env.require(offers(bob, 1));
-        env.require(balance(bob, gwUSD(50)));
+        env.require(Balance(bob, gwUSD(50)));
 
         // See if alice can create an offer without authorization.  alice
         // should not be able to create the offer and bob's offer should be
         // untouched.
-        env(offer(alice, gwUSD(40), XRP(4000)), ter(tecNO_LINE));
+        env(offer(alice, gwUSD(40), XRP(4000)), Ter(tecNO_LINE));
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(balance(alice, gwUSD(none)));
+        env.require(Balance(alice, gwUSD(kNONE)));
 
         env.require(offers(bob, 1));
-        env.require(balance(bob, gwUSD(50)));
+        env.require(Balance(bob, gwUSD(50)));
 
         // Set up a trust line for alice, but don't authorize it.  alice
         // should still not be able to create an offer for USD/gw.
         env(trust(gw, aliceUSD(100)));
         env.close();
 
-        env(offer(alice, gwUSD(40), XRP(4000)), ter(tecNO_AUTH));
+        env(offer(alice, gwUSD(40), XRP(4000)), Ter(tecNO_AUTH));
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(balance(alice, gwUSD(0)));
+        env.require(Balance(alice, gwUSD(0)));
 
         env.require(offers(bob, 1));
-        env.require(balance(bob, gwUSD(50)));
+        env.require(Balance(bob, gwUSD(50)));
 
         // Delete bob's offer so alice can create an offer without crossing.
-        env(offer_cancel(bob, bobOfferSeq));
+        env(offerCancel(bob, bobOfferSeq));
         env.close();
         env.require(offers(bob, 0));
 
@@ -4265,10 +4265,10 @@ public:
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(balance(alice, gwUSD(40)));
+        env.require(Balance(alice, gwUSD(40)));
 
         env.require(offers(bob, 0));
-        env.require(balance(bob, gwUSD(10)));
+        env.require(Balance(bob, gwUSD(10)));
     }
 
     void
@@ -4380,11 +4380,11 @@ public:
         env.require(offers(gw, 1));
 
         // Since gw has an offer out, gw should not be able to set RequireAuth.
-        env(fset(gw, asfRequireAuth), ter(tecOWNERS));
+        env(fset(gw, asfRequireAuth), Ter(tecOWNERS));
         env.close();
 
         // Cancel gw's offer so we can set RequireAuth.
-        env(offer_cancel(gw, gwOfferSeq));
+        env(offerCancel(gw, gwOfferSeq));
         env.close();
         env.require(offers(gw, 0));
 
@@ -4395,7 +4395,7 @@ public:
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
         // they can.
-        env(offer(gw, gwUSD(40), XRP(4000)), ter(tesSUCCESS));
+        env(offer(gw, gwUSD(40), XRP(4000)), Ter(tesSUCCESS));
         env.close();
 
         env.require(offers(gw, 1));
@@ -4408,14 +4408,14 @@ public:
         env(pay(gw, alice, gwUSD(50)));
         env.close();
 
-        env.require(balance(alice, gwUSD(50)));
+        env.require(Balance(alice, gwUSD(50)));
 
         // alice's offer should cross gw's
         env(offer(alice, XRP(4000), gwUSD(40)));
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(balance(alice, gwUSD(10)));
+        env.require(Balance(alice, gwUSD(10)));
 
         env.require(offers(gw, 0));
     }
@@ -4482,7 +4482,7 @@ public:
                 env.close();
 
             // Account deletion has a high fee.  Account for that.
-            env(acctdelete(gw, alice), fee(drops(env.current()->fees().increment)));
+            env(acctdelete(gw, alice), Fee(drops(env.current()->fees().increment)));
             env.close();
 
             // Verify that gw's account root is gone from the ledger.
@@ -4491,7 +4491,7 @@ public:
 
         // alice crosses becky's first offer.  The offer create fails because
         // the USD issuer is not in the ledger.
-        env(offer(alice, usd(2), XRP(2)), ter(tecNO_ISSUER));
+        env(offer(alice, usd(2), XRP(2)), Ter(tecNO_ISSUER));
         env.close();
         env.require(offers(alice, 0));
         BEAST_EXPECT(isOffer(env, becky, XRP(2), usd(2)));
@@ -4499,13 +4499,13 @@ public:
 
         // alice crosses becky's second offer.  Again, the offer create fails
         // because the USD issuer is not in the ledger.
-        env(offer(alice, usd(3), bux(3)), ter(tecNO_ISSUER));
+        env(offer(alice, usd(3), bux(3)), Ter(tecNO_ISSUER));
         env.require(offers(alice, 0));
         BEAST_EXPECT(isOffer(env, becky, XRP(2), usd(2)));
         BEAST_EXPECT(isOffer(env, becky, bux(3), usd(3)));
 
         // Cancel becky's BUX -> USD offer so we can try auto-bridging.
-        env(offer_cancel(becky, beckyBuxUsdSeq));
+        env(offerCancel(becky, beckyBuxUsdSeq));
         env.close();
         BEAST_EXPECT(!isOffer(env, becky, bux(3), usd(3)));
 
@@ -4519,7 +4519,7 @@ public:
 
         // carol attempts the auto-bridge.  Again, the offer create fails
         // because the USD issuer is not in the ledger.
-        env(offer(carol, usd(2), bux(2)), ter(tecNO_ISSUER));
+        env(offer(carol, usd(2), bux(2)), Ter(tecNO_ISSUER));
         env.close();
         BEAST_EXPECT(isOffer(env, alice, bux(2), XRP(2)));
         BEAST_EXPECT(isOffer(env, becky, XRP(2), usd(2)));
@@ -4541,7 +4541,7 @@ public:
 
             auto txn = noop(gw);
             txn[sfTickSize.fieldName] = Quality::minTickSize - 1;
-            env(txn, ter(temBAD_TICK_SIZE));
+            env(txn, Ter(temBAD_TICK_SIZE));
 
             txn[sfTickSize.fieldName] = Quality::minTickSize;
             env(txn);
@@ -4559,7 +4559,7 @@ public:
 
             txn = noop(gw);
             txn[sfTickSize.fieldName] = Quality::maxTickSize + 1;
-            env(txn, ter(temBAD_TICK_SIZE));
+            env(txn, Ter(temBAD_TICK_SIZE));
 
             txn[sfTickSize.fieldName] = 0;
             env(txn);
@@ -4708,8 +4708,8 @@ public:
             BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerId3);
             BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerId2);
             BEAST_EXPECT(offers[3]->getFieldU32(sfSequence) == offerId1);
-            env.require(balance(alice, usd(200)));
-            env.require(owners(alice, 5));
+            env.require(Balance(alice, usd(200)));
+            env.require(Owners(alice, 5));
         }
 
         // Cross alice's first offer.
@@ -4757,10 +4757,10 @@ public:
             auto offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
-        env.require(balance(alice, usd(0)));
-        env.require(owners(alice, 1));
-        env.require(balance(bob, usd(200)));
-        env.require(owners(bob, 1));
+        env.require(Balance(alice, usd(0)));
+        env.require(Owners(alice, 1));
+        env.require(Balance(bob, usd(200)));
+        env.require(Owners(bob, 1));
     }
 
     void
@@ -4782,7 +4782,7 @@ public:
 
         env(trust(alice, usd(1000)));
         env.close();
-        env.require(owners(alice, 1), tickets(alice, 0));
+        env.require(Owners(alice, 1), tickets(alice, 0));
 
         env(pay(gw, alice, usd(200)));
         env.close();
@@ -4791,13 +4791,13 @@ public:
         std::uint32_t const offerSeqId0{env.seq(alice)};
         env(offer(alice, XRP(50), usd(50)));
         env.close();
-        env.require(owners(alice, 2), tickets(alice, 0));
+        env.require(Owners(alice, 2), tickets(alice, 0));
 
         // Create four tickets.
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 4));
         env.close();
-        env.require(owners(alice, 6), tickets(alice, 4));
+        env.require(Owners(alice, 6), tickets(alice, 4));
 
         // Create the second (also sequence-based) offer.
         std::uint32_t const offerSeqId1{env.seq(alice)};
@@ -4823,12 +4823,12 @@ public:
             BEAST_EXPECT(offers[1]->getFieldU32(sfSequence) == offerTixId1);
             BEAST_EXPECT(offers[2]->getFieldU32(sfSequence) == offerTixId0);
             BEAST_EXPECT(offers[3]->getFieldU32(sfSequence) == offerSeqId1);
-            env.require(balance(alice, usd(200)));
-            env.require(owners(alice, 7));
+            env.require(Balance(alice, usd(200)));
+            env.require(Owners(alice, 7));
         }
 
         // Use a ticket to cancel an offer created with a sequence.
-        env(offer_cancel(alice, offerSeqId0), ticket::use(ticketSeq + 2));
+        env(offerCancel(alice, offerSeqId0), ticket::use(ticketSeq + 2));
         env.close();
 
         // Verify that offerSeqId_0 was canceled.
@@ -4841,7 +4841,7 @@ public:
         }
 
         // Use a ticket to cancel an offer created with a ticket.
-        env(offer_cancel(alice, offerTixId0), ticket::use(ticketSeq + 3));
+        env(offerCancel(alice, offerTixId0), ticket::use(ticketSeq + 3));
         env.close();
 
         // Verify that offerTixId_0 was canceled.
@@ -4853,10 +4853,10 @@ public:
         }
 
         // All of alice's tickets should now be used up.
-        env.require(owners(alice, 3), tickets(alice, 0));
+        env.require(Owners(alice, 3), tickets(alice, 0));
 
         // Use a sequence to cancel an offer created with a ticket.
-        env(offer_cancel(alice, offerTixId1));
+        env(offerCancel(alice, offerTixId1));
         env.close();
 
         // Verify that offerTixId_1 was canceled.
@@ -4867,12 +4867,12 @@ public:
         }
 
         // Use a sequence to cancel an offer created with a sequence.
-        env(offer_cancel(alice, offerSeqId1));
+        env(offerCancel(alice, offerSeqId1));
         env.close();
 
         // Verify that offerSeqId_1 was canceled.
         // All of alice's tickets should now be used up.
-        env.require(owners(alice, 1), tickets(alice, 0), offers(alice, 0));
+        env.require(Owners(alice, 1), tickets(alice, 0), offers(alice, 0));
     }
 
     void
@@ -4932,11 +4932,11 @@ public:
             env(offer(maker, XRP(100), usd(100)));
             env.close();
 
-            env(offer(taker, usd(100), XRP(101)), txflags(tfFillOrKill), ter(err));
+            env(offer(taker, usd(100), XRP(101)), txflags(tfFillOrKill), Ter(err));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             if (isTesSuccess(err))
             {
                 makerUSDBalance -= usd(100);
@@ -4949,11 +4949,11 @@ public:
             env(offer(maker, usd(100), XRP(100)));
             env.close();
 
-            env(offer(taker, XRP(100), usd(101)), txflags(tfFillOrKill), ter(err));
+            env(offer(taker, XRP(100), usd(101)), txflags(tfFillOrKill), Ter(err));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             if (isTesSuccess(err))
             {
                 makerUSDBalance += usd(100);
@@ -4966,11 +4966,11 @@ public:
             env(offer(maker, usd(100), eur(100)));
             env.close();
 
-            env(offer(taker, eur(100), usd(101)), txflags(tfFillOrKill), ter(err));
+            env(offer(taker, eur(100), usd(101)), txflags(tfFillOrKill), Ter(err));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             if (isTesSuccess(err))
             {
                 makerUSDBalance += usd(100);
@@ -4991,8 +4991,8 @@ public:
 
             makerUSDBalance -= usd(101);
             takerUSDBalance += usd(101);
-            makerXRPBalance += XRP(101).value() - txfee(env, 1);
-            takerXRPBalance -= XRP(101).value() + txfee(env, 1);
+            makerXRPBalance += XRP(101).value() - txFee(env, 1);
+            takerXRPBalance -= XRP(101).value() + txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(101), XRP(101)));
@@ -5003,8 +5003,8 @@ public:
 
             makerUSDBalance += usd(101);
             takerUSDBalance -= usd(101);
-            makerXRPBalance -= XRP(101).value() + txfee(env, 1);
-            takerXRPBalance += XRP(101).value() - txfee(env, 1);
+            makerXRPBalance -= XRP(101).value() + txFee(env, 1);
+            takerXRPBalance += XRP(101).value() - txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(101), eur(101)));
@@ -5017,8 +5017,8 @@ public:
             takerUSDBalance -= usd(101);
             makerEURBalance -= eur(101);
             takerEURBalance += eur(101);
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
@@ -5028,31 +5028,31 @@ public:
             env(offer(maker, XRP(100), usd(100)));
             env.close();
 
-            env(offer(taker, usd(100), XRP(99)), txflags(flags), ter(tecKILLED));
+            env(offer(taker, usd(100), XRP(99)), txflags(flags), Ter(tecKILLED));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), XRP(100)));
             env.close();
 
-            env(offer(taker, XRP(100), usd(99)), txflags(flags), ter(tecKILLED));
+            env(offer(taker, XRP(100), usd(99)), txflags(flags), Ter(tecKILLED));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), eur(100)));
             env.close();
 
-            env(offer(taker, eur(100), usd(99)), txflags(flags), ter(tecKILLED));
+            env(offer(taker, eur(100), usd(99)), txflags(flags), Ter(tecKILLED));
             env.close();
 
-            makerXRPBalance -= txfee(env, 1);
-            takerXRPBalance -= txfee(env, 1);
+            makerXRPBalance -= txFee(env, 1);
+            takerXRPBalance -= txFee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
@@ -5129,7 +5129,7 @@ public:
         testFillOrKill(features);
     }
 
-    FeatureBitset const allFeatures{jtx::testable_amendments()};
+    FeatureBitset const allFeatures{jtx::testableAmendments()};
 
     void
     run() override
@@ -5163,7 +5163,7 @@ class Offer_manual_test : public OfferBaseUtil_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 

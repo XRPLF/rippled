@@ -112,7 +112,7 @@ public:
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(
             std::equal(
-                uncompressed.begin() + xrpl::compression::headerBytes,
+                uncompressed.begin() + xrpl::compression::kHEADER_BYTES,
                 uncompressed.end(),
                 decompressed.begin()));
     }
@@ -417,7 +417,7 @@ public:
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
             auto const inboundEnabled =
-                peerFeatureEnabled(httpRequest, FEATURE_COMPR, "lz4", inboundEnable);
+                peerFeatureEnabled(httpRequest, kFEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
@@ -427,7 +427,7 @@ public:
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
-                peerFeatureEnabled(httpResp, FEATURE_COMPR, "lz4", outboundEnable);
+                peerFeatureEnabled(httpResp, kFEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

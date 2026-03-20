@@ -27,7 +27,7 @@ getEndpoint(std::string const& peer)
         std::optional<beast::IP::Endpoint> endpoint =
             beast::IP::Endpoint::from_string_checked(peerClean);
         if (endpoint)
-            return beast::IP::to_asio_endpoint(endpoint.value());
+            return beast::IP::toAsioEndpoint(endpoint.value());
     }
     catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
     {
@@ -158,7 +158,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                  role,
                  coro,
                  InfoSub::pointer(),
-                 apiVersion},
+                 kAPI_VERSION},
                 request_};
 
             // Make sure we can currently handle the rpc
@@ -281,7 +281,7 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
     auto endpoint = getClientEndpoint();
     if (endpoint)
-        return app_.getResourceManager().newInboundEndpoint(beast::IP::from_asio(endpoint.value()));
+        return app_.getResourceManager().newInboundEndpoint(beast::IP::fromAsio(endpoint.value()));
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
@@ -314,7 +314,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
             Throw<std::runtime_error>("Error setting grpc server address");
         }
 
-        auto const optSecureGateway = section.get("secure_gateway");
+        auto const optSecureGateway = section.get("secureGateway");
         if (optSecureGateway)
         {
             try
@@ -329,8 +329,8 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
                     if (addr.is_unspecified())
                     {
                         JLOG(journal_.error()) << "Can't pass unspecified IP in "
-                                               << "secure_gateway section of port_grpc";
-                        Throw<std::runtime_error>("Unspecified IP in secure_gateway section");
+                                               << "secureGateway section of port_grpc";
+                        Throw<std::runtime_error>("Unspecified IP in secureGateway section");
                     }
 
                     secureGatewayIPs_.emplace_back(addr);
@@ -339,7 +339,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
             catch (std::exception const&)
             {
                 JLOG(journal_.error()) << "Error parsing secure gateway IPs for grpc server";
-                Throw<std::runtime_error>("Error parsing secure_gateway section");
+                Throw<std::runtime_error>("Error parsing secureGateway section");
             }
         }
     }

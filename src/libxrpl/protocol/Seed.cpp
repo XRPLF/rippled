@@ -24,7 +24,7 @@ namespace xrpl {
 
 Seed::~Seed()
 {
-    secure_erase(buf_.data(), buf_.size());
+    secureErase(buf_.data(), buf_.size());
 }
 
 Seed::Seed(Slice const& slice)
@@ -49,7 +49,7 @@ randomSeed()
     std::array<std::uint8_t, 16> buffer{};
     beast::rngfill(buffer.data(), buffer.size(), crypto_prng());
     Seed seed(makeSlice(buffer));
-    secure_erase(buffer.data(), buffer.size());
+    secureErase(buffer.data(), buffer.size());
     return seed;
 }
 

@@ -19,7 +19,7 @@ offer(
 
 /** Cancel an offer. */
 Json::Value
-offer_cancel(Account const& account, std::uint32_t offerSeq);
+offerCancel(Account const& account, std::uint32_t offerSeq);
 
 }  // namespace jtx
 }  // namespace test

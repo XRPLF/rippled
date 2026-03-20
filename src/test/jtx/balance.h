@@ -9,13 +9,13 @@ namespace jtx {
 
 /** A balance matches.
 
-    This allows "none" which means either the account
+    This allows "kNONE" which means either the account
     doesn't exist (no XRP) or the trust line does not
     exist. If an amount is specified, the SLE must
     exist even if the amount is 0, or else the test
     fails.
 */
-class balance
+class Balance
 {
 private:
     bool const none_;
@@ -23,16 +23,16 @@ private:
     STAmount const value_;
 
 public:
-    balance(Account const& account, none_t) : none_(true), account_(account), value_(XRP)
+    Balance(Account const& account, NoneT) : none_(true), account_(account), value_(XRP)
     {
     }
 
-    balance(Account const& account, None const& value)
+    Balance(Account const& account, None const& value)
         : none_(true), account_(account), value_(value.asset)
     {
     }
 
-    balance(Account const& account, STAmount const& value)
+    Balance(Account const& account, STAmount const& value)
         : none_(false), account_(account), value_(value)
     {
     }

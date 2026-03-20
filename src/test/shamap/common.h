@@ -36,7 +36,7 @@ public:
         Section testSection;
         testSection.set("type", "memory");
         testSection.set("path", "SHAMap_test");
-        db_ = NodeStore::Manager::instance().make_Database(
+        db_ = NodeStore::Manager::instance().makeDatabase(
             megabytes(4), scheduler_, 1, testSection, j);
     }
 

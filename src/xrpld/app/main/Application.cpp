@@ -263,7 +263,7 @@ public:
         , txMaster_(*this)
 
         , collectorManager_(
-              make_CollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
+              makeCollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
 
         , jobQueue_(
               std::make_unique<JobQueue>(
@@ -301,7 +301,7 @@ public:
 
         , nodeStoreScheduler_(*jobQueue_)
 
-        , shaMapStore_(make_SHAMapStore(*this, nodeStoreScheduler_, logs_->journal("SHAMapStore")))
+        , shaMapStore_(makeSHAMapStore(*this, nodeStoreScheduler_, logs_->journal("SHAMapStore")))
 
         , tempNodeCache_(
               "NodeCache",
@@ -344,7 +344,7 @@ public:
                   collectorManager_->collector(),
                   logs_->journal("LedgerMaster")))
 
-        , ledgerCleaner_(make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
+        , ledgerCleaner_(makeLedgerCleaner(*this, logs_->journal("LedgerCleaner")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
@@ -359,7 +359,7 @@ public:
               }))
 
         , ledgerReplayer_(
-              std::make_unique<LedgerReplayer>(*this, *inboundLedgers_, make_PeerSetBuilder(*this)))
+              std::make_unique<LedgerReplayer>(*this, *inboundLedgers_, makePeerSetBuilder(*this)))
 
         , acceptedLedgerCache_(
               "AcceptedLedger",
@@ -368,7 +368,7 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
 
-        , networkOPs_(make_NetworkOPs(
+        , networkOPs_(makeNetworkOPs(
               *this,
               stopwatch(),
               config_->standalone(),
@@ -377,7 +377,7 @@ public:
               *jobQueue_,
               *ledgerMaster_,
               validatorKeys_,
-              get_io_context(),
+              getIoContext(),
               logs_->journal("NetworkOPs"),
               collectorManager_->collector()))
 
@@ -403,7 +403,7 @@ public:
 
         , serverHandler_(make_ServerHandler(
               *this,
-              get_io_context(),
+              getIoContext(),
               *jobQueue_,
               *networkOPs_,
               *resourceManager_,
@@ -411,29 +411,29 @@ public:
 
         , feeTrack_(std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
-        , hashRouter_(std::make_unique<HashRouter>(setup_HashRouter(*config_), stopwatch()))
+        , hashRouter_(std::make_unique<HashRouter>(setupHashRouter(*config_), stopwatch()))
 
         , validations_(ValidationParms(), stopwatch(), *this, logs_->journal("Validations"))
 
-        , loadManager_(make_LoadManager(*this, logs_->journal("LoadManager")))
+        , loadManager_(makeLoadManager(*this, logs_->journal("LoadManager")))
 
-        , txQ_(std::make_unique<TxQ>(setup_TxQ(*config_), logs_->journal("TxQ")))
+        , txQ_(std::make_unique<TxQ>(setupTxQ(*config_), logs_->journal("TxQ")))
 
-        , sweepTimer_(get_io_context())
+        , sweepTimer_(getIoContext())
 
-        , entropyTimer_(get_io_context())
+        , entropyTimer_(getIoContext())
 
-        , signals_(get_io_context())
+        , signals_(getIoContext())
 
         , checkSigs_(true)
 
-        , resolver_(ResolverAsio::New(get_io_context(), logs_->journal("Resolver")))
+        , resolver_(ResolverAsio::New(getIoContext(), logs_->journal("Resolver")))
 
         , io_latency_sampler_(
               collectorManager_->collector()->make_event("ios_latency"),
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
-              get_io_context())
+              getIoContext())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
         initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
@@ -558,7 +558,7 @@ public:
     boost::asio::io_context&
     getIOContext() override
     {
-        return get_io_context();
+        return getIoContext();
     }
 
     std::chrono::milliseconds
@@ -809,7 +809,7 @@ public:
 
         try
         {
-            relationalDatabase_.emplace(setup_RelationalDatabase(*this, *config_, *jobQueue_));
+            relationalDatabase_.emplace(setupRelationalDatabase(*this, *config_, *jobQueue_));
 
             // wallet database
             auto setup = setup_DatabaseCon(*config_, journal_);
@@ -834,7 +834,7 @@ public:
             auto j = logs_->journal("NodeObject");
             NodeStore::DummyScheduler dummyScheduler;
             std::unique_ptr<NodeStore::Database> source =
-                NodeStore::Manager::instance().make_Database(
+                NodeStore::Manager::instance().makeDatabase(
                     megabytes(config_->getValueFor(SizedItem::burstSize, std::nullopt)),
                     dummyScheduler,
                     0,
@@ -1078,7 +1078,7 @@ public:
     size_t
     getNumberOfThreads() const override
     {
-        return get_number_of_threads();
+        return getNumberOfThreads();
     }
 
 private:
@@ -1217,7 +1217,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         startGenesisLedger();
     }
     else if (
-        startUp == StartUpType::LOAD || startUp == StartUpType::LOAD_FILE ||
+        startUp == StartUpType::LOAD || startUp == StartUpType::LoadFile ||
         startUp == StartUpType::REPLAY)
     {
         JLOG(journal_.info()) << "Loading specified Ledger";
@@ -1225,7 +1225,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!loadOldLedger(
                 config_->START_LEDGER,
                 startUp == StartUpType::REPLAY,
-                startUp == StartUpType::LOAD_FILE,
+                startUp == StartUpType::LoadFile,
                 config_->TRAP_TX_HASH))
         {
             JLOG(journal_.error()) << "The specified ledger could not be loaded.";
@@ -1334,7 +1334,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         *serverHandler_,
         *resourceManager_,
         *resolver_,
-        get_io_context(),
+        getIoContext(),
         *config_,
         collectorManager_->collector());
     add(*overlay_);  // add to PropertyStream
@@ -1504,7 +1504,7 @@ ApplicationImp::run()
     //        forcing a call to io_context::stop()
     io_latency_sampler_.cancel();
 
-    resolver_->stop_async();
+    resolver_->stopAsync();
 
     // NIKB This is a hack - we need to wait for the resolver to
     //      stop. before we stop the io_server_queue or weird
@@ -1681,7 +1681,7 @@ ApplicationImp::getLastFullLedger()
         {
             stream << "Failed on ledger";
             Json::Value p;
-            addJson(p, {*ledger, nullptr, LedgerFill::full});
+            addJson(p, {*ledger, nullptr, LedgerFill::Full});
             stream << p;
         }
 
@@ -1860,7 +1860,7 @@ ApplicationImp::loadOldLedger(
                         0,
                         InboundLedger::Reason::GENERIC,
                         stopwatch(),
-                        make_DummyPeerSet(*this));
+                        makeDummyPeerSet(*this));
                     if (il->checkLocal())
                         loadLedger = il->getLedger();
                 }
@@ -1903,7 +1903,7 @@ ApplicationImp::loadOldLedger(
                     0,
                     InboundLedger::Reason::GENERIC,
                     stopwatch(),
-                    make_DummyPeerSet(*this));
+                    makeDummyPeerSet(*this));
 
                 if (il->checkLocal())
                     loadLedger = il->getLedger();
@@ -2102,7 +2102,7 @@ Application::Application() : beast::PropertyStream::Source("app")
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Application>
-make_Application(
+makeApplication(
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper)

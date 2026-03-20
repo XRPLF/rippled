@@ -40,7 +40,7 @@ class Invariants_test : public beast::unit_test::suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 |
+        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 |
             featureSingleAssetVault;
     }
 
@@ -1954,7 +1954,7 @@ class Invariants_test : public beast::unit_test::suite
 
         auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
-        env(set(a, vaultID), fee(increment));
+        env(set(a, vaultID), Fee(kINCREMENT));
 
         return loanBrokerKeylet;
     };
@@ -2061,7 +2061,7 @@ class Invariants_test : public beast::unit_test::suite
                         }
 
                         case Asset::MPT: {
-                            MPTTester mptt{env, issuer, mptInitNoFund};
+                            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
                             mptt.create(
                                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                             PrettyAsset const mptAsset = mptt.issuanceID();

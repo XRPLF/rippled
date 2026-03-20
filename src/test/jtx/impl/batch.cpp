@@ -48,7 +48,7 @@ inner::operator()(Env& env, JTx& jt) const
 }
 
 void
-sig::operator()(Env& env, JTx& jt) const
+Sig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -58,7 +58,7 @@ sig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
         Rethrow();
@@ -81,7 +81,7 @@ sig::operator()(Env& env, JTx& jt) const
 }
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     std::optional<STObject> st;
@@ -91,7 +91,7 @@ msig::operator()(Env& env, JTx& jt) const
         jt.jv[jss::SigningPubKey] = "";
         st = parse(jt.jv);
     }
-    catch (parse_error const&)
+    catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
         Rethrow();

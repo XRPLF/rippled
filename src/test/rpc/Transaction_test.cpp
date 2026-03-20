@@ -77,7 +77,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::result][jss::meta] == strHex(meta->getSerializer().getData()));
         }
 
-        auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
+        auto const tx = env.jt(noop(alice), Seq(env.seq(alice))).stx;
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
             auto const result = env.rpc(
@@ -320,7 +320,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::result][jss::meta] == strHex(meta->getSerializer().getData()));
         }
 
-        auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
+        auto const tx = env.jt(noop(alice), Seq(env.seq(alice))).stx;
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
@@ -669,12 +669,12 @@ class Transaction_test : public beast::unit_test::suite
 
             auto const ledgerSeq = env.current()->header().seq;
 
-            env(noop(alice), ter(tesSUCCESS));
+            env(noop(alice), Ter(tesSUCCESS));
             env.close();
 
             Json::Value params;
             params[jss::id] = 1;
-            auto const hash = env.tx()->getJson(JsonOptions::none)[jss::hash];
+            auto const hash = env.tx()->getJson(JsonOptions::kNONE)[jss::hash];
             params[jss::transaction] = hash;
             auto const jrr = env.rpc("json", "tx", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::hash] == hash);
@@ -748,7 +748,7 @@ class Transaction_test : public beast::unit_test::suite
         std::shared_ptr<STObject const> meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
-        Json::Value expected = txn->getJson(JsonOptions::none);
+        Json::Value expected = txn->getJson(JsonOptions::kNONE);
         expected[jss::DeliverMax] = expected[jss::Amount];
         if (apiVersion > 1)
         {
@@ -864,7 +864,7 @@ public:
         using namespace test::jtx;
         forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
 
-        FeatureBitset const all{testable_amendments()};
+        FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
     }
 

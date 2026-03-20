@@ -5,7 +5,7 @@ namespace xrpl {
 namespace PeerFinder {
 
 Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops)
-    : hops(std::min(hops, Tuning::maxHops + 1)), address(ep)
+    : hops(std::min(hops, Tuning::kMAX_HOPS + 1)), address(ep)
 {
 }
 

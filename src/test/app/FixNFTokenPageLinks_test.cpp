@@ -112,14 +112,14 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         {
             // Verify that the LedgerStateFix transaction is disabled
             // without the fixNFTokenPageLinks amendment.
-            Env env{*this, testable_amendments() - fixNFTokenPageLinks};
+            Env env{*this, testableAmendments() - fixNFTokenPageLinks};
             env.fund(XRP(1000), alice);
 
             auto const linkFixFee = drops(env.current()->fees().increment);
-            env(ledgerStateFix::nftPageLinks(alice, alice), fee(linkFixFee), ter(temDISABLED));
+            env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(temDISABLED));
         }
 
-        Env env{*this, testable_amendments()};
+        Env env{*this, testableAmendments()};
         env.fund(XRP(1000), alice);
         std::uint32_t const ticketSeq = env.seq(alice);
         env(ticket::create(alice, 1));
@@ -132,38 +132,38 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             tx[sfAccountTxnID.jsonName] =
                 "00000000000000000000000000000000"
                 "00000000000000000000000000000000";
-            env(tx, ticket::use(ticketSeq), ter(temINVALID));
+            env(tx, ticket::use(ticketSeq), Ter(temINVALID));
         }
         // Fee too low.
-        env(ledgerStateFix::nftPageLinks(alice, alice), ter(telINSUF_FEE_P));
+        env(ledgerStateFix::nftPageLinks(alice, alice), Ter(telINSUF_FEE_P));
 
         // Invalid flags.
         auto const linkFixFee = drops(env.current()->fees().increment);
         env(ledgerStateFix::nftPageLinks(alice, alice),
-            fee(linkFixFee),
+            Fee(linkFixFee),
             txflags(tfPassive),
-            ter(temINVALID_FLAG));
+            Ter(temINVALID_FLAG));
 
         {
             // ledgerStateFix::nftPageLinks requires an Owner field.
             Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx.removeMember(sfOwner.jsonName);
-            env(tx, fee(linkFixFee), ter(temINVALID));
+            env(tx, Fee(linkFixFee), Ter(temINVALID));
         }
         {
             // Invalid LedgerFixType codes.
             Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx[sfLedgerFixType.jsonName] = 0;
-            env(tx, fee(linkFixFee), ter(tefINVALID_LEDGER_FIX_TYPE));
+            env(tx, Fee(linkFixFee), Ter(tefINVALID_LEDGER_FIX_TYPE));
 
             tx[sfLedgerFixType.jsonName] = 200;
-            env(tx, fee(linkFixFee), ter(tefINVALID_LEDGER_FIX_TYPE));
+            env(tx, Fee(linkFixFee), Ter(tefINVALID_LEDGER_FIX_TYPE));
         }
 
         // Preclaim
         Account const carol("carol");
         env.memoize(carol);
-        env(ledgerStateFix::nftPageLinks(alice, carol), fee(linkFixFee), ter(tecOBJECT_NOT_FOUND));
+        env(ledgerStateFix::nftPageLinks(alice, carol), Fee(linkFixFee), Ter(tecOBJECT_NOT_FOUND));
     }
 
     void
@@ -175,7 +175,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         Account const alice("alice");
 
-        Env env{*this, testable_amendments()};
+        Env env{*this, testableAmendments()};
         env.fund(XRP(1000), alice);
 
         // These cases all return the same TER code, but they exercise
@@ -184,13 +184,13 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Owner has no pages to fix.
         auto const linkFixFee = drops(env.current()->fees().increment);
-        env(ledgerStateFix::nftPageLinks(alice, alice), fee(linkFixFee), ter(tecFAILED_PROCESSING));
+        env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(tecFAILED_PROCESSING));
 
         // Alice has only one page.
         env(token::mint(alice), txflags(tfTransferable));
         env.close();
 
-        env(ledgerStateFix::nftPageLinks(alice, alice), fee(linkFixFee), ter(tecFAILED_PROCESSING));
+        env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(tecFAILED_PROCESSING));
 
         // Alice has at least three pages.
         for (std::uint32_t i = 0; i < 64; ++i)
@@ -199,7 +199,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             env.close();
         }
 
-        env(ledgerStateFix::nftPageLinks(alice, alice), fee(linkFixFee), ter(tecFAILED_PROCESSING));
+        env(ledgerStateFix::nftPageLinks(alice, alice), Fee(linkFixFee), Ter(tecFAILED_PROCESSING));
     }
 
     void
@@ -222,7 +222,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         Account const carol("carol");
         Account const daria("daria");
 
-        Env env{*this, testable_amendments() - fixNFTokenPageLinks};
+        Env env{*this, testableAmendments() - fixNFTokenPageLinks};
         env.fund(XRP(1000), alice, bob, carol, daria);
 
         //**********************************************************************
@@ -409,7 +409,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         //**********************************************************************
         // Verify that the LedgerStateFix transaction is not enabled.
         auto const linkFixFee = drops(env.current()->fees().increment);
-        env(ledgerStateFix::nftPageLinks(daria, alice), fee(linkFixFee), ter(temDISABLED));
+        env(ledgerStateFix::nftPageLinks(daria, alice), Fee(linkFixFee), Ter(temDISABLED));
 
         // Wait 15 ledgers so the LedgerStateFix transaction is no longer
         // retried.
@@ -445,7 +445,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         env(noop(daria));
 
         // daria fixes the links in alice's NFToken directory.
-        env(ledgerStateFix::nftPageLinks(daria, alice), fee(linkFixFee));
+        env(ledgerStateFix::nftPageLinks(daria, alice), Fee(linkFixFee));
         env.close();
 
         // alice's last page should now be present and include no links.
@@ -486,7 +486,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         }
 
         // daria fixes the links in bob's NFToken directory.
-        env(ledgerStateFix::nftPageLinks(daria, bob), fee(linkFixFee));
+        env(ledgerStateFix::nftPageLinks(daria, bob), Fee(linkFixFee));
         env.close();
 
         // bob's last page should now be present and include a previous
@@ -544,7 +544,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         }
 
         // carol fixes the links in their own NFToken directory.
-        env(ledgerStateFix::nftPageLinks(carol, carol), fee(linkFixFee));
+        env(ledgerStateFix::nftPageLinks(carol, carol), Fee(linkFixFee));
         env.close();
 
         {

@@ -24,17 +24,17 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remote_endpoint_(remoteEndpoint)
+    , remoteEndpoint_(remoteEndpoint)
     , usage_(usage)
     , strand_(boost::asio::make_strand(ioContext))
     , timer_(ioContext)
     , stepTimer_(ioContext)
-    , stream_ptr_(
+    , streamPtr_(
           std::make_unique<stream_type>(
               socket_type(std::forward<boost::asio::io_context&>(ioContext)),
               *context))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
+    , socket_(streamPtr_->next_layer().socket())
+    , stream_(*streamPtr_)
     , slot_(slot)
 {
 }
@@ -73,7 +73,7 @@ ConnectAttempt::run()
         return;
     }
 
-    JLOG(journal_.debug()) << "run: connecting to " << remote_endpoint_;
+    JLOG(journal_.debug()) << "run: connecting to " << remoteEndpoint_;
 
     ioPending_ = true;
 
@@ -81,7 +81,7 @@ ConnectAttempt::run()
     setTimer(ConnectionStep::TcpConnect);
 
     stream_.next_layer().async_connect(
-        remote_endpoint_,
+        remoteEndpoint_,
         boost::asio::bind_executor(
             strand_,
             std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
@@ -194,7 +194,7 @@ ConnectAttempt::setTimer(ConnectionStep step)
     {
         try
         {
-            timer_.expires_after(connectTimeout);
+            timer_.expires_after(kCONNECT_TIMEOUT);
             timer_.async_wait(
                 boost::asio::bind_executor(
                     strand_,
@@ -216,19 +216,19 @@ ConnectAttempt::setTimer(ConnectionStep step)
         switch (step)
         {
             case ConnectionStep::TcpConnect:
-                stepTimeout = StepTimeouts::tcpConnect;
+                stepTimeout = StepTimeouts::kTCP_CONNECT;
                 break;
             case ConnectionStep::TlsHandshake:
-                stepTimeout = StepTimeouts::tlsHandshake;
+                stepTimeout = StepTimeouts::kTLS_HANDSHAKE;
                 break;
             case ConnectionStep::HttpWrite:
-                stepTimeout = StepTimeouts::httpWrite;
+                stepTimeout = StepTimeouts::kHTTP_WRITE;
                 break;
             case ConnectionStep::HttpRead:
-                stepTimeout = StepTimeouts::httpRead;
+                stepTimeout = StepTimeouts::kHTTP_READ;
                 break;
             case ConnectionStep::ShutdownStarted:
-                stepTimeout = StepTimeouts::tlsShutdown;
+                stepTimeout = StepTimeouts::kTLS_SHUTDOWN;
                 break;
             case ConnectionStep::Complete:
             case ConnectionStep::Init:
@@ -380,13 +380,13 @@ ConnectAttempt::onHandshake(error_code ec)
 
     // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
-            slot_, beast::IPAddressConversion::from_asio(localEndpoint)))
+            slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
         fail("Self connection");
         return;
     }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
         shutdown();
@@ -404,8 +404,8 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         *sharedValue,
         overlay_.setup().networkID,
-        overlay_.setup().public_ip,
-        remote_endpoint_.address(),
+        overlay_.setup().publicIp,
+        remoteEndpoint_.address(),
         app_);
 
     if (shutdown_)
@@ -453,7 +453,7 @@ ConnectAttempt::onWrite(error_code ec)
 
     boost::beast::http::async_read(
         stream_,
-        read_buf_,
+        readBuf_,
         response_,
         boost::asio::bind_executor(
             strand_,
@@ -531,7 +531,7 @@ ConnectAttempt::processResponse()
 
         if (!isRedirect)
         {
-            JLOG(journal_.warn()) << "processResponse: " << remote_endpoint_
+            JLOG(journal_.warn()) << "processResponse: " << remoteEndpoint_
                                   << " failed to upgrade to peer protocol: " << response_.result()
                                   << " (" << response_.reason() << ")";
 
@@ -556,13 +556,13 @@ ConnectAttempt::processResponse()
                 continue;
 
             error_code ec;
-            auto const endpoint = parse_endpoint(ipValue.asString(), ec);
+            auto const endpoint = parseEndpoint(ipValue.asString(), ec);
             if (!ec)
                 redirectEndpoints.push_back(endpoint);
         }
 
         // Notify PeerFinder about the redirect redirectEndpoints may be empty
-        overlay_.peerFinder().onRedirects(remote_endpoint_, redirectEndpoints);
+        overlay_.peerFinder().onRedirects(remoteEndpoint_, redirectEndpoints);
 
         fail("processResponse: failed to connect to peer: redirected");
         return;
@@ -585,7 +585,7 @@ ConnectAttempt::processResponse()
         }
     }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
         shutdown();
@@ -598,13 +598,13 @@ ConnectAttempt::processResponse()
             response_,
             *sharedValue,
             overlay_.setup().networkID,
-            overlay_.setup().public_ip,
-            remote_endpoint_.address(),
+            overlay_.setup().publicIp,
+            remoteEndpoint_.address(),
             app_);
 
         usage_.setPublicKey(publicKey);
 
-        JLOG(journal_.debug()) << "Protocol: " << to_string(*negotiatedProtocol);
+        JLOG(journal_.debug()) << "Protocol: " << toString(*negotiatedProtocol);
         JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
         auto const member = app_.cluster().member(publicKey);
@@ -617,7 +617,7 @@ ConnectAttempt::processResponse()
         if (result != PeerFinder::Result::success)
         {
             std::stringstream ss;
-            ss << "Outbound Connect Attempt " << remote_endpoint_ << " " << to_string(result);
+            ss << "Outbound Connect Attempt " << remoteEndpoint_ << " " << to_string(result);
             fail(ss.str());
             return;
         }
@@ -633,8 +633,8 @@ ConnectAttempt::processResponse()
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
-            std::move(stream_ptr_),
-            read_buf_.data(),
+            std::move(streamPtr_),
+            readBuf_.data(),
             std::move(slot_),
             std::move(response_),
             usage_,

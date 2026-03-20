@@ -281,10 +281,10 @@ checkPayment(
             }
 
             auto j = app.journal("RPCHandler");
-            JLOG(j.debug()) << "transactionSign: build_path: " << result.getJson(JsonOptions::none);
+            JLOG(j.debug()) << "transactionSign: build_path: " << result.getJson(JsonOptions::kNONE);
 
             if (!result.empty())
-                txJson[jss::Paths] = result.getJson(JsonOptions::none);
+                txJson[jss::Paths] = result.getJson(JsonOptions::kNONE);
         }
     }
     return Json::Value();
@@ -726,12 +726,12 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::disable_API_prior_V2);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::kDISABLE_API_PRIOR_V2);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::kNONE);
         }
 
         RPC::insertDeliverMax(

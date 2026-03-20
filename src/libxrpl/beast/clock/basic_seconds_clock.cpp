@@ -14,7 +14,7 @@ namespace {
 // Updates the clock
 class SecondsClockThread
 {
-    using Clock = basic_seconds_clock::Clock;
+    using Clock = BasicSecondsClock::Clock;
 
     bool stop_{false};
     std::mutex mut_;
@@ -77,8 +77,8 @@ SecondsClockThread::run()
 
 }  // unnamed namespace
 
-basic_seconds_clock::time_point
-basic_seconds_clock::now()
+BasicSecondsClock::time_point
+BasicSecondsClock::now()
 {
     static SecondsClockThread kCLK;
     return kCLK.now();

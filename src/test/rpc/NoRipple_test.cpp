@@ -71,13 +71,13 @@ public:
         // After this payment alice has a -50 USD balance with bob, and
         // bob has a -50 USD balance with carol.  So neither alice nor
         // bob should be able to clear the noRipple flag.
-        env(pay(alice, carol, carol["USD"](50)), path(bob));
+        env(pay(alice, carol, carol["USD"](50)), Path(bob));
         env.close();
 
         TER const terNeg{TER{tecNO_PERMISSION}};
 
-        env(trust(alice, bob["USD"](100), bob, tfSetNoRipple), ter(terNeg));
-        env(trust(bob, carol["USD"](100), carol, tfSetNoRipple), ter(terNeg));
+        env(trust(alice, bob["USD"](100), bob, tfSetNoRipple), Ter(terNeg));
+        env(trust(bob, carol["USD"](100), carol, tfSetNoRipple), Ter(terNeg));
         env.close();
 
         Json::Value params;
@@ -111,7 +111,7 @@ public:
 
         // Now carol sends the 50 USD back to alice.  Then alice and
         // bob can set the noRipple flag.
-        env(pay(carol, alice, alice["USD"](50)), path(bob));
+        env(pay(carol, alice, alice["USD"](50)), Path(bob));
         env.close();
 
         env(trust(alice, bob["USD"](100), bob, tfSetNoRipple));
@@ -164,7 +164,7 @@ public:
         Json::Value const resp{env.rpc("json", "ripple_path_find", to_string(params))};
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
-        env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
+        env(pay(alice, carol, bob["USD"](50)), Ter(tecPATH_DRY));
     }
 
     void
@@ -257,7 +257,7 @@ public:
             testPairwise(features);
         };
         using namespace jtx;
-        auto const sa = testable_amendments();
+        auto const sa = testableAmendments();
         withFeatsTests(sa - featurePermissionedDEX);
         withFeatsTests(sa);
     }

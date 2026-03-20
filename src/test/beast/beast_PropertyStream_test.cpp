@@ -29,7 +29,7 @@ public:
     {
         try
         {
-            bool const found(Source::peel_leading_slash(&s));
+            bool const found(Source::peelLeadingSlash(&s));
             BEAST_EXPECT(found == shouldBeFound);
             BEAST_EXPECT(s == expected);
         }
@@ -48,7 +48,7 @@ public:
     {
         try
         {
-            bool const found(Source::peel_trailing_slashstar(&s));
+            bool const found(Source::peelTrailingSlashstar(&s));
             BEAST_EXPECT(found == shouldBeFound);
             BEAST_EXPECT(s == expectedRemainder);
         }
@@ -64,7 +64,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source* source(root.findOne(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -79,7 +79,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source* source(root.findPath(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -94,7 +94,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source* source(root.findOneDeep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)

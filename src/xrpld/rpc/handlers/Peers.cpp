@@ -44,7 +44,7 @@ doPeers(RPC::JsonContext& context)
     Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
     std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
 
-    context.app.cluster().for_each([&cluster, now, ref, &self](ClusterNode const& node) {
+    context.app.cluster().forEach([&cluster, now, ref, &self](ClusterNode const& node) {
         if (node.identity() == self)
             return;
 

@@ -14,7 +14,7 @@ SlotImp::SlotImp(
     , inbound_(true)
     , fixed_(fixed)
     , reserved_(false)
-    , state_(accept)
+    , state_(Accept)
     , remote_endpoint_(remoteEndpoint)
     , local_endpoint_(localEndpoint)
     , listening_port_(unknownPort)
@@ -29,7 +29,7 @@ SlotImp::SlotImp(beast::IP::Endpoint const& remoteEndpoint, bool fixed, clock_ty
     , inbound_(false)
     , fixed_(fixed)
     , reserved_(false)
-    , state_(connect)
+    , state_(Connect)
     , remote_endpoint_(remoteEndpoint)
     , listening_port_(unknownPort)
     , checked(true)
@@ -42,7 +42,7 @@ void
 SlotImp::state(State state)
 {
     // Must go through activate() to set active state
-    XRPL_ASSERT(state != active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
+    XRPL_ASSERT(state != Active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
     XRPL_ASSERT(
@@ -52,18 +52,18 @@ SlotImp::state(State state)
 
     // You can't transition into the initial states
     XRPL_ASSERT(
-        state != accept && state != connect,
+        state != Accept && state != Connect,
         "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
-        state != connected || (!inbound_ && state_ == connect),
+        state != Connected || (!inbound_ && state_ == Connect),
         "xrpl::PeerFinder::SlotImp::state : input state is not connected an "
         "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
     XRPL_ASSERT(
-        state != closing || state_ != connect,
+        state != Closing || state_ != Connect,
         "xrpl::PeerFinder::SlotImp::state : input state is not closing an "
         "invalid state");
 
@@ -75,10 +75,10 @@ SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
-        state_ == accept || state_ == connected,
+        state_ == Accept || state_ == Connected,
         "xrpl::PeerFinder::SlotImp::activate : valid state");
 
-    state_ = active;
+    state_ = Active;
     whenAcceptEndpoints = now;
 }
 
@@ -122,7 +122,7 @@ SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 void
 SlotImp::recent_t::expire()
 {
-    beast::expire(cache, Tuning::liveCacheSecondsToLive);
+    beast::expire(cache, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
 }
 
 }  // namespace PeerFinder

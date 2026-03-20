@@ -17,12 +17,12 @@ namespace jtx {
 void
 fund(
     jtx::Env& env,
-    jtx::Account const& gw,
+    jtx::Account const& gw_,
     std::vector<jtx::Account> const& accounts,
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw, accounts, XRP(30000), amts, how);
+    fund(env, gw_, accounts, XRP(30000), amts, how);
 }
 
 void
@@ -55,28 +55,28 @@ fund(
 void
 fund(
     jtx::Env& env,
-    jtx::Account const& gw,
+    jtx::Account const& gw_,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts,
     Fund how)
 {
     if (how == Fund::All || how == Fund::Gw)
-        env.fund(xrp, gw);
+        env.fund(xrp, gw_);
     env.close();
     fund(env, accounts, xrp, amts, how);
 }
 
 AMMTestBase::AMMTestBase()
-    : gw("gateway")
-    , carol("carol")
-    , alice("alice")
-    , bob("bob")
-    , USD(gw["USD"])
-    , EUR(gw["EUR"])
-    , GBP(gw["GBP"])
-    , BTC(gw["BTC"])
-    , BAD(jtx::IOU(gw, badCurrency()))
+    : gw_("gateway")
+    , carol_("carol")
+    , alice_("alice")
+    , bob_("bob")
+    , USD(gw_["USD"])
+    , EUR(gw_["EUR"])
+    , GBP(gw_["GBP"])
+    , BTC(gw_["BTC"])
+    , BAD(jtx::IOU(gw_, badCurrency()))
 {
 }
 
@@ -85,7 +85,7 @@ AMMTestBase::testAMM(
     std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
     std::optional<std::pair<STAmount, STAmount>> const& pool,
     std::uint16_t tfee,
-    std::optional<jtx::ter> const& ter,
+    std::optional<jtx::Ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
     testAMM(cb, TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
@@ -130,19 +130,19 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 
         if (!asset1.native() && !asset2.native())
         {
-            fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+            fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
         }
         else if (asset1.native())
         {
-            fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            fund(env, gw_, {alice_, carol_}, toFund1, {toFund2}, Fund::All);
         }
         else if (asset2.native())
         {
-            fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+            fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
         }
 
         AMM ammAlice(
-            env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
+            env, alice_, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
         if (BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
@@ -175,7 +175,7 @@ AMMTest::pathTestEnv()
 }
 
 Json::Value
-AMMTest::find_paths_request(
+AMMTest::findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -207,9 +207,9 @@ AMMTest::find_paths_request(
     params[jss::command] = "ripple_path_find";
     params[jss::source_account] = toBase58(src);
     params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
+    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::kNONE);
     if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::none);
+        params[jss::send_max] = saSendMax->getJson(JsonOptions::kNONE);
     if (saSrcCurrency)
     {
         auto& sc = params[jss::source_currencies] = Json::arrayValue;
@@ -219,7 +219,7 @@ AMMTest::find_paths_request(
     }
 
     Json::Value result;
-    gate g;
+    Gate g;
     app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
         context.params = std::move(params);
         context.coro = coro;
@@ -228,13 +228,13 @@ AMMTest::find_paths_request(
     });
 
     using namespace std::chrono_literals;
-    BEAST_EXPECT(g.wait_for(5s));
+    BEAST_EXPECT(g.waitFor(5s));
     BEAST_EXPECT(!result.isMember(jss::error));
     return result;
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-AMMTest::find_paths(
+AMMTest::findPaths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -242,7 +242,7 @@ AMMTest::find_paths(
     std::optional<STAmount> const& saSendMax,
     std::optional<Currency> const& saSrcCurrency)
 {
-    Json::Value result = find_paths_request(env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
+    Json::Value result = findPathsRequest(env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
     BEAST_EXPECT(!result.isMember(jss::error));
 
     STAmount da;

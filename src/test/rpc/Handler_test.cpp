@@ -81,7 +81,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names = test::jtx::make_vector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> names = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 

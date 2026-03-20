@@ -23,11 +23,11 @@ public:
 
 protected:
     virtual void
-    map_begin() = 0;
+    mapBegin() = 0;
     virtual void
-    map_begin(std::string const& key) = 0;
+    mapBegin(std::string const& key) = 0;
     virtual void
-    map_end() = 0;
+    mapEnd() = 0;
 
     virtual void
     add(std::string const& key, std::string const& value) = 0;
@@ -40,7 +40,7 @@ protected:
 
     template <typename Value>
     void
-    lexical_add(std::string const& key, Value value)
+    lexicalAdd(std::string const& key, Value value)
     {
         std::stringstream ss;
         ss << value;
@@ -79,11 +79,11 @@ protected:
     add(std::string const& key, long double value);
 
     virtual void
-    array_begin() = 0;
+    arrayBegin() = 0;
     virtual void
-    array_begin(std::string const& key) = 0;
+    arrayBegin(std::string const& key) = 0;
     virtual void
-    array_end() = 0;
+    arrayEnd() = 0;
 
     virtual void
     add(std::string const& value) = 0;
@@ -96,7 +96,7 @@ protected:
 
     template <typename Value>
     void
-    lexical_add(Value value)
+    lexicalAdd(Value value)
     {
         std::stringstream ss;
         ss << value;
@@ -384,16 +384,16 @@ public:
     find(std::string path);
 
     Source*
-    find_one_deep(std::string const& name);
+    findOneDeep(std::string const& name);
     PropertyStream::Source*
-    find_path(std::string path);
+    findPath(std::string path);
     PropertyStream::Source*
-    find_one(std::string const& name);
+    findOne(std::string const& name);
 
     static bool
-    peel_leading_slash(std::string* path);
+    peelLeadingSlash(std::string* path);
     static bool
-    peel_trailing_slashstar(std::string* path);
+    peelTrailingSlashstar(std::string* path);
     static std::string
     peel_name(std::string* path);
 

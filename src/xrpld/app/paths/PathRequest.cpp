@@ -583,11 +583,11 @@ PathRequest::findPaths(
         {
             Json::Value jvEntry(Json::objectValue);
             rc.actualAmountIn.setIssuer(sourceAccount);
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::none);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::none);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::kNONE);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::kNONE);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::none);
+                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::kNONE);
 
             if (hasCompletion())
             {
@@ -642,7 +642,7 @@ PathRequest::doUpdate(
 
     newStatus[jss::source_account] = toBase58(*raSrcAccount);
     newStatus[jss::destination_account] = toBase58(*raDstAccount);
-    newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
+    newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::kNONE);
     newStatus[jss::full_reply] = !fast;
 
     if (jvId)

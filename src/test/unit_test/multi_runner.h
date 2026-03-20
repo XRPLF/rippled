@@ -90,7 +90,7 @@ class multi_runner_base
         std::atomic<std::size_t> job_index_{0};
         std::atomic<std::size_t> test_index_{0};
         std::atomic<bool> any_failed_{false};
-        // A parent process will periodically increment `keep_alive_`. The child
+        // A parent process will periodically kINCREMENT `keep_alive_`. The child
         // processes will check if `keep_alive_` is being incremented. If it is
         // not incremented for a sufficiently long time, the child will assume
         // the parent process has died.
@@ -269,25 +269,25 @@ public:
 
 private:
     virtual void
-    on_suite_begin(beast::unit_test::suite_info const& info) override;
+    onSuiteBegin(beast::unit_test::SuiteInfo const& info) override;
 
     virtual void
-    on_suite_end() override;
+    onSuiteEnd() override;
 
     virtual void
-    on_case_begin(std::string const& name) override;
+    onCaseBegin(std::string const& name) override;
 
     virtual void
-    on_case_end() override;
+    onCaseEnd() override;
 
     virtual void
-    on_pass() override;
+    onPass() override;
 
     virtual void
-    on_fail(std::string const& reason) override;
+    onFail(std::string const& reason) override;
 
     virtual void
-    on_log(std::string const& s) override;
+    onLog(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
@@ -300,7 +300,7 @@ multi_runner_child::run_multi(Pred pred)
     auto const num_tests_ = suite.size();
     bool failed = false;
 
-    auto get_test = [&]() -> beast::unit_test::suite_info const* {
+    auto get_test = [&]() -> beast::unit_test::SuiteInfo const* {
         auto const cur_test_index = checkoutTestIndex();
         if (cur_test_index >= num_tests_)
             return nullptr;

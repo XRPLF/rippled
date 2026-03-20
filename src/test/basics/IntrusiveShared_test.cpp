@@ -194,12 +194,12 @@ public:
             TIBase::ResetStatesGuard rsg{true};
 
             TIBase b;
-            BEAST_EXPECT(b.use_count() == 1);
+            BEAST_EXPECT(b.useCount() == 1);
             b.addWeakRef();
-            BEAST_EXPECT(b.use_count() == 1);
+            BEAST_EXPECT(b.useCount() == 1);
             auto s = b.releaseStrongRef();
             BEAST_EXPECT(s == ReleaseStrongRefAction::partialDestroy);
-            BEAST_EXPECT(b.use_count() == 0);
+            BEAST_EXPECT(b.useCount() == 0);
             TIBase* pb = &b;
             partialDestructorFinished(&pb);
             BEAST_EXPECT(!pb);
@@ -216,7 +216,7 @@ public:
             auto b = make_SharedIntrusive<TIBase>();
             auto id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(b->use_count() == 1);
+            BEAST_EXPECT(b->useCount() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 strong.push_back(b);
@@ -231,11 +231,11 @@ public:
             b = make_SharedIntrusive<TIBase>();
             id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(b->use_count() == 1);
+            BEAST_EXPECT(b->useCount() == 1);
             for (int i = 0; i < 10; ++i)
             {
                 weak.push_back(b);
-                BEAST_EXPECT(b->use_count() == 1);
+                BEAST_EXPECT(b->useCount() == 1);
             }
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             weak.resize(weak.size() - 1);
@@ -260,10 +260,10 @@ public:
             WeakIntrusive<TIBase> w{b};
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             auto s = w.lock();
-            BEAST_EXPECT(s && s->use_count() == 2);
+            BEAST_EXPECT(s && s->useCount() == 2);
             b.reset();
             BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(s && s->use_count() == 1);
+            BEAST_EXPECT(s && s->useCount() == 1);
             s.reset();
             BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
             BEAST_EXPECT(w.expired());
@@ -280,21 +280,21 @@ public:
             using enum TrackedState;
             using swu = SharedWeakUnion<TIBase>;
             swu b = make_SharedIntrusive<TIBase>();
-            BEAST_EXPECT(b.isStrong() && b.use_count() == 1);
+            BEAST_EXPECT(b.isStrong() && b.useCount() == 1);
             auto id = b.get()->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             swu w = b;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(w.isStrong() && b.use_count() == 2);
+            BEAST_EXPECT(w.isStrong() && b.useCount() == 2);
             w.convertToWeak();
-            BEAST_EXPECT(w.isWeak() && b.use_count() == 1);
+            BEAST_EXPECT(w.isWeak() && b.useCount() == 1);
             swu s = w;
-            BEAST_EXPECT(s.isWeak() && b.use_count() == 1);
+            BEAST_EXPECT(s.isWeak() && b.useCount() == 1);
             s.convertToStrong();
-            BEAST_EXPECT(s.isStrong() && b.use_count() == 2);
+            BEAST_EXPECT(s.isStrong() && b.useCount() == 2);
             b.reset();
             BEAST_EXPECT(TIBase::getState(id) == Alive);
-            BEAST_EXPECT(s.use_count() == 1);
+            BEAST_EXPECT(s.useCount() == 1);
             BEAST_EXPECT(!w.expired());
             s.reset();
             BEAST_EXPECT(TIBase::getState(id) == PartiallyDeleted);
@@ -338,14 +338,14 @@ public:
             // 2) Test self-assignment
             BEAST_EXPECT(union1.isStrong());
             BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
-            int initialRefCount = strong1->use_count();
+            int initialRefCount = strong1->useCount();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
             union1 = union1;  // Self-assignment
 #pragma clang diagnostic pop
             BEAST_EXPECT(union1.isStrong());
             BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
-            BEAST_EXPECT(strong1->use_count() == initialRefCount);
+            BEAST_EXPECT(strong1->useCount() == initialRefCount);
 
             // 3) Test assignment from null union pointer
             union1 = SharedWeakUnion<TIBase>();

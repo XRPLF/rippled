@@ -179,7 +179,7 @@ public:
             if (result.second)
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Logic add fixed '" << name << "' at " << remote_address;
+                    << beast::Leftw(18) << "Logic add fixed '" << name << "' at " << remote_address;
                 return;
             }
         }
@@ -202,7 +202,7 @@ public:
         if (iter == slots_.end())
         {
             // The slot disconnected before we finished the check
-            JLOG(journal_.debug()) << beast::leftw(18) << "Logic tested " << checkedAddress
+            JLOG(journal_.debug()) << beast::Leftw(18) << "Logic tested " << checkedAddress
                                    << " but the connection was closed";
             return;
         }
@@ -236,7 +236,7 @@ public:
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint)
     {
-        JLOG(journal_.debug()) << beast::leftw(18) << "Logic accept" << remote_endpoint
+        JLOG(journal_.debug()) << beast::Leftw(18) << "Logic accept" << remote_endpoint
                                << " on local " << local_endpoint;
 
         std::lock_guard _(lock_);
@@ -247,7 +247,7 @@ public:
             auto const count = connectedAddresses_.count(remote_endpoint.address());
             if (count + 1 > config_.ipLimit)
             {
-                JLOG(journal_.debug()) << beast::leftw(18) << "Logic dropping inbound "
+                JLOG(journal_.debug()) << beast::Leftw(18) << "Logic dropping inbound "
                                        << remote_endpoint << " because of ip limits.";
                 return {SlotImp::ptr(), Result::ipLimitExceeded};
             }
@@ -256,7 +256,7 @@ public:
         // Check for duplicate connection
         if (slots_.find(remote_endpoint) != slots_.end())
         {
-            JLOG(journal_.debug()) << beast::leftw(18) << "Logic dropping " << remote_endpoint
+            JLOG(journal_.debug()) << beast::Leftw(18) << "Logic dropping " << remote_endpoint
                                    << " as duplicate incoming";
             return {SlotImp::ptr(), Result::duplicatePeer};
         }
@@ -266,7 +266,7 @@ public:
             std::make_shared<SlotImp>(
                 local_endpoint, remote_endpoint, fixed(remote_endpoint.address()), clock_));
         // Add slot to table
-        auto const result(slots_.emplace(slot->remote_endpoint(), slot));
+        auto const result(slots_.emplace(slot->remoteEndpoint(), slot));
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
@@ -285,14 +285,14 @@ public:
     std::pair<SlotImp::ptr, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint)
     {
-        JLOG(journal_.debug()) << beast::leftw(18) << "Logic connect " << remote_endpoint;
+        JLOG(journal_.debug()) << beast::Leftw(18) << "Logic connect " << remote_endpoint;
 
         std::lock_guard _(lock_);
 
         // Check for duplicate connection
         if (slots_.find(remote_endpoint) != slots_.end())
         {
-            JLOG(journal_.debug()) << beast::leftw(18) << "Logic dropping " << remote_endpoint
+            JLOG(journal_.debug()) << beast::Leftw(18) << "Logic dropping " << remote_endpoint
                                    << " as duplicate connect";
             return {SlotImp::ptr(), Result::duplicatePeer};
         }
@@ -302,7 +302,7 @@ public:
             std::make_shared<SlotImp>(remote_endpoint, fixed(remote_endpoint), clock_));
 
         // Add slot to table
-        auto const result = slots_.emplace(slot->remote_endpoint(), slot);
+        auto const result = slots_.emplace(slot->remoteEndpoint(), slot);
         // Remote address must not already exist
         XRPL_ASSERT(
             result.second,
@@ -330,7 +330,7 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            slots_.find(slot->remoteEndpoint()) != slots_.end(),
             "xrpl::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->local_endpoint(local_endpoint);
@@ -341,7 +341,7 @@ public:
             if (iter != slots_.end())
             {
                 XRPL_ASSERT(
-                    iter->second->local_endpoint() == slot->remote_endpoint(),
+                    iter->second->localEndpoint() == slot->remoteEndpoint(),
                     "xrpl::PeerFinder::Logic::onConnected : local and remote "
                     "endpoints do match");
                 JLOG(journal.warn()) << "Logic dropping as self connect";
@@ -351,7 +351,7 @@ public:
 
         // Update counts
         counts_.remove(*slot);
-        slot->state(Slot::connected);
+        slot->state(Slot::Connected);
         counts_.add(*slot);
         return true;
     }
@@ -362,18 +362,18 @@ public:
         beast::WrappedSink sink{journal_.sink(), slot->prefix()};
         beast::Journal journal{sink};
 
-        JLOG(journal.debug()) << "Logic handshake " << slot->remote_endpoint() << " with "
+        JLOG(journal.debug()) << "Logic handshake " << slot->remoteEndpoint() << " with "
                               << (reserved ? "reserved " : "") << "key " << key;
 
         std::lock_guard _(lock_);
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            slots_.find(slot->remoteEndpoint()) != slots_.end(),
             "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
-            slot->state() == Slot::accept || slot->state() == Slot::connected,
+            slot->state() == Slot::Accept || slot->state() == Slot::Connected,
             "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
@@ -390,7 +390,7 @@ public:
         if (!counts_.can_activate(*slot))
         {
             if (!slot->inbound())
-                bootcache_.on_success(slot->remote_endpoint());
+                bootcache_.on_success(slot->remoteEndpoint());
             if (slot->inbound() && counts_.in_max() == 0)
                 return Result::inboundDisabled;
             return Result::full;
@@ -411,12 +411,12 @@ public:
         counts_.add(*slot);
 
         if (!slot->inbound())
-            bootcache_.on_success(slot->remote_endpoint());
+            bootcache_.on_success(slot->remoteEndpoint());
 
         // Mark fixed slot success
         if (slot->fixed() && !slot->inbound())
         {
-            auto iter(fixed_.find(slot->remote_endpoint()));
+            auto iter(fixed_.find(slot->remoteEndpoint()));
             if (iter == fixed_.end())
                 LogicError(
                     "PeerFinder::Logic::activate(): remote_endpoint "
@@ -467,7 +467,7 @@ public:
         // Make sure we don't connect to already-connected entries.
         for (auto const& s : slots_)
         {
-            auto const result(squelches_.insert(s.second->remote_endpoint().address()));
+            auto const result(squelches_.insert(s.second->remoteEndpoint().address()));
             if (!result.second)
                 squelches_.touch(result.first);
         }
@@ -484,14 +484,14 @@ public:
             if (!h.list().empty())
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Logic connect " << h.list().size() << " fixed";
+                    << beast::Leftw(18) << "Logic connect " << h.list().size() << " fixed";
                 return h.list();
             }
 
             if (counts_.attempts() > 0)
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
+                    << beast::Leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
                 return none;
             }
         }
@@ -512,14 +512,14 @@ public:
             if (!h.list().empty())
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Logic connect " << h.list().size() << " live "
+                    << beast::Leftw(18) << "Logic connect " << h.list().size() << " live "
                     << ((h.list().size() > 1) ? "endpoints" : "endpoint");
                 return h.list();
             }
             else if (counts_.attempts() > 0)
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
+                    << beast::Leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
                 return none;
             }
         }
@@ -545,7 +545,7 @@ public:
 
         if (!h.list().empty())
         {
-            JLOG(journal_.debug()) << beast::leftw(18) << "Logic connect " << h.list().size()
+            JLOG(journal_.debug()) << beast::Leftw(18) << "Logic connect " << h.list().size()
                                    << " boot " << ((h.list().size() > 1) ? "addresses" : "address");
             return h.list();
         }
@@ -572,7 +572,7 @@ public:
                 slots.reserve(slots_.size());
                 std::for_each(
                     slots_.cbegin(), slots_.cend(), [&slots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::active)
+                        if (value.second->state() == Slot::Active)
                             slots.emplace_back(value.second);
                     });
                 std::shuffle(slots.begin(), slots.end(), default_prng());
@@ -629,7 +629,7 @@ public:
                 result.push_back(std::make_pair(slot, list));
             }
 
-            whenBroadcast_ = now + Tuning::secondsPerMessage;
+            whenBroadcast_ = now + Tuning::kSECONDS_PER_MESSAGE;
         }
 
         return result;
@@ -648,7 +648,7 @@ public:
             entry.second->expire();
 
         // Expire the recent attempts table
-        beast::expire(squelches_, Tuning::recentAttemptDuration);
+        beast::expire(squelches_, Tuning::kRECENT_ATTEMPT_DURATION);
 
         bootcache_.periodicActivity();
     }
@@ -665,9 +665,9 @@ public:
             Endpoint& ep(*iter);
 
             // Enforce hop limit
-            if (ep.hops > Tuning::maxHops)
+            if (ep.hops > Tuning::kMAX_HOPS)
             {
-                JLOG(journal_.debug()) << beast::leftw(18) << "Endpoints drop " << ep.address
+                JLOG(journal_.debug()) << beast::Leftw(18) << "Endpoints drop " << ep.address
                                        << " for excess hops " << ep.hops;
                 iter = list.erase(iter);
                 continue;
@@ -680,12 +680,12 @@ public:
                 {
                     // Fill in our neighbors remote address
                     neighbor = true;
-                    ep.address = slot->remote_endpoint().at_port(ep.address.port());
+                    ep.address = slot->remoteEndpoint().at_port(ep.address.port());
                 }
                 else
                 {
                     JLOG(journal_.debug())
-                        << beast::leftw(18) << "Endpoints drop " << ep.address << " for extra self";
+                        << beast::Leftw(18) << "Endpoints drop " << ep.address << " for extra self";
                     iter = list.erase(iter);
                     continue;
                 }
@@ -695,7 +695,7 @@ public:
             if (!is_valid_address(ep.address))
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Endpoints drop " << ep.address << " as invalid";
+                    << beast::Leftw(18) << "Endpoints drop " << ep.address << " as invalid";
                 iter = list.erase(iter);
                 continue;
             }
@@ -706,7 +706,7 @@ public:
                 }))
             {
                 JLOG(journal_.debug())
-                    << beast::leftw(18) << "Endpoints drop " << ep.address << " as duplicate";
+                    << beast::Leftw(18) << "Endpoints drop " << ep.address << " as duplicate";
                 iter = list.erase(iter);
                 continue;
             }
@@ -727,10 +727,10 @@ public:
         beast::Journal journal{sink};
 
         // If we're sent too many endpoints, sample them at random:
-        if (list.size() > Tuning::numberOfEndpointsMax)
+        if (list.size() > Tuning::kNUMBER_OF_ENDPOINTS_MAX)
         {
             std::shuffle(list.begin(), list.end(), default_prng());
-            list.resize(Tuning::numberOfEndpointsMax);
+            list.resize(Tuning::kNUMBER_OF_ENDPOINTS_MAX);
         }
 
         JLOG(journal.trace()) << "Endpoints contained " << list.size()
@@ -740,12 +740,12 @@ public:
 
         // The object must exist in our table
         XRPL_ASSERT(
-            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            slots_.find(slot->remoteEndpoint()) != slots_.end(),
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!
         XRPL_ASSERT(
-            slot->state() == Slot::active,
+            slot->state() == Slot::Active,
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(clock_.now());
@@ -782,12 +782,12 @@ public:
                     // Test the slot's listening port before
                     // adding it to the livecache for the first time.
                     //
-                    checker_.async_connect(
+                    checker_.asyncConnect(
                         ep.address,
                         std::bind(
                             &Logic::checkComplete,
                             this,
-                            slot->remote_endpoint(),
+                            slot->remoteEndpoint(),
                             ep.address,
                             std::placeholders::_1));
 
@@ -812,7 +812,7 @@ public:
             bootcache_.insert(ep.address);
         }
 
-        slot->whenAcceptEndpoints = now + Tuning::secondsPerMessage;
+        slot->whenAcceptEndpoints = now + Tuning::kSECONDS_PER_MESSAGE;
     }
 
     //--------------------------------------------------------------------------
@@ -821,7 +821,7 @@ public:
     remove(SlotImp::ptr const& slot)
     {
         {
-            auto const iter = slots_.find(slot->remote_endpoint());
+            auto const iter = slots_.find(slot->remoteEndpoint());
             // The slot must exist in the table
             if (iter == slots_.end())
                 LogicError(
@@ -832,9 +832,9 @@ public:
             slots_.erase(iter);
         }
         // Remove the key if present
-        if (slot->public_key() != std::nullopt)
+        if (slot->publicKey() != std::nullopt)
         {
-            auto const iter = keys_.find(*slot->public_key());
+            auto const iter = keys_.find(*slot->publicKey());
             // Key must exist
             if (iter == keys_.end())
                 LogicError(
@@ -845,7 +845,7 @@ public:
         }
         // Remove from connected address table
         {
-            auto const iter(connectedAddresses_.find(slot->remote_endpoint().address()));
+            auto const iter(connectedAddresses_.find(slot->remoteEndpoint().address()));
             // Address must exist
             if (iter == connectedAddresses_.end())
                 LogicError(
@@ -870,9 +870,9 @@ public:
         beast::Journal journal{sink};
 
         // Mark fixed slot failure
-        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::active)
+        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::Active)
         {
-            auto iter(fixed_.find(slot->remote_endpoint()));
+            auto iter(fixed_.find(slot->remoteEndpoint()));
             if (iter == fixed_.end())
                 LogicError(
                     "PeerFinder::Logic::on_closed(): remote_endpoint "
@@ -885,13 +885,13 @@ public:
         // Do state specific bookkeeping
         switch (slot->state())
         {
-            case Slot::accept:
+            case Slot::Accept:
                 JLOG(journal.trace()) << "Logic accept failed";
                 break;
 
-            case Slot::connect:
-            case Slot::connected:
-                bootcache_.on_failure(slot->remote_endpoint());
+            case Slot::Connect:
+            case Slot::Connected:
+                bootcache_.on_failure(slot->remoteEndpoint());
                 // VFALCO TODO If the address exists in the ephemeral/live
                 //             endpoint livecache then we should mark the
                 //             failure
@@ -899,11 +899,11 @@ public:
                 // avoid propagating the address.
                 break;
 
-            case Slot::active:
+            case Slot::Active:
                 JLOG(journal.trace()) << "Logic close";
                 break;
 
-            case Slot::closing:
+            case Slot::Closing:
                 JLOG(journal.trace()) << "Logic finished";
                 break;
 
@@ -922,7 +922,7 @@ public:
     {
         std::lock_guard _(lock_);
 
-        bootcache_.on_failure(slot->remote_endpoint());
+        bootcache_.on_failure(slot->remoteEndpoint());
     }
 
     // Insert a set of redirect IP addresses into the Bootcache
@@ -1048,14 +1048,14 @@ public:
         if (!results.error)
         {
             int const count(addBootcacheAddresses(results.addresses));
-            JLOG(journal_.info()) << beast::leftw(18) << "Logic added " << count << " new "
+            JLOG(journal_.info()) << beast::Leftw(18) << "Logic added " << count << " new "
                                   << ((count == 1) ? "address" : "addresses") << " from "
                                   << source->name();
         }
         else
         {
             JLOG(journal_.error())
-                << beast::leftw(18) << "Logic failed "
+                << beast::Leftw(18) << "Logic failed "
                 << "'" << source->name() << "' fetch, " << results.error.message();
         }
     }
@@ -1092,9 +1092,9 @@ public:
         {
             beast::PropertyStream::Map item(set);
             SlotImp const& slot(*entry.second);
-            if (slot.local_endpoint() != std::nullopt)
-                item["local_address"] = to_string(*slot.local_endpoint());
-            item["remote_address"] = to_string(slot.remote_endpoint());
+            if (slot.localEndpoint() != std::nullopt)
+                item["local_address"] = to_string(*slot.localEndpoint());
+            item["remote_address"] = to_string(slot.remoteEndpoint());
             if (slot.inbound())
                 item["inbound"] = "yes";
             if (slot.fixed())
@@ -1160,15 +1160,15 @@ public:
     {
         switch (state)
         {
-            case Slot::accept:
+            case Slot::Accept:
                 return "accept";
-            case Slot::connect:
+            case Slot::Connect:
                 return "connect";
-            case Slot::connected:
+            case Slot::Connected:
                 return "connected";
-            case Slot::active:
+            case Slot::Active:
                 return "active";
-            case Slot::closing:
+            case Slot::Closing:
                 return "closing";
             default:
                 break;
@@ -1189,11 +1189,11 @@ Logic<Checker>::onRedirects(
 {
     std::lock_guard _(lock_);
     std::size_t n = 0;
-    for (; first != last && n < Tuning::maxRedirects; ++first, ++n)
-        bootcache_.insert(beast::IPAddressConversion::from_asio(*first));
+    for (; first != last && n < Tuning::MaxRedirects; ++first, ++n)
+        bootcache_.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {
-        JLOG(journal_.trace()) << beast::leftw(18) << "Logic add " << n << " redirect IPs from "
+        JLOG(journal_.trace()) << beast::Leftw(18) << "Logic add " << n << " redirect IPs from "
                                << remote_address;
     }
 }

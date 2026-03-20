@@ -947,7 +947,7 @@ doLedgerEntry(RPC::JsonContext& context)
     }
     else
     {
-        jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
+        jvResult[jss::node] = sleNode->getJson(JsonOptions::kNONE);
     }
 
     return jvResult;

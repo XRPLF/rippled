@@ -37,10 +37,10 @@ LedgerHandler::check()
     bool const ownerFunds = params[jss::owner_funds].asBool();
     bool const queue = params[jss::queue].asBool();
 
-    options_ = (full ? LedgerFill::full : 0) | (expand ? LedgerFill::expand : 0) |
-        (transactions ? LedgerFill::dumpTxrp : 0) | (accounts ? LedgerFill::dumpState : 0) |
-        (binary ? LedgerFill::binary : 0) | (ownerFunds ? LedgerFill::ownerFunds : 0) |
-        (queue ? LedgerFill::dumpQueue : 0);
+    options_ = (full ? LedgerFill::Full : 0) | (expand ? LedgerFill::Expand : 0) |
+        (transactions ? LedgerFill::DumpTxrp : 0) | (accounts ? LedgerFill::DumpState : 0) |
+        (binary ? LedgerFill::Binary : 0) | (ownerFunds ? LedgerFill::OwnerFunds : 0) |
+        (queue ? LedgerFill::DumpQueue : 0);
 
     if (full || accounts)
     {

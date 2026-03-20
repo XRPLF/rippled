@@ -162,7 +162,7 @@ public:
 
     /** Return the strong count */
     std::size_t
-    use_count() const;
+    useCount() const;
 
     template <class TT, class... Args>
     friend SharedIntrusive<TT>
@@ -360,7 +360,7 @@ public:
      * return 0
      */
     std::size_t
-    use_count() const;
+    useCount() const;
 
     /** Return true if there is a non-zero strong count. */
     bool

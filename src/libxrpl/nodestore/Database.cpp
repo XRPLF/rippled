@@ -74,7 +74,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::async);
+                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -86,7 +86,7 @@ Database::Database(
                             req.second(
                                 (seqn == req.first) || isSameDB(req.first, seqn)
                                     ? obj
-                                    : fetchNodeObject(hash, req.first, FetchType::async));
+                                    : fetchNodeObject(hash, req.first, FetchType::Async));
                         }
                     }
 
@@ -190,7 +190,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
         batch.clear();
     };
 
-    srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
+    srcDB.forEach([&](std::shared_ptr<NodeObject> nodeObject) {
         XRPL_ASSERT(nodeObject, "xrpl::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;

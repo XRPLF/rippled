@@ -13,7 +13,7 @@ namespace detail {
     provide additional behavior.
 */
 template <class Container>
-class const_container
+class ConstContainer
 {
 private:
     using cont_type = Container;

@@ -5,39 +5,39 @@ namespace test {
 
 namespace jtx {
 
-struct none_t
+struct NoneT
 {
-    none_t()
+    NoneT()
     {
     }
 };
-static none_t const none;
+static NoneT const kNONE;
 
-struct autofill_t
+struct AutofillT
 {
-    autofill_t()
+    AutofillT()
     {
     }
 };
-static autofill_t const autofill;
+static AutofillT const kAUTOFILL;
 
-struct disabled_t
+struct DisabledT
 {
-    disabled_t()
+    DisabledT()
     {
     }
 };
-static disabled_t const disabled;
+static DisabledT const kDISABLED;
 
-/** Used for fee() calls that use an owner reserve increment */
-struct increment_t
+/** Used for Fee() calls that use an owner reserve kINCREMENT */
+struct IncrementT
 {
-    increment_t()
+    IncrementT()
     {
     }
 };
 
-static increment_t const increment;
+static IncrementT const kINCREMENT;
 
 }  // namespace jtx
 

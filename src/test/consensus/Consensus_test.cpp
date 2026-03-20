@@ -615,7 +615,7 @@ public:
         slow.connect(network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
         // Run to the ledger *prior* to decreasing the resolution
-        sim.run(increaseLedgerTimeResolutionEvery - 2);
+        sim.run(kINCREASE_LEDGER_TIME_RESOLUTION_EVERY - 2);
 
         // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
@@ -642,7 +642,7 @@ public:
             when += 1s;
         // Advance the clock without consensus running (IS THIS WHAT
         // PREVENTS IT IN PRACTICE?)
-        sim.scheduler.step_for(NetClock::time_point{when} - network[0]->now());
+        sim.scheduler.stepFor(NetClock::time_point{when} - network[0]->now());
 
         // Run one more ledger with 30s resolution
         sim.run(1);

@@ -7,12 +7,12 @@
 namespace xrpl {
 namespace NodeStore {
 
-enum class FetchType { synchronous, async };
+enum class FetchType { Synchronous, Async };
 
 /** Contains information about a fetch operation. */
 struct FetchReport
 {
-    explicit FetchReport(FetchType fetchType_) : fetchType(fetchType_)
+    explicit FetchReport(FetchType fetchType) : fetchType(fetchType)
     {
     }
 

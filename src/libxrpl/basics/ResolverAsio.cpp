@@ -180,7 +180,7 @@ public:
     }
 
     void
-    stop_async() override
+    stopAsync() override
     {
         if (stop_called.exchange(true) == false)
         {
@@ -196,7 +196,7 @@ public:
     void
     stop() override
     {
-        stop_async();
+        stopAsync();
 
         JLOG(journal.debug()) << "Waiting to stop";
         std::unique_lock<std::mutex> lk{mut};
@@ -257,7 +257,7 @@ public:
         {
             while (iter != results.end())
             {
-                addresses.push_back(beast::IPAddressConversion::from_asio(*iter));
+                addresses.push_back(beast::IPAddressConversion::fromAsio(*iter));
                 ++iter;
             }
         }

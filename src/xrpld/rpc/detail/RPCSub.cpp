@@ -192,7 +192,7 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 }
 
 std::shared_ptr<RPCSub>
-make_RPCSub(
+makeRPCSub(
     InfoSub::Source& source,
     boost::asio::io_context& ioContext,
     JobQueue& jobQueue,

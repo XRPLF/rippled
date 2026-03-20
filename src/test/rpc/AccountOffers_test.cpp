@@ -22,7 +22,7 @@ public:
         testcase("Non-Admin Min Limit");
 
         using namespace jtx;
-        Env env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(noAdmin)};
         Account const gw("G1");
         auto const usdGw = gw["USD"];
         Account const bob("bob");
@@ -66,7 +66,7 @@ public:
         testcase(std::string("Sequential - ") + (asAdmin ? "admin" : "non-admin"));
 
         using namespace jtx;
-        Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
+        Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account const gw("G1");
         auto const usdGw = gw["USD"];
         Account const bob("bob");

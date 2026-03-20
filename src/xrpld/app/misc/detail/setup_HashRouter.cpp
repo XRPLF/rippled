@@ -6,7 +6,7 @@
 namespace xrpl {
 
 HashRouter::Setup
-setup_HashRouter(Config const& config)
+setupHashRouter(Config const& config)
 {
     using namespace std::chrono;
 
