@@ -12,24 +12,6 @@
 namespace xrpl {
 
 class STTx;
-/**
- * We have both transaction type permissions and granular type permissions.
- * Since we will reuse the TransactionFormats to parse the Transaction
- * Permissions, only the GranularPermissionType is defined here. To prevent
- * conflicts with TxType, the GranularPermissionType is always set to a value
- * greater than the maximum value of uint16.
- */
-// enum GranularPermissionType : std::uint32_t {
-// #pragma push_macro("PERMISSION")
-// #undef PERMISSION
-
-// #define PERMISSION(type, txType, value, ...) type = value,
-
-// #include <xrpl/protocol/detail/permissions.macro>
-
-// #undef PERMISSION
-// #pragma pop_macro("PERMISSION")
-// };
 
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("PERMISSION")
@@ -38,7 +20,7 @@ enum GranularPermissionType : std::uint32_t {
 #undef GRANULAR_TEMPLATE
 
 #define PERMISSION(name, txType, value) name = value,
-#define GRANULAR_TEMPLATE(...)
+#define GRANULAR_TEMPLATE(txType, allowedFlags, allowedFields)
 
 #include <xrpl/protocol/detail/permissions.macro>
 

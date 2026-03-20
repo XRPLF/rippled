@@ -40,7 +40,7 @@ Permission::Permission()
 #undef GRANULAR_TEMPLATE
 
 #define PERMISSION(type, txType, value) {#type, type},
-#define GRANULAR_TEMPLATE(...)
+#define GRANULAR_TEMPLATE(txType, allowedFlags, allowedFields)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
