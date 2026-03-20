@@ -374,21 +374,27 @@ See the "Verification Queries" section below.
 
 ## Expected Span Catalog
 
-All 12 production span names instrumented across Phases 2-4:
+All 16 production span names instrumented across Phases 2-5:
 
-| Span Name                   | Source File           | Phase | Key Attributes                                                                    | How to Trigger            |
-| --------------------------- | --------------------- | ----- | --------------------------------------------------------------------------------- | ------------------------- |
-| `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                | Any HTTP RPC call         |
-| `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                | Any HTTP RPC call         |
-| `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                | WebSocket RPC message     |
-| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                           | Any RPC command           |
-| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                   | Submit transaction        |
-| `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                    | Peer relays transaction   |
-| `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                            | Consensus proposing phase |
-| `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                | Ledger close event        |
-| `consensus.accept`          | RCLConsensus.cpp:395  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                        | Ledger accepted           |
-| `consensus.validation.send` | RCLConsensus.cpp:753  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                           | Validation sent           |
-| `consensus.accept.apply`    | RCLConsensus.cpp:453  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state` | Ledger apply + close time |
+| Span Name                   | Source File           | Phase | Key Attributes                                                                           | How to Trigger            |
+| --------------------------- | --------------------- | ----- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| `rpc.request`               | ServerHandler.cpp:271 | 2     | --                                                                                       | Any HTTP RPC call         |
+| `rpc.process`               | ServerHandler.cpp:573 | 2     | --                                                                                       | Any HTTP RPC call         |
+| `rpc.ws_message`            | ServerHandler.cpp:384 | 2     | --                                                                                       | WebSocket RPC message     |
+| `rpc.command.<name>`        | RPCHandler.cpp:161    | 2     | `xrpl.rpc.command`, `xrpl.rpc.version`, `xrpl.rpc.role`                                  | Any RPC command           |
+| `tx.process`                | NetworkOPs.cpp:1227   | 3     | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                          | Submit transaction        |
+| `tx.receive`                | PeerImp.cpp:1273      | 3     | `xrpl.peer.id`                                                                           | Peer relays transaction   |
+| `consensus.proposal.send`   | RCLConsensus.cpp:177  | 4     | `xrpl.consensus.round`                                                                   | Consensus proposing phase |
+| `consensus.ledger_close`    | RCLConsensus.cpp:282  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                       | Ledger close event        |
+| `consensus.accept`          | RCLConsensus.cpp:395  | 4     | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                               | Ledger accepted           |
+| `consensus.validation.send` | RCLConsensus.cpp:753  | 4     | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                  | Validation sent           |
+| `consensus.accept.apply`    | RCLConsensus.cpp:453  | 4     | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`        | Ledger apply + close time |
+| `tx.apply`                  | BuildLedger.cpp:88    | 5     | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                                          | Ledger close (tx set)     |
+| `ledger.build`              | BuildLedger.cpp:31    | 5     | `xrpl.ledger.seq`, `xrpl.ledger.close_time`, `close_time_correct`, `close_resolution_ms` | Ledger build              |
+| `ledger.validate`           | LedgerMaster.cpp:915  | 5     | `xrpl.ledger.seq`, `xrpl.ledger.validations`                                             | Ledger validated          |
+| `ledger.store`              | LedgerMaster.cpp:409  | 5     | `xrpl.ledger.seq`                                                                        | Ledger stored             |
+| `peer.proposal.receive`     | PeerImp.cpp:1667      | 5     | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`                                             | Peer sends proposal       |
+| `peer.validation.receive`   | PeerImp.cpp:2264      | 5     | `xrpl.peer.id`, `xrpl.peer.validation.trusted`                                           | Peer sends validation     |
 
 ---
 
@@ -407,10 +413,12 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 # Query traces by operation
 for op in "rpc.request" "rpc.process" \
           "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
-          "tx.process" "tx.receive" \
+          "tx.process" "tx.receive" "tx.apply" \
           "consensus.proposal.send" "consensus.ledger_close" \
           "consensus.accept" "consensus.accept.apply" \
-          "consensus.validation.send"; do
+          "consensus.validation.send" \
+          "ledger.build" "ledger.validate" "ledger.store" \
+          "peer.proposal.receive" "peer.validation.receive"; do
   count=$(curl -s "$TEMPO/api/search" \
     --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
     --data-urlencode "limit=5" \
@@ -445,9 +453,11 @@ Open http://localhost:3000 (anonymous admin access enabled).
 
 Pre-configured dashboards:
 
-- **RPC Performance**: Request rates, latency percentiles by command
-- **Transaction Overview**: Transaction processing rates and paths
-- **Consensus Health**: Consensus round duration and proposer counts
+- **RPC Performance**: Request rates, latency percentiles by command, top commands, WebSocket rate
+- **Transaction Overview**: Transaction processing rates, apply duration, peer relay, failed tx rate
+- **Consensus Health**: Consensus round duration, proposer counts, mode tracking, accept heatmap
+- **Ledger Operations**: Build/validate/store rates and durations, TX apply metrics
+- **Peer Network**: Proposal/validation receive rates, trusted vs untrusted breakdown (requires `trace_peer=1`)
 
 Pre-configured datasources:
 

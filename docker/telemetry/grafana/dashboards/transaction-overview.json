@@ -10,6 +10,7 @@
   "panels": [
     {
       "title": "Transaction Processing Rate",
+      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp:1227) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp:1273) fires when a raw transaction message arrives from a peer before deduplication.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -17,31 +18,45 @@
         "x": 0,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m]))",
-          "legendFormat": "tx.process/sec"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m]))",
+          "legendFormat": "tx.process / Sec [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\"}[5m]))",
-          "legendFormat": "tx.receive/sec"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\"}[5m]))",
+          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
       }
     },
     {
       "title": "Transaction Processing Latency",
+      "description": "p95 and p50 latency of transaction processing (tx.process span). Measures the time from when a transaction enters processTransaction() to completion. Computed via histogram_quantile() over the spanmetrics duration histogram with a 5m rate window.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -49,31 +64,45 @@
         "x": 12,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m])))",
-          "legendFormat": "p95"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m])))",
+          "legendFormat": "P95 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m])))",
-          "legendFormat": "p50"
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m])))",
+          "legendFormat": "P50 [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
       }
     },
     {
       "title": "Transaction Path Distribution",
+      "description": "Breakdown of transactions by origin path. The xrpl.tx.local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -81,18 +110,25 @@
         "x": 0,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_tx_local=~\"$tx_origin\", span_name=\"tx.process\"}[5m]))",
-          "legendFormat": "local={{xrpl_tx_local}}"
+          "expr": "sum by (xrpl_tx_local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_tx_local=~\"$tx_origin\", span_name=\"tx.process\"}[5m]))",
+          "legendFormat": "Local = {{xrpl_tx_local}} [{{exported_instance}}]"
         }
       ]
     },
     {
       "title": "Transaction Receive vs Suppressed",
+      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp:1273). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -100,18 +136,194 @@
         "x": 12,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\"}[5m]))",
-          "legendFormat": "total received"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\"}[5m]))",
+          "legendFormat": "Total Received [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Processing Duration Heatmap",
+      "description": "Heatmap showing the distribution of tx.process span durations across histogram buckets over time. Each cell represents the count of transactions that completed within that latency bucket in a 5m window. Reveals whether processing times are consistent or exhibit multi-modal patterns.",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "yAxis": {
+          "axisLabel": "Duration (ms)"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ]
+    },
+    {
+      "title": "Transaction Apply Duration per Ledger",
+      "description": "p95 and p50 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp:88) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "P95 tx.apply [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "P50 tx.apply [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Transaction Receive Rate",
+      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp:1273) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\"}[5m]))",
+          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Apply Failed Rate",
+      "description": "Rate of tx.apply spans completing with error status, indicating transaction application failures during ledger building. The span records xrpl.ledger.tx_failed as an attribute. Thresholds: green < 0.1/sec, yellow 0.1-1/sec, red > 1/sec. Some failures are normal (e.g. conflicting offers) but sustained high rates may indicate issues.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "legendFormat": "Failed / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
         },
         "overrides": []
       }
@@ -124,7 +336,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {

@@ -10,6 +10,7 @@
   "panels": [
     {
       "title": "Consensus Round Duration",
+      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp:395) measures the time to process an accepted ledger including transaction application and state finalization. The span carries xrpl.consensus.proposers and xrpl.consensus.round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -17,31 +18,45 @@
         "x": 0,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
-          "legendFormat": "P95 Round Duration"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
+          "legendFormat": "P95 Round Duration [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
-          "legendFormat": "P50 Round Duration"
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
+          "legendFormat": "P50 Round Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
       }
     },
     {
       "title": "Consensus Proposals Sent Rate",
+      "description": "Rate at which this node sends consensus proposals to the network. Sourced from the consensus.proposal.send span (RCLConsensus.cpp:177) which fires each time the node proposes a transaction set. The span carries xrpl.consensus.round identifying the consensus round number. A healthy proposing node should show steady proposal output.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -49,24 +64,38 @@
         "x": 12,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.proposal.send\"}[5m]))",
-          "legendFormat": "Proposals / Sec"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.proposal.send\"}[5m]))",
+          "legendFormat": "Proposals / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops"
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Proposals / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
       }
     },
     {
       "title": "Ledger Close Duration",
+      "description": "p95 duration of the ledger close event. The consensus.ledger_close span (RCLConsensus.cpp:282) measures the time from when consensus triggers a ledger close to completion. Carries xrpl.consensus.ledger.seq and xrpl.consensus.mode attributes. Compare with Consensus Round Duration to understand how close timing relates to overall round time.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -74,24 +103,38 @@
         "x": 0,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.ledger_close\"}[5m])))",
-          "legendFormat": "P95 Close Duration"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.ledger_close\"}[5m])))",
+          "legendFormat": "P95 Close Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms"
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
       }
     },
     {
       "title": "Validation Send Rate",
+      "description": "Rate at which this node sends ledger validations to the network. Sourced from the consensus.validation.send span (RCLConsensus.cpp:753). Each validation confirms the node has fully validated a ledger. The span carries xrpl.consensus.ledger.seq and xrpl.consensus.proposing. Should closely track the ledger close rate when the node is healthy.",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -99,13 +142,19 @@
         "x": 12,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.validation.send\"}[5m]))",
-          "legendFormat": "Validations / Sec"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.validation.send\"}[5m]))",
+          "legendFormat": "Validations / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -130,15 +179,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
-          "legendFormat": "P95 Apply Duration"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "legendFormat": "P95 Apply Duration [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
-          "legendFormat": "P50 Apply Duration"
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "legendFormat": "P50 Apply Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -170,8 +219,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m]))",
-          "legendFormat": "Total Rounds / Sec"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m]))",
+          "legendFormat": "Total Rounds / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -187,6 +236,167 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Consensus Mode Over Time",
+      "description": "Breakdown of consensus ledger close events by the node's consensus mode (Proposing, Observing, Wrong Ledger, Switched Ledger). Grouped by the xrpl.consensus.mode span attribute from consensus.ledger_close. A healthy validator should be predominantly in Proposing mode. Frequent Wrong Ledger or Switched Ledger indicates sync issues.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (xrpl_consensus_mode, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "legendFormat": "{{xrpl_consensus_mode}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Events / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Accept vs Close Rate",
+      "description": "Compares the rate of consensus.accept (ledger accepted after consensus) vs consensus.ledger_close (ledger close initiated). These should track closely in a healthy network. A divergence means some close events are not completing the accept phase, potentially indicating consensus failures or timeouts.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m]))",
+          "legendFormat": "Accepts / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "legendFormat": "Closes / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Events / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Validation vs Close Rate",
+      "description": "Compares the rate of consensus.validation.send vs consensus.ledger_close. Each validated ledger should produce one validation message. If validations lag behind closes, the node may be falling behind on validation or experiencing issues with the validation pipeline.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.validation.send\"}[5m]))",
+          "legendFormat": "Validations / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "legendFormat": "Closes / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Events / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Consensus Accept Duration Heatmap",
+      "description": "Heatmap showing the distribution of consensus.accept span durations across histogram buckets over time. Each cell represents how many accept events fell into that duration bucket in a 5m window. Useful for detecting outlier consensus rounds that take abnormally long.",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "yAxis": {
+          "axisLabel": "Duration (ms)"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
@@ -196,7 +406,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {

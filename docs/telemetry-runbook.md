@@ -75,6 +75,7 @@ All spans instrumented in rippled, grouped by subsystem:
 | ------------ | ------------------- | ----------------------------------------------- | ------------------------------------- |
 | `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path` | Transaction submission and processing |
 | `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`                                  | Transaction received from peer relay  |
+| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed` | Transaction set applied per ledger    |
 
 ### Consensus Spans (Phase 4)
 
@@ -102,6 +103,21 @@ All spans instrumented in rippled, grouped by subsystem:
 {name="consensus.accept.apply"} | xrpl.consensus.ledger.seq = 92345678
 ```
 
+### Ledger Spans (Phase 5)
+
+| Span Name         | Source File          | Attributes                                   | Description                   |
+| ----------------- | -------------------- | -------------------------------------------- | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp:31   | `xrpl.ledger.seq`                            | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp:915 | `xrpl.ledger.seq`, `xrpl.ledger.validations` | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp:409 | `xrpl.ledger.seq`                            | Ledger stored in history      |
+
+### Peer Spans (Phase 5)
+
+| Span Name                 | Source File      | Attributes                                     | Description                   |
+| ------------------------- | ---------------- | ---------------------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp:1667 | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`   | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp:2264 | `xrpl.peer.id`, `xrpl.peer.validation.trusted` | Validation received from peer |
+
 ## Prometheus Metrics (Spanmetrics)
 
 The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in rippled.
@@ -128,12 +144,14 @@ Every metric carries these standard labels:
 
 Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
 
-| Span Attribute        | Metric Label          | Applies To                     |
-| --------------------- | --------------------- | ------------------------------ |
-| `xrpl.rpc.command`    | `xrpl_rpc_command`    | `rpc.command.*` spans          |
-| `xrpl.rpc.status`     | `xrpl_rpc_status`     | `rpc.command.*` spans          |
-| `xrpl.consensus.mode` | `xrpl_consensus_mode` | `consensus.ledger_close` spans |
-| `xrpl.tx.local`       | `xrpl_tx_local`       | `tx.process` spans             |
+| Span Attribute                 | Metric Label                   | Applies To                      |
+| ------------------------------ | ------------------------------ | ------------------------------- |
+| `xrpl.rpc.command`             | `xrpl_rpc_command`             | `rpc.command.*` spans           |
+| `xrpl.rpc.status`              | `xrpl_rpc_status`              | `rpc.command.*` spans           |
+| `xrpl.consensus.mode`          | `xrpl_consensus_mode`          | `consensus.ledger_close` spans  |
+| `xrpl.tx.local`                | `xrpl_tx_local`                | `tx.process` spans              |
+| `xrpl.peer.proposal.trusted`   | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive` spans   |
+| `xrpl.peer.validation.trusted` | `xrpl_peer_validation_trusted` | `peer.validation.receive` spans |
 
 ### Histogram Buckets
 
@@ -145,7 +163,7 @@ Configured in `otel-collector-config.yaml`:
 
 ## Grafana Dashboards
 
-Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Five dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`rippled-rpc-perf`)
 
@@ -155,6 +173,10 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `xrpl_rpc_command`                |
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `xrpl_rpc_command`                                                                                     | `xrpl_rpc_command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                          | `le` (bucket boundaries)          |
+| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                                                 | —                                 |
+| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                                  | `status_code`                     |
+| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `xrpl_rpc_command`                                                                                                              | `xrpl_rpc_command`                |
+| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                              | —                                 |
 
 ### Transaction Overview (`rippled-transactions`)
 
@@ -164,32 +186,71 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —               |
 | Transaction Path Distribution     | piechart   | `sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `xrpl_tx_local` |
 | Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                          | —               |
+| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                               | `le`            |
+| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                        | —               |
+| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                            | —               |
+| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                          | `status_code`   |
 
 ### Consensus Health (`rippled-consensus`)
 
-| Panel                         | Type       | PromQL                                                                             | Labels Used |
-| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ----------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —           |
-| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —           |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —           |
-| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —           |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —           |
-| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —           |
+| Panel                         | Type       | PromQL                                                                             | Labels Used           |
+| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | --------------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —                     |
+| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —                     |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —                     |
+| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —                     |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —                     |
+| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —                     |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `xrpl_consensus_mode`                                  | `xrpl_consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                | —                     |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                     |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`                  |
+
+### Ledger Operations (`rippled-ledger-ops`)
+
+| Panel                   | Type       | PromQL                                         | Labels Used |
+| ----------------------- | ---------- | ---------------------------------------------- | ----------- |
+| Ledger Build Rate       | stat       | `ledger.build` call rate                       | —           |
+| Ledger Build Duration   | timeseries | p95/p50 of `ledger.build`                      | —           |
+| Ledger Validation Rate  | stat       | `ledger.validate` call rate                    | —           |
+| Build Duration Heatmap  | heatmap    | `ledger.build` histogram buckets               | `le`        |
+| TX Apply Duration       | timeseries | p95/p50 of `tx.apply`                          | —           |
+| TX Apply Rate           | timeseries | `tx.apply` call rate                           | —           |
+| Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
+| Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
+
+### Peer Network (`rippled-peer-net`)
+
+Requires `trace_peer=1` in the `[telemetry]` config section.
+
+| Panel                            | Type       | PromQL                            | Labels Used                    |
+| -------------------------------- | ---------- | --------------------------------- | ------------------------------ |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate      | —                              |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate    | —                              |
+| Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
 
 ### Span → Metric → Dashboard Summary
 
 | Span Name                   | Prometheus Metric Filter                  | Grafana Dashboard                             |
 | --------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `rpc.request`               | `{span_name="rpc.request"}`               | — (available but not paneled)                 |
-| `rpc.process`               | `{span_name="rpc.process"}`               | — (available but not paneled)                 |
-| `rpc.command.*`             | `{span_name=~"rpc.command.*"}`            | RPC Performance (all 4 panels)                |
-| `tx.process`                | `{span_name="tx.process"}`                | Transaction Overview (3 panels)               |
-| `tx.receive`                | `{span_name="tx.receive"}`                | Transaction Overview (2 panels)               |
-| `consensus.accept`          | `{span_name="consensus.accept"}`          | Consensus Health (Round Duration)             |
+| `rpc.request`               | `{span_name="rpc.request"}`               | RPC Performance (Overall Throughput)          |
+| `rpc.process`               | `{span_name="rpc.process"}`               | RPC Performance (Overall Throughput)          |
+| `rpc.ws_message`            | `{span_name="rpc.ws_message"}`            | RPC Performance (WebSocket Rate)              |
+| `rpc.command.*`             | `{span_name=~"rpc.command.*"}`            | RPC Performance (Rate, Latency, Error, Top)   |
+| `tx.process`                | `{span_name="tx.process"}`                | Transaction Overview (Rate, Latency, Heatmap) |
+| `tx.receive`                | `{span_name="tx.receive"}`                | Transaction Overview (Rate, Receive)          |
+| `tx.apply`                  | `{span_name="tx.apply"}`                  | Transaction Overview + Ledger Ops (Apply)     |
+| `consensus.accept`          | `{span_name="consensus.accept"}`          | Consensus Health (Duration, Rate, Heatmap)    |
 | `consensus.proposal.send`   | `{span_name="consensus.proposal.send"}`   | Consensus Health (Proposals Rate)             |
-| `consensus.ledger_close`    | `{span_name="consensus.ledger_close"}`    | Consensus Health (Close Duration)             |
+| `consensus.ledger_close`    | `{span_name="consensus.ledger_close"}`    | Consensus Health (Close, Mode)                |
 | `consensus.validation.send` | `{span_name="consensus.validation.send"}` | Consensus Health (Validation Rate)            |
 | `consensus.accept.apply`    | `{span_name="consensus.accept.apply"}`    | Consensus Health (Apply Duration, Close Time) |
+| `ledger.build`              | `{span_name="ledger.build"}`              | Ledger Ops (Build Rate, Duration, Heatmap)    |
+| `ledger.validate`           | `{span_name="ledger.validate"}`           | Ledger Ops (Validation Rate)                  |
+| `ledger.store`              | `{span_name="ledger.store"}`              | Ledger Ops (Store Rate)                       |
+| `peer.proposal.receive`     | `{span_name="peer.proposal.receive"}`     | Peer Network (Rate, Trusted/Untrusted)        |
+| `peer.validation.receive`   | `{span_name="peer.validation.receive"}`   | Peer Network (Rate, Trusted/Untrusted)        |
 
 ## Troubleshooting
 
