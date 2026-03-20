@@ -509,3 +509,77 @@ cmake --preset default -Dtelemetry=OFF
 ```
 
 When telemetry is compiled out, all trace macros expand to no-ops with zero overhead.
+
+## Validating Telemetry Stack
+
+After deploying telemetry, use the Phase 10 workload tools to validate the full stack end-to-end.
+
+### Quick Validation
+
+```bash
+# Run the full validation suite (starts cluster, generates load, validates):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+
+# Check the report:
+cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
+```
+
+### What Gets Validated
+
+| Category   | Checks         | Description                                              |
+| ---------- | -------------- | -------------------------------------------------------- |
+| Spans      | 16+ span types | All span names appear in Jaeger with required attributes |
+| Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics     |
+| Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works  |
+| Dashboards | 10 dashboards  | All Grafana dashboards load without errors               |
+
+### Running Individual Tools
+
+```bash
+# RPC load only:
+python3 docker/telemetry/workload/rpc_load_generator.py \
+    --endpoints ws://localhost:6006 --rate 50 --duration 120
+
+# Transaction mix only:
+python3 docker/telemetry/workload/tx_submitter.py \
+    --endpoint ws://localhost:6006 --tps 5 --duration 120
+
+# Validation only (assumes load already ran):
+python3 docker/telemetry/workload/validate_telemetry.py \
+    --report /tmp/report.json
+```
+
+### Interpreting Failures
+
+- **Span failures**: Check that the relevant trace category is enabled in `[telemetry]` config (e.g., `trace_rpc=1`).
+- **Metric failures**: Verify the OTel Collector is running and Prometheus is scraping port 8889. Check `docker compose logs otel-collector`.
+- **Dashboard failures**: Ensure Grafana provisioning is mounted correctly. Check `docker compose logs grafana`.
+
+## Performance Benchmarking
+
+Measure the overhead of the telemetry stack against a baseline:
+
+```bash
+docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
+```
+
+### Benchmark Thresholds
+
+| Metric            | Target | Description                            |
+| ----------------- | ------ | -------------------------------------- |
+| CPU overhead      | < 3%   | Average CPU increase across nodes      |
+| Memory overhead   | < 5MB  | Peak RSS increase per node             |
+| RPC p99 latency   | < 2ms  | Additional p99 latency for server_info |
+| Throughput impact | < 5%   | Reduction in ledger close rate         |
+| Consensus impact  | < 1%   | Increase in consensus round time       |
+
+### Tuning for Production
+
+If benchmarks exceed thresholds:
+
+1. **Reduce sampling**: `sampling_ratio=0.01` (1% of traces)
+2. **Disable peer tracing**: `trace_peer=0` (highest volume category)
+3. **Increase batch delay**: `batch_delay_ms=10000` (less frequent exports)
+4. **Reduce queue size**: `max_queue_size=1024` (back-pressure earlier)
+
+See `docker/telemetry/workload/README.md` for full documentation.

@@ -1,0 +1,242 @@
+# Telemetry Validation CI Workflow
+#
+# Builds rippled with telemetry enabled, runs the multi-node workload
+# harness, validates all telemetry data, and runs performance benchmarks.
+#
+# This is a separate workflow from the main CI. It runs:
+#   - On manual dispatch (workflow_dispatch)
+#   - On pushes to telemetry-related branches
+#
+# The workflow is intentionally heavyweight (builds rippled, starts Docker
+# services, runs a multi-node cluster) — it validates the full telemetry
+# stack end-to-end rather than individual unit tests.
+#
+# Architecture: two jobs to leverage cached dependencies:
+#   1. build-xrpld — runs on a self-hosted runner inside the same container
+#      image the main CI uses (debian-bookworm-gcc-13). This ensures Conan
+#      packages are fetched from the XRPLF remote instead of built from
+#      source, and ccache hits the remote cache.
+#   2. validate-telemetry — runs on ubuntu-latest (which has Docker) to
+#      launch the telemetry stack (OTel collector, Prometheus, Tempo, etc.)
+#      and validate the full pipeline end-to-end.
+
+name: Telemetry Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      rpc_rate:
+        description: "RPC load rate (requests per second)"
+        required: false
+        default: "50"
+      rpc_duration:
+        description: "RPC load duration (seconds)"
+        required: false
+        default: "120"
+      tx_tps:
+        description: "Transaction submit rate (TPS)"
+        required: false
+        default: "5"
+      tx_duration:
+        description: "Transaction submit duration (seconds)"
+        required: false
+        default: "120"
+      run_benchmark:
+        description: "Run performance benchmarks"
+        required: false
+        type: boolean
+        default: false
+
+  push:
+    branches:
+      - "pratik/otel-phase*"
+      - "feature/otel-*"
+      - "feature/telemetry-*"
+    paths:
+      - ".github/workflows/telemetry-validation.yml"
+      - "docker/telemetry/**"
+      - "include/xrpl/basics/Telemetry*.h"
+      - "src/xrpld/app/misc/Telemetry*"
+
+concurrency:
+  group: telemetry-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+
+jobs:
+  # ── Job 1: Build xrpld in the same container the main CI uses ──────
+  # This ensures Conan binary packages are fetched from the XRPLF remote
+  # (matching package IDs) and ccache hits the remote compilation cache.
+  build-xrpld:
+    name: Build xrpld
+    runs-on: [self-hosted, Linux, X64, heavy]
+    container: ghcr.io/xrplf/ci/debian-bookworm:gcc-13-sha-ab4d1f0
+    timeout-minutes: 60
+    env:
+      CCACHE_NAMESPACE: telemetry-validation
+      CCACHE_REMOTE_ONLY: true
+      CCACHE_REMOTE_STORAGE: http://cache.dev.ripplex.io:8080|layout=bazel
+      CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        with:
+          enable_ccache: ${{ github.repository_owner == 'XRPLF' }}
+
+      - name: Print build environment
+        uses: ./.github/actions/print-env
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+        with:
+          subtract: 2
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_nproc: ${{ steps.nproc.outputs.nproc }}
+          build_type: Release
+          log_verbosity: verbose
+
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            ..
+
+      - name: Build xrpld
+        working-directory: ${{ env.BUILD_DIR }}
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+        run: |
+          cmake \
+            --build . \
+            --config Release \
+            --parallel "${BUILD_NPROC}" \
+            --target xrpld
+
+      - name: Show ccache statistics
+        if: ${{ github.repository_owner == 'XRPLF' }}
+        run: ccache --show-stats -vv
+
+      - name: Upload xrpld binary
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: xrpld-telemetry
+          path: ${{ env.BUILD_DIR }}/xrpld
+          retention-days: 1
+          if-no-files-found: error
+
+  # ── Job 2: Run telemetry validation on ubuntu-latest (has Docker) ──
+  validate-telemetry:
+    name: Telemetry Stack Validation
+    needs: build-xrpld
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Python dependencies
+        run: pip3 install -r docker/telemetry/workload/requirements.txt
+
+      - name: Download xrpld binary
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: xrpld-telemetry
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binaries and scripts executable
+        run: |
+          chmod +x ${{ env.BUILD_DIR }}/xrpld
+          chmod +x docker/telemetry/workload/*.sh
+
+      - name: Run full telemetry validation
+        id: validation
+        env:
+          RPC_RATE: ${{ github.event.inputs.rpc_rate || '50' }}
+          RPC_DURATION: ${{ github.event.inputs.rpc_duration || '120' }}
+          TX_TPS: ${{ github.event.inputs.tx_tps || '5' }}
+          TX_DURATION: ${{ github.event.inputs.tx_duration || '120' }}
+          RUN_BENCHMARK: ${{ github.event.inputs.run_benchmark }}
+        run: |
+          ARGS="--xrpld ${{ env.BUILD_DIR }}/xrpld --skip-loki"
+          ARGS="$ARGS --rpc-rate $RPC_RATE"
+          ARGS="$ARGS --rpc-duration $RPC_DURATION"
+          ARGS="$ARGS --tx-tps $TX_TPS"
+          ARGS="$ARGS --tx-duration $TX_DURATION"
+          if [ "$RUN_BENCHMARK" = "true" ]; then
+            ARGS="$ARGS --with-benchmark"
+          fi
+          docker/telemetry/workload/run-full-validation.sh $ARGS
+        # continue-on-error allows subsequent steps (artifact upload,
+        # summary printing) to run even if validation fails. The final
+        # "Check validation result" step re-checks steps.validation.outcome
+        # (the pre-continue-on-error result) and fails the job properly.
+        continue-on-error: true
+
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: telemetry-validation-reports
+          path: /tmp/xrpld-validation/reports/
+          retention-days: 30
+
+      - name: Upload node logs
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: xrpld-node-logs
+          path: /tmp/xrpld-validation/node*/debug.log
+          retention-days: 7
+
+      - name: Print validation summary
+        if: always()
+        run: |
+          REPORT="/tmp/xrpld-validation/reports/validation-report.json"
+          if [ -f "$REPORT" ]; then
+            echo "## Telemetry Validation Results" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            TOTAL=$(jq '.summary.total' "$REPORT")
+            PASSED=$(jq '.summary.passed' "$REPORT")
+            FAILED=$(jq '.summary.failed' "$REPORT")
+            echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total Checks | $TOTAL |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Passed | $PASSED |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Failed | $FAILED |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$FAILED" -gt 0 ]; then
+              echo "### Failed Checks" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              jq -r '.checks[] | select(.passed == false) | "- **\(.name)**: \(.message)"' "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker/telemetry/workload/run-full-validation.sh --cleanup 2>/dev/null || true
+
+      - name: Check validation result
+        if: steps.validation.outcome == 'failure'
+        run: |
+          echo "Telemetry validation failed. Check the uploaded reports for details."
+          exit 1

@@ -1,0 +1,93 @@
+{
+  "description": "Expected metric inventory for rippled telemetry validation. Sourced from 09-data-collection-reference.md.",
+  "spanmetrics": {
+    "description": "SpanMetrics-derived RED metrics from the OTel Collector spanmetrics connector.",
+    "metrics": [
+      "traces_span_metrics_calls_total",
+      "traces_span_metrics_duration_milliseconds_bucket",
+      "traces_span_metrics_duration_milliseconds_count",
+      "traces_span_metrics_duration_milliseconds_sum"
+    ],
+    "required_labels": [
+      "span_name",
+      "status_code",
+      "service_name",
+      "span_kind"
+    ],
+    "dimension_labels": [
+      "xrpl_rpc_command",
+      "xrpl_rpc_status",
+      "xrpl_consensus_mode",
+      "xrpl_tx_local",
+      "xrpl_peer_proposal_trusted",
+      "xrpl_peer_validation_trusted"
+    ]
+  },
+  "statsd_gauges": {
+    "description": "beast::insight gauges emitted via StatsD UDP.",
+    "metrics": [
+      "rippled_LedgerMaster_Validated_Ledger_Age",
+      "rippled_LedgerMaster_Published_Ledger_Age",
+      "rippled_State_Accounting_Full_duration",
+      "rippled_Peer_Finder_Active_Inbound_Peers",
+      "rippled_Peer_Finder_Active_Outbound_Peers",
+      "rippled_jobq_job_count"
+    ]
+  },
+  "statsd_counters": {
+    "description": "beast::insight counters emitted via StatsD UDP. The OTel Prometheus exporter appends _total to monotonic counters.",
+    "metrics": ["rippled_rpc_requests_total", "rippled_ledger_fetches_total"]
+  },
+  "statsd_histograms": {
+    "description": "beast::insight timers/histograms emitted via StatsD UDP.",
+    "metrics": ["rippled_rpc_time", "rippled_rpc_size", "rippled_ios_latency"]
+  },
+  "overlay_traffic": {
+    "description": "Overlay traffic metrics (subset — full list has 45+ categories).",
+    "metrics": [
+      "rippled_total_Bytes_In",
+      "rippled_total_Bytes_Out",
+      "rippled_total_Messages_In",
+      "rippled_total_Messages_Out"
+    ]
+  },
+  "phase9_nodestore": {
+    "description": "Phase 9 NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
+    "metrics": ["nodestore_state"]
+  },
+  "phase9_cache": {
+    "description": "Phase 9 cache hit rate observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+    "metrics": ["cache_metrics"]
+  },
+  "phase9_txq": {
+    "description": "Phase 9 transaction queue observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
+    "metrics": ["txq_metrics"]
+  },
+  "phase9_rpc_method": {
+    "description": "Phase 9 per-RPC-method counters (MetricsRegistry via OTLP).",
+    "metrics": ["rpc_method_started_total", "rpc_method_finished_total"]
+  },
+  "phase9_objects": {
+    "description": "Phase 9 counted object instances observable gauge (MetricsRegistry via OTLP).",
+    "metrics": ["object_count"]
+  },
+  "phase9_load": {
+    "description": "Phase 9 fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
+    "metrics": ["load_factor_metrics"]
+  },
+  "grafana_dashboards": {
+    "description": "All 10 Grafana dashboards that must render data.",
+    "uids": [
+      "rippled-rpc-perf",
+      "rippled-transactions",
+      "rippled-consensus",
+      "rippled-ledger-ops",
+      "rippled-peer-net",
+      "rippled-system-node-health",
+      "rippled-system-network",
+      "rippled-system-rpc",
+      "rippled-system-overlay-detail",
+      "rippled-system-ledger-sync"
+    ]
+  }
+}

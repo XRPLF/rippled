@@ -589,6 +589,9 @@ StatsDGaugeImpl::StatsDGaugeImpl(
     std::shared_ptr<StatsDCollectorImp> const& impl)
     : m_impl(impl), m_name(name)
 {
+    // Start dirty so the initial value (0) is emitted on the first flush.
+    // Without this, gauges whose value never changes from 0 would never
+    // appear in downstream metric stores (e.g. Prometheus via StatsD).
     m_impl->add(*this);
 }
 

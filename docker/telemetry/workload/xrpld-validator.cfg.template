@@ -1,0 +1,94 @@
+# xrpld validator node configuration template for workload harness.
+#
+# Placeholders (replaced by docker-compose entrypoint):
+#   {{NODE_INDEX}}        — Node number (1-based)
+#   {{RPC_PORT}}          — HTTP RPC port
+#   {{WS_PORT}}           — WebSocket port
+#   {{PEER_PORT}}         — Peer protocol port
+#   {{DATA_DIR}}          — Node data directory
+#   {{VALIDATION_SEED}}   — Validator seed from key generation
+#   {{VALIDATORS_FILE}}   — Path to shared validators.txt
+#   {{IPS_FIXED}}         — Peer addresses (one per line)
+#   {{OTEL_ENDPOINT}}     — OTel Collector OTLP/HTTP endpoint
+#   {{STATSD_ADDRESS}}    — StatsD UDP address (host:port)
+#   {{LOG_LEVEL}}         — Log level (debug, info, warning, error)
+
+[server]
+port_rpc
+port_ws
+port_peer
+
+[port_rpc]
+port = {{RPC_PORT}}
+ip = 0.0.0.0
+admin = 0.0.0.0
+protocol = http
+
+[port_ws]
+port = {{WS_PORT}}
+ip = 0.0.0.0
+admin = 0.0.0.0
+protocol = ws
+
+[port_peer]
+port = {{PEER_PORT}}
+ip = 0.0.0.0
+protocol = peer
+
+[node_db]
+type=NuDB
+path={{DATA_DIR}}/nudb
+online_delete=256
+
+[database_path]
+{{DATA_DIR}}/db
+
+[debug_logfile]
+{{DATA_DIR}}/debug.log
+
+[validation_seed]
+{{VALIDATION_SEED}}
+
+[validators_file]
+{{VALIDATORS_FILE}}
+
+[ips_fixed]
+{{IPS_FIXED}}
+
+[peer_private]
+1
+
+# --- OpenTelemetry tracing (all categories enabled) ---
+[telemetry]
+enabled=1
+service_instance_id=validator-{{NODE_INDEX}}
+endpoint={{OTEL_ENDPOINT}}
+exporter=otlp_http
+sampling_ratio=1.0
+batch_size=512
+batch_delay_ms=2000
+max_queue_size=2048
+trace_rpc=1
+trace_transactions=1
+trace_consensus=1
+trace_peer=1
+trace_ledger=1
+
+# --- StatsD metrics (beast::insight) ---
+[insight]
+server=statsd
+address={{STATSD_ADDRESS}}
+prefix=rippled
+
+[rpc_startup]
+{ "command": "log_level", "severity": "{{LOG_LEVEL}}" }
+
+[ssl_verify]
+0
+
+# --- Network tuning for local cluster ---
+[network_id]
+0
+
+[sntp_servers]
+time.google.com

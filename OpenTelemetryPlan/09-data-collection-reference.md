@@ -711,23 +711,46 @@ Tracked types: `Transaction`, `Ledger`, `NodeObject`, `STTx`, `STLedgerEntry`, `
 
 ## 5c. Future: Synthetic Workload Generation & Telemetry Validation (Phase 10)
 
-> **Status**: Planned, not yet implemented.
 > **Plan details**: [06-implementation-phases.md §6.8.3](./06-implementation-phases.md) — motivation, architecture
 > **Task breakdown**: [Phase10_taskList.md](./Phase10_taskList.md) — per-task implementation details
+> **Tools**: [docker/telemetry/workload/](../docker/telemetry/workload/) — RPC load generator, transaction submitter, validation suite, benchmarks
 
 Phase 10 builds a 5-node validator docker-compose harness with RPC load generators, transaction submitters, and automated validation scripts that verify all spans, metrics, dashboards, and log-trace correlation work end-to-end. Includes a benchmark suite comparing telemetry-ON vs telemetry-OFF overhead.
 
+### Running the Validation Suite
+
+```bash
+# Full end-to-end validation (start cluster, generate load, validate):
+docker/telemetry/workload/run-full-validation.sh --xrpld .build/xrpld
+
+# Validation only (assumes stack and cluster are already running):
+python3 docker/telemetry/workload/validate_telemetry.py --report /tmp/report.json
+
+# Performance benchmark (baseline vs telemetry):
+docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
+```
+
 ### Validated Telemetry Inventory
 
-| Category           | Expected Count | Validation Method                |
-| ------------------ | -------------- | -------------------------------- |
-| Trace spans        | 16             | Jaeger/Tempo API query           |
-| Span attributes    | 22             | Per-span attribute assertion     |
-| StatsD metrics     | 255+           | Prometheus query                 |
-| Phase 9 metrics    | 68+            | Prometheus query                 |
-| SpanMetrics RED    | 4 per span     | Prometheus query                 |
-| Grafana dashboards | 10             | Dashboard API "no data" check    |
-| Log-trace links    | Present        | Loki query + Tempo reverse check |
+| Category           | Expected Count | Validation Method                | Config File             |
+| ------------------ | -------------- | -------------------------------- | ----------------------- |
+| Trace spans        | 17             | Jaeger/Tempo API query           | `expected_spans.json`   |
+| Span attributes    | 22             | Per-span attribute assertion     | `expected_spans.json`   |
+| StatsD metrics     | 255+           | Prometheus query                 | `expected_metrics.json` |
+| Phase 9 metrics    | 68+            | Prometheus query                 | `expected_metrics.json` |
+| SpanMetrics RED    | 4 per span     | Prometheus query                 | `expected_metrics.json` |
+| Grafana dashboards | 10             | Dashboard API "no data" check    | `expected_metrics.json` |
+| Log-trace links    | Present        | Loki query + Tempo reverse check | —                       |
+
+### Performance Overhead Targets
+
+| Metric            | Target       | Measurement Method                  |
+| ----------------- | ------------ | ----------------------------------- |
+| CPU overhead      | < 3%         | ps avg CPU% baseline vs telemetry   |
+| Memory overhead   | < 5MB        | ps peak RSS baseline vs telemetry   |
+| RPC p99 latency   | < 2ms impact | server_info round-trip timing       |
+| Throughput impact | < 5%         | Ledger close rate comparison        |
+| Consensus impact  | < 1%         | Consensus round time p95 comparison |
 
 ---
 

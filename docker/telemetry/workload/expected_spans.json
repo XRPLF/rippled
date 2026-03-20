@@ -1,0 +1,181 @@
+{
+  "description": "Expected span inventory for rippled telemetry validation. Sourced from 09-data-collection-reference.md.",
+  "spans": [
+    {
+      "name": "rpc.request",
+      "category": "rpc",
+      "parent": null,
+      "required_attributes": [],
+      "config_flag": "trace_rpc"
+    },
+    {
+      "name": "rpc.process",
+      "category": "rpc",
+      "parent": "rpc.request",
+      "required_attributes": [],
+      "config_flag": "trace_rpc"
+    },
+    {
+      "name": "rpc.ws_message",
+      "category": "rpc",
+      "parent": null,
+      "required_attributes": [],
+      "config_flag": "trace_rpc"
+    },
+    {
+      "name": "rpc.command.*",
+      "category": "rpc",
+      "parent": "rpc.process",
+      "required_attributes": [
+        "xrpl.rpc.command",
+        "xrpl.rpc.version",
+        "xrpl.rpc.role",
+        "xrpl.rpc.status",
+        "xrpl.rpc.duration_ms"
+      ],
+      "config_flag": "trace_rpc",
+      "note": "Wildcard — matches rpc.command.server_info, rpc.command.ledger, etc."
+    },
+    {
+      "name": "tx.process",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": ["xrpl.tx.hash", "xrpl.tx.local", "xrpl.tx.path"],
+      "config_flag": "trace_transactions"
+    },
+    {
+      "name": "tx.receive",
+      "category": "transaction",
+      "parent": null,
+      "required_attributes": [
+        "xrpl.peer.id",
+        "xrpl.tx.hash",
+        "xrpl.tx.suppressed",
+        "xrpl.tx.status"
+      ],
+      "config_flag": "trace_transactions"
+    },
+    {
+      "name": "tx.apply",
+      "category": "transaction",
+      "parent": "ledger.build",
+      "required_attributes": [
+        "xrpl.ledger.seq",
+        "xrpl.ledger.tx_count",
+        "xrpl.ledger.tx_failed"
+      ],
+      "config_flag": "trace_transactions"
+    },
+    {
+      "name": "consensus.proposal.send",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": ["xrpl.consensus.round"],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.ledger_close",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "xrpl.consensus.ledger.seq",
+        "xrpl.consensus.mode"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.accept",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": ["xrpl.consensus.proposers"],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.validation.send",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "xrpl.consensus.ledger.seq",
+        "xrpl.consensus.proposing"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "consensus.accept.apply",
+      "category": "consensus",
+      "parent": null,
+      "required_attributes": [
+        "xrpl.consensus.close_time",
+        "xrpl.consensus.ledger.seq",
+        "xrpl.consensus.parent_close_time",
+        "xrpl.consensus.close_time_self",
+        "xrpl.consensus.close_time_vote_bins",
+        "xrpl.consensus.resolution_direction"
+      ],
+      "config_flag": "trace_consensus"
+    },
+    {
+      "name": "ledger.build",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": [
+        "xrpl.ledger.seq",
+        "xrpl.ledger.tx_count",
+        "xrpl.ledger.tx_failed",
+        "xrpl.ledger.close_time",
+        "xrpl.ledger.close_time_correct",
+        "xrpl.ledger.close_resolution_ms"
+      ],
+      "config_flag": "trace_ledger"
+    },
+    {
+      "name": "ledger.validate",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": ["xrpl.ledger.seq", "xrpl.ledger.validations"],
+      "config_flag": "trace_ledger"
+    },
+    {
+      "name": "ledger.store",
+      "category": "ledger",
+      "parent": null,
+      "required_attributes": ["xrpl.ledger.seq"],
+      "config_flag": "trace_ledger"
+    },
+    {
+      "name": "peer.proposal.receive",
+      "category": "peer",
+      "parent": null,
+      "required_attributes": ["xrpl.peer.id", "xrpl.peer.proposal.trusted"],
+      "config_flag": "trace_peer"
+    },
+    {
+      "name": "peer.validation.receive",
+      "category": "peer",
+      "parent": null,
+      "required_attributes": ["xrpl.peer.id", "xrpl.peer.validation.trusted"],
+      "config_flag": "trace_peer"
+    }
+  ],
+  "parent_child_relationships": [
+    {
+      "parent": "rpc.request",
+      "child": "rpc.process",
+      "description": "RPC request contains processing span",
+      "skip": true,
+      "skip_reason": "rpc.request and rpc.process run on different threads (onRequest posts a coroutine to JobQueue for processRequest). Span context is not propagated across the thread boundary. Requires C++ fix to capture and forward the span context through the coroutine lambda."
+    },
+    {
+      "parent": "rpc.process",
+      "child": "rpc.command.*",
+      "description": "Processing span contains per-command span"
+    },
+    {
+      "parent": "ledger.build",
+      "child": "tx.apply",
+      "description": "Ledger build contains transaction application"
+    }
+  ],
+  "total_span_types": 17,
+  "total_unique_attributes": 29
+}

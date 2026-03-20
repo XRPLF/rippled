@@ -27,7 +27,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 XRPLD="$REPO_ROOT/.build/xrpld"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 STANDALONE_CFG="$SCRIPT_DIR/xrpld-telemetry.cfg"
-WORKDIR="/tmp/xrpld-integration"
+WORKDIR="${WORKDIR:-/tmp/xrpld-integration}"
 NUM_NODES=6
 PEER_PORT_BASE=51235
 RPC_PORT_BASE=5005
@@ -360,6 +360,12 @@ metrics_endpoint=http://localhost:4318/v1/metrics
 [insight]
 server=otel
 endpoint=http://localhost:4318/v1/metrics
+prefix=rippled
+service_instance_id=Node-${i}
+
+[insight]
+server=statsd
+address=127.0.0.1:8125
 prefix=rippled
 
 [rpc_startup]
