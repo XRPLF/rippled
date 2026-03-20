@@ -41,39 +41,98 @@ Permission::Permission()
 
     granularPermissionMap_ = {
 #pragma push_macro("PERMISSION")
+#pragma push_macro("GRANULAR_TEMPLATE")
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
 
 #define PERMISSION(type, txType, value) {#type, type},
+#define GRANULAR_TEMPLATE(...)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
+#pragma pop_macro("GRANULAR_TEMPLATE")
 #pragma pop_macro("PERMISSION")
     };
 
     granularNameMap_ = {
 #pragma push_macro("PERMISSION")
+#pragma push_macro("GRANULAR_TEMPLATE")
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
 
 #define PERMISSION(type, txType, value) {type, #type},
+#define GRANULAR_TEMPLATE(...)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
+#pragma pop_macro("GRANULAR_TEMPLATE")
 #pragma pop_macro("PERMISSION")
     };
 
     granularTxTypeMap_ = {
 #pragma push_macro("PERMISSION")
+#pragma push_macro("GRANULAR_TEMPLATE")
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
 
 #define PERMISSION(type, txType, value) {type, txType},
+#define GRANULAR_TEMPLATE(...)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
+#pragma pop_macro("GRANULAR_TEMPLATE")
 #pragma pop_macro("PERMISSION")
     };
+
+    granularPermittedFlags_ = {
+#pragma push_macro("GRANULAR_TEMPLATE")
+#undef GRANULAR_TEMPLATE
+#pragma push_macro("PERMISSION")
+#undef PERMISSION
+
+#define PERMISSION(...)
+#define GRANULAR_TEMPLATE(txType, flags, fields) {txType, flags},
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef GRANULAR_TEMPLATE
+#undef PERMISSION
+#pragma pop_macro("PERMISSION")
+#pragma pop_macro("GRANULAR_TEMPLATE")
+    };
+
+    {
+        std::unordered_map<TxType, std::vector<SOElement>> tempFields = {
+#pragma push_macro("GRANULAR_TEMPLATE")
+#undef GRANULAR_TEMPLATE
+#pragma push_macro("PERMISSION")
+#undef PERMISSION
+
+#define PERMISSION(...)
+#define GRANULAR_TEMPLATE(txType, flags, fields) {txType, std::vector<SOElement> fields},
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef GRANULAR_TEMPLATE
+#undef PERMISSION
+#pragma pop_macro("PERMISSION")
+#pragma pop_macro("GRANULAR_TEMPLATE")
+        };
+
+        for (auto& [txType, fields] : tempFields)
+        {
+            granularTemplates_.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(txType),
+                std::forward_as_tuple(std::move(fields), TxFormats::getCommonFields()));
+        }
+    }
 
     XRPL_ASSERT(
         txFeatureMap_.size() == delegableTx_.size(),
@@ -198,6 +257,35 @@ TxType
 Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
+}
+
+bool
+Permission::checkGranularSandbox(STTx const& tx) const
+{
+    auto const txType = tx.getTxnType();
+
+    auto const flagsIt = granularPermittedFlags_.find(txType);
+    auto const templateIt = granularTemplates_.find(txType);
+
+    if (templateIt == granularTemplates_.end() || flagsIt == granularPermittedFlags_.end())
+        return false;
+
+    // Check if the flag is permitted
+    if ((tx.getFlags() & tfUniversalMask & ~flagsIt->second) != 0)
+        return false;
+
+    // Check if the field is permitted
+    for (auto const& field : tx)
+    {
+        if (field.getSType() == STI_NOTPRESENT)
+            continue;
+        if (templateIt->second.getIndex(field.getFName()) == -1)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }  // namespace xrpl

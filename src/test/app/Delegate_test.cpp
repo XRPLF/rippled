@@ -1152,6 +1152,35 @@ class Delegate_test : public beast::unit_test::suite
             env(trust(gw, gw["USD"](0), alice, tfSetfAuth | tfFullyCanonicalSig),
                 delegate::as(bob));
         }
+
+        {
+            Env env(*this);
+            Account gw{"gw"};
+            Account alice{"alice"};
+            Account bob{"bob"};
+            env.fund(XRP(10000), gw, alice, bob);
+
+            // Set up a standard environment where bob CAN authorize
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env(trust(alice, gw["USD"](50)));
+            env.close();
+            env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+            env.close();
+
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
+            env.close();
+
+            // sfQualityOut is a valid TrustSet field, but not permitted in granular template
+            Json::Value txJson = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+            txJson[sfQualityOut.jsonName] = 100;
+            env(txJson, delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+            // tfSetNoRipple is a valid flag for TrustSet, but not permitted in granular template
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth | tfSetNoRipple),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
+        }
     }
 
     void
@@ -1307,7 +1336,9 @@ class Delegate_test : public beast::unit_test::suite
             env(jv2, ter(terNO_DELEGATE_PERMISSION));
         }
 
-        // can not set AccountSet flags on behalf of other account
+        // can not set AccountSet flags on behalf of other account,
+        // in permissions.macro, the template for AccountSet does
+        // not allow any flag set or clear.
         {
             Env env(*this);
             auto const alice = Account{"alice"};
@@ -1402,6 +1433,30 @@ class Delegate_test : public beast::unit_test::suite
 
             env(jt);
             BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
+        }
+
+        // setting invalid field not in permissions.macro template will be rejected.
+        {
+            Env env(*this);
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Alice gives Bob permission to set her Domain
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            std::string const domain = "example.com";
+            auto txJson = noop(alice);
+            txJson[sfDomain] = strHex(domain);
+            txJson[sfDelegate] = bob.human();
+
+            // sfNFTokenMinter is a valid field in AccountSet tx, but
+            // it is not permitted for granular template
+            txJson[sfNFTokenMinter] = bob.human();
+
+            env(txJson, ter(terNO_DELEGATE_PERMISSION));
         }
     }
 
@@ -1522,6 +1577,37 @@ class Delegate_test : public beast::unit_test::suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
             mpt.set({.account = alice, .flags = tfMPTLock | tfFullyCanonicalSig, .delegate = bob});
+        }
+
+        // field not permitted to exist in granular delegation
+        {
+            Env env(*this);
+            Account alice{"alice"};
+            Account bob{"bob"};
+            env.fund(XRP(100000), alice, bob);
+
+            MPTTester mpt(env, alice, {.fund = false});
+            mpt.create({.flags = tfMPTCanLock});
+            env.close();
+
+            // alice gives granular permission to bob for MPTokenIssuanceLock
+            env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
+            env.close();
+
+            // Field is not permitted, permitted fields for delegation is defined in
+            // permissions.macro.
+            mpt.set(
+                {.account = alice,
+                 .mutableFlags = 2,
+                 .delegate = bob,
+                 .err = terNO_DELEGATE_PERMISSION});
+
+            // Notice: flags not defined in permissions.macro are not permitted for delegation.
+            // Since preflight will check invalid flag for the tx, it is not reachable.
+            // If any new flag is defined into the transaction in the future,
+            // but is not allowed for delegation, the transaction will be rejected with
+            // terNO_DELEGATE_PERMISSION. The set of permitted flags for delegation is defined in
+            // permissions.macro.
         }
     }
 

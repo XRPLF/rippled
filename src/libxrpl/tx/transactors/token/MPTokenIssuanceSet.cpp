@@ -144,16 +144,13 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    auto const txFlags = tx.getFlags();
-
-    // this is added in case more flags will be added for MPTokenIssuanceSet
-    // in the future. Currently unreachable.
-    if ((txFlags & tfMPTokenIssuanceSetMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
+    if (!Permission::getInstance().checkGranularSandbox(tx))
+        return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
 
+    auto const txFlags = tx.getFlags();
     if (((txFlags & tfMPTLock) != 0u) && !granularPermissions.contains(MPTokenIssuanceLock))
         return terNO_DELEGATE_PERMISSION;
 

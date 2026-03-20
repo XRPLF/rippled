@@ -7,8 +7,11 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace xrpl {
+
+class STTx;
 /**
  * We have both transaction type permissions and granular type permissions.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -16,15 +19,31 @@ namespace xrpl {
  * conflicts with TxType, the GranularPermissionType is always set to a value
  * greater than the maximum value of uint16.
  */
+// enum GranularPermissionType : std::uint32_t {
+// #pragma push_macro("PERMISSION")
+// #undef PERMISSION
+
+// #define PERMISSION(type, txType, value, ...) type = value,
+
+// #include <xrpl/protocol/detail/permissions.macro>
+
+// #undef PERMISSION
+// #pragma pop_macro("PERMISSION")
+// };
+
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("PERMISSION")
+#pragma push_macro("GRANULAR_TEMPLATE")
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
 
 #define PERMISSION(type, txType, value) type = (value),
 
 #include <xrpl/protocol/detail/permissions.macro>
 
 #undef PERMISSION
+#undef GRANULAR_TEMPLATE
+#pragma pop_macro("GRANULAR_TEMPLATE")
 #pragma pop_macro("PERMISSION")
 };
 
@@ -36,14 +55,14 @@ private:
     Permission();
 
     std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
-
     std::unordered_map<std::uint16_t, Delegation> delegableTx_;
-
     std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
 
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
-
     std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap_;
+
+    std::unordered_map<TxType, std::uint32_t> granularPermittedFlags_;
+    std::unordered_map<TxType, SOTemplate> granularTemplates_;
 
 public:
     static Permission const&
@@ -78,6 +97,9 @@ public:
     // tx type value is permission value minus one
     static TxType
     permissionToTxType(uint32_t const& value);
+
+    [[nodiscard]] bool
+    checkGranularSandbox(STTx const& tx) const;
 };
 
 }  // namespace xrpl
