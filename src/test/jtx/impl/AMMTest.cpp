@@ -17,12 +17,12 @@ namespace jtx {
 void
 fund(
     jtx::Env& env,
-    jtx::Account const& gw_,
+    jtx::Account const& gw,
     std::vector<jtx::Account> const& accounts,
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw_, accounts, XRP(30000), amts, how);
+    fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
 void
@@ -55,14 +55,14 @@ fund(
 void
 fund(
     jtx::Env& env,
-    jtx::Account const& gw_,
+    jtx::Account const& gw,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts,
     Fund how)
 {
     if (how == Fund::All || how == Fund::Gw)
-        env.fund(xrp, gw_);
+        env.fund(xrp, gw);
     env.close();
     fund(env, accounts, xrp, amts, how);
 }

@@ -701,11 +701,11 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         auto txSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
         PublicKey toDisableKey(derivePublicKey(KeyType::ed25519, randomSecretKey()));
         PublicKey toReEnableKey(derivePublicKey(KeyType::ed25519, randomSecretKey()));
-        LedgerIndex Seq(1234);
+        LedgerIndex seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
-        vote.addTx(Seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
+        vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
         BEAST_EXPECT(countTx(txSet) == 1);
-        vote.addTx(Seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
+        vote.addTx(seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
         BEAST_EXPECT(countTx(txSet) == 2);
         // content of a tx is implicitly tested after applied to a ledger
         // in later test cases

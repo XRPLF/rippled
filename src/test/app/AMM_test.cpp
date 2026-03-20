@@ -3087,15 +3087,15 @@ private:
                 BEAST_EXPECT(ammAlice.expectAuctionSlot({carol_}));
                 env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{100}}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot({}));
-                Account bob_("bob_");
+                Account bob("bob_");
                 Account dan("dan");
-                fund(env, {bob_, dan}, XRP(1'000));
+                fund(env, {bob, dan}, XRP(1'000));
                 env(ammAlice.bid({
                     .account = alice_,
                     .bidMin = IOUAmount{100},
-                    .authAccounts = {bob_, dan},
+                    .authAccounts = {bob, dan},
                 }));
-                BEAST_EXPECT(ammAlice.expectAuctionSlot({bob_, dan}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot({bob, dan}));
             },
             std::nullopt,
             0,
@@ -4429,15 +4429,15 @@ private:
     {
         testcase("AMMAndCLOB, offer quality change");
         using namespace jtx;
-        auto const gw_ = Account("gw_");
-        auto const tst = gw_["TST"];
+        auto const gw = Account("gw_");
+        auto const tst = gw["TST"];
         auto const lP1 = Account("LP1");
         auto const lP2 = Account("LP2");
 
         auto prep = [&](auto const& offerCb, auto const& expectCb) {
             Env env(*this, features);
-            env.fund(XRP(30'000'000'000), gw_);
-            env(offer(gw_, XRP(11'500'000'000), tst(1'000'000'000)));
+            env.fund(XRP(30'000'000'000), gw);
+            env(offer(gw, XRP(11'500'000'000), tst(1'000'000'000)));
 
             env.fund(XRP(10'000), lP1);
             env.fund(XRP(10'000), lP2);
@@ -4861,7 +4861,7 @@ private:
         // Deposit/Withdraw in USD
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                Account const bob_("bob_");
+                Account const bob("bob_");
                 Account const ed("ed");
                 Account const paul("paul");
                 Account const dan("dan");
@@ -4872,7 +4872,7 @@ private:
                 fund(
                     env,
                     gw_,
-                    {bob_, ed, paul, dan, chris, simon, ben, natalie},
+                    {bob, ed, paul, dan, chris, simon, ben, natalie},
                     {USD(1'500'000)},
                     Fund::Acct);
                 for (int i = 0; i < 10; ++i)
@@ -4885,8 +4885,8 @@ private:
                     ammAlice.withdrawAll(chris, USD(0));
                     ammAlice.deposit(dan, USD(10));
                     ammAlice.withdrawAll(dan, USD(0));
-                    ammAlice.deposit(bob_, USD(100));
-                    ammAlice.withdrawAll(bob_, USD(0));
+                    ammAlice.deposit(bob, USD(100));
+                    ammAlice.withdrawAll(bob, USD(0));
                     ammAlice.deposit(carol_, USD(1'000));
                     ammAlice.withdrawAll(carol_, USD(0));
                     ammAlice.deposit(ed, USD(10'000));
@@ -4981,7 +4981,7 @@ private:
         // Same as above but deposit/withdraw in XRP
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                Account const bob_("bob_");
+                Account const bob("bob_");
                 Account const ed("ed");
                 Account const paul("paul");
                 Account const dan("dan");
@@ -4992,7 +4992,7 @@ private:
                 fund(
                     env,
                     gw_,
-                    {bob_, ed, paul, dan, chris, simon, ben, natalie},
+                    {bob, ed, paul, dan, chris, simon, ben, natalie},
                     XRP(2'000'000),
                     {},
                     Fund::Acct);
@@ -5006,8 +5006,8 @@ private:
                     ammAlice.withdrawAll(chris, XRP(0));
                     ammAlice.deposit(dan, XRP(10));
                     ammAlice.withdrawAll(dan, XRP(0));
-                    ammAlice.deposit(bob_, XRP(100));
-                    ammAlice.withdrawAll(bob_, XRP(0));
+                    ammAlice.deposit(bob, XRP(100));
+                    ammAlice.withdrawAll(bob, XRP(0));
                     ammAlice.deposit(carol_, XRP(1'000));
                     ammAlice.withdrawAll(carol_, XRP(0));
                     ammAlice.deposit(ed, XRP(10'000));

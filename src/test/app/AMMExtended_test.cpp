@@ -487,8 +487,8 @@ private:
         auto const gw1 = Account{"gateway_1"};
         auto const gw2 = Account{"gateway_2"};
         auto const gw3 = Account{"gateway_3"};
-        auto const localAlice = Account{"alice_"};
-        auto const localBob = Account{"bob_"};
+        auto const localAlice = Account{"alice"};
+        auto const localBob = Account{"bob"};
         auto const usD1 = gw1["USD"];
         auto const usD2 = gw2["USD"];
         auto const usD3 = gw3["USD"];
@@ -633,7 +633,7 @@ private:
         AMM ammAlice(env, alice_, xts(100), xxx(100));
 
         Json::Value payment;
-        payment[jss::secret] = toBase58(generateSeed("bob_"));
+        payment[jss::secret] = toBase58(generateSeed("bob"));
         payment[jss::id] = env.seq(bob_);
         payment[jss::build_path] = true;
         payment[jss::tx_json] = pay(bob_, bob_, bob_["XXX"](1));
@@ -1058,7 +1058,7 @@ private:
             // A trust line's QualityOut should not affect offer crossing.
             auto const ann = Account("ann");
             auto const aBux = ann["BUX"];
-            auto const localBob = Account("bob_");
+            auto const localBob = Account("bob");
             auto const cam = Account("cam");
             auto const dan = Account("dan");
             auto const dBux = dan["BUX"];
@@ -1120,14 +1120,14 @@ private:
         Env env{*this, features};
 
         auto const ann = Account("ann");
-        auto const localBob = Account("bob_");
+        auto const localBob = Account("bob");
         auto const cam = Account("cam");
-        auto const carol_ = Account("carol_");
+        auto const carol = Account("carol");
         auto const aBux = ann["BUX"];
         auto const bBux = localBob["BUX"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(XRP(1'000), carol_);
+        env.fund(XRP(1'000), carol);
         env.fund(reserve(env, 4) + (fee * 5), ann, localBob, cam);
         env.close();
 
@@ -1135,16 +1135,16 @@ private:
         env(trust(cam, aBux(40)));
         env(trust(localBob, aBux(30)));
         env(trust(cam, bBux(40)));
-        env(trust(carol_, bBux(400)));
-        env(trust(carol_, aBux(400)));
+        env(trust(carol, bBux(400)));
+        env(trust(carol, aBux(400)));
         env.close();
 
         env(pay(ann, cam, aBux(35)));
         env(pay(localBob, cam, bBux(35)));
-        env(pay(localBob, carol_, bBux(400)));
-        env(pay(ann, carol_, aBux(400)));
+        env(pay(localBob, carol, bBux(400)));
+        env(pay(ann, carol, aBux(400)));
 
-        AMM ammCarol(env, carol_, aBux(300), bBux(330));
+        AMM ammCarol(env, carol, aBux(300), bBux(330));
 
         // cam puts an offer on the books that her upcoming offer could cross.
         // But this offer should be deleted, not crossed, by her upcoming
@@ -2913,24 +2913,24 @@ private:
         Env env(*this, features);
 
         Account const g1{"G1"};
-        Account const alice_{"alice_"};
-        Account const bob_{"bob_"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
-        env.fund(XRP(1'000), g1, alice_, bob_);
+        env.fund(XRP(1'000), g1, alice, bob);
         env.close();
 
-        env.trust(g1["USD"](100), bob_);
-        env.trust(g1["USD"](205), alice_);
+        env.trust(g1["USD"](100), bob);
+        env.trust(g1["USD"](205), alice);
         env.close();
 
-        env(pay(g1, bob_, g1["USD"](10)));
-        env(pay(g1, alice_, g1["USD"](205)));
+        env(pay(g1, bob, g1["USD"](10)));
+        env(pay(g1, alice, g1["USD"](205)));
         env.close();
 
-        AMM ammAlice(env, alice_, XRP(500), g1["USD"](105));
+        AMM ammAlice(env, alice, XRP(500), g1["USD"](105));
 
         {
-            auto lines = getAccountLines(env, bob_);
+            auto lines = getAccountLines(env, bob);
             if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
                 return;
             BEAST_EXPECT(lines[jss::lines][0u][jss::account] == g1.human());
@@ -2939,7 +2939,7 @@ private:
         }
 
         {
-            auto lines = getAccountLines(env, alice_, g1["USD"]);
+            auto lines = getAccountLines(env, alice, g1["USD"]);
             if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
                 return;
             BEAST_EXPECT(lines[jss::lines][0u][jss::account] == g1.human());
@@ -2950,34 +2950,34 @@ private:
 
         // Account with line unfrozen (proving operations normally work)
         //   test: can make Payment on that line
-        env(pay(alice_, bob_, g1["USD"](1)));
+        env(pay(alice, bob, g1["USD"](1)));
 
         //   test: can receive Payment on that line
-        env(pay(bob_, alice_, g1["USD"](1)));
+        env(pay(bob, alice, g1["USD"](1)));
         env.close();
 
         // Is created via a TrustSet with SetFreeze flag
         //   test: sets LowFreeze | HighFreeze flags
-        env(trust(g1, bob_["USD"](0), tfSetFreeze));
+        env(trust(g1, bob["USD"](0), tfSetFreeze));
         env.close();
 
         {
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
-            env(offer(bob_, g1["USD"](5), XRP(25)));
+            env(offer(bob, g1["USD"](5), XRP(25)));
             env.close();
             BEAST_EXPECT(ammAlice.expectBalances(XRP(525), g1["USD"](100), ammAlice.tokens()));
         }
 
         {
             //    test: can not sell assets from that line
-            env(offer(bob_, XRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
+            env(offer(bob, XRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
 
             //    test: can receive Payment on that line
-            env(pay(alice_, bob_, g1["USD"](1)));
+            env(pay(alice, bob, g1["USD"](1)));
 
             //    test: can not make Payment from that line
-            env(pay(bob_, alice_, g1["USD"](1)), Ter(tecPATH_DRY));
+            env(pay(bob, alice, g1["USD"](1)), Ter(tecPATH_DRY));
         }
 
         {
@@ -2987,7 +2987,7 @@ private:
             Json::Value bobLine;
             for (auto const& it : lines[jss::lines])
             {
-                if (it[jss::account] == bob_.human())
+                if (it[jss::account] == bob.human())
                 {
                     bobLine = it;
                     break;
@@ -3001,7 +3001,7 @@ private:
 
         {
             //    test: shows freeze peer
-            auto lines = getAccountLines(env, bob_);
+            auto lines = getAccountLines(env, bob);
             Json::Value g1Line;
             for (auto const& it : lines[jss::lines])
             {
@@ -3020,7 +3020,7 @@ private:
         {
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
-            env(trust(g1, bob_["USD"](0), tfClearFreeze));
+            env(trust(g1, bob["USD"](0), tfClearFreeze));
             auto affected = env.meta()->getJson(JsonOptions::kNONE)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
@@ -3240,27 +3240,27 @@ private:
         using namespace jtx;
         Env env{*this, features};
         Account const bogie{"bogie", KeyType::secp256k1};
-        Account const alice_{"alice_", KeyType::secp256k1};
+        Account const alice{"alice", KeyType::secp256k1};
         Account const becky{"becky", KeyType::ed25519};
         Account const zelda{"zelda", KeyType::secp256k1};
-        fund(env, gw_, {alice_, becky, zelda}, XRP(20'000), {USD(20'000)});
+        fund(env, gw_, {alice, becky, zelda}, XRP(20'000), {USD(20'000)});
 
         // alice_ uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::secp256k1};
-        env(regkey(alice_, alie));
-        env(fset(alice_, asfDisableMaster), Sig(alice_));
+        env(regkey(alice, alie));
+        env(fset(alice, asfDisableMaster), Sig(alice));
 
         // Attach signers to alice_.
-        env(signers(alice_, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));
+        env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));
         env.close();
-        env.require(Owners(alice_, 2));
+        env.require(Owners(alice, 2));
 
         Msig const ms{becky, bogie};
 
         // Multisign all AMM transactions
         AMM ammAlice(
             env,
-            alice_,
+            alice,
             XRP(10'000),
             USD(10'000),
             false,
@@ -3272,16 +3272,16 @@ private:
             Ter(tesSUCCESS));
         BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
 
-        ammAlice.deposit(alice_, 1'000'000);
+        ammAlice.deposit(alice, 1'000'000);
         BEAST_EXPECT(ammAlice.expectBalances(XRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
 
-        ammAlice.withdraw(alice_, 1'000'000);
+        ammAlice.withdraw(alice, 1'000'000);
         BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
 
         ammAlice.vote({}, 1'000);
         BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
 
-        env(ammAlice.bid({.account = alice_, .bidMin = 100}), ms).close();
+        env(ammAlice.bid({.account = alice, .bidMin = 100}), ms).close();
         BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, IOUAmount{4'000}));
         // 4000 tokens burnt
         BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), IOUAmount{9'996'000, 0}));

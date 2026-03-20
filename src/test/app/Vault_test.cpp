@@ -89,10 +89,10 @@ class Vault_test : public beast::unit_test::suite
             env.memoize(vaultAccount);
 
             // Several 3rd party accounts which cannot receive funds
-            Account alice_{"alice_"};
+            Account alice{"alice_"};
             Account erin{"erin"};  // not authorized by issuer
-            env.fund(XRP(1000), alice_, erin);
-            env(fset(alice_, asfDepositAuth));
+            env.fund(XRP(1000), alice, erin);
+            env(fset(alice, asfDepositAuth));
             env.close();
 
             {
@@ -299,7 +299,7 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " fail to withdraw to 3rd party lsfDepositAuth");
                 auto tx = vault.withdraw(
                     {.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-                tx[sfDestination] = alice_.human();
+                tx[sfDestination] = alice.human();
                 env(tx, Ter{tecNO_PERMISSION});
                 env.close();
             }
@@ -1314,10 +1314,10 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("IOU fail create vault for AMM LPToken");
             Env env{*this, testableAmendments() | featureSingleAssetVault};
-            Account const gw_("gateway");
-            Account const alice_("alice_");
-            Account const carol_("carol_");
-            IOU const usd = gw_["USD"];
+            Account const gw("gateway");
+            Account const alice("alice_");
+            Account const carol("carol_");
+            IOU const usd = gw["USD"];
 
             auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
             auto toFund = [&](STAmount const& a) -> STAmount {
@@ -1339,18 +1339,18 @@ class Vault_test : public beast::unit_test::suite
 
             if (!asset1.native() && !asset2.native())
             {
-                fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
+                fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
             }
             else if (asset1.native())
             {
-                fund(env, gw_, {alice_, carol_}, toFund1, {toFund2}, Fund::All);
+                fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
             }
             else if (asset2.native())
             {
-                fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
+                fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
             }
 
-            AMM ammAlice(env, alice_, asset1, asset2, CreateArg{.log = false, .tfee = 0});
+            AMM ammAlice(env, alice, asset1, asset2, CreateArg{.log = false, .tfee = 0});
 
             Account const owner{"owner"};
             env.fund(XRP(1000000), owner);
@@ -3199,10 +3199,10 @@ class Vault_test : public beast::unit_test::suite
         Env env{*this, testableAmendments() | featureSingleAssetVault};
         Account owner{"owner"};
         Account depositor{"depositor"};
-        Account alice_{"charlie"};
+        Account alice{"charlie"};
         std::string const credType = "credential";
         Vault vault{env};
-        env.fund(XRP(100000), owner, depositor, alice_);
+        env.fund(XRP(100000), owner, depositor, alice);
         env.close();
 
         PrettyAsset asset = xrpIssue();
@@ -3277,13 +3277,13 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("private XRP vault cannot pay shares to 3rd party");
             Json::Value jv;
-            jv[sfAccount] = alice_.human();
+            jv[sfAccount] = alice.human();
             jv[sfTransactionType] = jss::MPTokenAuthorize;
             jv[sfMPTokenIssuanceID] = to_string(issuanceId);
             env(jv);
             env.close();
 
-            env(pay(owner, alice_, shares(1)), Ter{tecNO_AUTH});
+            env(pay(owner, alice, shares(1)), Ter{tecNO_AUTH});
         }
     }
 

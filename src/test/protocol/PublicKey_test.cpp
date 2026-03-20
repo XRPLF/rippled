@@ -47,7 +47,7 @@ public:
     }
 
     blob
-    Sig(std::string const& hex)
+    sig(std::string const& hex)
     {
         blob b;
         hexToBinary(hex.begin(), hex.end(), b);
@@ -57,7 +57,7 @@ public:
     bool
     check(std::optional<ECDSACanonicality> answer, std::string const& s)
     {
-        return ecdsaCanonicality(makeSlice(Sig(s))) == answer;
+        return ecdsaCanonicality(makeSlice(sig(s))) == answer;
     }
 
     void
