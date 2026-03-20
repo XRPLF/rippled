@@ -3,10 +3,12 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Mutex.hpp>
 #include <xrpl/beast/insight/Collector.h>
-#include <xrpl/ledger/LedgerIndexMap.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
+#include <map>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -31,7 +33,8 @@ public:
     float
     getCacheHitRate()
     {
-        return m_ledgers_by_hash.getHitRate();
+        auto lock = ledger_maps_.lock();
+        return lock->by_hash->getHitRate();
     }
 
     /** Get a ledger given its sequence number */
@@ -54,7 +57,10 @@ public:
     void
     sweep()
     {
-        m_ledgers_by_hash.sweep();
+        {
+            auto lock = ledger_maps_.lock();
+            lock->by_hash->sweep();
+        }
         m_consensus_validated.sweep();
     }
 
@@ -102,9 +108,15 @@ private:
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 
-    using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
+    struct LedgerMaps
+    {
+        using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash m_ledgers_by_hash;
+        std::unique_ptr<LedgersByHash> by_hash;
+        std::map<LedgerIndex, LedgerHash> by_index;  // validated ledgers
+    };
+
+    xrpl::Mutex<LedgerMaps, std::recursive_mutex> ledger_maps_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
@@ -123,9 +135,6 @@ private:
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
     ConsensusValidated m_consensus_validated;
-
-    // Maps ledger indexes to the corresponding hash.
-    xrpl::LedgerIndexMap<LedgerIndex, LedgerHash> mLedgersByIndex;  // validated ledgers
 
     beast::Journal j_;
 };

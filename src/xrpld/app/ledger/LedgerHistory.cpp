@@ -12,22 +12,21 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
     : app_(app)
     , collector_(collector)
     , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
-    , m_ledgers_by_hash(
-          "LedgerCache",
-          app_.config().getValueFor(SizedItem::ledgerSize),
-          std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
-          stopwatch(),
-          app_.journal("TaggedCache"))
     , m_consensus_validated(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
           stopwatch(),
           app_.journal("TaggedCache"))
-    , mLedgersByIndex(
-          512)  // Index map reserve capacity, aligned with typical ledger_history retention.
     , j_(app.journal("LedgerHistory"))
 {
+    auto lock = ledger_maps_.lock();
+    lock->by_hash = std::make_unique<LedgerMaps::LedgersByHash>(
+        "LedgerCache",
+        app_.config().getValueFor(SizedItem::ledgerSize),
+        std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
+        stopwatch(),
+        app_.journal("TaggedCache"));
 }
 
 bool
@@ -39,10 +38,11 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
+    auto lock = ledger_maps_.lock();
     bool const alreadyHad =
-        m_ledgers_by_hash.canonicalize_replace_cache(ledger->header().hash, ledger);
+        lock->by_hash->canonicalize_replace_cache(ledger->header().hash, ledger);
     if (validated)
-        mLedgersByIndex.put(ledger->header().seq, ledger->header().hash);
+        lock->by_index[ledger->header().seq] = ledger->header().hash;
 
     return alreadyHad;
 }
@@ -50,19 +50,30 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    if (auto p = mLedgersByIndex.get(index))
-        return *p;
+    auto lock = ledger_maps_.lock();
+    if (auto it = lock->by_index.find(index); it != lock->by_index.end())
+        return it->second;
     return {};
 }
 
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
-    if (auto p = mLedgersByIndex.get(index))
+    uint256 hash;
     {
-        uint256 const hash = *p;
-        return getLedgerByHash(hash);
+        auto lock = ledger_maps_.lock();
+        if (auto it = lock->by_index.find(index); it != lock->by_index.end())
+        {
+            hash = it->second;
+        }
+        else
+        {
+            hash = {};
+        }
     }
+
+    if (!hash.isZero())
+        return getLedgerByHash(hash);
 
     std::shared_ptr<Ledger const> ret = loadByIndex(index, app_);
 
@@ -74,10 +85,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
+        auto lock = ledger_maps_.lock();
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
-        m_ledgers_by_hash.canonicalize_replace_client(ret->header().hash, ret);
-        mLedgersByIndex.put(ret->header().seq, ret->header().hash);
+        lock->by_hash->canonicalize_replace_client(ret->header().hash, ret);
+        lock->by_index[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
 }
@@ -85,7 +97,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
-    auto ret = m_ledgers_by_hash.fetch(hash);
+    std::shared_ptr<Ledger const> ret;
+    {
+        auto lock = ledger_maps_.lock();
+        ret = lock->by_hash->fetch(hash);
+    }
 
     if (ret)
     {
@@ -110,7 +126,10 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     XRPL_ASSERT(
         ret->header().hash == hash,
         "xrpl::LedgerHistory::getLedgerByHash : loaded ledger hash match");
-    m_ledgers_by_hash.canonicalize_replace_client(ret->header().hash, ret);
+    {
+        auto lock = ledger_maps_.lock();
+        lock->by_hash->canonicalize_replace_client(ret->header().hash, ret);
+    }
     XRPL_ASSERT(
         ret->header().hash == hash, "xrpl::LedgerHistory::getLedgerByHash : result hash match");
 
@@ -462,11 +481,12 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    if (auto cur = mLedgersByIndex.get(ledgerIndex))
+    auto lock = ledger_maps_.lock();
+    if (auto it = lock->by_index.find(ledgerIndex); it != lock->by_index.end())
     {
-        if (*cur != ledgerHash)
+        if (it->second != ledgerHash)
         {
-            mLedgersByIndex.put(ledgerIndex, ledgerHash);
+            lock->by_index[ledgerIndex] = ledgerHash;
             return false;
         }
     }
@@ -477,21 +497,44 @@ void
 LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
 {
     std::size_t hashesCleared = 0;
-    for (LedgerHash it : m_ledgers_by_hash.getKeys())
-    {
-        auto const ledger = getLedgerByHash(it);
-        if (!ledger || ledger->header().seq < seq)
-        {
-            m_ledgers_by_hash.del(it, false);
-            ++hashesCleared;
-        }
-    }
-    JLOG(j_.debug()) << "LedgersByHash: cleared " << hashesCleared << " entries before seq " << seq
-                     << " (total now " << m_ledgers_by_hash.size() << ")";
+    std::size_t indexesCleared = 0;
+    std::size_t cacheSize = 0;
+    std::size_t indexSize = 0;
 
-    std::size_t const indexesCleared = mLedgersByIndex.eraseBefore(seq);
-    JLOG(j_.debug()) << "LedgerIndexMap: cleared " << indexesCleared << " index entries before seq "
-                     << seq << " (total now " << mLedgersByIndex.size() << ")";
+    {
+        auto lock = ledger_maps_.lock();
+        for (LedgerHash it : lock->by_hash->getKeys())
+        {
+            auto const ledger = getLedgerByHash(it);
+            if (!ledger || ledger->header().seq < seq)
+            {
+                lock->by_hash->del(it, false);
+                ++hashesCleared;
+            }
+        }
+        cacheSize = lock->by_hash->size();
+
+        auto it = lock->by_index.begin();
+        while (it != lock->by_index.end())
+        {
+            if (it->first < seq)
+            {
+                it = lock->by_index.erase(it);
+                ++indexesCleared;
+            }
+            else
+            {
+                ++it;
+            }
+        }
+        indexSize = lock->by_index.size();
+    }
+
+    JLOG(j_.debug()) << "LedgersByHash: cleared " << hashesCleared << " entries before seq " << seq
+                     << " (total now " << cacheSize << ")";
+
+    JLOG(j_.debug()) << "LedgersByIndex: cleared " << indexesCleared << " index entries before seq "
+                     << seq << " (total now " << indexSize << ")";
 }
 
 }  // namespace xrpl
