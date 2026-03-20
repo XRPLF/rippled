@@ -415,12 +415,6 @@ exporters:
     tls:
       insecure: true
 
-  # Grafana Tempo for trace storage
-  otlp/tempo:
-    endpoint: tempo:4317
-    tls:
-      insecure: true
-
 service:
   pipelines:
     traces:
@@ -567,17 +561,6 @@ services:
     ports:
       - "3200:3200" # Tempo HTTP API
       - "4317" # OTLP gRPC (internal)
-
-  # Grafana Tempo for trace storage (recommended for production)
-  tempo:
-    image: grafana/tempo:2.7.2
-    container_name: tempo
-    command: ["-config.file=/etc/tempo.yaml"]
-    volumes:
-      - ./tempo.yaml:/etc/tempo.yaml:ro
-      - tempo-data:/var/tempo
-    ports:
-      - "3200:3200" # HTTP API
 
   # Grafana Tempo for trace storage (recommended for production)
   tempo:
