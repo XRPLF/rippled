@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "RPC and pathfinding metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "description": "RPC and pathfinding metrics from beast::insight System Metrics. Requires [insight] server=otel in rippled config.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,7 +10,7 @@
   "links": [],
   "panels": [
     {
-      "title": "RPC Request Rate (StatsD)",
+      "title": "RPC Request Rate (System Metrics)",
       "description": "Rate of RPC requests as counted by the beast::insight counter. Sourced from rpc.requests (ServerHandler.cpp:108) which increments on every HTTP and WebSocket RPC request. Compare with the span-based rpc.request rate in the RPC Performance dashboard for cross-validation.",
       "type": "stat",
       "gridPos": {
@@ -30,8 +30,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_rpc_requests_total[5m])",
-          "legendFormat": "Requests / Sec"
+          "expr": "rate(rippled_rpc_requests_total{exported_instance=~\"$node\"}[5m])",
+          "legendFormat": "Requests / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -42,7 +42,7 @@
       }
     },
     {
-      "title": "RPC Response Time (StatsD)",
+      "title": "RPC Response Time (System Metrics)",
       "description": "P95 and P50 of RPC response time from the beast::insight timer. Sourced from the rpc.time event (ServerHandler.cpp:110) which records elapsed milliseconds for each RPC response. This measures the full HTTP handler time, not just command execution. Compare with span-based rpc.request duration.",
       "type": "timeseries",
       "gridPos": {
@@ -62,15 +62,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.95\"}",
-          "legendFormat": "P95 Response Time"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 Response Time [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.5\"}",
-          "legendFormat": "P50 Response Time"
+          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 Response Time [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -108,15 +108,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_size{quantile=\"0.95\"}",
-          "legendFormat": "P95 Response Size"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_rpc_size_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 Response Size [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_size{quantile=\"0.5\"}",
-          "legendFormat": "P50 Response Size"
+          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(rippled_rpc_size_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 Response Size [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -154,29 +154,29 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.5\"}",
-          "legendFormat": "P50"
+          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.9\"}",
-          "legendFormat": "P90"
+          "expr": "histogram_quantile(0.9, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P90 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.95\"}",
-          "legendFormat": "P95"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_rpc_time{quantile=\"0.99\"}",
-          "legendFormat": "P99"
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(rippled_rpc_time_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P99 [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -214,15 +214,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_pathfind_fast{quantile=\"0.95\"}",
-          "legendFormat": "P95 Fast Pathfind"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_pathfind_fast_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 Fast Pathfind [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_pathfind_fast{quantile=\"0.5\"}",
-          "legendFormat": "P50 Fast Pathfind"
+          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(rippled_pathfind_fast_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 Fast Pathfind [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -260,15 +260,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_pathfind_full{quantile=\"0.95\"}",
-          "legendFormat": "P95 Full Pathfind"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_pathfind_full_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 Full Pathfind [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_pathfind_full{quantile=\"0.5\"}",
-          "legendFormat": "P50 Full Pathfind"
+          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(rippled_pathfind_full_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 Full Pathfind [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -287,7 +287,7 @@
     },
     {
       "title": "Resource Warnings Rate",
-      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h:33) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp:706 (Phase 6 Task 6.1).",
+      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h:33) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in System MetricsCollector.cpp:706 (Phase 6 Task 6.1).",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -306,8 +306,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_warn_total[5m])",
-          "legendFormat": "Warnings / Sec"
+          "expr": "rate(rippled_warn_total{exported_instance=~\"$node\"}[5m])",
+          "legendFormat": "Warnings / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -335,7 +335,7 @@
     },
     {
       "title": "Resource Drops Rate",
-      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h:34) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in StatsDCollector.cpp:706 (Phase 6 Task 6.1).",
+      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h:34) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in System MetricsCollector.cpp:706 (Phase 6 Task 6.1).",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -354,8 +354,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_drop_total[5m])",
-          "legendFormat": "Drops / Sec"
+          "expr": "rate(rippled_drop_total{exported_instance=~\"$node\"}[5m])",
+          "legendFormat": "Drops / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -385,12 +385,33 @@
   "schemaVersion": 39,
   "tags": ["rippled", "statsd", "rpc", "pathfinding", "telemetry"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(rippled_rpc_requests_total, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
-  "title": "RPC & Pathfinding (StatsD)",
-  "uid": "rippled-statsd-rpc"
+  "title": "RPC & Pathfinding (System Metrics)",
+  "uid": "rippled-system-rpc"
 }

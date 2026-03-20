@@ -78,6 +78,13 @@ include(target_link_modules)
 # Level 01
 add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
+# OTelCollector in beast/insight uses OTel Metrics SDK when telemetry is enabled.
+if(telemetry)
+    target_link_libraries(
+        xrpl.libxrpl.beast
+        PUBLIC opentelemetry-cpp::opentelemetry-cpp
+    )
+endif()
 
 include(GitInfo)
 add_module(xrpl git)

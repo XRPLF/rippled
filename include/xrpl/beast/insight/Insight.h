@@ -12,4 +12,5 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/insight/OTelCollector.h>
 #include <xrpl/beast/insight/StatsDCollector.h>

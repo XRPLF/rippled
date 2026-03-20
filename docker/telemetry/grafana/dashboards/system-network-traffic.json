@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Network traffic and peer metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "description": "Network traffic and peer metrics from beast::insight System Metrics. Requires [insight] server=otel in rippled config.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -30,20 +30,20 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Inbound_Peers",
-          "legendFormat": "Inbound Peers"
+          "expr": "rippled_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\"}",
+          "legendFormat": "Inbound Peers [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Outbound_Peers",
-          "legendFormat": "Outbound Peers"
+          "expr": "rippled_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\"}",
+          "legendFormat": "Outbound Peers [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Peers",
             "spanNulls": true,
@@ -76,13 +76,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Overlay_Peer_Disconnects",
-          "legendFormat": "Disconnects"
+          "expr": "rippled_Overlay_Peer_Disconnects{exported_instance=~\"$node\"}",
+          "legendFormat": "Disconnects [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Disconnects",
             "spanNulls": true,
@@ -115,15 +115,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Bytes_In",
-          "legendFormat": "Bytes In"
+          "expr": "rippled_total_Bytes_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Bytes_Out",
-          "legendFormat": "Bytes Out"
+          "expr": "rippled_total_Bytes_Out{exported_instance=~\"$node\"}",
+          "legendFormat": "Bytes Out [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -161,20 +161,20 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_In",
-          "legendFormat": "Messages In"
+          "expr": "rippled_total_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_Out",
-          "legendFormat": "Messages Out"
+          "expr": "rippled_total_Messages_Out{exported_instance=~\"$node\"}",
+          "legendFormat": "Messages Out [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -207,27 +207,27 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_Messages_In",
-          "legendFormat": "TX Messages In"
+          "expr": "rippled_transactions_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "TX Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_Messages_Out",
-          "legendFormat": "TX Messages Out"
+          "expr": "rippled_transactions_Messages_Out{exported_instance=~\"$node\"}",
+          "legendFormat": "TX Messages Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transactions_duplicate_Messages_In",
-          "legendFormat": "TX Duplicate In"
+          "expr": "rippled_transactions_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "TX Duplicate In [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -260,34 +260,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_Messages_In",
-          "legendFormat": "Proposals In"
+          "expr": "rippled_proposals_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Proposals In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_Messages_Out",
-          "legendFormat": "Proposals Out"
+          "expr": "rippled_proposals_Messages_Out{exported_instance=~\"$node\"}",
+          "legendFormat": "Proposals Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_untrusted_Messages_In",
-          "legendFormat": "Untrusted In"
+          "expr": "rippled_proposals_untrusted_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Untrusted In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proposals_duplicate_Messages_In",
-          "legendFormat": "Duplicate In"
+          "expr": "rippled_proposals_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Duplicate In [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -320,34 +320,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_Messages_In",
-          "legendFormat": "Validations In"
+          "expr": "rippled_validations_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Validations In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_Messages_Out",
-          "legendFormat": "Validations Out"
+          "expr": "rippled_validations_Messages_Out{exported_instance=~\"$node\"}",
+          "legendFormat": "Validations Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_untrusted_Messages_In",
-          "legendFormat": "Untrusted In"
+          "expr": "rippled_validations_untrusted_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Untrusted In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validations_duplicate_Messages_In",
-          "legendFormat": "Duplicate In"
+          "expr": "rippled_validations_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "legendFormat": "Duplicate In [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -380,8 +380,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
-          "legendFormat": "{{__name__}}"
+          "expr": "topk(10, {exported_instance=~\"$node\", __name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
+          "legendFormat": "{{__name__}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -660,12 +660,33 @@
   "schemaVersion": 39,
   "tags": ["rippled", "statsd", "network", "telemetry"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(rippled_Peer_Finder_Active_Inbound_Peers, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Network Traffic (StatsD)",
-  "uid": "rippled-statsd-network"
+  "title": "Network Traffic (System Metrics)",
+  "uid": "rippled-system-network"
 }

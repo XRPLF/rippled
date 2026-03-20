@@ -23,6 +23,24 @@ public:
 
             m_collector = beast::insight::StatsDCollector::New(address, prefix, journal);
         }
+        // LCOV_EXCL_START -- OTel collector path is not exercised in unit tests
+        else if (server == "otel")
+        {
+            // Read OTLP metrics endpoint from [insight] section.
+            // Default to the standard OTLP/HTTP metrics path on localhost.
+            std::string endpoint = get(params, "endpoint");
+            if (endpoint.empty())
+                endpoint = "http://localhost:4318/v1/metrics";
+            std::string const& prefix(get(params, "prefix"));
+
+            // Read service_instance_id, same key as the [telemetry]
+            // section uses, so multi-node deployments can distinguish
+            // metric sources via the exported_instance Prometheus label.
+            std::string const instanceId = get(params, "service_instance_id");
+
+            m_collector = beast::insight::OTelCollector::New(endpoint, prefix, instanceId, journal);
+        }
+        // LCOV_EXCL_STOP
         else
         {
             m_collector = beast::insight::NullCollector::New();

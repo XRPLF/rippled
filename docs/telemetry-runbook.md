@@ -161,13 +161,26 @@ Configured in `otel-collector-config.yaml`:
 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
 ```
 
-## StatsD Metrics (beast::insight)
+## System Metrics (beast::insight via OTel native)
 
-rippled has a built-in metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
+rippled has a built-in metrics framework (`beast::insight`) that exports metrics natively via OTLP/HTTP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
 
 ### Configuration
 
 Add to `xrpld.cfg`:
+
+```ini
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
+prefix=rippled
+```
+
+The OTel Collector receives these via the OTLP receiver (same endpoint as traces, port 4318) and exports them to Prometheus alongside spanmetrics.
+
+#### StatsD fallback (backward compatibility)
+
+The legacy StatsD backend is still available:
 
 ```ini
 [insight]
@@ -176,7 +189,7 @@ address=127.0.0.1:8125
 prefix=rippled
 ```
 
-The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
+When using StatsD, uncomment the `statsd` receiver in `otel-collector-config.yaml` and add port `8125:8125/udp` to the docker-compose otel-collector service.
 
 ### Metric Reference
 
@@ -284,7 +297,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
 
-### Node Health — StatsD (`rippled-statsd-node-health`)
+### Node Health — System Metrics (`rippled-system-node-health`)
 
 | Panel                      | Type       | PromQL                                                 | Labels Used |
 | -------------------------- | ---------- | ------------------------------------------------------ | ----------- |
@@ -297,7 +310,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —           |
 | Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —           |
 
-### Network Traffic — StatsD (`rippled-statsd-network`)
+### Network Traffic — System Metrics (`rippled-system-network`)
 
 | Panel                  | Type       | PromQL                                 | Labels Used |
 | ---------------------- | ---------- | -------------------------------------- | ----------- |
@@ -310,7 +323,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Validation Traffic     | timeseries | `rippled_validations_Messages_In/Out`  | —           |
 | Traffic by Category    | bargauge   | `topk(10, rippled_*_Bytes_In)`         | —           |
 
-### RPC & Pathfinding — StatsD (`rippled-statsd-rpc`)
+### RPC & Pathfinding — System Metrics (`rippled-system-rpc`)
 
 | Panel                     | Type       | PromQL                                                   | Labels Used |
 | ------------------------- | ---------- | -------------------------------------------------------- | ----------- |
@@ -353,6 +366,14 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Test collector connectivity: `curl -v http://localhost:4318/v1/traces`
 4. Check collector logs: `docker compose logs otel-collector`
+
+### No system metrics in Prometheus
+
+1. Check rippled logs for `OTelCollector starting` message
+2. Verify `server=otel` in the `[insight]` config section
+3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
+4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=rippled_job_count'`
 
 ### High memory usage
 

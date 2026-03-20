@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Node health metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "description": "Node health metrics from beast::insight System Metrics. Requires [insight] server=otel in rippled config.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -30,8 +30,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_LedgerMaster_Validated_Ledger_Age",
-          "legendFormat": "Validated Age"
+          "expr": "rippled_LedgerMaster_Validated_Ledger_Age{exported_instance=~\"$node\"}",
+          "legendFormat": "Validated Age [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -78,8 +78,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_LedgerMaster_Published_Ledger_Age",
-          "legendFormat": "Published Age"
+          "expr": "rippled_LedgerMaster_Published_Ledger_Age{exported_instance=~\"$node\"}",
+          "legendFormat": "Published Age [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -107,7 +107,7 @@
     },
     {
       "title": "Operating Mode Duration",
-      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp:774-778). A healthy node should spend the vast majority of time in Full mode.",
+      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp:774-778) which report microseconds. A healthy node should spend the vast majority of time in Full mode.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -126,43 +126,43 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Full_duration",
-          "legendFormat": "Full"
+          "expr": "rippled_State_Accounting_Full_duration{exported_instance=~\"$node\"}",
+          "legendFormat": "Full [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Tracking_duration",
-          "legendFormat": "Tracking"
+          "expr": "rippled_State_Accounting_Tracking_duration{exported_instance=~\"$node\"}",
+          "legendFormat": "Tracking [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Syncing_duration",
-          "legendFormat": "Syncing"
+          "expr": "rippled_State_Accounting_Syncing_duration{exported_instance=~\"$node\"}",
+          "legendFormat": "Syncing [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Connected_duration",
-          "legendFormat": "Connected"
+          "expr": "rippled_State_Accounting_Connected_duration{exported_instance=~\"$node\"}",
+          "legendFormat": "Connected [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Disconnected_duration",
-          "legendFormat": "Disconnected"
+          "expr": "rippled_State_Accounting_Disconnected_duration{exported_instance=~\"$node\"}",
+          "legendFormat": "Disconnected [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "µs",
           "custom": {
-            "axisLabel": "Duration (Sec)",
+            "axisLabel": "Duration",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -193,41 +193,41 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Full_transitions",
-          "legendFormat": "Full"
+          "expr": "rippled_State_Accounting_Full_transitions{exported_instance=~\"$node\"}",
+          "legendFormat": "Full [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Tracking_transitions",
-          "legendFormat": "Tracking"
+          "expr": "rippled_State_Accounting_Tracking_transitions{exported_instance=~\"$node\"}",
+          "legendFormat": "Tracking [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Syncing_transitions",
-          "legendFormat": "Syncing"
+          "expr": "rippled_State_Accounting_Syncing_transitions{exported_instance=~\"$node\"}",
+          "legendFormat": "Syncing [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Connected_transitions",
-          "legendFormat": "Connected"
+          "expr": "rippled_State_Accounting_Connected_transitions{exported_instance=~\"$node\"}",
+          "legendFormat": "Connected [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Disconnected_transitions",
-          "legendFormat": "Disconnected"
+          "expr": "rippled_State_Accounting_Disconnected_transitions{exported_instance=~\"$node\"}",
+          "legendFormat": "Disconnected [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Transitions",
             "spanNulls": true,
@@ -260,15 +260,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ios_latency{quantile=\"0.95\"}",
-          "legendFormat": "P95 I/O Latency"
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_ios_latency_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P95 I/O Latency [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ios_latency{quantile=\"0.5\"}",
-          "legendFormat": "P50 I/O Latency"
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(rippled_ios_latency_bucket{exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "P50 I/O Latency [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -287,7 +287,7 @@
     },
     {
       "title": "Job Queue Depth",
-      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
+      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough — common during ledger replay or heavy RPC load.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -306,13 +306,13 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_job_count",
-          "legendFormat": "Job Queue Depth"
+          "expr": "rippled_job_count{exported_instance=~\"$node\"}",
+          "legendFormat": "Job Queue Depth [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
             "axisLabel": "Jobs",
             "spanNulls": true,
@@ -345,8 +345,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_ledger_fetches_total[5m])",
-          "legendFormat": "Fetches / Sec"
+          "expr": "rate(rippled_ledger_fetches_total{exported_instance=~\"$node\"}[5m])",
+          "legendFormat": "Fetches / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -377,8 +377,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_ledger_history_mismatch_total[5m])",
-          "legendFormat": "Mismatches / Sec"
+          "expr": "rate(rippled_ledger_history_mismatch_total{exported_instance=~\"$node\"}[5m])",
+          "legendFormat": "Mismatches / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -404,12 +404,33 @@
   "schemaVersion": 39,
   "tags": ["rippled", "statsd", "node-health", "telemetry"],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(rippled_LedgerMaster_Validated_Ledger_Age, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
   },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Node Health (StatsD)",
-  "uid": "rippled-statsd-node-health"
+  "title": "Node Health (System Metrics)",
+  "uid": "rippled-system-node-health"
 }

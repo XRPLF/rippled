@@ -10,13 +10,12 @@
 graph LR
     subgraph rippledNode["rippled Node"]
         A["Trace Macros<br/>XRPL_TRACE_SPAN<br/>(OTLP/HTTP exporter)"]
-        B["beast::insight<br/>StatsD metrics<br/>(UDP sender)"]
+        B["beast::insight<br/>OTel native metrics<br/>(OTLP/HTTP exporter)"]
     end
 
-    subgraph collector["OTel Collector  :4317 / :4318 / :8125"]
+    subgraph collector["OTel Collector  :4317 / :4318"]
         direction TB
-        R1["OTLP Receiver<br/>:4317 gRPC  |  :4318 HTTP"]
-        R2["StatsD Receiver<br/>:8125 UDP"]
+        R1["OTLP Receiver<br/>:4317 gRPC  |  :4318 HTTP<br/>(traces + metrics)"]
         BP["Batch Processor<br/>timeout 1s, batch 100"]
         SM["SpanMetrics Connector<br/>derives RED metrics<br/>from trace spans"]
 
@@ -29,7 +28,7 @@ graph LR
     end
 
     subgraph metrics["Metrics Stack"]
-        E["Prometheus  :9090<br/>scrapes :8889<br/>span-derived + StatsD metrics"]
+        E["Prometheus  :9090<br/>scrapes :8889<br/>span-derived + system metrics"]
     end
 
     subgraph viz["Visualization"]
@@ -37,20 +36,19 @@ graph LR
     end
 
     A -->|"OTLP/HTTP :4318<br/>(traces + attributes)"| R1
-    B -->|"UDP :8125<br/>(gauges, counters, timers)"| R2
+    B -->|"OTLP/HTTP :4318<br/>(gauges, counters, histograms)"| R1
 
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R2 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* summaries"| E
+    R1 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* histograms"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
 
     style A fill:#4a90d9,color:#fff,stroke:#2a6db5
-    style B fill:#d9534f,color:#fff,stroke:#b52d2d
+    style B fill:#4a90d9,color:#fff,stroke:#2a6db5
     style R1 fill:#5cb85c,color:#fff,stroke:#3d8b3d
-    style R2 fill:#5cb85c,color:#fff,stroke:#3d8b3d
     style BP fill:#449d44,color:#fff,stroke:#2d6e2d
     style SM fill:#449d44,color:#fff,stroke:#2d6e2d
     style D fill:#f0ad4e,color:#000,stroke:#c78c2e
@@ -63,10 +61,10 @@ graph LR
     style viz fill:#1a2d33,color:#ccc,stroke:#5bc0de
 ```
 
-There are two independent telemetry pipelines entering a single **OTel Collector**:
+There are two independent telemetry pipelines entering a single **OTel Collector** via the same OTLP receiver:
 
 1. **OpenTelemetry Traces** — Distributed spans with attributes, exported via OTLP/HTTP (:4318) to the collector's **OTLP Receiver**. The **Batch Processor** groups spans (1s timeout, batch size 100) before forwarding to trace backends. The **SpanMetrics Connector** derives RED metrics (rate, errors, duration) from every span and feeds them into the metrics pipeline.
-2. **beast::insight StatsD** — System-level gauges, counters, and timers emitted as StatsD UDP packets to port :8125, ingested by the collector's **StatsD Receiver**, and exported alongside span-derived metrics to Prometheus.
+2. **beast::insight OTel Metrics** — System-level gauges, counters, and histograms exported natively via OTLP/HTTP (:4318) to the same **OTLP Receiver**. These are batched and exported to Prometheus alongside span-derived metrics. The StatsD UDP transport has been replaced by native OTLP; `server=statsd` remains available as a fallback.
 
 **Trace backend** — The collector exports traces via OTLP/gRPC to:
 
@@ -263,13 +261,25 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 ---
 
-## 2. StatsD Metrics (beast::insight)
+## 2. System Metrics (beast::insight — OTel native)
 
-> **See also**: [02-design-decisions.md](./02-design-decisions.md) for the beast::insight coexistence design. [06-implementation-phases.md](./06-implementation-phases.md) for the Phase 6 metric inventory.
+> **See also**: [02-design-decisions.md](./02-design-decisions.md) for the beast::insight coexistence design. [06-implementation-phases.md](./06-implementation-phases.md) for the Phase 6/7 metric inventory.
+>
+> **Migration complete**: Phase 7 replaced the StatsD UDP transport with native OTel Metrics SDK export via OTLP/HTTP. The `beast::insight::Collector` interface and all metric names are preserved — only the wire protocol changed. `[insight] server=statsd` remains as a fallback.
 
-These are system-level metrics emitted by rippled's `beast::insight` framework via StatsD UDP. They cover operational data that doesn't map to individual trace spans.
+These are system-level metrics emitted by rippled's `beast::insight` framework via OTel OTLP/HTTP. They cover operational data that doesn't map to individual trace spans.
 
 ### Configuration
+
+```ini
+# Recommended: native OTel metrics via OTLP/HTTP
+[insight]
+server=otel
+endpoint=http://localhost:4318/v1/metrics
+prefix=rippled
+```
+
+Fallback (StatsD):
 
 ```ini
 [insight]
@@ -300,7 +310,7 @@ prefix=rippled
 | `rippled_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
 | `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
 
-**Grafana dashboard**: _Node Health (StatsD)_ (`rippled-statsd-node-health`)
+**Grafana dashboard**: _Node Health (System Metrics)_ (`rippled-system-node-health`)
 
 ### 2.2 Counters
 
@@ -312,11 +322,11 @@ prefix=rippled
 | `rippled_warn`                    | Logic.h            | Resource manager warnings issued              |
 | `rippled_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
 
-**Note**: `rippled_warn` and `rippled_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
+**Note**: With `server=otel`, `rippled_warn` and `rippled_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
-**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`rippled-statsd-rpc`)
+**Grafana dashboard**: _RPC & Pathfinding (System Metrics)_ (`rippled-system-rpc`)
 
-### 2.3 Histograms (from StatsD timers)
+### 2.3 Histograms (Event timers)
 
 | Prometheus Metric       | Source File       | Unit  | Description                    |
 | ----------------------- | ----------------- | ----- | ------------------------------ |
@@ -356,7 +366,7 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | `ping` / `status`                                                 | Keepalive and status       |
 | `set_get`                                                         | Set requests               |
 
-**Grafana dashboards**: _Network Traffic_ (`rippled-statsd-network`), _Overlay Traffic Detail_ (`rippled-statsd-overlay-detail`), _Ledger Data & Sync_ (`rippled-statsd-ledger-sync`)
+**Grafana dashboards**: _Network Traffic_ (`rippled-system-network`), _Overlay Traffic Detail_ (`rippled-system-overlay-detail`), _Ledger Data & Sync_ (`rippled-system-ledger-sync`)
 
 ---
 
@@ -374,15 +384,15 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | Ledger Operations    | `rippled-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison |
 | Peer Network         | `rippled-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown     |
 
-### 3.2 StatsD Dashboards (5)
+### 3.2 System Metrics Dashboards (5)
 
-| Dashboard              | UID                             | Data Source         | Key Panels                                                                        |
-| ---------------------- | ------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
-| Node Health            | `rippled-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
-| Network Traffic        | `rippled-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
-| RPC & Pathfinding      | `rippled-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
-| Overlay Traffic Detail | `rippled-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
-| Ledger Data & Sync     | `rippled-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
+| Dashboard              | UID                             | Data Source       | Key Panels                                                                        |
+| ---------------------- | ------------------------------- | ----------------- | --------------------------------------------------------------------------------- |
+| Node Health            | `rippled-system-node-health`    | Prometheus (OTLP) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
+| Network Traffic        | `rippled-system-network`        | Prometheus (OTLP) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
+| RPC & Pathfinding      | `rippled-system-rpc`            | Prometheus (OTLP) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
+| Overlay Traffic Detail | `rippled-system-overlay-detail` | Prometheus (OTLP) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
+| Ledger Data & Sync     | `rippled-system-ledger-sync`    | Prometheus (OTLP) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
 
 ### 3.3 Accessing the Dashboards
 
@@ -438,7 +448,7 @@ ledger.store                  (persist to DB)
 
 ## 5. Prometheus Query Examples
 
-> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8.7 for correlating Prometheus StatsD metrics with trace-derived metrics.
+> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8.7 for correlating Prometheus system metrics with trace-derived metrics.
 
 ### Span-Derived Metrics
 

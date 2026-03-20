@@ -556,6 +556,8 @@ span->SetAttribute("peer.id", peerId);
 
 ### 2.6.4 Coexistence Strategy
 
+> **Note**: Phase 7 replaces the StatsD bridge with native OTel Metrics SDK export. The diagram below shows the Phase 6 intermediate state. See [Phase7_taskList.md](./Phase7_taskList.md) for the migration design where Beast Insight emits via OTLP instead of StatsD.
+
 ```mermaid
 flowchart TB
     subgraph rippled["rippled Process"]
@@ -583,6 +585,8 @@ flowchart TB
 - **Beast Insight to StatsD Server**: Insight sends aggregated metrics (counters, gauges) over UDP to a StatsD server. Grafana reads from StatsD-compatible backends like Graphite or Prometheus (via StatsD exporter).
 - **OpenTelemetry to OTLP Collector**: OTel exports spans over OTLP/gRPC to a Collector, which then forwards to a trace backend (Tempo).
 - **Grafana (red, unified UI)**: All three data streams converge in Grafana, enabling operators to correlate logs, metrics, and traces in a single dashboard.
+
+**Phase 7 target state**: Beast Insight routes to `OTelCollector` (new `Collector` implementation) which exports via OTLP/HTTP to the same collector endpoint as traces. StatsD UDP path becomes a deprecated fallback (`[insight] server=statsd`). See [06-implementation-phases.md §6.8](./06-implementation-phases.md) and [Phase7_taskList.md](./Phase7_taskList.md) for details.
 
 ### 2.6.5 Correlation with PerfLog
 
