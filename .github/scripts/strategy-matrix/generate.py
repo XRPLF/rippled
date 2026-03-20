@@ -234,41 +234,56 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
-        # GCC-Asan rippled-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
+        # Add ASAN, TSAN, and UBSAN sanitizer jobs for specific bookworm distros.
+        # Each sanitizer runs independently to keep binary size under ASAN's
+        # 2GB shadow memory limit (combining ASAN+UBSAN inflates data sections
+        # past 2GB, see https://github.com/google/sanitizers/issues/856).
         if os[
             "distro_version"
         ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
             "clang-20",
             "gcc-13",
         ]:
-            # Add ASAN + UBSAN configuration.
+            # Add ASAN configuration.
             configurations.append(
                 {
-                    "config_name": config_name + "-asan-ubsan",
+                    "config_name": config_name + "-asan",
                     "cmake_args": cmake_args,
                     "cmake_target": cmake_target,
                     "build_only": build_only,
                     "build_type": build_type,
                     "os": os,
                     "architecture": architecture,
-                    "sanitizers": "address,undefinedbehavior",
+                    "sanitizers": "address",
                 }
             )
-            # Add TSAN + UBSAN configuration.
+            # Add TSAN configuration.
             # TSAN instrumentation significantly increases memory usage during
             # compilation, so reduce build parallelism to avoid OOM on CI runners.
             configurations.append(
                 {
-                    "config_name": config_name + "-tsan-ubsan",
+                    "config_name": config_name + "-tsan",
                     "cmake_args": cmake_args,
                     "cmake_target": cmake_target,
                     "build_only": build_only,
                     "build_type": build_type,
                     "os": os,
                     "architecture": architecture,
-                    "sanitizers": "thread,undefinedbehavior",
+                    "sanitizers": "thread",
                     "nproc_subtract": 20,
+                }
+            )
+            # Add UBSAN configuration.
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
                 }
             )
         else:
@@ -291,10 +306,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         c
         for c in configurations
         if c["sanitizers"]
-        and (
-            ("gcc-13" in c["config_name"] and "asan" in c["config_name"])
-            or ("clang-20" in c["config_name"] and "tsan" in c["config_name"])
-        )
+        and ("gcc-13" in c["config_name"] or "clang-20" in c["config_name"])
     ]
     if sanitizer_only:
         return sanitizer_only
