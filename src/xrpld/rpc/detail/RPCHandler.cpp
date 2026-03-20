@@ -8,6 +8,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/Tuning.h>
+#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
@@ -157,6 +158,11 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
+    XRPL_TRACE_RPC(context.app.getTelemetry(), "rpc.command." + name);
+    XRPL_TRACE_SET_ATTR("xrpl.rpc.command", name.c_str());
+    XRPL_TRACE_SET_ATTR("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
+    XRPL_TRACE_SET_ATTR("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
+
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
     std::uint64_t const curId = ++requestId;
@@ -172,12 +178,15 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
+        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");
         return ret;
     }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
+        XRPL_TRACE_EXCEPTION(e);
+        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;
