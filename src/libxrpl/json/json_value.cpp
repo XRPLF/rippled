@@ -525,7 +525,7 @@ Value::asInt() const
 
         case realValue:
             JSON_ASSERT_MESSAGE(
-                value_.real_ >= minInt && value_.real_ <= maxInt,
+                (value_.real_ >= minInt && value_.real_ <= maxInt),
                 "Real out of signed integer range");
             return Int(value_.real_);
 
@@ -626,7 +626,8 @@ Value::asUInt() const
 
         case realValue:
             JSON_ASSERT_MESSAGE(
-                value_.real_ >= 0 && value_.real_ <= maxUInt, "Real out of unsigned integer range");
+                (value_.real_ >= 0 && value_.real_ <= maxUInt),
+                "Real out of unsigned integer range");
             return UInt(value_.real_);
 
         case booleanValue:

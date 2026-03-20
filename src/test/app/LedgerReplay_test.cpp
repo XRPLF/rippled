@@ -1339,7 +1339,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
         BEAST_EXPECT(net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
-        BEAST_EXPECT(net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
+        BEAST_EXPECT(net.client.countsAsExpected(4, 3, (2 * (totalReplay - 1)) + 2));
 
         // cover
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
@@ -1351,7 +1351,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses changed
         BEAST_EXPECT(net.client.waitForLedgers(finalHash, totalReplay * 3));
-        BEAST_EXPECT(net.client.countsAsExpected(5, 3, totalReplay * 3 - 1));
+        BEAST_EXPECT(net.client.countsAsExpected(5, 3, (totalReplay * 3) - 1));
 
         // sweep
         net.client.replayer.sweep();

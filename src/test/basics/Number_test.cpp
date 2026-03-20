@@ -1537,7 +1537,7 @@ public:
             // 99'999'999'999'999'999'800'000'000'000'000'000'100 - also 38
             // digits
             BEAST_EXPECT(
-                (power(max, 2) == Number{false, maxMantissa / 10 - 1, 20, Number::normalized{}}));
+                (power(max, 2) == Number{false, (maxMantissa / 10) - 1, 20, Number::normalized{}}));
         }
     }
 

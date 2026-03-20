@@ -103,6 +103,7 @@ Message::compress()
         if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
         {
             bufferCompressed_.resize(headerBytesCompressed + compressedSize);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
             setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }
         else
