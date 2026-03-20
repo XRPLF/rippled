@@ -308,7 +308,7 @@ TxQ::MaybeTx&
 TxQ::TxQAccount::add(MaybeTx&& txn)
 {
     auto const seqProx = txn.seqProxy;
-    auto const* txnPtr = &txn;
+    [[maybe_unused]] auto const* txnPtr = &txn;
 
     auto result = transactions.emplace(seqProx, std::move(txn));
     XRPL_ASSERT(result.second, "xrpl::TxQ::TxQAccount::add : emplace succeeded");
