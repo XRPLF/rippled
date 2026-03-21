@@ -53,7 +53,7 @@ public:
     }
 
     /** Returns the read view (always available) */
-    ReadView const*
+    ReadView const&
     readView() const
     {
         return readView_;
@@ -77,13 +77,13 @@ protected:
     ReadOnlySLE() = default;
 
     /** Constructor for read-only context (ReadView) */
-    explicit ReadOnlySLE(std::shared_ptr<SLE const> sle, ReadView const* view)
+    explicit ReadOnlySLE(std::shared_ptr<SLE const> sle, ReadView const& view)
         : sle_(std::move(sle)), readView_(view)
     {
     }
 
     std::shared_ptr<SLE const> sle_;  // Always valid (const view)
-    ReadView const* readView_;        // Always valid
+    ReadView const& readView_;        // Always valid
 };
 
 /**
@@ -123,7 +123,7 @@ public:
     }
 
     /** Returns the apply view for write operations */
-    ApplyView*
+    ApplyView&
     applyView() const
     {
         return applyView_;
@@ -174,7 +174,7 @@ protected:
     }
 
     std::shared_ptr<SLE> mutableSle_;  // Mutable SLE for write contexts
-    ApplyView* applyView_;             // ApplyView for write contexts
+    ApplyView& applyView_;             // ApplyView for write contexts
 };
 
 }  // namespace xrpl
