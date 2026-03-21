@@ -267,8 +267,10 @@ parseUint16(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -320,8 +322,10 @@ parseUint32(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(
                 field, json_name, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -449,7 +453,7 @@ parseLeaf(
                 {
                     auto const str = value.asString();
 
-                    std::uint64_t val;
+                    std::uint64_t val = 0;
 
                     bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
 

@@ -12,7 +12,7 @@ namespace test {
 namespace jtx {
 
 std::tuple<Json::Value, Keylet>
-Vault::create(CreateArgs const& args)
+Vault::create(CreateArgs const& args) const
 {
     auto keylet = keylet::vault(args.owner.id(), env.seq(args.owner));
     Json::Value jv;

@@ -198,7 +198,7 @@ ValidVault::finalize(
 
         return true;  // Not a vault operation
     }
-    else if (!(hasPrivilege(tx, mustModifyVault) || hasPrivilege(tx, mayModifyVault)))
+    if (!(hasPrivilege(tx, mustModifyVault) || hasPrivilege(tx, mayModifyVault)))
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault updated by a wrong transaction type";
@@ -280,7 +280,7 @@ ValidVault::finalize(
 
         return result;
     }
-    else if (txnType == ttVAULT_DELETE)
+    if (txnType == ttVAULT_DELETE)
     {
         JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
                            "deleting a vault";

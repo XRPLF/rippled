@@ -98,7 +98,7 @@ doAccountLines(RPC::JsonContext& context)
         return result;
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountLines, context))
         return *err;
 
@@ -191,9 +191,13 @@ doAccountLines(RPC::JsonContext& context)
                     if (visitData.ignoreDefault)
                     {
                         if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                        }
                         else
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfHighReserve);
+                        }
                     }
 
                     if (!ignore && count <= limit)

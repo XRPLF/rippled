@@ -196,6 +196,7 @@ struct Flow_test : public beast::unit_test::suite
 
         //   Dan -> Bob -> Alice -> Carol; vary bobDanQIn and bobAliceQOut
         for (auto bobDanQIn : {80, 100, 120})
+        {
             for (auto bobAliceQOut : {80, 100, 120})
             {
                 Env env(*this, features);
@@ -213,12 +214,17 @@ struct Flow_test : public beast::unit_test::suite
                     txflags(tfNoRippleDirect));
                 env.require(balance(bob, USDA(90)));
                 if (bobAliceQOut > bobDanQIn)
+                {
                     env.require(
                         balance(bob, USDD(10.0 * double(bobAliceQOut) / double(bobDanQIn))));
+                }
                 else
+                {
                     env.require(balance(bob, USDD(10)));
+                }
                 env.require(balance(carol, USDA(10)));
             }
+        }
 
         // bob -> alice -> carol; vary carolAliceQIn
         for (auto carolAliceQIn : {80, 100, 120})
@@ -472,8 +478,10 @@ struct Flow_test : public beast::unit_test::suite
                     return false;
                 Sandbox sb(&view, tapNONE);
                 for (auto const& o : flowResult.removableOffers)
+                {
                     if (auto ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
+                }
                 sb.apply(view);
                 return true;
             });

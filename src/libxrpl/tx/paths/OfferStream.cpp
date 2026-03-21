@@ -95,8 +95,10 @@ accountFundsHelper(
     beast::Journal j)
 {
     if (issue.account == id)
+    {
         // self funded
         return amtDefault;
+    }
 
     return toAmount<IOUAmount>(
         accountHolds(view, id, issue.currency, issue.account, freezeHandling, j));

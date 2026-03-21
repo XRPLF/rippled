@@ -37,12 +37,12 @@ private:
         return EitherAmount(*cache_);
     }
 
-public:
     XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
         : acc_(acc), isLast_(ctx.isLast), j_(ctx.j)
     {
     }
 
+public:
     AccountID const&
     acc() const
     {
@@ -135,6 +135,8 @@ private:
         }
         return false;
     }
+
+    friend TDerived;
 };
 
 //------------------------------------------------------------------------------
@@ -149,7 +151,10 @@ private:
 class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
 {
 public:
-    using XRPEndpointStep<XRPEndpointPaymentStep>::XRPEndpointStep;
+    XRPEndpointPaymentStep(StrandContext const& ctx, AccountID const& acc)
+        : XRPEndpointStep<XRPEndpointPaymentStep>(ctx, acc)
+    {
+    }
 
     XRPAmount
     xrpLiquid(ReadView& sb) const
@@ -238,7 +243,7 @@ XRPEndpointStep<TDerived>::revImp(
     auto& sender = isLast_ ? xrpAccount() : acc_;
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
 
     cache_.emplace(result);
@@ -261,7 +266,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     auto& sender = isLast_ ? xrpAccount() : acc_;
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {XRPAmount{beast::zero}, XRPAmount{beast::zero}};
 
     cache_.emplace(result);
@@ -327,7 +332,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     auto& src = isLast_ ? xrpAccount() : acc_;
     auto& dst = isLast_ ? acc_ : xrpAccount();
     auto ter = checkFreeze(ctx.view, src, dst, xrpCurrency());
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return ter;
 
     auto const issuesIndex = isLast_ ? 0 : 1;
@@ -375,7 +380,7 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
-    if (ter != tesSUCCESS)
+    if (!isTesSuccess(ter))
         return {ter, nullptr};
 
     return {tesSUCCESS, std::move(r)};

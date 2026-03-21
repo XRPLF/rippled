@@ -72,7 +72,7 @@ public:
     bool
     validMultiSign() const
     {
-        return isMultiSigning() && multiSignPublicKey_ && multiSignature_.size();
+        return isMultiSigning() && multiSignPublicKey_ && !multiSignature_.empty();
     }
 
     // Don't call this method unless isMultiSigning() returns true.
@@ -179,11 +179,15 @@ checkPayment(
         if (tx_json.isMember(jss::Amount))
         {
             if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
+            {
                 return RPC::make_error(
                     rpcINVALID_PARAMS, "Cannot specify differing 'Amount' and 'DeliverMax'");
+            }
         }
         else
+        {
             tx_json[jss::Amount] = tx_json[jss::DeliverMax];
+        }
 
         tx_json.removeMember(jss::DeliverMax);
     }
@@ -204,12 +208,16 @@ checkPayment(
         return RPC::invalid_field_error("tx_json.Destination");
 
     if (params.isMember(jss::build_path) && ((doPath == false) || amount.holds<MPTIssue>()))
+    {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
+    }
 
     if (tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
+    {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Cannot specify both 'tx_json.Paths' and 'build_path'");
+    }
 
     std::optional<uint256> domain;
     if (tx_json.isMember(sfDomainID.jsonName))
@@ -220,10 +228,8 @@ checkPayment(
         {
             return RPC::make_error(rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
@@ -338,9 +344,13 @@ checkTxJsonFields(
     if (verify && !config.standalone() && (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
         if (apiVersion == 1)
+        {
             ret.first = rpcError(rpcNO_CURRENT);
+        }
         else
+        {
             ret.first = rpcError(rpcNOT_SYNCED);
+        }
         return ret;
     }
 
@@ -525,8 +535,10 @@ transactionPreProcessImpl(
     if (verify)
     {
         if (!sle)
+        {
             // XXX Ignore transactions for accounts not created.
             return rpcError(rpcSRC_ACT_NOT_FOUND);
+        }
 
         JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
                         << toBase58(srcAddressID);
@@ -592,8 +604,10 @@ transactionPreProcessImpl(
         {
             // If the target object doesn't exist, make one.
             if (!parsed.object->isFieldPresent(*signatureTarget))
+            {
                 parsed.object->setFieldObject(
                     *signatureTarget, STObject{*signatureTemplate, *signatureTarget});
+            }
             sigObject = &parsed.object->peekFieldObject(*signatureTarget);
         }
         sigObject->setFieldVL(
@@ -666,8 +680,10 @@ transactionConstructImpl(
             // Check the signature if that's called for.
             auto sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
+            {
                 forceValidity(
                     app.getHashRouter(), sttxNew->getTransactionID(), Validity::SigGoodOnly);
+            }
             if (checkValidity(app.getHashRouter(), *sttxNew, rules).first != Validity::Valid)
             {
                 ret.first = RPC::make_error(rpcINTERNAL, "Invalid signature.");
@@ -714,7 +730,9 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
+        {
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        }
 
         RPC::insertDeliverMax(
             jvResult[jss::tx_json], tpTrans->getSTransaction()->getTxnType(), apiVersion);
@@ -880,9 +898,11 @@ checkFee(
         {
             mult = request[jss::fee_mult_max].asInt();
             if (mult < 0)
+            {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
                     RPC::expected_field_message(jss::fee_mult_max, "a positive integer"));
+            }
         }
         else
         {
@@ -896,9 +916,11 @@ checkFee(
         {
             div = request[jss::fee_div_max].asInt();
             if (div <= 0)
+            {
                 return RPC::make_error(
                     rpcINVALID_PARAMS,
                     RPC::expected_field_message(jss::fee_div_max, "a positive integer"));
+            }
         }
         else
         {
@@ -1024,8 +1046,10 @@ checkMultiSignFields(Json::Value const& jvRequest)
     // Account.
     if (!jvRequest.isMember(jss::signature_target) &&
         !tx_json[sfSigningPubKey.getJsonName()].asString().empty())
+    {
         return RPC::make_error(
             rpcINVALID_PARAMS, "When multi-signing 'tx_json.SigningPubKey' must be empty.");
+    }
 
     return Json::Value();
 }

@@ -94,9 +94,13 @@ public:
     dereference() const override
     {
         if (!sle1_)
+        {
             return sle0_;
-        else if (!sle0_)
+        }
+        if (!sle0_)
+        {
             return sle1_;
+        }
         if (sle1_->key() <= sle0_->key())
             return sle1_;
         return sle0_;
@@ -108,9 +112,13 @@ private:
     {
         ++iter0_;
         if (iter0_ == end0_)
+        {
             sle0_ = nullptr;
+        }
         else
+        {
             sle0_ = *iter0_;
+        }
     }
 
     void
@@ -118,9 +126,13 @@ private:
     {
         ++iter1_;
         if (iter1_ == end1_)
+        {
             sle1_ = nullptr;
+        }
         else
+        {
             sle1_ = iter1_->second.sle;
+        }
     }
 
     void

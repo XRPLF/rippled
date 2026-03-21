@@ -78,8 +78,6 @@ RCLConsensus::Adaptor::Adaptor(
 
     if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
     {
-        std::stringstream ss;
-
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
 
@@ -384,7 +382,10 @@ RCLConsensus::Adaptor::onAccept(
     bool const validating)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT, "AcceptLedger", [=, this, cj = std::move(consensusJson)]() mutable {
+        jtACCEPT,
+        "AcceptLedger",
+        // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
+        [=, this, cj = std::move(consensusJson)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
@@ -408,7 +409,7 @@ RCLConsensus::Adaptor::doAccept(
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
 
-    bool closeTimeCorrect;
+    bool closeTimeCorrect = false;
 
     bool const proposing = mode == ConsensusMode::proposing;
     bool const haveCorrectLCL = mode != ConsensusMode::wrongLedger;
@@ -497,7 +498,7 @@ RCLConsensus::Adaptor::doAccept(
             std::move(accepted),
             [curr = built.seq(), j = app_.journal("CensorshipDetector"), &failed](
                 uint256 const& id, LedgerIndex seq) {
-                if (failed.count(id))
+                if (failed.contains(id))
                     return true;
 
                 auto const wait = curr - seq;
@@ -584,9 +585,13 @@ RCLConsensus::Adaptor::doAccept(
         auto const lastVal = ledgerMaster_.getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
+        {
             rules = makeRulesGivenLedger(*lastVal, app_.config().features);
+        }
         else
+        {
             rules.emplace(app_.config().features);
+        }
         app_.openLedger().accept(
             app_,
             *rules,
@@ -663,9 +668,13 @@ RCLConsensus::Adaptor::notify(
     protocol::TMStatusChange s;
 
     if (!haveCorrectLCL)
+    {
         s.set_newevent(protocol::neLOST_SYNC);
+    }
     else
+    {
         s.set_newevent(ne);
+    }
 
     s.set_ledgerseq(ledger.seq());
     s.set_networktime(app_.timeKeeper().now().time_since_epoch().count());
@@ -673,7 +682,7 @@ RCLConsensus::Adaptor::notify(
         ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::bytes);
     s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::bytes);
 
-    std::uint32_t uMin, uMax;
+    std::uint32_t uMin = 0, uMax = 0;
     if (!ledgerMaster_.getFullValidatedRange(uMin, uMax))
     {
         uMin = 0;
@@ -725,9 +734,13 @@ RCLConsensus::Adaptor::buildLCL(
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(built))
+    {
         JLOG(j_.debug()) << "Consensus built ledger we already had";
+    }
     else if (app_.getInboundLedgers().find(built->header().hash))
+    {
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
+    }
     else
         JLOG(j_.debug()) << "Consensus built new ledger";
     return RCLCxLedger{std::move(built)};
