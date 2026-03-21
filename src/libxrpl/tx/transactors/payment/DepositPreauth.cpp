@@ -249,7 +249,7 @@ DepositPreauth::doApply()
 TER
 DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
-    // Existence already checked in preclaim and DeleteAccount
+    // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {

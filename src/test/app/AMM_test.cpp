@@ -1973,7 +1973,7 @@ private:
         // Withdraw all tokens.
         testAMM([&](AMM& ammAlice, Env& env) {
             env(trust(carol, STAmount{ammAlice.lptIssue(), 10'000}));
-            // Can SetTrust only for AMM LP tokens
+            // Can TrustSet only for AMM LP tokens
             env(trust(carol, STAmount{Issue{EUR.currency, ammAlice.ammAccount()}, 10'000}),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -4415,7 +4415,7 @@ private:
             AMM amm(env, C, TSTA(5'000), TSTB(5'000));
             auto const ammIss = Issue(TSTA.currency, amm.ammAccount());
 
-            // Can SetTrust only for AMM LP tokens
+            // Can TrustSet only for AMM LP tokens
             env(trust(D, STAmount{ammIss, 10'000}), ter(tecNO_PERMISSION));
             env.close();
 
@@ -5108,7 +5108,7 @@ private:
             amm.withdrawAll(gw);
             BEAST_EXPECT(amm.ammExists());
 
-            // Bid,Vote,Deposit,Withdraw,SetTrust failing with
+            // Bid,Vote,Deposit,Withdraw,TrustSet failing with
             // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
             env(amm.bid({
                     .account = alice,
