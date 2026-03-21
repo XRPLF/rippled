@@ -63,9 +63,11 @@ ServerDefinitions::translate(std::string const& inp)
     {
         if (contains("512") || contains("384") || contains("256") || contains("192") ||
             contains("160") || contains("128"))
+        {
             return replace("UINT", "Hash");
-        else
-            return replace("UINT", "UInt");
+        }
+
+        return replace("UINT", "UInt");
     }
 
     static std::unordered_map<std::string_view, std::string_view> const replacements{
@@ -102,7 +104,9 @@ ServerDefinitions::translate(std::string const& inp)
             out += token;
         }
         else
+        {
             out += token;
+        }
         if (pos == inpToProcess.size())
             break;
         inpToProcess = inpToProcess.substr(pos + 1);
@@ -217,7 +221,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
     {
-        if (field->fieldName == "")
+        if (field->fieldName.empty())
             continue;
 
         Json::Value innerObj = Json::objectValue;

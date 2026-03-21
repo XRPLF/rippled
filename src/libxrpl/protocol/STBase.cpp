@@ -23,6 +23,9 @@ STBase::STBase(SField const& n) : fName(&n)
 STBase&
 STBase::operator=(STBase const& t)
 {
+    if (this == &t)
+        return *this;
+
     if (!fName->isUseful())
         fName = t.fName;
     return *this;

@@ -213,7 +213,7 @@ public:
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
-        , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
+        , likelyToClaimFee(isTesSuccess(ter) || isTecClaimHardFail(ter, flags))
     {
     }
 

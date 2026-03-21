@@ -24,9 +24,13 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
     if (sle->getType() == ltRIPPLE_STATE)
     {
         if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfLowNode);
-        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        }
+        if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfHighNode);
+        }
     }
 
     if (!sle->isFieldPresent(sfOwnerNode))
@@ -46,7 +50,7 @@ isRelatedToAccount(
         return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
             (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
     }
-    else if (sle->isFieldPresent(sfAccount))
+    if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
         // present. This will match objects such as Escrows (ltESCROW), Payment
@@ -57,12 +61,12 @@ isRelatedToAccount(
         return sle->getAccountID(sfAccount) == accountID ||
             (sle->isFieldPresent(sfDestination) && sle->getAccountID(sfDestination) == accountID);
     }
-    else if (sle->getType() == ltSIGNER_LIST)
+    if (sle->getType() == ltSIGNER_LIST)
     {
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
     }
-    else if (sle->getType() == ltNFTOKEN_OFFER)
+    if (sle->getType() == ltNFTOKEN_OFFER)
     {
         // Do not check the sfDestination field. NFToken Offers are NOT added to
         // the Destination account's directory.
@@ -234,9 +238,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         if (!keyType)
         {
             if (apiVersion > 1u)
+            {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
+            }
             else
+            {
                 error = RPC::invalid_field_error(jss::key_type);
+            }
             return {};
         }
 
@@ -279,7 +287,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     if (!seed)
     {
         if (has_key_type)
+        {
             seed = getSeedFromRPC(params, error);
+        }
         else
         {
             if (!params[jss::secret].isString())

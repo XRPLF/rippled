@@ -54,9 +54,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         if (*domain == beast::zero)
+        {
             return temMALFORMED;
-        else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        }
+        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        {
             return temMALFORMED;  // DomainID only allowed on private vaults
+        }
     }
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
@@ -67,7 +71,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -141,7 +145,7 @@ VaultCreate::doApply()
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     adjustOwnerCount(view(), owner, 2, j_);
     auto const ownerCount = owner->at(sfOwnerCount);
-    if (mPriorBalance < view().fees().accountReserve(ownerCount))
+    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
@@ -151,7 +155,7 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -206,16 +210,20 @@ VaultCreate::doApply()
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe
     if (auto value = tx[~sfWithdrawalPolicy])
+    {
         vault->at(sfWithdrawalPolicy) = *value;
+    }
     else
+    {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+    }
     if (scale)
         vault->at(sfScale) = scale;
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -223,7 +231,7 @@ VaultCreate::doApply()
     if (vault->isFlag(lsfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), mPriorBalance, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

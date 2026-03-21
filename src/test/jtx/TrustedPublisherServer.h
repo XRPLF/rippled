@@ -129,7 +129,7 @@ public:
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
     // This constructor is only public so std::make_shared has access.
-    // The function`make_TrustedPublisherServer` should be used to create
+    // The function `make_TrustedPublisherServer` should be used to create
     // instances.
     // The `futures` member is expected to be structured as
     // effective / expiration time point pairs for use in version 2 UNLs
@@ -249,7 +249,7 @@ public:
     {
         error_code ec;
         acceptor_.close(ec);
-        // TODO consider making this join
+        // TODO: consider making this join
         // any running do_peer threads
     }
 
