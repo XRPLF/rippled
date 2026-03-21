@@ -5434,6 +5434,81 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(assetsAvailableAfterWithdraw == 0);
             BEAST_EXPECT(assetsTotalAfterWithdraw == 0);
         }
+
+        // Test donation with non-1:1 share ratio.
+        // A prior donation skews the ratio so that 1 share > 1 asset.
+        // The donated amount must land exactly, not rounded via shares.
+        {
+            testcase(prefix + " succeeds with non-1:1 share ratio");
+
+            // Create a fresh vault
+            auto const [createTx, vk] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(createTx, ter{tesSUCCESS});
+            env.close();
+
+            // Depositor puts in 10 XRP → gets 10 shares at 1:1
+            env(vault.deposit({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = XRP(10),
+                }),
+                ter{tesSUCCESS});
+            env.close();
+
+            // Owner donates 7 XRP → ratio becomes 17 assets / 10 shares
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = XRP(7),
+                    .flags = tfVaultDonate,
+                }),
+                ter{tesSUCCESS});
+            env.close();
+
+            auto const sharesAfterFirstDonate = vaultShareBalance(vk);
+            auto const [availAfterFirstDonate, totalAfterFirstDonate] = vaultAssetBalance(vk);
+
+            // Shares unchanged (donation doesn't mint shares)
+            BEAST_EXPECT(sharesAfterFirstDonate == 10'000'000);
+            // Assets increased by exactly the donated amount
+            BEAST_EXPECT(availAfterFirstDonate == 17'000'000);
+            BEAST_EXPECT(totalAfterFirstDonate == 17'000'000);
+
+            // Donate again at the skewed 17:10 ratio — 3 XRP
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = vk.key,
+                    .amount = XRP(3),
+                    .flags = tfVaultDonate,
+                }),
+                ter{tesSUCCESS});
+            env.close();
+
+            auto const sharesAfterSecondDonate = vaultShareBalance(vk);
+            auto const [availAfterSecondDonate, totalAfterSecondDonate] = vaultAssetBalance(vk);
+
+            // Shares still unchanged
+            BEAST_EXPECT(sharesAfterSecondDonate == 10'000'000);
+            // Assets increased by exactly 3 XRP (20 total)
+            BEAST_EXPECT(availAfterSecondDonate == 20'000'000);
+            BEAST_EXPECT(totalAfterSecondDonate == 20'000'000);
+
+            // Depositor withdraws all shares — should get all 20 XRP
+            auto const sleVault = env.le(vk);
+            if (!BEAST_EXPECT(sleVault))
+                return;
+            Asset shareAsset(sleVault->at(sfShareMPTID));
+            env(vault.withdraw(
+                    {.depositor = depositor,
+                     .id = vk.key,
+                     .amount = shareAsset(sharesAfterSecondDonate)}),
+                ter{tesSUCCESS});
+            env.close();
+
+            BEAST_EXPECT(vaultShareBalance(vk) == 0);
+            BEAST_EXPECT(vaultAssetBalance(vk).first == 0);
+            BEAST_EXPECT(vaultAssetBalance(vk).second == 0);
+        }
     }
 
 public:

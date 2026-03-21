@@ -1103,6 +1103,9 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
 
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
+
 /** Has the specified time passed?
 
     @param now  the current time

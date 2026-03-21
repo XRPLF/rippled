@@ -186,6 +186,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(VaultDeposit,                                                                                                                                  \
+        TF_FLAG(tfVaultDonate, 0x00010000),                                                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(Batch,                                                                                                                                         \
         TF_FLAG(tfAllOrNothing, 0x00010000)                                                                                                                    \
         TF_FLAG(tfOnlyOne, 0x00020000)                                                                                                                         \
@@ -214,8 +218,6 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
         MASK_ADJ(0))
 
-constexpr std::uint32_t const tfVaultDonate = 0x00010000;
-constexpr std::uint32_t const tfVaultDepositMask = ~(tfUniversal | tfVaultDonate);
 // clang-format on
 
 // Create all the flag values.

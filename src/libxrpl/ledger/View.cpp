@@ -3723,6 +3723,12 @@ rippleUnlockEscrowMPT(
     return tesSUCCESS;
 }
 
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx)
+{
+    return rules.enabled(featureLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
+}
+
 bool
 after(NetClock::time_point now, std::uint32_t mark)
 {

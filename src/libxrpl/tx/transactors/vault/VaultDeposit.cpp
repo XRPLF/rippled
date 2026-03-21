@@ -77,7 +77,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(featureLendingProtocolV1_1) && ctx.tx.isFlag(tfVaultDonate))
+    if (isVaultDonate(ctx.view.rules(), ctx.tx))
     {
         if (account != vault->at(sfOwner))
         {
@@ -168,8 +168,7 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const isDonate =
-        ctx_.view().rules().enabled(featureLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate);
+    auto const isDonate = isVaultDonate(ctx_.view().rules(), ctx_.tx);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
