@@ -17,7 +17,7 @@ namespace xrpl {
 std::uint32_t
 VaultDeposit::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fixLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
         return tfVaultDepositMask;
 
     return tfVaultDepositMask | tfVaultDonate;
@@ -77,7 +77,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixLendingProtocolV1_1) && ctx.tx.isFlag(tfVaultDonate))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1) && ctx.tx.isFlag(tfVaultDonate))
     {
         if (account != vault->at(sfOwner))
         {
@@ -169,7 +169,7 @@ VaultDeposit::doApply()
     }
 
     auto const isDonate =
-        ctx_.view().rules().enabled(fixLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate);
+        ctx_.view().rules().enabled(featureLendingProtocolV1_1) && ctx_.tx.isFlag(tfVaultDonate);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
@@ -233,8 +233,11 @@ VaultDeposit::doApply()
 
             auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
             if (!maybeAssets)
+            {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            else if (*maybeAssets > amount)
+            }
+
+            if (*maybeAssets > amount)
             {
                 // LCOV_EXCL_START
                 JLOG(j_.error()) << "VaultDeposit: would take more than offered.";

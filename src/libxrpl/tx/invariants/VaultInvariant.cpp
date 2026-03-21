@@ -419,7 +419,8 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    bool const isDonate = view.rules().enabled(fixLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
+    bool const isDonate =
+        view.rules().enabled(featureLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
     bool const shouldUpdateShares =
         // Vault Asset donation is the only operation that can succeed without updating shares
         ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //
@@ -710,7 +711,7 @@ ValidVault::finalize(
                 }
 
                 // If assets are donated, check share invariants
-                if (view.rules().enabled(fixLendingProtocolV1_1) && tx.isFlag(tfVaultDonate))
+                if (view.rules().enabled(featureLendingProtocolV1_1) && tx.isFlag(tfVaultDonate))
                 {
                     auto const accountDeltaShares = deltaShares(tx[sfAccount]);
                     if (accountDeltaShares)

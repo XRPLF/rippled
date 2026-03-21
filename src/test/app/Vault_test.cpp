@@ -5252,7 +5252,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 disabled");
             env.disableFeature(featureLendingProtocolV1_1);
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(temDISABLED), THISLINE);
+            env(delTx, ter(temDISABLED));
             env.close();
             env.enableFeature(featureLendingProtocolV1_1);
         }
@@ -5261,7 +5261,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data too large");
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5269,7 +5269,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data empty");
             delTx[sfMemoData] = strHex(std::string(0, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5277,12 +5277,12 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data valid");
             PrettyAsset const xrpAsset = xrpIssue();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
-            env(tx, ter(tesSUCCESS), THISLINE);
+            env(tx, ter(tesSUCCESS));
             env.close();
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(tesSUCCESS), THISLINE);
+            env(delTx, ter(tesSUCCESS));
             env.close();
         }
     }
@@ -5321,21 +5321,21 @@ class Vault_test : public beast::unit_test::suite
         auto const depositAmount = XRP(10);
 
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-        env(tx, ter(tesSUCCESS), THISLINE);
+        env(tx, ter(tesSUCCESS));
         env.close();
 
-        // With fixLendingProtocolV1_1 disabled, donations fail
+        // With featureLendingProtocolV1_1 disabled, donations fail
         {
-            testcase(prefix + " fails with fixLendingProtocolV1_1 disabled");
-            env.disableFeature(fixLendingProtocolV1_1);
+            testcase(prefix + " fails with featureLendingProtocolV1_1 disabled");
+            env.disableFeature(featureLendingProtocolV1_1);
             auto const tx = vault.deposit({
                 .depositor = owner,
                 .id = keylet.key,
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{temINVALID_FLAG}, THISLINE);
-            env.enableFeature(fixLendingProtocolV1_1);
+            env(tx, ter{temINVALID_FLAG});
+            env.enableFeature(featureLendingProtocolV1_1);
             env.close();
         }
 
@@ -5348,7 +5348,7 @@ class Vault_test : public beast::unit_test::suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tecNO_PERMISSION}, THISLINE);
+            env(tx, ter{tecNO_PERMISSION});
             env.close();
         }
 
@@ -5358,8 +5358,7 @@ class Vault_test : public beast::unit_test::suite
                 .id = keylet.key,
                 .amount = depositAmount,
             }),
-            ter{tesSUCCESS},
-            THISLINE);
+            ter{tesSUCCESS});
         env.close();
 
         // Donation is not allowed by a non-owner
@@ -5371,7 +5370,7 @@ class Vault_test : public beast::unit_test::suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tecNO_PERMISSION}, THISLINE);
+            env(tx, ter{tecNO_PERMISSION});
             env.close();
         }
 
@@ -5383,7 +5382,7 @@ class Vault_test : public beast::unit_test::suite
                 .id = keylet.key,
             });
             tx[sfAssetsMaximum] = XRP(30).number();
-            env(tx, ter{tesSUCCESS}, THISLINE);
+            env(tx, ter{tesSUCCESS});
 
             tx = vault.deposit({
                 .depositor = owner,
@@ -5392,7 +5391,7 @@ class Vault_test : public beast::unit_test::suite
                 .flags = tfVaultDonate,
             });
 
-            env(tx, ter{tecLIMIT_EXCEEDED}, THISLINE);
+            env(tx, ter{tecLIMIT_EXCEEDED});
             env.close();
         }
 
@@ -5407,7 +5406,7 @@ class Vault_test : public beast::unit_test::suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tesSUCCESS}, THISLINE);
+            env(tx, ter{tesSUCCESS});
             env.close();
 
             auto const shareBalanceAfterDeposit = vaultShareBalance(keylet);
@@ -5426,7 +5425,7 @@ class Vault_test : public beast::unit_test::suite
             Asset shareAsset(sleVault->at(sfShareMPTID));
             tx = vault.withdraw(
                 {.depositor = depositor, .id = keylet.key, .amount = shareAsset(shareBalance)});
-            env(tx, ter{tesSUCCESS}, THISLINE);
+            env(tx, ter{tesSUCCESS});
 
             auto const shareBalanceAfterWithdraw = vaultShareBalance(keylet);
             auto const [assetsAvailableAfterWithdraw, assetsTotalAfterWithdraw] =

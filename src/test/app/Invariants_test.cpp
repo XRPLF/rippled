@@ -3380,7 +3380,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            Env{*this, testable_amendments() - fixLendingProtocolV1_1},
+            Env{*this, testable_amendments() - featureLendingProtocolV1_1},
             {"deposit must change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
