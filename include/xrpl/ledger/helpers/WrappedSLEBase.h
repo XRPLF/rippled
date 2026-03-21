@@ -119,7 +119,7 @@ public:
     bool
     canModify() const
     {
-        return applyView_ != nullptr && mutableSle_ != nullptr;
+        return mutableSle_ != nullptr;
     }
 
     /** Returns the apply view for write operations */
@@ -147,28 +147,28 @@ public:
     insert()
     {
         XRPL_ASSERT(canModify(), "xrpl::WritableSLE::insert : can modify");
-        applyView_->insert(mutableSle_);
+        applyView_.insert(mutableSle_);
     }
 
     void
     erase()
     {
         XRPL_ASSERT(canModify(), "xrpl::WritableSLE::erase : can modify");
-        applyView_->erase(mutableSle_);
+        applyView_.erase(mutableSle_);
     }
 
     void
     update()
     {
         XRPL_ASSERT(canModify(), "xrpl::WritableSLE::update : can modify");
-        applyView_->update(mutableSle_);
+        applyView_.update(mutableSle_);
     }
 
 protected:
     WritableSLE() = default;
 
     /** Constructor for read-write context (ApplyView) */
-    explicit WritableSLE(std::shared_ptr<SLE> sle, ApplyView* view)
+    explicit WritableSLE(std::shared_ptr<SLE> sle, ApplyView& view)
         : mutableSle_(std::move(sle)), applyView_(view)
     {
     }
