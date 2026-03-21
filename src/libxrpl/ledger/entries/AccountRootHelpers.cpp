@@ -66,15 +66,15 @@ AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 {
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
-        readView_->ownerCountHook(id_, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
+        readView_.ownerCountHook(id_, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount(sle_) ? XRPAmount{0} : readView_->fees().accountReserve(ownerCount);
+        isPseudoAccount(sle_) ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle_->getFieldAmount(sfBalance);
 
-    auto const balance = readView_->balanceHook(id_, xrpAccount(), fullBalance);
+    auto const balance = readView_.balanceHook(id_, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
@@ -104,7 +104,7 @@ WritableAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
     std::uint32_t const current{mutableSle_->getFieldU32(sfOwnerCount)};
     AccountID const id = (*mutableSle_)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
-    applyView_->adjustOwnerCountHook(id_, current, adjusted);
+    applyView_.adjustOwnerCountHook(id_, current, adjusted);
     mutableSle_->at(sfOwnerCount) = adjusted;
     update();
 }

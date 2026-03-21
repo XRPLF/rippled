@@ -28,7 +28,7 @@ protected:
     AccountID const id_;
 
 public:
-    AccountRoot(AccountID const& id, ReadView const* view)
+    AccountRoot(AccountID const& id, ReadView const& view)
         : ReadOnlySLE(view->read(keylet::account(id)), view), id_(id)
     {
     }
@@ -83,7 +83,7 @@ public:
 class WritableAccountRoot : public AccountRoot, public WritableSLE
 {
 public:
-    WritableAccountRoot(AccountID const& id, ApplyView* view)
+    WritableAccountRoot(AccountID const& id, ApplyView& view)
         : AccountRoot(id, view), WritableSLE(view->peek(keylet::account(id)), view)
     {
     }
@@ -113,7 +113,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
     Pseudo-account designator fields MUST be maintained by including the
     SField::sMD_PseudoAccount flag in the SField definition.
 */
-[[nodiscard]] std::vector<SField const*> const&
+[[nodiscard]] std::vector<SField&> const&
 getPseudoAccountFields();
 
 /** Returns true if and only if sleAcct is a pseudo-account or specific
@@ -127,7 +127,7 @@ getPseudoAccountFields();
 [[nodiscard]] bool
 isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter = {});
+    std::set<SField&> const& pseudoFieldFilter = {});
 
 /** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool
