@@ -370,7 +370,7 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    WritableAccountRoot wrappedAcct(account, &ctx_.view());
+    WritableAccountRoot wrappedAcct(account, ctx_.view());
     wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
     wrappedAcct.update();
 

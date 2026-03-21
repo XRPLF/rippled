@@ -160,7 +160,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto wrappedAccount = WritableAccountRoot(ctx.tx.getAccountID(sfAccount), &ctx.view()))
+    if (auto wrappedAccount = WritableAccountRoot(ctx.tx.getAccountID(sfAccount), ctx.view()))
     {
         wrappedAccount.adjustOwnerCount(count, ctx.journal);
         return true;

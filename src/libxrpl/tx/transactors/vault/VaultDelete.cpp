@@ -88,7 +88,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    WritableAccountRoot pseudoAcct(pseudoID, &view());
+    WritableAccountRoot pseudoAcct(pseudoID, view());
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -182,7 +182,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot owner(ownerID, &view());
+    WritableAccountRoot owner(ownerID, view());
     if (!owner)
     {
         // LCOV_EXCL_START

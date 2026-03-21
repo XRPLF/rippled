@@ -51,7 +51,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
-        WritableAccountRoot wrappedAccount(account, &view);
+        WritableAccountRoot wrappedAccount(account, view);
         if (!wrappedAccount)
         {
             // LCOV_EXCL_START

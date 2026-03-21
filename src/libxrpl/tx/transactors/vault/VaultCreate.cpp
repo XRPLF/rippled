@@ -130,7 +130,7 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    WritableAccountRoot owner(account_, &view());
+    WritableAccountRoot owner(account_, view());
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

@@ -54,7 +54,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, &ctx_.view());
+    WritableAccountRoot wrappedOwner(account_, ctx_.view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -122,7 +122,7 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(account, &view);
+    WritableAccountRoot wrappedOwner(account, view);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

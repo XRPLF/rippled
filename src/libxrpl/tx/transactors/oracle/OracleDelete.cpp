@@ -55,7 +55,7 @@ OracleDelete::deleteOracle(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(account, &view);
+    WritableAccountRoot wrappedOwner(account, view);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

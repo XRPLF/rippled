@@ -62,7 +62,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, &view());
+    WritableAccountRoot wrappedOwner(account_, view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
