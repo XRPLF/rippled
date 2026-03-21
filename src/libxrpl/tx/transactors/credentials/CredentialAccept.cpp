@@ -76,8 +76,8 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    WritableAccountRoot wrappedSubject(account_, &view());
-    WritableAccountRoot wrappedIssuer(issuer, &view());
+    WritableAccountRoot wrappedSubject(account_, view());
+    WritableAccountRoot wrappedIssuer(issuer, view());
 
     if (!wrappedSubject || !wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
