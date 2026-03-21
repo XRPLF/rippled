@@ -391,7 +391,7 @@ public:
 
             testcase(test);
 
-            std::string toLoad = "";
+            std::string toLoad;
             int max = 0;
             if (maxPeers)
             {
