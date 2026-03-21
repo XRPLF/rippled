@@ -141,6 +141,19 @@ public:
 
     /** The number of hardware threads to use for compression of a batch. */
     static unsigned int const numHardwareThreads;
+
+    /** Calculate parallelization parameters for a batch of items.
+
+        Determines the number of threads and items per thread needed for parallel batch processing.
+
+        @param batchSize Number of items to process
+        @param maxThreadCount Maximum number of threads to use.
+        @return A pair of (numThreads, numItems) where numThreads is the exact number of threads to
+                use, and numItems is the number of items per thread. The last thread may process
+                fewer items.
+    */
+    static std::pair<unsigned int, unsigned int>
+    calculateBatchParallelism(unsigned int batchSize, unsigned int maxThreadCount);
 };
 
 }  // namespace NodeStore

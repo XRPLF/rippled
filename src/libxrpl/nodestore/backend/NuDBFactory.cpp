@@ -74,11 +74,32 @@ public:
     {
         try
         {
-            // Wait for all thread pool tasks to complete before closing the database. This prevents
-            // worker threads from accessing the database after close.
+            // Set shutdown flag to prevent new batch operations from starting. This must happen
+            // before stop() is called to ensure fetchBatch/storeBatch check the flag before posting
+            // any new tasks.
+            shutdown_.store(true, std::memory_order_release);
+
+            // Wait for all active operations to complete.
+            while (pendingReads_.load(std::memory_order_acquire) > 0 &&
+                   pendingWrites_.load(std::memory_order_acquire) > 0)
+            {
+                std::this_thread::yield();
+            }
+
+            // Signal the thread pool to stop accepting new work. This ensures no new tasks will be
+            // posted after this point.
+            threadPool_.stop();
+
+            // Wait for all currently executing thread pool tasks to complete. This prevents worker
+            // threads from accessing the database after close().
             threadPool_.join();
 
-            // close can throw and we don't want the destructor to throw.
+            // Verify all writes have completed.
+            XRPL_ASSERT(
+                pendingWrites_.load() == 0, "xrpl::NuDBBackend::~NuDBBackend : pendingWrites == 0");
+
+            // Close the database. At this point, all threads have stopped and no pending reads and
+            // writes remain, so it's safe to close the database.
             close();
         }
         catch (nudb::system_error const&)  // NOLINT(bugprone-empty-catch)
@@ -107,9 +128,7 @@ public:
         if (db_.is_open())
         {
             // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::NodeStore::NuDBBackend::open : database is already "
-                "open");
+            UNREACHABLE("xrpl::NodeStore::NuDBBackend::open : database is already open");
             JLOG(j_.error()) << "database is already open";
             return;
             // LCOV_EXCL_STOP
@@ -187,6 +206,18 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
+        // Increment pending reads counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        ++pendingReads_;
+        auto guard = [this](void*) { --pendingReads_; };
+        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return backendError;
+        }
+
         Status status = ok;
         pno->reset();
         nudb::error_code ec;
@@ -226,10 +257,23 @@ public:
             return {{}, ok};
         }
 
+        // Increment pending reads counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        pendingReads_ += hashes.size();
+        auto guard = [this, &hashes](void*) { pendingReads_ -= hashes.size(); };
+        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return {{}, backendError};
+        }
+
         std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
 
-        // Calculate optimal parallelization parameters for the batch.
-        auto const [numThreads, numItems] = calculateBatchParallelization(hashes.size());
+        // Calculate parallelization parameters for the batch.
+        auto const [numThreads, numItems] =
+            Backend::calculateBatchParallelism(hashes.size(), numHardwareThreads);
 
         // If we need only one thread, just do it sequentially.
         if (numThreads == 1u)
@@ -329,21 +373,23 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
+        // Increment pending writes counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        ++pendingWrites_;
+        auto guard = [this](void*) { --pendingWrites_; };
+        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return;
+        }
+
         BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
 
-        ++pendingWrites_;
-        try
-        {
-            do_insert(no);
-        }
-        catch (...)
-        {
-            --pendingWrites_;
-            throw;
-        }
-        --pendingWrites_;
+        do_insert(no);
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
@@ -358,31 +404,33 @@ public:
             return;
         }
 
+        // Increment pending writes counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        pendingWrites_ += batch.size();
+        auto guard = [this, &batch](void*) { pendingWrites_ -= batch.size(); };
+        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return;
+        }
+
         BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
 
-        pendingWrites_ += batch.size();
-
-        // Calculate optimal parallelization parameters for the batch.
-        auto const [numThreads, numItems] = calculateBatchParallelization(batch.size());
+        // Calculate parallelization parameters for the batch.
+        auto const [numThreads, numItems] =
+            Backend::calculateBatchParallelism(batch.size(), numHardwareThreads);
 
         // If we need only one thread, just do it sequentially.
         if (numThreads == 1u)
         {
             for (auto const& e : batch)
             {
-                try
-                {
-                    do_insert(e);
-                }
-                catch (...)
-                {
-                    pendingWrites_ -= batch.size();
-                    throw;
-                }
+                do_insert(e);
             }
-            pendingWrites_ -= batch.size();
 
             report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - start);
@@ -460,7 +508,6 @@ public:
         {
             if (item.eptr)
             {
-                pendingWrites_ -= batch.size();
                 std::rethrow_exception(item.eptr);
             }
 
@@ -468,12 +515,9 @@ public:
             db_.insert(item.key.data(), item.data.data(), item.data.size(), ec);
             if (ec && ec != nudb::error::key_exists)
             {
-                pendingWrites_ -= batch.size();
                 Throw<nudb::system_error>(ec);
             }
         }
-
-        pendingWrites_ -= batch.size();
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
@@ -560,33 +604,6 @@ public:
     }
 
 private:
-    /** Calculate optimal parallelization parameters for batch operations.
-
-        Determines the number of items per thread and actual number of tasks needed for parallel
-        batch processing, ensuring no thread has an invalid start index.
-
-        @param batchSize Number of items to process
-        @return A pair of (actualTasks, numItems) where actualTasks is the exact number of threads
-                to create and numItems is the number of items per thread.
-    */
-    std::pair<unsigned int, unsigned int>
-    calculateBatchParallelization(std::size_t batchSize) const
-    {
-        // Estimate the number of threads using ceiling division: aim for at least 4 items per
-        // thread, but don't exceed the number of available hardware threads.
-        auto const numThreads =
-            std::min(static_cast<unsigned int>((batchSize + 3) / 4), numHardwareThreads);
-
-        // Calculate items per thread.
-        auto const numItems = (batchSize + numThreads - 1) / numThreads;
-
-        // Calculate actual tasks needed. After rounding up numItems, we may need fewer threads than
-        // initially estimated.
-        auto const actualTasks = (batchSize + numItems - 1) / numItems;
-
-        return {actualTasks, numItems};
-    }
-
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
@@ -642,8 +659,13 @@ private:
     nudb::store db_;
     std::atomic<bool> deletePath_;
     Scheduler& scheduler_;
-    std::atomic<size_t> pendingWrites_{0};
-    boost::asio::thread_pool threadPool_;
+    std::atomic<size_t> pendingReads_{
+        0};  // Declare before threadPool_ to ensure it's destroyed after.
+    std::atomic<size_t> pendingWrites_{
+        0};  // Declare before threadPool_ to ensure it's destroyed after.
+    std::atomic<bool> shutdown_{
+        false};  // Declare before threadPool_ to ensure it's destroyed after.
+    boost::asio::thread_pool threadPool_;  // Declare after db_ to ensure it's destroyed before.
 };
 
 //------------------------------------------------------------------------------
