@@ -111,7 +111,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    WritableAccountRoot wrappedIssuer(account_, &view());
+    WritableAccountRoot wrappedIssuer(account_, view());
     if (!wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

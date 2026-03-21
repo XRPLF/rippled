@@ -389,7 +389,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    WritableAccountRoot wrappedAcct(account_, &ctx_.view());
+    WritableAccountRoot wrappedAcct(account_, ctx_.view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

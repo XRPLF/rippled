@@ -384,7 +384,7 @@ canWithdraw(
     STAmount const& amount,
     bool hasDestinationTag)
 {
-    auto const toWrapped = AccountRoot(to, &view);
+    auto const toWrapped = AccountRoot(to, view);
 
     return canWithdraw(view, from, to, toWrapped, amount, hasDestinationTag);
 }

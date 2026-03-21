@@ -738,7 +738,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(ReadView const& sb, DebtDirection prev
         "xrpl::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
         "issue");
 
-    AccountRoot issuer(src_, &sb);
+    AccountRoot issuer(src_, sb);
 
     std::uint32_t const srcQOut =
         redeems(prevStepDebtDirection) ? issuer.transferRate().value : QUALITY_ONE;

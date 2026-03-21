@@ -324,7 +324,7 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
-    WritableAccountRoot wrappedAccount(account_, &view());
+    WritableAccountRoot wrappedAccount(account_, view());
     if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -369,7 +369,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.journal("View");
 
-    WritableAccountRoot wrappedDst(uDstAccountID, &view());
+    WritableAccountRoot wrappedDst(uDstAccountID, view());
 
     if (!wrappedDst)
     {

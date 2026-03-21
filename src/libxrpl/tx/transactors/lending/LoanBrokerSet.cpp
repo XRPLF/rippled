@@ -202,7 +202,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        WritableAccountRoot owner(account_, &view);
+        WritableAccountRoot owner(account_, view);
         if (!owner)
         {
             // This should be impossible

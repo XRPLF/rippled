@@ -145,8 +145,8 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
     auto viewJ = ctx.registry.journal("View");
-    AccountRoot wrappedPays(uPaysIssuerID, &ctx.view);
-    AccountRoot wrappedGets(uGetsIssuerID, &ctx.view);
+    AccountRoot wrappedPays(uPaysIssuerID, ctx.view);
+    AccountRoot wrappedGets(uGetsIssuerID, ctx.view);
 
     if (wrappedPays.isGlobalFrozen() || wrappedGets.isGlobalFrozen())
     {
@@ -298,7 +298,7 @@ OfferCreate::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (account_ != sendMax.getIssuer()))
         {
-            WritableAccountRoot wrappedAcct(sendMax.getIssuer(), &psb);
+            WritableAccountRoot wrappedAcct(sendMax.getIssuer(), psb);
             gatewayXferRate = wrappedAcct.transferRate();
             if (gatewayXferRate.value != QUALITY_ONE)
             {
@@ -735,7 +735,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    WritableAccountRoot wrappedCreator(account_, &sb);
+    WritableAccountRoot wrappedCreator(account_, sb);
     if (!wrappedCreator)
         return {tefINTERNAL, false};
 

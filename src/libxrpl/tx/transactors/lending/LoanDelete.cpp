@@ -68,7 +68,7 @@ LoanDelete::doApply()
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
-    WritableAccountRoot wrappedBorrower(borrower, &view);
+    WritableAccountRoot wrappedBorrower(borrower, view);
     if (!wrappedBorrower)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

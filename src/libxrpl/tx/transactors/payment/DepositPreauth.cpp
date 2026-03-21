@@ -135,7 +135,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        WritableAccountRoot wrappedOwner(account_, &view());
+        WritableAccountRoot wrappedOwner(account_, view());
         if (!wrappedOwner)
             return {tefINTERNAL};
 
@@ -182,7 +182,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        WritableAccountRoot wrappedOwner(account_, &view());
+        WritableAccountRoot wrappedOwner(account_, view());
         if (!wrappedOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -267,7 +267,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    WritableAccountRoot wrappedOwner(account, &view);
+    WritableAccountRoot wrappedOwner(account, view);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

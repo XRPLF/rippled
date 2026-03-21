@@ -318,7 +318,7 @@ updateTrustLine(
         return false;
     std::uint32_t const flags(state->getFieldU32(sfFlags));
 
-    WritableAccountRoot wrappedAcct(sender, &view);
+    WritableAccountRoot wrappedAcct(sender, view);
     if (!wrappedAcct)
         return false;
 
@@ -424,7 +424,7 @@ issueIOU(
 
     final_balance.setIssuer(noAccount());
 
-    WritableAccountRoot receiverAccount(account, &view);
+    WritableAccountRoot receiverAccount(account, view);
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -605,7 +605,7 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    WritableAccountRoot wrappedIssuer(issuerId, &view);
+    WritableAccountRoot wrappedIssuer(issuerId, view);
     if (wrappedIssuer.isGlobalFrozen())
         return tecFROZEN;  // LCOV_EXCL_LINE
 
@@ -613,8 +613,8 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
-    WritableAccountRoot wrappedSrc(srcId, &view);
-    WritableAccountRoot wrappedDst(dstId, &view);
+    WritableAccountRoot wrappedSrc(srcId, view);
+    WritableAccountRoot wrappedDst(dstId, view);
     if (!wrappedDst || !wrappedSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!wrappedSrc->isFlag(lsfDefaultRipple))
@@ -680,7 +680,7 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        WritableAccountRoot wrappedLow(line->at(sfLowLimit)->getIssuer(), &view);
+        WritableAccountRoot wrappedLow(line->at(sfLowLimit)->getIssuer(), view);
         if (!wrappedLow)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -694,7 +694,7 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        WritableAccountRoot wrappedHigh(line->at(sfHighLimit)->getIssuer(), &view);
+        WritableAccountRoot wrappedHigh(line->at(sfHighLimit)->getIssuer(), view);
         if (!wrappedHigh)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -722,8 +722,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    WritableAccountRoot wrappedLow(low, &view);
-    WritableAccountRoot wrappedHigh(high, &view);
+    WritableAccountRoot wrappedLow(low, view);
+    WritableAccountRoot wrappedHigh(high, view);
     if (!wrappedLow || !wrappedHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

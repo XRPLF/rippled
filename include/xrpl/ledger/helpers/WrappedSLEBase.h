@@ -23,13 +23,14 @@ class ReadOnlySLE
 public:
     virtual ~ReadOnlySLE() = default;
 
-    // Explicitly default copy/move operations
+    // Copy/move constructors are fine (reference can be initialized from another)
     ReadOnlySLE(ReadOnlySLE const&) = default;
     ReadOnlySLE(ReadOnlySLE&&) = default;
+    // Assignment operators are deleted (cannot rebind reference members)
     ReadOnlySLE&
-    operator=(ReadOnlySLE const&) = default;
+    operator=(ReadOnlySLE const&) = delete;
     ReadOnlySLE&
-    operator=(ReadOnlySLE&&) = default;
+    operator=(ReadOnlySLE&&) = delete;
 
     /** Returns true if the ledger entry exists */
     bool
@@ -74,7 +75,8 @@ public:
     }
 
 protected:
-    ReadOnlySLE() = default;
+    // Default constructor is deleted (cannot leave reference uninitialized)
+    ReadOnlySLE() = delete;
 
     /** Constructor for read-only context (ReadView) */
     explicit ReadOnlySLE(std::shared_ptr<SLE const> sle, ReadView const& view)
@@ -100,13 +102,14 @@ class WritableSLE
 public:
     virtual ~WritableSLE() = default;
 
-    // Explicitly default copy/move operations
+    // Copy/move constructors are fine (reference can be initialized from another)
     WritableSLE(WritableSLE const&) = default;
     WritableSLE(WritableSLE&&) = default;
+    // Assignment operators are deleted (cannot rebind reference members)
     WritableSLE&
-    operator=(WritableSLE const&) = default;
+    operator=(WritableSLE const&) = delete;
     WritableSLE&
-    operator=(WritableSLE&&) = default;
+    operator=(WritableSLE&&) = delete;
 
     /** Returns a mutable SLE for write operations */
     std::shared_ptr<SLE> const&
@@ -165,7 +168,8 @@ public:
     }
 
 protected:
-    WritableSLE() = default;
+    // Default constructor is deleted (cannot leave reference uninitialized)
+    WritableSLE() = delete;
 
     /** Constructor for read-write context (ApplyView) */
     explicit WritableSLE(std::shared_ptr<SLE> sle, ApplyView& view)
