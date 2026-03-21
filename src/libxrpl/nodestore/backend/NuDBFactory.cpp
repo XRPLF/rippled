@@ -20,6 +20,7 @@
 #include <exception>
 #include <latch>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -73,6 +74,10 @@ public:
     {
         try
         {
+            // Wait for all thread pool tasks to complete before closing the database. This prevents
+            // worker threads from accessing the database after close.
+            threadPool_.join();
+
             // close can throw and we don't want the destructor to throw.
             close();
         }
@@ -223,7 +228,7 @@ public:
 
         std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
 
-        // Calculate optimal parallelization parameters.
+        // Calculate optimal parallelization parameters for the batch.
         auto const [numThreads, numItems] = calculateBatchParallelization(hashes.size());
 
         // If we need only one thread, just do it sequentially.
@@ -243,6 +248,10 @@ public:
         // Use a latch to synchronize task completion.
         std::latch taskCompletion(numThreads);
 
+        // Track exceptions from worker threads.
+        std::exception_ptr eptr;
+        std::mutex emutex;
+
         // Submit fetch tasks to the thread pool.
         for (auto t = 0u; t < numThreads; ++t)
         {
@@ -258,25 +267,45 @@ public:
             }
             auto const endIdx = std::min<std::size_t>(startIdx + numItems, hashes.size());
 
-            auto task = [this, &hashes, &results, &taskCompletion, startIdx, endIdx]() {
-                // Fetch the items assigned to this task.
-                for (size_t i = startIdx; i < endIdx; ++i)
-                {
-                    std::shared_ptr<NodeObject> nObj;
-                    if (fetch(hashes[i], &nObj) == ok)
+            auto task =
+                [this, &hashes, &results, &taskCompletion, &eptr, &emutex, startIdx, endIdx]() {
+                    try
                     {
-                        results[i] = nObj;
+                        // Fetch the items assigned to this task.
+                        for (size_t i = startIdx; i < endIdx; ++i)
+                        {
+                            std::shared_ptr<NodeObject> nObj;
+                            if (fetch(hashes[i], &nObj) == ok)
+                            {
+                                results[i] = nObj;
+                            }
+                        }
                     }
-                }
-                // Signal task completion.
-                taskCompletion.count_down();
-            };
+                    catch (...)
+                    {
+                        // Store the first exception that occurs. Ensures count_down() is always
+                        // called to prevent deadlock.
+                        std::lock_guard<std::mutex> lock(emutex);
+                        if (!eptr)
+                        {
+                            eptr = std::current_exception();
+                        }
+                    }
+                    // Signal task completion.
+                    taskCompletion.count_down();
+                };
 
             boost::asio::post(threadPool_, std::move(task));
         }
 
         // Wait for all fetch tasks to complete.
         taskCompletion.wait();
+
+        // Rethrow the first exception if one occurred.
+        if (eptr)
+        {
+            std::rethrow_exception(eptr);
+        }
 
         return {results, ok};
     }
@@ -335,7 +364,7 @@ public:
 
         pendingWrites_ += static_cast<int>(batch.size());
 
-        // Calculate optimal parallelization parameters.
+        // Calculate optimal parallelization parameters for the batch.
         auto const [numThreads, numItems] = calculateBatchParallelization(batch.size());
 
         // If we need only one thread, just do it sequentially.
@@ -426,7 +455,7 @@ public:
         taskCompletion.wait();
 
         // Insert the compressed data sequentially, since NuDB is designed as an append-only data
-        // store that only supports one writer.
+        // store that limits concurrent writes.
         for (auto const& item : compressed)
         {
             if (item.eptr)
