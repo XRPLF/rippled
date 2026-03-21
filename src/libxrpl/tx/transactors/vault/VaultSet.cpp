@@ -23,7 +23,7 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultSet::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fixLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
         return tfVaultSetMask;
 
     // Add tfVaultDepositBlock and tfVaultDepositUnblock flags to indicate they are disabled
@@ -36,6 +36,8 @@ isValidVaultUpdate(PreflightContext const& ctx)
     auto const atLeastOneFieldPresent = ctx.tx.isFieldPresent(sfDomainID) ||
         ctx.tx.isFieldPresent(sfAssetsMaximum) || ctx.tx.isFieldPresent(sfData);
 
+    // Mask of valid, non-universal flags: any bit set here means the
+    // transaction is requesting a meaningful flag change.
     auto const expectedFlags = ~(VaultSet::getFlagsMask(ctx) | tfUniversal);
 
     return atLeastOneFieldPresent || (ctx.tx.getFlags() & expectedFlags);
@@ -134,7 +136,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         // The Vault is not configured to support deposit blocking
         if (!vault->isFlag(lsfVaultOwnerCanBlockDeposit) &&
@@ -214,7 +216,7 @@ VaultSet::doApply()
         view().update(sleIssuance);
     }
 
-    if (view().rules().enabled(fixLendingProtocolV1_1))
+    if (view().rules().enabled(featureLendingProtocolV1_1))
     {
         if (tx.isFlag(tfVaultDepositBlock))
             vault->setFlag(lsfVaultDepositBlocked);

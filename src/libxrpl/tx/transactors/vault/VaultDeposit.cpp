@@ -77,7 +77,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         // Perform these checks early to avoid unnecessary processing
 
@@ -85,7 +85,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         if (isVaultInsolvent(vault, sleShareIssuance))
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: Vault is insolvent, deposits are not allowed";
-            return tecNO_PERMISSION;
+            return tecLOCKED;
         }
 
         if (vault->isFlag(lsfVaultDepositBlocked))

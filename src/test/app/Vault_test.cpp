@@ -669,11 +669,11 @@ class Vault_test : public beast::unit_test::suite
             env(tx, ter{temINVALID_FLAG});
 
             {
-                env.disableFeature(fixLendingProtocolV1_1);
+                env.disableFeature(featureLendingProtocolV1_1);
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 tx[sfFlags] = tfVaultOwnerCanBlockDeposit;
                 env(tx, ter{temINVALID_FLAG});
-                env.enableFeature(fixLendingProtocolV1_1);
+                env.enableFeature(featureLendingProtocolV1_1);
             }
 
             {
@@ -1067,18 +1067,18 @@ class Vault_test : public beast::unit_test::suite
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
-                testcase("set flags fail without fixLendingProtocolV1_1");
+                testcase("set flags fail without featureLendingProtocolV1_1");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    env.disableFeature(fixLendingProtocolV1_1);
+                    env.disableFeature(featureLendingProtocolV1_1);
                     env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
                         ter(temINVALID_FLAG));
                     env(vault.set(
                             {.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
                         ter(temINVALID_FLAG));
-                    env.enableFeature(fixLendingProtocolV1_1);
+                    env.enableFeature(featureLendingProtocolV1_1);
                 }
             });
 
@@ -2371,7 +2371,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = depositAmount});
-                env(tx, ter{tesSUCCESS}, THISLINE);
+                env(tx, ter{tesSUCCESS});
                 env.close();
             }
 
@@ -2383,7 +2383,7 @@ class Vault_test : public beast::unit_test::suite
                 using namespace loanBroker;
                 using namespace loan;
 
-                env(set(owner, vaultKeylet.key), THISLINE);
+                env(set(owner, vaultKeylet.key));
                 env.close();
 
                 // Create a simple Loan for the full amount of Vault assets
@@ -2393,11 +2393,10 @@ class Vault_test : public beast::unit_test::suite
                     paymentTotal(1),
                     sig(sfCounterpartySignature, owner),
                     fee(env.current()->fees().base * 2),
-                    ter(tesSUCCESS),
-                    THISLINE);
+                    ter(tesSUCCESS));
                 env.close(std::chrono::seconds{120 + 60});
 
-                env(manage(owner, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS), THISLINE);
+                env(manage(owner, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS));
                 env.close();
 
                 auto const sleVault = env.le(vaultKeylet);
@@ -2424,7 +2423,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(20)});
-                env(tx, ter{tecNO_PERMISSION}, THISLINE);
+                env(tx, ter{tecNO_PERMISSION});
                 env.close();
             }
 
@@ -2440,14 +2439,13 @@ class Vault_test : public beast::unit_test::suite
                          .id = vaultKeylet.key,
                          .holder = depositor,
                          .amount = share(0)}),
-                    ter(tesSUCCESS),
-                    THISLINE);
+                    ter(tesSUCCESS));
                 env.close();
             }
 
             {
-                env(loan::del(owner, loanKeylet.key), ter(tesSUCCESS), THISLINE);
-                env(loanBroker::del(owner, brokerKeylet.key), ter(tesSUCCESS), THISLINE);
+                env(loan::del(owner, loanKeylet.key), ter(tesSUCCESS));
+                env(loanBroker::del(owner, brokerKeylet.key), ter(tesSUCCESS));
                 env(vault.del({.owner = owner, .id = vaultKeylet.key}));
                 env.close();
             }
@@ -3173,7 +3171,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = issuer, .id = vaultKeylet.key, .amount = depositAmount});
-                env(tx, ter{tesSUCCESS}, THISLINE);
+                env(tx, ter{tesSUCCESS});
                 env.close();
             }
 
@@ -3185,7 +3183,7 @@ class Vault_test : public beast::unit_test::suite
                 using namespace loanBroker;
                 using namespace loan;
 
-                env(set(owner, vaultKeylet.key), ter{tesSUCCESS}, THISLINE);
+                env(set(owner, vaultKeylet.key), ter{tesSUCCESS});
                 env.close();
 
                 // Create a simple Loan for the full amount of Vault assets
@@ -3195,11 +3193,10 @@ class Vault_test : public beast::unit_test::suite
                     paymentTotal(1),
                     sig(sfCounterpartySignature, owner),
                     fee(env.current()->fees().base * 2),
-                    ter{tesSUCCESS},
-                    THISLINE);
+                    ter{tesSUCCESS});
                 env.close(std::chrono::seconds{120 + 60});
 
-                env(manage(owner, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS), THISLINE);
+                env(manage(owner, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS));
                 env.close();
 
                 auto const sleVault = env.le(vaultKeylet);
@@ -3226,7 +3223,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = issuer, .id = vaultKeylet.key, .amount = asset(20)});
-                env(tx, ter{tecNO_PERMISSION}, THISLINE);
+                env(tx, ter{tecNO_PERMISSION});
                 env.close();
             }
 
@@ -3242,14 +3239,13 @@ class Vault_test : public beast::unit_test::suite
                          .id = vaultKeylet.key,
                          .holder = issuer,
                          .amount = share(0)}),
-                    ter(tesSUCCESS),
-                    THISLINE);
+                    ter(tesSUCCESS));
                 env.close();
             }
 
             {
-                env(loan::del(owner, loanKeylet.key), ter(tesSUCCESS), THISLINE);
-                env(loanBroker::del(owner, brokerKeylet.key), ter(tesSUCCESS), THISLINE);
+                env(loan::del(owner, loanKeylet.key), ter(tesSUCCESS));
+                env(loanBroker::del(owner, brokerKeylet.key), ter(tesSUCCESS));
                 env(vault.del({.owner = owner, .id = vaultKeylet.key}));
                 env.close();
             }
@@ -5585,30 +5581,28 @@ class Vault_test : public beast::unit_test::suite
 
         auto const blockVault = [&](TER expectedTer, Keylet const& keylet) {
             env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositBlock}),
-                ter(expectedTer),
-                THISLINE);
+                ter(expectedTer));
         };
 
         auto const unblockVault = [&](TER expectedTer, Keylet const& keylet) {
             env(vault.set({.owner = owner, .id = keylet.key, .flags = tfVaultDepositUnblock}),
-                ter(expectedTer),
-                THISLINE);
+                ter(expectedTer));
         };
 
         // Blocking Vault with the amendment disabled fails
         {
             testcase(prefix + "block/unblock fails when amendment is disabled");
 
-            env.disableFeature(fixLendingProtocolV1_1);
+            env.disableFeature(featureLendingProtocolV1_1);
             auto const [tx, keylet] = vault.create(
                 {.owner = owner, .asset = asset, .flags = tfVaultOwnerCanBlockDeposit});
-            env(tx, ter(temINVALID_FLAG), THISLINE);
+            env(tx, ter(temINVALID_FLAG));
             env.close();
 
             blockVault(temINVALID_FLAG, keylet);
             unblockVault(temINVALID_FLAG, keylet);
 
-            env.enableFeature(fixLendingProtocolV1_1);
+            env.enableFeature(featureLendingProtocolV1_1);
         }
 
         // Block Vault deposits fails if the vault is not configured to allow blocking deposits
@@ -5621,7 +5615,7 @@ class Vault_test : public beast::unit_test::suite
             blockVault(tecNO_PERMISSION, keylet);
             unblockVault(tecNO_PERMISSION, keylet);
 
-            env(vault.del({.owner = owner, .id = keylet.key}), ter(tesSUCCESS), THISLINE);
+            env(vault.del({.owner = owner, .id = keylet.key}), ter(tesSUCCESS));
             env.close();
         }
 
@@ -5638,15 +5632,13 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
             env(vault.deposit({
                     .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             blockVault(tesSUCCESS, keylet);
 
@@ -5656,8 +5648,7 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tecNO_PERMISSION),
-                THISLINE);
+                ter(tecNO_PERMISSION));
 
             // Other accounts are also blocked from depositing to the vault
             env(vault.deposit({
@@ -5665,8 +5656,7 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tecNO_PERMISSION),
-                THISLINE);
+                ter(tecNO_PERMISSION));
 
             // Block vault withdrawal works as normal
             env(vault.withdraw({
@@ -5674,16 +5664,14 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             env(vault.withdraw({
                     .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             unblockVault(tesSUCCESS, keylet);
 
@@ -5692,16 +5680,14 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             env(vault.deposit({
                     .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             // Withdraw to keep the vault empty
             env(vault.withdraw({
@@ -5709,30 +5695,26 @@ class Vault_test : public beast::unit_test::suite
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
 
             env(vault.withdraw({
                     .depositor = other,
                     .id = keylet.key,
                     .amount = XRP(10'000),
                 }),
-                ter(tesSUCCESS),
-                THISLINE);
+                ter(tesSUCCESS));
         }
 
         {
             testcase(prefix + "block/unblock fails when caller is not owner");
 
             env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositBlock}),
-                ter(tecNO_PERMISSION),
-                THISLINE);
+                ter(tecNO_PERMISSION));
 
             blockVault(tesSUCCESS, keylet);
 
             env(vault.set({.owner = other, .id = keylet.key, .flags = tfVaultDepositUnblock}),
-                ter(tecNO_PERMISSION),
-                THISLINE);
+                ter(tecNO_PERMISSION));
 
             unblockVault(tesSUCCESS, keylet);
         }
@@ -5772,7 +5754,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 disabled");
             env.disableFeature(featureLendingProtocolV1_1);
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(temDISABLED), THISLINE);
+            env(delTx, ter(temDISABLED));
             env.close();
             env.enableFeature(featureLendingProtocolV1_1);
         }
@@ -5781,7 +5763,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data too large");
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5789,7 +5771,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data empty");
             delTx[sfMemoData] = strHex(std::string(0, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5797,12 +5779,12 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data valid");
             PrettyAsset const xrpAsset = xrpIssue();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
-            env(tx, ter(tesSUCCESS), THISLINE);
+            env(tx, ter(tesSUCCESS));
             env.close();
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(tesSUCCESS), THISLINE);
+            env(delTx, ter(tesSUCCESS));
             env.close();
         }
     }
