@@ -41,7 +41,7 @@ class Invariants_test : public beast::unit_test::suite
     defaultAmendments()
     {
         return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault;
+            featureSingleAssetVault | fixInvariantOverwrite;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -987,9 +987,9 @@ class Invariants_test : public beast::unit_test::suite
 
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
-                // outstanding exceeds maxMPTokenAmount → checkAmount sets bad_
+                // outstanding exceeds maxMPTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
-                // locked is valid and <= outstanding → must NOT clear bad_
+                // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
                 return true;

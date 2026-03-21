@@ -227,6 +227,7 @@ public:
 class NoXRPTrustLines
 {
     bool xrpTrustLine_ = false;
+    bool xrpTrustLineLegacy_ = false;
 
 public:
     void
@@ -246,6 +247,7 @@ public:
 class NoDeepFreezeTrustLinesWithoutFreeze
 {
     bool deepFreezeWithoutFreeze_ = false;
+    bool deepFreezeWithoutFreezeLegacy_ = false;
 
 public:
     void
@@ -281,6 +283,7 @@ public:
 class NoZeroEscrow
 {
     bool bad_ = false;
+    bool badLegacy_ = false;
 
 public:
     void

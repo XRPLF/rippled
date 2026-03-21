@@ -306,14 +306,25 @@ NoZeroEscrow::visitEntry(
     };
 
     if (before && before->getType() == ltESCROW)
-        bad_ |= isBad((*before)[sfAmount]);
+    {
+        auto const b = isBad((*before)[sfAmount]);
+        bad_ |= b;
+        badLegacy_ |= b;
+    }
 
     if (after && after->getType() == ltESCROW)
-        bad_ |= isBad((*after)[sfAmount]);
+    {
+        auto const b = isBad((*after)[sfAmount]);
+        bad_ |= b;
+        badLegacy_ |= b;
+    }
 
     auto checkAmount = [this](std::int64_t amount) {
         if (amount > maxMPTokenAmount || amount < 0)
+        {
             bad_ = true;
+            badLegacy_ = true;
+        }
     };
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
@@ -324,6 +335,7 @@ NoZeroEscrow::visitEntry(
         {
             checkAmount(*locked);
             bad_ |= outstanding < *locked;
+            badLegacy_ = outstanding < *locked;
         }
     }
 
@@ -346,7 +358,9 @@ NoZeroEscrow::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    if (bad_)
+    bool const effectiveBad = rv.rules().enabled(fixInvariantOverwrite) ? bad_ : badLegacy_;
+
+    if (effectiveBad)
     {
         JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
         return false;
@@ -598,8 +612,10 @@ NoXRPTrustLines::visitEntry(
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        xrpTrustLine_ |= after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
+        bool const isXrp = after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
             after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+        xrpTrustLine_ |= isXrp;
+        xrpTrustLineLegacy_ = isXrp;
     }
 }
 
@@ -608,10 +624,13 @@ NoXRPTrustLines::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& rv,
     beast::Journal const& j) const
 {
-    if (!xrpTrustLine_)
+    bool const bad =
+        rv.rules().enabled(fixInvariantOverwrite) ? xrpTrustLine_ : xrpTrustLineLegacy_;
+
+    if (!bad)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an XRP trust line was created";
@@ -635,8 +654,9 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
         bool const highFreeze = uFlags & lsfHighFreeze;
         bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
 
-        deepFreezeWithoutFreeze_ |=
-            (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
+        bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
+        deepFreezeWithoutFreeze_ |= bad;
+        deepFreezeWithoutFreezeLegacy_ = bad;
     }
 }
 
@@ -645,10 +665,13 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& rv,
     beast::Journal const& j) const
 {
-    if (!deepFreezeWithoutFreeze_)
+    bool const bad = rv.rules().enabled(fixInvariantOverwrite) ? deepFreezeWithoutFreeze_
+                                                               : deepFreezeWithoutFreezeLegacy_;
+
+    if (!bad)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: a trust line with deep freeze flag "
