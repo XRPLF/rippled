@@ -629,7 +629,7 @@ AccountSet::doApply()
 }
 
 void
-SetAccount::visitInvariantEntry(
+AccountSet::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -637,7 +637,7 @@ SetAccount::visitInvariantEntry(
 }
 
 bool
-SetAccount::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

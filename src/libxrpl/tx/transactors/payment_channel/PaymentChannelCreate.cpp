@@ -171,7 +171,7 @@ PaymentChannelCreate::doApply()
 }
 
 void
-PayChanCreate::visitInvariantEntry(
+PaymentChannelCreate::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -179,7 +179,7 @@ PayChanCreate::visitInvariantEntry(
 }
 
 bool
-PayChanCreate::finalizeInvariants(
+PaymentChannelCreate::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

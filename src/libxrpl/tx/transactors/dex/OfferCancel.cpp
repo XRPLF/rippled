@@ -61,7 +61,7 @@ OfferCancel::doApply()
 }
 
 void
-CancelOffer::visitInvariantEntry(
+OfferCancel::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -69,7 +69,7 @@ CancelOffer::visitInvariantEntry(
 }
 
 bool
-CancelOffer::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

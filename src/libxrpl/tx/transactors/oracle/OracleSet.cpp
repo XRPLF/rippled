@@ -307,7 +307,7 @@ OracleSet::doApply()
 }
 
 void
-SetOracle::visitInvariantEntry(
+OracleSet::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -315,7 +315,7 @@ SetOracle::visitInvariantEntry(
 }
 
 bool
-SetOracle::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

@@ -400,7 +400,7 @@ AccountDelete::doApply()
 }
 
 void
-DeleteAccount::visitInvariantEntry(
+AccountDelete::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -408,7 +408,7 @@ DeleteAccount::visitInvariantEntry(
 }
 
 bool
-DeleteAccount::finalizeInvariants(
+AccountDelete::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

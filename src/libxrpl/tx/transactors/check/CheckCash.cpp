@@ -447,7 +447,7 @@ CheckCash::doApply()
 }
 
 void
-CashCheck::visitInvariantEntry(
+CheckCash::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -455,7 +455,7 @@ CashCheck::visitInvariantEntry(
 }
 
 bool
-CashCheck::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

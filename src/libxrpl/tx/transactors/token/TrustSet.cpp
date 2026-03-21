@@ -653,7 +653,7 @@ TrustSet::doApply()
 }
 
 void
-SetTrust::visitInvariantEntry(
+TrustSet::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -661,7 +661,7 @@ SetTrust::visitInvariantEntry(
 }
 
 bool
-SetTrust::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+TrustSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

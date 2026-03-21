@@ -386,7 +386,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 }
 
 void
-SetSignerList::visitInvariantEntry(
+SignerListSet::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -394,7 +394,7 @@ SetSignerList::visitInvariantEntry(
 }
 
 bool
-SetSignerList::finalizeInvariants(
+SignerListSet::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

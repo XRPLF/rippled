@@ -201,7 +201,7 @@ CheckCreate::doApply()
 }
 
 void
-CreateCheck::visitInvariantEntry(
+CheckCreate::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -209,7 +209,7 @@ CreateCheck::visitInvariantEntry(
 }
 
 bool
-CreateCheck::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

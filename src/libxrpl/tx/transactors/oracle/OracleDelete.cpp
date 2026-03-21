@@ -78,7 +78,7 @@ OracleDelete::doApply()
 }
 
 void
-DeleteOracle::visitInvariantEntry(
+OracleDelete::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -86,7 +86,7 @@ DeleteOracle::visitInvariantEntry(
 }
 
 bool
-DeleteOracle::finalizeInvariants(
+OracleDelete::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

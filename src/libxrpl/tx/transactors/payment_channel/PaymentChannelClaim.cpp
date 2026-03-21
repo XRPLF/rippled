@@ -187,7 +187,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PayChanClaim::visitInvariantEntry(
+PaymentChannelClaim::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -195,7 +195,7 @@ PayChanClaim::visitInvariantEntry(
 }
 
 bool
-PayChanClaim::finalizeInvariants(
+PaymentChannelClaim::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

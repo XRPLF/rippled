@@ -92,7 +92,7 @@ PaymentChannelFund::doApply()
 }
 
 void
-PayChanFund::visitInvariantEntry(
+PaymentChannelFund::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -100,7 +100,12 @@ PayChanFund::visitInvariantEntry(
 }
 
 bool
-PayChanFund::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+PaymentChannelFund::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
 {
     return true;
 }

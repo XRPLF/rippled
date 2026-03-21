@@ -121,7 +121,7 @@ TicketCreate::doApply()
 }
 
 void
-CreateTicket::visitInvariantEntry(
+TicketCreate::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -129,7 +129,7 @@ CreateTicket::visitInvariantEntry(
 }
 
 bool
-CreateTicket::finalizeInvariants(
+TicketCreate::finalizeInvariants(
     STTx const&,
     TER,
     XRPAmount,

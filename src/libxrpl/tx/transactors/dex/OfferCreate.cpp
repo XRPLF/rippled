@@ -876,7 +876,7 @@ OfferCreate::doApply()
 }
 
 void
-CreateOffer::visitInvariantEntry(
+OfferCreate::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -884,7 +884,7 @@ CreateOffer::visitInvariantEntry(
 }
 
 bool
-CreateOffer::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }

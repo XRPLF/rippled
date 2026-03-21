@@ -93,7 +93,7 @@ CheckCancel::doApply()
 }
 
 void
-CancelCheck::visitInvariantEntry(
+CheckCancel::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
@@ -101,7 +101,7 @@ CancelCheck::visitInvariantEntry(
 }
 
 bool
-CancelCheck::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+CheckCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     return true;
 }
