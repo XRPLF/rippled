@@ -362,7 +362,7 @@ public:
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
 
-        pendingWrites_ += static_cast<int>(batch.size());
+        pendingWrites_ += batch.size();
 
         // Calculate optimal parallelization parameters for the batch.
         auto const [numThreads, numItems] = calculateBatchParallelization(batch.size());
@@ -378,11 +378,11 @@ public:
                 }
                 catch (...)
                 {
-                    pendingWrites_ -= static_cast<int>(batch.size());
+                    pendingWrites_ -= batch.size();
                     throw;
                 }
             }
-            pendingWrites_ -= static_cast<int>(batch.size());
+            pendingWrites_ -= batch.size();
 
             report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - start);
@@ -460,7 +460,7 @@ public:
         {
             if (item.eptr)
             {
-                pendingWrites_ -= static_cast<int>(batch.size());
+                pendingWrites_ -= batch.size();
                 std::rethrow_exception(item.eptr);
             }
 
@@ -468,12 +468,12 @@ public:
             db_.insert(item.key.data(), item.data.data(), item.data.size(), ec);
             if (ec && ec != nudb::error::key_exists)
             {
-                pendingWrites_ -= static_cast<int>(batch.size());
+                pendingWrites_ -= batch.size();
                 Throw<nudb::system_error>(ec);
             }
         }
 
-        pendingWrites_ -= static_cast<int>(batch.size());
+        pendingWrites_ -= batch.size();
 
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
@@ -642,7 +642,7 @@ private:
     nudb::store db_;
     std::atomic<bool> deletePath_;
     Scheduler& scheduler_;
-    std::atomic<int> pendingWrites_{0};
+    std::atomic<size_t> pendingWrites_{0};
     boost::asio::thread_pool threadPool_;
 };
 
