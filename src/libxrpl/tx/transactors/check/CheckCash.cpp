@@ -2,6 +2,7 @@
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -335,7 +336,7 @@ CheckCash::doApply()
                 initialBalance.setIssuer(noAccount());
 
                 // clang-format off
-                if (TER const ter = trustCreate(
+                if (TER const ter = WritableRippleState::trustCreate(
                         psb,                            // payment sandbox
                         destLow,                        // is dest low?
                         issuer,                         // source

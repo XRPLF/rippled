@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -385,7 +386,7 @@ rippleCreditIOU(
 
         if (bDelete)
         {
-            return trustDelete(
+            return WritableRippleState::trustDelete(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
@@ -413,7 +414,7 @@ rippleCreditIOU(
 
     bool const noRipple = (wrappedAccount->getFlags() & lsfDefaultRipple) == 0;
 
-    return trustCreate(
+    return WritableRippleState::trustCreate(
         view,
         bSenderHigh,
         uSenderID,
