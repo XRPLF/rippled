@@ -182,7 +182,7 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
-    MPToken const mptIssuance(ctx.view, clawAmount.get<MPTIssue>());
+    MPTokenIssuance const mptIssuance(ctx.view, clawAmount.get<MPTIssue>());
     if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 

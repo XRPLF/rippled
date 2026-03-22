@@ -72,7 +72,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
-    MPToken const shareIssuance(ctx.view, share);
+    MPTokenIssuance const shareIssuance(ctx.view, share);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START
@@ -173,7 +173,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
                 if constexpr (std::is_same_v<TIss, MPTIssue>)
                 {
-                    MPToken const mptIssuance(ctx.view, issue);
+                    MPTokenIssuance const mptIssuance(ctx.view, issue);
                     if (!mptIssuance)
                         return tecOBJECT_NOT_FOUND;
 
@@ -214,7 +214,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 Expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
     std::shared_ptr<SLE> const& vault,
-    MPToken const& shareIssuance,
+    MPTokenIssuance const& shareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -317,7 +317,7 @@ VaultClawback::doApply()
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
-    MPToken const shareIssuance(view(), share);
+    MPTokenIssuance const shareIssuance(view(), share);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START

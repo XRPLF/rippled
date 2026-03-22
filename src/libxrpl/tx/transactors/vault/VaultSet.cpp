@@ -72,7 +72,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    MPToken const shareIssuance(ctx.view, (*vault)[sfShareMPTID]);
+    MPTokenIssuance const shareIssuance(ctx.view, (*vault)[sfShareMPTID]);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START
@@ -126,7 +126,7 @@ VaultSet::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    WritableMPToken shareIssuance(view(), (*vault)[sfShareMPTID]);
+    WritableMPTokenIssuance shareIssuance(view(), (*vault)[sfShareMPTID]);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START

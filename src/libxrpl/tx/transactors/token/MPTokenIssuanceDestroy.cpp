@@ -16,7 +16,7 @@ TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    MPToken const mptIssuance(ctx.view, ctx.tx[sfMPTokenIssuanceID]);
+    MPTokenIssuance const mptIssuance(ctx.view, ctx.tx[sfMPTokenIssuanceID]);
     if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -37,7 +37,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    WritableMPToken mptIssuance(view(), ctx_.tx[sfMPTokenIssuanceID]);
+    WritableMPTokenIssuance mptIssuance(view(), ctx_.tx[sfMPTokenIssuanceID]);
     if (accountID_ != mptIssuance.getIssuer())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

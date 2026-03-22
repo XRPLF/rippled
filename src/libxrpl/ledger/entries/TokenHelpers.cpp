@@ -27,9 +27,9 @@ isLPTokenFrozen(
     Issue const& asset2);
 
 class IOUToken;
-class MPToken;
+class MPTokenIssuance;
 class WritableIOUToken;
-class WritableMPToken;
+class WritableMPTokenIssuance;
 
 std::unique_ptr<TokenBase>
 makeTokenBase(ReadView const& view, Asset const& asset)
@@ -42,7 +42,7 @@ makeTokenBase(ReadView const& view, Asset const& asset)
             }
             else
             {
-                return std::make_unique<MPToken>(view, issue);
+                return std::make_unique<MPTokenIssuance>(view, issue);
             }
         },
         asset.value());
@@ -59,7 +59,7 @@ makeWritableTokenBase(ApplyView& view, Asset const& asset)
             }
             else
             {
-                return std::make_unique<WritableMPToken>(view, issue);
+                return std::make_unique<WritableMPTokenIssuance>(view, issue);
             }
         },
         asset.value());
@@ -812,7 +812,7 @@ rippleCreditMPT(
     beast::Journal j)
 {
     // Do not check MPT authorization here - it must have been checked earlier
-    WritableMPToken mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
+    WritableMPTokenIssuance mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
@@ -884,7 +884,7 @@ rippleSendMPT(
 
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
     auto const& issuer = saAmount.getIssuer();
-    WritableMPToken mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
+    WritableMPTokenIssuance mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
@@ -937,7 +937,7 @@ rippleSendMultiMPT(
     // Safe to get MPT since rippleSendMultiMPT is only called by
     // accountSendMultiMPT
     auto const& issuer = mptIssue.getIssuer();
-    auto mptIssuance = MPToken(view, mptIssue);
+    auto mptIssuance = MPTokenIssuance(view, mptIssue);
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 

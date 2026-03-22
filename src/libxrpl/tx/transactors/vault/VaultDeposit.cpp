@@ -62,7 +62,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = MPToken(ctx.view, vaultShare);
+    auto const mptIssuance = MPTokenIssuance(ctx.view, vaultShare);
     if (!mptIssuance)
     {
         // LCOV_EXCL_START
@@ -84,7 +84,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
-    if (MPToken(ctx.view, vaultShare).isFrozen(account))
+    if (MPTokenIssuance(ctx.view, vaultShare).isFrozen(account))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
@@ -139,7 +139,7 @@ VaultDeposit::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
-    WritableMPToken mptoken(view(), (*vault)[sfShareMPTID]);
+    WritableMPTokenIssuance mptoken(view(), (*vault)[sfShareMPTID]);
     if (!mptoken.exists())
     {
         // LCOV_EXCL_START

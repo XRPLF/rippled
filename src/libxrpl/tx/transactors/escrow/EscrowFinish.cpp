@@ -149,7 +149,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    auto const mptIssuance = MPToken(ctx.view, amount.get<MPTIssue>());
+    auto const mptIssuance = MPTokenIssuance(ctx.view, amount.get<MPTIssue>());
     // If the issuer is the same as the dest, return tesSUCCESS
     if (mptIssuance.getIssuer() == dest)
         return tesSUCCESS;

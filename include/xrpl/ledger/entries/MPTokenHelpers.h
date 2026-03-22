@@ -14,10 +14,10 @@
 
 namespace xrpl {
 
-class MPToken : public virtual TokenBase
+class MPTokenIssuance : public virtual TokenBase
 {
 public:
-    MPToken(ReadView const& view, MPTIssue const& mptIssue)
+    MPTokenIssuance(ReadView const& view, MPTIssue const& mptIssue)
         : ReadOnlySLE(view.read(keylet::mptIssuance(mptIssue.getMptID())), view)
         , TokenBase(view, view.read(keylet::mptIssuance(mptIssue.getMptID())))
         , mptID_(mptIssue.getMptID())
@@ -25,7 +25,7 @@ public:
     {
     }
 
-    MPToken(ReadView const& view, MPTID const& mptID)
+    MPTokenIssuance(ReadView const& view, MPTID const& mptID)
         : ReadOnlySLE(view.read(keylet::mptIssuance(mptID)), view)
         , TokenBase(view, view.read(keylet::mptIssuance(mptID)))
         , mptID_(mptID)
@@ -150,32 +150,32 @@ protected:
     MPTIssue const mptIssue_;
 };
 
-class WritableMPToken : public virtual WritableTokenBase, public virtual MPToken
+class WritableMPTokenIssuance : public virtual WritableTokenBase, public virtual MPTokenIssuance
 {
 public:
-    WritableMPToken(ApplyView& view, MPTIssue const& mptIssue)
+    WritableMPTokenIssuance(ApplyView& view, MPTIssue const& mptIssue)
         : ReadOnlySLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
         , TokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
         , WritableSLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
         , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
-        , MPToken(view, mptIssue)
+        , MPTokenIssuance(view, mptIssue)
     {
     }
 
-    WritableMPToken(ApplyView& view, MPTID const& mptID)
+    WritableMPTokenIssuance(ApplyView& view, MPTID const& mptID)
         : ReadOnlySLE(view.peek(keylet::mptIssuance(mptID)), view)
         , TokenBase(view, view.peek(keylet::mptIssuance(mptID)))
         , WritableSLE(view.peek(keylet::mptIssuance(mptID)), view)
         , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptID)))
-        , MPToken(view, mptID)
+        , MPTokenIssuance(view, mptID)
     {
     }
 
     // Resolve ambiguity: use writable operator-> for non-const, read-only for const
     using WritableSLE::operator->;
-    using MPToken::operator->;
+    using MPTokenIssuance::operator->;
     using WritableSLE::operator*;
-    using MPToken::operator*;
+    using MPTokenIssuance::operator*;
 
     //------------------------------------------------------------------------------
     //
