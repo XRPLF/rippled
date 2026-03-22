@@ -22,7 +22,7 @@ public:
     TER
     doApply() override;
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     deleteDelegate(
         ApplyView& view,

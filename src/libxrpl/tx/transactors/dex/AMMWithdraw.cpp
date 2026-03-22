@@ -538,7 +538,7 @@ AMMWithdraw::withdraw(
             auto const balance = (*sleAccount)[sfBalance].xrp();
             std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
-            // See also SetTrust::doApply()
+            // See also TrustSet::doApply()
             XRPAmount const reserve(
                 (ownerCount < 2) ? XRPAmount(beast::zero)
                                  : view.fees().accountReserve(ownerCount + 1));
