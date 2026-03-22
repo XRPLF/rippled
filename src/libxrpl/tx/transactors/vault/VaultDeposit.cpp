@@ -159,7 +159,7 @@ VaultDeposit::doApply()
     else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptoken.getMptID(), accountID_)))
+        if (!mptoken.hasHolder(accountID_))
         {
             if (auto const err = mptoken.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
                 !isTesSuccess(err))

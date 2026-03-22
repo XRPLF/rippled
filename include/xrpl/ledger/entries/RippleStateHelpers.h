@@ -119,6 +119,12 @@ public:
     [[nodiscard]] bool
     requiresAuth() const override;
 
+    [[nodiscard]] bool
+    hasHolder(AccountID const& holder) const override
+    {
+        return readView_.exists(keylet::line(issuer_, holder, currency_));
+    }
+
 protected:
     Issue const issue_;
     AccountID const issuer_;

@@ -132,18 +132,17 @@ preclaimHelper<MPTIssue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
+    MPTokenIssuance const mptIssuance(ctx.view, clawAmount.get<MPTIssue>());
+    if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
-    if (!((*sleIssuance)[sfFlags] & lsfMPTCanClawback))
+    if (!mptIssuance.canClawback())
         return tecNO_PERMISSION;
 
-    if (sleIssuance->getAccountID(sfIssuer) != issuer)
+    if (mptIssuance.getIssuer() != issuer)
         return tecNO_PERMISSION;
 
-    if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, holder)))
+    if (!mptIssuance.hasHolder(holder))
         return tecOBJECT_NOT_FOUND;
 
     if (accountHolds(

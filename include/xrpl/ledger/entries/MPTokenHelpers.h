@@ -130,6 +130,12 @@ public:
     [[nodiscard]] bool
     requiresAuth() const override;
 
+    [[nodiscard]] bool
+    hasHolder(AccountID const& holder) const override
+    {
+        return readView_.exists(keylet::mptoken(mptID_, holder));
+    }
+
     STAmount
     accountHolds(
         AccountID const& account,

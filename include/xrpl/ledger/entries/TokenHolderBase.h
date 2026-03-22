@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/ledger/entries/WrappedSLEBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>

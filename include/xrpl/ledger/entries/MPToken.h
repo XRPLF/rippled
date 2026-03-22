@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/ledger/entries/DirectoryHelpers.h>
 #include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/ledger/entries/TokenHolderBase.h>
 
@@ -8,11 +9,13 @@ namespace xrpl {
 class MPToken : public virtual TokenHolderBase
 {
 public:
-    MPToken(ReadView const& view, MPTokenIssuance const& issuance, AccountID const& holder)
-        : ReadOnlySLE(view.read(keylet::mptoken(issuance.getMptID(), holder)), view)
+    MPToken(MPTokenIssuance const& issuance, AccountID const& holder)
+        : ReadOnlySLE(
+              issuance.readView().read(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.readView())
         , TokenHolderBase(
-              view,
-              view.read(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.readView(),
+              issuance.readView().read(keylet::mptoken(issuance.getMptID(), holder)),
               issuance,
               holder)
         , issuance_(issuance)
@@ -32,20 +35,24 @@ protected:
 class WritableMPToken : public virtual WritableTokenHolderBase, public virtual MPToken
 {
 public:
-    WritableMPToken(ApplyView& view, WritableMPTokenIssuance& issuance, AccountID const& holder)
-        : ReadOnlySLE(view.peek(keylet::mptoken(issuance.getMptID(), holder)), view)
+    WritableMPToken(WritableMPTokenIssuance& issuance, AccountID const& holder)
+        : ReadOnlySLE(
+              issuance.applyView().peek(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.applyView())
         , TokenHolderBase(
-              view,
-              view.peek(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.applyView(),
+              issuance.applyView().peek(keylet::mptoken(issuance.getMptID(), holder)),
               issuance,
               holder)
-        , WritableSLE(view.peek(keylet::mptoken(issuance.getMptID(), holder)), view)
+        , WritableSLE(
+              issuance.applyView().peek(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.applyView())
         , WritableTokenHolderBase(
-              view,
-              view.peek(keylet::mptoken(issuance.getMptID(), holder)),
+              issuance.applyView(),
+              issuance.applyView().peek(keylet::mptoken(issuance.getMptID(), holder)),
               issuance,
               holder)
-        , MPToken(view, issuance, holder)
+        , MPToken(issuance, holder)
         , writableIssuance_(issuance)
     {
     }
@@ -64,15 +71,14 @@ public:
 
     static TER
     createMPToken(
-        ApplyView& view,
         WritableMPTokenIssuance& issuance,
         AccountID const& account,
         std::uint32_t const flags)
     {
-        WritableMPToken mptoken(view, issuance, account);
+        WritableMPToken mptoken(issuance, account);
 
-        auto const ownerNode =
-            view.dirInsert(keylet::ownerDir(account), mptoken.key(), describeOwnerDir(account));
+        auto const ownerNode = mptoken.applyView().dirInsert(
+            keylet::ownerDir(account), mptoken.key(), describeOwnerDir(account));
 
         if (!ownerNode)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
