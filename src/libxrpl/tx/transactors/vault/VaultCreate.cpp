@@ -1,6 +1,6 @@
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpersMPTokenHelpers.h>
-#include <xrpl/ledger/helpersTokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

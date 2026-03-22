@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/ledger/entries/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {

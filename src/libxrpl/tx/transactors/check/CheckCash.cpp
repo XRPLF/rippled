@@ -154,15 +154,15 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // An issuer can always accept their own currency.
         if (!value.native() && (value.getIssuer() != dstId))
         {
-            AccountRoot const acctIssuer(issuerId, ctx.view);
-            if (!acctIssuer)
+            IOUToken const iouToken(ctx.view, issuerId, currency);
+            if (!iouToken)
             {
                 JLOG(ctx.j.warn())
                     << "Can't receive IOUs from non-existent issuer: " << to_string(issuerId);
                 return tecNO_ISSUER;
             }
 
-            if (acctIssuer->at(sfFlags) & lsfRequireAuth)
+            if (iouToken.requiresAuth())
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
