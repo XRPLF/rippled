@@ -84,7 +84,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
-    if (auto const ret = MPToken(ctx.view, vaultShare).checkFrozen(account))
+    if (auto const ret = MPTokenIssuance(ctx.view, vaultShare).checkFrozen(account))
         return ret;
 
     return tesSUCCESS;
@@ -99,7 +99,7 @@ VaultWithdraw::doApply()
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
     MPTIssue const share{mptIssuanceID};
-    MPToken const shareIssuance(view(), mptIssuanceID);
+    MPTokenIssuance const shareIssuance(view(), mptIssuanceID);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START

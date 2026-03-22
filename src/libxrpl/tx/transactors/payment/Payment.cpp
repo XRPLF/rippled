@@ -463,7 +463,7 @@ Payment::doApply()
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
-        MPToken mptToken(view(), mptIssue);
+        MPTokenIssuance mptToken(view(), mptIssue);
 
         if (auto const ter = mptToken.requireAuth(accountID_); !isTesSuccess(ter))
             return ter;
