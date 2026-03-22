@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -26,7 +27,7 @@ private:
     Expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         std::shared_ptr<SLE> const& vault,
-        std::shared_ptr<SLE const> const& sleShareIssuance,
+        MPToken const& shareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
 };
