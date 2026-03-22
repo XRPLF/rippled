@@ -2,7 +2,8 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/helpersTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -214,9 +215,9 @@ OfferCreate::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(issue.currency), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
-    AccountRoot const issuerAcct(issue.account, view);
+    IOUToken const iouToken(view, issue);
 
-    if (!issuerAcct)
+    if (!iouToken)
     {
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(issue.account);
@@ -230,7 +231,7 @@ OfferCreate::checkAcceptAsset(
     if (issue.account == id)
         return tesSUCCESS;
 
-    if (issuerAcct->getFlags() & lsfRequireAuth)
+    if (iouToken.requiresAuth())
     {
         auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 

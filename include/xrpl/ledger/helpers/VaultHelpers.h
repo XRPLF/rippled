@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/ledger/entries/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 

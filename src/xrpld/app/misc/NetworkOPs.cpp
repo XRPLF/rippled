@@ -43,7 +43,7 @@
 #include <xrpl/git/Git.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
-#include <xrpl/ledger/helpersTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>

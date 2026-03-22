@@ -3,7 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpersWrappedSLEBase.h>
+#include <xrpl/ledger/helpers/WrappedSLEBase.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>

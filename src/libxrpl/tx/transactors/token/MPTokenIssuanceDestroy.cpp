@@ -1,5 +1,5 @@
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/entries/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
