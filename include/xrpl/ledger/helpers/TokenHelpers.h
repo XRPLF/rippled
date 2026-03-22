@@ -140,6 +140,26 @@ public:
     [[nodiscard]] virtual TER
     canTransfer(AccountID const& from, AccountID const& to) const = 0;
 
+    //------------------------------------------------------------------------------
+    //
+    // Token capability checks (Asset-based dispatchers)
+    //
+    //------------------------------------------------------------------------------
+
+    /** Check if the token issuer has enabled clawback capability.
+     * For IOUs, checks lsfAllowTrustLineClawback on issuer's AccountRoot.
+     * For MPTs, checks lsfMPTCanClawback on the issuance.
+     */
+    [[nodiscard]] virtual bool
+    canClawback() const = 0;
+
+    /** Check if the token requires authorization for holders.
+     * For IOUs, checks lsfRequireAuth on issuer's AccountRoot.
+     * For MPTs, checks lsfMPTRequireAuth on the issuance.
+     */
+    [[nodiscard]] virtual bool
+    requiresAuth() const = 0;
+
 protected:
     TokenBase(ReadView const& view, std::shared_ptr<SLE const> sle) : ReadOnlySLE(sle, view)
     {

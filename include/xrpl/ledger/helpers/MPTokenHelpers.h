@@ -118,6 +118,18 @@ public:
     [[nodiscard]] TER
     canTransfer(AccountID const& from, AccountID const& to) const override;
 
+    //------------------------------------------------------------------------------
+    //
+    // Token capability checks (MPT-specific)
+    //
+    //------------------------------------------------------------------------------
+
+    [[nodiscard]] bool
+    canClawback() const override;
+
+    [[nodiscard]] bool
+    requiresAuth() const override;
+
     STAmount
     accountHolds(
         AccountID const& account,
