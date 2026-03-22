@@ -4,6 +4,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/entries/RippleState.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -404,7 +405,7 @@ class Invariants_test : public beast::unit_test::suite
                     STAmount const lowLimit = line->at(sfLowLimit);
                     STAmount const highLimit = line->at(sfHighLimit);
                     BEAST_EXPECT(
-                        trustDelete(
+                        WritableRippleState::trustDelete(
                             ac.view(),
                             line,
                             lowLimit.getIssuer(),

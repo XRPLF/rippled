@@ -5,6 +5,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/ledger/entries/MPTokenHelpers.h>
+#include <xrpl/ledger/entries/RippleState.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -76,7 +77,7 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.setIssuer(noAccount());
 
         // clang-format off
-        if (TER const ter = trustCreate(
+        if (TER const ter = WritableRippleState::trustCreate(
                 view,                           // payment sandbox
                 recvLow,                        // is dest low?
                 issuer,                         // source
