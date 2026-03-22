@@ -130,6 +130,14 @@ public:
     [[nodiscard]] bool
     requiresAuth() const override;
 
+    [[nodiscard]] TER
+    checkExists() const override
+    {
+        if (!exists())
+            return tecOBJECT_NOT_FOUND;
+        return tesSUCCESS;
+    }
+
     [[nodiscard]] bool
     hasHolder(AccountID const& holder) const override
     {
