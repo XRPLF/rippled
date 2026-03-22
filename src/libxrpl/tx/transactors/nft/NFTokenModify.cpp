@@ -1,3 +1,4 @@
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenModify.h>
@@ -36,10 +37,10 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     // Verify permissions for the issuer
     if (AccountID const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
     {
-        auto const sle = ctx.view.read(keylet::account(issuer));
-        if (!sle)
+        AccountRoot const acctIssuer(issuer, ctx.view);
+        if (!acctIssuer)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
+        if (auto const minter = acctIssuer->at(~sfNFTokenMinter); minter != account)
             return tecNO_PERMISSION;
     }
 

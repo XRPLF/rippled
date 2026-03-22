@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
@@ -73,8 +74,7 @@ verifyDepositPreauth(
     STTx const& tx,
     ApplyView& view,
     AccountID const& src,
-    AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    AccountRoot const& dst,
     beast::Journal j);
 
 }  // namespace xrpl

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -102,13 +103,12 @@ checkAttestationPublicKey(
 
     AccountID const accountFromPK = calcAccountID(pk);
 
-    if (auto const sleAttestationSigningAccount =
-            view.read(keylet::account(attestationSignerAccount)))
+    if (AccountRoot const acctSigner(attestationSignerAccount, view); acctSigner)
     {
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster)
+            if (acctSigner->getFieldU32(sfFlags) & lsfDisableMaster)
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -118,8 +118,7 @@ checkAttestationPublicKey(
         else
         {
             // regular key
-            if (std::optional<AccountID> regularKey =
-                    (*sleAttestationSigningAccount)[~sfRegularKey];
+            if (std::optional<AccountID> regularKey = acctSigner->at(~sfRegularKey);
                 regularKey != accountFromPK)
             {
                 if (!regularKey)
@@ -380,12 +379,12 @@ transferHelper(
     if (dst == src)
         return tesSUCCESS;
 
-    auto const dstK = keylet::account(dst);
-    if (auto sleDst = psb.read(dstK))
+    AccountRoot const acctDst(dst, psb);
+    if (acctDst)
     {
         // Check dst tag and deposit auth
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !dstTag)
+        if ((acctDst->getFlags() & lsfRequireDestTag) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -394,7 +393,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
 
-        if (!canBypassDepositAuth && (sleDst->getFlags() & lsfDepositAuth) &&
+        if (!canBypassDepositAuth && (acctDst->getFlags() & lsfDepositAuth) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -407,17 +406,17 @@ transferHelper(
 
     if (amt.native())
     {
-        auto const sleSrc = psb.peek(keylet::account(src));
-        XRPL_ASSERT(sleSrc, "xrpl::transferHelper : non-null source account");
-        if (!sleSrc)
+        WritableAccountRoot acctSrc(src, psb);
+        XRPL_ASSERT(acctSrc, "xrpl::transferHelper : non-null source account");
+        if (!acctSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
+            auto const ownerCount = acctSrc->getFieldU32(sfOwnerCount);
             auto const reserve = psb.fees().accountReserve(ownerCount);
 
             auto const availableBalance = [&]() -> STAmount {
-                STAmount const curBal = (*sleSrc)[sfBalance];
+                STAmount const curBal = acctSrc->at(sfBalance);
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
                 // changes
@@ -433,8 +432,8 @@ transferHelper(
             }
         }
 
-        auto sleDst = psb.peek(dstK);
-        if (!sleDst)
+        WritableAccountRoot acctDst(dst, psb);
+        if (!acctDst)
         {
             if (canCreate == CanCreateDstPolicy::no)
             {
@@ -448,17 +447,17 @@ transferHelper(
             }
 
             // Create the account.
-            sleDst = std::make_shared<SLE>(dstK);
-            sleDst->setAccountID(sfAccount, dst);
-            sleDst->setFieldU32(sfSequence, psb.seq());
+            acctDst.newSLE();
+            acctDst->setAccountID(sfAccount, dst);
+            acctDst->setFieldU32(sfSequence, psb.seq());
 
-            psb.insert(sleDst);
+            acctDst.insert();
         }
 
-        (*sleSrc)[sfBalance] = (*sleSrc)[sfBalance] - amt;
-        (*sleDst)[sfBalance] = (*sleDst)[sfBalance] + amt;
-        psb.update(sleSrc);
-        psb.update(sleDst);
+        acctSrc->at(sfBalance) = acctSrc->at(sfBalance) - amt;
+        acctDst->at(sfBalance) = acctDst->at(sfBalance) + amt;
+        acctSrc.update();
+        acctDst.update();
 
         return tesSUCCESS;
     }
@@ -729,9 +728,9 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
     std::uint32_t q = std::numeric_limits<std::uint32_t>::max();
 
     AccountID const thisDoor = sleBridge[sfAccount];
-    auto const sleDoor = [&] { return view.read(keylet::account(thisDoor)); }();
+    AccountRoot const acctDoor(thisDoor, view);
 
-    if (!sleDoor)
+    if (!acctDoor)
     {
         return {r, q, tecINTERNAL};
     }
@@ -1394,25 +1393,25 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(bridgeSpec.issue(chainType)))
     {
-        auto const sleIssuer = ctx.view.read(keylet::account(bridgeSpec.issue(chainType).account));
+        AccountRoot const acctIssuer(bridgeSpec.issue(chainType).account, ctx.view);
 
-        if (!sleIssuer)
+        if (!acctIssuer)
             return tecNO_ISSUER;
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (sleIssuer->getFlags() & lsfAllowTrustLineClawback)
+        if (acctIssuer->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
     }
 
     {
         // Check reserve
-        auto const sleAcc = ctx.view.read(keylet::account(account));
-        if (!sleAcc)
+        AccountRoot const acctSrc(account, ctx.view);
+        if (!acctSrc)
             return terNO_ACCOUNT;
 
-        auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const balance = acctSrc->at(sfBalance);
+        auto const reserve = ctx.view.fees().accountReserve(acctSrc->getFieldU32(sfOwnerCount) + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1540,8 +1539,7 @@ BridgeModify::doApply()
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
     bool const clearAccountCreate = ctx_.tx.getFlags() & tfClearAccountCreateAmount;
 
-    auto const sleAcct = ctx_.view().peek(keylet::account(account));
-    if (!sleAcct)
+    if (!AccountRoot(account, ctx_.view()))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge::ChainType const chainType =
@@ -1598,7 +1596,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (!ctx.view.read(keylet::account(ctx.tx[sfDestination])))
+    if (!AccountRoot(ctx.tx[sfDestination], ctx.view))
     {
         return tecNO_DST;
     }
@@ -1703,11 +1701,11 @@ XChainClaim::doApply()
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
 
-        auto const sleAcct = psb.peek(keylet::account(account));
+        AccountRoot const acctRoot(account, psb);
         auto const sleBridge = peekBridge(psb, bridgeSpec);
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
-        if (!(sleBridge && sleClaimID && sleAcct))
+        if (!(sleBridge && sleClaimID && acctRoot))
             return Unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1884,8 +1882,8 @@ XChainCommit::doApply()
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    auto const sleAccount = psb.read(keylet::account(account));
-    if (!sleAccount)
+    AccountRoot const acctRoot(account, psb);
+    if (!acctRoot)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
@@ -1896,7 +1894,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
+        accountID_, preFeeBalance_, (*acctRoot)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -1953,12 +1951,12 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 
     {
         // Check reserve
-        auto const sleAcc = ctx.view.read(keylet::account(account));
-        if (!sleAcc)
+        AccountRoot const acctSrc(account, ctx.view);
+        if (!acctSrc)
             return terNO_ACCOUNT;
 
-        auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const balance = acctSrc->at(sfBalance);
+        auto const reserve = ctx.view.fees().accountReserve(acctSrc->getFieldU32(sfOwnerCount) + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -2158,8 +2156,8 @@ XChainCreateAccountCommit::doApply()
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
-    auto const sle = psb.peek(keylet::account(account));
-    if (!sle)
+    AccountRoot const acctRoot(account, psb);
+    if (!acctRoot)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(psb, bridge);
@@ -2170,7 +2168,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sle)[sfBalance]};
+        accountID_, preFeeBalance_, (*acctRoot)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

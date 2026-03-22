@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -88,7 +89,7 @@ CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(subject, account_, credType);
+    Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
@@ -110,7 +111,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    WritableAccountRoot wrappedIssuer(account_, view());
+    WritableAccountRoot wrappedIssuer(accountID_, view());
     if (!wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -122,15 +123,15 @@ CredentialCreate::doApply()
     }
 
     sleCred->setAccountID(sfSubject, subject);
-    sleCred->setAccountID(sfIssuer, account_);
+    sleCred->setAccountID(sfIssuer, accountID_);
     sleCred->setFieldVL(sfCredentialType, credType);
 
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), credentialKey, describeOwnerDir(accountID_));
         JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
                          << ": " << (page ? "success" : "failure");
         if (!page)
@@ -140,7 +141,7 @@ CredentialCreate::doApply()
         wrappedIssuer.adjustOwnerCount(1, j_);
     }
 
-    if (subject == account_)
+    if (subject == accountID_)
     {
         sleCred->setFieldU32(sfFlags, lsfAccepted);
     }
@@ -153,7 +154,8 @@ CredentialCreate::doApply()
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
-        view().update(view().peek(keylet::account(subject)));
+        WritableAccountRoot subjectAcct(subject, view());
+        subjectAcct.update();
     }
 
     view().insert(sleCred);

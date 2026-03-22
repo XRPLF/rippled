@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/account/SetRegularKey.h>
@@ -15,9 +16,9 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
-            auto const sle = view.read(keylet::account(id));
+            AccountRoot const acct(id, view);
 
-            if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
+            if (acct && (!(acct->getFlags() & lsfPasswordSpent)))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
@@ -43,27 +44,27 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
+    WritableAccountRoot acct(accountID_, view());
+    if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (!minimumFee(ctx_.registry, ctx_.baseFee, view().fees(), view().flags()))
-        sle->setFlag(lsfPasswordSpent);
+        acct->setFlag(lsfPasswordSpent);
 
     if (ctx_.tx.isFieldPresent(sfRegularKey))
     {
-        sle->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
+        acct->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
     }
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(account_)))
+        if (acct->isFlag(lsfDisableMaster) && !view().peek(keylet::signers(accountID_)))
             return tecNO_ALTERNATIVE_KEY;
 
-        sle->makeFieldAbsent(sfRegularKey);
+        acct->makeFieldAbsent(sfRegularKey);
     }
 
-    ctx_.view().update(sle);
+    acct.update();
 
     return tesSUCCESS;
 }

@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -71,16 +72,17 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     {
-        auto const sleSrc = ctx.view.read(keylet::account(srcId));
-        auto const sleDst = ctx.view.read(keylet::account(dstId));
-        if (!sleSrc || !sleDst)
+        AccountRoot const acctSrc(srcId, ctx.view);
+        AccountRoot const acctDst(dstId, ctx.view);
+        if (!acctSrc || !acctDst)
         {
             // If the check exists this should never occur.
             JLOG(ctx.j.warn()) << "Malformed transaction: source or destination not in ledger";
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
+        if ((acctDst->getFlags() & lsfRequireDestTag) &&
+            !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -145,15 +147,15 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // An issuer can always accept their own currency.
         if (!value.native() && (value.getIssuer() != dstId))
         {
-            auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
-            if (!sleIssuer)
+            AccountRoot const acctIssuer(issuerId, ctx.view);
+            if (!acctIssuer)
             {
                 JLOG(ctx.j.warn())
                     << "Can't receive IOUs from non-existent issuer: " << to_string(issuerId);
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if (acctIssuer->at(sfFlags) & lsfRequireAuth)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
@@ -212,7 +214,7 @@ CheckCash::doApply()
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(account_)))
+    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(accountID_)))
     {
         // LCOV_EXCL_START
         JLOG(ctx_.journal.fatal()) << "Precheck did not verify source or destination's existence.";
@@ -233,7 +235,7 @@ CheckCash::doApply()
     auto viewJ = ctx_.registry.journal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
-    if (srcId != account_)
+    if (srcId != accountID_)
     {
         STAmount const sendMax = sleCheck->at(sfSendMax);
 
@@ -272,7 +274,7 @@ CheckCash::doApply()
             }
 
             // The source account has enough XRP so make the ledger change.
-            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
+            if (TER const ter{transferXRP(psb, srcId, accountID_, xrpDeliver, viewJ)};
                 !isTesSuccess(ter))
             {
                 // The transfer failed.  Return the error code.
@@ -295,9 +297,9 @@ CheckCash::doApply()
             // If a trust line does not exist yet create one.
             Issue const& trustLineIssue = flowDeliver.issue();
             AccountID const issuer = flowDeliver.getIssuer();
-            AccountID const truster = issuer == account_ ? srcId : account_;
+            AccountID const truster = issuer == accountID_ ? srcId : accountID_;
             Keylet const trustLineKey = keylet::line(truster, trustLineIssue);
-            bool const destLow = issuer > account_;
+            bool const destLow = issuer > accountID_;
 
             if (!psb.exists(trustLineKey))
             {
@@ -308,7 +310,7 @@ CheckCash::doApply()
                 //     a. this (destination) account and
                 //     b. issuing account (not sending account).
 
-                WritableAccountRoot wrappedDst(account_, psb);
+                WritableAccountRoot wrappedDst(accountID_, psb);
 
                 // Can the account cover the trust line's reserve?
                 if (std::uint32_t const ownerCount = {wrappedDst->at(sfOwnerCount)};
@@ -329,7 +331,7 @@ CheckCash::doApply()
                         psb,                            // payment sandbox
                         destLow,                        // is dest low?
                         issuer,                         // source
-                        account_,                       // destination
+                        accountID_,                       // destination
                         trustLineKey.key,               // ledger index
                         wrappedDst,                         // Account to add to
                         false,                          // authorize account
@@ -337,7 +339,7 @@ CheckCash::doApply()
                         false,                          // freeze trust line
                         false,                          // deep freeze trust line
                         initialBalance,                 // zero initial balance
-                        Issue(currency, account_),      // limit of zero
+                        Issue(currency, accountID_),      // limit of zero
                         0,                              // quality in
                         0,                              // quality out
                         viewJ);                         // journal
@@ -381,7 +383,7 @@ CheckCash::doApply()
                 psb,
                 flowDeliver,
                 srcId,
-                account_,
+                accountID_,
                 STPathSet{},
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
@@ -418,9 +420,9 @@ CheckCash::doApply()
 
     // Check was cashed.  If not a self send (and it shouldn't be), remove
     // check link from destination directory.
-    if (srcId != account_ &&
+    if (srcId != accountID_ &&
         !psb.dirRemove(
-            keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
+            keylet::ownerDir(accountID_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";

@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -113,7 +114,8 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    AccountID const account_;
+    AccountID const accountID_;
+    AccountRoot const account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
     virtual ~Transactor() = default;

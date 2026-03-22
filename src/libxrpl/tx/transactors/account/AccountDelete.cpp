@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -209,12 +210,12 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.read(keylet::account(dst));
+    AccountRoot const acctDst(dst, ctx.view);
 
-    if (!sleDst)
+    if (!acctDst)
         return tecNO_DST;
 
-    if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if (acctDst->getFlags() & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -226,21 +227,21 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (sleDst->getFlags() & lsfDepositAuth)
+        if (acctDst->getFlags() & lsfDepositAuth)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
         }
     }
 
-    auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
-    if (!sleAccount)
+    AccountRoot const acctSrc(account, ctx.view);
+    XRPL_ASSERT(acctSrc, "xrpl::AccountDelete::preclaim : non-null account");
+    if (!acctSrc)
         return terNO_ACCOUNT;
 
     // If an issuer has any issued NFTs resident in the ledger then it
     // cannot be deleted.
-    if ((*sleAccount)[~sfMintedNFTokens] != (*sleAccount)[~sfBurnedNFTokens])
+    if (acctSrc->at(~sfMintedNFTokens) != acctSrc->at(~sfBurnedNFTokens))
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
@@ -259,7 +260,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
     constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    if (acctSrc->getFieldU32(sfSequence) + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // We don't allow an account to be deleted if
@@ -273,8 +274,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+    if (acctSrc->at(~sfFirstNFTokenSequence).value_or(0) +
+            acctSrc->at(~sfMintedNFTokens).value_or(0) + seqDelta >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -327,25 +328,24 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
+    WritableAccountRoot src(accountID_, view());
+    XRPL_ASSERT(src.exists(), "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    auto dst = view().peek(keylet::account(dstID));
-    XRPL_ASSERT(dst, "xrpl::AccountDelete::doApply : non-null destination account");
+    WritableAccountRoot dst(dstID, view());
+    XRPL_ASSERT(dst.exists(), "xrpl::AccountDelete::doApply : non-null destination account");
 
-    if (!src || !dst)
+    if (!src.exists() || !dst.exists())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
 
-    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    Keylet const ownerDirKeylet{keylet::ownerDir(accountID_)};
     auto const ter = cleanupOnAccountDelete(
         view(),
         ownerDirKeylet,
@@ -354,7 +354,7 @@ AccountDelete::doApply()
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{deleter(ctx_.registry, view(), account_, dirEntry, sleItem, j_)};
+                TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};
 
                 return {result, SkipEntry::No};
             }
@@ -385,7 +385,7 @@ AccountDelete::doApply()
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(account_);
+        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(accountID_);
         return tecHAS_OBLIGATIONS;
     }
 
@@ -393,8 +393,8 @@ AccountDelete::doApply()
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    view().update(dst);
-    view().erase(src);
+    dst.update();
+    src.erase();
 
     return tesSUCCESS;
 }

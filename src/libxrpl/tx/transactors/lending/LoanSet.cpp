@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -346,8 +347,8 @@ LoanSet::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
-    if (!brokerOwnerSle)
+    WritableAccountRoot brokerOwnerAcct(brokerOwner, view);
+    if (!brokerOwnerAcct)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
@@ -357,7 +358,7 @@ LoanSet::doApply()
     Asset const vaultAsset = vaultSle->at(sfAsset);
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
-    auto const borrower = counterparty == brokerOwner ? account_ : counterparty;
+    auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
     WritableAccountRoot wrappedBorrower(borrower, view);
     if (!wrappedBorrower)
     {
@@ -365,8 +366,8 @@ LoanSet::doApply()
     }
 
     auto const brokerPseudo = brokerSle->at(sfAccount);
-    auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
-    if (!brokerPseudoSle)
+    WritableAccountRoot brokerPseudoAcct(brokerPseudo, view);
+    if (!brokerPseudoAcct)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -476,7 +477,7 @@ LoanSet::doApply()
     {
         auto const ownerCount = wrappedBorrower->at(sfOwnerCount);
         auto const balance =
-            account_ == borrower ? preFeeBalance_ : wrappedBorrower->at(sfBalance).value().xrp();
+            accountID_ == borrower ? preFeeBalance_ : wrappedBorrower->at(sfBalance).value().xrp();
         if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }
@@ -488,7 +489,7 @@ LoanSet::doApply()
     // Create a holding for the borrower if one does not already exist.
 
     XRPL_ASSERT_PARTS(
-        borrower == account_ || borrower == counterparty,
+        borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
     if (auto const ter = addEmptyHolding(
@@ -510,12 +511,12 @@ LoanSet::doApply()
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
         XRPL_ASSERT_PARTS(
-            brokerOwner == account_ || brokerOwner == counterparty,
+            brokerOwner == accountID_ || brokerOwner == counterparty,
             "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 
         if (auto const ter = addEmptyHolding(
-                view, brokerOwner, brokerOwnerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
+                view, brokerOwner, brokerOwnerAcct->at(sfBalance).value().xrp(), vaultAsset, j_);
             ter && ter != tecDUPLICATE)
         {
             // ignore tecDUPLICATE. That means the holding already exists,

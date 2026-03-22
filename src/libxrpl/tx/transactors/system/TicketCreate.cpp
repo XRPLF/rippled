@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -28,13 +29,13 @@ TER
 TicketCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
-    auto const sleAccountRoot = ctx.view.read(keylet::account(id));
-    if (!sleAccountRoot)
+    AccountRoot const acctRoot(id, ctx.view);
+    if (!acctRoot)
         return terNO_ACCOUNT;
 
     // Make sure the TicketCreate would not cause the account to own
     // too many tickets.
-    std::uint32_t const curTicketCount = (*sleAccountRoot)[~sfTicketCount].value_or(0u);
+    std::uint32_t const curTicketCount = acctRoot->at(~sfTicketCount).value_or(0u);
     std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
     std::uint32_t const consumedTickets = ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
 
@@ -53,7 +54,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, view());
+    WritableAccountRoot wrappedOwner(accountID_, view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -86,15 +87,15 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::ticket(account_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
         SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
 
-        sleTicket->setAccountID(sfAccount, account_);
+        sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
                          << (page ? "success" : "failure");

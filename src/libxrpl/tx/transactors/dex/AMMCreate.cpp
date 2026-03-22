@@ -1,6 +1,7 @@
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
@@ -96,8 +97,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         if (isXRP(issue))
             return false;
 
-        if (auto const issuerAccount = view.read(keylet::account(issue.account)))
-            return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+        AccountRoot const issuerAcct(issue.account, view);
+        if (issuerAcct)
+            return (issuerAcct->getFlags() & lsfDefaultRipple) == 0;
 
         return false;
     };
@@ -134,8 +136,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     auto isLPToken = [&](STAmount const& amount) -> bool {
-        if (auto const sle = ctx.view.read(keylet::account(amount.issue().account)))
-            return sle->isFieldPresent(sfAMMID);
+        AccountRoot const acct(amount.issue().account, ctx.view);
+        if (acct)
+            return acct->isFieldPresent(sfAMMID);
         return false;
     };
 
@@ -164,10 +167,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
-        auto const sle = ctx.view.read(keylet::account(issue.account));
-        if (!sle)
+        AccountRoot const acct(issue.account, ctx.view);
+        if (!acct)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        if (sle->getFlags() & lsfAllowTrustLineClawback)
+        if (acct->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
         return tesSUCCESS;
     };
@@ -178,7 +181,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
+applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast::Journal j_)
 {
     auto const amount = ctx_.tx[sfAmount];
     auto const amount2 = ctx_.tx[sfAmount2];
@@ -221,7 +224,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, issue2});
     // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
+    initializeFeeAuctionVote(ctx_.view(), ammSle, accountID_, lptIss, ctx_.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
     if (auto ter = dirLink(sb, accountId, ammSle); ter)
@@ -232,7 +235,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
+    auto res = accountSend(sb, accountId, accountID_, lpTokens, ctx_.journal);
     if (!isTesSuccess(res))
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -241,7 +244,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
 
     auto sendAndTrustSet = [&](STAmount const& amount) -> TER {
         if (auto const res =
-                accountSend(sb, account_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes))
+                accountSend(sb, accountID_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes))
             return res;
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
@@ -296,7 +299,7 @@ AMMCreate::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyCreate(ctx_, sb, account_, j_);
+    auto const result = applyCreate(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 

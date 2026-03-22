@@ -6,6 +6,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -28,26 +29,19 @@ namespace xrpl {
  * If the entry is not an account root, sets the 'Invalid' field to true.
  */
 void
-injectSLE(Json::Value& jv, SLE const& sle)
+injectSLE(Json::Value& jv, AccountRoot const& account)
 {
-    jv = sle.getJson(JsonOptions::none);
-    if (sle.getType() == ltACCOUNT_ROOT)
+    jv = account->getJson(JsonOptions::none);
+    if (account->isFieldPresent(sfEmailHash))
     {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash = sle.getFieldH128(sfEmailHash);
-            Blob const b(hash.begin(), hash.end());
-            std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
+        auto const& hash = account->getFieldH128(sfEmailHash);
+        Blob const b(hash.begin(), hash.end());
+        std::string md5 = strHex(makeSlice(b));
+        boost::to_lower(md5);
+        // VFALCO TODO Give a name and move this constant
+        //             to a more visible location. Also
+        //             shouldn't this be https?
+        jv[jss::urlgravatar] = str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
     }
 }
 
@@ -127,8 +121,8 @@ doAccountInfo(RPC::JsonContext& context)
     static constexpr std::pair<std::string_view, LedgerSpecificFlags> allowTrustLineLockingFlag{
         "allowTrustLineLocking", lsfAllowTrustLineLocking};
 
-    auto const sleAccepted = ledger->read(keylet::account(accountID));
-    if (sleAccepted)
+    AccountRoot const acctRoot(accountID, *ledger);
+    if (acctRoot)
     {
         auto const queue = params.isMember(jss::queue) && params[jss::queue].asBool();
 
@@ -141,26 +135,26 @@ doAccountInfo(RPC::JsonContext& context)
         }
 
         Json::Value jvAccepted(Json::objectValue);
-        injectSLE(jvAccepted, *sleAccepted);
+        injectSLE(jvAccepted, acctRoot);
         result[jss::account_data] = jvAccepted;
 
         Json::Value acctFlags{Json::objectValue};
         for (auto const& lsf : lsFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+            acctFlags[lsf.first.data()] = acctRoot->isFlag(lsf.second);
 
         for (auto const& lsf : disallowIncomingFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
+            acctFlags[lsf.first.data()] = acctRoot->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
         {
             acctFlags[allowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
+                acctRoot->isFlag(allowTrustLineClawbackFlag.second);
         }
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
             acctFlags[allowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(allowTrustLineLockingFlag.second);
+                acctRoot->isFlag(allowTrustLineLockingFlag.second);
         }
 
         result[jss::account_flags] = std::move(acctFlags);
@@ -168,7 +162,7 @@ doAccountInfo(RPC::JsonContext& context)
         auto const pseudoFields = getPseudoAccountFields();
         for (auto const& pseudoField : pseudoFields)
         {
-            if (sleAccepted->isFieldPresent(*pseudoField))
+            if (acctRoot->isFieldPresent(*pseudoField))
             {
                 std::string name = pseudoField->fieldName;
                 if (name.ends_with("ID"))

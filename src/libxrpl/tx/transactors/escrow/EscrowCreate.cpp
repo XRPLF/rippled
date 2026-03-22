@@ -3,6 +3,7 @@
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -164,10 +165,10 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
-    if (!sleIssuer)
+    AccountRoot const acctIssuer(issuer, ctx.view);
+    if (!acctIssuer)
         return tecNO_ISSUER;
-    if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
+    if (!acctIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
@@ -299,15 +300,15 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    auto const sled = ctx.view.read(keylet::account(dest));
-    if (!sled)
+    AccountRoot const acctDest(dest, ctx.view);
+    if (!acctDest)
         return tecNO_DST;
 
     // Pseudo-accounts cannot receive escrow. Note, this is not amendment-gated
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sled))
+    if (acctDest.isPseudoAccount())
         return tecNO_PERMISSION;
 
     if (!isXRP(amount))
@@ -385,7 +386,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    WritableAccountRoot wrappedAcct(account_, ctx_.view());
+    WritableAccountRoot wrappedAcct(accountID_, ctx_.view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -394,7 +395,7 @@ EscrowCreate::doApply()
 
     auto const reserve = ctx_.view().fees().accountReserve((*wrappedAcct)[sfOwnerCount] + 1);
 
-    auto const balance = sle->getFieldAmount(sfBalance).xrp();
+    auto const balance = wrappedAcct->getFieldAmount(sfBalance).xrp();
     if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
@@ -407,19 +408,19 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
-        if (!sled)
+        AccountRoot const acctDest(ctx_.tx[sfDestination], ctx_.view());
+        if (!acctDest)
             return tecNO_DST;  // LCOV_EXCL_LINE
-        if (((*sled)[sfFlags] & lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
+        if ((acctDest->getFlags() & lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
     }
 
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet = keylet::escrow(account_, ctx_.tx.getSeqValue());
+    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
-    (*slep)[sfAccount] = account_;
+    (*slep)[sfAccount] = accountID_;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[sfDestination] = ctx_.tx[sfDestination];
@@ -444,7 +445,7 @@ EscrowCreate::doApply()
     // Add escrow to sender's owner directory
     {
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), escrowKeylet, describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -452,7 +453,7 @@ EscrowCreate::doApply()
 
     // If it's not a self-send, add escrow to recipient's owner directory.
     AccountID const dest = ctx_.tx[sfDestination];
-    if (dest != account_)
+    if (dest != accountID_)
     {
         auto page =
             ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
@@ -465,7 +466,7 @@ EscrowCreate::doApply()
     // track the total locked balance. For MPT, this isn't necessary because the
     // locked balance is already stored directly in the MPTokenIssuance object.
     AccountID const issuer = amount.getIssuer();
-    if (!isXRP(amount) && issuer != account_ && issuer != dest && !amount.holds<MPTIssue>())
+    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
     {
         auto page =
             ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
@@ -483,7 +484,7 @@ EscrowCreate::doApply()
     {
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, account_, amount, j_);
+                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))

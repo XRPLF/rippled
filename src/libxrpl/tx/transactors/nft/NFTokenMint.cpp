@@ -1,5 +1,6 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Rate.h>
@@ -166,12 +167,12 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
     // transaction. Check that and verify that this is allowed:
     if (auto issuer = ctx.tx[~sfIssuer])
     {
-        auto const sle = ctx.view.read(keylet::account(*issuer));
+        AccountRoot const acctIssuer(*issuer, ctx.view);
 
-        if (!sle)
+        if (!acctIssuer)
             return tecNO_ISSUER;
 
-        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != ctx.tx[sfAccount])
+        if (auto const minter = acctIssuer->at(~sfNFTokenMinter); minter != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
     }
 
@@ -202,11 +203,11 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenMint::doApply()
 {
-    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
+    auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
-        auto const root = view().peek(keylet::account(issuer));
-        if (root == nullptr)
+        WritableAccountRoot root(issuer, view());
+        if (!root)
         {
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
@@ -251,7 +252,7 @@ NFTokenMint::doApply()
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
             return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-        ctx_.view().update(root);
+        root.update();
         return tokenSeq;
     }();
 
@@ -259,7 +260,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+        AccountRoot(accountID_, view())->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -285,7 +286,7 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    if (TER const ret = nft::insertToken(ctx_.view(), account_, std::move(newToken));
+    if (TER const ret = nft::insertToken(ctx_.view(), accountID_, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -312,8 +313,7 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+    if (auto const ownerCountAfter = AccountRoot(accountID_, view())->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
         if (auto const reserve = view().fees().accountReserve(ownerCountAfter);

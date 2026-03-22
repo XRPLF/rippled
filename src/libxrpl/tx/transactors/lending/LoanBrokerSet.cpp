@@ -200,7 +200,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        WritableAccountRoot owner(account_, view);
+        WritableAccountRoot owner(accountID_, view);
         if (!owner)
         {
             // This should be impossible
@@ -209,9 +209,9 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanbroker(accountID_, sequence));
 
-        if (auto const ter = dirLink(view, account_, broker))
+        if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
@@ -235,7 +235,7 @@ LoanBrokerSet::doApply()
         // Initialize data fields:
         broker->at(sfSequence) = sequence;
         broker->at(sfVaultID) = vaultID;
-        broker->at(sfOwner) = account_;
+        broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;
         // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;

@@ -5,6 +5,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -699,8 +700,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         if (!isXRP(offer.issueIn().currency) && offer.owner() != offer.issueIn().account)
         {
             auto const& issuerID = offer.issueIn().account;
-            auto const issuer = afView.read(keylet::account(issuerID));
-            if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
+            AccountRoot const acctIssuer(issuerID, afView);
+            if (acctIssuer && (acctIssuer->getFlags() & lsfRequireAuth))
             {
                 // Issuer requires authorization.  See if offer owner has that.
                 auto const& ownerID = offer.owner();
@@ -1275,7 +1276,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     }
 
     auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+        return isXRP(iss.account) || AccountRoot(iss.account, view);
     };
 
     if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))

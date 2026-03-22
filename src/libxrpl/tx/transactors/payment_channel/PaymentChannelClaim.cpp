@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -140,12 +141,12 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
-        auto const sled = ctx_.view().peek(keylet::account(dst));
-        if (!sled)
+        WritableAccountRoot dstAcct(dst, ctx_.view());
+        if (!dstAcct)
             return tecNO_DST;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, AccountRoot(dst, ctx_.view()), ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -153,8 +154,8 @@ PaymentChannelClaim::doApply()
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::zero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view().update(sled);
+        (*dstAcct)[sfBalance] = (*dstAcct)[sfBalance] + reqDelta;
+        dstAcct.update();
         ctx_.view().update(slep);
     }
 
