@@ -9,7 +9,7 @@ namespace xrpl {
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    MPToken const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
@@ -36,7 +36,7 @@ assetsToSharesDeposit(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    MPToken const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
@@ -62,7 +62,7 @@ sharesToAssetsDeposit(
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    MPToken const& issuance,
     STAmount const& assets,
     TruncateShares truncate)
 {
@@ -89,7 +89,7 @@ assetsToSharesWithdraw(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    MPToken const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");

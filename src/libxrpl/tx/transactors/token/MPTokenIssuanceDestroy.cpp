@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
@@ -15,19 +16,19 @@ TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
-    if (!sleMPT)
+    MPToken const mptIssuance(ctx.view, ctx.tx[sfMPTokenIssuanceID]);
+    if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 
     // ensure it is issued by the tx submitter
-    if ((*sleMPT)[sfIssuer] != ctx.tx[sfAccount])
+    if (mptIssuance.getIssuer() != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances
-    if ((*sleMPT)[sfOutstandingAmount] != 0)
+    if (mptIssuance->at(sfOutstandingAmount) != 0)
         return tecHAS_OBLIGATIONS;
 
-    if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
+    if (mptIssuance->at(~sfLockedAmount).value_or(0) != 0)
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
@@ -36,14 +37,15 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
-    if (accountID_ != mpt->getAccountID(sfIssuer))
+    WritableMPToken mptIssuance(view(), ctx_.tx[sfMPTokenIssuanceID]);
+    if (accountID_ != mptIssuance.getIssuer())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(
+            keylet::ownerDir(accountID_), (*mptIssuance)[sfOwnerNode], mptIssuance->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    view().erase(mpt);
+    mptIssuance.erase();
 
     WritableAccountRoot acct(accountID_, view());
     acct.adjustOwnerCount(-1, j_);

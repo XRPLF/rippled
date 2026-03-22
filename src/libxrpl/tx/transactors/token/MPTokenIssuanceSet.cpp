@@ -1,3 +1,4 @@
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -149,11 +150,11 @@ TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
-    if (!sleMptIssuance)
+    MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+    if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleMptIssuance->isFlag(lsfMPTCanLock))
+    if (!mptIssuance->isFlag(lsfMPTCanLock))
     {
         // For readability two separate `if` rather than `||` of two conditions
         if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
@@ -168,7 +169,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // ensure it is issued by the tx submitter
-    if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
+    if (mptIssuance.getIssuer() != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     if (auto const holderID = ctx.tx[~sfHolder])
@@ -184,7 +185,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
+        if (!mptIssuance.requiresAuth())
             return tecNO_PERMISSION;
 
         if (*domain != beast::zero)
@@ -197,7 +198,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
     // the ledger.
-    auto const currentMutableFlags = sleMptIssuance->getFieldU32(sfMutableFlags);
+    auto const currentMutableFlags = mptIssuance->getFieldU32(sfMutableFlags);
 
     auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
         return currentMutableFlags & mutableFlag;
@@ -224,7 +225,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // was previously enabled (at issuance or via a prior mutation). Setting
         // it by tmfMPTSetCanTransfer in the current transaction does not meet
         // this requirement.
-        if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
+        if (fee > 0u && !mptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))

@@ -78,12 +78,12 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+        MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
 
-        if (!sleMptIssuance)
+        if (!mptIssuance)
             return tecOBJECT_NOT_FOUND;
 
-        if (accountID == (*sleMptIssuance)[sfIssuer])
+        if (accountID == mptIssuance.getIssuer())
             return tecNO_PERMISSION;
 
         // if holder wants to use and create a mpt
@@ -96,11 +96,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (AccountRoot const acctHolder(*holderID, ctx.view); !acctHolder)
         return tecNO_DST;
 
-    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
-    if (!sleMptIssuance)
+    MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+    if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
-
-    std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
 
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
@@ -109,12 +107,12 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //
     // Note: `accountID` is issuer's account
     //       `holderID` is holder's account
-    if (accountID != (*sleMptIssuance)[sfIssuer])
+    if (accountID != mptIssuance.getIssuer())
         return tecNO_PERMISSION;
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if (!(mptIssuanceFlags & lsfMPTRequireAuth))
+    if (!mptIssuance.requiresAuth())
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.

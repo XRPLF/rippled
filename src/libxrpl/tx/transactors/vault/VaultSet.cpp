@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -71,9 +72,8 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    MPToken const shareIssuance(ctx.view, (*vault)[sfShareMPTID]);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultSet: missing issuance of vault shares.";
@@ -98,7 +98,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
 
         // Sanity check only, this should be enforced by VaultCreate
-        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
+        if (!shareIssuance.requiresAuth())
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
@@ -126,9 +126,8 @@ VaultSet::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    WritableMPToken shareIssuance(view(), (*vault)[sfShareMPTID]);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultSet: missing issuance of vault shares.";
@@ -155,13 +154,13 @@ VaultSet::doApply()
             // vault public (i.e. removal of lsfVaultPrivate flag). The
             // sfDomainID flag must be set in the MPTokenIssuance object and can
             // be freely updated.
-            sleIssuance->setFieldH256(sfDomainID, *domainId);
+            shareIssuance->setFieldH256(sfDomainID, *domainId);
         }
-        else if (sleIssuance->isFieldPresent(sfDomainID))
+        else if (shareIssuance->isFieldPresent(sfDomainID))
         {
-            sleIssuance->makeFieldAbsent(sfDomainID);
+            shareIssuance->makeFieldAbsent(sfDomainID);
         }
-        view().update(sleIssuance);
+        shareIssuance.update();
     }
 
     // Note, we must update Vault object even if only DomainID is being updated

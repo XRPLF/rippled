@@ -1,6 +1,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -70,16 +71,15 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleShareIssuance)
+    MPTIssue const share{mptIssuanceID};
+    MPToken const shareIssuance(ctx.view, share);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultClawback: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
-
-    Asset const share = MPTIssue{mptIssuanceID};
 
     // Ambiguous case: If Issuer is Owner they must specify the asset
     if (!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner))
@@ -105,7 +105,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         auto const assetsTotal = vault->at(sfAssetsTotal);
         auto const assetsAvailable = vault->at(sfAssetsAvailable);
-        auto const sharesTotal = sleShareIssuance->at(sfOutstandingAmount);
+        auto const sharesTotal = shareIssuance->at(sfOutstandingAmount);
 
         // Owner can clawback funds when the vault has shares but no assets
         if (sharesTotal == 0 || (assetsTotal != 0 || assetsAvailable != 0))
@@ -162,16 +162,22 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
+        auto const vaultAssetToken = makeTokenBase(ctx.view, vaultAsset);
+        if (!vaultAssetToken)
+        {
+            JLOG(ctx.j.error()) << "VaultClawback: missing vault asset token.";
+            return tefINTERNAL;
+        }
+
         return std::visit(
             [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
                 if constexpr (std::is_same_v<TIss, MPTIssue>)
                 {
-                    auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
-                    if (mptIssue == nullptr)
+                    MPToken const mptIssuance(ctx.view, issue);
+                    if (!mptIssuance)
                         return tecOBJECT_NOT_FOUND;
 
-                    std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                    if (!(issueFlags & lsfMPTCanClawback))
+                    if (!mptIssuance.canClawback())
                     {
                         JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                                "MPT vault asset.";
@@ -180,8 +186,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 }
                 else if constexpr (std::is_same_v<TIss, Issue>)
                 {
-                    AccountRoot const acctIssuer(account, ctx.view);
-                    if (!acctIssuer)
+                    IOUToken const iouToken(ctx.view, issue);
+                    if (!iouToken)
                     {
                         // LCOV_EXCL_START
                         JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
@@ -189,8 +195,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                         // LCOV_EXCL_STOP
                     }
 
-                    std::uint32_t const issuerFlags = acctIssuer->getFieldU32(sfFlags);
-                    if (!(issuerFlags & lsfAllowTrustLineClawback) || (issuerFlags & lsfNoFreeze))
+                    if (!iouToken.canClawback())
                     {
                         JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
                                                "IOU vault asset.";
@@ -209,7 +214,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 Expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
     std::shared_ptr<SLE> const& vault,
-    std::shared_ptr<SLE const> const& sleShareIssuance,
+    MPToken const& shareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -235,7 +240,7 @@ VaultClawback::assetsToClawback(
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_);
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+        auto const maybeAssets = sharesToAssetsWithdraw(vault, shareIssuance, sharesDestroyed);
         if (!maybeAssets)
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -247,14 +252,13 @@ VaultClawback::assetsToClawback(
     try
     {
         {
-            auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, assetsRecovered);
+            auto const maybeShares = assetsToSharesWithdraw(vault, shareIssuance, assetsRecovered);
             if (!maybeShares)
                 return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
         }
 
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+        auto const maybeAssets = sharesToAssetsWithdraw(vault, shareIssuance, sharesDestroyed);
         if (!maybeAssets)
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         assetsRecovered = *maybeAssets;
@@ -268,14 +272,13 @@ VaultClawback::assetsToClawback(
             // AssetsAvailable
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleShareIssuance, assetsRecovered, TruncateShares::yes);
+                    vault, shareIssuance, assetsRecovered, TruncateShares::yes);
                 if (!maybeShares)
                     return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
                 sharesDestroyed = *maybeShares;
             }
 
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+            auto const maybeAssets = sharesToAssetsWithdraw(vault, shareIssuance, sharesDestroyed);
             if (!maybeAssets)
                 return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
@@ -296,7 +299,7 @@ VaultClawback::assetsToClawback(
             << "VaultClawback: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
+            << ", sharesTotal=" << shareIssuance->at(sfOutstandingAmount)
             << ", amount=" << clawbackAmount.value();
         return Unexpected(tecPATH_DRY);
     }
@@ -313,15 +316,15 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    MPTIssue const share{mptIssuanceID};
+    MPToken const shareIssuance(view(), share);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultClawback: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
-    MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
@@ -353,7 +356,7 @@ VaultClawback::doApply()
     {
         XRPL_ASSERT(amount.asset() == vaultAsset, "xrpl::VaultClawback::doApply : matching asset");
 
-        auto const clawbackParts = assetsToClawback(vault, sleIssuance, holder, amount);
+        auto const clawbackParts = assetsToClawback(vault, shareIssuance, holder, amount);
         if (!clawbackParts)
             return clawbackParts.error();
 
