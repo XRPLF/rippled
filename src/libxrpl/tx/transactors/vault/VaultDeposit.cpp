@@ -62,8 +62,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = MPTokenIssuance(ctx.view, vaultShare);
-    if (!mptIssuance)
+    auto const shareIssuance = MPTokenIssuance(ctx.view, vaultShare);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -71,7 +71,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (mptIssuance->isFlag(lsfMPTLocked))
+    if (shareIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
@@ -84,12 +84,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
-    if (MPTokenIssuance(ctx.view, vaultShare).isFrozen(account))
+    if (shareIssuance.isFrozen(account))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const maybeDomainID = mptIssuance->at(~sfDomainID);
+        auto const maybeDomainID = shareIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
         // perform authorization check based on DomainID read from mptIssuance.
         // Had the vault shares been a regular MPToken, we would allow

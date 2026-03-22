@@ -195,8 +195,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
             // However, the trustline from destination to issuer may not
             // be frozen.
-            IOUToken wrapped(ctx.view, Issue{currency, issuerId});
-            if (wrapped.isFrozen(dstId))
+            if (iouToken.isFrozen(dstId))
             {
                 JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
                 return tecFROZEN;
