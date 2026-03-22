@@ -1,5 +1,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
@@ -90,7 +91,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
         {
-            if (!ctx.view.read(keylet::account(account[sfAccount])))
+            if (AccountRoot const acct(account[sfAccount], ctx.view); !acct)
             {
                 JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
                 return terNO_ACCOUNT;
@@ -147,14 +148,14 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
+applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast::Journal j_)
 {
     using namespace std::chrono;
     auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
+    auto const lpTokens = ammLPHolds(sb, *ammSle, accountID_, ctx_.journal);
     auto const& rules = ctx_.view().rules();
     if (!rules.enabled(fixInnerObjTemplate))
     {
@@ -186,11 +187,11 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
     auto validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
-        return timeSlot && *timeSlot < tailingSlot && sb.read(keylet::account(account));
+        return timeSlot && *timeSlot < tailingSlot && AccountRoot(account, sb);
     };
 
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
-        auctionSlot.setAccountID(sfAccount, account_);
+        auctionSlot.setAccountID(sfAccount, accountID_);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         if (fee != 0)
         {
@@ -221,7 +222,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
+        auto res = redeemIOU(sb, accountID_, saBurn, lpTokens.issue(), ctx_.journal);
         if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
@@ -319,7 +320,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         }
         res = accountSend(
             sb,
-            account_,
+            accountID_,
             auctionSlot[sfAccount],
             toSTAmount(lpTokens.issue(), refund),
             ctx_.journal);
@@ -343,7 +344,7 @@ AMMBid::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyBid(ctx_, sb, account_, j_);
+    auto const result = applyBid(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 

@@ -292,7 +292,7 @@ requireAuth(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
+    auto const mptIssuer = AccountRoot(sleIssuance->getAccountID(sfIssuer), view);
 
     // issuer is always "authorized"
     if (mptIssuer == account)  // Issuer won't have MPToken
@@ -306,13 +306,12 @@ requireAuth(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
-        auto const sleIssuer = view.read(keylet::account(mptIssuer));
-        if (!sleIssuer)
+        if (!mptIssuer.exists())
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        if (sleIssuer->isFieldPresent(sfVaultID))
+        if (mptIssuer->isFieldPresent(sfVaultID))
         {
-            auto const sleVault = view.read(keylet::vault(sleIssuer->getFieldH256(sfVaultID)));
+            auto const sleVault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 

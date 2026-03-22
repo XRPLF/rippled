@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STNumber.h>
@@ -97,7 +98,7 @@ ValidLoanBroker::finalize(
     {
         for (auto const& field : {&sfLowLimit, &sfHighLimit})
         {
-            auto const account = view.read(keylet::account(line->at(*field).getIssuer()));
+            AccountRoot const account(line->at(*field).getIssuer(), view);
             // This Invariant doesn't know about the rules for Trust Lines, so
             // if the account is missing, don't treat it as an error. This
             // loop is only concerned with finding Broker pseudo-accounts
@@ -111,7 +112,7 @@ ValidLoanBroker::finalize(
     }
     for (auto const& mpt : mpts_)
     {
-        auto const account = view.read(keylet::account(mpt->at(sfAccount)));
+        AccountRoot const account(mpt->at(sfAccount), view);
         // This Invariant doesn't know about the rules for MPTokens, so
         // if the account is missing, don't treat is as an error. This
         // loop is only concerned with finding Broker pseudo-accounts

@@ -1,6 +1,7 @@
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -852,10 +853,10 @@ tokenOfferCreatePreclaim(
 
     if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
     {
-        auto const root = view.read(keylet::account(nftIssuer));
-        XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
+        AccountRoot const acctRoot(nftIssuer, view);
+        XRPL_ASSERT(acctRoot, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
-        if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
+        if (auto minter = acctRoot->at(~sfNFTokenMinter); minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
@@ -877,26 +878,26 @@ tokenOfferCreatePreclaim(
     {
         // If a destination is specified, the destination must already be in
         // the ledger.
-        auto const sleDst = view.read(keylet::account(*dest));
+        AccountRoot const acctDst(*dest, view);
 
-        if (!sleDst)
+        if (!acctDst)
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if (acctDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
             return tecNO_PERMISSION;
     }
 
     if (owner)
     {
-        auto const sleOwner = view.read(keylet::account(*owner));
+        AccountRoot const acctOwner(*owner, view);
 
         // defensively check
         // it should not be possible to specify owner that doesn't exist
-        if (!sleOwner)
+        if (!acctOwner)
             return tecNO_TARGET;
 
-        if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if (acctOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
             return tecNO_PERMISSION;
     }
 
@@ -928,9 +929,8 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags)
 {
-    Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet);
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+    AccountRoot const acctRoot(acctID, view);
+    if (priorBalance < view.fees().accountReserve(acctRoot->getFieldU32(sfOwnerCount) + 1))
         return tecINSUFFICIENT_RESERVE;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
@@ -1000,8 +1000,8 @@ checkTrustlineAuthorized(
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
-        auto const issuerAccount = view.read(keylet::account(issue.account));
-        if (!issuerAccount)
+        AccountRoot const acctIssuer(issue.account, view);
+        if (!acctIssuer)
         {
             JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
                                "receive IOUs from non-existent issuer: "
@@ -1018,7 +1018,7 @@ checkTrustlineAuthorized(
             return tesSUCCESS;
         }
 
-        if (issuerAccount->isFlag(lsfRequireAuth))
+        if (acctIssuer->isFlag(lsfRequireAuth))
         {
             auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 
@@ -1052,8 +1052,8 @@ checkTrustlineDeepFrozen(
 
     if (view.rules().enabled(featureDeepFreeze))
     {
-        auto const issuerAccount = view.read(keylet::account(issue.account));
-        if (!issuerAccount)
+        AccountRoot const acctIssuer(issue.account, view);
+        if (!acctIssuer)
         {
             JLOG(j.debug()) << "xrpl::nft::checkTrustlineDeepFrozen: can't "
                                "receive IOUs from non-existent issuer: "

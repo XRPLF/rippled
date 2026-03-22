@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 //
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -80,16 +81,16 @@ determineBrokerID(ReadView const& view, STTx const& tx)
     // Thus, Amount.issuer _should_ be the loan broker's
     // pseudo-account, but we don't know yet whether it is.
     auto const maybePseudo = dstAmount->getIssuer();
-    auto const sle = view.read(keylet::account(maybePseudo));
+    AccountRoot const acct(maybePseudo, view);
 
     // If the account was not found, the transaction can't go further.
-    if (!sle)
+    if (!acct)
         return Unexpected{tecNO_ENTRY};
 
     // If the account was found, and has a LoanBrokerID (and therefore
     // is a pseudo-account), that's the
     // answer we need.
-    if (auto const brokerID = sle->at(~sfLoanBrokerID))
+    if (auto const brokerID = acct->at(~sfLoanBrokerID))
         return *brokerID;
 
     // If the account does not have a LoanBrokerID, the transaction
@@ -272,8 +273,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         return tecINTERNAL;  // tecINSUFFICIENT_FUNDS; LCOV_EXCL_LINE
 
     // Check if the vault asset issuer has the correct flags
-    auto const sleIssuer = ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-    if (!sleIssuer)
+    AccountRoot const acctIssuer(vaultAsset.getIssuer(), ctx.view);
+    if (!acctIssuer)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Issuer account does not exist.";
@@ -282,7 +283,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     }
 
     return std::visit(
-        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *sleIssuer, clawAmount); },
+        [&]<typename T>(T const&) { return preclaimHelper<T>(ctx, *acctIssuer.sle(), clawAmount); },
         vaultAsset.value());
 }
 

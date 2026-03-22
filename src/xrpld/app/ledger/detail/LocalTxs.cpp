@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 
 /*
@@ -130,12 +131,12 @@ public:
                 return true;
 
             AccountID const acctID = txn.getAccount();
-            auto const sleAcct = view.read(keylet::account(acctID));
+            AccountRoot const acctRoot(acctID, view);
 
-            if (!sleAcct)
+            if (!acctRoot)
                 return false;
 
-            SeqProxy const acctSeq = SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+            SeqProxy const acctSeq = SeqProxy::sequence(acctRoot->getFieldU32(sfSequence));
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())

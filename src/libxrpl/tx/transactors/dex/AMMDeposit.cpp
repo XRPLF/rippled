@@ -347,7 +347,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const tfee = (lptAMMBalance == beast::zero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
-        : getTradingFee(ctx_.view(), *ammSle, account_);
+        : getTradingFee(ctx_.view(), *ammSle, accountID_);
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
@@ -418,7 +418,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
         if (lptAMMBalance == beast::zero)
-            initializeFeeAuctionVote(sb, ammSle, account_, lptAMMBalance.issue(), tfee);
+            initializeFeeAuctionVote(sb, ammSle, accountID_, lptAMMBalance.issue(), tfee);
 
         sb.update(ammSle);
     }
@@ -456,7 +456,7 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    WritableAccountRoot wrappedAcct(account_, view);
+    WritableAccountRoot wrappedAcct(accountID_, view);
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::zero)
             return temBAD_AMOUNT;
@@ -464,15 +464,15 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle = view.read(keylet::line(account_, lpIssue.account, lpIssue.currency));
+            auto const sle = view.read(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
             if (wrappedAcct.xrpLiquid(!sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (
-            account_ == depositAmount.issue().account ||
+            accountID_ == depositAmount.issue().account ||
             accountHolds(
                 view,
-                account_,
+                accountID_,
                 depositAmount.issue(),
                 FreezeHandling::fhIGNORE_FREEZE,
                 ctx_.journal) >= depositAmount)
@@ -519,7 +519,7 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, account_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
+        view, accountID_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
@@ -538,7 +538,7 @@ AMMDeposit::deposit(
         }
 
         res = accountSend(
-            view, account_, ammAccount, *amount2DepositActual, ctx_.journal, WaiveTransferFee::Yes);
+            view, accountID_, ammAccount, *amount2DepositActual, ctx_.journal, WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug())
@@ -548,7 +548,7 @@ AMMDeposit::deposit(
     }
 
     // Deposit LP tokens
-    res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal);
+    res = accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";

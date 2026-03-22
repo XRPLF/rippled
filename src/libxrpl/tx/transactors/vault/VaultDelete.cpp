@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -110,16 +111,16 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
+    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //
                 << "VaultDelete: failed to remove vault owner's MPToken"
-                << " MPTID=" << to_string(shareMPTID)  //
-                << " account=" << toBase58(account_)   //
+                << " MPTID=" << to_string(shareMPTID)   //
+                << " account=" << toBase58(accountID_)  //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
@@ -142,20 +143,20 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
-    if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
+    WritableAccountRoot vaultPseudo(pseudoID, view());
+    if (!vaultPseudo || vaultPseudo->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Making the payment and removing the empty holding should have deleted any
     // obligations associated with the vault or vault pseudo-account.
-    if (*vaultPseudoSLE->at(sfBalance))
+    if (*vaultPseudo->at(sfBalance))
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: pseudo-account has a balance";
         return tecHAS_OBLIGATIONS;
         // LCOV_EXCL_STOP
     }
-    if (vaultPseudoSLE->at(sfOwnerCount) != 0)
+    if (vaultPseudo->at(sfOwnerCount) != 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: pseudo-account still owns objects";
@@ -170,7 +171,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    view().erase(vaultPseudoSLE);
+    vaultPseudo.erase();
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);

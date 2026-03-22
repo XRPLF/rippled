@@ -37,15 +37,15 @@ TER
 MPTokenIssuanceDestroy::doApply()
 {
     auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
-    if (account_ != mpt->getAccountID(sfIssuer))
+    if (accountID_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     view().erase(mpt);
 
-    WritableAccountRoot acct(account_, view());
+    WritableAccountRoot acct(accountID_, view());
     acct.adjustOwnerCount(-1, j_);
 
     return tesSUCCESS;

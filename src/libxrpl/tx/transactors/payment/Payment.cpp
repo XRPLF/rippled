@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/ledger/entries/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -272,10 +273,9 @@ Payment::preclaim(PreclaimContext const& ctx)
     AccountID const dstAccountID(ctx.tx[sfDestination]);
     STAmount const dstAmount(ctx.tx[sfAmount]);
 
-    auto const k = keylet::account(dstAccountID);
-    auto const sleDst = ctx.view.read(k);
+    AccountRoot const dstAcct(dstAccountID, ctx.view);
 
-    if (!sleDst)
+    if (!dstAcct)
     {
         // Destination account does not exist.
         if (!dstAmount.native())
@@ -310,7 +310,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if ((sleDst->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if ((dstAcct->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -368,30 +368,29 @@ Payment::doApply()
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
     bool const mptDirect = dstAmount.holds<MPTIssue>();
-    STAmount const maxSourceAmount = getMaxSourceAmount(account_, dstAmount, sendMax);
+    STAmount const maxSourceAmount = getMaxSourceAmount(accountID_, dstAmount, sendMax);
 
     JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
                      << " dstAmount=" << dstAmount.getFullText();
 
     // Open a ledger for editing.
-    auto const k = keylet::account(dstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    WritableAccountRoot dst(dstAccountID, view());
 
-    if (!sleDst)
+    if (!dst)
     {
         // Create the account.
-        sleDst = std::make_shared<SLE>(k);
-        sleDst->setAccountID(sfAccount, dstAccountID);
-        sleDst->setFieldU32(sfSequence, view().seq());
+        dst.newSLE();
+        dst->setAccountID(sfAccount, dstAccountID);
+        dst->setFieldU32(sfSequence, view().seq());
 
-        view().insert(sleDst);
+        dst.insert();
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(sleDst);
+        dst.update();
     }
 
     bool const ripple = (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
@@ -406,8 +405,7 @@ Payment::doApply()
         //  1. If Account == Destination, or
         //  2. If Account is deposit preauthorized by destination.
 
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -426,7 +424,7 @@ Payment::doApply()
                 maxSourceAmount,
                 dstAmount,
                 dstAccountID,
-                account_,
+                accountID_,
                 ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.tx[~sfDomainID],
                 ctx_.registry.logs(),
@@ -466,18 +464,17 @@ Payment::doApply()
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_); !isTesSuccess(ter))
+        if (auto const ter = requireAuth(view(), mptIssue, accountID_); !isTesSuccess(ter))
             return ter;
 
         if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
+        if (auto const ter = canTransfer(view(), mptIssue, accountID_, dstAccountID);
             !isTesSuccess(ter))
             return ter;
 
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -486,13 +483,13 @@ Payment::doApply()
         // Transfer rate
         Rate rate{QUALITY_ONE};
         // Payment between the holders
-        if (account_ != issuer && dstAccountID != issuer)
+        if (accountID_ != issuer && dstAccountID != issuer)
         {
             // If globally/individually locked then
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isAnyFrozen(view(), {account_, dstAccountID}, mptIssue))
+            if (isAnyFrozen(view(), {accountID_, dstAccountID}, mptIssue))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.
@@ -520,7 +517,7 @@ Payment::doApply()
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
-        auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
+        auto res = accountSend(pv, accountID_, dstAccountID, amountDeliver, ctx_.journal);
         if (isTesSuccess(res))
         {
             pv.apply(ctx_.rawView());
@@ -543,13 +540,13 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(account_));
-    if (!sleSrc)
+    WritableAccountRoot srcAcct(accountID_, view());
+    if (!srcAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // ownerCount is the number of entries in this ledger for this
     // account that require a reserve.
-    auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
+    auto const ownerCount = srcAcct->getFieldU32(sfOwnerCount);
 
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
@@ -575,7 +572,7 @@ Payment::doApply()
     // transaction types. Note, this is not amendment-gated because all writes
     // to pseudo-account discriminator fields **are** amendment gated, hence the
     // behaviour of this check will always match the active amendments.
-    if (isPseudoAccount(sleDst))
+    if (dst.isPseudoAccount())
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the
@@ -602,21 +599,20 @@ Payment::doApply()
     // Get the base reserve.
     XRPAmount const dstReserve{view().fees().reserve};
 
-    if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
+    if (dstAmount > dstReserve || dst->getFieldAmount(sfBalance) > dstReserve)
     {
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
 
     // Do the arithmetic for the transfer and make the ledger change.
-    sleSrc->setFieldAmount(sfBalance, sleSrc->getFieldAmount(sfBalance) - dstAmount);
-    sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
+    srcAcct->setFieldAmount(sfBalance, srcAcct->getFieldAmount(sfBalance) - dstAmount);
+    dst->setFieldAmount(sfBalance, dst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent))
-        sleDst->clearFlag(lsfPasswordSpent);
+    if ((dst->getFlags() & lsfPasswordSpent))
+        dst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
 }

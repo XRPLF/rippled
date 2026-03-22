@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/tx/transactors/dex/AMMHelpers.h>
@@ -184,8 +185,8 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Issue const
 {
     if (isXRP(issue))
     {
-        if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return (*sle)[sfBalance];
+        if (AccountRoot const acct(ammAccountID, view); acct)
+            return (*acct)[sfBalance];
     }
     else if (
         auto const sle = view.read(keylet::line(ammAccountID, issue.account, issue.currency));
@@ -255,8 +256,8 @@ deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Jo
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
-    if (!sleAMMRoot)
+    WritableAccountRoot ammRoot(ammAccountID, sb);
+    if (!ammRoot)
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
@@ -287,7 +288,7 @@ deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Jo
     }
 
     sb.erase(ammSle);
-    sb.erase(sleAMMRoot);
+    ammRoot.erase();
 
     return tesSUCCESS;
 }

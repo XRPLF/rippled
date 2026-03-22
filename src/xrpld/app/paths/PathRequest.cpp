@@ -8,6 +8,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -168,11 +169,11 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
         return false;
     }
 
-    auto const sleDest = lrLedger->read(keylet::account(*raDstAccount));
+    AccountRoot const acctDest(*raDstAccount, *lrLedger);
 
     Json::Value& jvDestCur = (jvStatus[jss::destination_currencies] = Json::arrayValue);
 
-    if (!sleDest)
+    if (!acctDest)
     {
         jvDestCur.append(Json::Value(systemCurrencyCode()));
         if (!saDstAmount.native())
@@ -191,13 +192,13 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP(acctDest->getFlags() & lsfDisallowXRP);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
         for (auto const& currency : usDestCurrID)
             jvDestCur.append(to_string(currency));
-        jvStatus[jss::destination_tag] = (sleDest->getFlags() & lsfRequireDestTag);
+        jvStatus[jss::destination_tag] = (acctDest->getFlags() & lsfRequireDestTag);
     }
 
     jvStatus[jss::ledger_hash] = to_string(lrLedger->header().hash);

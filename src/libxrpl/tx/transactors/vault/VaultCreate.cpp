@@ -130,13 +130,13 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    WritableAccountRoot owner(account_, view());
+    WritableAccountRoot owner(accountID_, view());
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
+    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
-    if (auto ter = dirLink(view(), account_, vault))
+    if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     owner.adjustOwnerCount(2, j_);
@@ -188,7 +188,7 @@ VaultCreate::doApply()
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
-    vault->at(sfOwner) = account_;
+    vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
@@ -214,7 +214,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -222,7 +222,7 @@ VaultCreate::doApply()
     if (txFlags & tfVaultPrivate)
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

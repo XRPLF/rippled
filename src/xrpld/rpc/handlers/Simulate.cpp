@@ -10,6 +10,7 @@
 
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -38,9 +39,8 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
         return Unexpected(
             RPC::make_error(rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle =
-        context.app.openLedger().current()->read(keylet::account(*srcAddressID));
-    if (!hasTicketSeq && !sle)
+    AccountRoot const acct(*srcAddressID, *context.app.openLedger().current());
+    if (!hasTicketSeq && !acct)
     {
         JLOG(context.app.journal("Simulate").debug())
             << "Failed to find source account "
@@ -49,7 +49,7 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
         return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
     }
 
-    return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
+    return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(acct.sle()).value();
 }
 
 static std::optional<Json::Value>

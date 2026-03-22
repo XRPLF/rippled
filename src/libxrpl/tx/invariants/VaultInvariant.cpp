@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -480,16 +481,15 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const sleSharesIssuer =
-                    view.read(keylet::account(updatedShares->share.getIssuer()));
-                if (!sleSharesIssuer)
+                AccountRoot const acctSharesIssuer(updatedShares->share.getIssuer(), view);
+                if (!acctSharesIssuer)
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: shares issuer must exist";
                     return false;
                 }
 
-                if (!isPseudoAccount(sleSharesIssuer))
+                if (!acctSharesIssuer.isPseudoAccount())
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: shares issuer must be a "
@@ -497,7 +497,7 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (auto const vaultId = (*sleSharesIssuer)[~sfVaultID];
+                if (auto const vaultId = acctSharesIssuer->at(~sfVaultID);
                     !vaultId || *vaultId != afterVault.key)
                 {
                     JLOG(j.fatal())  //

@@ -5,6 +5,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/tx/transactors/dex/AMMUtils.h>
@@ -101,10 +102,10 @@ doAMMInfo(RPC::JsonContext& context)
             auto const id = parseBase58<AccountID>((params[jss::amm_account].asString()));
             if (!id)
                 return Unexpected(rpcACT_MALFORMED);
-            auto const sle = ledger->read(keylet::account(*id));
-            if (!sle)
+            AccountRoot const acctAmm(*id, *ledger);
+            if (!acctAmm)
                 return Unexpected(rpcACT_MALFORMED);
-            ammID = sle->getFieldH256(sfAMMID);
+            ammID = acctAmm->getFieldH256(sfAMMID);
             if (ammID->isZero())
                 return Unexpected(rpcACT_NOT_FOUND);
         }
@@ -112,7 +113,7 @@ doAMMInfo(RPC::JsonContext& context)
         if (params.isMember(jss::account))
         {
             accountID = parseBase58<AccountID>(params[jss::account].asString());
-            if (!accountID || !ledger->read(keylet::account(*accountID)))
+            if (!accountID || !AccountRoot(*accountID, *ledger))
                 return Unexpected(rpcACT_MALFORMED);
         }
 

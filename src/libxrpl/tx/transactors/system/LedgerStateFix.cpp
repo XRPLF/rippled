@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -38,7 +39,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfLedgerFixType] == FixType::nfTokenPageLink)
     {
         AccountID const owner{ctx.tx[sfOwner]};
-        if (!ctx.view.read(keylet::account(owner)))
+        if (!AccountRoot(owner, ctx.view))
             return tecOBJECT_NOT_FOUND;
 
         return tesSUCCESS;

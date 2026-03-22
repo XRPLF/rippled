@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -171,15 +172,15 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(keylet::account(id));
-    if (!sle)
+    AccountRoot const acct(id, ctx.view);
+    if (!acct)
         return terNO_ACCOUNT;
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
 
-    if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
+    if (bSetAuth && !(acct->getFieldU32(sfFlags) & lsfRequireAuth))
     {
         JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
@@ -193,15 +194,15 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (id == uDstAccountID)
         return temDST_IS_SRC;
 
-    // This might be nullptr
-    auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+    // This might not exist
+    AccountRoot const acctDst(uDstAccountID, ctx.view);
     if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        sleDst == nullptr)
+        !acctDst.exists())
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
+    if (acctDst->getFlags() & lsfDisallowIncomingTrustline)
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
@@ -223,17 +224,17 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     // enabled in the code section below, for specific cases. This block is not
     // amendment-gated because sleDst will not have a pseudo-account designator
     // field populated, unless the appropriate amendment was already enabled.
-    if (sleDst && isPseudoAccount(sleDst))
+    if (acctDst && acctDst.isPseudoAccount())
     {
         // If destination is AMM and the trustline doesn't exist then only allow
         // TrustSet if the asset is AMM LP token and AMM is not in empty state.
-        if (sleDst->isFieldPresent(sfAMMID))
+        if (acctDst->isFieldPresent(sfAMMID))
         {
             if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
             {
                 // pass
             }
-            else if (auto const ammSle = ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
+            else if (auto const ammSle = ctx.view.read({ltAMM, acctDst->getFieldH256(sfAMMID)}))
             {
                 auto const lpTokens = ammSle->getFieldAmount(sfLPTokenBalance);
                 if (lpTokens == beast::zero)
@@ -250,7 +251,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             }
         }
-        else if (sleDst->isFieldPresent(sfVaultID) || sleDst->isFieldPresent(sfLoanBrokerID))
+        else if (acctDst->isFieldPresent(sfVaultID) || acctDst->isFieldPresent(sfLoanBrokerID))
         {
             if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
@@ -265,7 +266,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     // Checking all freeze/deep freeze flag invariants.
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
-        bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
+        bool const bNoFreeze = acct->isFlag(lsfNoFreeze);
         bool const bSetFreeze = (uTxFlags & tfSetFreeze);
         bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
 
@@ -320,9 +321,9 @@ TrustSet::doApply()
     AccountID uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
-    bool const bHigh = account_ > uDstAccountID;
+    bool const bHigh = accountID_ > uDstAccountID;
 
-    WritableAccountRoot wrappedAccount(account_, view());
+    WritableAccountRoot wrappedAccount(accountID_, view());
     if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -376,9 +377,9 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(account_);
+    saLimitAllow.setIssuer(accountID_);
 
-    SLE::pointer sleRippleState = view().peek(keylet::line(account_, uDstAccountID, currency));
+    SLE::pointer sleRippleState = view().peek(keylet::line(accountID_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -390,8 +391,8 @@ TrustSet::doApply()
         std::uint32_t uLowQualityOut = 0;
         std::uint32_t uHighQualityIn = 0;
         std::uint32_t uHighQualityOut = 0;
-        auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
-        auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
+        auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
+        auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
         auto lowAcct = !bHigh ? wrappedAccount : wrappedDst;
         auto highAcct = bHigh ? wrappedAccount : wrappedDst;
 
@@ -626,7 +627,7 @@ TrustSet::doApply()
         // Zero balance in currency.
         STAmount saBalance(Issue{currency, noAccount()});
 
-        auto const k = keylet::line(account_, uDstAccountID, currency);
+        auto const k = keylet::line(accountID_, uDstAccountID, currency);
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
@@ -634,7 +635,7 @@ TrustSet::doApply()
         terResult = trustCreate(
             view(),
             bHigh,
-            account_,
+            accountID_,
             uDstAccountID,
             k.key,
             wrappedAccount,

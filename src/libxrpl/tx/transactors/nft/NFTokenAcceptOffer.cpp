@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -347,11 +348,11 @@ NFTokenAcceptOffer::transferNFToken(
         !isTesSuccess(ret))
         return ret;
 
-    auto const sleBuyer = view().read(keylet::account(buyer));
-    if (!sleBuyer)
+    AccountRoot const acctBuyer(buyer, view());
+    if (!acctBuyer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const buyerOwnerCountBefore = sleBuyer->getFieldU32(sfOwnerCount);
+    std::uint32_t const buyerOwnerCountBefore = acctBuyer->getFieldU32(sfOwnerCount);
 
     auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
@@ -368,9 +369,9 @@ NFTokenAcceptOffer::transferNFToken(
         // the deduction of the potential offer price. A small caveat here is
         // that the balance has already deducted the transaction fee, meaning
         // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+        auto const buyerBalance = acctBuyer->getFieldAmount(sfBalance);
 
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+        auto const buyerOwnerCountAfter = acctBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
             if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
@@ -387,8 +388,8 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
-    AccountID const& seller = isSell ? owner : account_;
-    AccountID const& buyer = isSell ? account_ : owner;
+    AccountID const& seller = isSell ? owner : accountID_;
+    AccountID const& buyer = isSell ? accountID_ : owner;
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
@@ -509,7 +510,7 @@ NFTokenAcceptOffer::doApply()
         // Send the broker the amount they requested.
         if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::zero)
         {
-            if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
+            if (auto const r = pay(buyer, accountID_, cut.value()); !isTesSuccess(r))
                 return r;
 
             amount -= cut.value();

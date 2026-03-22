@@ -76,7 +76,7 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    WritableAccountRoot wrappedSubject(account_, view());
+    WritableAccountRoot wrappedSubject(accountID_, view());
     WritableAccountRoot wrappedIssuer(issuer, view());
 
     if (!wrappedSubject || !wrappedIssuer)
@@ -90,7 +90,7 @@ CredentialAccept::doApply()
     }
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
 
     if (checkExpired(sleCred, view().header().parentCloseTime))

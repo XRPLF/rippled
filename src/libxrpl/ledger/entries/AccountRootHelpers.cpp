@@ -70,7 +70,7 @@ AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount(sle_) ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
+        isPseudoAccount() ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle_->getFieldAmount(sfBalance);
 
@@ -156,6 +156,21 @@ getPseudoAccountFields()
         return pseudoFields;
     }();
     return pseudoFields;
+}
+
+[[nodiscard]] bool
+AccountRoot::isPseudoAccount(std::set<SField const*> const& pseudoFieldFilter) const
+{
+    auto const& fields = getPseudoAccountFields();
+
+    // Intentionally use defensive coding here because it's cheap and makes the
+    // semantics of true return value clean.
+    return sle_ && sle_->getType() == ltACCOUNT_ROOT &&
+        std::count_if(
+            fields.begin(), fields.end(), [this, &pseudoFieldFilter](SField const* sf) -> bool {
+                return sle_->isFieldPresent(*sf) &&
+                    (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
+            }) > 0;
 }
 
 [[nodiscard]] bool

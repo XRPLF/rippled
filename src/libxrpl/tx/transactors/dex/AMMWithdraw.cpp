@@ -1,5 +1,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMHelpers.h>
@@ -269,8 +270,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto const accountSle = sb.read(keylet::account(ammAccountID));
-    if (!accountSle)
+    AccountRoot const ammAcct(ammAccountID, sb);
+    if (!ammAcct)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
@@ -280,11 +281,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     // might not match the LP's trustline balance
     if (sb.rules().enabled(fixAMMv1_1))
     {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, account_); !res)
+        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
             return {res.error(), false};
     }
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 
     auto const expected = ammHolds(
         sb,
@@ -413,7 +414,7 @@ AMMWithdraw::withdraw(
         view,
         ammSle,
         ammAccount,
-        account_,
+        accountID_,
         amountBalance,
         amountWithdraw,
         amount2Withdraw,
@@ -532,11 +533,11 @@ AMMWithdraw::withdraw(
             return tesSUCCESS;
         if (!view.exists(keylet::line(account, issue)))
         {
-            auto const sleAccount = view.read(keylet::account(account));
-            if (!sleAccount)
+            AccountRoot const acct(account, view);
+            if (!acct)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            auto const balance = (*sleAccount)[sfBalance].xrp();
-            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
+            auto const balance = acct->getFieldAmount(sfBalance).xrp();
+            std::uint32_t const ownerCount = acct->at(sfOwnerCount);
 
             // See also TrustSet::doApply()
             XRPAmount const reserve(
@@ -628,7 +629,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = equalWithdrawTokens(
         view,
         ammSle,
-        account_,
+        accountID_,
         ammAccount,
         amountBalance,
         amount2Balance,

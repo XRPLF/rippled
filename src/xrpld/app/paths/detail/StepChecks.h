@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -19,9 +20,10 @@ checkFreeze(
     XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
-    if (auto sle = view.read(keylet::account(dst)))
+    AccountRoot const acctDst(dst, view);
+    if (acctDst)
     {
-        if (sle->isFlag(lsfGlobalFreeze))
+        if (acctDst->isFlag(lsfGlobalFreeze))
         {
             return terNO_LINE;
         }
@@ -43,10 +45,9 @@ checkFreeze(
 
     if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
-        if (auto const sleDst = view.read(keylet::account(dst));
-            sleDst && sleDst->isFieldPresent(sfAMMID))
+        if (AccountRoot const acctDst2(dst, view); acctDst2 && acctDst2->isFieldPresent(sfAMMID))
         {
-            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            auto const sleAmm = view.read(keylet::amm(acctDst2->at(sfAMMID)));
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
