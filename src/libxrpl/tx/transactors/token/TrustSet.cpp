@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -581,7 +582,8 @@ TrustSet::doApply()
         {
             // Delete.
 
-            terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            terResult = WritableRippleState::trustDelete(
+                view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
         else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
@@ -632,7 +634,7 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
         // Create a new ripple line.
-        terResult = trustCreate(
+        terResult = WritableRippleState::trustCreate(
             view(),
             bHigh,
             accountID_,

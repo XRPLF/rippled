@@ -60,6 +60,12 @@ public:
         return readView_;
     }
 
+    Keylet const&
+    key() const
+    {
+        return key_;
+    }
+
     STLedgerEntry const*
     operator->() const
     {
@@ -80,12 +86,21 @@ protected:
 
     /** Constructor for read-only context (ReadView) */
     explicit ReadOnlySLE(std::shared_ptr<SLE const> sle, ReadView const& view)
-        : sle_(std::move(sle)), readView_(view)
+        : sle_(std::move(sle))
+        , readView_(view)
+        , key_(sle_ ? Keylet(sle_->getType(), sle_->key()) : Keylet(ltANY, uint256{}))
+    {
+    }
+
+    /** Constructor for read-only context (ReadView) with explicit keylet */
+    explicit ReadOnlySLE(Keylet const& key, ReadView const& view)
+        : sle_(view.read(key)), readView_(view), key_(key)
     {
     }
 
     std::shared_ptr<SLE const> sle_;  // Always valid (const view)
     ReadView const& readView_;        // Always valid
+    Keylet key_;                      // Keylet for this entry
 };
 
 /**
@@ -192,8 +207,8 @@ protected:
     {
     }
 
-    ApplyView& applyView_;  // ApplyView for write contexts (first for init order)
-    Keylet const key_;
+    ApplyView& applyView_;             // ApplyView for write contexts (first for init order)
+    Keylet key_;                       // Keylet for this entry
     std::shared_ptr<SLE> mutableSle_;  // Mutable SLE for write contexts
 };
 
