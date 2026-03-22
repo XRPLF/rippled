@@ -4,6 +4,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -640,15 +641,14 @@ rippleUnlockEscrowMPT(
     if (issuer != receiver)
     {
         // Increase the MPT Holder MPTAmount
-        auto const mptokenID = keylet::mptoken(mptIssue.getMptID(), receiver);
-        auto sle = view.peek(mptokenID);
-        if (!sle)
+        WritableMPToken mpt(mptIssuance, receiver);
+        if (!mpt)
         {  // LCOV_EXCL_START
             JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
-        auto current = sle->getFieldU64(sfMPTAmount);
+        auto current = mpt->getFieldU64(sfMPTAmount);
         auto delta = netAmount.mpt().value();
 
         // Overflow check for addition
@@ -659,8 +659,8 @@ rippleUnlockEscrowMPT(
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        (*sle)[sfMPTAmount] += delta;
-        view.update(sle);
+        (*mpt)[sfMPTAmount] += delta;
+        mpt.update();
     }
     else
     {

@@ -1,3 +1,4 @@
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -179,7 +180,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_DST;
 
         // the mptoken must exist
-        if (!ctx.view.exists(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
+        if (!mptIssuance.hasHolder(*holderID))
             return tecOBJECT_NOT_FOUND;
     }
 
@@ -235,28 +236,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
-MPTokenIssuanceSet::doApply()
+static TER
+updateMPTokenIssuance(WritableMPTokenIssuance& mptIssuance, STTx const& tx)
 {
-    auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto const txFlags = ctx_.tx.getFlags();
-    auto const holderID = ctx_.tx[~sfHolder];
-    auto const domainID = ctx_.tx[~sfDomainID];
-    std::shared_ptr<SLE> sle;
-
-    if (holderID)
-    {
-        sle = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
-    }
-    else
-    {
-        sle = view().peek(keylet::mptIssuance(mptIssuanceID));
-    }
-
-    if (!sle)
+    if (!mptIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
+    auto const txFlags = tx.getFlags();
+    std::uint32_t const flagsIn = mptIssuance->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
     if (txFlags & tfMPTLock)
@@ -268,7 +255,7 @@ MPTokenIssuanceSet::doApply()
         flagsOut &= ~lsfMPTLocked;
     }
 
-    if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
+    if (auto const mutableFlags = tx[~sfMutableFlags].value_or(0))
     {
         for (auto const& f : mptMutabilityFlags)
         {
@@ -286,14 +273,14 @@ MPTokenIssuanceSet::doApply()
         {
             // If the lsfMPTCanTransfer flag is being cleared, then also clear
             // the TransferFee field.
-            sle->makeFieldAbsent(sfTransferFee);
+            mptIssuance->makeFieldAbsent(sfTransferFee);
         }
     }
 
     if (flagsIn != flagsOut)
-        sle->setFieldU32(sfFlags, flagsOut);
+        mptIssuance->setFieldU32(sfFlags, flagsOut);
 
-    if (auto const transferFee = ctx_.tx[~sfTransferFee])
+    if (auto const transferFee = tx[~sfTransferFee])
     {
         // TransferFee uses soeDEFAULT style:
         // - If the field is absent, it is interpreted as 0.
@@ -301,47 +288,88 @@ MPTokenIssuanceSet::doApply()
         // Therefore, when TransferFee is 0, the field should be removed.
         if (transferFee == 0)
         {
-            sle->makeFieldAbsent(sfTransferFee);
+            mptIssuance->makeFieldAbsent(sfTransferFee);
         }
         else
         {
-            sle->setFieldU16(sfTransferFee, *transferFee);
+            mptIssuance->setFieldU16(sfTransferFee, *transferFee);
         }
     }
 
-    if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
+    if (auto const metadata = tx[~sfMPTokenMetadata])
     {
         if (metadata->empty())
         {
-            sle->makeFieldAbsent(sfMPTokenMetadata);
+            mptIssuance->makeFieldAbsent(sfMPTokenMetadata);
         }
         else
         {
-            sle->setFieldVL(sfMPTokenMetadata, *metadata);
+            mptIssuance->setFieldVL(sfMPTokenMetadata, *metadata);
         }
     }
 
-    if (domainID)
+    if (auto const domainID = tx[~sfDomainID])
     {
         // This is enforced in preflight.
         XRPL_ASSERT(
-            sle->getType() == ltMPTOKEN_ISSUANCE,
+            mptIssuance->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
         if (*domainID != beast::zero)
         {
-            sle->setFieldH256(sfDomainID, *domainID);
+            mptIssuance->setFieldH256(sfDomainID, *domainID);
         }
         else
         {
-            if (sle->isFieldPresent(sfDomainID))
-                sle->makeFieldAbsent(sfDomainID);
+            if (mptIssuance->isFieldPresent(sfDomainID))
+                mptIssuance->makeFieldAbsent(sfDomainID);
         }
     }
 
-    view().update(sle);
+    mptIssuance.update();
 
     return tesSUCCESS;
+}
+
+static TER
+updateMPToken(WritableMPToken& mpt, STTx const& tx)
+{
+    if (!mpt)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const txFlags = tx.getFlags();
+    std::uint32_t const flagsIn = mpt->getFieldU32(sfFlags);
+
+    if (txFlags & tfMPTLock)
+    {
+        mpt->setFlag(flagsIn & lsfMPTLocked);
+    }
+    else if (txFlags & tfMPTUnlock)
+    {
+        mpt->clearFlag(lsfMPTLocked);
+    }
+
+    mpt.update();
+
+    return tesSUCCESS;
+}
+
+TER
+MPTokenIssuanceSet::doApply()
+{
+    auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
+    auto const holderID = ctx_.tx[~sfHolder];
+    WritableMPTokenIssuance mptIssuance(view(), mptIssuanceID);
+
+    if (holderID)
+    {
+        WritableMPToken mpt(mptIssuance, *holderID);
+        return updateMPToken(mpt, ctx_.tx);
+    }
+    else
+    {
+        return updateMPTokenIssuance(mptIssuance, ctx_.tx);
+    }
 }
 
 }  // namespace xrpl

@@ -4,12 +4,12 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <variant>
 
@@ -182,9 +182,8 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
-    auto const mptIssuance = MPTokenIssuance(view, amount.get<MPTIssue>());
-    auto const mptID = mptIssuance.getMptID();
-    if (!view.exists(keylet::mptoken(mptID, receiver)) && createAsset && !receiverIssuer)
+    WritableMPTokenIssuance mptIssuance(view, amount.get<MPTIssue>());
+    if (!mptIssuance.hasHolder(receiver) && createAsset && !receiverIssuer)
     {
         // For backwards compatibility: if dest is not WritableAccountRoot, return error
         if (!std::holds_alternative<WritableAccountRoot>(dest))
@@ -198,7 +197,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             return tecINSUFFICIENT_RESERVE;
         }
 
-        if (auto const ter = MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);
+        if (auto const ter = WritableMPToken::createMPToken(mptIssuance, receiver, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -208,7 +207,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         wrappedDest.adjustOwnerCount(1, journal);
     }
 
-    if (!view.exists(keylet::mptoken(mptID, receiver)) && !receiverIssuer)
+    if (!mptIssuance.hasHolder(receiver) && !receiverIssuer)
         return tecNO_PERMISSION;
 
     auto const xferRate = mptIssuance.transferRate();
