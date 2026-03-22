@@ -1074,16 +1074,20 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
             this->visitInvariantEntry(isDelete, before, after);
         });
         // Phase 2: finalize
-        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), j_))
+        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
         {
-            JLOG(j_.fatal()) << "Transaction has failed one or more transaction invariants";
+            JLOG(ctx_.journal.fatal()) <<  //
+                "Transaction has failed one or more transaction invariants";
             return tecINVARIANT_FAILED;
         }
     }
     catch (std::exception const& ex)
     {
-        JLOG(j_.fatal()) << "Exception while checking transaction invariants: " << ex.what()
-                         << ", tx: " << to_string(ctx_.tx.getJson(JsonOptions::none));
+        JLOG(ctx_.journal.fatal()) <<                               //
+            "Exception while checking transaction invariants: " <<  //
+            ex.what() <<                                            //
+            ", tx: " <<                                             //
+            to_string(ctx_.tx.getJson(JsonOptions::none));
 
         return tecINVARIANT_FAILED;
     }
@@ -1095,18 +1099,18 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 Transactor::checkInvariants(TER result, XRPAmount fee)
 {
     // Transaction invariants first (more specific). These check post-conditions of the specific
-    // transaction. If these fail, the transaction's core logic is wrong — there is no point running
-    // protocol invariants on a known-bad state.
-    result = checkTransactionInvariants(result, fee);
+    // transaction. If these fail, the transaction's core logic is wrong.
+    auto const txResult = checkTransactionInvariants(result, fee);
 
-    // Protocol invariants second (broader), only if transaction invariants passed. These check
-    // properties that must hold regardless of transaction type.  Running protocol invariants after
-    // that is wasteful, the transaction is already going to be rejected. Worse, a transaction
-    // invariant failure could cause protocol invariants to produce misleading secondary failures
-    // (e.g., a broken deposit leaves the vault in a state that also trips the protocol check,
-    // generating confusing double-failure logs).
-    if (isTesSuccess(result) || isTecClaim(result))
-        result = ctx_.checkInvariants(result, fee);
+    // Protocol invariants second (broader). These check properties that must hold regardless of
+    // transaction type.
+    auto const protoResult = ctx_.checkInvariants(result, fee);
+
+    // Fail if either check failed. tef (fatal) takes priority over tec.
+    if (txResult == tefINVARIANT_FAILED || protoResult == tefINVARIANT_FAILED)
+        return tefINVARIANT_FAILED;
+    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
+        return tecINVARIANT_FAILED;
 
     return result;
 }
