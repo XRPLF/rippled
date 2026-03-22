@@ -1009,8 +1009,8 @@ checkTrustlineAuthorized(
 
     if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
     {
-        AccountRoot const acctIssuer(issue.account, view);
-        if (!acctIssuer)
+        IOUToken const iouToken(view, issue);
+        if (!iouToken)
         {
             JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: can't "
                                "receive IOUs from non-existent issuer: "
@@ -1027,7 +1027,7 @@ checkTrustlineAuthorized(
             return tesSUCCESS;
         }
 
-        if (acctIssuer->isFlag(lsfRequireAuth))
+        if (iouToken.requiresAuth())
         {
             auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 

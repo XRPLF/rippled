@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -83,10 +84,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         STAmount const sendMax{ctx.tx[sfSendMax]};
         if (!sendMax.native())
         {
+            IOUToken const iouToken(ctx.view, sendMax.issue());
+
             // The currency may not be globally frozen
-            AccountID const issuerId{sendMax.getIssuer()};
-            AccountRoot wrappedIssuer(issuerId, ctx.view);
-            if (wrappedIssuer.isGlobalFrozen())
+            if (iouToken.isGlobalFrozen())
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
                 return tecFROZEN;
@@ -97,27 +98,15 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
             // Note that we DO allow create check for a currency that the
             // account does not yet have a trustline to.
             AccountID const srcId{ctx.tx.getAccountID(sfAccount)};
-            if (issuerId != srcId)
+            if (iouToken.isFrozen(srcId))
             {
-                // Check if the issuer froze the line
-                auto const sleTrust =
-                    ctx.view.read(keylet::line(srcId, issuerId, sendMax.getCurrency()));
-                if (sleTrust && sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
-                {
-                    JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
-                    return tecFROZEN;
-                }
+                JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
+                return tecFROZEN;
             }
-            if (issuerId != dstId)
+            if (iouToken.isFrozen(dstId))
             {
-                // Check if dst froze the line.
-                auto const sleTrust =
-                    ctx.view.read(keylet::line(issuerId, dstId, sendMax.getCurrency()));
-                if (sleTrust && sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
-                {
-                    JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
-                    return tecFROZEN;
-                }
+                JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
+                return tecFROZEN;
             }
         }
     }
