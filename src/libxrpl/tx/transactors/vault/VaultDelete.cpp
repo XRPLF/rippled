@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -115,11 +116,9 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
+    if (auto const mptoken = MPToken(shareIssuance, vault->at(sfOwner)))
     {
-        if (auto const ter = makeWritableTokenBase(view(), MPTIssue(shareMPTID))
-                                 ->removeEmptyHolding(accountID_, j_);
-            !isTesSuccess(ter))
+        if (auto const ter = shareIssuance.removeEmptyHolding(accountID_, j_); !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //

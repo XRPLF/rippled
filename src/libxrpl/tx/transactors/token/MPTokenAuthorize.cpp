@@ -30,7 +30,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
     MPTokenIssuance const mptIssuance(ctx.view, ctx.tx[sfMPTokenIssuanceID]);
-    MPToken const mpt(ctx.view, mptIssuance, accountID);
+    MPToken const mpt(mptIssuance, accountID);
 
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken
@@ -110,7 +110,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
-    if (!ctx.view.exists(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
+    if (!mptIssuance.hasHolder(*holderID))
         return tecOBJECT_NOT_FOUND;
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
@@ -118,32 +118,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // can only be created if the Vault amendment is enabled.
     if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
         return tecNO_PERMISSION;
-
-    return tesSUCCESS;
-}
-
-TER
-MPTokenAuthorize::createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    std::uint32_t const flags)
-{
-    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-
-    auto const ownerNode =
-        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
-
-    if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    auto mptoken = std::make_shared<SLE>(mptokenKey);
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
-
-    view.insert(mptoken);
 
     return tesSUCCESS;
 }

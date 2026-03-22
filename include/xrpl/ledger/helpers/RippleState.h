@@ -9,11 +9,13 @@ namespace xrpl {
 class RippleState : public virtual TokenHolderBase
 {
 public:
-    RippleState(ReadView const& view, IOUToken const& token, AccountID const& holder)
-        : ReadOnlySLE(view.read(keylet::line(holder, token.getIssuer(), token.getCurrency())), view)
+    RippleState(IOUToken const& token, AccountID const& holder)
+        : ReadOnlySLE(
+              token.readView().read(keylet::line(holder, token.getIssuer(), token.getCurrency())),
+              token.readView())
         , TokenHolderBase(
-              view,
-              view.read(keylet::line(holder, token.getIssuer(), token.getCurrency())),
+              token.readView(),
+              token.readView().read(keylet::line(holder, token.getIssuer(), token.getCurrency())),
               token,
               holder)
         , iouToken_(token)
@@ -56,7 +58,7 @@ public:
               view.peek(keylet::line(holder, token.getIssuer(), token.getCurrency())),
               token,
               holder)
-        , RippleState(view, token, holder)
+        , RippleState(token, holder)
         , writableIOUToken_(token)
     {
     }
