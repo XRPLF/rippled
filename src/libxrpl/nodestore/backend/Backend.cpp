@@ -17,6 +17,22 @@ unsigned int const Backend::numHardwareThreads = []() {
 std::pair<unsigned int, unsigned int>
 Backend::calculateBatchParallelism(unsigned int batchSize, unsigned int maxThreadCount)
 {
+    XRPL_ASSERT(
+        maxThreadCount > 0,
+        "xrpl::NodeStore::Backend::calculateBatchParallelism : maxThreadCount > 0");
+    if (maxThreadCount == 0)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::NodeStore::Backend::calculateBatchParallelism : maxThreadCount == 0");
+        return {1, batchSize};
+        // LCOV_EXCL_STOP
+    }
+
+    if (batchSize == 0)
+    {
+        return {0, 0};
+    }
+
     // Estimate the number of threads using ceiling division: aim for at least 4 items per thread,
     // but don't exceed the number of available threads.
     auto const initialThreads = std::min((batchSize + 3u) / 4u, maxThreadCount);
@@ -28,7 +44,6 @@ Backend::calculateBatchParallelism(unsigned int batchSize, unsigned int maxThrea
     // threads than initially estimated.
     auto const actualThreads = (batchSize + numItems - 1u) / numItems;
 
-    // Sanity checks.
     XRPL_ASSERT(
         numItems <= batchSize,
         "xrpl::NodeStore::Backend::calculateBatchParallelism : numItems <= batchSize");

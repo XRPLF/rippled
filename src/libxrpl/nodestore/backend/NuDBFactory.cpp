@@ -80,7 +80,7 @@ public:
             shutdown_.store(true, std::memory_order_release);
 
             // Wait for all active operations to complete.
-            while (pendingReads_.load(std::memory_order_acquire) > 0 &&
+            while (pendingReads_.load(std::memory_order_acquire) > 0 ||
                    pendingWrites_.load(std::memory_order_acquire) > 0)
             {
                 std::this_thread::yield();
@@ -275,8 +275,9 @@ public:
         auto const [numThreads, numItems] =
             Backend::calculateBatchParallelism(hashes.size(), numHardwareThreads);
 
-        // If we need only one thread, just do it sequentially.
-        if (numThreads == 1u)
+        // If we need only one thread, just do it sequentially. Although it should be impossible to
+        // get 0 threads here, handle it gracefully just in case.
+        if (numThreads <= 1u)
         {
             for (size_t i = 0; i < hashes.size(); ++i)
             {
@@ -424,8 +425,9 @@ public:
         auto const [numThreads, numItems] =
             Backend::calculateBatchParallelism(batch.size(), numHardwareThreads);
 
-        // If we need only one thread, just do it sequentially.
-        if (numThreads == 1u)
+        // If we need only one thread, just do it sequentially. Although it should be impossible to
+        // get 0 threads here, handle it gracefully just in case.
+        if (numThreads <= 1u)
         {
             for (auto const& e : batch)
             {
