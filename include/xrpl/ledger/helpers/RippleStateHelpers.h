@@ -95,6 +95,18 @@ public:
     [[nodiscard]] TER
     canTransfer(AccountID const& from, AccountID const& to) const override;
 
+    //------------------------------------------------------------------------------
+    //
+    // Token capability checks (IOU-specific)
+    //
+    //------------------------------------------------------------------------------
+
+    [[nodiscard]] bool
+    canClawback() const override;
+
+    [[nodiscard]] bool
+    requiresAuth() const override;
+
 protected:
     Issue const issue_;
     AccountID const issuer_;
