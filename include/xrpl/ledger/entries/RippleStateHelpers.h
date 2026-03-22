@@ -37,6 +37,18 @@ public:
     {
     }
 
+    [[nodiscard]] AccountID const&
+    getIssuer() const
+    {
+        return issuer_;
+    }
+
+    [[nodiscard]] Currency const&
+    getCurrency() const
+    {
+        return currency_;
+    }
+
     [[nodiscard]] bool
     isGlobalFrozen() const override
     {

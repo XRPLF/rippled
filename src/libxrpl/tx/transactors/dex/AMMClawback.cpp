@@ -73,8 +73,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset].get<Issue>();
     auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
-    AccountRoot const acctIssuer(ctx.tx[sfAccount], ctx.view);
-    if (!acctIssuer)
+    IOUToken const assetToken(ctx.view, asset);
+    if (!assetToken)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     if (AccountRoot const acctHolder(ctx.tx[sfHolder], ctx.view); !acctHolder)
@@ -87,11 +87,9 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    std::uint32_t const issuerFlagsIn = acctIssuer->getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (!assetToken.canClawback())
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

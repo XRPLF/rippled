@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 //
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -181,16 +182,15 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
-    if (!sleIssuance)
+    MPToken const mptIssuance(ctx.view, clawAmount.get<MPTIssue>());
+    if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanClawback))
+    if (!mptIssuance.canClawback())
         return tecNO_PERMISSION;
 
     // With all the checking already done, this should be impossible
-    if (sleIssuance->at(sfIssuer) != sleIssuer[sfAccount])
+    if (mptIssuance.getIssuer() != sleIssuer[sfAccount])
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;

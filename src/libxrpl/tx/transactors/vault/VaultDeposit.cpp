@@ -173,7 +173,7 @@ VaultDeposit::doApply()
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = mptoken.authorizeMPToken(
-                    preFeeBalance_,          // priorBalance
+                    preFeeBalance_,         // priorBalance
                     mptoken->at(sfIssuer),  // account
                     ctx_.journal,
                     {},         // flags
@@ -189,7 +189,7 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, mptoken.sle(), amount);
+            auto const maybeShares = assetsToSharesDeposit(vault, mptoken, amount);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -197,7 +197,7 @@ VaultDeposit::doApply()
         if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
-        auto const maybeAssets = sharesToAssetsDeposit(vault, mptoken.sle(), sharesCreated);
+        auto const maybeAssets = sharesToAssetsDeposit(vault, mptoken, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE

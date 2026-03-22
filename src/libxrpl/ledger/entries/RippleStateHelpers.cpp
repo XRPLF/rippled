@@ -726,7 +726,8 @@ IOUToken::canClawback() const
 {
     if (!issuerAccount_.exists())
         return false;
-    return issuerAccount_->isFlag(lsfAllowTrustLineClawback);
+    return issuerAccount_->isFlag(lsfAllowTrustLineClawback) &&
+        !issuerAccount_->isFlag(lsfNoFreeze);
 }
 
 bool

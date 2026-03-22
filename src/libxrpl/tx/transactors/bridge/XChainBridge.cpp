@@ -1394,13 +1394,16 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
     if (!isXRP(bridgeSpec.issue(chainType)))
     {
         AccountRoot const acctIssuer(bridgeSpec.issue(chainType).account, ctx.view);
+        IOUToken const iouToken(ctx.view, bridgeSpec.issue(chainType));
 
-        if (!acctIssuer)
+        if (!iouToken)
             return tecNO_ISSUER;
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (acctIssuer->getFlags() & lsfAllowTrustLineClawback)
+        // NOTE: DO NOT use `iouToken.canClawback()` here, because that function also checks
+        // `lsfNoFreeze`, which is not checked here
+        if (iouToken->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
     }
 

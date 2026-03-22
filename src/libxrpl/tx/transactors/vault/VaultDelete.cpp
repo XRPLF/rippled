@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/AccountRootHelpers.h>
+#include <xrpl/ledger/entries/MPTokenHelpers.h>
 #include <xrpl/ledger/entries/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -49,9 +50,9 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    MPToken const shareIssuance(ctx.view, vault->at(sfShareMPTID));
 
-    if (!sleMPT)
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -59,7 +60,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
+    if (shareIssuance.getIssuer() != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
@@ -67,7 +68,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (sleMPT->at(sfOutstandingAmount) != 0)
+    if (shareIssuance->at(sfOutstandingAmount) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero outstanding shares.";
         return tecHAS_OBLIGATIONS;
@@ -104,8 +105,8 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
-    if (!mpt)
+    WritableMPToken shareIssuance(view(), shareMPTID);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
@@ -131,7 +132,8 @@ VaultDelete::doApply()
         }
     }
 
-    if (!view().dirRemove(keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(
+            keylet::ownerDir(pseudoID), (*shareIssuance)[sfOwnerNode], shareIssuance->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: failed to delete issuance object.";
@@ -140,7 +142,7 @@ VaultDelete::doApply()
     }
     pseudoAcct.adjustOwnerCount(-1, j_);
 
-    view().erase(mpt);
+    shareIssuance.erase();
 
     // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))

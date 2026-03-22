@@ -171,6 +171,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         AccountRoot const acct(issue.account, ctx.view);
         if (!acct)
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        // NOTE: DO NOT use `iouToken.canClawback()` here, because that function also checks
+        // `lsfNoFreeze`, which is not checked here
         if (acct->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
         return tesSUCCESS;

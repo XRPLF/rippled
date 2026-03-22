@@ -98,8 +98,9 @@ VaultWithdraw::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    MPTIssue const share{mptIssuanceID};
+    MPToken const shareIssuance(view(), mptIssuanceID);
+    if (!shareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultWithdraw: missing issuance of vault shares.";
@@ -114,8 +115,6 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
-
-    MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
     try
@@ -124,7 +123,7 @@ VaultWithdraw::doApply()
         {
             // Fixed assets, variable shares.
             {
-                auto const maybeShares = assetsToSharesWithdraw(vault, sleIssuance, amount);
+                auto const maybeShares = assetsToSharesWithdraw(vault, shareIssuance, amount);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -132,7 +131,7 @@ VaultWithdraw::doApply()
 
             if (sharesRedeemed == beast::zero)
                 return tecPRECISION_LOSS;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets = sharesToAssetsWithdraw(vault, shareIssuance, sharesRedeemed);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -141,7 +140,7 @@ VaultWithdraw::doApply()
         {
             // Fixed shares, variable assets.
             sharesRedeemed = amount;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets = sharesToAssetsWithdraw(vault, shareIssuance, sharesRedeemed);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -159,7 +158,7 @@ VaultWithdraw::doApply()
             << "VaultWithdraw: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", sharesTotal=" << shareIssuance->at(sfOutstandingAmount)
             << ", amount=" << amount.value();
         return tecPATH_DRY;
     }
