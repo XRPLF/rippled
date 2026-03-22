@@ -22,9 +22,11 @@ assetsToSharesDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
+    {
         return STAmount{
             shares.asset(),
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale)).truncate()};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = ((shareTotal * assets) / assetTotal).truncate();
@@ -47,8 +49,10 @@ sharesToAssetsDeposit(
     Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
+    {
         return STAmount{
             assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
+    }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;

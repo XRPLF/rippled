@@ -42,9 +42,13 @@ internalDirNext(
         }
 
         if constexpr (std::is_const_v<N>)
+        {
             page = view.read(keylet::page(root, next));
+        }
         else
+        {
             page = view.peek(keylet::page(root, next));
+        }
 
         XRPL_ASSERT(page, "xrpl::detail::internalDirNext : non-null root");
 
@@ -74,9 +78,13 @@ internalDirFirst(
     uint256& entry)
 {
     if constexpr (std::is_const_v<N>)
+    {
         page = view.read(keylet::page(root));
+    }
     else
+    {
         page = view.peek(keylet::page(root));
+    }
 
     if (!page)
         return false;

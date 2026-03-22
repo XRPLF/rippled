@@ -481,7 +481,7 @@ cleanupOnAccountDelete(
             // Deleter handles the details of specific account-owned object
             // deletion
             auto const [ter, skipEntry] = deleter(nodeType, dirEntry, sleItem);
-            if (ter != tesSUCCESS)
+            if (!isTesSuccess(ter))
                 return ter;
 
             // dirFirst() and dirNext() are like iterators with exposed

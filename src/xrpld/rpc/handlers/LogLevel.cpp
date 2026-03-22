@@ -52,9 +52,13 @@ doLogLevel(RPC::JsonContext& context)
         std::string partition(context.params[jss::partition].asString());
 
         if (boost::iequals(partition, "base"))
+        {
             context.app.logs().threshold(severity);
+        }
         else
+        {
             context.app.logs().get(partition).threshold(severity);
+        }
 
         return Json::objectValue;
     }

@@ -257,8 +257,10 @@ void
 PerfLogImp::report()
 {
     if (!logFile_)
+    {
         // If logFile_ is not writable do no further work.
         return;
+    }
 
     auto const present = system_clock::now();
     if (present < lastLog_ + setup_.logInterval)
@@ -345,9 +347,13 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     }
     std::lock_guard lock(counter->second.mutex);
     if (finish)
+    {
         ++counter->second.value.finished;
+    }
     else
+    {
         ++counter->second.value.errored;
+    }
     counter->second.value.duration +=
         std::chrono::duration_cast<microseconds>(steady_clock::now() - startTime);
 }
@@ -437,7 +443,7 @@ PerfLogImp::rotate()
 void
 PerfLogImp::start()
 {
-    if (setup_.perfLog.size())
+    if (!setup_.perfLog.empty())
         thread_ = std::thread(&PerfLogImp::run, this);
 }
 
@@ -463,7 +469,7 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     PerfLog::Setup setup;
     std::string perfLog;
     set(perfLog, "perf_log", section);
-    if (perfLog.size())
+    if (!perfLog.empty())
     {
         setup.perfLog = boost::filesystem::path(perfLog);
         if (setup.perfLog.is_relative())

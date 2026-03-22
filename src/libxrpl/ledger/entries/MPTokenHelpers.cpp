@@ -94,9 +94,13 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
     auto mptID = mptIssue.getMptID();
     auto issuance = view.read(keylet::mptIssuance(mptID));
     if (!issuance)
+    {
         return tecOBJECT_NOT_FOUND;
+    }
     if (!issuance->isFlag(lsfMPTCanTransfer))
+    {
         return tecNO_AUTH;
+    }
 
     return tesSUCCESS;
 }
@@ -226,11 +230,15 @@ authorizeMPToken(
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
     if (flags & tfMPTUnauthorize)
+    {
         flagsOut &= ~lsfMPTAuthorized;
+    }
     // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
     // MPToken
     else
+    {
         flagsOut |= lsfMPTAuthorized;
+    }
 
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
@@ -312,9 +320,13 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
+                        {
                             return requireAuth(view, issue, account, authType);
+                        }
                         else
+                        {
                             return requireAuth(view, issue, account, authType, depth + 1);
+                        }
                     },
                     asset.value());
                 !isTesSuccess(err))
@@ -338,11 +350,15 @@ requireAuth(
             sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        if (auto const ter = credentials::validDomain(view, *maybeDomainID, account);
-            isTesSuccess(ter))
+        auto const ter = credentials::validDomain(view, *maybeDomainID, account);
+        if (isTesSuccess(ter))
+        {
             return ter;  // Note: sleToken might be null
-        else if (!sleToken)
+        }
+        if (!sleToken)
+        {
             return ter;
+        }
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
@@ -409,14 +425,14 @@ enforceMPTokenAuthorization(
         // Either way, return tecNO_AUTH and there is nothing else to do
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain && maybeDomainID.has_value())
+    if (!authorizedByDomain && maybeDomainID.has_value())
     {
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the
         // credentials used to create the MPToken have expired or been deleted.
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    else if (!authorizedByDomain)
+    if (!authorizedByDomain)
     {
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.
@@ -428,7 +444,7 @@ enforceMPTokenAuthorization(
 
         return tecNO_AUTH;
     }
-    else if (authorizedByDomain && sleToken != nullptr)
+    if (authorizedByDomain && sleToken != nullptr)
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
@@ -437,7 +453,7 @@ enforceMPTokenAuthorization(
             "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
         return tesSUCCESS;
     }
-    else if (authorizedByDomain)
+    if (authorizedByDomain)
     {
         // Could not find MPToken but there should be one because we are
         // authorized by domain. Proceed to create it, then return tesSUCCESS
@@ -540,9 +556,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sle->isFieldPresent(sfLockedAmount))
+        {
             (*sle)[sfLockedAmount] += pay;
+        }
         else
+        {
             sle->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sle);
     }
@@ -563,9 +583,13 @@ rippleLockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         if (sleIssuance->isFieldPresent(sfLockedAmount))
+        {
             (*sleIssuance)[sfLockedAmount] += pay;
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, pay);
+        }
 
         view.update(sleIssuance);
     }
@@ -582,8 +606,10 @@ rippleUnlockEscrowMPT(
     beast::Journal j)
 {
     if (!view.rules().enabled(fixTokenEscrowV1))
+    {
         XRPL_ASSERT(
             netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
+    }
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
@@ -618,9 +644,13 @@ rippleUnlockEscrowMPT(
 
         auto const newLocked = locked - redeem;
         if (newLocked == 0)
+        {
             sleIssuance->makeFieldAbsent(sfLockedAmount);
+        }
         else
+        {
             sleIssuance->setFieldU64(sfLockedAmount, newLocked);
+        }
         view.update(sleIssuance);
     }
 
@@ -673,42 +703,39 @@ rippleUnlockEscrowMPT(
                            "cannot unlock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
+    // Decrease the MPT Holder EscrowedAmount
+    auto const mptokenID = keylet::mptoken(mptID.key, sender);
+    auto sle = view.peek(mptokenID);
+    if (!sle)
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
+        return tecOBJECT_NOT_FOUND;
+    }  // LCOV_EXCL_STOP
+
+    if (!sle->isFieldPresent(sfLockedAmount))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
+                        << to_string(sender);
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const locked = sle->getFieldU64(sfLockedAmount);
+    auto const delta = grossAmount.mpt().value();
+
+    // Underflow check for subtraction
+    if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
+    {  // LCOV_EXCL_START
+        JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+                        << to_string(sender) << ": " << locked << " < " << delta;
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
+
+    auto const newLocked = locked - delta;
+    if (newLocked == 0)
+        sle->makeFieldAbsent(sfLockedAmount);
     else
-    {
-        // Decrease the MPT Holder EscrowedAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, sender);
-        auto sle = view.peek(mptokenID);
-        if (!sle)
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
-            return tecOBJECT_NOT_FOUND;
-        }  // LCOV_EXCL_STOP
-
-        if (!sle->isFieldPresent(sfLockedAmount))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
-                            << to_string(sender);
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        auto const locked = sle->getFieldU64(sfLockedAmount);
-        auto const delta = grossAmount.mpt().value();
-
-        // Underflow check for subtraction
-        if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
-        {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
-                            << to_string(sender) << ": " << locked << " < " << delta;
-            return tecINTERNAL;
-        }  // LCOV_EXCL_STOP
-
-        auto const newLocked = locked - delta;
-        if (newLocked == 0)
-            sle->makeFieldAbsent(sfLockedAmount);
-        else
-            sle->setFieldU64(sfLockedAmount, newLocked);
-        view.update(sle);
-    }
+        sle->setFieldU64(sfLockedAmount, newLocked);
+    view.update(sle);
 
     // Note: The gross amount is the amount that was locked, the net
     // amount is the amount that is being unlocked. The difference is the fee

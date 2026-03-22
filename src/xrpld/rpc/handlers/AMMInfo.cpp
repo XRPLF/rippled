@@ -75,17 +75,25 @@ doAMMInfo(RPC::JsonContext& context)
         if (params.isMember(jss::asset))
         {
             if (auto const i = getIssue(params[jss::asset], context.j))
+            {
                 issue1 = *i;
+            }
             else
+            {
                 return Unexpected(i.error());
+            }
         }
 
         if (params.isMember(jss::asset2))
         {
             if (auto const i = getIssue(params[jss::asset2], context.j))
+            {
                 issue2 = *i;
+            }
             else
+            {
                 return Unexpected(i.error());
+            }
         }
 
         if (params.isMember(jss::amm_account))
@@ -204,11 +212,15 @@ doAMMInfo(RPC::JsonContext& context)
     }
 
     if (!isXRP(asset1Balance))
+    {
         ammResult[jss::asset_frozen] =
             isFrozen(*ledger, ammAccountID, issue1.currency, issue1.account);
+    }
     if (!isXRP(asset2Balance))
+    {
         ammResult[jss::asset2_frozen] =
             isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
+    }
 
     result[jss::amm] = std::move(ammResult);
     if (!result.isMember(jss::ledger_index) && !result.isMember(jss::ledger_hash))

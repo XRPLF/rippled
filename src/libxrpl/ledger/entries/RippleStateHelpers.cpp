@@ -402,12 +402,14 @@ issueIOU(
         // at the time of deletion.
         state->setFieldAmount(sfBalance, final_balance);
         if (must_delete)
+        {
             return trustDelete(
                 view,
                 state,
                 bSenderHigh ? account : issue.account,
                 bSenderHigh ? issue.account : account,
                 j);
+        }
 
         view.update(state);
 
@@ -540,9 +542,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (trustLine)
+        {
             return ((*trustLine)[sfFlags] & ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
+        }
         return TER{tecNO_LINE};
     }
 
@@ -737,7 +741,7 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j); ter != tesSUCCESS)
+    if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;

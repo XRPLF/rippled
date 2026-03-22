@@ -355,9 +355,13 @@ struct TestPeerSet : public PeerSet
     {
         int dropRate = 0;
         if (behavior == PeerSetBehavior::Drop50)
+        {
             dropRate = 50;
+        }
         else if (behavior == PeerSetBehavior::DropAll)
+        {
             dropRate = 100;
+        }
 
         if ((rand() % 100 + 1) <= dropRate)
             return;
@@ -497,7 +501,7 @@ struct LedgerServer
         auto updateIdx = [&]() {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
-            while (senders.count(fromIdx) != 0)
+            while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
             toIdx = (toIdx + r * 2) % fundedAccounts;
@@ -968,7 +972,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("TaskParameter");
 
-        auto makeSkipList = [](int count) -> std::vector<uint256> const {
+        auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);
@@ -1095,7 +1099,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
             }
             else
+            {
                 break;
+            }
         }
 
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);

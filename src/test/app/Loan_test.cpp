@@ -81,7 +81,7 @@ protected:
         int coverDeposit = 1000;
         TenthBips16 managementFeeRate{100};
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
-        std::string data{};
+        std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
 
         Number
@@ -150,20 +150,22 @@ protected:
         // only signs.
         bool counterpartyExplicit = true;
         Number principalRequest;
-        std::optional<STAmount> setFee{};
-        std::optional<Number> originationFee{};
-        std::optional<Number> serviceFee{};
-        std::optional<Number> lateFee{};
-        std::optional<Number> closeFee{};
-        std::optional<TenthBips32> overFee{};
-        std::optional<TenthBips32> interest{};
-        std::optional<TenthBips32> lateInterest{};
-        std::optional<TenthBips32> closeInterest{};
-        std::optional<TenthBips32> overpaymentInterest{};
-        std::optional<std::uint32_t> payTotal{};
-        std::optional<std::uint32_t> payInterval{};
-        std::optional<std::uint32_t> gracePd{};
-        std::optional<std::uint32_t> flags{};
+        // NOLINTBEGIN(readability-redundant-member-init)
+        std::optional<STAmount> setFee = std::nullopt;
+        std::optional<Number> originationFee = std::nullopt;
+        std::optional<Number> serviceFee = std::nullopt;
+        std::optional<Number> lateFee = std::nullopt;
+        std::optional<Number> closeFee = std::nullopt;
+        std::optional<TenthBips32> overFee = std::nullopt;
+        std::optional<TenthBips32> interest = std::nullopt;
+        std::optional<TenthBips32> lateInterest = std::nullopt;
+        std::optional<TenthBips32> closeInterest = std::nullopt;
+        std::optional<TenthBips32> overpaymentInterest = std::nullopt;
+        std::optional<std::uint32_t> payTotal = std::nullopt;
+        std::optional<std::uint32_t> payInterval = std::nullopt;
+        std::optional<std::uint32_t> gracePd = std::nullopt;
+        std::optional<std::uint32_t> flags = std::nullopt;
+        // NOLINTEND(readability-redundant-member-init)
 
         template <class... FN>
         jtx::JTx
@@ -232,7 +234,7 @@ protected:
     struct LoanState
     {
         std::uint32_t previousPaymentDate = 0;
-        NetClock::time_point startDate = {};
+        NetClock::time_point startDate;
         std::uint32_t nextPaymentDate = 0;
         std::uint32_t paymentRemaining = 0;
         std::int32_t const loanScale = 0;
@@ -698,10 +700,12 @@ protected:
 
         env.close();
         if (asset.native() || lender != issuer)
+        {
             env(
                 pay((asset.native() ? env.master : issuer),
                     lender,
                     asset(brokerParams.vaultDeposit + brokerParams.coverDeposit)));
+        }
         // Fund the borrower later once we know the total loan
         // size
 
@@ -773,10 +777,12 @@ protected:
         auto const shortage = totalNeeded - borrowerBalance.number();
 
         if (shortage > beast::zero && (broker.asset.native() || issuer != borrower))
+        {
             env(
                 pay((broker.asset.native() ? env.master : issuer),
                     borrower,
                     STAmount{broker.asset, shortage}));
+        }
     }
 
     void
@@ -826,6 +832,7 @@ protected:
             roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
 
         if (!showStepBalances)
+        {
             log << currencyLabel << " Payment components: "
                 << "Payments remaining, "
                 << "rawInterest, rawPrincipal, "
@@ -833,6 +840,7 @@ protected:
                 << "trackedValueDelta, trackedPrincipalDelta, "
                    "trackedInterestDelta, trackedMgmtFeeDelta, special"
                 << std::endl;
+        }
 
         // Include the service fee
         STAmount const totalDue =
@@ -947,18 +955,21 @@ protected:
                 (state.loanScale - (deltas.total() - state.periodicPayment).exponent()) > 14);
 
             if (!showStepBalances)
+            {
                 log << currencyLabel << " Payment components: " << state.paymentRemaining << ", "
 
                     << deltas.interest << ", " << deltas.principal << ", " << deltas.managementFee
                     << ", " << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
-                    << paymentComponents.trackedManagementFeeDelta << ", "
-                    << (paymentComponents.specialCase == detail::PaymentSpecialCase::final ? "final"
-                            : paymentComponents.specialCase == detail::PaymentSpecialCase::extra
-                            ? "extra"
-                            : "none")
-                    << std::endl;
+                    << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
+                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                        return "final";
+                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                        return "extra";
+                    return "none";
+                }() << std::endl;
+            }
 
             auto const totalDueAmount =
                 STAmount{broker.asset, paymentComponents.trackedValueDelta + serviceFee};
@@ -1016,8 +1027,10 @@ protected:
             {
                 auto const loanSle = env.le(loanKeylet);
                 if (!BEAST_EXPECT(loanSle))
+                {
                     // No reason for this not to exist
                     return;
+                }
                 auto const current = constructRoundedLoanState(loanSle);
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
@@ -1091,8 +1104,10 @@ protected:
         {
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
+            {
                 // No reason for this not to exist
                 return;
+            }
             log << currencyLabel << " Total amounts paid: "
                 << "\n\tTotal value: " << totalPaid.trackedValueDelta
                 << " (initial: " << truncate(initialState.totalValue)
@@ -1179,8 +1194,10 @@ protected:
         auto const [keylet, loanSequence] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
+            {
                 // will be invalid
                 return std::make_pair(keylet::loan(broker.brokerID), std::uint32_t(0));
+            }
 
             // Broker has no loans
             BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
@@ -1454,11 +1471,13 @@ protected:
     std::string
     getCurrencyLabel(Asset const& asset)
     {
-        return (
-            asset.native()                ? "XRP"
-                : asset.holds<Issue>()    ? "IOU"
-                : asset.holds<MPTIssue>() ? "MPT"
-                                          : "Unknown");
+        if (asset.native())
+            return "XRP";
+        if (asset.holds<Issue>())
+            return "IOU";
+        if (asset.holds<MPTIssue>())
+            return "MPT";
+        return "Unknown";
     }
 
     /** Wrapper to run a series of lifecycle tests for a given asset and loan
@@ -1788,8 +1807,10 @@ protected:
             auto const vaultPseudo = [&]() {
                 auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
+                {
                     // This will be wrong, but the test has failed anyway.
                     return lender;
+                }
                 auto const vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
                 return vaultPseudo;
             }();
@@ -1807,7 +1828,7 @@ protected:
                     // XRP can't be frozen
                     return std::make_tuple(empty, empty, empty, tesSUCCESS);
                 }
-                else if (broker.asset.holds<Issue>())
+                if (broker.asset.holds<Issue>())
                 {
                     auto freeze = [&](Account const& holder) {
                         env(trust(issuer, holder[iouCurrency](0), tfSetFreeze));
@@ -1821,16 +1842,14 @@ protected:
                     };
                     return std::make_tuple(freeze, deepfreeze, unfreeze, tecFROZEN);
                 }
-                else
-                {
-                    auto freeze = [&](Account const& holder) {
-                        mptt.set({.account = issuer, .holder = holder, .flags = tfMPTLock});
-                    };
-                    auto unfreeze = [&](Account const& holder) {
-                        mptt.set({.account = issuer, .holder = holder, .flags = tfMPTUnlock});
-                    };
-                    return std::make_tuple(freeze, empty, unfreeze, tecLOCKED);
-                }
+
+                auto freeze = [&](Account const& holder) {
+                    mptt.set({.account = issuer, .holder = holder, .flags = tfMPTLock});
+                };
+                auto unfreeze = [&](Account const& holder) {
+                    mptt.set({.account = issuer, .holder = holder, .flags = tfMPTUnlock});
+                };
+                return std::make_tuple(freeze, empty, unfreeze, tecLOCKED);
             }();
 
             // Try freezing the accounts that can't be frozen
@@ -2511,12 +2530,13 @@ protected:
                              << ", " << paymentComponents.trackedPrincipalDelta << ", "
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
-                             << (paymentComponents.specialCase == detail::PaymentSpecialCase::final
-                                     ? "final"
-                                     : paymentComponents.specialCase ==
-                                         detail::PaymentSpecialCase::extra
-                                     ? "extra"
-                                     : "none");
+                             << [&]() -> char const* {
+                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                            return "final";
+                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                            return "extra";
+                        return "none";
+                    }();
 
                     auto const totalDueAmount = STAmount{
                         broker.asset, paymentComponents.trackedValueDelta + serviceFee.number()};
@@ -2568,8 +2588,10 @@ protected:
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
                     if (canImpairLoan(env, broker, state))
+                    {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));
+                    }
 
                     env.close();
 
@@ -4247,10 +4269,8 @@ protected:
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
             }
-            else
-            {
-                return std::nullopt;
-            }
+
+            return std::nullopt;
         }();
         if (!pseudoBroker)
             return;
@@ -6247,9 +6267,13 @@ protected:
             Vault vault(env);
 
             if (borrower == broker)
+            {
                 env.fund(XRP(10'000), broker, issuer, depositor);
+            }
             else
+            {
                 env.fund(XRP(10'000), broker, borrower, issuer, depositor);
+            }
             env.close();
 
             auto const xrpFee = XRP(100);

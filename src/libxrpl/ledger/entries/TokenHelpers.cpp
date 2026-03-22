@@ -38,9 +38,13 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return isGlobalFrozen(view, issue.getIssuer());
+            }
             else
+            {
                 return isGlobalFrozen(view, issue);
+            }
         },
         asset.value());
 }
@@ -177,7 +181,7 @@ getLineIfUsable(
             {
                 return nullptr;  // LCOV_EXCL_LINE
             }
-            else if (sleIssuer->isFieldPresent(sfAMMID))
+            if (sleIssuer->isFieldPresent(sfAMMID))
             {
                 auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
 
@@ -404,13 +408,19 @@ transferRate(ReadView const& view, STAmount const& amount)
 canAddHolding(ReadView const& view, Issue const& issue)
 {
     if (issue.native())
+    {
         return tesSUCCESS;  // No special checks for XRP
+    }
 
     auto const issuer = view.read(keylet::account(issue.getIssuer()));
     if (!issuer)
+    {
         return terNO_ACCOUNT;
-    else if (!issuer->isFlag(lsfDefaultRipple))
+    }
+    if (!issuer->isFlag(lsfDefaultRipple))
+    {
         return terNO_RIPPLE;
+    }
 
     return tesSUCCESS;
 }
@@ -651,7 +661,7 @@ rippleSendIOU(
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -806,7 +816,6 @@ accountSendIOU(
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
-        std::string receiver_bal("-");
 
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();
@@ -975,15 +984,12 @@ accountSendMultiIOU(
         {
             return TER{tecFAILED_PROCESSING};
         }
-        else
-        {
-            auto const sndBal = sender->getFieldAmount(sfBalance);
-            view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
+        auto const sndBal = sender->getFieldAmount(sfBalance);
+        view.creditHook(senderID, xrpAccount(), takeFromSender, sndBal);
 
-            // Decrement XRP balance.
-            sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
-            view.update(sender);
-        }
+        // Decrement XRP balance.
+        sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
+        view.update(sender);
     }
 
     if (auto stream = j.trace())
@@ -1031,7 +1037,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     if (uReceiverID == issuer)
@@ -1044,7 +1052,9 @@ rippleCreditMPT(
             view.update(sleIssuance);
         }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     else
     {
@@ -1055,7 +1065,9 @@ rippleCreditMPT(
             view.update(sle);
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     return tesSUCCESS;
@@ -1095,7 +1107,7 @@ rippleSendMPT(
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
         auto const ter = rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
         return tesSUCCESS;
@@ -1111,7 +1123,7 @@ rippleSendMPT(
                     << " cost=" << saActual.getFullText();
 
     if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
-        terResult != tesSUCCESS)
+        !isTesSuccess(ter))
         return terResult;
 
     return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
@@ -1285,9 +1297,13 @@ accountSend(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
             else
+            {
                 return accountSendMPT(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            }
         },
         saAmount.asset().value());
 }
@@ -1306,9 +1322,13 @@ accountSendMulti(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
+            }
             else
+            {
                 return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
+            }
         },
         asset.value());
 }
