@@ -717,6 +717,28 @@ IOUToken::canTransfer(AccountID const& from, AccountID const& to) const
 
 //------------------------------------------------------------------------------
 //
+// Token capability checks (IOU-specific)
+//
+//------------------------------------------------------------------------------
+
+bool
+IOUToken::canClawback() const
+{
+    if (!issuerAccount_.exists())
+        return false;
+    return issuerAccount_->isFlag(lsfAllowTrustLineClawback);
+}
+
+bool
+IOUToken::requiresAuth() const
+{
+    if (!issuerAccount_.exists())
+        return false;
+    return issuerAccount_->isFlag(lsfRequireAuth);
+}
+
+//------------------------------------------------------------------------------
+//
 // Empty holding operations (IOU-specific)
 //
 //------------------------------------------------------------------------------

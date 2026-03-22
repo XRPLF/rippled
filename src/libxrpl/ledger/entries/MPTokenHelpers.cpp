@@ -462,6 +462,28 @@ MPToken::canTransfer(AccountID const& from, AccountID const& to) const
     return tesSUCCESS;
 }
 
+//------------------------------------------------------------------------------
+//
+// Token capability checks (MPT-specific)
+//
+//------------------------------------------------------------------------------
+
+bool
+MPToken::canClawback() const
+{
+    if (!sle_)
+        return false;
+    return sle_->isFlag(lsfMPTCanClawback);
+}
+
+bool
+MPToken::requiresAuth() const
+{
+    if (!sle_)
+        return false;
+    return sle_->isFlag(lsfMPTRequireAuth);
+}
+
 TER
 rippleLockEscrowMPT(
     ApplyView& view,
