@@ -51,13 +51,21 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
     auto const type = getType();
 
     if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    {
         ret += ",txn\n";
+    }
     else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    {
         ret += ",txn+md\n";
+    }
     else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    {
         ret += ",as\n";
+    }
     else
+    {
         ret += ",leaf\n";
+    }
 
     ret += "  Tag=";
     ret += to_string(item_->key());

@@ -186,10 +186,12 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 foundExpired = true;
                 continue;
             }
-            else if (sleCredential->getFlags() & lsfAccepted)
+            if (sleCredential->getFlags() & lsfAccepted)
+            {
                 return tesSUCCESS;
-            else
-                continue;
+            }
+
+            continue;
         }
     }
 
@@ -197,7 +199,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 }
 
 TER
-authorizedDepositPreauth(ApplyView const& view, STVector256 const& credIDs, AccountID const& dst)
+authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
@@ -337,9 +339,11 @@ verifyDepositPreauth(
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
+            {
                 return !credentialsPresent ? tecNO_PERMISSION
                                            : credentials::authorizedDepositPreauth(
                                                  view, tx.getFieldV256(sfCredentialIDs), dst);
+            }
         }
     }
 

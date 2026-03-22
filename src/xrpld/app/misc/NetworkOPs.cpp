@@ -753,7 +753,7 @@ private:
     DispatchState mDispatchState = DispatchState::none;
     std::vector<TransactionStatus> mTransactions;
 
-    StateAccounting accounting_{};
+    StateAccounting accounting_;
 
     std::set<uint256> pendingValidations_;
     std::mutex validationsMutex_;
@@ -1013,9 +1013,13 @@ NetworkOPsImp::processHeartbeatTimer()
         auto origMode = mMode.load();
         CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mMode == OperatingMode::SYNCING)
+        {
             setMode(OperatingMode::SYNCING);
+        }
         else if (mMode == OperatingMode::CONNECTED)
+        {
             setMode(OperatingMode::CONNECTED);
+        }
         auto newMode = mMode.load();
         if (origMode != newMode)
         {
@@ -1225,9 +1229,13 @@ NetworkOPsImp::processTransaction(
         return;
 
     if (bLocal)
+    {
         doTransactionSync(transaction, bUnlimited, failType);
+    }
     else
+    {
         doTransactionAsync(transaction, bUnlimited, failType);
+    }
 }
 
 void
@@ -1288,7 +1296,7 @@ NetworkOPsImp::doTransactionSyncBatch(
         {
             apply(lock);
 
-            if (mTransactions.size())
+            if (!mTransactions.empty())
             {
                 // More transactions need to be applied, but by another job.
                 if (m_job_queue.addJob(jtBATCH, "TxBatchSync", [this]() { transactionBatch(); }))
@@ -1343,7 +1351,9 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
     }
 
     if (mTransactions.empty())
+    {
         mTransactions.swap(transactions);
+    }
     else
     {
         mTransactions.reserve(mTransactions.size() + transactions.size());
@@ -1372,7 +1382,7 @@ NetworkOPsImp::transactionBatch()
     if (mDispatchState == DispatchState::running)
         return;
 
-    while (mTransactions.size())
+    while (!mTransactions.empty())
     {
         apply(lock);
     }
@@ -1452,7 +1462,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 registry_.getHashRouter().setFlags(e.transaction->getID(), HashRouterFlags::BAD);
 
 #ifdef DEBUG
-            if (e.result != tesSUCCESS)
+            if (!isTesSuccess(e.result))
             {
                 std::string token, human;
 
@@ -1465,7 +1475,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             bool addLocal = e.local;
 
-            if (e.result == tesSUCCESS)
+            if (isTesSuccess(e.result))
             {
                 JLOG(m_journal.debug()) << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
@@ -1616,7 +1626,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     if (!submit_held.empty())
     {
         if (mTransactions.empty())
+        {
             mTransactions.swap(submit_held);
+        }
         else
         {
             mTransactions.reserve(mTransactions.size() + submit_held.size());
@@ -1814,7 +1826,9 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
         switchLedgers = false;
     }
     else
+    {
         networkClosed = closedLedger;
+    }
 
     if (!switchLedgers)
         return false;
@@ -1822,8 +1836,10 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     auto consensus = m_ledgerMaster.getLedgerByHash(closedLedger);
 
     if (!consensus)
+    {
         consensus = registry_.getInboundLedgers().acquire(
             closedLedger, 0, InboundLedger::Reason::CONSENSUS);
+    }
 
     if (consensus &&
         (!m_ledgerMaster.canBeCurrent(consensus) ||
@@ -1875,9 +1891,13 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
         auto const lastVal = registry_.getLedgerMaster().getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
+        {
             rules = makeRulesGivenLedger(*lastVal, registry_.app().config().features);
+        }
         else
+        {
             rules.emplace(registry_.app().config().features);
+        }
         registry_.openLedger().accept(
             registry_.app(),
             *rules,
@@ -2197,7 +2217,9 @@ NetworkOPsImp::pubServer()
             jvObj[jss::load_factor_fee_reference] = f.em->referenceFeeLevel.jsonClipped();
         }
         else
+        {
             jvObj[jss::load_factor] = f.loadFactorServer;
+        }
 
         mLastFeeSummary = f;
 
@@ -2421,9 +2443,13 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
     try
     {
         if (pendingValidations_.contains(val->getLedgerHash()))
+        {
             bypassAccept = BypassAccept::yes;
+        }
         else
+        {
             pendingValidations_.insert(val->getLedgerHash());
+        }
         scope_unlock unlock(lock);
         handleNewValidation(registry_.app(), val, source, bypassAccept, m_journal);
     }
@@ -2565,10 +2591,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         if (!human)
         {
             if (when)
+            {
                 info[jss::validator_list_expires] =
                     safe_cast<Json::UInt>(when->time_since_epoch().count());
+            }
             else
+            {
                 info[jss::validator_list_expires] = 0;
+            }
         }
         else
         {
@@ -2588,9 +2618,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                     x[jss::expiration] = to_string(*when);
 
                     if (*when > registry_.timeKeeper().now())
+                    {
                         x[jss::status] = "active";
+                    }
                     else
+                    {
                         x[jss::status] = "expired";
+                    }
                 }
             }
             else
@@ -2723,22 +2757,30 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
         if (escalationMetrics.openLedgerFeeLevel != escalationMetrics.referenceFeeLevel &&
             (admin || loadFactorFeeEscalation != loadFactor))
+        {
             info[jss::load_factor_fee_escalation] =
                 escalationMetrics.openLedgerFeeLevel.decimalFromReference(
                     escalationMetrics.referenceFeeLevel);
+        }
         if (escalationMetrics.minProcessingFeeLevel != escalationMetrics.referenceFeeLevel)
+        {
             info[jss::load_factor_fee_queue] =
                 escalationMetrics.minProcessingFeeLevel.decimalFromReference(
                     escalationMetrics.referenceFeeLevel);
+        }
     }
 
     bool valid = false;
     auto lpClosed = m_ledgerMaster.getValidatedLedger();
 
     if (lpClosed)
+    {
         valid = true;
+    }
     else
+    {
         lpClosed = m_ledgerMaster.getClosedLedger();
+    }
 
     if (lpClosed)
     {
@@ -2785,15 +2827,23 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
 
         if (valid)
+        {
             info[jss::validated_ledger] = l;
+        }
         else
+        {
             info[jss::closed_ledger] = l;
+        }
 
         auto lpPublished = m_ledgerMaster.getPublishedLedger();
         if (!lpPublished)
+        {
             info[jss::published_ledger] = "none";
+        }
         else if (lpPublished->header().seq != lpClosed->header().seq)
+        {
             info[jss::published_ledger] = lpPublished->header().seq;
+        }
     }
 
     accounting_.json(info);
@@ -2963,7 +3013,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     ++it;
                 }
                 else
+                {
                     it = mStreamMaps[sLedger].erase(it);
+                }
             }
         }
 
@@ -2981,7 +3033,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     ++it;
                 }
                 else
+                {
                     it = mStreamMaps[sBookChanges].erase(it);
+                }
             }
         }
 
@@ -3176,7 +3230,9 @@ NetworkOPsImp::pubValidatedTransaction(
                 ++it;
             }
             else
+            {
                 it = mStreamMaps[sTransactions].erase(it);
+            }
         }
 
         it = mStreamMaps[sRTTransactions].begin();
@@ -3193,7 +3249,9 @@ NetworkOPsImp::pubValidatedTransaction(
                 ++it;
             }
             else
+            {
                 it = mStreamMaps[sRTTransactions].erase(it);
+            }
         }
     }
 
@@ -3238,7 +3296,9 @@ NetworkOPsImp::pubAccountTransaction(
                             ++iProposed;
                         }
                         else
+                        {
                             it = simiIt->second.erase(it);
+                        }
                     }
                 }
 
@@ -3256,7 +3316,9 @@ NetworkOPsImp::pubAccountTransaction(
                             ++iAccepted;
                         }
                         else
+                        {
                             it = simiIt->second.erase(it);
+                        }
                     }
                 }
 
@@ -3370,7 +3432,9 @@ NetworkOPsImp::pubProposedAccountTransaction(
                             ++iProposed;
                         }
                         else
+                        {
                             it = simiIt->second.erase(it);
+                        }
                     }
                 }
             }
@@ -3385,9 +3449,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
         MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::ref isrListener : notify)
+        {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
                 [&](Json::Value const& jv) { isrListener->send(jv, true); });
+        }
 
         XRPL_ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::none,
@@ -3739,10 +3805,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                 << " done, found last tx.";
                             return;
                         }
-                        else
-                        {
-                            sendMultiApiJson(jvTx, false);
-                        }
+
+                        sendMultiApiJson(jvTx, false);
                     }
 
                     if (marker)
@@ -3902,7 +3966,9 @@ bool
 NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 {
     if (auto listeners = registry_.getOrderBookDB().makeBookListeners(book))
+    {
         listeners->addSubscriber(isrListener);
+    }
     else
     {
         // LCOV_EXCL_START
@@ -4160,7 +4226,7 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     // this entry before removing
     for (SubMapType const& map : mStreamMaps)
     {
-        if (map.find(pInfo->getSeq()) != map.end())
+        if (map.contains(pInfo->getSeq()))
             return false;
     }
     mRpcSubMap.erase(strUrl);
@@ -4223,9 +4289,13 @@ NetworkOPsImp::getBookPage(
 
             auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
             if (ledgerIndex)
+            {
                 sleOfferDir = view.read(keylet::page(*ledgerIndex));
+            }
             else
+            {
                 sleOfferDir.reset();
+            }
 
             if (!sleOfferDir)
             {

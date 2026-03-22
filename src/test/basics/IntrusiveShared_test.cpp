@@ -144,7 +144,7 @@ public:
     }
 
     void
-    partialDestructor()
+    partialDestructor() const
     {
         using enum TrackedState;
 
@@ -245,7 +245,7 @@ public:
             while (!weak.empty())
             {
                 weak.resize(weak.size() - 1);
-                if (weak.size())
+                if (!weak.empty())
                     BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
             }
             BEAST_EXPECT(TIBase::getState(id) == deleted);

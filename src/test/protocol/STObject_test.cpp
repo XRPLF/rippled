@@ -351,7 +351,7 @@ public:
                 Buffer b(1);
                 BEAST_EXPECT(!b.empty());
                 st[sf4] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf4]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -370,7 +370,7 @@ public:
                 BEAST_EXPECT(!!~st[~sf5]);
                 Buffer b(1);
                 st[sf5] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf5]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -420,9 +420,9 @@ public:
 
             STObject st(sot, sfGeneric);
             auto const& cst(st);
-            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
             std::vector<uint256> v;
             v.emplace_back(1);
             st[sf1] = v;
@@ -437,7 +437,7 @@ public:
             BEAST_EXPECT(cst[sf3].size() == 1);
             BEAST_EXPECT(cst[sf3][0] == uint256{1});
             st[sf3] = std::vector<uint256>{};
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
         }
     }  // namespace xrpl
 

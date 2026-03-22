@@ -120,7 +120,7 @@ public:
                 to_string(calcNodeID(publicKey)) == "7E59C17D50F5959C7B158FEC95C8F815BF653DC8");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -162,7 +162,7 @@ public:
                 to_string(calcNodeID(publicKey)) == "AA066C988C712815CC37AF71472B7CBBBD4E2A0A");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -202,7 +202,7 @@ public:
                 "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -241,7 +241,7 @@ public:
                 "pwDQjwEhbUBmPuEjFpEG75bFhv2obkCB7NxQsfFxM7xGHBMVPu9");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message

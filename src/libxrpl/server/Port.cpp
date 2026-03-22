@@ -44,7 +44,7 @@ operator<<(std::ostream& os, Port const& p)
 {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (p.admin_nets_v4.size() || p.admin_nets_v6.size())
+    if (!p.admin_nets_v4.empty() || !p.admin_nets_v6.empty())
     {
         os << "admin nets:";
         for (auto const& net : p.admin_nets_v4)
@@ -59,7 +59,7 @@ operator<<(std::ostream& os, Port const& p)
         }
     }
 
-    if (p.secure_gateway_nets_v4.size() || p.secure_gateway_nets_v6.size())
+    if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
     {
         os << "secure_gateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)

@@ -46,7 +46,9 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                     return;
 
                 if (child->isLeaf())
+                {
                     ++pos;
+                }
                 else
                 {
                     // If there are no more children, don't push this node
@@ -164,7 +166,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
         auto const& childHash = node->getChildHash(branch);
 
-        if (mn.missingHashes_.count(childHash) != 0)
+        if (mn.missingHashes_.contains(childHash))
         {
             // we already know this child node is missing
             fullBelow = false;
@@ -358,8 +360,10 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
             {
                 // Recheck nodes we could not finish before
                 for (auto const& [innerNode, nodeId] : mn.resumes_)
+                {
                     if (!innerNode->isFullBelow(mn.generation_))
                         mn.stack_.push(std::make_tuple(innerNode, nodeId, rand_int(255), 0, true));
+                }
 
                 mn.resumes_.clear();
             }
@@ -644,7 +648,7 @@ SHAMap::deepCompare(SHAMap& other) const
             JLOG(journal_.info()) << "unable to fetch node";
             return false;
         }
-        else if (otherNode->getHash() != node->getHash())
+        if (otherNode->getHash() != node->getHash())
         {
             JLOG(journal_.warn()) << "node hash mismatch";
             return false;

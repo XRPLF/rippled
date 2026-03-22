@@ -209,7 +209,7 @@ public:
     checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     ticketDelete(
         ApplyView& view,

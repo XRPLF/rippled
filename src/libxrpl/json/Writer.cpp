@@ -25,7 +25,7 @@ std::map<char, char const*> jsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-static size_t const jsonEscapeLength = 2;
+size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 char const closeBrace = '}';
@@ -36,7 +36,7 @@ char const openBrace = '{';
 char const openBracket = '[';
 char const quote = '"';
 
-static auto const integralFloatsBecomeInts = false;
+auto const integralFloatsBecomeInts = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -137,9 +137,13 @@ public:
             check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
+        {
             stack_.top().isFirst = false;
+        }
         else
+        {
             output_({&comma, 1});
+        }
     }
 
     void
