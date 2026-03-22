@@ -35,7 +35,8 @@ escrowCancelPreclaimHelper<Issue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = IOUToken(ctx.view, amount.issue()).requireAuth(account); !isTesSuccess(ter))
+    if (auto const ter = IOUToken(ctx.view, amount.issue()).requireAuth(account);
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -54,7 +55,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const mptIssuance = MPToken(ctx.view, amount.get<MPTIssue>());
+    auto const mptIssuance = MPTokenIssuance(ctx.view, amount.get<MPTIssue>());
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 

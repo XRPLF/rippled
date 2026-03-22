@@ -236,7 +236,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecNO_PERMISSION;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const mptIssuance = MPToken(ctx.view, amount.get<MPTIssue>());
+    auto const mptIssuance = MPTokenIssuance(ctx.view, amount.get<MPTIssue>());
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 

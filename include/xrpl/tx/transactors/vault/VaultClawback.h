@@ -27,7 +27,7 @@ private:
     Expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         std::shared_ptr<SLE> const& vault,
-        MPToken const& shareIssuance,
+        MPTokenIssuance const& shareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
 };

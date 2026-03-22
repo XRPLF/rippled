@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -180,7 +181,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
-    auto const mptIssuance = MPToken(view, amount.get<MPTIssue>());
+    auto const mptIssuance = MPTokenIssuance(view, amount.get<MPTIssue>());
     auto const mptID = mptIssuance.getMptID();
     if (!view.exists(keylet::mptoken(mptID, receiver)) && createAsset && !receiverIssuer)
     {

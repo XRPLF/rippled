@@ -50,7 +50,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    MPToken const shareIssuance(ctx.view, vault->at(sfShareMPTID));
+    MPTokenIssuance const shareIssuance(ctx.view, vault->at(sfShareMPTID));
 
     if (!shareIssuance)
     {
@@ -105,7 +105,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    WritableMPToken shareIssuance(view(), shareMPTID);
+    WritableMPTokenIssuance shareIssuance(view(), shareMPTID);
     if (!shareIssuance)
     {
         // LCOV_EXCL_START

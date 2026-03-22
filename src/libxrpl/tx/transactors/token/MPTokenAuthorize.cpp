@@ -78,7 +78,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+        MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
 
         if (!mptIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -96,7 +96,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (AccountRoot const acctHolder(*holderID, ctx.view); !acctHolder)
         return tecNO_DST;
 
-    MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+    MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
     if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -158,7 +158,7 @@ TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
-    WritableMPToken mptToken(ctx_.view(), tx[sfMPTokenIssuanceID]);
+    WritableMPTokenIssuance mptToken(ctx_.view(), tx[sfMPTokenIssuanceID]);
     return mptToken.authorizeMPToken(
         preFeeBalance_, accountID_, ctx_.journal, tx.getFlags(), tx[~sfHolder]);
 }

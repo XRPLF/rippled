@@ -150,7 +150,7 @@ TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    MPToken const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+    MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
     if (!mptIssuance)
         return tecOBJECT_NOT_FOUND;
 

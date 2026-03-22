@@ -22,7 +22,7 @@ namespace xrpl {
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
-    MPToken const& issuance,
+    MPTokenIssuance const& issuance,
     STAmount const& assets);
 
 /** From the perspective of a vault, return the number of assets to take from
@@ -38,7 +38,7 @@ assetsToSharesDeposit(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& vault,
-    MPToken const& issuance,
+    MPTokenIssuance const& issuance,
     STAmount const& shares);
 
 /** Controls whether to truncate shares instead of rounding. */
@@ -59,7 +59,7 @@ enum class TruncateShares : bool { no = false, yes = true };
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
-    MPToken const& issuance,
+    MPTokenIssuance const& issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::no);
 
@@ -76,7 +76,7 @@ assetsToSharesWithdraw(
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
-    MPToken const& issuance,
+    MPTokenIssuance const& issuance,
     STAmount const& shares);
 
 }  // namespace xrpl
