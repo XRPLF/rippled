@@ -279,10 +279,10 @@ SignerListSet::replaceSignerList()
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter = removeSignersFromLedger(ctx_.registry, view(), account_, j_))
+    if (TER const ter = removeSignersFromLedger(ctx_.registry, view(), accountID_, j_))
         return ter;
 
-    WritableAccountRoot wrappedAcct(account_, view());
+    WritableAccountRoot wrappedAcct(accountID_, view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -301,8 +301,8 @@ SignerListSet::replaceSignerList()
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    Keylet const ownerDirKeylet = keylet::ownerDir(account_);
-    Keylet const signerListKeylet = keylet::signers(account_);
+    Keylet const ownerDirKeylet = keylet::ownerDir(accountID_);
+    Keylet const signerListKeylet = keylet::signers(accountID_);
     auto signerList = std::make_shared<SLE>(signerListKeylet);
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
@@ -310,9 +310,9 @@ SignerListSet::replaceSignerList()
     auto viewJ = ctx_.registry.journal("View");
     // Add the signer list to the account's directory.
     auto const page =
-        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
+        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
 
-    JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_) << ": "
+    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
                      << (page ? "success" : "failure");
 
     if (!page)
@@ -331,14 +331,14 @@ SignerListSet::destroySignerList()
 {
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    WritableAccountRoot wrappedAcct(account_, view());
+    WritableAccountRoot wrappedAcct(accountID_, view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((wrappedAcct->isFlag(lsfDisableMaster)) && (!wrappedAcct->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
-    return removeSignersFromLedger(ctx_.registry, view(), account_, j_);
+    return removeSignersFromLedger(ctx_.registry, view(), accountID_, j_);
 }
 
 void
@@ -347,7 +347,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        ledgerEntry->setAccountID(sfOwner, account_);
+        ledgerEntry->setAccountID(sfOwner, accountID_);
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);

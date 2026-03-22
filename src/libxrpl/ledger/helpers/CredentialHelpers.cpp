@@ -321,8 +321,7 @@ verifyDepositPreauth(
     STTx const& tx,
     ApplyView& view,
     AccountID const& src,
-    AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    AccountRoot const& dst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
@@ -336,15 +335,15 @@ verifyDepositPreauth(
     if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
-    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
+    if (dst.exists() && (dst->getFlags() & lsfDepositAuth))
     {
         if (src != dst)
         {
-            if (!view.exists(keylet::depositPreauth(dst, src)))
+            if (!view.exists(keylet::depositPreauth(dst.id(), src)))
             {
                 return !credentialsPresent ? tecNO_PERMISSION
                                            : credentials::authorizedDepositPreauth(
-                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
+                                                 view, tx.getFieldV256(sfCredentialIDs), dst.id());
             }
         }
     }

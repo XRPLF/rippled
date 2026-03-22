@@ -167,18 +167,34 @@ public:
         applyView_.update(mutableSle_);
     }
 
+    void
+    newSLE()
+    {
+        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::newSLE : can modify");
+        mutableSle_ = std::make_shared<SLE>(key_);
+    }
+
 protected:
     // Default constructor is deleted (cannot leave reference uninitialized)
     WritableSLE() = delete;
 
     /** Constructor for read-write context (ApplyView) */
     explicit WritableSLE(std::shared_ptr<SLE> sle, ApplyView& view)
-        : mutableSle_(std::move(sle)), applyView_(view)
+        : applyView_(view)
+        , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
+        , mutableSle_(std::move(sle))
     {
     }
 
+    /** Constructor for read-write context (ApplyView) */
+    explicit WritableSLE(Keylet const& key, ApplyView& view)
+        : applyView_(view), key_(key), mutableSle_(applyView_.peek(key))
+    {
+    }
+
+    ApplyView& applyView_;  // ApplyView for write contexts (first for init order)
+    Keylet const key_;
     std::shared_ptr<SLE> mutableSle_;  // Mutable SLE for write contexts
-    ApplyView& applyView_;             // ApplyView for write contexts
 };
 
 }  // namespace xrpl

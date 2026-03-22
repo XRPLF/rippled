@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
@@ -26,11 +27,11 @@ OfferCancel::preclaim(PreclaimContext const& ctx)
     auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
-    auto const sle = ctx.view.read(keylet::account(id));
-    if (!sle)
+    AccountRoot const acct(id, ctx.view);
+    if (!acct)
         return terNO_ACCOUNT;
 
-    if ((*sle)[sfSequence] <= offerSequence)
+    if (acct->getFieldU32(sfSequence) <= offerSequence)
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                             << "Sequence " << offerSequence << " is invalid.";
@@ -47,11 +48,10 @@ OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(keylet::account(account_));
-    if (!sle)
+    if (AccountRoot const acct(accountID_, view()); !acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
+    if (auto sleOffer = view().peek(keylet::offer(accountID_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.registry.journal("View"));

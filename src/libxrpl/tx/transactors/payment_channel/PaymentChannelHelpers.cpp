@@ -41,7 +41,6 @@ closeChannel(
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
     WritableAccountRoot wrappedOwner(src, view);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE

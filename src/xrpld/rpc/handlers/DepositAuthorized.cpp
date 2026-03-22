@@ -2,6 +2,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -66,14 +67,14 @@ doDepositAuthorized(RPC::JsonContext& context)
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger->read(keylet::account(dstAcct));
-    if (!sleDest)
+    AccountRoot const acctDest(dstAcct, *ledger);
+    if (!acctDest)
     {
         RPC::inject_error(rpcDST_ACT_NOT_FOUND, result);
         return result;
     }
 
-    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
+    bool const reqAuth = (acctDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;

@@ -289,11 +289,11 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
-    if (!sled)
+    WritableAccountRoot dest(destID, ctx_.view());
+    if (!dest.exists())
         return tecNO_DST;
 
-    if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dest, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -327,7 +327,7 @@ EscrowFinish::doApply()
     // Transfer amount to destination
     if (isXRP(amount))
     {
-        (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
+        (*dest)[sfBalance] = (*dest)[sfBalance] + amount;
     }
     else
     {
@@ -338,13 +338,13 @@ EscrowFinish::doApply()
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == account_;
+        bool const createAsset = destID == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         lockedRate,
-                        sled,
+                        dest,
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -370,7 +370,7 @@ EscrowFinish::doApply()
         }
     }
 
-    ctx_.view().update(sled);
+    dest.update();
 
     // Adjust source owner count
     WritableAccountRoot wrappedAcct(account, ctx_.view());

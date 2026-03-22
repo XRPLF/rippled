@@ -1,5 +1,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 
@@ -60,14 +61,14 @@ PaymentChannelFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
-    if (!sle)
+    WritableAccountRoot acct(txAccount, ctx_.view());
+    if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+        auto const balance = (*acct)[sfBalance];
+        auto const reserve = ctx_.view().fees().accountReserve((*acct)[sfOwnerCount]);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -77,7 +78,7 @@ PaymentChannelFund::doApply()
     }
 
     // do not allow adding funds if dst does not exist
-    if (AccountID const dst = (*slep)[sfDestination]; !ctx_.view().read(keylet::account(dst)))
+    if (AccountID const dst = (*slep)[sfDestination]; !AccountRoot(dst, ctx_.view()))
     {
         return tecNO_DST;
     }
@@ -85,8 +86,8 @@ PaymentChannelFund::doApply()
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
     ctx_.view().update(slep);
 
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view().update(sle);
+    (*acct)[sfBalance] = (*acct)[sfBalance] - ctx_.tx[sfAmount];
+    acct.update();
 
     return tesSUCCESS;
 }

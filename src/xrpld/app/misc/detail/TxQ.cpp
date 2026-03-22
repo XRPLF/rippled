@@ -3,6 +3,7 @@
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
@@ -1606,13 +1607,13 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
-    auto const sleAccount = view.read(keylet::account(account));
+    AccountRoot const acctRoot(account, view);
 
     // Don't attempt to direct apply if the account is not in the ledger.
-    if (!sleAccount)
+    if (!acctRoot)
         return {};
 
-    SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
+    SeqProxy const acctSeqProx = SeqProxy::sequence(acctRoot->at(sfSequence));
     SeqProxy const txSeqProx = tx->getSeqProxy();
 
     // Can only directly apply if the transaction sequence matches the account
@@ -1721,10 +1722,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     auto const baseFee = calculateBaseFee(view, *tx);
     auto const fee = FeeMetrics::scaleFeeLevel(snapshot, view);
 
-    auto const sle = view.read(keylet::account(account));
+    AccountRoot const acctInfo(account, view);
 
-    std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
-    std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
+    std::uint32_t const accountSeq = acctInfo ? acctInfo->at(sfSequence) : 0;
+    std::uint32_t const availableSeq = nextQueuableSeqImpl(acctInfo.sle(), lock).value();
     return {
         mulDiv(fee, baseFee, baseLevel)
             .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),

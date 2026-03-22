@@ -57,8 +57,8 @@ isVaultPseudoAccountFrozen(
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    auto const mptIssuer = AccountRoot(issuer, view);
+    if (!mptIssuer.exists())
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -418,8 +418,8 @@ doWithdraw(
     }
     else
     {
-        auto dstSle = view.read(keylet::account(dstAcct));
-        if (auto err = verifyDepositPreauth(tx, view, senderAcct, dstAcct, dstSle, j))
+        auto dst = AccountRoot(dstAcct, view);
+        if (auto err = verifyDepositPreauth(tx, view, senderAcct, dst, j))
             return err;
     }
 

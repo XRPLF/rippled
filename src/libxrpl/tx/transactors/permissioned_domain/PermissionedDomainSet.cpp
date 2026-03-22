@@ -64,7 +64,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, view());
+    WritableAccountRoot wrappedOwner(accountID_, view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -98,16 +98,16 @@ PermissionedDomainSet::doApply()
             return tecINSUFFICIENT_RESERVE;
 
         Keylet const pdKeylet =
-            keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
+            keylet::permissionedDomain(accountID_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        slePd->setAccountID(sfOwner, account_);
+        slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
-            view().dirInsert(keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
+            view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 

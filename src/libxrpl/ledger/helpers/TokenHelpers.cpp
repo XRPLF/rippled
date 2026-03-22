@@ -181,14 +181,14 @@ getLineIfUsable(
         // we need to check if the associated assets have been frozen
         if (view.rules().enabled(fixFrozenLPTokenTransfer))
         {
-            auto const sleIssuer = view.read(keylet::account(issuer));
-            if (!sleIssuer)
+            auto const issuerRoot = AccountRoot(issuer, view);
+            if (!issuerRoot.exists())
             {
                 return nullptr;  // LCOV_EXCL_LINE
             }
-            if (sleIssuer->isFieldPresent(sfAMMID))
+            if (issuerRoot->isFieldPresent(sfAMMID))
             {
-                auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+                auto const sleAmm = view.read(keylet::amm((*issuerRoot)[sfAMMID]));
 
                 if (!sleAmm ||
                     isLPTokenFrozen(
@@ -428,12 +428,13 @@ canAddHolding(ReadView const& view, Issue const& issue)
     {
         return tesSUCCESS;  // No special checks for XRP
     }
+    auto const issuer = AccountRoot(issue.getIssuer(), view);
 
-    auto const issuer = view.read(keylet::account(issue.getIssuer()));
-    if (!issuer)
+    if (!issuer.exists())
     {
         return terNO_ACCOUNT;
     }
+
     if (!issuer->isFlag(lsfDefaultRipple))
     {
         return terNO_RIPPLE;
@@ -576,8 +577,7 @@ rippleCreditIOU(
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(
-                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
+                static_cast<bool>(AccountRoot(uSenderID, view)->getFlags() & lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
@@ -1368,15 +1368,15 @@ transferXRP(
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
-    if (!sender || !receiver)
+    WritableAccountRoot acctSender(from, view);
+    WritableAccountRoot acctReceiver(to, view);
+    if (!acctSender || !acctReceiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     JLOG(j.trace()) << "transferXRP: " << to_string(from) << " -> " << to_string(to)
                     << ") : " << amount.getFullText();
 
-    if (sender->getFieldAmount(sfBalance) < amount)
+    if (acctSender->getFieldAmount(sfBalance) < amount)
     {
         // VFALCO Its unfortunate we have to keep
         //        mutating these TER everywhere
@@ -1387,11 +1387,11 @@ transferXRP(
     }
 
     // Decrement XRP balance.
-    sender->setFieldAmount(sfBalance, sender->getFieldAmount(sfBalance) - amount);
-    view.update(sender);
+    acctSender->setFieldAmount(sfBalance, acctSender->getFieldAmount(sfBalance) - amount);
+    acctSender.update();
 
-    receiver->setFieldAmount(sfBalance, receiver->getFieldAmount(sfBalance) + amount);
-    view.update(receiver);
+    acctReceiver->setFieldAmount(sfBalance, acctReceiver->getFieldAmount(sfBalance) + amount);
+    acctReceiver.update();
 
     return tesSUCCESS;
 }

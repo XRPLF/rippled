@@ -94,8 +94,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    auto const sleHolder = ctx.view.read(keylet::account(*holderID));
-    if (!sleHolder)
+    if (AccountRoot const acctHolder(*holderID, ctx.view); !acctHolder)
         return tecNO_DST;
 
     auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
@@ -166,7 +165,7 @@ MPTokenAuthorize::doApply()
         ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
-        account_,
+        accountID_,
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);

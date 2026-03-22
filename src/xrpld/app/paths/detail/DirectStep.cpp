@@ -814,8 +814,8 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
-    auto const sleSrc = ctx.view.read(keylet::account(src_));
-    if (!sleSrc)
+    AccountRoot const acctSrc(src_, ctx.view);
+    if (!acctSrc)
     {
         JLOG(j_.warn()) << "DirectStepI: can't receive IOUs from non-existent issuer: " << src_;
         return terNO_ACCOUNT;
@@ -874,7 +874,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         }
     }
 
-    return static_cast<TDerived const*>(this)->check(ctx, sleSrc);
+    return static_cast<TDerived const*>(this)->check(ctx, acctSrc.sle());
 }
 
 //------------------------------------------------------------------------------

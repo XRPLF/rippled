@@ -2,6 +2,7 @@
 //
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -286,7 +287,7 @@ LoanPay::doApply()
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
-    auto const brokerPayeeSle = view.peek(keylet::account(brokerPayee));
+    WritableAccountRoot brokerPayeeAcct(brokerPayee, view);
     if (!sendBrokerFeeToOwner)
     {
         // If we can't send the fee to the owner, and the pseudo-account is
@@ -488,13 +489,13 @@ LoanPay::doApply()
 #if !NDEBUG
     auto const accountBalanceBefore = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         fhIGNORE_FREEZE,
         ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
-    auto const vaultBalanceBefore = account_ == vaultPseudoAccount
+    auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -504,7 +505,7 @@ LoanPay::doApply()
               ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
-    auto const brokerBalanceBefore = account_ == brokerPayee
+    auto const brokerBalanceBefore = accountID_ == brokerPayee
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -524,11 +525,11 @@ LoanPay::doApply()
 
     if (totalPaidToBroker != beast::zero)
     {
-        if (brokerPayee == account_)
+        if (brokerPayee == accountID_)
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
-                    view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
+                    view, brokerPayee, brokerPayeeAcct->at(sfBalance).value().xrp(), asset, j_);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,
@@ -542,7 +543,7 @@ LoanPay::doApply()
 
     if (auto const ter = accountSendMulti(
             view,
-            account_,
+            accountID_,
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
@@ -565,13 +566,13 @@ LoanPay::doApply()
 
     auto const accountBalanceAfter = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         fhIGNORE_FREEZE,
         ahIGNORE_AUTH,
         j_,
         SpendableHandling::shFULL_BALANCE);
-    auto const vaultBalanceAfter = account_ == vaultPseudoAccount
+    auto const vaultBalanceAfter = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -581,7 +582,7 @@ LoanPay::doApply()
               ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
-    auto const brokerBalanceAfter = account_ == brokerPayee
+    auto const brokerBalanceAfter = accountID_ == brokerPayee
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -600,7 +601,7 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         accountBalanceAfter >= beast::zero, "xrpl::LoanPay::doApply", "positive account balance");
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),
+        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(

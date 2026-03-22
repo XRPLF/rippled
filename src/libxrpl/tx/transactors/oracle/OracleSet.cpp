@@ -42,8 +42,8 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
-    if (!sleSetter)
+    AccountRoot const acctSetter(ctx.tx.getAccountID(sfAccount), ctx.view);
+    if (!acctSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
@@ -150,8 +150,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =
-        ctx.view.fees().accountReserve(sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
-    auto const& balance = sleSetter->getFieldAmount(sfBalance);
+        ctx.view.fees().accountReserve(acctSetter->getFieldU32(sfOwnerCount) + adjustReserve);
+    auto const& balance = acctSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -182,7 +182,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
-    auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
+    auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
@@ -292,7 +292,7 @@ OracleSet::doApply()
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 

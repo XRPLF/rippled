@@ -135,7 +135,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        WritableAccountRoot wrappedOwner(account_, view());
+        WritableAccountRoot wrappedOwner(accountID_, view());
         if (!wrappedOwner)
             return {tefINTERNAL};
 
@@ -153,15 +153,15 @@ DepositPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        Keylet const preauthKeylet = keylet::depositPreauth(account_, auth);
+        Keylet const preauthKeylet = keylet::depositPreauth(accountID_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->setAccountID(sfAuthorize, auth);
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
                          << to_string(preauthKeylet.key) << ": " << (page ? "success" : "failure");
@@ -176,13 +176,13 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
-        auto const preauth = keylet::depositPreauth(account_, ctx_.tx[sfUnauthorize]);
+        auto const preauth = keylet::depositPreauth(accountID_, ctx_.tx[sfUnauthorize]);
 
         return DepositPreauth::removeFromLedger(view(), preauth.key, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        WritableAccountRoot wrappedOwner(account_, view());
+        WritableAccountRoot wrappedOwner(accountID_, view());
         if (!wrappedOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -211,18 +211,18 @@ DepositPreauth::doApply()
             sortedLE.push_back(std::move(cred));
         }
 
-        Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);
+        Keylet const preauthKey = keylet::depositPreauth(accountID_, sortedTX);
         auto slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
 
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKey, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory " << to_string(preauthKey.key)
                          << ": " << (page ? "success" : "failure");
@@ -238,7 +238,7 @@ DepositPreauth::doApply()
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         auto const preauthKey = keylet::depositPreauth(
-            account_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
+            accountID_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
         return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
 

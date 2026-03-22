@@ -115,7 +115,7 @@ LoanBrokerDelete::doApply()
     auto const brokerPseudoID = broker->at(sfAccount);
 
     if (!view().dirRemove(
-            keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
+            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -128,25 +128,25 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, WaiveTransferFee::Yes))
             return ter;
     }
 
     if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
-    if (!brokerPseudoSLE)
+    WritableAccountRoot brokerPseudo(brokerPseudoID, view());
+    if (!brokerPseudo)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Making the payment and removing the empty holding should have deleted any
     // obligations associated with the broker or broker pseudo-account.
-    if (*brokerPseudoSLE->at(sfBalance))
+    if (*brokerPseudo->at(sfBalance))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
-    if (brokerPseudoSLE->at(sfOwnerCount) != 0)
+    if (brokerPseudo->at(sfOwnerCount) != 0)
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account still owns objects";
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
@@ -157,12 +157,12 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
-    view().erase(brokerPseudoSLE);
+    brokerPseudo.erase();
 
     view().erase(broker);
 
     {
-        WritableAccountRoot wrappedOwner(account_, view());
+        WritableAccountRoot wrappedOwner(accountID_, view());
         if (!wrappedOwner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

@@ -58,14 +58,14 @@ TER
 PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.read(keylet::account(account));
-    if (!sle)
+    AccountRoot const acctSrc(account, ctx.view);
+    if (!acctSrc)
         return terNO_ACCOUNT;
 
     // Check reserve and funds availability
     {
-        auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        auto const balance = acctSrc->at(sfBalance);
+        auto const reserve = ctx.view.fees().accountReserve(acctSrc->getFieldU32(sfOwnerCount) + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -78,11 +78,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 
     {
         // Check destination account
-        auto const sled = ctx.view.read(keylet::account(dst));
-        if (!sled)
+        AccountRoot const acctDst(dst, ctx.view);
+        if (!acctDst)
             return tecNO_DST;
 
-        auto const flags = sled->getFlags();
+        auto const flags = acctDst->getFlags();
 
         // Check if they have disallowed incoming payment channels
         if ((flags & lsfDisallowIncomingPayChan) != 0u)
@@ -97,7 +97,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         // writes to pseudo-account discriminator fields **are** amendment
         // gated, hence the behaviour of this check will always match the
         // currently active amendments.
-        if (isPseudoAccount(sled))
+        if (acctDst.isPseudoAccount())
             return tecNO_PERMISSION;
     }
 
@@ -107,7 +107,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelCreate::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, ctx_.view());
+    WritableAccountRoot wrappedOwner(accountID_, ctx_.view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -124,14 +124,14 @@ PaymentChannelCreate::doApply()
     //
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChan(account_, dst, ctx_.tx.getSeqValue());
+    Keylet const payChanKeylet = keylet::payChan(accountID_, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
     (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
-    (*slep)[sfAccount] = account_;
+    (*slep)[sfAccount] = accountID_;
     (*slep)[sfDestination] = dst;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
     (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
@@ -148,7 +148,7 @@ PaymentChannelCreate::doApply()
     // Add PayChan to owner directory
     {
         auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), payChanKeylet, describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), payChanKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;

@@ -7,6 +7,7 @@
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -99,15 +100,15 @@ doNoRippleCheck(RPC::JsonContext& context)
         return result;
     }
     auto const accountID{std::move(id.value())};
-    auto const sle = ledger->read(keylet::account(accountID));
-    if (!sle)
+    AccountRoot const acct(accountID, *ledger);
+    if (!acct)
         return rpcError(rpcACT_NOT_FOUND);
 
-    std::uint32_t seq = sle->getFieldU32(sfSequence);
+    std::uint32_t seq = acct->getFieldU32(sfSequence);
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
+    bool bDefaultRipple = acct->getFieldU32(sfFlags) & lsfDefaultRipple;
 
     if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {

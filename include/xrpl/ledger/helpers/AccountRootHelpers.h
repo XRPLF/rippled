@@ -71,6 +71,29 @@ public:
     */
     [[nodiscard]] TER
     checkDestinationAndTag(bool hasDestinationTag) const;
+
+    /** Returns true if and only if sleAcct is a pseudo-account or specific
+        pseudo-accounts in pseudoFieldFilter.
+
+        Returns false if sleAcct is:
+        - NOT a pseudo-account OR
+        - NOT a ltACCOUNT_ROOT OR
+        - null pointer
+    */
+    [[nodiscard]] bool
+    isPseudoAccount(std::set<SField const*> const& pseudoFieldFilter = {}) const;
+
+    [[nodiscard]] bool
+    operator==(AccountRoot const& other) const
+    {
+        return id_ == other.id_;
+    }
+
+    [[nodiscard]] bool
+    operator==(AccountID const& other) const
+    {
+        return id_ == other;
+    }
 };
 
 /**
@@ -84,7 +107,7 @@ class WritableAccountRoot : public AccountRoot, public WritableSLE
 {
 public:
     WritableAccountRoot(AccountID const& id, ApplyView& view)
-        : AccountRoot(id, view), WritableSLE(view.peek(keylet::account(id)), view)
+        : AccountRoot(id, view), WritableSLE(keylet::account(id), view)
     {
     }
 
@@ -136,7 +159,10 @@ isPseudoAccount(
     AccountID const& accountId,
     std::set<SField const*> const& pseudoFieldFilter = {})
 {
-    return isPseudoAccount(view.read(keylet::account(accountId)), pseudoFieldFilter);
+    AccountRoot const acct(accountId, view);
+    if (!acct)
+        return false;
+    return acct.isPseudoAccount(pseudoFieldFilter);
 }
 
 /**

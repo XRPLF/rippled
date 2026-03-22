@@ -107,14 +107,14 @@ isFrozen(
 {
     if (isXRP(currency))
         return false;
-    auto sle = view.read(keylet::account(issuer));
-    if (sle && sle->isFlag(lsfGlobalFreeze))
+    auto const issuerRoot = AccountRoot(issuer, view);
+    if (issuerRoot.exists() && issuerRoot->isFlag(lsfGlobalFreeze))
         return true;
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
-        if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        auto const sleLine = view.read(keylet::line(account, issuer, currency));
+        if (sleLine && sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
     return false;
@@ -211,8 +211,8 @@ trustCreate(
     XRPL_ASSERT(
         wrappedAcct->getAccountID(sfAccount) == (bSetHigh ? uHighAccountID : uLowAccountID),
         "xrpl::trustCreate : matching account ID");
-    auto const slePeer = view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
-    if (!slePeer)
+    auto const peer = AccountRoot(bSetHigh ? uLowAccountID : uHighAccountID, view);
+    if (!peer.exists())
         return tecNO_TARGET;
 
     // Remember deletion hints.
@@ -249,7 +249,7 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
-    if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
+    if ((peer->getFlags() & lsfDefaultRipple) == 0)
     {
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
@@ -538,8 +538,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
-    if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
+    auto const issuerAccount = AccountRoot(issue.account, view);
+    if (issuerAccount.exists() && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         if (trustLine)
         {
@@ -562,8 +562,8 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     auto const& issuerId = issue.getIssuer();
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
-    auto const sleIssuer = view.read(keylet::account(issuerId));
-    if (sleIssuer == nullptr)
+    auto const issuer = AccountRoot(issuerId, view);
+    if (issuer.exists())
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {
@@ -575,7 +575,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
             bool const issuerHigh = issuerId > account;
             return line->isFlag(issuerHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
-        return sleIssuer->isFlag(lsfDefaultRipple) == false;
+        return issuer->isFlag(lsfDefaultRipple) == false;
     };
 
     // Fail if rippling disabled on both trust lines
@@ -655,11 +655,11 @@ removeEmptyHolding(
 {
     if (issue.native())
     {
-        auto const sle = view.read(keylet::account(accountID));
-        if (!sle)
+        auto const account = AccountRoot(accountID, view);
+        if (!account.exists())
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const balance = sle->getFieldAmount(sfBalance);
+        auto const balance = account->getFieldAmount(sfBalance);
         if (balance.xrp() != 0)
             return tecHAS_OBLIGATIONS;
 

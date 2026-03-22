@@ -53,14 +53,14 @@ TER
 CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
-    auto const sleDst = ctx.view.read(keylet::account(dstId));
-    if (!sleDst)
+    AccountRoot const acctDst(dstId, ctx.view);
+    if (!acctDst)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
         return tecNO_DST;
     }
 
-    auto const flags = sleDst->getFlags();
+    auto const flags = acctDst->getFlags();
 
     // Check if the destination has disallowed incoming checks
     if ((flags & lsfDisallowIncomingCheck) != 0u)
@@ -70,7 +70,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sleDst))
+    if (acctDst.isPseudoAccount())
         return tecNO_PERMISSION;
 
     if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx.isFieldPresent(sfDestinationTag))
@@ -134,7 +134,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    WritableAccountRoot wrappedAcct(account_, view());
+    WritableAccountRoot wrappedAcct(accountID_, view());
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -152,10 +152,10 @@ CheckCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
-    Keylet const checkKeylet = keylet::check(account_, seq);
+    Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
-    sleCheck->setAccountID(sfAccount, account_);
+    sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
     sleCheck->setFieldU32(sfSequence, seq);
@@ -174,7 +174,7 @@ CheckCreate::doApply()
     auto viewJ = ctx_.registry.journal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
-    if (dstAccountId != account_)
+    if (dstAccountId != accountID_)
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
@@ -189,8 +189,8 @@ CheckCreate::doApply()
     }
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), checkKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");

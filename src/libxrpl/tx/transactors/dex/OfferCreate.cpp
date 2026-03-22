@@ -138,11 +138,11 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
-    auto const sleCreator = ctx.view.read(keylet::account(id));
-    if (!sleCreator)
+    AccountRoot const acctCreator(id, ctx.view);
+    if (!acctCreator)
         return terNO_ACCOUNT;
 
-    std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
+    std::uint32_t const uAccountSequence = acctCreator->getFieldU32(sfSequence);
 
     auto viewJ = ctx.registry.journal("View");
     AccountRoot wrappedPays(uPaysIssuerID, ctx.view);
@@ -207,9 +207,9 @@ OfferCreate::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(!isXRP(issue.currency), "xrpl::OfferCreate::checkAcceptAsset : input is not XRP");
 
-    auto const issuerAccount = view.read(keylet::account(issue.account));
+    AccountRoot const issuerAcct(issue.account, view);
 
-    if (!issuerAccount)
+    if (!issuerAcct)
     {
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(issue.account);
@@ -223,7 +223,7 @@ OfferCreate::checkAcceptAsset(
     if (issue.account == id)
         return tesSUCCESS;
 
-    if (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u)
+    if (issuerAcct->getFlags() & lsfRequireAuth)
     {
         auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 
@@ -283,7 +283,7 @@ OfferCreate::flowCross(
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
         STAmount const inStartBalance =
-            accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+            accountFunds(psb, accountID_, takerAmount.in, fhZERO_IF_FROZEN, j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -296,7 +296,7 @@ OfferCreate::flowCross(
         // offer taker.  Set sendMax to allow for the gateway's cut.
         Rate gatewayXferRate{QUALITY_ONE};
         STAmount sendMax = takerAmount.in;
-        if (!sendMax.native() && (account_ != sendMax.getIssuer()))
+        if (!sendMax.native() && (accountID_ != sendMax.getIssuer()))
         {
             WritableAccountRoot wrappedAcct(sendMax.getIssuer(), psb);
             gatewayXferRate = wrappedAcct.transferRate();
@@ -360,8 +360,8 @@ OfferCreate::flowCross(
         auto const result = flow(
             psb,
             deliver,
-            account_,
-            account_,
+            accountID_,
+            accountID_,
             paths,
             true,                            // default path
             (txFlags & tfFillOrKill) == 0u,  // partial payment
@@ -386,7 +386,7 @@ OfferCreate::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance =
-                accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+                accountFunds(psb, accountID_, takerAmount.in, fhZERO_IF_FROZEN, j_);
 
             if (takerInBalance <= beast::zero)
             {
@@ -546,7 +546,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = sb.peek(keylet::offer(account_, *cancelSequence));
+        auto const sleCancel = sb.peek(keylet::offer(accountID_, *cancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
         // been consumed or removed. If it is found, however, it's an error
@@ -579,15 +579,15 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         std::uint8_t uTickSize = Quality::maxTickSize;
         if (!isXRP(uPaysIssuerID))
         {
-            auto const sle = sb.read(keylet::account(uPaysIssuerID));
-            if (sle && sle->isFieldPresent(sfTickSize))
-                uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
+            AccountRoot const acctPays(uPaysIssuerID, sb);
+            if (acctPays && acctPays->isFieldPresent(sfTickSize))
+                uTickSize = std::min(uTickSize, (*acctPays)[sfTickSize]);
         }
         if (!isXRP(uGetsIssuerID))
         {
-            auto const sle = sb.read(keylet::account(uGetsIssuerID));
-            if (sle && sle->isFieldPresent(sfTickSize))
-                uTickSize = std::min(uTickSize, (*sle)[sfTickSize]);
+            AccountRoot const acctGets(uGetsIssuerID, sb);
+            if (acctGets && acctGets->isFieldPresent(sfTickSize))
+                uTickSize = std::min(uTickSize, (*acctGets)[sfTickSize]);
         }
         if (uTickSize < Quality::maxTickSize)
         {
@@ -735,7 +735,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    WritableAccountRoot wrappedCreator(account_, sb);
+    WritableAccountRoot wrappedCreator(accountID_, sb);
     if (!wrappedCreator)
         return {tefINTERNAL, false};
 
@@ -760,11 +760,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    auto const offer_index = keylet::offer(account_, offerSequence);
+    auto const offer_index = keylet::offer(accountID_, offerSequence);
 
     // Add offer to owner's directory.
     auto const ownerNode =
-        sb.dirInsert(keylet::ownerDir(account_), offer_index, describeOwnerDir(account_));
+        sb.dirInsert(keylet::ownerDir(accountID_), offer_index, describeOwnerDir(accountID_));
 
     if (!ownerNode)
     {
@@ -821,7 +821,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     auto sleOffer = std::make_shared<SLE>(offer_index);
-    sleOffer->setAccountID(sfAccount, account_);
+    sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence);
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
     sleOffer->setFieldAmount(sfTakerPays, saTakerPays);

@@ -56,12 +56,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(account_, ctx_.view());
+    WritableAccountRoot wrappedOwner(accountID_, ctx_.view());
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
-    auto const delegateKey = keylet::delegate(account_, authAccount);
+    auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
     auto sle = ctx_.view().peek(delegateKey);
     if (sle)
@@ -70,7 +70,7 @@ DelegateSet::doApply()
         if (permissions.empty())
         {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, account_, j_);
+            return deleteDelegate(view(), sle, accountID_, j_);
         }
 
         sle->setFieldArray(sfPermissions, permissions);
@@ -89,12 +89,12 @@ DelegateSet::doApply()
         return tecINSUFFICIENT_RESERVE;
 
     sle = std::make_shared<SLE>(delegateKey);
-    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
     auto const page =
-        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+        ctx_.view().dirInsert(keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE

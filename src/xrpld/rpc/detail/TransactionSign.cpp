@@ -12,6 +12,7 @@
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -126,17 +127,14 @@ public:
 //------------------------------------------------------------------------------
 
 static error_code_i
-acctMatchesPubKey(
-    std::shared_ptr<SLE const> accountState,
-    AccountID const& accountID,
-    PublicKey const& publicKey)
+acctMatchesPubKey(AccountRoot const& account, PublicKey const& publicKey)
 {
     auto const publicKeyAcctID = calcAccountID(publicKey);
-    bool const isMasterKey = publicKeyAcctID == accountID;
+    bool const isMasterKey = publicKeyAcctID == account.id();
 
     // If we can't get the accountRoot, but the accountIDs match, that's
     // good enough.
-    if (!accountState)
+    if (!account)
     {
         if (isMasterKey)
             return rpcSUCCESS;
@@ -144,16 +142,16 @@ acctMatchesPubKey(
     }
 
     // If we *can* get to the accountRoot, check for MASTER_DISABLED.
-    auto const& sle = *accountState;
     if (isMasterKey)
     {
-        if (sle.isFlag(lsfDisableMaster))
+        if (account->isFlag(lsfDisableMaster))
             return rpcMASTER_DISABLED;
         return rpcSUCCESS;
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if ((account->isFieldPresent(sfRegularKey)) &&
+        (publicKeyAcctID == account->getAccountID(sfRegularKey)))
     {
         return rpcSUCCESS;
     }
@@ -459,11 +457,11 @@ transactionPreProcessImpl(
     if (!verify && !tx_json.isMember(jss::Sequence))
         return RPC::missing_field_error("tx_json.Sequence");
 
-    std::shared_ptr<SLE const> sle;
+    std::optional<AccountRoot> acctSrc;
     if (verify)
-        sle = app.openLedger().current()->read(keylet::account(srcAddressID));
+        acctSrc.emplace(srcAddressID, *app.openLedger().current());
 
-    if (verify && !sle)
+    if (verify && !acctSrc.value() && acctSrc->exists())
     {
         // If not offline and did not find account, error.
         JLOG(j.debug()) << "transactionSign: Failed to find source account "
@@ -477,14 +475,15 @@ transactionPreProcessImpl(
         if (!tx_json.isMember(jss::Sequence))
         {
             bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
-            if (!hasTicketSeq && !sle)
+            if (!hasTicketSeq && (!acctSrc || !acctSrc->exists()))
             {
                 JLOG(j.debug()) << "transactionSign: Failed to find source account "
                                 << "in current ledger: " << toBase58(srcAddressID);
 
                 return rpcError(rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] = hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+            tx_json[jss::Sequence] =
+                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(acctSrc->sle()).value();
         }
 
         if (!tx_json.isMember(jss::NetworkID))
@@ -534,7 +533,7 @@ transactionPreProcessImpl(
 
     if (verify)
     {
-        if (!sle)
+        if (!acctSrc || !acctSrc->exists())
         {
             // XXX Ignore transactions for accounts not created.
             return rpcError(rpcSRC_ACT_NOT_FOUND);
@@ -564,19 +563,18 @@ transactionPreProcessImpl(
                 }
 
                 auto delegatedAddressID = *ptrDelegatedAddressID;
-                auto delegatedSle =
-                    app.openLedger().current()->read(keylet::account(delegatedAddressID));
-                if (!delegatedSle)
+                AccountRoot const acctDelegated(delegatedAddressID, *app.openLedger().current());
+                if (!acctDelegated)
                     return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
 
-                auto const err = acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
+                auto const err = acctMatchesPubKey(acctDelegated, pk);
 
                 if (err != rpcSUCCESS)
                     return rpcError(err);
             }
             else
             {
-                auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+                auto const err = acctMatchesPubKey(*acctSrc, pk);
 
                 if (err != rpcSUCCESS)
                     return rpcError(err);
@@ -1161,10 +1159,9 @@ transactionSignFor(
         signForParams.validMultiSign(), "xrpl::RPC::transactionSignFor : valid multi-signature");
 
     {
-        std::shared_ptr<SLE const> account_state = ledger->read(keylet::account(*signerAccountID));
+        AccountRoot const acctSigner(*signerAccountID, *ledger);
         // Make sure the account and secret belong together.
-        auto const err =
-            acctMatchesPubKey(account_state, *signerAccountID, signForParams.getPublicKey());
+        auto const err = acctMatchesPubKey(acctSigner, signForParams.getPublicKey());
 
         if (err != rpcSUCCESS)
             return rpcError(err);
@@ -1246,9 +1243,9 @@ transactionSubmitMultiSigned(
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
 
-    std::shared_ptr<SLE const> sle = ledger->read(keylet::account(srcAddressID));
+    AccountRoot const acctSrcMulti(srcAddressID, *ledger);
 
-    if (!sle)
+    if (!acctSrcMulti)
     {
         // If did not find account, error.
         JLOG(j.debug()) << "transactionSubmitMultiSigned: Failed to find source account "

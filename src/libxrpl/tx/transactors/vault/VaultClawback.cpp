@@ -2,6 +2,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -180,8 +181,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 }
                 else if constexpr (std::is_same_v<TIss, Issue>)
                 {
-                    auto const issuerSle = ctx.view.read(keylet::account(account));
-                    if (!issuerSle)
+                    AccountRoot const acctIssuer(account, ctx.view);
+                    if (!acctIssuer)
                     {
                         // LCOV_EXCL_START
                         JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
@@ -189,7 +190,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                         // LCOV_EXCL_STOP
                     }
 
-                    std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
+                    std::uint32_t const issuerFlags = acctIssuer->getFieldU32(sfFlags);
                     if (!(issuerFlags & lsfAllowTrustLineClawback) || (issuerFlags & lsfNoFreeze))
                     {
                         JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
@@ -324,7 +325,7 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], account_);
+    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
@@ -339,7 +340,7 @@ VaultClawback::doApply()
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
-    if (account_ == vault->at(sfOwner) && amount.asset() == share)
+    if (accountID_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
             view(),
@@ -406,7 +407,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 

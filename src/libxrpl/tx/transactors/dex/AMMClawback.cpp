@@ -1,5 +1,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -72,11 +73,11 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset].get<Issue>();
     auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
-    auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
-    if (!sleIssuer)
+    AccountRoot const acctIssuer(ctx.tx[sfAccount], ctx.view);
+    if (!acctIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
+    if (AccountRoot const acctHolder(ctx.tx[sfHolder], ctx.view); !acctHolder)
         return terNO_ACCOUNT;
 
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
@@ -86,7 +87,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
+    std::uint32_t const issuerFlagsIn = acctIssuer->getFieldU32(sfFlags);
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
@@ -123,8 +124,8 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const ammAccount = (*ammSle)[sfAccount];
-    auto const accountSle = sb.read(keylet::account(ammAccount));
-    if (!accountSle)
+    AccountRoot const ammAcct(ammAccount, sb);
+    if (!ammAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (sb.rules().enabled(fixAMMClawbackRounding))

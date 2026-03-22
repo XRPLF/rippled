@@ -9,6 +9,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <tuple>
@@ -699,12 +700,12 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    auto sleAccount = mLedger->read(keylet::account(account));
+    AccountRoot const acctRoot(account, *mLedger);
 
-    if (!sleAccount)
+    if (!acctRoot)
         return 0;
 
-    int aFlags = sleAccount->getFieldU32(sfFlags);
+    int aFlags = acctRoot->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
     bool const bFrozen = ((aFlags & lsfGlobalFreeze) != 0);
 
@@ -926,11 +927,11 @@ Pathfinder::addLink(
         else
         {
             // search for accounts to add
-            auto const sleEnd = mLedger->read(keylet::account(uEndAccount));
+            AccountRoot const acctEnd(uEndAccount, *mLedger);
 
-            if (sleEnd)
+            if (acctEnd)
             {
-                bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
+                bool const bRequireAuth(acctEnd->getFieldU32(sfFlags) & lsfRequireAuth);
                 bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & afAC_LAST) != 0u);

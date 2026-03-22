@@ -53,7 +53,7 @@ DIDDelete::deleteSLE(
 TER
 DIDDelete::doApply()
 {
-    return deleteSLE(ctx_, keylet::did(account_), account_);
+    return deleteSLE(ctx_, keylet::did(accountID_), accountID_);
 }
 
 }  // namespace xrpl
