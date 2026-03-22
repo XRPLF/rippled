@@ -67,10 +67,8 @@ public:
     bool
     active(severities::Severity level) const override
     {
-        // Always active at trace level to capture all messages
-        // But also check forward sink
-        if (forwardSink_ && forwardSink_->active(level))
-            return true;
+        // Always capture messages at or above our threshold,
+        // regardless of forward sink status
         return level >= threshold();
     }
 

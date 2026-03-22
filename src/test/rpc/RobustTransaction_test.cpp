@@ -450,18 +450,25 @@ public:
             BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
 
             // Verify debug_log is present and is an array
-            BEAST_EXPECT(jvResult.isMember(jss::debug_log));
+            if (!BEAST_EXPECT(jvResult.isMember(jss::debug_log)))
+            {
+                log << "Response was: " << jvResult.toStyledString() << std::endl;
+            }
             BEAST_EXPECT(jvResult[jss::debug_log].isArray());
 
-            // The debug log should contain entries (at least some trace/debug info)
+            // The debug log should contain at least some entries
+            auto const& debugLog = jvResult[jss::debug_log];
+            log << "debug_log has " << debugLog.size() << " entries" << std::endl;
+            BEAST_EXPECT(debugLog.size() > 0);
+
             // Each entry should have "level" and "message" fields
-            if (jvResult[jss::debug_log].size() > 0)
+            for (Json::UInt i = 0; i < debugLog.size(); ++i)
             {
-                auto const& firstEntry = jvResult[jss::debug_log][0u];
-                BEAST_EXPECT(firstEntry.isMember("level"));
-                BEAST_EXPECT(firstEntry.isMember("message"));
-                BEAST_EXPECT(firstEntry["level"].isString());
-                BEAST_EXPECT(firstEntry["message"].isString());
+                auto const& entry = debugLog[i];
+                BEAST_EXPECT(entry.isMember("level"));
+                BEAST_EXPECT(entry.isMember("message"));
+                BEAST_EXPECT(entry["level"].isString());
+                BEAST_EXPECT(entry["message"].isString());
             }
         }
 
