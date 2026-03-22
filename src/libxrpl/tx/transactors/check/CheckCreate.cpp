@@ -121,8 +121,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    WritableAccountRoot wrappedAcct(accountID_, view());
-    if (!wrappedAcct)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // A check counts against the reserve of the issuing account, but we
@@ -130,7 +129,7 @@ CheckCreate::doApply()
     // reserve to pay fees.
     {
         STAmount const reserve{
-            view().fees().accountReserve(wrappedAcct->getFieldU32(sfOwnerCount) + 1)};
+            view().fees().accountReserve(account_->getFieldU32(sfOwnerCount) + 1)};
 
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -188,7 +187,7 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    wrappedAcct.adjustOwnerCount(1, viewJ);
+    account_.adjustOwnerCount(1, viewJ);
     return tesSUCCESS;
 }
 
