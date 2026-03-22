@@ -816,6 +816,7 @@ accountSendIOU(
     if (auto stream = j.trace())
     {
         std::string sender_bal("-");
+        std::string receiver_bal("-");
 
         if (sender)
             sender_bal = sender->getFieldAmount(sfBalance).getFullText();
@@ -1123,7 +1124,7 @@ rippleSendMPT(
                     << " cost=" << saActual.getFullText();
 
     if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
-        !isTesSuccess(ter))
+        !isTesSuccess(terResult))
         return terResult;
 
     return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
