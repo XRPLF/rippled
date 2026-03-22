@@ -115,7 +115,7 @@ protected:
     beast::Journal const j_;
 
     AccountID const accountID_;
-    AccountRoot const account_;
+    WritableAccountRoot account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
     virtual ~Transactor() = default;
