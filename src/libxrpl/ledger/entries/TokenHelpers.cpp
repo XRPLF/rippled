@@ -106,9 +106,13 @@ isAnyFrozen(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return isAnyFrozen(view, accounts, issue);
+            }
             else
+            {
                 return isAnyFrozen(view, accounts, issue, depth);
+            }
         },
         asset.value());
 }
@@ -257,9 +261,11 @@ accountHolds(
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
     if (returnSpendable && account == issuer)
+    {
         // If the account is the issuer, then their limit is effectively
         // infinite
         return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+    }
 
     // IOU: Return balance on trust line modulo freeze
     SLE::const_pointer const sle =
@@ -314,9 +320,13 @@ accountHolds(
     auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
 
     if (!sleMpt)
+    {
         amount.clear(mptIssue);
+    }
     else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    {
         amount.clear(mptIssue);
+    }
     else
     {
         amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
@@ -391,9 +401,13 @@ transferRate(ReadView const& view, STAmount const& amount)
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return transferRate(view, issue.getIssuer());
+            }
             else
+            {
                 return transferRate(view, issue.getMptID());
+            }
         },
         amount.asset().value());
 }

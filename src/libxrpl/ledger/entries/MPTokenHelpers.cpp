@@ -732,9 +732,13 @@ rippleUnlockEscrowMPT(
 
     auto const newLocked = locked - delta;
     if (newLocked == 0)
+    {
         sle->makeFieldAbsent(sfLockedAmount);
+    }
     else
+    {
         sle->setFieldU64(sfLockedAmount, newLocked);
+    }
     view.update(sle);
 
     // Note: The gross amount is the amount that was locked, the net

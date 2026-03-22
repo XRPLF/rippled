@@ -142,8 +142,10 @@ forEachItemAfter(
             if (!ownerDir)
                 return true;
             for (auto const& key : ownerDir->getFieldV256(sfIndexes))
+            {
                 if (f(view.read(keylet::child(key))) && limit-- <= 1)
                     return true;
+            }
             auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
             if (uNodeNext == 0)
                 return true;
