@@ -293,8 +293,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset))
         return terNO_DELEGATE_PERMISSION;
 
     // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
