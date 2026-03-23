@@ -2423,7 +2423,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(20)});
-                env(tx, ter{tecNO_PERMISSION});
+                env(tx, ter{tecLOCKED});
                 env.close();
             }
 
@@ -3223,7 +3223,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 auto const tx = vault.deposit(
                     {.depositor = issuer, .id = vaultKeylet.key, .amount = asset(20)});
-                env(tx, ter{tecNO_PERMISSION});
+                env(tx, ter{tecLOCKED});
                 env.close();
             }
 
