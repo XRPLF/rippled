@@ -1,5 +1,6 @@
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>

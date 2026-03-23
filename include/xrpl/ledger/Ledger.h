@@ -384,6 +384,27 @@ private:
     bool
     setup();
 
+    /** Deserialize a SHAMapItem containing a single STTx
+
+        Throw:
+
+        May throw on deserializaton error
+    */
+    static std::shared_ptr<STTx const>
+    deserializeTx(SHAMapItem const& item);
+
+    /** Deserialize a SHAMapItem containing STTx + STObject metadata
+
+        The SHAMap must contain two variable length
+        serialization objects.
+
+        Throw:
+
+            May throw on deserializaton error
+    */
+    static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
+    deserializeTxPlusMeta(SHAMapItem const& item);
+
     bool mImmutable;
 
     // A SHAMap containing the transactions associated with this ledger.
@@ -403,70 +424,5 @@ private:
 
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
-
-//------------------------------------------------------------------------------
-//
-// API
-//
-//------------------------------------------------------------------------------
-
-extern bool
-pendSaveValidated(
-    ServiceRegistry& registry,
-    std::shared_ptr<Ledger const> const& ledger,
-    bool isSynchronous,
-    bool isCurrent);
-
-std::shared_ptr<Ledger>
-loadLedgerHelper(
-    LedgerHeader const& sinfo,
-    Rules const& rules,
-    Fees const& fees,
-    ServiceRegistry& registry,
-    bool acquire);
-
-std::shared_ptr<Ledger>
-loadByIndex(
-    std::uint32_t ledgerIndex,
-    Rules const& rules,
-    Fees const& fees,
-    ServiceRegistry& registry,
-    bool acquire = true);
-
-std::shared_ptr<Ledger>
-loadByHash(
-    uint256 const& ledgerHash,
-    Rules const& rules,
-    Fees const& fees,
-    ServiceRegistry& registry,
-    bool acquire = true);
-
-// Fetch the ledger with the highest sequence contained in the database
-extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry);
-
-/** Deserialize a SHAMapItem containing a single STTx
-
-    Throw:
-
-        May throw on deserializaton error
-*/
-std::shared_ptr<STTx const>
-deserializeTx(SHAMapItem const& item);
-
-/** Deserialize a SHAMapItem containing STTx + STObject metadata
-
-    The SHAMap must contain two variable length
-    serialization objects.
-
-    Throw:
-
-        May throw on deserializaton error
-*/
-std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
-deserializeTxPlusMeta(SHAMapItem const& item);
-
-uint256
-calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl

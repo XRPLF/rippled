@@ -1,5 +1,6 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>

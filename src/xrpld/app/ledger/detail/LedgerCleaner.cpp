@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
