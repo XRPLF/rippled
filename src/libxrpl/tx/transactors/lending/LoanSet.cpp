@@ -519,9 +519,9 @@ LoanSet::doApply()
             "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 
-        if (auto const ter =
-                makeWritableTokenBase(view, vaultAsset)
-                    ->addEmptyHolding(brokerOwner, brokerOwnerAcct->at(sfBalance).value().xrp(), j_);
+        if (auto const ter = makeWritableTokenBase(view, vaultAsset)
+                                 ->addEmptyHolding(
+                                     brokerOwner, brokerOwnerAcct->at(sfBalance).value().xrp(), j_);
             ter && ter != tecDUPLICATE)
         {
             // ignore tecDUPLICATE. That means the holding already exists,
