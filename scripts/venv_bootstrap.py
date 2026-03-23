@@ -18,17 +18,23 @@ def ensure_venv(deps_dir: Path) -> None:
     stamp = deps_dir / ".deps_ready"
 
     needs_setup = (
-        not stamp.exists()
-        or requirements_file.stat().st_mtime > stamp.stat().st_mtime
+        not stamp.exists() or requirements_file.stat().st_mtime > stamp.stat().st_mtime
     )
 
     if needs_setup:
         print(f"Installing code generation dependencies to {deps_dir}...", flush=True)
         deps_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(
-            [sys.executable, "-m", "pip", "install",
-             "--target", str(deps_dir),
-             "-r", str(requirements_file)],
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--target",
+                str(deps_dir),
+                "-r",
+                str(requirements_file),
+            ],
             check=True,
         )
         stamp.touch()

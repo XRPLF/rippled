@@ -96,7 +96,10 @@ function(setup_protocol_autogen)
         message(STATUS "Using user-provided Python venv: ${CODEGEN_VENV_DIR}")
     else()
         set(CODEGEN_PYTHON "${Python3_EXECUTABLE}")
-        set(VENV_DIR_ARG "--venv-dir" "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
+        set(VENV_DIR_ARG
+            "--venv-dir"
+            "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv"
+        )
     endif()
 
     # At configure time - list output files using the stdlib-only list_outputs.py
@@ -151,8 +154,8 @@ function(setup_protocol_autogen)
         COMMAND
             ${CODEGEN_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
-            "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro "${SFIELDS_MACRO}"
-            ${VENV_DIR_ARG}
+            "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro
+            "${SFIELDS_MACRO}" ${VENV_DIR_ARG}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
             "${TRANSACTIONS_MACRO}"
@@ -170,10 +173,11 @@ function(setup_protocol_autogen)
     add_custom_command(
         OUTPUT ${LEDGER_OUTPUT_FILES}
         COMMAND
-            ${CODEGEN_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
-            "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro "${SFIELDS_MACRO}"
-            ${VENV_DIR_ARG}
+            ${CODEGEN_PYTHON} "${GENERATE_LEDGER_SCRIPT}"
+            "${LEDGER_ENTRIES_MACRO}" --header-dir
+            "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
+            "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro
+            "${SFIELDS_MACRO}" ${VENV_DIR_ARG}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
             "${LEDGER_ENTRIES_MACRO}"

@@ -58,9 +58,7 @@ def main():
     parser.add_argument(
         "--header-dir", required=True, help="Output directory for header files"
     )
-    parser.add_argument(
-        "--test-dir", help="Output directory for test files (optional)"
-    )
+    parser.add_argument("--test-dir", help="Output directory for test files (optional)")
 
     args = parser.parse_args()
 
