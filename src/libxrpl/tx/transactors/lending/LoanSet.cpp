@@ -390,6 +390,19 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        }
+
+        if (auto const ter = verifyValidDomain(view, account_, *domainID, j_); !isTesSuccess(ter))
+            return ter;
+    }
+
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);

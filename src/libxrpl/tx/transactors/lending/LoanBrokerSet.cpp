@@ -30,7 +30,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     if (!validNumericRange(tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
         return temINVALID;
 
-    auto const domainID = tx.at(~sfDomainID);
+    if (!ctx.rules.enabled(fixLendingProtocolV1_1))
+    {
+        if (tx.isFlag(tfLoanBrokerPrivate) || tx.isFieldPresent(sfDomainID))
+        {
+            return temDISABLED;
+        }
+    }
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
@@ -58,6 +64,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         // We're creating a new LoanBroker.
         if (ctx.rules.enabled(fixLendingProtocolV1_1))
         {
+            auto const domainID = tx.at(~sfDomainID);
             if (domainID)
             {
                 if (*domainID == beast::zero)
@@ -71,14 +78,6 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
                     return temINVALID;
                 }
             }
-        }
-    }
-
-    if (!ctx.rules.enabled(fixLendingProtocolV1_1))
-    {
-        if (tx.isFlag(tfLoanBrokerPrivate) || tx.isFieldPresent(sfDomainID))
-        {
-            return temDISABLED;
         }
     }
 
@@ -141,14 +140,17 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    auto const domainID = tx[~sfDomainID];
-    if (domainID && *domainID != beast::zero)
+    if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
     {
-        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
-        if (!sleDomain)
+        auto const domainID = tx[~sfDomainID];
+        if (domainID && *domainID != beast::zero)
         {
-            JLOG(ctx.j.warn()) << "Domain does not exist.";
-            return tecOBJECT_NOT_FOUND;
+            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domainID));
+            if (!sleDomain)
+            {
+                JLOG(ctx.j.warn()) << "Domain does not exist.";
+                return tecOBJECT_NOT_FOUND;
+            }
         }
     }
 
@@ -186,11 +188,9 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
         if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
         {
+            auto const domainID = tx[~sfDomainID];
             if (sleBroker->isFlag(lsfLoanBrokerPrivate) && domainID)
                 return tecNO_PERMISSION;
-        }
-        {
-            return tecNO_PERMISSION;
         }
     }
     else
