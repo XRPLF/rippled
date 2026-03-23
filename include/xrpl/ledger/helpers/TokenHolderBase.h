@@ -2,8 +2,8 @@
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/WrappedSLEBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
