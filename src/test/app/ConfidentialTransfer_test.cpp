@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
@@ -2937,6 +2938,86 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .flags = tfMPTUnauthorize,
             });
+        }
+
+        // removeEmptyHolding: vault share MPToken with confidential balance
+        // fields should not be deleted on VaultWithdraw
+        {
+            Env env{*this, features | featureSingleAssetVault};
+            Account const issuer("issuer");
+            Account const owner("owner");
+            Account const depositor("depositor");
+
+            MPTTester mptt{env, issuer, {.holders = {owner, depositor}}};
+            mptt.create({
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback,
+            });
+            PrettyAsset asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+
+            test::jtx::Vault vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Get the share MPTID from vault
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle != nullptr);
+            MPTID share = vaultSle->at(sfShareMPTID);
+
+            // Depositor deposits into vault
+            tx = vault.deposit(
+                {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Verify depositor has share tokens
+            auto shareMpt = env.le(keylet::mptoken(share, depositor.id()));
+            BEAST_EXPECT(shareMpt != nullptr);
+
+            // Inject confidential balance fields on the share MPToken
+            // to simulate a scenario where vault shares somehow have
+            // confidential balances
+            env.app().openLedger().modify([&](OpenView& view, beast::Journal) {
+                // Set lsfMPTCanConfidentialAmount on the share issuance
+                // so the invariant allows encrypted fields on the MPToken
+                auto issuance = std::const_pointer_cast<SLE>(
+                    view.read(keylet::mptIssuance(share)));
+                if (!issuance)
+                    return false;
+                issuance->setFlag(lsfMPTCanConfidentialAmount);
+                view.rawReplace(issuance);
+
+                auto const k = keylet::mptoken(share, depositor.id());
+                auto sle = std::const_pointer_cast<SLE>(view.read(k));
+                if (!sle)
+                    return false;
+                // Inject dummy confidential balance fields
+                Buffer dummyCiphertext(ecGamalEncryptedTotalLength);
+                std::memset(dummyCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+                dummyCiphertext.data()[0] = ecCompressedPrefixEvenY;
+                dummyCiphertext.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+                dummyCiphertext.data()[ecGamalEncryptedLength - 1] = 0x01;
+                dummyCiphertext.data()[ecGamalEncryptedTotalLength - 1] = 0x01;
+                sle->setFieldVL(sfConfidentialBalanceSpending, dummyCiphertext);
+                sle->setFieldVL(sfConfidentialBalanceInbox, dummyCiphertext);
+                sle->setFieldVL(sfIssuerEncryptedBalance, dummyCiphertext);
+                view.rawReplace(sle);
+                return true;
+            });
+
+            // Withdraw everything - which should fail because of the confidential balance fields
+            tx = vault.withdraw(
+                {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)});
+            env(tx);
+
+            // The share MPToken should still exist because the
+            // withdrawal failed due to confidential balance obligations
+            shareMpt = env.le(keylet::mptoken(share, depositor.id()));
+            BEAST_EXPECT(shareMpt != nullptr);
         }
     }
 
