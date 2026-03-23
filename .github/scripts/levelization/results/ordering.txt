@@ -7,12 +7,10 @@ libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
-libxrpl.ledger > xrpl.core
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
 libxrpl.ledger > xrpl.nodestore
 libxrpl.ledger > xrpl.protocol
-libxrpl.ledger > xrpl.rdb
 libxrpl.net > xrpl.basics
 libxrpl.net > xrpl.net
 libxrpl.nodestore > xrpl.basics
