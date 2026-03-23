@@ -480,6 +480,9 @@ public:
             BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
             BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
             BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
+            // verify flags from previous sponsorship are not carried over
+            BEAST_EXPECT(!sle->isFlag(lsfSponsorshipRequireSignForFee));
+            BEAST_EXPECT(!sle->isFlag(lsfSponsorshipRequireSignForReserve));
 
             // update sponsorship with non-zero value
             env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
