@@ -330,7 +330,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return ret;
     }
 
-    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    if (ctx.view.rules().enabled(fixLendingProtocolV1_1) && brokerSle->isFlag(lsfLoanBrokerPrivate))
     {
         auto const domainID = brokerSle->at(~sfDomainID);
         if (!domainID)

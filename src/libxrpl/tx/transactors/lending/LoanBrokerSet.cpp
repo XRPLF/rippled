@@ -337,13 +337,15 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
-        if (tx.isFlag(tfLoanBrokerPrivate))
+        if (ctx_.view().rules().enabled(fixLendingProtocolV1_1))
         {
-            broker->setFlag(lsfLoanBrokerPrivate);
+            if (tx.isFlag(tfLoanBrokerPrivate))
+            {
+                broker->setFlag(lsfLoanBrokerPrivate);
+                if (auto domainID = tx[~sfDomainID])
+                    broker->setFieldH256(sfDomainID, *domainID);
+            }
         }
-
-        auto const domainID = tx[~sfDomainID];
-        broker->at(~sfDomainID) = domainID;
 
         view.insert(broker);
 
