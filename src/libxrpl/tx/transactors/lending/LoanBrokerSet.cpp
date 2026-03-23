@@ -250,13 +250,21 @@ LoanBrokerSet::doApply()
         if (auto const debtMax = tx[~sfDebtMaximum])
             broker->at(sfDebtMaximum) = *debtMax;
 
-        auto domainID = tx[~sfDomainID];
-        if (domainID && *domainID == beast::zero)
+        if (ctx_.view().rules().enabled(fixLendingProtocolV1_1) &&
+            broker->isFlag(lsfLoanBrokerPrivate))
         {
-            domainID = std::nullopt;
+            if (auto const domainID = tx[~sfDomainID])
+            {
+                if (*domainID != beast::zero)
+                {
+                    broker->setFieldH256(sfDomainID, *domainID);
+                }
+                else if (broker->isFieldPresent(sfDomainID))
+                {
+                    broker->makeFieldAbsent(sfDomainID);
+                }
+            }
         }
-
-        broker->at(~sfDomainID) = domainID;
 
         view.update(broker);
 
