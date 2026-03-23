@@ -5882,7 +5882,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
-        // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
+    // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
     void
