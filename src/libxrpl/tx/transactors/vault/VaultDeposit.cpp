@@ -1,5 +1,5 @@
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
