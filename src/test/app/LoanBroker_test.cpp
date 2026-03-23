@@ -2033,16 +2033,17 @@ class LoanBroker_test : public beast::unit_test::suite
             }
         }
 
-        // Cannot set non-zero DomainID on public broker
+        // Cannot set DomainID on public broker
         env(set(alice, vaultKeylet.key),
             loanBrokerID(publicBrokerKeylet.key),
             domainID(domainId1),
             ter(tecNO_PERMISSION));
 
-        // But zero DomainID on public broker is allowed (no-op)
+        // Cannot set DomainID to even zero on public broker
         env(set(alice, vaultKeylet.key),
             loanBrokerID(publicBrokerKeylet.key),
-            domainID(beast::zero));
+            domainID(beast::zero),
+            ter(tecNO_PERMISSION));
         env.close();
     }
 

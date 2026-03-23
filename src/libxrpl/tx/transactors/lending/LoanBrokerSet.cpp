@@ -52,7 +52,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
         if (ctx.rules.enabled(fixLendingProtocolV1_1))
         {
-             // Cannot change private flag on existing broker
+            // Cannot change private flag on existing broker
             if (tx.isFlag(tfLoanBrokerPrivate))
             {
                 return temINVALID;
@@ -189,7 +189,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
         {
             auto const domainID = tx[~sfDomainID];
-            if (sleBroker->isFlag(lsfLoanBrokerPrivate) && domainID)
+            if (!sleBroker->isFlag(lsfLoanBrokerPrivate) && domainID)
                 return tecNO_PERMISSION;
         }
     }
