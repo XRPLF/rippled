@@ -1894,6 +1894,49 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testGranularSandboxCheckOrder()
+    {
+        testcase("Make sure GranularSandbox is checked after transaction-level permission");
+
+        using namespace jtx;
+
+        Env env(*this);
+        Account gw{"gw"};
+        Account alice{"alice"};
+        Account bob{"bob"};
+        env.fund(XRP(10000), gw, alice, bob);
+
+        // Set up a standard environment where bob CAN authorize
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(alice, gw["USD"](50)));
+        env.close();
+        env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+        env.close();
+
+        env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
+        env.close();
+
+        // sfQualityOut is a valid TrustSet field, but not permitted in granular template
+        Json::Value txJson = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+        txJson[sfQualityOut.jsonName] = 100;
+        env(txJson, delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+        // Now Alice grants Bob with transaction level permission
+        env(delegate::set(gw, bob, {"TrustlineAuthorize", "TrustSet"}));
+        env.close();
+
+        /*
+         * NOTE: This case is to ensure that if a delegate possesses a
+         * transaction-level permission (e.g., TrustSet), the granular sandbox must not incorrectly
+         * block the transaction. The function checkGranularSandbox MUST be called after the
+         * transaction-level permission check. This test case is to avoid future refactor mistakes,
+         * modifying the order will fail here.
+         */
+        env(txJson, delegate::as(bob));
+    }
+
+    void
     testTxDelegableCount()
     {
         testcase("Delegable Transactions Completeness");
@@ -1982,6 +2025,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
         testTxRequireFeatures(all);
+        testGranularSandboxCheckOrder();
         testTxDelegableCount();
         testDelegateUtilsNullptrCheck();
     }

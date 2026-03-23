@@ -81,6 +81,17 @@ public:
     static TxType
     permissionToTxType(uint32_t const& value);
 
+    /**
+     * @brief Verifies a delegated transaction against its granular permission template.
+     *
+     * @note WARNING: Do not move this check before standard transaction-level
+     * format checks, which is in preclaim. This function assumes the transaction's
+     * base structural integrity (fees, sequence, signatures) has already been
+     * validated.
+     *
+     * @param tx The transaction to verify.
+     * @return true if the transaction fields and flags comply with the granular template.
+     */
     [[nodiscard]] bool
     checkGranularSandbox(STTx const& tx) const;
 };
