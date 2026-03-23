@@ -1160,7 +1160,6 @@ class Delegate_test : public beast::unit_test::suite
             Account bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
 
-            // Set up a standard environment where bob CAN authorize
             env(fset(gw, asfRequireAuth));
             env.close();
             env(trust(alice, gw["USD"](50)));
@@ -1950,7 +1949,6 @@ class Delegate_test : public beast::unit_test::suite
         Account bob{"bob"};
         env.fund(XRP(10000), gw, alice, bob);
 
-        // Set up a standard environment where bob CAN authorize
         env(fset(gw, asfRequireAuth));
         env.close();
         env(trust(alice, gw["USD"](50)));
@@ -1970,13 +1968,11 @@ class Delegate_test : public beast::unit_test::suite
         env(delegate::set(gw, bob, {"TrustlineAuthorize", "TrustSet"}));
         env.close();
 
-        /*
-         * NOTE: This case is to ensure that if a delegate possesses a
-         * transaction-level permission (e.g., TrustSet), the granular sandbox must not incorrectly
-         * block the transaction. The function checkGranularSandbox MUST be called after the
-         * transaction-level permission check. This test case is to avoid future refactor mistakes,
-         * modifying the order will fail here.
-         */
+        // NOTE: This case is to ensure that if a delegate possesses a
+        // transaction-level permission (e.g., TrustSet), the granular sandbox must not incorrectly
+        // block the transaction. The function checkGranularSandbox MUST be called after the
+        // transaction-level permission check. This test case is to avoid future refactor mistakes,
+        // modifying the order will fail here.
         env(txJson, delegate::as(bob));
     }
 
