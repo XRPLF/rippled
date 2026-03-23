@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -74,7 +75,9 @@ isVaultPseudoAccountFrozen(
         // LCOV_EXCL_STOP
     }
 
-    return mptIssuance.isAnyFrozen({issuer, account}, depth + 1);
+    auto const vaultAsset = vault->at(sfAsset);
+    auto const token = makeTokenBase(view, vaultAsset);
+    return token->isAnyFrozen({issuer, account}, depth + 1);
 }
 
 bool
