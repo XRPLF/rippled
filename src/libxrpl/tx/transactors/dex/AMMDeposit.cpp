@@ -539,7 +539,12 @@ AMMDeposit::deposit(
         }
 
         res = accountSend(
-            view, accountID_, ammAccount, *amount2DepositActual, ctx_.journal, WaiveTransferFee::Yes);
+            view,
+            accountID_,
+            ammAccount,
+            *amount2DepositActual,
+            ctx_.journal,
+            WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug())
