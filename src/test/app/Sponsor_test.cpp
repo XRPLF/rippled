@@ -273,8 +273,7 @@ public:
 
         auto const vaultSle = env.le(keylet);
         BEAST_EXPECT(vaultSle);
-        Account const pseudoAcc(
-            "vault", vaultSle->getAccountID(sfAccount));
+        Account const pseudoAcc("vault", vaultSle->getAccountID(sfAccount));
         env.memoize(pseudoAcc);
 
         // Sponsee is a pseudo account -> tecNO_PERMISSION
@@ -5288,7 +5287,7 @@ public:
             env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
                 batch::inner(noop(alice), seq + 1),
                 batch::inner(ticket::create(alice, 1), seq + 2),
-                sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                sponsor::as(sponsor, spfSponsorFee),
                 sig(sfSponsorSignature, sponsor),
                 ter(tesSUCCESS));
             env.close();
@@ -5301,6 +5300,24 @@ public:
             // fee is paid by sponsor
             BEAST_EXPECT(env.balance(alice) == XRP(1000));
             BEAST_EXPECT(env.balance(sponsor) == XRP(1000 - 1));
+        }
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            // spfSponsorReserve on outer Batch is rejected
+            for (auto const flags : {spfSponsorReserve | spfSponsorFee, spfSponsorReserve})
+            {
+                auto const seq = env.seq(alice);
+                env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                    batch::inner(noop(alice), seq + 1),
+                    batch::inner(noop(alice), seq + 2),
+                    sponsor::as(sponsor, flags),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(temINVALID_FLAG));
+                env.close();
+            }
         }
         {
             // test outer transaction with prefunded sponsor
@@ -5319,7 +5336,7 @@ public:
             env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
                 batch::inner(noop(alice), seq + 1),
                 batch::inner(ticket::create(alice, 1), seq + 2),
-                sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                sponsor::as(sponsor, spfSponsorFee),
                 ter(tesSUCCESS));
             env.close();
 
