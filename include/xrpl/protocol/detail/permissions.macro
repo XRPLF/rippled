@@ -69,7 +69,6 @@ GRANULAR_TEMPLATE(ttPAYMENT, tfPartialPayment | tfLimitQuality | tfNoRippleDirec
    ({{sfDestination, soeREQUIRED},
       {sfAmount, soeREQUIRED},
       {sfSendMax, soeOPTIONAL},
-      {sfPaths, soeDEFAULT},
       {sfInvoiceID, soeOPTIONAL},
       {sfDestinationTag, soeOPTIONAL},
       {sfDeliverMin, soeOPTIONAL},
