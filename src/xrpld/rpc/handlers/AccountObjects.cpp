@@ -239,7 +239,18 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::none));
+            bool canAppendNFT = true;
+            if (sponsored.has_value())
+            {
+                std::optional<AccountID> const nftSponsor =
+                    cp->isFieldPresent(sfSponsor)
+                        ? cp->getAccountID(sfSponsor)
+                        : std::optional<AccountID>(std::nullopt);
+                if (!sponsoredMatchesFilter(sponsored.value(), nftSponsor))
+                    canAppendNFT = false;
+            }
+            if (canAppendNFT)
+                jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {

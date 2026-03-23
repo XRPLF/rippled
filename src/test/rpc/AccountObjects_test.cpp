@@ -1449,6 +1449,41 @@ public:
             }
             BEAST_EXPECT(!foundSponsoredTrustLine);
         }
+
+        // NFT page sponsored filter
+        {
+            // Mint an NFT for bob (creates NFT page)
+            env(token::mint(bob, 0));
+            env.close();
+
+            auto const nftPageKeylet = keylet::nftpage_max(bob);
+            BEAST_EXPECT(env.le(nftPageKeylet));
+
+            // Sponsor the NFT page
+            env(sponsor::transfer(bob, tfSponsorshipCreate, nftPageKeylet.key),
+                sponsor::as(sponsor1, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor1));
+            env.close();
+
+            // Verify NFT page has sponsor field
+            BEAST_EXPECT(env.le(nftPageKeylet)->isFieldPresent(sfSponsor));
+
+            // sponsored=true should include the sponsored NFT page
+            // sponsored=false should NOT include the sponsored NFT page
+            for (auto const sponsored : {true, false})
+            {
+                auto const resp = acctObjsSponsored(bob.id(), sponsored);
+                auto const& objs = resp[jss::result][jss::account_objects];
+                bool foundNFTPage = false;
+                for (auto const& obj : objs)
+                {
+                    if (obj[sfLedgerEntryType.jsonName] == jss::NFTokenPage &&
+                        obj.isMember(sfSponsor.jsonName))
+                        foundNFTPage = true;
+                }
+                BEAST_EXPECT(foundNFTPage == sponsored);
+            }
+        }
     }
 
     void
