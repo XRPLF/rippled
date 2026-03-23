@@ -1475,6 +1475,39 @@ public:
             // Payment is re-applied
             BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
         }
+
+        // RequireSignForFee: co-signing should succeed
+        {
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // set flag
+            env(sponsor::set_fee(sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
+            env.close();
+
+            // pre-funded (no sig) should fail
+            env(pay(alice, bob, XRP(100)),
+                fee(XRP(1)),
+                sponsor::as(sponsor, spfSponsorFee),
+                ter(terNO_SPONSORSHIP));
+            env.close();
+
+            // co-signing (with sig) should succeed
+            env(pay(alice, bob, XRP(100)),
+                fee(XRP(1)),
+                sponsor::as(sponsor, spfSponsorFee),
+                sig(sfSponsorSignature, sponsor),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(
+                env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount) == XRP(9));
+        }
     }
 
     void
