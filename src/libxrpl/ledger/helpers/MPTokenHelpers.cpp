@@ -504,15 +504,14 @@ rippleLockEscrowMPT(
     // 1. Decrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
     {
-        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), sender);
-        auto sle = view.peek(mptokenID);
-        if (!sle)
+        auto mptoken = WritableMPToken(mptIssuance, sender);
+        if (!mptoken.exists())
         {  // LCOV_EXCL_START
             JLOG(j.error()) << "rippleLockEscrowMPT: MPToken not found for " << sender;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
-        auto const amt = sle->getFieldU64(sfMPTAmount);
+        auto const amt = mptoken->getFieldU64(sfMPTAmount);
         auto const pay = amount.mpt().value();
 
         // Underflow check for subtraction
@@ -523,10 +522,10 @@ rippleLockEscrowMPT(
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        (*sle)[sfMPTAmount] = amt - pay;
+        (*mptoken)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
+        uint64_t const locked = (*mptoken)[~sfLockedAmount].value_or(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
@@ -535,16 +534,16 @@ rippleLockEscrowMPT(
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        if (sle->isFieldPresent(sfLockedAmount))
+        if (mptoken->isFieldPresent(sfLockedAmount))
         {
-            (*sle)[sfLockedAmount] += pay;
+            (*mptoken)[sfLockedAmount] += pay;
         }
         else
         {
-            sle->setFieldU64(sfLockedAmount, pay);
+            mptoken->setFieldU64(sfLockedAmount, pay);
         }
 
-        view.update(sle);
+        mptoken.update();
     }
 
     // 1. Increase the Issuance EscrowedAmount
@@ -800,6 +799,12 @@ MPTokenIssuance::accountHolds(
     }
 
     return amount;
+}
+
+std::unique_ptr<TokenHolderBase>
+MPTokenIssuance::getHolder(AccountID const& holder) const
+{
+    return std::make_unique<MPToken>(*this, holder);
 }
 
 }  // namespace xrpl

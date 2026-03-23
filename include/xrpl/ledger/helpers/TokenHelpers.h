@@ -44,15 +44,14 @@ enum class WaiveTransferFee : bool { No = false, Yes };
  */
 enum class AuthType { StrongAuth, WeakAuth, Legacy };
 
-//------------------------------------------------------------------------------
-//
-// Freeze checking (Asset-based dispatchers)
-//
-//------------------------------------------------------------------------------
+class TokenHolderBase;
 
 class TokenBase : public virtual ReadOnlySLE
 {
 public:
+    [[nodiscard]] virtual AccountID const&
+    getIssuer() const = 0;
+
     [[nodiscard]] virtual bool
     isGlobalFrozen() const = 0;
 
@@ -153,6 +152,9 @@ public:
     [[nodiscard]] virtual bool
     canClawback() const = 0;
 
+    [[nodiscard]] virtual bool
+    canEscrow() const = 0;
+
     /** Check if the token requires authorization for holders.
      * For IOUs, checks lsfRequireAuth on issuer's AccountRoot.
      * For MPTs, checks lsfMPTRequireAuth on the issuance.
@@ -165,6 +167,12 @@ public:
 
     [[nodiscard]] virtual bool
     hasHolder(AccountID const& holder) const = 0;
+
+    [[nodiscard]] virtual TER
+    checkHolder(AccountID const& holder) const = 0;
+
+    [[nodiscard]] virtual std::unique_ptr<TokenHolderBase>
+    getHolder(AccountID const& holder) const = 0;
 
 protected:
     TokenBase(ReadView const& view, std::shared_ptr<SLE const> sle) : ReadOnlySLE(sle, view)

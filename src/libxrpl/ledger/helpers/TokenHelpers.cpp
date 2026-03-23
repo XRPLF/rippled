@@ -305,6 +305,7 @@ rippleCreditIOU(
 {
     AccountID const& issuer = saAmount.getIssuer();
     Currency const& currency = saAmount.getCurrency();
+    WritableIOUToken token(view, issuer, currency);
 
     // Make sure issuer is involved.
     XRPL_ASSERT(
@@ -316,7 +317,6 @@ rippleCreditIOU(
     XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleCreditIOU : sender is not receiver");
 
     bool const bSenderHigh = uSenderID > uReceiverID;
-    auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
     XRPL_ASSERT(
         !isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::rippleCreditIOU : sender is not XRP");
@@ -325,9 +325,10 @@ rippleCreditIOU(
         "xrpl::rippleCreditIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
-    if (auto const sleRippleState = view.peek(index))
+    auto rippleState = WritableRippleState(view, token, uSenderID);
+    if (rippleState.exists())
     {
-        STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
+        STAmount saBalance = rippleState->getFieldAmount(sfBalance);
 
         if (bSenderHigh)
             saBalance.negate();  // Put balance in sender terms.
@@ -343,7 +344,7 @@ rippleCreditIOU(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
-        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
+        std::uint32_t const uFlags(rippleState->getFieldU32(sfFlags));
         bool bDelete = false;
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
@@ -357,11 +358,11 @@ rippleCreditIOU(
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
                 static_cast<bool>(AccountRoot(uSenderID, view)->getFlags() & lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
-            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
+            !rippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            && !rippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            && !rippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -369,7 +370,7 @@ rippleCreditIOU(
             wrappedSender.adjustOwnerCount(-1, j);
 
             // Clear reserve flag.
-            sleRippleState->setFieldU32(
+            rippleState->setFieldU32(
                 sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
             // Balance is zero, receiver reserve is clear.
@@ -382,20 +383,20 @@ rippleCreditIOU(
             saBalance.negate();
 
         // Want to reflect balance to zero even if we are deleting line.
-        sleRippleState->setFieldAmount(sfBalance, saBalance);
+        rippleState->setFieldAmount(sfBalance, saBalance);
         // ONLY: Adjust ripple balance.
 
         if (bDelete)
         {
             return WritableRippleState::trustDelete(
                 view,
-                sleRippleState,
+                rippleState.mutableSle(),
                 bSenderHigh ? uReceiverID : uSenderID,
                 !bSenderHigh ? uReceiverID : uSenderID,
                 j);
         }
 
-        view.update(sleRippleState);
+        rippleState.update();
         return tesSUCCESS;
     }
 
@@ -414,6 +415,8 @@ rippleCreditIOU(
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     bool const noRipple = (wrappedAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
     return WritableRippleState::trustCreate(
         view,
@@ -814,7 +817,7 @@ rippleCreditMPT(
     beast::Journal j)
 {
     // Do not check MPT authorization here - it must have been checked earlier
-    WritableMPTokenIssuance mptIssuance(view, saAmount.get<MPTIssue>().getMptID());
+    WritableMPTokenIssuance mptIssuance(view, saAmount.get<MPTIssue>());
     auto const& issuer = saAmount.getIssuer();
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
@@ -830,8 +833,15 @@ rippleCreditMPT(
         {
             auto const amt = mpt->getFieldU64(sfMPTAmount);
             auto const pay = saAmount.mpt().value();
-            if (amt < pay)
+            if (view.rules().enabled(fixTypeSafetyRefactor))
+            {
+                if (!canSubtract(STAmount(mpt.getMptIssue(), amt), saAmount))
+                    return tecINSUFFICIENT_FUNDS;
+            }
+            else if (amt < pay)
+            {
                 return tecINSUFFICIENT_FUNDS;
+            }
             (*mpt)[sfMPTAmount] = amt - pay;
             mpt.update();
         }

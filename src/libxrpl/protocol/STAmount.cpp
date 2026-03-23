@@ -1717,4 +1717,28 @@ divRoundStrict(STAmount const& num, STAmount const& den, Asset const& asset, boo
     return divRoundImpl<NumberRoundModeGuard>(num, den, asset, roundUp);
 }
 
+NotTEC
+checkAmount(STAmount const& amount)
+{
+    if (amount.native())
+    {
+        if (amount <= beast::zero)
+            return temBAD_AMOUNT;
+    }
+    else if (amount.holds<Issue>())
+    {
+        if (amount.native() || amount <= beast::zero)
+            return temBAD_AMOUNT;
+
+        if (badCurrency() == amount.getCurrency())
+            return temBAD_CURRENCY;
+    }
+    else if (amount.holds<MPTIssue>())
+    {
+        if (amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero)
+            return temBAD_AMOUNT;
+    }
+    return tesSUCCESS;
+}
+
 }  // namespace xrpl

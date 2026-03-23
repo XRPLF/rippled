@@ -924,4 +924,10 @@ deleteAMMTrustLine(
     return tesSUCCESS;
 }
 
+std::unique_ptr<TokenHolderBase>
+IOUToken::getHolder(AccountID const& holder) const
+{
+    return std::make_unique<RippleState>(*this, holder);
+}
+
 }  // namespace xrpl
