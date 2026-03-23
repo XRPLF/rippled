@@ -1,7 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -85,6 +84,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         if (!sendMax.native())
         {
             IOUToken const iouToken(ctx.view, sendMax.issue());
+            auto const issuerId = iouToken.getIssuer();
 
             // The currency may not be globally frozen
             if (iouToken.isGlobalFrozen())
@@ -98,15 +98,27 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
             // Note that we DO allow create check for a currency that the
             // account does not yet have a trustline to.
             AccountID const srcId{ctx.tx.getAccountID(sfAccount)};
-            if (iouToken.isFrozen(srcId))
+            if (issuerId != srcId)
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
-                return tecFROZEN;
+                // Check if the issuer froze the line
+                auto const sleTrust =
+                    ctx.view.read(keylet::line(srcId, issuerId, sendMax.getCurrency()));
+                if (sleTrust && sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
+                {
+                    JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
+                    return tecFROZEN;
+                }
             }
-            if (iouToken.isFrozen(dstId))
+            if (issuerId != dstId)
             {
-                JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
-                return tecFROZEN;
+                // Check if dst froze the line.
+                auto const sleTrust =
+                    ctx.view.read(keylet::line(issuerId, dstId, sendMax.getCurrency()));
+                if (sleTrust && sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
+                {
+                    JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
+                    return tecFROZEN;
+                }
             }
         }
     }

@@ -79,13 +79,11 @@ accountFundsHelper(
     ReadView const& view,
     AccountID const& id,
     STAmount const& saDefault,
-    Issue const& issue,
+    Issue const&,
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    if (!saDefault.native() && saDefault.getIssuer() == id)
-        return saDefault;
-    return IOUToken(view, issue).accountHolds(id, freezeHandling, j);
+    return IOUToken(view, saDefault.issue()).accountFunds(id, saDefault, freezeHandling, j);
 }
 
 static IOUAmount
@@ -102,6 +100,7 @@ accountFundsHelper(
         // self funded
         return amtDefault;
     }
+
     return toAmount<IOUAmount>(IOUToken(view, issue).accountHolds(id, freezeHandling, j));
 }
 
@@ -109,7 +108,7 @@ static XRPAmount
 accountFundsHelper(
     ReadView const& view,
     AccountID const& id,
-    XRPAmount const& amtDefault,
+    XRPAmount const&,
     Issue const& issue,
     FreezeHandling freezeHandling,
     beast::Journal j)

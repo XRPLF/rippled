@@ -3,7 +3,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -873,13 +872,9 @@ tokenOfferCreatePreclaim(
     {
         // We allow an IOU issuer to make a buy offer
         // using their own currency.
-        auto const funds = [&]() -> STAmount {
-            if (!amount.native() && amount.getIssuer() == acctID)
-                return amount;
-            return makeTokenBase(view, amount.asset())
-                ->accountHolds(acctID, FreezeHandling::fhZERO_IF_FROZEN, j);
-        }();
-        if (funds.signum() <= 0)
+        if (IOUToken(view, amount.issue())
+                .accountFunds(acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j)
+                .signum() <= 0)
             return tecUNFUNDED_OFFER;
     }
 

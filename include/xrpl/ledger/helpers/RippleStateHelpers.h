@@ -91,6 +91,19 @@ public:
         beast::Journal j,
         SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
 
+    /** Returns the funds available for account to pay for an amount.
+     *
+     * If the account is the issuer of the currency, it can always
+     * afford to pay (returns saDefault as-is). Otherwise, returns
+     * the result of accountHolds.
+     */
+    [[nodiscard]] STAmount
+    accountFunds(
+        AccountID const& id,
+        STAmount const& saDefault,
+        FreezeHandling freezeHandling,
+        beast::Journal j) const;
+
     [[nodiscard]] TER
     canAddHolding() const override;
 
