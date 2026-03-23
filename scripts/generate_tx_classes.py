@@ -147,27 +147,10 @@ def main():
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
-    parser.add_argument(
-        "--list-outputs",
-        action="store_true",
-        help="List output files without generating (one per line)",
-    )
-
     args = parser.parse_args()
 
     # Parse the macro file to get transaction names
     transactions = parse_macro_file(args.macro_path)
-
-    # If --list-outputs, just print the output file paths and exit
-    if args.list_outputs:
-        header_dir = Path(args.header_dir)
-        for tx in transactions:
-            print(header_dir / f"{tx['name']}.h")
-        if args.test_dir:
-            test_dir = Path(args.test_dir)
-            for tx in transactions:
-                print(test_dir / f"{tx['name']}Tests.cpp")
-        return
 
     # Auto-detect sfields.macro path if not provided
     if args.sfields_macro:

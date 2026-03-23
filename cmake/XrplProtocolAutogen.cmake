@@ -33,6 +33,7 @@ function(setup_protocol_autogen)
     set(SFIELDS_MACRO "${MACRO_DIR}/sfields.macro")
 
     # Python scripts and templates
+    set(LIST_OUTPUTS_SCRIPT "${SCRIPTS_DIR}/list_outputs.py")
     set(GENERATE_TX_SCRIPT "${SCRIPTS_DIR}/generate_tx_classes.py")
     set(GENERATE_LEDGER_SCRIPT "${SCRIPTS_DIR}/generate_ledger_classes.py")
     set(REQUIREMENTS_FILE "${SCRIPTS_DIR}/requirements.txt")
@@ -81,100 +82,31 @@ function(setup_protocol_autogen)
 
     message(STATUS "Using Python3 for code generation: ${Python3_EXECUTABLE}")
 
-    # Set up Python virtual environment for code generation
+    # Determine venv directory and Python executable paths
     if(CODEGEN_VENV_DIR)
-        # User-provided venv - skip automatic setup
         set(VENV_DIR "${CODEGEN_VENV_DIR}")
         message(STATUS "Using user-provided Python venv: ${VENV_DIR}")
     else()
-        # Use default venv in build directory
         set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
     endif()
 
-    # Determine the Python executable path in the venv
     if(WIN32)
         set(VENV_PYTHON "${VENV_DIR}/Scripts/python.exe")
-        set(VENV_PIP "${VENV_DIR}/Scripts/pip.exe")
     else()
         set(VENV_PYTHON "${VENV_DIR}/bin/python")
-        set(VENV_PIP "${VENV_DIR}/bin/pip")
     endif()
 
-    # Only auto-setup venv if not user-provided
-    if(NOT CODEGEN_VENV_DIR)
-        # Check if venv needs to be created or updated
-        set(VENV_NEEDS_UPDATE FALSE)
-        if(NOT EXISTS "${VENV_PYTHON}")
-            set(VENV_NEEDS_UPDATE TRUE)
-            message(
-                STATUS
-                "Creating Python virtual environment for code generation..."
-            )
-        elseif(
-            "${REQUIREMENTS_FILE}"
-                IS_NEWER_THAN
-                "${VENV_DIR}/.requirements_installed"
-        )
-            set(VENV_NEEDS_UPDATE TRUE)
-            message(
-                STATUS
-                "Updating Python virtual environment (requirements changed)..."
-            )
-        endif()
+    # Stamp file that tracks whether the venv is up to date
+    set(VENV_STAMP_FILE "${VENV_DIR}/.requirements_installed")
 
-        # Create/update virtual environment if needed
-        if(VENV_NEEDS_UPDATE)
-            message(
-                STATUS
-                "Setting up Python virtual environment at ${VENV_DIR}"
-            )
-            execute_process(
-                COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_DIR}"
-                RESULT_VARIABLE VENV_RESULT
-                ERROR_VARIABLE VENV_ERROR
-            )
-            if(NOT VENV_RESULT EQUAL 0)
-                message(
-                    FATAL_ERROR
-                    "Failed to create virtual environment: ${VENV_ERROR}"
-                )
-            endif()
-
-            message(STATUS "Installing Python dependencies...")
-            execute_process(
-                COMMAND ${VENV_PIP} install --upgrade pip
-                RESULT_VARIABLE PIP_UPGRADE_RESULT
-                OUTPUT_QUIET
-                ERROR_VARIABLE PIP_UPGRADE_ERROR
-            )
-            if(NOT PIP_UPGRADE_RESULT EQUAL 0)
-                message(WARNING "Failed to upgrade pip: ${PIP_UPGRADE_ERROR}")
-            endif()
-
-            execute_process(
-                COMMAND ${VENV_PIP} install -r "${REQUIREMENTS_FILE}"
-                RESULT_VARIABLE PIP_INSTALL_RESULT
-                ERROR_VARIABLE PIP_INSTALL_ERROR
-            )
-            if(NOT PIP_INSTALL_RESULT EQUAL 0)
-                message(
-                    FATAL_ERROR
-                    "Failed to install Python dependencies: ${PIP_INSTALL_ERROR}"
-                )
-            endif()
-
-            # Mark requirements as installed
-            file(TOUCH "${VENV_DIR}/.requirements_installed")
-            message(STATUS "Python virtual environment ready")
-        endif()
-    endif()
-
-    # At configure time - get list of output files for transactions
+    # At configure time - list output files using the stdlib-only list_outputs.py
+    # (no venv required, so configure remains fast)
     execute_process(
         COMMAND
-            ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
-            "${AUTOGEN_TEST_DIR}/transactions" --list-outputs
+            ${Python3_EXECUTABLE} "${LIST_OUTPUTS_SCRIPT}"
+            "${TRANSACTIONS_MACRO}" --type transaction --header-dir
+            "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
+            "${AUTOGEN_TEST_DIR}/transactions"
         OUTPUT_VARIABLE TX_OUTPUT_FILES
         OUTPUT_STRIP_TRAILING_WHITESPACE
         RESULT_VARIABLE TX_LIST_RESULT
@@ -186,16 +118,15 @@ function(setup_protocol_autogen)
             "Failed to list transaction output files:\n${TX_LIST_ERROR}"
         )
     endif()
-    # Convert newline-separated list to CMake list
     string(REPLACE "\\" "/" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
     string(REPLACE "\n" ";" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
 
-    # At configure time - get list of output files for ledger entries
     execute_process(
         COMMAND
-            ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
-            "${AUTOGEN_TEST_DIR}/ledger_entries" --list-outputs
+            ${Python3_EXECUTABLE} "${LIST_OUTPUTS_SCRIPT}"
+            "${LEDGER_ENTRIES_MACRO}" --type ledger_entry --header-dir
+            "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
+            "${AUTOGEN_TEST_DIR}/ledger_entries"
         OUTPUT_VARIABLE LEDGER_OUTPUT_FILES
         OUTPUT_STRIP_TRAILING_WHITESPACE
         RESULT_VARIABLE LEDGER_LIST_RESULT
@@ -207,9 +138,25 @@ function(setup_protocol_autogen)
             "Failed to list ledger entry output files:\n${LEDGER_LIST_ERROR}"
         )
     endif()
-    # Convert newline-separated list to CMake list
     string(REPLACE "\\" "/" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
     string(REPLACE "\n" ";" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
+
+    # Build-time venv setup (only when not using a user-provided venv)
+    if(NOT CODEGEN_VENV_DIR)
+        add_custom_command(
+            OUTPUT "${VENV_STAMP_FILE}"
+            COMMAND
+                ${CMAKE_COMMAND}
+                    -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
+                    -DVENV_DIR=${VENV_DIR}
+                    -DREQUIREMENTS_FILE=${REQUIREMENTS_FILE}
+                    -DSTAMP_FILE=${VENV_STAMP_FILE}
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SetupCodegenVenv.cmake"
+            DEPENDS "${REQUIREMENTS_FILE}"
+            COMMENT "Setting up Python virtual environment for code generation..."
+            VERBATIM
+        )
+    endif()
 
     # Custom command to generate transaction classes at build time
     add_custom_command(
@@ -221,6 +168,7 @@ function(setup_protocol_autogen)
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
+            "${VENV_STAMP_FILE}"
             "${TRANSACTIONS_MACRO}"
             "${SFIELDS_MACRO}"
             "${GENERATE_TX_SCRIPT}"
@@ -242,6 +190,7 @@ function(setup_protocol_autogen)
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
+            "${VENV_STAMP_FILE}"
             "${LEDGER_ENTRIES_MACRO}"
             "${SFIELDS_MACRO}"
             "${GENERATE_LEDGER_SCRIPT}"
