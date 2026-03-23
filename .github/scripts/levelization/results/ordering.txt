@@ -9,7 +9,6 @@ libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
-libxrpl.ledger > xrpl.nodestore
 libxrpl.ledger > xrpl.protocol
 libxrpl.net > xrpl.basics
 libxrpl.net > xrpl.net
