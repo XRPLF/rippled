@@ -96,7 +96,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (!ownerNode)
             return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
+        auto mptIssuance = WritableMPTokenIssuance::makeNew(mptId, view);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
@@ -121,7 +121,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
-        view.insert(mptIssuance);
+        mptIssuance.update();
     }
 
     // Update owner count.

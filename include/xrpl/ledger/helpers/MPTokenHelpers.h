@@ -215,6 +215,36 @@ public:
 
     [[nodiscard]] TER
     removeEmptyHolding(AccountID const& accountID, beast::Journal journal) override;
+
+    /** Create a WritableMPTokenIssuance backed by a brand-new SLE
+     *  (not yet inserted into the view).
+     */
+    [[nodiscard]] static WritableMPTokenIssuance
+    makeNew(MPTID const& mptID, ApplyView& view)
+    {
+        return WritableMPTokenIssuance(
+            mptID, std::make_shared<SLE>(keylet::mptIssuance(mptID)), view);
+    }
+
+    [[nodiscard]] static WritableMPTokenIssuance
+    makeNew(std::uint32_t const seq, AccountID const& issuer, ApplyView& view)
+    {
+        auto const mptID = makeMptID(seq, issuer);
+        return WritableMPTokenIssuance(
+            mptID, std::make_shared<SLE>(keylet::mptIssuance(mptID)), view);
+    }
+
+private:
+    // This is a private constructor only used by `makeNew`
+    WritableMPTokenIssuance(MPTID const& mptID, std::shared_ptr<SLE> sle, ApplyView& view)
+        : ReadOnlySLE(sle, view)
+        , TokenBase(view, sle)
+        , WritableSLE(sle, view)
+        , WritableTokenBase(view, sle)
+        , MPTokenIssuance(view, mptID)
+    {
+        insert();
+    }
 };
 
 //------------------------------------------------------------------------------

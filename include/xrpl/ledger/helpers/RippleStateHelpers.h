@@ -174,6 +174,34 @@ public:
 
     [[nodiscard]] TER
     removeEmptyHolding(AccountID const& accountID, beast::Journal journal) override;
+
+    /** Create a WritableIOUToken backed by a brand-new SLE
+     *  (not yet inserted into the view).
+     */
+    [[nodiscard]] static WritableIOUToken
+    makeNew(AccountID const& id, Currency const& currency, ApplyView& view)
+    {
+        return makeNew(Issue{currency, id}, view);
+    }
+
+    [[nodiscard]] static WritableIOUToken
+    makeNew(Issue const& issue, ApplyView& view)
+    {
+        return WritableIOUToken(
+            issue, view, std::make_shared<SLE>(keylet::account(issue.getIssuer())));
+    }
+
+private:
+    // This is a private constructor only used by `makeNew`
+    WritableIOUToken(Issue const& issue, ApplyView& view, std::shared_ptr<SLE> sle)
+        : ReadOnlySLE(sle, view)
+        , TokenBase(view, sle)
+        , WritableSLE(sle, view)
+        , WritableTokenBase(view, sle)
+        , IOUToken(view, issue)
+    {
+        insert();
+    }
 };
 
 //------------------------------------------------------------------------------
