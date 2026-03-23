@@ -112,9 +112,10 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
-        txFlags & tfSponsorshipSetRequireSignForFee;
+        (txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee));
     auto const sponsoringReserve =
-        tx.isFieldPresent(sfReserveCount) || txFlags & tfSponsorshipSetRequireSignForReserve;
+        tx.isFieldPresent(sfReserveCount) ||
+        (txFlags & (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve));
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;

@@ -5138,6 +5138,11 @@ public:
                     sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
+                // ClearRequireSignForFee flag
+                env(sponsor::set(alice, tfSponsorshipClearRequireSignForFee),
+                    sponsor::sponseeAcc(bob),
+                    delegate::as(carol),
+                    ter(result));
                 env.close();
             };
 
@@ -5179,6 +5184,11 @@ public:
                     ter(result));
                 // SetRequireSignForReserve flag
                 env(sponsor::set(alice, tfSponsorshipSetRequireSignForReserve),
+                    sponsor::sponseeAcc(bob),
+                    delegate::as(carol),
+                    ter(result));
+                // ClearRequireSignForReserve flag
+                env(sponsor::set(alice, tfSponsorshipClearRequireSignForReserve),
                     sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
