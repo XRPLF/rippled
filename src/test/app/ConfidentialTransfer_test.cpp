@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
@@ -6301,6 +6302,212 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
+    // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
+    // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
+    // sequence numbers.
+    void
+    testWithTickets(FeatureBitset features)
+    {
+        testcase("Confidential transfer with tickets");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        // MPTokenIssuanceSet with ticket, registers alice's issuer key.
+        {
+            std::uint32_t const ticketSeq = env.seq(alice) + 1;
+            env(ticket::create(alice, 1));
+            mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice), .ticketSeq = ticketSeq});
+        }
+
+        // ConfidentialMPTConvert with ticket, first convert registers bob's key.
+        {
+            std::uint32_t const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            mptAlice.convert(
+                {.account = bob,
+                 .amt = 50,
+                 .holderPubKey = mptAlice.getPubKey(bob),
+                 .ticketSeq = ticketSeq});
+            env.require(mptbalance(mptAlice, bob, 50));
+        }
+
+        // ConfidentialMPTConvert with ticket
+        {
+            std::uint32_t const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            mptAlice.convert({.account = bob, .amt = 20, .ticketSeq = ticketSeq});
+            env.require(mptbalance(mptAlice, bob, 30));
+        }
+
+        // ConfidentialMPTMergeInbox with ticket.
+        {
+            std::uint32_t const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            mptAlice.mergeInbox({.account = bob, .ticketSeq = ticketSeq});
+        }
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // ConfidentialMPTSend with ticket.
+        {
+            std::uint32_t const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            mptAlice.send({.account = bob, .dest = carol, .amt = 10, .ticketSeq = ticketSeq});
+        }
+
+        // Merge carol's inbox so her spending balance includes the received send.
+        mptAlice.mergeInbox({.account = carol});
+
+        // ConfidentialMPTConvertBack with ticket.
+        // The convertBack proof context hash must use the ticket sequence.
+        {
+            std::uint32_t const ticketSeq = env.seq(carol) + 1;
+            env(ticket::create(carol, 1));
+            mptAlice.convertBack({.account = carol, .amt = 10, .ticketSeq = ticketSeq});
+            // carol converted 50, received 10 from bob, then converted back 10 → public 60
+            env.require(mptbalance(mptAlice, carol, 60));
+        }
+    }
+
+    // Verifies that cryptographic proofs in Convert transactions are bound to
+    // the ticket sequence rather than the account sequence.
+    // A proof built with the ticket sequence passes.
+    void
+    testConvertTicketProofBinding(FeatureBitset features)
+    {
+        testcase("Convert proof binds to ticket sequence");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+        mptAlice.generateKeyPair(bob);
+
+        uint64_t const amt = 30;
+        Buffer const bf = generateBlindingFactor();
+        Buffer const holderCt = mptAlice.encryptAmount(bob, amt, bf);
+        Buffer const issuerCt = mptAlice.encryptAmount(alice, amt, bf);
+
+        std::uint32_t const ticketSeq1 = env.seq(bob) + 1;
+        env(ticket::create(bob, 1));
+
+        // Invalid: Schnorr proof built with the account seq (env.seq(bob)) rather
+        // than the ticket seq (ticketSeq1).
+        {
+            BEAST_EXPECT(env.seq(bob) != ticketSeq1);
+            uint256 const badCtxHash =
+                getConvertContextHash(bob, mptAlice.issuanceID(), env.seq(bob));
+            auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
+            BEAST_EXPECT(badProof.has_value());
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = amt,
+                .proof = strHex(*badProof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCt,
+                .issuerEncryptedAmt = issuerCt,
+                .blindingFactor = bf,
+                .ticketSeq = ticketSeq1,
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        std::uint32_t const ticketSeq2 = env.seq(bob) + 1;
+        env(ticket::create(bob, 1));
+
+        // Valid: proof auto-generated by convert() using ticketSeq2; context hashes match.
+        mptAlice.convert({
+            .account = bob,
+            .amt = amt,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .holderEncryptedAmt = holderCt,
+            .issuerEncryptedAmt = issuerCt,
+            .blindingFactor = bf,
+            .ticketSeq = ticketSeq2,
+        });
+        env.require(mptbalance(mptAlice, bob, 70));
+    }
+
+    // Exercises ticket-specific error codes for confidential transfer transactions:
+    // terPRE_TICKET when the ticket doesn't exist yet, and tefNO_TICKET when
+    // the ticket has already been consumed or was never created.
+    void
+    testTicketErrors(FeatureBitset features)
+    {
+        testcase("Confidential transfer ticket errors");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+        mptAlice.generateKeyPair(bob);
+
+        // Give bob an inbox balance so MergeInbox has something to merge.
+        mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob)});
+
+        // Use MergeInbox as the confidential transfer transaction under test
+        // so that ticket errors are isolated from cryptographic verification.
+
+        // terPRE_TICKET: ticket sequence is far in the future and hasn't been created.
+        mptAlice.mergeInbox(
+            {.account = bob, .ticketSeq = env.seq(bob) + 100, .err = terPRE_TICKET});
+
+        // Create one ticket and use it successfully.
+        std::uint32_t const ticketSeq = env.seq(bob) + 1;
+        env(ticket::create(bob, 1));
+        mptAlice.mergeInbox({.account = bob, .ticketSeq = ticketSeq});
+
+        // tefNO_TICKET: attempt to reuse the same (already-consumed) ticket.
+        mptAlice.mergeInbox({.account = bob, .ticketSeq = ticketSeq, .err = tefNO_TICKET});
+
+        // tefNO_TICKET: ticket sequence is in the past but was never created.
+        mptAlice.mergeInbox({.account = bob, .ticketSeq = 1, .err = tefNO_TICKET});
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -6355,6 +6562,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testProofContextBinding(features);
         testProofCiphertextBinding(features);
         testProofVersionMismatch(features);
+
+        // Ticket Tests
+        testWithTickets(features);
+        testConvertTicketProofBinding(features);
+        testTicketErrors(features);
     }
 
 public:
