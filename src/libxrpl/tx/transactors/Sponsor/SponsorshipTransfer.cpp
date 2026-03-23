@@ -34,7 +34,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve should not be set when creating sponsorship";
+                << "preflight: spfSponsorReserve should be set when creating sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
