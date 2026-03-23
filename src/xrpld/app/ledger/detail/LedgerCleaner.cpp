@@ -93,7 +93,9 @@ public:
         std::lock_guard lock(mutex_);
 
         if (maxRange_ == 0)
+        {
             map["status"] = "idle";
+        }
         else
         {
             map["status"] = "running";
@@ -356,10 +358,10 @@ private:
 
         while (!shouldExit())
         {
-            LedgerIndex ledgerIndex;
+            LedgerIndex ledgerIndex = 0;
             LedgerHash ledgerHash;
-            bool doNodes;
-            bool doTxns;
+            bool doNodes = false;
+            bool doTxns = false;
 
             if (app_.getFeeTrack().isLoadedLocal())
             {

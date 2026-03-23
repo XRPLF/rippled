@@ -30,7 +30,7 @@ csprng_engine::~csprng_engine()
 void
 csprng_engine::mix_entropy(void* buffer, std::size_t count)
 {
-    std::array<std::random_device::result_type, 128> entropy;
+    std::array<std::random_device::result_type, 128> entropy{};
 
     {
         // On every platform we support, std::random_device
@@ -71,7 +71,7 @@ csprng_engine::operator()(void* ptr, std::size_t count)
 csprng_engine::result_type
 csprng_engine::operator()()
 {
-    result_type ret;
+    result_type ret = 0;
     (*this)(&ret, sizeof(result_type));
     return ret;
 }

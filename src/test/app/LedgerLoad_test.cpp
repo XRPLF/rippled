@@ -36,17 +36,19 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile{};
-        Json::Value ledger{};
-        Json::Value hashes{};
-        uint256 trapTxHash{};
+        // NOLINTBEGIN(readability-redundant-member-init)
+        std::string ledgerFile = {};
+        Json::Value ledger = {};
+        Json::Value hashes = {};
+        uint256 trapTxHash = {};
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     SetupData
     setupLedger(beast::temp_dir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {td.path()};
+        SetupData retval = {.dbPath = td.path()};
 
         retval.ledgerFile = td.file("ledgerdata.json");
 
@@ -58,10 +60,11 @@ class LedgerLoad_test : public beast::unit_test::suite
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0 && BEAST_EXPECT(prev))
+            if (i > 0 && BEAST_EXPECT(prev.has_value()))
             {
-                env.trust(acct["USD"](1000), *prev);
-                env(pay(acct, *prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);  // NOLINT(bugprone-unchecked-optional-access)
+                env(pay(
+                    acct, *prev, acct["USD"](5)));  // NOLINT(bugprone-unchecked-optional-access)
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();

@@ -180,7 +180,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Acceptor::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Acceptor::close, shared_from_this()));
+                    return;
+                }
                 acceptor_.close();
             }
 
@@ -210,7 +213,10 @@ private:
             on_accept(error_code ec)
             {
                 if (ec)
-                    return fail("accept", ec);
+                {
+                    fail("accept", ec);
+                    return;
+                }
                 auto const p = std::make_shared<Connection>(server_, std::move(socket_));
                 server_.add(p);
                 p->run();
@@ -248,7 +254,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Connection::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Connection::close, shared_from_this()));
+                    return;
+                }
                 if (socket_.is_open())
                 {
                     socket_.close();
@@ -289,7 +298,10 @@ private:
                 if (ec == boost::asio::error::operation_aborted)
                     return;
                 if (ec)
-                    return fail("timer", ec);
+                {
+                    fail("timer", ec);
+                    return;
+                }
                 test_.log << "[server] timeout" << std::endl;
                 socket_.close();
             }
@@ -298,7 +310,10 @@ private:
             on_handshake(error_code ec)
             {
                 if (ec)
-                    return fail("handshake", ec);
+                {
+                    fail("handshake", ec);
+                    return;
+                }
 #if 1
                 boost::asio::async_read_until(
                     stream_,
@@ -322,13 +337,17 @@ private:
                 if (ec == boost::asio::error::eof)
                 {
                     server_.test_.log << "[server] read: EOF" << std::endl;
-                    return stream_.async_shutdown(bind_executor(
+                    stream_.async_shutdown(bind_executor(
                         strand_,
                         std::bind(
                             &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    return;
                 }
                 if (ec)
-                    return fail("read", ec);
+                {
+                    fail("read", ec);
+                    return;
+                }
 
                 buf_.commit(bytes_transferred);
                 buf_.consume(bytes_transferred);
@@ -350,7 +369,10 @@ private:
             {
                 buf_.consume(bytes_transferred);
                 if (ec)
-                    return fail("write", ec);
+                {
+                    fail("write", ec);
+                    return;
+                }
                 stream_.async_shutdown(bind_executor(
                     strand_,
                     std::bind(
@@ -361,7 +383,10 @@ private:
             on_shutdown(error_code ec)
             {
                 if (ec)
-                    return fail("shutdown", ec);
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
                 socket_.close();
                 timer_.cancel();
             }
@@ -422,7 +447,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Connection::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Connection::close, shared_from_this()));
+                    return;
+                }
                 if (socket_.is_open())
                 {
                     socket_.close();
@@ -463,7 +491,10 @@ private:
                 if (ec == boost::asio::error::operation_aborted)
                     return;
                 if (ec)
-                    return fail("timer", ec);
+                {
+                    fail("timer", ec);
+                    return;
+                }
                 test_.log << "[client] timeout";
                 socket_.close();
             }
@@ -472,7 +503,10 @@ private:
             on_connect(error_code ec)
             {
                 if (ec)
-                    return fail("connect", ec);
+                {
+                    fail("connect", ec);
+                    return;
+                }
                 stream_.async_handshake(
                     stream_type::client,
                     bind_executor(
@@ -485,7 +519,10 @@ private:
             on_handshake(error_code ec)
             {
                 if (ec)
-                    return fail("handshake", ec);
+                {
+                    fail("handshake", ec);
+                    return;
+                }
                 write(buf_, "HELLO\n");
 
 #if 1
@@ -512,7 +549,10 @@ private:
             {
                 buf_.consume(bytes_transferred);
                 if (ec)
-                    return fail("write", ec);
+                {
+                    fail("write", ec);
+                    return;
+                }
 #if 1
                 boost::asio::async_read_until(
                     stream_,
@@ -537,7 +577,10 @@ private:
             on_read(error_code ec, std::size_t bytes_transferred)
             {
                 if (ec)
-                    return fail("read", ec);
+                {
+                    fail("read", ec);
+                    return;
+                }
                 buf_.commit(bytes_transferred);
                 stream_.async_shutdown(bind_executor(
                     strand_,
@@ -549,7 +592,10 @@ private:
             on_shutdown(error_code ec)
             {
                 if (ec)
-                    return fail("shutdown", ec);
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
                 socket_.close();
                 timer_.cancel();
             }

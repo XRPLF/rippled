@@ -129,12 +129,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
-                if (res != tesSUCCESS)
+                if (!isTesSuccess(res))
                     return res;
 
                 res = nft::checkTrustlineDeepFrozen(
                     ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
-                if (res != tesSUCCESS)
+                if (!isTesSuccess(res))
                     return res;
             }
         }
@@ -180,19 +180,19 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
-            if (res != tesSUCCESS)
+            if (!isTesSuccess(res))
                 return res;
 
             if (!so)
             {
                 res = nft::checkTrustlineAuthorized(
                     ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
-                if (res != tesSUCCESS)
+                if (!isTesSuccess(res))
                     return res;
 
                 res = nft::checkTrustlineDeepFrozen(
                     ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
-                if (res != tesSUCCESS)
+                if (!isTesSuccess(res))
                     return res;
             }
         }
@@ -248,21 +248,21 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
-                if (res != tesSUCCESS)
+                if (!isTesSuccess(res))
                     return res;
 
                 if (!bo)
                 {
                     res = nft::checkTrustlineAuthorized(
                         ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
-                    if (res != tesSUCCESS)
+                    if (!isTesSuccess(res))
                         return res;
                 }
             }
 
             auto const res = nft::checkTrustlineDeepFrozen(
                 ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
-            if (res != tesSUCCESS)
+            if (!isTesSuccess(res))
                 return res;
         }
     }
@@ -271,8 +271,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     // this nftoken
     auto const& offer = bo ? bo : so;
     if (!offer)
+    {
         // Purely defensive, should be caught in preflight.
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const& tokenID = offer->at(sfNFTokenID);
     auto const& amount = offer->at(sfAmount);
@@ -294,12 +296,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
-            if (res != tesSUCCESS)
+            if (!isTesSuccess(res))
                 return res;
 
             res = nft::checkTrustlineDeepFrozen(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
-            if (res != tesSUCCESS)
+            if (!isTesSuccess(res))
                 return res;
         }
     }
@@ -321,7 +323,7 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     // we know that something went wrong. This was originally found in the
     // context of IOU transfer fees. Since there are several payouts in this tx,
     // just confirm that the end state is OK.
-    if (result != tesSUCCESS)
+    if (!isTesSuccess(result))
         return result;
     if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
         return tecINSUFFICIENT_FUNDS;
@@ -361,7 +363,7 @@ NFTokenAcceptOffer::transferNFToken(
     // NFTs free of reserve.
     if (view().rules().enabled(fixNFTokenReserve))
     {
-        // To check if there is sufficient reserve, we cannot use mPriorBalance
+        // To check if there is sufficient reserve, we cannot use preFeeBalance_
         // because NFT is sold for a price. So we must use the balance after
         // the deduction of the potential offer price. A small caveat here is
         // that the balance has already deducted the transaction fee, meaning
