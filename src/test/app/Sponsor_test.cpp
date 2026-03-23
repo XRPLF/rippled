@@ -3255,24 +3255,17 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
 
             // NFTokenMintOffer
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
-            env(token::mint(alice),
-                token::amount(XRP(10000)),
-                sponsor::as(sponsor, spfSponsorReserve),
-                sig(sfSponsorSignature, sponsor));
-            env.close();
-
-            // testEachSponsorship(
-            //     env,
-            //     cosigning,
-            //     sponsor,
-            //     alice,
-            //     2,
-            //     2,
-            //     tecINSUFFICIENT_RESERVE,
-            //     [&](Env& env, auto const& submit) {
-            //         token::mint(alice), token::amount(XRP(100));
-            //     });
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                2,
+                2,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(token::mint(alice), token::amount(XRP(100)));
+                });
         }
 
         {
