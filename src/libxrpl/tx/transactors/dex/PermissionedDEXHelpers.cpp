@@ -1,4 +1,4 @@
-#include <xrpl/ledger/entries/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 
 namespace xrpl {

@@ -1,4 +1,4 @@
-#include <xrpl/ledger/entries/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 //
 #include <xrpl/protocol/LedgerFormats.h>
 

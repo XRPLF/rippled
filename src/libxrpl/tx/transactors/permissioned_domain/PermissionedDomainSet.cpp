@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 //
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/entries/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 

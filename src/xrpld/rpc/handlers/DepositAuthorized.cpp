@@ -2,7 +2,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/RPCErr.h>
