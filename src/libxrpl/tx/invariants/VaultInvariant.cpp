@@ -1084,7 +1084,7 @@ ValidVault::finalize(
 [[nodiscard]] std::int32_t
 ValidVault::computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& numbers)
 {
-    if (numbers.size() == 0)
+    if (numbers.empty())
         return 0;
 
     auto const max =
