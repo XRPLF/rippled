@@ -4952,6 +4952,69 @@ public:
             auto const sponsorSle2 = env.le(keylet::account(sponsor));
             BEAST_EXPECT(!sponsorSle2->isFieldPresent(sfSponsoringAccountCount));
         }
+
+        {
+            // Sponsor with sfSponsoringOwnerCount cannot delete (tecHAS_OBLIGATIONS)
+            Env env{*this, testable_amendments()};
+            Account const gw("gw");
+            env.fund(XRP(1000000), alice, bob, sponsor, gw);
+            env.close();
+
+            auto const USD = gw["USD"];
+
+            // Create sponsorship allowing reserve sponsoring
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Create a trust line for alice
+            env(trust(alice, USD(1000)));
+            env.close();
+
+            // Transfer reserve sponsorship of trust line to sponsor
+            auto const trustId = keylet::line(alice, gw, USD.currency);
+            BEAST_EXPECT(env.le(trustId));
+
+            env(sponsor::transfer(alice, tfSponsorshipCreate, trustId.key),
+                sponsor::as(sponsor, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            // Verify sfSponsoringOwnerCount is set on sponsor
+            auto const sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringOwnerCount));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringOwnerCount) >= 1);
+
+            incLgrSeqForAccDel(env, sponsor);
+
+            // AccountDelete should fail
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(sponsor, bob), fee(requiredFee), ter(tecHAS_OBLIGATIONS));
+        }
+
+        {
+            // Sponsor with sfSponsoringAccountCount cannot delete (tecHAS_OBLIGATIONS)
+            Env env{*this, testable_amendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            // Create SponsoredAccount (sets sfSponsoringAccountCount on sponsor)
+            env(pay(sponsor, alice, XRP(10000)), txflags(tfSponsorCreatedAccount));
+            env.close();
+
+            // Verify sfSponsoringAccountCount is set on sponsor
+            auto const sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringAccountCount));
+            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
+
+            incLgrSeqForAccDel(env, sponsor);
+
+            // AccountDelete should fail
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(sponsor, bob), fee(requiredFee), ter(tecHAS_OBLIGATIONS));
+        }
     }
 
     void
