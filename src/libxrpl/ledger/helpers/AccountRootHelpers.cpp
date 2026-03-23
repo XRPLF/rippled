@@ -14,7 +14,7 @@ namespace xrpl {
 bool
 AccountRoot::isGlobalFrozen() const
 {
-    if (isXRP(id_))
+    if (!exists())
         return false;
     return sle_->isFlag(lsfGlobalFreeze);
 }
@@ -64,6 +64,9 @@ confineOwnerCount(
 XRPAmount
 AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 {
+    if (!exists())
+        return beast::zero;
+
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
         readView_.ownerCountHook(id_, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);

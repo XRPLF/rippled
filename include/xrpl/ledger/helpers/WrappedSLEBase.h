@@ -170,7 +170,7 @@ public:
     void
     newSLE()
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::newSLE : can modify");
+        XRPL_ASSERT(!canModify(), "xrpl::WritableSLE::newSLE : mutableSle_ is not null");
         mutableSle_ = std::make_shared<SLE>(key_);
     }
 
