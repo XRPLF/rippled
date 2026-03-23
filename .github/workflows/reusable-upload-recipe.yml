@@ -89,10 +89,10 @@ jobs:
           conan export . --version=rc
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/rc
 
-      # When this workflow is triggered by a tag event, it will always be when tagging a final
+      # When this workflow is triggered by a push event, it will always be when tagging a final
       # release, see on-tag.yml.
       - name: Upload Conan recipe (release)
-        if: ${{ github.event_name == 'tag' }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         env:
           REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
