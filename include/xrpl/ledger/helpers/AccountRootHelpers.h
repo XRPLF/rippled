@@ -111,6 +111,24 @@ public:
     {
     }
 
+    /** Create a WritableAccountRoot backed by a brand-new SLE
+     *  (not yet inserted into the view).
+     */
+    [[nodiscard]] static WritableAccountRoot
+    makeNew(AccountID const& id, ApplyView& view)
+    {
+        return WritableAccountRoot(id, view, std::make_shared<SLE>(keylet::account(id)));
+    }
+
+private:
+    // This is a private constructor only used by `makeNew`
+    WritableAccountRoot(AccountID const& id, ApplyView& view, std::shared_ptr<SLE> sle)
+        : AccountRoot(id, view), WritableSLE(std::move(sle), view)
+    {
+        insert();
+    }
+
+public:
     // Resolve ambiguity: use writable operator-> for non-const, read-only for const
     using WritableSLE::operator->;
     using AccountRoot::operator->;
