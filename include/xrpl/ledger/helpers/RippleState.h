@@ -38,6 +38,42 @@ public:
         return iouToken_;
     }
 
+    [[nodiscard]] TER
+    checkSpendable(
+        STAmount const& amount,
+        FreezeHandling zeroIfFrozen,
+        AuthHandling zeroIfUnauthorized,
+        beast::Journal j) const override
+    {
+        STAmount const balance = (*sle_)[sfBalance];
+        AccountID const& issuer = iouToken_.getIssuer();
+
+        // If balance is positive, issuer must have higher address than account
+        if (balance > beast::zero && issuer < holder_)
+            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+        // If balance is negative, issuer must have lower address than account
+        if (balance < beast::zero && issuer > holder_)
+            return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+        STAmount const spendableAmount = accountHolds(zeroIfFrozen, zeroIfUnauthorized, j);
+
+        // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
+        if (spendableAmount <= beast::zero)
+            return tecINSUFFICIENT_FUNDS;
+
+        // If the spendable amount is less than the amount, return
+        // tecINSUFFICIENT_FUNDS
+        if (spendableAmount < amount)
+            return tecINSUFFICIENT_FUNDS;
+
+        // If the amount is not addable to the balance, return tecPRECISION_LOSS
+        if (!canAdd(spendableAmount, amount))
+            return tecPRECISION_LOSS;
+
+        return tesSUCCESS;
+    }
+
 protected:
     IOUToken const& iouToken_;
 };

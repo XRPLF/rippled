@@ -88,6 +88,13 @@ public:
             holder_, zeroIfFrozen, zeroIfUnauthorized, j, includeFullBalance);
     }
 
+    [[nodiscard]] virtual TER
+    checkSpendable(
+        STAmount const& amount,
+        FreezeHandling zeroIfFrozen,
+        AuthHandling zeroIfUnauthorized,
+        beast::Journal j) const = 0;
+
     [[nodiscard]] TER
     requireAuth(AuthType authType = AuthType::Legacy, int depth = 0) const
     {

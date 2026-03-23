@@ -28,6 +28,32 @@ public:
         return issuance_;
     }
 
+    MPTIssue
+    getMptIssue() const
+    {
+        return issuance_.getMptIssue();
+    }
+
+    [[nodiscard]] TER
+    checkSpendable(
+        STAmount const& amount,
+        FreezeHandling zeroIfFrozen,
+        AuthHandling zeroIfUnauthorized,
+        beast::Journal j) const override
+    {
+        STAmount const spendableAmount = accountHolds(zeroIfFrozen, zeroIfUnauthorized, j);
+
+        // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
+        if (spendableAmount <= beast::zero)
+            return tecINSUFFICIENT_FUNDS;
+
+        // If the spendable amount is less than the amount, return tecINSUFFICIENT_FUNDS
+        if (!canSubtract(spendableAmount, amount))
+            return tecINSUFFICIENT_FUNDS;
+
+        return tesSUCCESS;
+    }
+
 protected:
     MPTokenIssuance const& issuance_;
 };

@@ -46,7 +46,7 @@ public:
     }
 
     AccountID const&
-    getIssuer() const
+    getIssuer() const override
     {
         return mptIssue_.getIssuer();
     }
@@ -128,13 +128,40 @@ public:
     canClawback() const override;
 
     [[nodiscard]] bool
+    canEscrow() const override
+    {
+        return sle_->isFlag(lsfMPTCanEscrow);
+    }
+
+    [[nodiscard]] bool
     requiresAuth() const override;
+
+    [[nodiscard]] TER
+    checkExists() const override
+    {
+        if (!exists())
+            return tecOBJECT_NOT_FOUND;
+        if (sle_->getAccountID(sfIssuer) != mptIssue_.getIssuer())
+            return tecINTERNAL;
+        return tesSUCCESS;
+    }
 
     [[nodiscard]] bool
     hasHolder(AccountID const& holder) const override
     {
         return readView_.exists(keylet::mptoken(mptID_, holder));
     }
+
+    [[nodiscard]] TER
+    checkHolder(AccountID const& holder) const override
+    {
+        if (!hasHolder(holder))
+            return tecOBJECT_NOT_FOUND;
+        return tesSUCCESS;
+    }
+
+    [[nodiscard]] std::unique_ptr<TokenHolderBase>
+    getHolder(AccountID const& holder) const override;
 
     STAmount
     accountHolds(

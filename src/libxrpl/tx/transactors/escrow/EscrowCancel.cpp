@@ -82,13 +82,31 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 
         if (!isXRP(amount))
         {
-            if (auto const ret = std::visit(
+            if (ctx.view.rules().enabled(fixTypeSafetyRefactor))
+            {
+                AccountID issuer = amount.getIssuer();
+                // If the issuer is the same as the account, return tecINTERNAL
+                if (issuer == account)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+
+                auto const token = makeTokenBase(ctx.view, amount.issue());
+                if (auto const ter = token->checkExists(); !isTesSuccess(ter))
+                    return ter;
+
+                if (auto const ter = token->requireAuth(account, AuthType::WeakAuth);
+                    !isTesSuccess(ter))
+                    return ter;
+            }
+            else if (
+                auto const ret = std::visit(
                     [&]<typename T>(T const&) {
                         return escrowCancelPreclaimHelper<T>(ctx, account, amount);
                     },
                     amount.asset().value());
                 !isTesSuccess(ret))
+            {
                 return ret;
+            }
         }
     }
     return tesSUCCESS;
