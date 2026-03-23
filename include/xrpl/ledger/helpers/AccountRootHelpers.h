@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/WrappedSLEBase.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
