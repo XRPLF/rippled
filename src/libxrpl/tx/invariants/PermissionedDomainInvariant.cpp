@@ -1,7 +1,7 @@
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
 //
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFormats.h>

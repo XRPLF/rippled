@@ -218,6 +218,12 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
+    // Get the ledger
+    std::shared_ptr<ReadView const> ledger;
+    result = RPC::lookupLedger(ledger, context);
+    if (!ledger)
+        return result;  // LCOV_EXCL_LINE
+
     // Collect the dataset into bimap keyed by lastUpdateTime and
     // STAmount (Number is int64 and price is uint64)
     Prices prices;
@@ -237,11 +243,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
             RPC::inject_error(rpcINVALID_PARAMS, result);
             return result;
         }
-
-        std::shared_ptr<ReadView const> ledger;
-        result = RPC::lookupLedger(ledger, context);
-        if (!ledger)
-            return result;  // LCOV_EXCL_LINE
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
@@ -284,8 +285,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (auto const threshold = std::get<std::uint32_t>(timeThreshold))
     {
         // threshold defines an acceptable range {max,min} of lastUpdateTime as
-        // {latestTime, latestTime - threshold}, the prices with lastUpdateTime
-        // greater than (latestTime - threshold) are erased.
+        // {latestTime, latestTime - threshold}. Prices with lastUpdateTime
+        // less than (latestTime - threshold) are erased (outdated prices).
         auto const oldestTime = prices.left.rbegin()->first;
         auto const upperBound = latestTime > threshold ? (latestTime - threshold) : oldestTime;
         if (upperBound > oldestTime)

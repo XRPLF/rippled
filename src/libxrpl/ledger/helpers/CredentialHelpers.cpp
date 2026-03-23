@@ -1,5 +1,7 @@
-#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+//
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
