@@ -105,6 +105,8 @@ public:
         writeAlways(Severity level, std::string const& text) = 0;
 
     private:
+        /// Minimum severity level. Atomic for safe concurrent reads/writes
+        /// (e.g. RPC threshold changes vs. hot-path log checks).
         std::atomic<Severity> thresh_;
         bool m_console;
     };

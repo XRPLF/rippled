@@ -10,9 +10,14 @@
 #define XRPL_NO_SANITIZE_ADDRESS
 #endif
 
-// Detect whether a memory sanitizer (TSAN or ASAN) is active at compile time.
-// GCC defines __SANITIZE_THREAD__ / __SANITIZE_ADDRESS__ directly.
-// Clang uses __has_feature(thread_sanitizer) / __has_feature(address_sanitizer).
+/** Detect whether a memory sanitizer (TSAN or ASAN) is active at compile time.
+ *
+ *  Evaluates to 1 when the translation unit is compiled with ThreadSanitizer
+ *  or AddressSanitizer instrumentation, 0 otherwise.
+ *
+ *  GCC defines __SANITIZE_THREAD__ / __SANITIZE_ADDRESS__ directly.
+ *  Clang uses __has_feature(thread_sanitizer) / __has_feature(address_sanitizer).
+ */
 #if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__)
 #define XRPL_SANITIZER_ACTIVE 1
 #elif defined(__has_feature)

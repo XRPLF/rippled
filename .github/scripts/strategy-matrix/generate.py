@@ -324,17 +324,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 }
             )
 
-    # TEMPORARY: Only build previously-failing sanitizer variants to save CI.
-    # Remove this filter once these configs pass.
-    sanitizer_only = [
-        c
-        for c in configurations
-        if c["sanitizers"]
-        and ("gcc-13" in c["config_name"] or "clang-20" in c["config_name"])
-    ]
-    if sanitizer_only:
-        return sanitizer_only
-
     return configurations
 
 

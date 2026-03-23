@@ -23,7 +23,12 @@ public:
     virtual ~Manager() = 0;
 
     /** Start the manager's background thread.
-        Must be called after construction.
+
+        Must be called after construction to begin periodic charge decay
+        and inactive-consumer sweeps.
+
+        @note Not thread-safe. Must be called exactly once, before any
+              concurrent access to the manager.
     */
     virtual void
     start() = 0;
