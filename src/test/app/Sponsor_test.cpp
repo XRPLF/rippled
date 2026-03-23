@@ -360,7 +360,7 @@ public:
         env.close();
 
         // Invalid Sponsor Account (Account = Sponsor.Account)
-        env(noop(alice), sponsor::as(alice), ter(temMALFORMED));
+        env(noop(alice), sponsor::as(alice, spfSponsorFee), ter(temMALFORMED));
 
         // Invalid Sponsor Account
         // (SponsorSignature is specified but Sponsor.Account is not specified)
@@ -377,6 +377,9 @@ public:
         env(noop(alice),
             sponsor::as(sponsor, (spfSponsorFee | spfSponsorReserve) + 1),
             ter(temINVALID_FLAG));
+
+        // SponsorFlags=0 with valid sponsor (no sponsorship purpose)
+        env(noop(alice), sponsor::as(sponsor, 0), ter(temINVALID_FLAG));
 
         // Invalid Flags without sponsor
         auto tx = noop(alice);

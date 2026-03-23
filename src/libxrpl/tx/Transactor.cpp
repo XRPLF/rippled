@@ -160,16 +160,28 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID_FLAG;
     }
 
-    if (!hasSponsor && hasSponsorFlags)
+    if (!hasSponsor)
     {
-        JLOG(ctx.j.debug()) << "preflight1: sponsor flags without sponsor definition";
-        return temINVALID_FLAG;
-    }
+        if (hasSponsorFlags)
+        {
+            JLOG(ctx.j.debug()) << "preflight1: sponsor flags without sponsor definition";
+            return temINVALID_FLAG;
+        }
 
-    if (!hasSponsor && hasSponsorSig)
+        if (hasSponsorSig)
+        {
+            JLOG(ctx.j.debug()) << "preflight1: sponsor signature without sponsor definition";
+            return temMALFORMED;
+        }
+    }
+    else if (hasSponsorFlags)
     {
-        JLOG(ctx.j.debug()) << "preflight1: sponsor signature without sponsor definition";
-        return temMALFORMED;
+        auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
+        if ((sponsorFlags & ~(spfSponsorFee | spfSponsorReserve)) || sponsorFlags == 0)
+        {
+            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
+            return temINVALID_FLAG;
+        }
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
@@ -217,6 +229,13 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
                                "same as the transaction originator";
         return temMALFORMED;
     }
+
+    // if (hasSponsor && hasSponsorFlags &&
+    //     ctx.tx.getFieldU32(sfSponsorFlags) == 0)
+    // {
+    //     JLOG(ctx.j.debug()) << "preflight1: sponsor with no sponsorship flags";
+    //     return temINVALID_FLAG;
+    // }
 
     return tesSUCCESS;
 }
