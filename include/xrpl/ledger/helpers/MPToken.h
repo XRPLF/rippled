@@ -78,7 +78,7 @@ public:
         WritableMPToken mptoken(issuance, account);
 
         auto const ownerNode = mptoken.applyView().dirInsert(
-            keylet::ownerDir(account), mptoken.key(), describeOwnerDir(account));
+            keylet::ownerDir(account), mptoken->key(), describeOwnerDir(account));
 
         if (!ownerNode)
             return tecDIR_FULL;  // LCOV_EXCL_LINE

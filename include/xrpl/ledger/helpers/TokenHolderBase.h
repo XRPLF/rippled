@@ -20,16 +20,6 @@ public:
     {
     }
 
-    /** Constructor with explicit keylet (for when SLE lookup is needed) */
-    TokenHolderBase(
-        ReadView const& view,
-        Keylet const& key,
-        TokenBase const& token,
-        AccountID const& holder)
-        : ReadOnlySLE(key, view), token_(token), holder_(holder), holderAccount_(holder, view)
-    {
-    }
-
     TokenHolderBase() = delete;
 
     AccountID const&
@@ -123,20 +113,6 @@ public:
         : ReadOnlySLE(sle, view)
         , TokenHolderBase(view, sle, token, holder)
         , WritableSLE(sle, view)
-        , writableToken_(token)
-        , writableHolderAccount_(holder, view)
-    {
-    }
-
-    /** Constructor with explicit keylet (for creation or lookup by key) */
-    WritableTokenHolderBase(
-        ApplyView& view,
-        Keylet const& key,
-        WritableTokenBase& token,
-        AccountID const& holder)
-        : ReadOnlySLE(key, view)
-        , TokenHolderBase(view, key, token, holder)
-        , WritableSLE(key, view)
         , writableToken_(token)
         , writableHolderAccount_(holder, view)
     {

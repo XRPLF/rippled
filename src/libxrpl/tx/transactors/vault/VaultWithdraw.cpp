@@ -82,6 +82,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = vaultAssetToken->checkFrozen(dstAcct))
         return ret;
 
+    // Cannot withdraw if the vault account's asset holding is frozen/locked
+    if (vaultAssetToken->isFrozen(vaultAccount))
+        return tecLOCKED;
+
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
     if (auto const ret = MPTokenIssuance(ctx.view, vaultShare).checkFrozen(account))

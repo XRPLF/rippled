@@ -342,7 +342,7 @@ updateMPToken(WritableMPToken& mpt, STTx const& tx)
 
     if (txFlags & tfMPTLock)
     {
-        mpt->setFlag(flagsIn & lsfMPTLocked);
+        mpt->setFlag(flagsIn | lsfMPTLocked);
     }
     else if (txFlags & tfMPTUnlock)
     {

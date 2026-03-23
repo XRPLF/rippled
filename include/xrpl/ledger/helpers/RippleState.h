@@ -90,17 +90,13 @@ public:
         return writableIOUToken_;
     }
 
-    static Expected<std::unique_ptr<WritableRippleState>, TER>
-    createHolding(
-        ApplyView& view,
-        WritableIOUToken& token,
-        AccountID const& accountID,
-        beast::Journal journal)
+    static Expected<WritableRippleState, TER>
+    makeNew(WritableIOUToken& token, AccountID const& accountID, beast::Journal journal)
     {
         auto const ter = token.addEmptyHolding(accountID, XRPAmount{0}, journal);
         if (ter != tesSUCCESS)
             return Unexpected(ter);
-        return std::make_unique<WritableRippleState>(view, token, accountID);
+        return WritableRippleState{token.applyView(), token, accountID};
     }
 
     //--------------------------------------------------------------------------

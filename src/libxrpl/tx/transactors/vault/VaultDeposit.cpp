@@ -80,8 +80,11 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (token->isFrozen(account))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (auto const ret = token->checkFrozen(account))
+        return ret;
+    // Cannot deposit if the vault account's asset holding is frozen/locked
+    if (token->isFrozen(vaultAccount))
+        return tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
     if (shareIssuance.isFrozen(account))
