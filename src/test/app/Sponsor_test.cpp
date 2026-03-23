@@ -1585,6 +1585,7 @@ public:
             env.close();
 
             // to non-funded account
+            auto const sponsor2BalanceBefore = env.balance(sponsor2);
             env(pay(sponsor2, charlie, drops(1)), txflags(tfSponsorCreatedAccount), fee(XRP(1)));
             env.close();
 
@@ -1593,6 +1594,8 @@ public:
             BEAST_EXPECT(charlieSle->getAccountID(sfSponsor) == sponsor2.id());
             BEAST_EXPECT(sponsoredOwnerCount(env, charlie) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
+            // verify sponsor balance decreased by payment + fee
+            BEAST_EXPECT(env.balance(sponsor2) == sponsor2BalanceBefore - drops(1) - XRP(1));
         }
     }
 
