@@ -4,8 +4,6 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/LedgerTiming.h>
-#include <xrpl/nodestore/Database.h>
-#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
