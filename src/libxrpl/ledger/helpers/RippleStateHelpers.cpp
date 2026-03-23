@@ -203,9 +203,11 @@ IOUToken::accountHolds(
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
     if (returnSpendable && account == issuer_)
+    {
         // If the account is the issuer, then their limit is effectively
         // infinite
         return STAmount{issue_, STAmount::cMaxValue, STAmount::cMaxOffset};
+    }
 
     // IOU: Return balance on trust line modulo freeze
     // Check if line exists and is usable (mirrors old getLineIfUsable)

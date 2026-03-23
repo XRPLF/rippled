@@ -715,9 +715,13 @@ rippleUnlockEscrowMPT(
 
     auto const newLocked = locked - delta;
     if (newLocked == 0)
+    {
         sle->makeFieldAbsent(sfLockedAmount);
+    }
     else
+    {
         sle->setFieldU64(sfLockedAmount, newLocked);
+    }
     view.update(sle);
 
     // Note: The gross amount is the amount that was locked, the net
@@ -781,9 +785,13 @@ MPTokenIssuance::accountHolds(
     auto const sleMpt = readView_.read(keylet::mptoken(mptID_, account));
 
     if (!sleMpt)
+    {
         amount.clear(mptIssue_);
+    }
     else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(account))
+    {
         amount.clear(mptIssue_);
+    }
     else
     {
         amount = STAmount{mptIssue_, sleMpt->getFieldU64(sfMPTAmount)};
