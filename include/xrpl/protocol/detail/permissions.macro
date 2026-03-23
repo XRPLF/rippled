@@ -55,17 +55,17 @@ PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
  * allowedFlags: permitted flags for delegation.
  * allowedFields: permitted fields for delegation.
  */
-GRANULAR_TEMPLATE(ttTRUST_SET, tfSetfAuth | tfSetFreeze | tfClearFreeze,
+GRANULAR_TEMPLATE(ttTRUST_SET, tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze,
     ({{sfLimitAmount, soeREQUIRED}}))
 
-GRANULAR_TEMPLATE(ttACCOUNT_SET, 0,
+GRANULAR_TEMPLATE(ttACCOUNT_SET, tfUniversal,
     ({{sfDomain, soeOPTIONAL},
       {sfEmailHash, soeOPTIONAL},
       {sfMessageKey, soeOPTIONAL},
       {sfTransferRate, soeOPTIONAL},
       {sfTickSize, soeOPTIONAL}}))
 
-GRANULAR_TEMPLATE(ttPAYMENT, tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+GRANULAR_TEMPLATE(ttPAYMENT, tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
    ({{sfDestination, soeREQUIRED},
       {sfAmount, soeREQUIRED},
       {sfSendMax, soeOPTIONAL},
@@ -75,6 +75,6 @@ GRANULAR_TEMPLATE(ttPAYMENT, tfPartialPayment | tfLimitQuality | tfNoRippleDirec
       {sfCredentialIDs, soeOPTIONAL},
       {sfDomainID, soeOPTIONAL}}))
 
-GRANULAR_TEMPLATE(ttMPTOKEN_ISSUANCE_SET, tfMPTLock | tfMPTUnlock,
+GRANULAR_TEMPLATE(ttMPTOKEN_ISSUANCE_SET, tfUniversal | tfMPTLock | tfMPTUnlock,
     ({{sfMPTokenIssuanceID, soeREQUIRED},
       {sfHolder, soeOPTIONAL}}))
