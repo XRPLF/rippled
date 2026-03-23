@@ -250,6 +250,48 @@ public:
     }
 
     void
+    testPseudoAccountSponsorship()
+    {
+        testcase("Pseudo account sponsorship");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const gw("gw");
+        Account const sp("sponsor");
+
+        Asset asset = gw["IOU"].asset();
+
+        env.fund(XRP(1000000), alice, bob, gw, sp);
+        env.close();
+
+        // Create a vault to get a pseudo account
+        Vault vault{env};
+        auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const vaultSle = env.le(keylet);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudoAcc(
+            "vault", vaultSle->getAccountID(sfAccount));
+        env.memoize(pseudoAcc);
+
+        // Sponsee is a pseudo account -> tecNO_PERMISSION
+        env(sponsor::set(sp, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(pseudoAcc),
+            ter(tecNO_PERMISSION));
+        env.close();
+
+        // Sponsor is a pseudo account -> tecNO_PERMISSION
+        // (submitted by bob with counterpartySponsor pointing to pseudo account)
+        env(sponsor::set(bob, tfDeleteObject),
+            sponsor::counterpartySponsor(pseudoAcc),
+            ter(tecNO_PERMISSION));
+        env.close();
+    }
+
+    void
     testSingleSigning()
     {
         testcase("Single signing");
@@ -5391,6 +5433,7 @@ protected:
     {
         testDisabled();
         testInvalidSponsorshipSet();
+        testPseudoAccountSponsorship();
 
         testSingleSigning();
         testMultiSigning();

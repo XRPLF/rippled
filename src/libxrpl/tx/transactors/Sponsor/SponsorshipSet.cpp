@@ -113,9 +113,9 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
         (txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee));
-    auto const sponsoringReserve =
-        tx.isFieldPresent(sfReserveCount) ||
-        (txFlags & (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve));
+    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
+        (txFlags &
+         (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve));
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -144,6 +144,10 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeAccountID));
     if (!sponseeSle)
         return tecNO_DST;
+
+    // Pseudo accounts cannot be sponsors or sponsees
+    if (isPseudoAccount(sponsorAccSle) || isPseudoAccount(sponseeSle))
+        return tecNO_PERMISSION;
 
     // check if object exists
     auto const sponsorObjSle = ctx.view.read(keylet::sponsor(sponsorAccountID, sponseeAccountID));
