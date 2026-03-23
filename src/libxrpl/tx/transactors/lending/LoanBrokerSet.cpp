@@ -184,7 +184,11 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             }
         }
 
-        if (domainID && *domainID != beast::zero && !sleBroker->isFlag(lsfLoanBrokerPrivate))
+        if (ctx.view.rules().enabled(fixLendingProtocolV1_1))
+        {
+            if (sleBroker->isFlag(lsfLoanBrokerPrivate) && domainID)
+                return tecNO_PERMISSION;
+        }
         {
             return tecNO_PERMISSION;
         }
