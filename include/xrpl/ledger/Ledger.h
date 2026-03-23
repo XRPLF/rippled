@@ -384,24 +384,24 @@ private:
     bool
     setup();
 
-    /** Deserialize a SHAMapItem containing a single STTx
-
-        Throw:
-
-        May throw on deserializaton error
-    */
+    /** @brief Deserialize a SHAMapItem containing a single STTx.
+     *
+     * @param item The SHAMapItem to deserialize.
+     * @return A shared pointer to the deserialized transaction.
+     * @throw May throw on deserialization error.
+     */
     static std::shared_ptr<STTx const>
     deserializeTx(SHAMapItem const& item);
 
-    /** Deserialize a SHAMapItem containing STTx + STObject metadata
-
-        The SHAMap must contain two variable length
-        serialization objects.
-
-        Throw:
-
-            May throw on deserializaton error
-    */
+    /** @brief Deserialize a SHAMapItem containing STTx + STObject metadata.
+     *
+     * The SHAMapItem must contain two variable length serialization objects.
+     *
+     * @param item The SHAMapItem to deserialize.
+     * @return A pair containing shared pointers to the deserialized transaction
+     *         and metadata.
+     * @throw May throw on deserialization error.
+     */
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
 
