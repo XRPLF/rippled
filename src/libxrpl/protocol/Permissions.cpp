@@ -271,7 +271,7 @@ Permission::checkGranularSandbox(STTx const& tx) const
         return false;
 
     // Check if the flag is permitted
-    if ((tx.getFlags() & tfUniversalMask & ~flagsIt->second) != 0)
+    if ((tx.getFlags() & ~flagsIt->second) != 0)
         return false;
 
     // Check if the field is permitted
