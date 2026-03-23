@@ -563,7 +563,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
     auto const issuer = AccountRoot(issuerId, view);
-    if (issuer.exists())
+    if (!issuer.exists())
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {

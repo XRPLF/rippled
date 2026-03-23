@@ -461,7 +461,7 @@ transactionPreProcessImpl(
     if (verify)
         acctSrc.emplace(srcAddressID, *app.openLedger().current());
 
-    if (verify && !acctSrc.value() && acctSrc->exists())
+    if (verify && acctSrc.has_value() && !acctSrc->exists())
     {
         // If not offline and did not find account, error.
         JLOG(j.debug()) << "transactionSign: Failed to find source account "
