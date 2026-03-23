@@ -46,9 +46,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
         if (ctx.rules.enabled(fixLendingProtocolV1_1))
         {
+             // Cannot change private flag on existing broker
             if (tx.isFlag(tfLoanBrokerPrivate))
             {
-                // Cannot change private flag on existing broker
                 return temINVALID;
             }
         }
