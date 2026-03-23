@@ -13,12 +13,11 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
+      - id: check-added-large-files
+        args: [--maxkb=400, --enforce-all]
       - id: trailing-whitespace
-        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: end-of-file-fixer
-        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: mixed-line-ending
-        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
