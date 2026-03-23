@@ -91,8 +91,8 @@ DelegateSet::doApply()
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
-    auto const page =
-        ctx_.view().dirInsert(keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
+    auto const page = ctx_.view().dirInsert(
+        keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
