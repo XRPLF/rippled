@@ -82,22 +82,22 @@ function(setup_protocol_autogen)
 
     message(STATUS "Using Python3 for code generation: ${Python3_EXECUTABLE}")
 
-    # Determine venv directory and Python executable paths
+    # Determine which Python interpreter and arguments to use for generation.
+    # When the user supplies a pre-built venv, call its interpreter directly.
+    # Otherwise call the system Python with --venv-dir so that venv_bootstrap.py
+    # sets up the venv on demand, only when generation is actually needed.
     if(CODEGEN_VENV_DIR)
-        set(VENV_DIR "${CODEGEN_VENV_DIR}")
-        message(STATUS "Using user-provided Python venv: ${VENV_DIR}")
+        if(WIN32)
+            set(CODEGEN_PYTHON "${CODEGEN_VENV_DIR}/Scripts/python.exe")
+        else()
+            set(CODEGEN_PYTHON "${CODEGEN_VENV_DIR}/bin/python")
+        endif()
+        set(VENV_DIR_ARG "")
+        message(STATUS "Using user-provided Python venv: ${CODEGEN_VENV_DIR}")
     else()
-        set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
+        set(CODEGEN_PYTHON "${Python3_EXECUTABLE}")
+        set(VENV_DIR_ARG "--venv-dir" "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
     endif()
-
-    if(WIN32)
-        set(VENV_PYTHON "${VENV_DIR}/Scripts/python.exe")
-    else()
-        set(VENV_PYTHON "${VENV_DIR}/bin/python")
-    endif()
-
-    # Stamp file that tracks whether the venv is up to date
-    set(VENV_STAMP_FILE "${VENV_DIR}/.requirements_installed")
 
     # At configure time - list output files using the stdlib-only list_outputs.py
     # (no venv required, so configure remains fast)
@@ -141,34 +141,20 @@ function(setup_protocol_autogen)
     string(REPLACE "\\" "/" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
     string(REPLACE "\n" ";" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
 
-    # Build-time venv setup (only when not using a user-provided venv)
-    if(NOT CODEGEN_VENV_DIR)
-        add_custom_command(
-            OUTPUT "${VENV_STAMP_FILE}"
-            COMMAND
-                ${CMAKE_COMMAND}
-                    -DPYTHON_EXECUTABLE=${Python3_EXECUTABLE}
-                    -DVENV_DIR=${VENV_DIR}
-                    -DREQUIREMENTS_FILE=${REQUIREMENTS_FILE}
-                    -DSTAMP_FILE=${VENV_STAMP_FILE}
-                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SetupCodegenVenv.cmake"
-            DEPENDS "${REQUIREMENTS_FILE}"
-            COMMENT "Setting up Python virtual environment for code generation..."
-            VERBATIM
-        )
-    endif()
-
-    # Custom command to generate transaction classes at build time
+    # Custom command to generate transaction classes at build time.
+    # venv_bootstrap.py sets up the venv on first run (inside the script),
+    # so there is no build-dir stamp file in DEPENDS — which is the key point:
+    # all DEPENDS are source-tree files with stable git timestamps, so Ninja
+    # will skip this command whenever the generated files are already up to date.
     add_custom_command(
         OUTPUT ${TX_OUTPUT_FILES}
         COMMAND
-            ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
+            ${CODEGEN_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
-            "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro
-            "${SFIELDS_MACRO}"
+            "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro "${SFIELDS_MACRO}"
+            ${VENV_DIR_ARG}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
-            "${VENV_STAMP_FILE}"
             "${TRANSACTIONS_MACRO}"
             "${SFIELDS_MACRO}"
             "${GENERATE_TX_SCRIPT}"
@@ -184,13 +170,12 @@ function(setup_protocol_autogen)
     add_custom_command(
         OUTPUT ${LEDGER_OUTPUT_FILES}
         COMMAND
-            ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
+            ${CODEGEN_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
-            "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro
-            "${SFIELDS_MACRO}"
+            "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro "${SFIELDS_MACRO}"
+            ${VENV_DIR_ARG}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         DEPENDS
-            "${VENV_STAMP_FILE}"
             "${LEDGER_ENTRIES_MACRO}"
             "${SFIELDS_MACRO}"
             "${GENERATE_LEDGER_SCRIPT}"

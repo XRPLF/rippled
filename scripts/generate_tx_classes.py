@@ -6,6 +6,17 @@ and generate C++ classes for each transaction type.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
+# Bootstrap: must happen before any third-party imports so the venv is
+# ready and we re-exec into it if necessary.
+import argparse as _argparse
+from pathlib import Path as _Path
+_bp = _argparse.ArgumentParser(add_help=False)
+_bp.add_argument("--venv-dir", default=None)
+_bargs, _ = _bp.parse_known_args()
+if _bargs.venv_dir:
+    from venv_bootstrap import ensure_venv
+    ensure_venv(_Path(_bargs.venv_dir))
+
 import io
 import argparse
 from pathlib import Path
@@ -147,6 +158,7 @@ def main():
         "--sfields-macro",
         help="Path to sfields.macro (default: auto-detect from macro_path)",
     )
+    parser.add_argument("--venv-dir", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     # Parse the macro file to get transaction names
