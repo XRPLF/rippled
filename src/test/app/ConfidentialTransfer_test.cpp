@@ -2984,8 +2984,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env.app().openLedger().modify([&](OpenView& view, beast::Journal) {
                 // Set lsfMPTCanConfidentialAmount on the share issuance
                 // so the invariant allows encrypted fields on the MPToken
-                auto issuance = std::const_pointer_cast<SLE>(
-                    view.read(keylet::mptIssuance(share)));
+                auto issuance = std::const_pointer_cast<SLE>(view.read(keylet::mptIssuance(share)));
                 if (!issuance)
                     return false;
                 issuance->setFlag(lsfMPTCanConfidentialAmount);
