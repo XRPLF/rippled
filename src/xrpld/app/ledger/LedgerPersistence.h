@@ -1,5 +1,4 @@
-#ifndef XRPLD_APP_LEDGER_LEDGERPERSISTENCE_H_INCLUDED
-#define XRPLD_APP_LEDGER_LEDGERPERSISTENCE_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/Ledger.h>
 
@@ -89,5 +88,3 @@ std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry);
 
 }  // namespace xrpl
-
-#endif
