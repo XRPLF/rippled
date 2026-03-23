@@ -324,11 +324,10 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = accountID_ > uDstAccountID;
 
-    WritableAccountRoot wrappedAccount(accountID_, view());
-    if (!wrappedAccount)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = wrappedAccount->getFieldU32(sfOwnerCount);
+    std::uint32_t const uOwnerCount = account_->getFieldU32(sfOwnerCount);
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -394,8 +393,8 @@ TrustSet::doApply()
         std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
-        auto lowAcct = !bHigh ? wrappedAccount : wrappedDst;
-        auto highAcct = bHigh ? wrappedAccount : wrappedDst;
+        auto lowAcct = !bHigh ? account_ : wrappedDst;
+        auto highAcct = bHigh ? account_ : wrappedDst;
 
         //
         // Balances
@@ -500,7 +499,7 @@ TrustSet::doApply()
         }
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
-        bool const bNoFreeze = wrappedAccount->isFlag(lsfNoFreeze);
+        bool const bNoFreeze = account_->isFlag(lsfNoFreeze);
         uFlagsOut = computeFreezeFlags(
             uFlagsOut,
             bHigh,
@@ -639,7 +638,7 @@ TrustSet::doApply()
             accountID_,
             uDstAccountID,
             k.key,
-            wrappedAccount,
+            account_,
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

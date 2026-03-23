@@ -331,11 +331,10 @@ SignerListSet::destroySignerList()
 {
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    WritableAccountRoot wrappedAcct(accountID_, view());
-    if (!wrappedAcct)
+    if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((wrappedAcct->isFlag(lsfDisableMaster)) && (!wrappedAcct->isFieldPresent(sfRegularKey)))
+    if ((account_->isFlag(lsfDisableMaster)) && (!account_->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
     return removeSignersFromLedger(ctx_.registry, view(), accountID_, j_);

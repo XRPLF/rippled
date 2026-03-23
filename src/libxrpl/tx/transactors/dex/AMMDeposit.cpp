@@ -457,7 +457,6 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    WritableAccountRoot wrappedAcct(accountID_, view);
     auto checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::zero)
             return temBAD_AMOUNT;
@@ -466,7 +465,7 @@ AMMDeposit::deposit(
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
-            if (wrappedAcct.xrpLiquid(!sle, j_) >= depositAmount)
+            if (account_.xrpLiquid(!sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (
