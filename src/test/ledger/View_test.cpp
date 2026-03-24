@@ -7,6 +7,8 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 
 #include <type_traits>
@@ -88,7 +90,7 @@ class View_test : public beast::unit_test::suite
         auto const next = v.succ(k(id).key);
         if (answer)
         {
-            if (BEAST_EXPECT(next))
+            if (BEAST_EXPECT(next); next.has_value())
                 BEAST_EXPECT(*next == k(*answer).key);
         }
         else

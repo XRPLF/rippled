@@ -1,4 +1,6 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
@@ -58,7 +60,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -138,7 +140,7 @@ MPTokenIssuanceCreate::doApply()
         view(),
         j_,
         {
-            .priorBalance = mPriorBalance,
+            .priorBalance = preFeeBalance_,
             .account = account_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),

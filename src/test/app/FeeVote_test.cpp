@@ -4,7 +4,7 @@
 #include <xrpld/app/misc/FeeVote.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -114,7 +114,7 @@ bool
 applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
     auto const res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
-    return res.ter == tesSUCCESS;
+    return isTesSuccess(res.ter);
 }
 
 bool

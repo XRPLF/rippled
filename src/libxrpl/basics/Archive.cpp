@@ -51,8 +51,8 @@ extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const&
     if (archive_write_disk_set_standard_lookup(aw.get()) < ARCHIVE_OK)
         Throw<std::runtime_error>(archive_error_string(aw.get()));
 
-    int result;
-    struct archive_entry* entry;
+    int result = 0;
+    struct archive_entry* entry = nullptr;
     while (true)
     {
         result = archive_read_next_header(ar.get(), &entry);
@@ -67,9 +67,9 @@ extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const&
 
         if (archive_entry_size(entry) > 0)
         {
-            void const* buf;
-            size_t sz;
-            la_int64_t offset;
+            void const* buf = nullptr;
+            size_t sz = 0;
+            la_int64_t offset = 0;
             while (true)
             {
                 result = archive_read_data_block(ar.get(), &buf, &sz, &offset);

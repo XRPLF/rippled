@@ -46,7 +46,7 @@ STObject::STObject(STObject&& other)
 {
 }
 
-STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
+STObject::STObject(SField const& name) : STBase(name)
 {
 }
 
@@ -62,8 +62,7 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
     applyTemplate(type);  // May throw
 }
 
-STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false)
-    : STBase(name), mType(nullptr)
+STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -141,9 +140,13 @@ STObject::set(SOTemplate const& type)
     for (auto const& elem : type)
     {
         if (elem.style() != soeREQUIRED)
+        {
             v_.emplace_back(detail::nonPresentObject, elem.sField());
+        }
         else
+        {
             v_.emplace_back(detail::defaultObject, elem.sField());
+        }
     }
 }
 
@@ -216,8 +219,8 @@ STObject::set(SerialIter& sit, int depth)
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
-        int type;
-        int field;
+        int type = 0;
+        int field = 0;
 
         // Get the metadata for the next field
         sit.getFieldID(type, field);
@@ -269,7 +272,7 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
@@ -291,16 +294,22 @@ STObject::getFullText() const
         ret += " = {";
     }
     else
+    {
         ret = "{";
+    }
 
     for (auto const& elem : v_)
     {
         if (elem->getSType() != STI_NOTPRESENT)
         {
             if (!first)
+            {
                 ret += ", ";
+            }
             else
+            {
                 first = false;
+            }
 
             ret += elem->getFullText();
         }
