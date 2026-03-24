@@ -366,10 +366,8 @@ MPTokenIssuanceSet::doApply()
         WritableMPToken mpt(mptIssuance, *holderID);
         return updateMPToken(mpt, ctx_.tx);
     }
-    else
-    {
-        return updateMPTokenIssuance(mptIssuance, ctx_.tx);
-    }
+
+    return updateMPTokenIssuance(mptIssuance, ctx_.tx);
 }
 
 }  // namespace xrpl
