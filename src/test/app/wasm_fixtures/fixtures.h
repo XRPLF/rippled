@@ -83,4 +83,3 @@ extern std::string const opcReservedHex;
 extern std::string const impExpHex;
 
 extern std::string const tracesInvalidHex;
-
