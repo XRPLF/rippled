@@ -43,7 +43,7 @@ protected:
 
             auto loanSet = set(alice, keylet.key, Number(10000));
             loanSet[sfCounterparty] = bob.human();
-            auto batchTxn = env.jt(
+            auto const batchTxn = env.jt(
                 batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::inner(loanSet, aliceSeq),
                 batch::inner(del(alice, loanKeylet.key), aliceSeq + 1),
@@ -81,15 +81,15 @@ protected:
         env(pay(issuer, broker, IOU(10'000'000)));
         env.close();
 
-        auto brokerSeq = env.seq(broker);
+        auto const brokerSeq = env.seq(broker);
         // The starting sequence should be brokerSeq + 1 because the batch
         // outer transaction will consume the first sequence.
-        auto txns = createVaultAndBrokerTransactions(
+        auto const txns = createVaultAndBrokerTransactions(
             env, IOU, broker, BrokerParameters::defaults(), brokerSeq + 1);
 
         auto const batchFee = batch::calcBatchFee(env, 0, 4);
 
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
             batch::inner(txns.vaultCreateTx, brokerSeq + 1),
             batch::inner(txns.vaultDepositTx, brokerSeq + 2),
@@ -125,7 +125,7 @@ protected:
         env(trust(broker, IOU(20'000'000)));
         env(pay(issuer, broker, IOU(10'000'000)));
         env.close();
-        auto brokerInfo = createVaultAndBroker(env, IOU, broker);
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
 
         LoanParameters const loanParams{
             .account = broker,
@@ -137,7 +137,7 @@ protected:
             .gracePd = 86400 * 5,
         };
 
-        auto loanSetTx = loanParams.getTransaction(env, brokerInfo);
+        auto const loanSetTx = loanParams.getTransaction(env, brokerInfo);
 
         // Get the loan keylet that will be created by the LoanSet
         auto const brokerSeq = env.seq(broker);
@@ -148,13 +148,13 @@ protected:
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
         // Create the loan delete transaction
-        auto loanDelTx = del(broker, loanKeylet.key);
+        auto const loanDelTx = del(broker, loanKeylet.key);
 
         // Calculate batch fee: 1 signer (borrower) + 2 transactions
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
         // Create the batch transaction with both LoanSet and LoanDelete
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
             batch::inner(loanSetTx, brokerSeq + 1),
             batch::inner(loanDelTx, brokerSeq + 2),
@@ -192,7 +192,7 @@ protected:
         env(trust(broker, IOU(20'000'000)));
         env(pay(issuer, broker, IOU(10'000'000)));
         env.close();
-        auto brokerInfo = createVaultAndBroker(env, IOU, broker);
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
 
         LoanParameters const loanParams{
             .account = broker,
@@ -204,7 +204,7 @@ protected:
             .gracePd = 86400 * 5,      // 5 days grace period
         };
 
-        auto loanSetTx = loanParams.getTransaction(env, brokerInfo);
+        auto const loanSetTx = loanParams.getTransaction(env, brokerInfo);
 
         // Get the loan keylet that will be created by the LoanSet
         auto const brokerSeq = env.seq(broker);
@@ -215,13 +215,13 @@ protected:
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
 
         // Create the manage transaction to impair the loan
-        auto impairTx = manage(broker, loanKeylet.key, tfLoanImpair);
+        auto const impairTx = manage(broker, loanKeylet.key, tfLoanImpair);
 
         // Calculate batch fee: 1 signer (borrower) + 2 transactions
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
         // Create the batch transaction with LoanSet and impair
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
             batch::inner(loanSetTx, brokerSeq + 1),
             batch::inner(impairTx, brokerSeq + 2),
@@ -289,7 +289,7 @@ protected:
         BrokerParameters brokerParams = BrokerParameters::defaults();
         brokerParams.vaultDeposit = 100;   // Small vault deposit
         brokerParams.coverDeposit = 1000;  // Large cover deposit
-        auto brokerInfo = createVaultAndBroker(env, IOU, broker, brokerParams);
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker, brokerParams);
 
         LoanParameters const loanParams{
             .account = broker,
@@ -347,23 +347,23 @@ protected:
         // Now batch: default, withdraw DefaultCovered, and make a payment
         auto const brokerSeq = env.seq(broker);
 
-        auto defaultTx = manage(broker, loanKeylet.key, tfLoanDefault);
+        auto const defaultTx = manage(broker, loanKeylet.key, tfLoanDefault);
 
         // Withdraw the DefaultCovered amount from vault
         Vault vault{env};
-        auto withdrawTx = vault.withdraw(
+        auto const withdrawTx = vault.withdraw(
             {.depositor = broker,
              .id = brokerInfo.vaultID,
              .amount = brokerInfo.asset(defaultCovered)});
 
         // Make a payment to recipient
-        auto paymentTx = pay(broker, recipient, brokerInfo.asset(defaultCovered / 2));
+        auto const paymentTx = pay(broker, recipient, brokerInfo.asset(defaultCovered / 2));
 
         // Calculate batch fee: 0 signers (broker signs outer) + 3 transactions
         auto const batchFee = batch::calcBatchFee(env, 0, 3);
 
         // Create the batch transaction
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
             batch::inner(defaultTx, brokerSeq + 1),
             batch::inner(withdrawTx, brokerSeq + 2),
@@ -441,7 +441,7 @@ protected:
         env.close();
 
         // Create vault and broker
-        auto brokerInfo = createVaultAndBroker(env, IOU, broker);
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
 
         // Get the loan keylet BEFORE creating the loan
         auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
@@ -481,23 +481,23 @@ protected:
             .payInterval = 86400,  // 1 day
             .gracePd = 86400,      // 1 day grace period
         };
-        auto loanSetTx = loanParams.getTransaction(env, brokerInfo);
+        auto const loanSetTx = loanParams.getTransaction(env, brokerInfo);
 
         // Transaction 2: Buy 400 XRP for $1000 from MM1
-        auto buyTx = offer(borrower, XRP(400), IOU(1000));
+        auto const buyTx = offer(borrower, XRP(400), IOU(1000));
 
         // Transaction 3: Sell 400 XRP for $1008 to MM2
-        auto sellTx = offer(borrower, IOU(1008), XRP(400));
+        auto const sellTx = offer(borrower, IOU(1008), XRP(400));
 
         // Transaction 4: Repay the loan
         // We know the total will be $1001 (principal $1000 + interest $1)
-        auto payTx = pay(borrower, loanKeylet.key, IOU(1001));
+        auto const payTx = pay(borrower, loanKeylet.key, IOU(1001));
 
         // Calculate batch fee: 1 signer (broker as counterparty) + 4 transactions
         auto const batchFee = batch::calcBatchFee(env, 1, 4);
 
         // Create the batch transaction with tfAllOrNothing
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
             batch::inner(loanSetTx, borrowerSeq + 1),
             batch::inner(buyTx, borrowerSeq + 2),
@@ -591,7 +591,7 @@ protected:
         env.close();
 
         // Create vault and broker
-        auto brokerInfo = createVaultAndBroker(env, IOU, broker);
+        auto const brokerInfo = createVaultAndBroker(env, IOU, broker);
 
         // Get the loan keylet BEFORE creating the loan
         auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
@@ -635,24 +635,24 @@ protected:
             .payInterval = 86400,  // 1 day
             .gracePd = 86400,      // 1 day grace period
         };
-        auto loanSetTx = loanParams.getTransaction(env, brokerInfo);
+        auto const loanSetTx = loanParams.getTransaction(env, brokerInfo);
 
         // Transaction 2: Buy 400 XRP for $1000 from MM1
-        auto buyTx = offer(borrower, XRP(400), IOU(1000));
+        auto const buyTx = offer(borrower, XRP(400), IOU(1000));
         buyTx[jss::Flags] = tfFillOrKill;
 
         // Transaction 3: Try to sell 400 XRP for $1008 - this will FAIL
-        auto sellTx = offer(borrower, XRP(400), IOU(1008));
+        auto const sellTx = offer(borrower, XRP(400), IOU(1008));
         sellTx[jss::Flags] = tfFillOrKill;
 
         // Transaction 4: Repay the loan
-        auto payTx = pay(borrower, loanKeylet.key, IOU(1001));
+        auto const payTx = pay(borrower, loanKeylet.key, IOU(1001));
 
         // Calculate batch fee: 1 signer (broker as counterparty) + 4 transactions
         auto const batchFee = batch::calcBatchFee(env, 1, 4);
 
         // Create the batch transaction with tfAllOrNothing
-        auto batchTxn = env.jt(
+        auto const batchTxn = env.jt(
             batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
             batch::inner(loanSetTx, borrowerSeq + 1),
             batch::inner(buyTx, borrowerSeq + 2),
