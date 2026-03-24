@@ -21,7 +21,7 @@ protected:
     bool good_ = false;
 
 public:
-    WasmNumber(Slice const& data) : good_(false)
+    WasmNumber(Slice const& data)
     {
         if (data.size() != encodedFloatSize)
             return;
@@ -44,7 +44,7 @@ public:
     }
 
     template <class T>
-    WasmNumber(T mantissa = 0, int32_t exponent = 0) : good_(false)
+    WasmNumber(T mantissa = 0, int32_t exponent = 0)
     {
         try
         {
@@ -103,9 +103,9 @@ public:
 struct FloatState
 {
     Number::rounding_mode oldMode_;
-    bool good_;
+    bool good_ = false;
 
-    FloatState(int32_t mode) : oldMode_(Number::getround()), good_(false)
+    FloatState(int32_t mode) : oldMode_(Number::getround())
     {
         if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
