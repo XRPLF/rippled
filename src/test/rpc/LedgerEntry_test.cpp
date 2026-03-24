@@ -2831,7 +2831,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             1,
             scCarol,
             signers,
-            UT_XCHAIN_DEFAULT_NUM_SIGNERS);
+            kUT_XCHAIN_DEFAULT_NUM_SIGNERS);
         for (size_t i = 0; i < kNUM_ATTEST; ++i)
         {
             scEnv(attestations[i]);
@@ -2891,7 +2891,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
 
         // complete attestations quorum - CreateAccountClaimID should not be
         // present anymore
-        for (size_t i = kNUM_ATTEST; i < UT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
+        for (size_t i = kNUM_ATTEST; i < kUT_XCHAIN_DEFAULT_NUM_SIGNERS; ++i)
         {
             scEnv(attestations[i]);
         }

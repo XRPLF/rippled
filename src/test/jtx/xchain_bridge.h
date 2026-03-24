@@ -14,8 +14,8 @@ namespace jtx {
 
 using JValueVec = std::vector<Json::Value>;
 
-constexpr std::size_t UT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
-constexpr std::size_t UT_XCHAIN_DEFAULT_QUORUM = 4;
+constexpr std::size_t kUT_XCHAIN_DEFAULT_NUM_SIGNERS = 5;
+constexpr std::size_t kUT_XCHAIN_DEFAULT_QUORUM = 4;
 
 Json::Value
 bridge(
@@ -112,7 +112,7 @@ claim_attestations(
     std::uint64_t claimID,
     std::optional<jtx::Account> const& dst,
     std::vector<jtx::Signer> const& signers,
-    std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
+    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
 JValueVec
@@ -127,7 +127,7 @@ create_account_attestations(
     std::uint64_t createCount,
     jtx::Account const& dst,
     std::vector<jtx::Signer> const& signers,
-    std::size_t const numAtts = UT_XCHAIN_DEFAULT_QUORUM,
+    std::size_t const numAtts = kUT_XCHAIN_DEFAULT_QUORUM,
     std::size_t const fromIdx = 0);
 
 struct XChainBridgeObjects

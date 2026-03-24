@@ -367,7 +367,7 @@ XChainBridgeObjects::XChainBridgeObjects()
     , jvub(bridge(mcuDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , features(testableAmendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
-        constexpr int kNUM_SIGNERS = UT_XCHAIN_DEFAULT_NUM_SIGNERS;
+        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;
         result.reserve(kNUM_SIGNERS);
         for (int i = 0; i < kNUM_SIGNERS; ++i)
@@ -380,7 +380,7 @@ XChainBridgeObjects::XChainBridgeObjects()
         return result;
     }())
     , alt_signers([] {
-        constexpr int kNUM_SIGNERS = UT_XCHAIN_DEFAULT_NUM_SIGNERS;
+        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;
         result.reserve(kNUM_SIGNERS);
         for (int i = 0; i < kNUM_SIGNERS; ++i)
@@ -413,16 +413,17 @@ XChainBridgeObjects::XChainBridgeObjects()
         }
         return r;
     }())
-    , quorum(UT_XCHAIN_DEFAULT_QUORUM)
+    , quorum(kUT_XCHAIN_DEFAULT_QUORUM)
     , reward(XRP(1))
-    , split_reward_quorum(divide(reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), reward.issue()))
-    , split_reward_everyone(divide(reward, STAmount(UT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.issue()))
+    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.issue()))
+    , split_reward_everyone(
+          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.issue()))
     , tiny_reward(drops(37))
     , tiny_reward_split(
-          (divide(tiny_reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue())))
+          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue())))
     , tiny_reward_remainder(
           tiny_reward -
-          multiply(tiny_reward_split, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue()))
+          multiply(tiny_reward_split, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue()))
     , one_xrp(XRP(1))
     , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.issue()))
 {

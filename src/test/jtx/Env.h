@@ -705,14 +705,14 @@ private:
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
     void
-    fund_arg(STAmount const& amount, Account const& account)
+    fundArg(STAmount const& amount, Account const& account)
     {
         fund(true, amount, account);
     }
 
     template <std::size_t N>
     void
-    fund_arg(STAmount const& amount, std::array<Account, N> const& list)
+    fundArg(STAmount const& amount, std::array<Account, N> const& list)
     {
         for (auto const& account : list)
             fund(false, amount, account);
@@ -749,7 +749,7 @@ public:
     void
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        fund_arg(amount, arg);
+        fundArg(amount, arg);
         if constexpr (sizeof...(args) > 0)
             fund(amount, args...);
     }

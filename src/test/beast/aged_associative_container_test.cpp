@@ -330,7 +330,7 @@ public:
     {
         using Key = std::string;
         using Clock = std::chrono::steady_clock;
-        using ManualClock = ManualClock<Clock>;
+        using ManualClock = beast::ManualClock<Clock>;
     };
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
