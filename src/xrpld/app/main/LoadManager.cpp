@@ -13,7 +13,7 @@
 namespace xrpl {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
-    : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
+    : app_(app), journal_(journal), armed_(false)
 {
 }
 

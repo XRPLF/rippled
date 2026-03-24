@@ -27,3 +27,11 @@ src:core/JobQueue.cpp
 src:libxrpl/beast/utility/beast_Journal.cpp
 src:test/beast/beast_PropertyStream_test.cpp
 src:src/test/app/Invariants_test.cpp
+
+# ASan false positive: stack-use-after-scope in ErrorCodes.h inline functions.
+# When Clang inlines the StaticString overloads (e.g. invalid_field_error(StaticString)),
+# ASan scope-poisons the temporary std::string before the inlined callee finishes reading
+# through the const ref. This corrupts the coroutine stack and crashes the Simulate test.
+# See asan.supp comments for full explanation and planned fix.
+[address]
+src:*ErrorCodes.h

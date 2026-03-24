@@ -2,8 +2,11 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -14,8 +17,8 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/Delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -191,9 +194,11 @@ NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+    {
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
+    }
 
     // It should be impossible for the InnerBatchTxn flag to be set without
     // featureBatch being enabled
@@ -352,8 +357,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
-                                                      : ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getFeePayer();
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -382,32 +386,18 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    if (ctx_.tx.isFieldPresent(sfDelegate))
-    {
-        // Delegated transactions are paid by the delegated account.
-        auto const delegate = ctx_.tx.getAccountID(sfDelegate);
-        auto const delegatedSle = view().peek(keylet::account(delegate));
-        if (!delegatedSle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const feePayer = ctx_.tx.getFeePayer();
+    auto const sle = view().peek(keylet::account(feePayer));
+    if (!sle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        delegatedSle->setFieldAmount(sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
-        view().update(delegatedSle);
-    }
-    else
-    {
-        auto const sle = view().peek(keylet::account(account_));
-        if (!sle)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+    // Deduct the fee, so it's not available during the transaction.
+    // Will only write the account back if the transaction succeeds.
+    sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
+    if (feePayer != account_)
+        view().update(sle);  // done in `apply()` for the account
 
-        // Deduct the fee, so it's not available during the transaction.
-        // Will only write the account back if the transaction succeeds.
-
-        mSourceBalance -= feePaid;
-        sle->setFieldAmount(sfBalance, mSourceBalance);
-
-        // VFALCO Should we call view().rawDestroyXRP() here as well?
-    }
-
+    // VFALCO Should we call view().rawDestroyXRP() here as well?
     return tesSUCCESS;
 }
 
@@ -562,9 +552,13 @@ Transactor::ticketDelete(
     if (auto ticketCount = (*sleAccount)[~sfTicketCount])
     {
         if (*ticketCount == 1)
+        {
             sleAccount->makeFieldAbsent(sfTicketCount);
+        }
         else
+        {
             ticketCount = *ticketCount - 1;
+        }
     }
     else
     {
@@ -606,15 +600,14 @@ Transactor::apply()
 
     if (sle)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
-        mSourceBalance = mPriorBalance;
+        preFeeBalance_ = STAmount{(*sle)[sfBalance]}.xrp();
 
         TER result = consumeSeqProxy(sle);
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         result = payFee();
-        if (result != tesSUCCESS)
+        if (!isTesSuccess(result))
             return result;
 
         if (sle->isFieldPresent(sfAccountTxnID))
@@ -639,10 +632,12 @@ Transactor::checkSign(
         auto const sle = view.read(keylet::account(idAccount));
 
         if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        {
             // Pseudo-accounts can't sign transactions. This check is gated on
             // the Lending Protocol amendment because that's the project it was
             // added under, and it doesn't justify another amendment
             return tefBAD_AUTH;
+        }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
@@ -1015,7 +1010,7 @@ removeDeletedTrustLines(
     for (auto const& index : trustLines)
     {
         if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
-            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) != tesSUCCESS)
+            !isTesSuccess(deleteAMMTrustLine(view, sleState, std::nullopt, viewJ)))
         {
             JLOG(viewJ.error()) << "removeDeletedTrustLines: failed to delete AMM trustline";
         }
@@ -1039,9 +1034,7 @@ Transactor::reset(XRPAmount fee)
     if (!txnAcct)
         return {tefINTERNAL, beast::zero};
 
-    auto const payerSle = ctx_.tx.isFieldPresent(sfDelegate)
-        ? view().peek(keylet::account(ctx_.tx.getAccountID(sfDelegate)))
-        : txnAcct;
+    auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
         return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
 
@@ -1126,7 +1119,7 @@ Transactor::operator()()
     }
 
     auto result = ctx_.preclaimResult;
-    if (result == tesSUCCESS)
+    if (isTesSuccess(result))
         result = apply();
 
     // No transaction can return temUNKNOWN from apply,

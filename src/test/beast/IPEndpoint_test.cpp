@@ -152,7 +152,7 @@ public:
         std::string const& normal = "")
     {
         auto const result = Endpoint::from_string_checked(s);
-        if (!BEAST_EXPECT(result))
+        if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v4()))
             return;
@@ -171,7 +171,7 @@ public:
         std::string const& normal = "")
     {
         auto result = Endpoint::from_string_checked(s);
-        if (!BEAST_EXPECT(result))
+        if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v6()))
             return;

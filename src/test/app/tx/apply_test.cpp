@@ -31,7 +31,7 @@ public:
             "8B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
 
         auto ret = strUnHex(non_fully_canonical_tx);
-        SerialIter sitTrans(makeSlice(*ret));
+        SerialIter sitTrans(makeSlice(*ret));  // NOLINT(bugprone-unchecked-optional-access)
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {

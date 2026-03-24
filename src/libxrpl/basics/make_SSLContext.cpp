@@ -239,6 +239,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_certificate_file(cert_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
@@ -271,9 +272,11 @@ initAuthenticated(
                 if (!cert_set)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
+                    {
                         LogicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
+                    }
 
                     cert_set = true;
                 }
@@ -298,6 +301,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_private_key_file(key_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)

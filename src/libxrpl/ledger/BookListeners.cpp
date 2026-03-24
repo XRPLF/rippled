@@ -38,7 +38,9 @@ BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& haveP
             ++it;
         }
         else
+        {
             it = mListeners.erase(it);
+        }
     }
 }
 

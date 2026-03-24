@@ -74,7 +74,7 @@ deriveDeterministicRootKey(Seed const& seed)
     // buf  |----------------|----|
     //      |      seed      | seq|
 
-    std::array<std::uint8_t, 20> buf;
+    std::array<std::uint8_t, 20> buf{};
     std::copy(seed.begin(), seed.end(), buf.begin());
 
     // The odds that this loop executes more than once are negligible
@@ -119,7 +119,7 @@ class Generator
 {
 private:
     uint256 root_;
-    std::array<std::uint8_t, 33> generator_;
+    std::array<std::uint8_t, 33> generator_{};
 
     uint256
     calculateTweak(std::uint32_t seq) const
@@ -133,7 +133,7 @@ private:
         // buf  |---------------------------------|----|----|
         //      |            generator            | seq| cnt|
 
-        std::array<std::uint8_t, 41> buf;
+        std::array<std::uint8_t, 41> buf{};
         std::copy(generator_.begin(), generator_.end(), buf.begin());
         copy_uint32(buf.data() + 33, seq);
 

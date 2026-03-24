@@ -32,6 +32,86 @@ hexToBytes(std::string const& hex)
     return Bytes(ws.begin(), ws.end());
 }
 
+template <class IT, class T>
+unsigned
+uleb128(IT& it, T val)
+{
+    unsigned count = 0;
+    do
+    {
+        std::uint8_t byte = val & 0x7f;
+        val >>= 7;
+        if (val)
+            byte |= 0x80;
+        *it++ = byte;
+        ++count;
+    } while (val != 0);
+
+    return count;
+}
+
+template <class IT>
+std::pair<std::uint64_t, unsigned>
+uleb128(IT&& it)
+{
+    static_assert(sizeof(*it) == 1, "invalid iterator type");
+    std::uint64_t val = 0;
+    std::uint64_t byte = 0;
+    unsigned shift = 0;
+    unsigned count = 0;
+
+    do
+    {
+        if (shift > sizeof(std::uint64_t) * 8 - 7)
+            return {0, 0};
+        byte = *it++;
+        val |= (byte & 0x7F) << shift;
+        shift += 7;
+        ++count;
+    } while (byte >= 0x80);
+
+    return {val, count};
+}
+
+std::pair<unsigned, unsigned>
+getSection(Bytes const& module, std::uint8_t n)
+{
+    static std::uint8_t const hdr[] = {0x00, 0x61, 0x73, 0x6D};
+    static std::uint8_t const ver[] = {0x01, 0x00, 0x00, 0x00};
+    static std::uint8_t const lastSec = 12;
+
+    // sections:
+    // 0: "Custom", 1: "Type", 2: "Import", 3: "Function", 4: "Table", 5: "Memory", 6: "Global",
+    // 7: "Export", 8: "Start", 9: "Element", 10: "Code", 11: "Data", 12: "DataCount"
+
+    if (module.size() < sizeof(hdr) + sizeof(ver) + 2)
+        return {0, 0};
+    if (memcmp(module.data(), hdr, sizeof(hdr)) != 0)
+        return {0, 0};
+    if (memcmp(module.data() + sizeof(hdr), ver, sizeof(ver)) != 0)
+        return {0, 0};
+
+    unsigned pos = sizeof(hdr) + sizeof(ver);  // sections start
+    for (; pos < module.size();)
+    {
+        auto const start = pos;
+        std::uint8_t const byte = module[pos++];
+        if (byte > lastSec)
+            return {0, 0};
+
+        auto [sz, cnt] = uleb128(module.cbegin() + pos);
+        if (!cnt)
+            return {0, 0};
+        if (pos + cnt + sz > module.size())
+            return {0, 0};
+        pos += cnt + sz;
+
+        if (byte == n)
+            return {start, pos};
+    }
+    return {0, 0};
+}
+
 std::optional<int32_t>
 runFinishFunction(std::string const& code)
 {
@@ -193,6 +273,71 @@ struct Wasm_test : public beast::unit_test::suite
         // empty module, throwing exception
         re = engine.run({}, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
         BEAST_EXPECT(!re);
+        env.close();
+    }
+
+    void
+    testImpExp()
+    {
+        testcase("Wasm import/export functions");
+
+        auto impExpWasm = hexToBytes(impExpHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestLedgerDataProvider hfs(env);
+        ImportVec imports;
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "get_parent_ledger_hash", &hfs, 60);
+        auto& engine = WasmEngine::instance();
+
+        // Test exp_func1() - should return 1
+        auto re = engine.run(impExpWasm, hfs, 1'000'000, "exp_func1", {}, imports, env.journal);
+        checkResult(re, 1, 30);
+
+        // Test exp_func2(5) - should return 2 * 5 = 10
+        re = engine.run(
+            impExpWasm, hfs, 1'000'000, "exp_func2", wasmParams(5), imports, env.journal);
+        checkResult(re, 10, 52);
+
+        // Test test_imports() - should call get_ledger_sqn and get_parent_ledger_hash
+        re = engine.run(impExpWasm, hfs, 1'000'000, "test_imports", {}, imports, env.journal);
+        // Should return the ledger sequence number (3 by default in test env)
+        checkResult(re, 3, 294);
+
+        // Test corrupted import/export sections - invert each byte and expect failure
+        testcase("Wasm import/export section corruption");
+        {
+            // Import section(#2): bytes [26, 79) - 53 bytes
+            // Export section(#7): bytes [90, 141) - 51 bytes
+            auto [importStart, importEnd] = getSection(impExpWasm, 2);
+            auto [exportStart, exportEnd] = getSection(impExpWasm, 7);
+
+            BEAST_EXPECTS(importStart == 26, std::to_string(importStart));
+            BEAST_EXPECTS(importEnd == 79, std::to_string(importEnd));
+            BEAST_EXPECTS(exportStart == 90, std::to_string(exportStart));
+            BEAST_EXPECTS(exportEnd == 141, std::to_string(exportEnd));
+
+            auto testInv = [&](unsigned i) {
+                auto corruptedWasm = impExpWasm;
+                corruptedWasm[i] = ~corruptedWasm[i];  // Invert byte
+
+                // Try to run any function - should fail due to corruption
+                auto result = engine.run(
+                    corruptedWasm, hfs, 1'000'000, "exp_func1", {}, imports, env.journal);
+                BEAST_EXPECT(!result);
+            };
+
+            // Test each byte in import section
+            for (unsigned i = importStart; i < importEnd; ++i)
+                testInv(i);
+
+            // Test each byte in export section
+            for (unsigned i = exportStart; i < exportEnd; ++i)
+                testInv(i);
+        }
+
         env.close();
     }
 
@@ -723,8 +868,7 @@ struct Wasm_test : public beast::unit_test::suite
         //     i32.const 1001))
         auto const wasmHex =
             "0061736d01000000010c0260017f017f60027f7f017f03030200010503010001071a03066d656d6f727902"
-            "0005746573743100"
-            "0005746573743200010a0d02050041e8070b050041e9070b";
+            "00057465737431000005746573743200010a0d02050041e8070b050041e9070b";
         auto const wasm = hexToBytes(wasmHex);
 
         // good params, module is working properly
@@ -862,23 +1006,6 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         env.close();
-    }
-
-    template <class IT>
-    std::size_t
-    uleb128(IT& it, std::uint16_t val)
-    {
-        std::size_t count = 0;
-        do
-        {
-            std::uint8_t byte = val & 0x7f;
-            val >>= 7;
-            if (val)
-                byte |= 0x80;
-            *it++ = byte;
-            ++count;
-        } while (val != 0);
-        return count;
     }
 
     void
@@ -1394,6 +1521,7 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmLib();
         testBadWasm();
         testWasmLedgerSqn();
+        testImpExp();
 
         testWasmFib();
 

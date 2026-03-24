@@ -36,7 +36,7 @@ class JobQueue_test : public beast::unit_test::suite
             // The Job should never run, so having the Job access this
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
-            bool unprotected;
+            bool unprotected = false;
             BEAST_EXPECT(jQueue.addJob(jtCLIENT, "JobAddTest2", [&unprotected]() {
                 unprotected = false;
             }) == false);
@@ -118,7 +118,7 @@ class JobQueue_test : public beast::unit_test::suite
             // The Coro should never run, so having the Coro access this
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
-            bool unprotected;
+            bool unprotected = false;
             auto const coro = jQueue.postCoro(
                 jtCLIENT, "PostCoroTest3", [&unprotected](std::shared_ptr<JobQueue::Coro> const&) {
                     unprotected = false;
