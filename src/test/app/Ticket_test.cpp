@@ -9,7 +9,7 @@ namespace xrpl {
 
 class Ticket_test : public beast::unit_test::suite
 {
-    /// @brief Validate metadata for a successful CreateTicket transaction.
+    /// @brief Validate metadata for a successful TicketCreate transaction.
     ///
     /// @param env current jtx env (tx and meta are extracted using it)
     void
@@ -286,11 +286,15 @@ class Ticket_test : public beast::unit_test::suite
 
                     BEAST_EXPECT(prevTicketCount > 0);
                     if (prevTicketCount == 1)
+                    {
                         BEAST_EXPECT(!finalFields.isMember(sfTicketCount.jsonName));
+                    }
                     else
+                    {
                         BEAST_EXPECT(
                             finalFields.isMember(sfTicketCount.jsonName) &&
                             finalFields[sfTicketCount.jsonName].asUInt() == prevTicketCount - 1);
+                    }
                 }
             }
             else if (node.isMember(sfDeletedNode.jsonName))

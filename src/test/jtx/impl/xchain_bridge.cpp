@@ -286,6 +286,7 @@ claim_attestations(
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)
+    {
         vec.emplace_back(claim_attestation(
             submittingAccount,
             jvBridge,
@@ -296,6 +297,7 @@ claim_attestations(
             claimID,
             dst,
             signers[i]));
+    }
     return vec;
 }
 
@@ -319,6 +321,7 @@ create_account_attestations(
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)
+    {
         vec.emplace_back(create_account_attestation(
             submittingAccount,
             jvBridge,
@@ -330,6 +333,7 @@ create_account_attestations(
             createCount,
             dst,
             signers[i]));
+    }
     return vec;
 }
 

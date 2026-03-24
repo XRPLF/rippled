@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -77,12 +78,14 @@ static MPTCreate
 makeMPTCreate(MPTInitDef const& arg)
 {
     if (arg.pay)
+    {
         return {
             .maxAmt = arg.maxAmt,
             .transferFee = arg.transferFee,
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
             .authHolder = arg.authHolder};
+    }
     return {
         .maxAmt = arg.maxAmt,
         .transferFee = arg.transferFee,
@@ -145,7 +148,7 @@ MPTTester::create(MPTCreate const& arg)
          .metadata = arg.metadata,
          .mutableFlags = arg.mutableFlags,
          .domainID = arg.domainID});
-    if (submit(arg, jv) != tesSUCCESS)
+    if (!isTesSuccess(submit(arg, jv)))
     {
         // Verify issuance doesn't exist
         env_.require(
@@ -174,16 +177,24 @@ MPTTester::create(MPTCreate const& arg)
         if (arg.authorize)
         {
             if (arg.authorize->empty())
+            {
                 authAndPay(holders_, [](auto const& it) { return it.second; });
+            }
             else
+            {
                 authAndPay(*arg.authorize, [](auto const& it) { return it; });
+            }
         }
         else if (arg.pay)
         {
             if (arg.pay->first.empty())
+            {
                 authAndPay(holders_, [](auto const& it) { return it.second; });
+            }
             else
+            {
                 authAndPay(arg.pay->first, [](auto const& it) { return it; });
+            }
         }
     }
 }
@@ -245,7 +256,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
     });
-    if (auto const result = submit(arg, jv); result == tesSUCCESS)
+    if (auto const result = submit(arg, jv); isTesSuccess(result))
     {
         // Issuer authorizes
         if (!arg.account || *arg.account == issuer_)
@@ -253,10 +264,14 @@ MPTTester::authorize(MPTAuthorize const& arg)
             auto const flags = getFlags(arg.holder);
             // issuer un-authorizes the holder
             if (arg.flags.value_or(0) == tfMPTUnauthorize)
+            {
                 env_.require(mptflags(*this, flags, arg.holder));
-            // issuer authorizes the holder
+                // issuer authorizes the holder
+            }
             else
+            {
                 env_.require(mptflags(*this, flags | lsfMPTAuthorized, arg.holder));
+            }
         }
         // Holder authorizes
         else if (arg.flags.value_or(0) != tfMPTUnauthorize)
@@ -315,9 +330,13 @@ MPTTester::setJV(MPTSet const& arg)
         std::visit(
             [&jv]<typename T>(T const& holder) {
                 if constexpr (std::is_same_v<T, Account>)
+                {
                     jv[sfHolder] = holder.human();
+                }
                 else if constexpr (std::is_same_v<T, AccountID>)
+                {
                     jv[sfHolder] = toBase58(holder);
+                }
             },
             *arg.holder);
     }
@@ -360,42 +379,70 @@ MPTTester::set(MPTSet const& arg)
                 if (arg.flags)
                 {
                     if (*arg.flags & tfMPTLock)
+                    {
                         flags |= lsfMPTLocked;
+                    }
                     else if (*arg.flags & tfMPTUnlock)
+                    {
                         flags &= ~lsfMPTLocked;
+                    }
                 }
 
                 if (arg.mutableFlags)
                 {
                     if (*arg.mutableFlags & tmfMPTSetCanLock)
+                    {
                         flags |= lsfMPTCanLock;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearCanLock)
+                    {
                         flags &= ~lsfMPTCanLock;
+                    }
 
                     if (*arg.mutableFlags & tmfMPTSetRequireAuth)
+                    {
                         flags |= lsfMPTRequireAuth;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
+                    {
                         flags &= ~lsfMPTRequireAuth;
+                    }
 
                     if (*arg.mutableFlags & tmfMPTSetCanEscrow)
+                    {
                         flags |= lsfMPTCanEscrow;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
+                    {
                         flags &= ~lsfMPTCanEscrow;
+                    }
 
                     if (*arg.mutableFlags & tmfMPTSetCanClawback)
+                    {
                         flags |= lsfMPTCanClawback;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearCanClawback)
+                    {
                         flags &= ~lsfMPTCanClawback;
+                    }
 
                     if (*arg.mutableFlags & tmfMPTSetCanTrade)
+                    {
                         flags |= lsfMPTCanTrade;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearCanTrade)
+                    {
                         flags &= ~lsfMPTCanTrade;
+                    }
 
                     if (*arg.mutableFlags & tmfMPTSetCanTransfer)
+                    {
                         flags |= lsfMPTCanTransfer;
+                    }
                     else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
+                    {
                         flags &= ~lsfMPTCanTransfer;
+                    }
                 }
             }
             env_.require(mptflags(*this, flags, holder));
@@ -498,14 +545,18 @@ MPTTester::pay(
     auto const outstandingAmt = getBalance(issuer_);
 
     if (credentials)
+    {
         env_(
             jtx::pay(src, dest, mpt(amount)),
             ter(err.value_or(tesSUCCESS)),
             credentials::ids(*credentials));
+    }
     else
+    {
         env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
+    }
 
-    if (env_.ter() != tesSUCCESS)
+    if (!isTesSuccess(env_.ter()))
         amount = 0;
     if (close_)
         env_.close();
@@ -543,7 +594,7 @@ MPTTester::claw(
     auto const issuerAmt = getBalance(issuer);
     auto const holderAmt = getBalance(holder);
     env_(jtx::claw(issuer, mpt(amount), holder), ter(err.value_or(tesSUCCESS)));
-    if (env_.ter() != tesSUCCESS)
+    if (!isTesSuccess(env_.ter()))
         amount = 0;
     if (close_)
         env_.close();

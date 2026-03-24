@@ -355,9 +355,13 @@ struct TestPeerSet : public PeerSet
     {
         int dropRate = 0;
         if (behavior == PeerSetBehavior::Drop50)
+        {
             dropRate = 50;
+        }
         else if (behavior == PeerSetBehavior::DropAll)
+        {
             dropRate = 100;
+        }
 
         if ((rand() % 100 + 1) <= dropRate)
             return;
@@ -497,7 +501,7 @@ struct LedgerServer
         auto updateIdx = [&]() {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
-            while (senders.count(fromIdx) != 0)
+            while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
             toIdx = (toIdx + r * 2) % fundedAccounts;
@@ -968,7 +972,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("TaskParameter");
 
-        auto makeSkipList = [](int count) -> std::vector<uint256> const {
+        auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);
@@ -1095,7 +1099,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
             }
             else
+            {
                 break;
+            }
         }
 
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
@@ -1128,9 +1134,27 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
 
-        // sweep
-        net.client.replayer.sweep();
-        BEAST_EXPECT(net.client.countsAsExpected(0, 0, 0));
+        // sweep() cleans up skipLists_ and deltas_ by removing entries whose
+        // weak_ptr can no longer be locked. Those weak_ptrs expire only when the
+        // last shared_ptr holder releases the sub-task. The sole owner is the
+        // LedgerReplayTask, but a JobQueue worker thread may still hold a
+        // temporary shared_ptr to a sub-task (from wptr.lock()) while executing
+        // the timer job that drove the task to completion. If sweep() runs before
+        // that thread unwinds, the weak_ptr is still lockable and the map entry
+        // is not removed. We retry until the worker thread finishes.
+        auto waitForSweep = [&net]() {
+            for (auto numAttempts = 0; numAttempts < 20; ++numAttempts)
+            {
+                net.client.replayer.sweep();
+                if (net.client.countsAsExpected(0, 0, 0))
+                {
+                    return true;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            return false;
+        };
+        BEAST_EXPECT(waitForSweep());
     }
 
     void

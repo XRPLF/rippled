@@ -339,7 +339,7 @@ public:
         }
         // Create data file with values
         std::size_t nitems = 0;
-        dat_file_header dh;
+        dat_file_header dh{};
         dh.version = currentVersion;
         dh.uid = make_uid();
         dh.appnum = 1;
@@ -367,8 +367,10 @@ public:
             for (it->SeekToFirst(); it->Valid(); it->Next())
             {
                 if (it->key().size() != 32)
+                {
                     Throw<std::runtime_error>(
                         "Unexpected key size " + std::to_string(it->key().size()));
+                }
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
@@ -406,7 +408,7 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
         // Create key file
-        key_file_header kh;
+        key_file_header kh{};
         kh.version = currentVersion;
         kh.uid = dh.uid;
         kh.appnum = dh.appnum;
@@ -465,7 +467,7 @@ public:
             {
                 auto const offset = r.offset();
                 // Data Record or Spill Record
-                std::size_t size;
+                std::size_t size = 0;
                 auto is = r.prepare(field<uint48_t>::size, ec);  // Size
                 if (ec)
                     Throw<nudb::system_error>(ec);
