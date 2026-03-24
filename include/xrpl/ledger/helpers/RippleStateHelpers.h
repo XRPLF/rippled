@@ -49,6 +49,12 @@ public:
         return currency_;
     }
 
+    [[nodiscard]] Issue const&
+    getIssue() const
+    {
+        return issue_;
+    }
+
     [[nodiscard]] bool
     isGlobalFrozen() const override
     {

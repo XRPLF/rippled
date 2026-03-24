@@ -90,15 +90,6 @@ public:
         return writableIOUToken_;
     }
 
-    static Expected<WritableRippleState, TER>
-    makeNew(WritableIOUToken& token, AccountID const& accountID, beast::Journal journal)
-    {
-        auto const ter = token.addEmptyHolding(accountID, XRPAmount{0}, journal);
-        if (ter != tesSUCCESS)
-            return Unexpected(ter);
-        return WritableRippleState{token.applyView(), token, accountID};
-    }
-
     //--------------------------------------------------------------------------
     //
     // Trust line operations
@@ -136,6 +127,29 @@ public:
         AccountID const& uLowAccountID,
         AccountID const& uHighAccountID,
         beast::Journal j);
+
+    /** Create a WritableRippleState backed by a brand-new SLE
+     *  (not yet inserted into the view).
+     */
+    [[nodiscard]] static WritableRippleState
+    makeNew(WritableIOUToken& token, AccountID const& holder)
+    {
+        return WritableRippleState(
+            token, holder, std::make_shared<SLE>(keylet::line(holder, token.getIssue())));
+    }
+
+private:
+    // This is a private constructor only used by `makeNew`
+    WritableRippleState(WritableIOUToken& token, AccountID const& holder, std::shared_ptr<SLE> sle)
+        : ReadOnlySLE(sle, token.applyView())
+        , TokenHolderBase(token.applyView(), sle, token, holder)
+        , WritableSLE(sle, token.applyView())
+        , WritableTokenHolderBase(token.applyView(), sle, token, holder)
+        , RippleState(token, holder)
+        , writableIOUToken_(token)
+    {
+        insert();
+    }
 
 protected:
     WritableIOUToken& writableIOUToken_;

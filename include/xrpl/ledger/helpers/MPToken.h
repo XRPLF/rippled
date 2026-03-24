@@ -75,7 +75,7 @@ public:
         AccountID const& account,
         std::uint32_t const flags)
     {
-        WritableMPToken mptoken(issuance, account);
+        WritableMPToken mptoken = makeNew(issuance, account);
 
         auto const ownerNode = mptoken.applyView().dirInsert(
             keylet::ownerDir(account), mptoken->key(), describeOwnerDir(account));
@@ -83,16 +83,38 @@ public:
         if (!ownerNode)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        mptoken.newSLE();
-
         (*mptoken)[sfAccount] = account;
         (*mptoken)[sfMPTokenIssuanceID] = issuance.getMptID();
         (*mptoken)[sfFlags] = flags;
         (*mptoken)[sfOwnerNode] = *ownerNode;
 
-        mptoken.insert();
-
         return tesSUCCESS;
+    }
+
+    /** Create a WritableMPToken backed by a brand-new SLE
+     *  (not yet inserted into the view).
+     */
+    [[nodiscard]] static WritableMPToken
+    makeNew(WritableMPTokenIssuance& issuance, AccountID const& holder)
+    {
+        return WritableMPToken(
+            issuance, holder, std::make_shared<SLE>(keylet::mptoken(issuance.getMptID(), holder)));
+    }
+
+private:
+    // This is a private constructor only used by `makeNew`
+    WritableMPToken(
+        WritableMPTokenIssuance& issuance,
+        AccountID const& holder,
+        std::shared_ptr<SLE> sle)
+        : ReadOnlySLE(sle, issuance.applyView())
+        , TokenHolderBase(issuance.applyView(), sle, issuance, holder)
+        , WritableSLE(sle, issuance.applyView())
+        , WritableTokenHolderBase(issuance.applyView(), sle, issuance, holder)
+        , MPToken(issuance, holder)
+        , writableIssuance_(issuance)
+    {
+        insert();
     }
 
 protected:
