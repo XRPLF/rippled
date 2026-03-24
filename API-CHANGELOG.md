@@ -94,7 +94,7 @@ This release contains bug fixes only and no API changes.
 
 ### Breaking changes in 2.5.0
 
-- `feature`: In admin-mode responses, the `vetoed` field is now always a boolean. Disabled obsolete amendments now have `"vetoed": true` and a new `"obsolete": true` field, instead of the previous `"vetoed": "Obsolete"` string value. This change improves type safety for API clients while avoiding changes to non-admin responses.
+- `feature`: The `vetoed` field in admin-mode responses is now always a boolean. Disabled obsolete amendments now have `"vetoed": true` instead of the previous `"vetoed": "Obsolete"` string value, which was not type-safe. A new `"obsolete"` boolean field is now included in all responses (both admin and non-admin), indicating whether an amendment is obsolete.
 
 ### Additions and bugfixes in 2.5.0
 
