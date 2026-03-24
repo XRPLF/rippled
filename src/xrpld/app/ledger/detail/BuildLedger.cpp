@@ -138,11 +138,11 @@ applyTransactions(
         count += changes;
 
         // A non-retry pass made no changes
-        if (!changes && !certainRetry)
+        if ((changes == 0) && !certainRetry)
             break;
 
         // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
             certainRetry = false;
     }
 

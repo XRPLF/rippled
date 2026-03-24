@@ -111,7 +111,7 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
@@ -524,7 +524,7 @@ public:
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }
@@ -643,7 +643,7 @@ public:
             Params params{};
             params.items = default_items;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
                 beast::temp_dir tempDir;
                 Section config = parse(config_string);

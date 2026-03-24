@@ -176,7 +176,7 @@ class ElementComboIter
     bool
     has(SB s) const
     {
-        return state_ & (1 << safe_cast<int>(s));
+        return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
     bool
@@ -212,7 +212,7 @@ public:
     valid() const
     {
         return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
-            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || prev_) &&
+            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || (prev_ != nullptr)) &&
             (!hasAny({SB::rootAcc, SB::sameAccIss, SB::existingAcc, SB::prevAcc}) ||
              has(SB::acc)) &&
             (!hasAny({SB::rootIss, SB::sameAccIss, SB::existingIss, SB::prevIss}) ||

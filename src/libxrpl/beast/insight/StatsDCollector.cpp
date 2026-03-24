@@ -352,7 +352,7 @@ public:
         }
     }
 
-    void
+    static void
     log(std::vector<boost::asio::const_buffer> const& buffers)
     {
         (void)buffers;

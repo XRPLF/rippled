@@ -1,5 +1,5 @@
 #include <xrpl/ledger/TrustLine.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Quality.h>
 

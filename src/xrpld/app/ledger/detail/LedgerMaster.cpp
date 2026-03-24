@@ -196,7 +196,7 @@ LedgerMaster::isCaughtUp(std::string& reason)
     }
     std::uint32_t validClose = mValidLedgerSign.load();
     std::uint32_t pubClose = mPubLedgerClose.load();
-    if (!validClose || !pubClose)
+    if ((validClose == 0u) || (pubClose == 0u))
     {
         reason = "No published ledger";
         return false;
@@ -515,7 +515,7 @@ LedgerMaster::getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal
     // published ledger which is.
     maxVal = mPubLedgerSeq.load();
 
-    if (!maxVal)
+    if (maxVal == 0u)
         return false;
 
     std::optional<std::uint32_t> maybeMin;

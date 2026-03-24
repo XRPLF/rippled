@@ -2,28 +2,19 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <functional>
-#include <initializer_list>
 #include <map>
+#include <memory>
+#include <optional>
+#include <set>
 #include <utility>
 
 namespace xrpl {

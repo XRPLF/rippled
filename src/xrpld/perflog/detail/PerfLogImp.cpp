@@ -70,8 +70,8 @@ PerfLogImp::Counters::countersJson() const
         Rpc value;
         {
             std::lock_guard lock(proc.second.mutex);
-            if (!proc.second.value.started && !proc.second.value.finished &&
-                !proc.second.value.errored)
+            if ((proc.second.value.started == 0u) && (proc.second.value.finished == 0u) &&
+                (proc.second.value.errored == 0u))
             {
                 continue;
             }
@@ -90,7 +90,7 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[proc.first] = p;
     }
 
-    if (totalRpc.started)
+    if (totalRpc.started != 0u)
     {
         Json::Value totalRpcJson(Json::objectValue);
         totalRpcJson[jss::started] = std::to_string(totalRpc.started);
@@ -108,8 +108,8 @@ PerfLogImp::Counters::countersJson() const
         Jq value;
         {
             std::lock_guard lock(proc.second.mutex);
-            if (!proc.second.value.queued && !proc.second.value.started &&
-                !proc.second.value.finished)
+            if ((proc.second.value.queued == 0u) && (proc.second.value.started == 0u) &&
+                (proc.second.value.finished == 0u))
             {
                 continue;
             }
@@ -130,7 +130,7 @@ PerfLogImp::Counters::countersJson() const
         jobQueueObj[JobTypes::name(proc.first)] = j;
     }
 
-    if (totalJq.queued)
+    if (totalJq.queued != 0u)
     {
         Json::Value totalJqJson(Json::objectValue);
         totalJqJson[jss::queued] = std::to_string(totalJq.queued);

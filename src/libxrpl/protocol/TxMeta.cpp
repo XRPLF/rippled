@@ -28,7 +28,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
     XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes)
+    if (affectedNodes != nullptr)
         nodes_ = *affectedNodes;
 
     setAdditionalFields(obj);
@@ -96,7 +96,7 @@ TxMeta::getAffectedAccounts() const
         {
             auto const* inner = dynamic_cast<STObject const*>(&node.peekAtIndex(index));
             XRPL_ASSERT(inner, "xrpl::getAffectedAccounts : STObject type cast succeeded");
-            if (inner)
+            if (inner != nullptr)
             {
                 for (auto const& field : *inner)
                 {

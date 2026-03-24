@@ -292,7 +292,7 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
+    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling) != 0u;
     auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
     if (seq != view().seq())
     {

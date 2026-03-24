@@ -191,7 +191,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
@@ -609,7 +609,7 @@ PathRequest::findPaths(
         after four source currencies, 50 - (4 * 4) = 34.
     */
     int const size = sourceCurrencies.size();
-    consumer_.charge({std::clamp(size * size + 34, 50, 400), "path update"});
+    consumer_.charge({std::clamp((size * size) + 34, 50, 400), "path update"});
     return true;
 }
 

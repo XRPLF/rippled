@@ -925,7 +925,7 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
 
     // If we are not running in standalone mode and there's a configured UNL,
     // check to make sure that it's not expired.
-    if (validating_ && !app_.config().standalone() && app_.validators().count())
+    if (validating_ && !app_.config().standalone() && (app_.validators().count() != 0u))
     {
         auto const when = app_.validators().expires();
 
@@ -997,7 +997,7 @@ RCLConsensus::Adaptor::validator() const
 void
 RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
-    if (!positions && app_.getOPs().isFull())
+    if ((positions == 0u) && app_.getOPs().isFull())
         app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 

@@ -62,7 +62,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             //   0, 3, 2, 5, 4, 7...
             // in sets of 16 NFTs we can get each page to be fully
             // populated.
-            std::uint32_t const intTaxon = (i / 16) + (i & 0b10000 ? 2 : 0);
+            std::uint32_t const intTaxon = (i / 16) + (((i & 0b10000) != 0u) ? 2 : 0);
             uint32_t const extTaxon = internalTaxon(owner, intTaxon);
             nfts.push_back(token::getNextID(env, owner, extTaxon, tfTransferable));
             env(token::mint(owner, extTaxon), txflags(tfTransferable));

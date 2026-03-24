@@ -117,7 +117,7 @@ public:
                 decompressed.begin()));
     }
 
-    std::shared_ptr<protocol::TMManifests>
+    static std::shared_ptr<protocol::TMManifests>
     buildManifests(int n)
     {
         auto manifests = std::make_shared<protocol::TMManifests>();
@@ -143,7 +143,7 @@ public:
         return manifests;
     }
 
-    std::shared_ptr<protocol::TMEndpoints>
+    static std::shared_ptr<protocol::TMEndpoints>
     buildEndpoints(int n)
     {
         auto endpoints = std::make_shared<protocol::TMEndpoints>();
@@ -196,7 +196,7 @@ public:
         return transaction;
     }
 
-    std::shared_ptr<protocol::TMGetLedger>
+    static std::shared_ptr<protocol::TMGetLedger>
     buildGetLedger()
     {
         auto getLedger = std::make_shared<protocol::TMGetLedger>();
@@ -213,7 +213,7 @@ public:
         return getLedger;
     }
 
-    std::shared_ptr<protocol::TMLedgerData>
+    static std::shared_ptr<protocol::TMLedgerData>
     buildLedgerData(uint32_t n, Logs& logs)
     {
         auto ledgerData = std::make_shared<protocol::TMLedgerData>();
@@ -251,7 +251,7 @@ public:
         return ledgerData;
     }
 
-    std::shared_ptr<protocol::TMGetObjectByHash>
+    static std::shared_ptr<protocol::TMGetObjectByHash>
     buildGetObjectByHash()
     {
         auto getObject = std::make_shared<protocol::TMGetObjectByHash>();
@@ -277,7 +277,7 @@ public:
         return getObject;
     }
 
-    std::shared_ptr<protocol::TMValidatorList>
+    static std::shared_ptr<protocol::TMValidatorList>
     buildValidatorList()
     {
         auto list = std::make_shared<protocol::TMValidatorList>();
@@ -304,7 +304,7 @@ public:
         return list;
     }
 
-    std::shared_ptr<protocol::TMValidatorListCollection>
+    static std::shared_ptr<protocol::TMValidatorListCollection>
     buildValidatorListCollection()
     {
         auto list = std::make_shared<protocol::TMValidatorListCollection>();
