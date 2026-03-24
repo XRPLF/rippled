@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -11,7 +12,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <string>
 
