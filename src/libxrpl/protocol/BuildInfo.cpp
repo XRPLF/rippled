@@ -140,7 +140,7 @@ encodeSoftwareVersion(std::string_view versionStr)
                 if (x == 0)
                     x = parsePreRelease(id, "b", 0x40, 0, 63);
 
-                if (x & 0xC0)
+                if ((x & 0xC0) != 0)
                 {
                     c |= static_cast<std::uint64_t>(x) << 16;
                     break;
