@@ -124,7 +124,8 @@ verifyProofs(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // verify el gamal pedersen linkage
-    if (auto const ter = verifyBalancePcmLinkage(
+    if (auto const ter = verifyPcmLinkage(
+            PcmLinkageType::balance,
             pedersenProof,
             (*mptoken)[sfConfidentialBalanceSpending],
             holderPubKey,

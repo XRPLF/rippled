@@ -404,48 +404,39 @@ Buffer
 generateBlindingFactor();
 
 /**
- * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
- * Pedersen Commitment for a transaction Amount.
+ * @brief Distinguishes the two algebraic structures used in
+ * ElGamal-Pedersen linkage proofs.
  *
- * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `m`
- * as the Pedersen Commitment `pcmSlice`, using the randomness `r`.
- * Proves Enc(m) <-> Pcm(m)
- *
- * @param proof       The Zero Knowledge Proof bytes.
- * @param encAmt      The ElGamal ciphertext of the amount (C1, C2).
- * @param pubKeySlice The sender's public key.
- * @param pcmSlice    The Pedersen Commitment to the amount.
- * @param contextHash The unique context hash for this transaction.
- * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ * - amount: The ciphertext was created with randomness `r`.
+ *           Verification order: C1, C2, Pk, Pcm.
+ * - balance: The ciphertext was created with the secret key `s`.
+ *            Verification order: Pk, C2, C1, Pcm (swaps Pk <-> C1).
  */
-TER
-verifyAmountPcmLinkage(
-    Slice const& proof,
-    Slice const& encAmt,
-    Slice const& pubKeySlice,
-    Slice const& pcmSlice,
-    uint256 const& contextHash);
+enum class PcmLinkageType { amount, balance };
 
 /**
  * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
- * Pedersen Commitment for an account Balance.
+ * Pedersen Commitment.
  *
- * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `b`
- * as the Pedersen Commitment `pcmSlice`, using the secret key `s`.
- * Proves Enc(b) <-> Pcm(b)
+ * Proves that the ElGamal ciphertext `encAmt` encrypts the same value
+ * as the Pedersen Commitment `pcmSlice`.
  *
- * Note: Swaps arguments (Pk <-> C1) to accommodate the different algebraic
- * structure.
+ * The `type` parameter selects the argument ordering passed to the
+ * underlying secp256k1 verification call to accommodate the different
+ * algebraic structures used for amounts (randomness `r`) vs balances
+ * (secret key `s`).
  *
+ * @param type        Whether this is an amount or balance linkage proof.
  * @param proof       The Zero Knowledge Proof bytes.
- * @param encAmt      The ElGamal ciphertext of the balance (C1, C2).
+ * @param encAmt      The ElGamal ciphertext (C1, C2).
  * @param pubKeySlice The sender's public key.
- * @param pcmSlice    The Pedersen Commitment to the balance.
+ * @param pcmSlice    The Pedersen Commitment.
  * @param contextHash The unique context hash for this transaction.
  * @return tesSUCCESS if the proof is valid, or an error code otherwise.
  */
 TER
-verifyBalancePcmLinkage(
+verifyPcmLinkage(
+    PcmLinkageType type,
     Slice const& proof,
     Slice const& encAmt,
     Slice const& pubKeySlice,

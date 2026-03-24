@@ -157,7 +157,8 @@ verifySendProofs(
     }
 
     // Verify amount linkage
-    if (auto const ter = verifyAmountPcmLinkage(
+    if (auto const ter = verifyPcmLinkage(
+            PcmLinkageType::amount,
             amountLinkageProof,
             ctx.tx[sfSenderEncryptedAmount],
             (*sleSenderMPToken)[sfHolderEncryptionKey],
@@ -169,7 +170,8 @@ verifySendProofs(
     }
 
     // Verify balance linkage
-    if (auto const ter = verifyBalancePcmLinkage(
+    if (auto const ter = verifyPcmLinkage(
+            PcmLinkageType::balance,
             balanceLinkageProof,
             (*sleSenderMPToken)[sfConfidentialBalanceSpending],
             (*sleSenderMPToken)[sfHolderEncryptionKey],
