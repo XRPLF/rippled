@@ -1,5 +1,5 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>

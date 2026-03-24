@@ -7,6 +7,7 @@
 #include <test/jtx/sendmax.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>

@@ -1,5 +1,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -98,7 +100,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return !v || *v == (*sle)[field];
     };
 
-    std::uint32_t adjustReserve = 0;
+    std::int8_t adjustReserve = 0;
     if (sle)
     {
         // update

@@ -1,6 +1,9 @@
 #include <xrpl/tx/transactors/vault/VaultDelete.h>
 //
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
