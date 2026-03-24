@@ -48,6 +48,7 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number interestUnrealized = 0;
 
         Vault static make(SLE const&);
     };

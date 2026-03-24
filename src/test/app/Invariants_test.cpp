@@ -2273,6 +2273,7 @@ class Invariants_test : public beast::unit_test::suite
             std::optional<int> assetsMaximum = std::nullopt;
             std::optional<int> sharesTotal = std::nullopt;
             std::optional<int> vaultAssets = std::nullopt;
+            std::optional<int> interestUnrealized = std::nullopt;
             std::optional<AccountAmount> accountAssets = std::nullopt;
             std::optional<AccountAmount> accountShares = std::nullopt;
             // NOLINTEND(readability-redundant-member-init)
@@ -2287,11 +2288,13 @@ class Invariants_test : public beast::unit_test::suite
             if (!sleShares)
                 return false;
 
-            // These two fields are adjusted in absolute terms
+            // These three fields are adjusted in absolute terms
             if (args.lossUnrealized)
                 (*sleVault)[sfLossUnrealized] = *args.lossUnrealized;
             if (args.assetsMaximum)
                 (*sleVault)[sfAssetsMaximum] = *args.assetsMaximum;
+            if (args.interestUnrealized)
+                (*sleVault)[sfInterestUnrealized] = *args.interestUnrealized;
 
             // Remaining fields are adjusted in terms of difference
             if (args.assetsTotal)
@@ -2949,6 +2952,126 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"interest unrealized must be positive"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.interestUnrealized = -1;
+                       }));
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // InterestUnrealized exceeds the lent portion (assetsTotal -
+        // assetsAvailable). Vault has 30 XRP total, reduce available by 10 XRP
+        // so lent = 10 XRP, then set interest to 20 XRP which exceeds lent.
+        doInvariantCheck(
+            {"interest unrealized exceeds lent assets"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
+                           adj.interestUnrealized = (DROPS_PER_XRP * 20).value();
+                       }));
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Deposit net asset value = assetsTotal - interestUnrealized must be > 0 when
+        // vault has assets. Set interestUnrealized = assetsTotal so net asset value = 0.
+        doInvariantCheck(
+            {"deposit net asset value must be positive"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.assetsAvailable = (DROPS_PER_XRP * -20).value();
+                           adj.interestUnrealized = (DROPS_PER_XRP * 30 + 10).value();
+                       }));
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Withdrawal net asset value = assetsTotal - interestUnrealized - lossUnrealized
+        // must not go negative.
+        doInvariantCheck(
+            {"withdrawal net asset value must not be negative"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.assetsAvailable = (DROPS_PER_XRP * -20).value();
+                           adj.interestUnrealized = (DROPS_PER_XRP * 15).value();
+                           adj.lossUnrealized = (DROPS_PER_XRP * 20).value();
+                       }));
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Interest unrealized with no outstanding shares.
+        doInvariantCheck(
+            {"interest unrealized with no outstanding shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
+                           adj.interestUnrealized = (DROPS_PER_XRP * 5).value();
+                       }));
+
+                // Zero out shares
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleShares)[sfOutstandingAmount] = 0;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Interest unrealized must not change on non-loan transactions.
+        doInvariantCheck(
+            {"vault transaction must not change interest unrealized"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
+                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
+                           adj.interestUnrealized = (DROPS_PER_XRP * 5).value();
+                       }));
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
