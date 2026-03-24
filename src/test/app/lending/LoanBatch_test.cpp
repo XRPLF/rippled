@@ -49,11 +49,11 @@ protected:
                     bobSeq,
                     batchFee,
                     tfAllOrNothing,
+                    aliceSeq,
                     {loanSet,
                      del(alice, loanKeylet.key),
                      manage(alice, loanKeylet.key, tfLoanImpair),
-                     pay(alice, loanKeylet.key, XRP(500))},
-                    aliceSeq),
+                     pay(alice, loanKeylet.key, XRP(500))}),
                 batch::sig(alice));
             env(batchTxn, ter(temINVALID_INNER_BATCH));
         };
@@ -100,8 +100,8 @@ protected:
                 brokerSeq,
                 batchFee,
                 tfAllOrNothing,
-                {txns.vaultCreateTx, txns.vaultDepositTx, txns.brokerSetTx, *txns.coverDepositTx},
-                brokerSeq + 1));
+                brokerSeq + 1,
+                {txns.vaultCreateTx, txns.vaultDepositTx, txns.brokerSetTx, *txns.coverDepositTx}));
 
         env(batchTxn);
         env.close();
@@ -163,7 +163,7 @@ protected:
         // Create the batch transaction with both LoanSet and LoanDelete
         auto const batchTxn = env.jt(
             batch::make(
-                broker, brokerSeq, batchFee, tfAllOrNothing, {loanSetTx, loanDelTx}, brokerSeq + 1),
+                broker, brokerSeq, batchFee, tfAllOrNothing, brokerSeq + 1, {loanSetTx, loanDelTx}),
             batch::sig(borrower));
 
         env(batchTxn);
@@ -229,7 +229,7 @@ protected:
         // Create the batch transaction with LoanSet and impair
         auto const batchTxn = env.jt(
             batch::make(
-                broker, brokerSeq, batchFee, tfAllOrNothing, {loanSetTx, impairTx}, brokerSeq + 1),
+                broker, brokerSeq, batchFee, tfAllOrNothing, brokerSeq + 1, {loanSetTx, impairTx}),
             batch::sig(borrower));
 
         auto currentTime = env.now().time_since_epoch().count();
@@ -374,8 +374,8 @@ protected:
                 brokerSeq,
                 batchFee,
                 tfAllOrNothing,
-                {defaultTx, withdrawTx, paymentTx},
-                brokerSeq + 1));
+                brokerSeq + 1,
+                {defaultTx, withdrawTx, paymentTx}));
 
         env(batchTxn);
         env.close();
@@ -511,8 +511,8 @@ protected:
                 borrowerSeq,
                 batchFee,
                 tfAllOrNothing,
-                {loanSetTx, buyTx, sellTx, payTx},
-                borrowerSeq + 1),
+                borrowerSeq + 1,
+                {loanSetTx, buyTx, sellTx, payTx}),
             batch::sig(broker));
 
         env(batchTxn);
@@ -668,8 +668,8 @@ protected:
                 borrowerSeq,
                 batchFee,
                 tfAllOrNothing,
-                {loanSetTx, buyTx, sellTx, payTx},
-                borrowerSeq + 1),
+                borrowerSeq + 1,
+                {loanSetTx, buyTx, sellTx, payTx}),
             batch::sig(broker));
 
         env(batchTxn);

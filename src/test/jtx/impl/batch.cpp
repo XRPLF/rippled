@@ -53,14 +53,13 @@ make(
     uint32_t seq,
     STAmount const& fee,
     std::uint32_t flags,
-    std::vector<Json::Value> const& txns,
     std::uint32_t innerStartSeq,
-    std::optional<std::uint32_t> const& ticket)
+    std::vector<Json::Value> const& txns)
 {
     auto jv = outer(account, seq, fee, flags);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
-        inner in(txns[i], innerStartSeq + static_cast<std::uint32_t>(i), ticket);
+        inner in(txns[i], innerStartSeq + static_cast<std::uint32_t>(i));
         auto const index = jv[jss::RawTransactions].size();
         Json::Value& batchTransaction = jv[jss::RawTransactions][index];
         batchTransaction = Json::Value{};

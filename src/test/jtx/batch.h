@@ -87,9 +87,8 @@ make(
     uint32_t seq,
     STAmount const& fee,
     std::uint32_t flags,
-    std::vector<Json::Value> const& txns,
     std::uint32_t innerStartSeq,
-    std::optional<std::uint32_t> const& ticket = std::nullopt);
+    std::vector<Json::Value> const& txns);
 
 /** Set a batch signature on a JTx. */
 class sig
