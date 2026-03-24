@@ -22,6 +22,13 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace xrpl {
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor. Implemented in applySteps.cpp
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx);
+
 namespace test {
 
 class Invariants_test : public beast::unit_test::suite

@@ -122,7 +122,9 @@ protected:
 
 public:
     virtual ~Transactor() = default;
+
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
+
     /** Process the transaction. */
     ApplyResult
     operator()();
@@ -142,8 +144,8 @@ public:
     /** Check all invariants for the current transaction.
      *
      *  Runs transaction-specific invariants first (visitInvariantEntry +
-     *  finalizeInvariants), then protocol-level invariants.  Protocol
-     *  invariants are skipped if a transaction invariant already failed.
+     *  finalizeInvariants), then protocol-level invariants.  Both layers
+     *  always run; the worst failure code is returned.
      *
      *  @param result  the tentative TER from transaction processing.
      *  @param fee     the fee consumed by the transaction.

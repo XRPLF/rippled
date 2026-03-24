@@ -1066,13 +1066,11 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
     try
     {
         // Phase 1: visit modified entries
-        ctx_.visit([this](
-                       uint256 const&,
-                       bool isDelete,
-                       std::shared_ptr<SLE const> const& before,
-                       std::shared_ptr<SLE const> const& after) {
-            this->visitInvariantEntry(isDelete, before, after);
-        });
+        ctx_.visit(
+            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                this->visitInvariantEntry(isDelete, before, after);
+            });
+
         // Phase 2: finalize
         if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
         {
