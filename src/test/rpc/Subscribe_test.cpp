@@ -400,7 +400,7 @@ public:
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
         auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
-        if (!BEAST_EXPECT(parsedseed))
+        if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 
         std::string const valPublicKey = toBase58(
@@ -818,13 +818,17 @@ public:
          * return {true, true} if received numReplies replies and also
          * received a tx with the account_history_tx_first == true
          */
-        auto getTxHash = [](WSClient& wsc, IdxHashVec& v, int numReplies) -> std::pair<bool, bool> {
+        auto getTxHash = [](WSClient& wsc,
+                            IdxHashVec& v,
+                            int numReplies,
+                            std::chrono::milliseconds timeout =
+                                std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
             bool first_flag = false;
 
             for (int i = 0; i < numReplies; ++i)
             {
                 std::uint32_t idx{0};
-                auto reply = wsc.getMsg(100ms);
+                auto reply = wsc.getMsg(timeout);
                 if (reply)
                 {
                     auto r = *reply;
@@ -998,7 +1002,7 @@ public:
             BEAST_EXPECT(goodSubRPC(jv));
 
             sendPayments(env, env.master, alice, 1, 1);
-            r = getTxHash(*wscTxHistory, vec, 1);
+            r = getTxHash(*wscTxHistory, vec, 1, 10ms);
             BEAST_EXPECT(!r.first);
         }
         {
@@ -1017,7 +1021,7 @@ public:
                 return;
             IdxHashVec genesisFullHistoryVec;
             BEAST_EXPECT(env.syncClose());
-            if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
+            if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1, 10ms).first))
                 return;
 
             /*
@@ -1177,7 +1181,7 @@ public:
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
-                getTxHash(*ws, tempVec, 100);
+                getTxHash(*ws, tempVec, 100, 1000ms);
             }
 
             auto count = mixedPayments();
@@ -1211,7 +1215,7 @@ public:
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
-                getTxHash(*wscLong, tempVec, 100);
+                getTxHash(*wscLong, tempVec, 100, 1000ms);
             }
 
             // repeat the payments many rounds

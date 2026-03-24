@@ -206,6 +206,8 @@ public:
                     Json::Value p;
                     p["Paths"] = path[jss::paths_computed];
                     STParsedJSONObject po("generic", p);
+
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     paths = po.object->getFieldPathSet(sfPaths);
                 }
             }
@@ -1516,7 +1518,7 @@ public:
             }
             else
             {
-                BEAST_EXPECT(st.size() == 0);
+                BEAST_EXPECT(st.empty());
                 BEAST_EXPECT(equal(sa, XRP(0)));
             }
         };

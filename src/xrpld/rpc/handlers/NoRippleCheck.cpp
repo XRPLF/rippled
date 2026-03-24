@@ -6,6 +6,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -55,12 +56,16 @@ doNoRippleCheck(RPC::JsonContext& context)
     {
         std::string const role = params["role"].asString();
         if (role == "gateway")
+        {
             roleGateway = true;
+        }
         else if (role != "user")
+        {
             return RPC::invalid_field_error("role");
+        }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::noRippleCheck, context))
         return *err;
 

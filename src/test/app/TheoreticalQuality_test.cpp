@@ -9,7 +9,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 namespace xrpl {
 namespace test {
@@ -25,7 +25,9 @@ struct RippleCalcTestParams
     STPathSet paths;
 
     explicit RippleCalcTestParams(Json::Value const& jv)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         : srcAccount{*parseBase58<AccountID>(jv[jss::Account].asString())}
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         , dstAccount{*parseBase58<AccountID>(jv[jss::Destination].asString())}
         , dstAmt{amountFromJson(sfAmount, jv[jss::Amount])}
     {
@@ -45,6 +47,7 @@ struct RippleCalcTestParams
                     {
                         assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
                         p.emplace_back(
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             *parseBase58<AccountID>(pe[jss::account].asString()),
                             std::nullopt,
                             std::nullopt);
@@ -54,9 +57,15 @@ struct RippleCalcTestParams
                         auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -144,7 +153,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};
@@ -237,9 +246,9 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             std::nullopt,
             dummyJ);
 
-        BEAST_EXPECT(sr.first == tesSUCCESS);
+        BEAST_EXPECT(isTesSuccess(sr.first));
 
-        if (sr.first != tesSUCCESS)
+        if (!isTesSuccess(sr.first))
             return;
 
         // Due to the floating point calculations, theoretical and actual
@@ -255,7 +264,8 @@ class TheoreticalQuality_test : public beast::unit_test::suite
 
         for (auto const& strand : sr.second)
         {
-            Quality const theoreticalQ = *qualityUpperBound(sb, strand);
+            Quality const theoreticalQ =
+                *qualityUpperBound(sb, strand);  // NOLINT(bugprone-unchecked-optional-access)
             auto const f =
                 flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
             BEAST_EXPECT(f.success);
@@ -488,7 +498,7 @@ public:
                 return std::nullopt;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return std::nullopt;

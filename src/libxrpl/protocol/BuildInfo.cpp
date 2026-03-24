@@ -3,6 +3,7 @@
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <boost/preprocessor/stringize.hpp>
 
@@ -80,7 +81,7 @@ getVersionString()
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = "rippled-" + getVersionString();
+    static std::string const value = systemName() + "-" + getVersionString();
     return value;
 }
 
