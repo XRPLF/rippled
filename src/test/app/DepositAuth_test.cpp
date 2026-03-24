@@ -304,9 +304,11 @@ struct DepositAuth_test : public beast::unit_test::suite
             auto const noRipplePrev = i & 0x1;
             auto const noRippleNext = i & 0x2;
             auto const withDepositAuth = i & 0x4;
-            testIssuer(testable_amendments(), noRipplePrev, noRippleNext, withDepositAuth);
+            testIssuer(
+                testable_amendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
 
-            testNonIssuer(testable_amendments(), noRipplePrev, noRippleNext, withDepositAuth);
+            testNonIssuer(
+                testable_amendments(), noRipplePrev != 0, noRippleNext != 0, withDepositAuth != 0);
         }
     }
 

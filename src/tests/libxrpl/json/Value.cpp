@@ -209,10 +209,10 @@ TEST(json_value, compare_strings)
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);
-        EXPECT_EQ((lhs < rhs), (!(lhsEqRhs || !lhsLtRhs)));
+        EXPECT_EQ((lhs < rhs), (!lhsEqRhs && lhsLtRhs));
         EXPECT_EQ((lhs <= rhs), (lhsEqRhs || lhsLtRhs));
         EXPECT_EQ((lhs >= rhs), (lhsEqRhs || !lhsLtRhs));
-        EXPECT_EQ((lhs > rhs), (!(lhsEqRhs || lhsLtRhs)));
+        EXPECT_EQ((lhs > rhs), (!lhsEqRhs && !lhsLtRhs));
     };
 
     Json::Value const null0;

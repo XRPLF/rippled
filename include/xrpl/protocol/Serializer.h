@@ -336,7 +336,7 @@ public:
         static_assert(N > 0, "");
     }
 
-    std::size_t
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return remain_ == 0;

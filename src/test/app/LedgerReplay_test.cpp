@@ -232,9 +232,7 @@ public:
     bool
     supportsFeature(ProtocolFeature f) const override
     {
-        if (f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_)
-            return true;
-        return false;
+        return f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_;
     }
     std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
@@ -363,7 +361,7 @@ struct TestPeerSet : public PeerSet
             dropRate = 100;
         }
 
-        if ((rand() % 100 + 1) <= dropRate)
+        if (((rand() % 100) + 1) <= dropRate)
             return;
 
         switch (type)
@@ -752,9 +750,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -771,9 +767,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -1066,10 +1060,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             auto http_resp = xrpl::makeResponse(
                 true, http_request, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
             auto const clientResult = peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
-            if (clientResult != expecting)
-                return false;
-
-            return true;
+            return clientResult == expecting;
         };
 
         BEAST_EXPECT(handshake(false, false, false));
@@ -1301,7 +1292,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int totalReplay = 5;
         NetworkOfTwo net(
             *this,
-            {totalReplay * 3 + 1},
+            {(totalReplay * 3) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1348,11 +1339,11 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
         BEAST_EXPECT(net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
-        BEAST_EXPECT(net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
+        BEAST_EXPECT(net.client.countsAsExpected(4, 3, (2 * (totalReplay - 1)) + 2));
 
         // cover
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
-        deltaStatuses = std::vector<TaskStatus>(totalReplay * 3 - 1, TaskStatus::Completed);
+        deltaStatuses = std::vector<TaskStatus>((totalReplay * 3) - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash,
             totalReplay * 3,
@@ -1360,7 +1351,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses changed
         BEAST_EXPECT(net.client.waitForLedgers(finalHash, totalReplay * 3));
-        BEAST_EXPECT(net.client.countsAsExpected(5, 3, totalReplay * 3 - 1));
+        BEAST_EXPECT(net.client.countsAsExpected(5, 3, (totalReplay * 3) - 1));
 
         // sweep
         net.client.replayer.sweep();
@@ -1464,7 +1455,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
         int rounds = 4;
         NetworkOfTwo net(
             *this,
-            {totalReplay * rounds + 1},
+            {(totalReplay * rounds) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);

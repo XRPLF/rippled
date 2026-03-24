@@ -1,8 +1,9 @@
 #include <xrpld/app/paths/detail/StepChecks.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
@@ -368,7 +369,7 @@ make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing)
+    if (ctx.offerCrossing != 0u)
     {
         auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);

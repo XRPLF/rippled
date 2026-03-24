@@ -84,7 +84,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     }
 
     XRPL_ASSERT(
-        !it->second || (it->second->size() > 0),
+        !it->second || (!it->second->empty()),
         "xrpl::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "
