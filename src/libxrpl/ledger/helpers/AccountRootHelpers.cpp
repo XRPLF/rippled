@@ -126,8 +126,8 @@ AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    constexpr std::uint16_t maxAccountAttempts = 256;
-    for (std::uint16_t i = 0; i < maxAccountAttempts; ++i)
+    constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
+    for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
     {
         ripesha_hasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
@@ -148,7 +148,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const pseudoFields = []() {
+    static std::vector<SField const*> const kPSEUDO_FIELDS = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {
@@ -168,7 +168,7 @@ getPseudoAccountFields()
         }
         return pseudoFields;
     }();
-    return pseudoFields;
+    return kPSEUDO_FIELDS;
 }
 
 [[nodiscard]] bool

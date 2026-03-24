@@ -33,7 +33,7 @@ namespace xrpl::test {
 template <class T>
 struct SEnv
 {
-    jtx::Env env_;
+    jtx::Env env;
 
     SEnv(
         T& s,
@@ -41,28 +41,28 @@ struct SEnv
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
-        : env_(s, std::move(config), features, std::move(logs), thresh)
+        : env(s, std::move(config), features, std::move(logs), thresh)
     {
     }
 
     SEnv&
     close()
     {
-        env_.close();
+        env.close();
         return *this;
     }
 
     SEnv&
     enableFeature(uint256 const feature)
     {
-        env_.enableFeature(feature);
+        env.enableFeature(feature);
         return *this;
     }
 
     SEnv&
     disableFeature(uint256 const feature)
     {
-        env_.app().config().features.erase(feature);
+        env.app().config().features.erase(feature);
         return *this;
     }
 
@@ -70,7 +70,7 @@ struct SEnv
     SEnv&
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        env_.fund(amount, arg, args...);
+        env.fund(amount, arg, args...);
         return *this;
     }
 
@@ -78,7 +78,7 @@ struct SEnv
     SEnv&
     tx(JsonValue&& jv, FN const&... fN)
     {
-        env_(std::forward<JsonValue>(jv), fN...);
+        env(std::forward<JsonValue>(jv), fN...);
         return *this;
     }
 
@@ -87,44 +87,44 @@ struct SEnv
     multiTx(jtx::JValueVec const& jvv, FN const&... fN)
     {
         for (auto const& jv : jvv)
-            env_(jv, fN...);
+            env(jv, fN...);
         return *this;
     }
 
     TER
-    Ter() const
+    ter() const
     {
-        return env_.ter();
+        return env.ter();
     }
 
     STAmount
     balance(jtx::Account const& account) const
     {
-        return env_.balance(account).value();
+        return env.balance(account).value();
     }
 
     STAmount
     balance(jtx::Account const& account, Issue const& issue) const
     {
-        return env_.balance(account, issue).value();
+        return env.balance(account, issue).value();
     }
 
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return env_.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count);
     }
 
     XRPAmount
     txFee()
     {
-        return env_.current()->fees().base;
+        return env.current()->fees().base;
     }
 
     std::shared_ptr<SLE const>
     account(jtx::Account const& account)
     {
-        return env_.le(account);
+        return env.le(account);
     }
 
     std::shared_ptr<SLE const>
@@ -133,7 +133,7 @@ struct SEnv
         STXChainBridge b(jvb);
 
         auto tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
-            if (auto r = env_.le(keylet::bridge(b, ct)))
+            if (auto r = env.le(keylet::bridge(b, ct)))
             {
                 if ((*r)[sfXChainBridge] == b)
                     return r;
@@ -160,13 +160,13 @@ struct SEnv
     std::shared_ptr<SLE const>
     claimID(Json::Value const& jvb, std::uint64_t seq)
     {
-        return env_.le(keylet::xChainClaimID(STXChainBridge(jvb), seq));
+        return env.le(keylet::xChainClaimID(STXChainBridge(jvb), seq));
     }
 
     std::shared_ptr<SLE const>
     caClaimID(Json::Value const& jvb, std::uint64_t seq)
     {
-        return env_.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), seq));
+        return env.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), seq));
     }
 };
 
@@ -180,26 +180,26 @@ struct XEnv : public jtx::XChainBridgeObjects, public SEnv<T>
     XEnv(T& s, bool side = false) : SEnv<T>(s, jtx::envconfig(), features)
     {
         using namespace jtx;
-        STAmount xrp_funds{XRP(10000)};
+        STAmount xrpFunds{XRP(10000)};
 
         if (!side)
         {
-            this->fund(xrp_funds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
+            this->fund(xrpFunds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
 
             // Signer's list must match the attestation signers
             // env_(jtx::signers(mcDoor, quorum, signers));
             for (auto& s : signers)
-                this->fund(xrp_funds, s.account);
+                this->fund(xrpFunds, s.account);
         }
         else
         {
-            this->fund(xrp_funds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
+            this->fund(xrpFunds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
             for (auto& ra : payees)
-                this->fund(xrp_funds, ra);
+                this->fund(xrpFunds, ra);
 
             for (auto& s : signers)
-                this->fund(xrp_funds, s.account);
+                this->fund(xrpFunds, s.account);
 
             // Signer's list must match the attestation signers
             // env_(jtx::signers(Account::kMASTER, quorum, signers));
@@ -212,19 +212,19 @@ struct XEnv : public jtx::XChainBridgeObjects, public SEnv<T>
 template <class T>
 struct Balance
 {
-    jtx::Account const& account_;
-    T& env_;
+    jtx::Account const& account;
+    T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account_(account), env_(env)
+    Balance(T& env, jtx::Account const& account) : account(account), env(env)
     {
-        startAmount = env_.balance(account_);
+        startAmount = env.balance(account);
     }
 
     STAmount
     diff() const
     {
-        return env_.balance(account_) - startAmount;
+        return env.balance(account) - startAmount;
     }
 };
 
@@ -235,47 +235,47 @@ struct BalanceTransfer
 {
     using balance = Balance<T>;
 
-    balance from_;
-    balance to_;
-    balance payer_;                        // pays the rewards
+    balance from;
+    balance to;
+    balance payer;                         // pays the rewards
     std::vector<balance> reward_accounts;  // receives the reward
-    XRPAmount txFees_;
+    XRPAmount txFees;
 
     BalanceTransfer(
         T& env,
-        jtx::Account const& from_acct,
-        jtx::Account const& to_acct,
+        jtx::Account const& fromAcct,
+        jtx::Account const& toAcct,
         jtx::Account const& payer,
         jtx::Account const* payees,
-        size_t num_payees,
+        size_t numPayees,
         bool withClaim)
-        : from_(env, from_acct)
-        , to_(env, to_acct)
-        , payer_(env, payer)
+        : from(env, fromAcct)
+        , to(env, toAcct)
+        , payer(env, payer)
         , reward_accounts([&]() {
             std::vector<balance> r;
-            r.reserve(num_payees);
-            for (size_t i = 0; i < num_payees; ++i)
+            r.reserve(numPayees);
+            for (size_t i = 0; i < numPayees; ++i)
                 r.emplace_back(env, payees[i]);
             return r;
         }())
-        , txFees_(withClaim ? env.env_.current()->fees().base : XRPAmount(0))
+        , txFees(withClaim ? env.env.current()->fees().base : XRPAmount(0))
     {
     }
 
     BalanceTransfer(
         T& env,
-        jtx::Account const& from_acct,
-        jtx::Account const& to_acct,
+        jtx::Account const& fromAcct,
+        jtx::Account const& toAcct,
         jtx::Account const& payer,
         std::vector<jtx::Account> const& payees,
         bool withClaim)
-        : BalanceTransfer(env, from_acct, to_acct, payer, &payees[0], payees.size(), withClaim)
+        : BalanceTransfer(env, fromAcct, toAcct, payer, &payees[0], payees.size(), withClaim)
     {
     }
 
     bool
-    payees_received(STAmount const& reward) const
+    payeesReceived(STAmount const& reward) const
     {
         return std::all_of(reward_accounts.begin(), reward_accounts.end(), [&](balance const& b) {
             return b.diff() == reward;
@@ -283,24 +283,24 @@ struct BalanceTransfer
     }
 
     bool
-    check_most_balances(STAmount const& amt, STAmount const& reward)
+    checkMostBalances(STAmount const& amt, STAmount const& reward)
     {
-        return from_.diff() == -amt && to_.diff() == amt && payees_received(reward);
+        return from.diff() == -amt && to.diff() == amt && payeesReceived(reward);
     }
 
     bool
-    has_happened(STAmount const& amt, STAmount const& reward, bool check_payer = true)
+    hasHappened(STAmount const& amt, STAmount const& reward, bool checkPayer = true)
     {
-        auto reward_cost = multiply(reward, STAmount(reward_accounts.size()), reward.issue());
-        return check_most_balances(amt, reward) &&
-            (!check_payer || payer_.diff() == -(reward_cost + txFees_));
+        auto rewardCost = multiply(reward, STAmount(reward_accounts.size()), reward.issue());
+        return checkMostBalances(amt, reward) &&
+            (!checkPayer || payer.diff() == -(rewardCost + txFees));
     }
 
     bool
-    has_not_happened()
+    hasNotHappened()
     {
-        return check_most_balances(STAmount(0), STAmount(0)) &&
-            payer_.diff() <= txFees_;  // could have paid fee for failed claim
+        return checkMostBalances(STAmount(0), STAmount(0)) &&
+            payer.diff() <= txFees;  // could have paid fee for failed claim
     }
 };
 
@@ -342,13 +342,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return XEnv(*this).env_.current()->fees().accountReserve(count);
+        return XEnv(*this).env.current()->fees().accountReserve(count);
     }
 
     XRPAmount
     txFee()
     {
-        return XEnv(*this).env_.current()->fees().base;
+        return XEnv(*this).env.current()->fees().base;
     }
 
     void
@@ -540,17 +540,17 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         using namespace jtx;
         testcase("Bridge create constraints");
         XEnv env(*this, true);
-        auto& A = scAlice;
-        auto& B = scBob;
-        auto& C = scCarol;
-        auto AUSD = A["USD"];
-        auto BUSD = B["USD"];
-        auto CUSD = C["USD"];
-        auto GUSD = scGw["USD"];
-        auto AEUR = A["EUR"];
-        auto BEUR = B["EUR"];
-        auto CEUR = C["EUR"];
-        auto GEUR = scGw["EUR"];
+        auto& a = scAlice;
+        auto& b = scBob;
+        auto& c = scCarol;
+        auto ausd = a["USD"];
+        auto busd = b["USD"];
+        auto cusd = c["USD"];
+        auto gusd = scGw["USD"];
+        auto aeur = a["EUR"];
+        auto beur = b["EUR"];
+        auto ceur = c["EUR"];
+        auto geur = scGw["EUR"];
 
         // Accounts to own single bridges
         Account const a1("a1");
@@ -565,51 +565,51 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
         // Add a bridge on two different accounts with the same locking and
         // issuing assets
-        env.tx(create_bridge(a1, bridge(a1, GUSD, B, BUSD))).close();
-        env.tx(create_bridge(a2, bridge(a2, GUSD, B, BUSD))).close();
+        env.tx(create_bridge(a1, bridge(a1, gusd, b, busd))).close();
+        env.tx(create_bridge(a2, bridge(a2, gusd, b, busd))).close();
 
         // Add the exact same bridge to two different accounts (one locking
         // account and one issuing)
-        env.tx(create_bridge(a3, bridge(a3, GUSD, a4, a4["USD"]))).close();
-        env.tx(create_bridge(a4, bridge(a3, GUSD, a4, a4["USD"])), Ter(tecDUPLICATE)).close();
+        env.tx(create_bridge(a3, bridge(a3, gusd, a4, a4["USD"]))).close();
+        env.tx(create_bridge(a4, bridge(a3, gusd, a4, a4["USD"])), Ter(tecDUPLICATE)).close();
 
         // Add the exact same bridge to two different accounts (one issuing
         // account and one locking - opposite order from the test above)
-        env.tx(create_bridge(a5, bridge(a6, GUSD, a5, a5["USD"]))).close();
-        env.tx(create_bridge(a6, bridge(a6, GUSD, a5, a5["USD"])), Ter(tecDUPLICATE)).close();
+        env.tx(create_bridge(a5, bridge(a6, gusd, a5, a5["USD"]))).close();
+        env.tx(create_bridge(a6, bridge(a6, gusd, a5, a5["USD"])), Ter(tecDUPLICATE)).close();
 
         // Test case 1 ~ 5, create bridges
-        auto const goodBridge1 = bridge(A, GUSD, B, BUSD);
-        auto const goodBridge2 = bridge(A, BUSD, C, CUSD);
-        env.tx(create_bridge(B, goodBridge1)).close();
+        auto const goodBridge1 = bridge(a, gusd, b, busd);
+        auto const goodBridge2 = bridge(a, busd, c, cusd);
+        env.tx(create_bridge(b, goodBridge1)).close();
         // Issuing asset is the same, this is a duplicate
-        env.tx(create_bridge(B, bridge(A, GEUR, B, BUSD)), Ter(tecDUPLICATE)).close();
-        env.tx(create_bridge(A, goodBridge2), Ter(tesSUCCESS)).close();
+        env.tx(create_bridge(b, bridge(a, geur, b, busd)), Ter(tecDUPLICATE)).close();
+        env.tx(create_bridge(a, goodBridge2), Ter(tesSUCCESS)).close();
         // Locking asset is the same - this is a duplicate
-        env.tx(create_bridge(A, bridge(A, BUSD, B, BEUR)), Ter(tecDUPLICATE)).close();
+        env.tx(create_bridge(a, bridge(a, busd, b, beur)), Ter(tecDUPLICATE)).close();
         // Locking asset is USD - this is a duplicate even tho it has a
         // different issuer
-        env.tx(create_bridge(A, bridge(A, CUSD, B, BEUR)), Ter(tecDUPLICATE)).close();
+        env.tx(create_bridge(a, bridge(a, cusd, b, beur)), Ter(tecDUPLICATE)).close();
 
         // Test case 6 and 7, commits
-        env.tx(trust(C, BUSD(1000)))
-            .tx(trust(A, BUSD(1000)))
+        env.tx(trust(c, busd(1000)))
+            .tx(trust(a, busd(1000)))
             .close()
-            .tx(pay(B, C, BUSD(1000)))
+            .tx(pay(b, c, busd(1000)))
             .close();
-        auto const aBalanceStart = env.balance(A, BUSD);
-        auto const cBalanceStart = env.balance(C, BUSD);
-        env.tx(xchain_commit(C, goodBridge1, 1, BUSD(50))).close();
-        BEAST_EXPECT(env.balance(A, BUSD) - aBalanceStart == BUSD(0));
-        BEAST_EXPECT(env.balance(C, BUSD) - cBalanceStart == BUSD(-50));
-        env.tx(xchain_commit(C, goodBridge2, 1, BUSD(60))).close();
-        BEAST_EXPECT(env.balance(A, BUSD) - aBalanceStart == BUSD(60));
-        BEAST_EXPECT(env.balance(C, BUSD) - cBalanceStart == BUSD(-50 - 60));
+        auto const aBalanceStart = env.balance(a, busd);
+        auto const cBalanceStart = env.balance(c, busd);
+        env.tx(xchain_commit(c, goodBridge1, 1, busd(50))).close();
+        BEAST_EXPECT(env.balance(a, busd) - aBalanceStart == busd(0));
+        BEAST_EXPECT(env.balance(c, busd) - cBalanceStart == busd(-50));
+        env.tx(xchain_commit(c, goodBridge2, 1, busd(60))).close();
+        BEAST_EXPECT(env.balance(a, busd) - aBalanceStart == busd(60));
+        BEAST_EXPECT(env.balance(c, busd) - cBalanceStart == busd(-50 - 60));
 
         // bridge modify test cases
-        env.tx(bridge_modify(B, goodBridge1, XRP(33), std::nullopt)).close();
+        env.tx(bridge_modify(b, goodBridge1, XRP(33), std::nullopt)).close();
         BEAST_EXPECT((*env.bridge(goodBridge1))[sfSignatureReward] == XRP(33));
-        env.tx(bridge_modify(A, goodBridge2, XRP(44), std::nullopt)).close();
+        env.tx(bridge_modify(a, goodBridge2, XRP(44), std::nullopt)).close();
         BEAST_EXPECT((*env.bridge(goodBridge2))[sfSignatureReward] == XRP(44));
     }
 
@@ -748,7 +748,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     ib = xrpIssue();
                 })};
 
-        std::vector<std::pair<int, int>> expected_result{
+        std::vector<std::pair<int, int>> expectedResult{
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
@@ -792,7 +792,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             {temXCHAIN_BRIDGE_BAD_ISSUES, temXCHAIN_BRIDGE_BAD_ISSUES},
             {tesSUCCESS, tesSUCCESS}};
 
-        std::vector<std::tuple<TER, TER, bool>> test_result;
+        std::vector<std::tuple<TER, TER, bool>> testResult;
 
         auto testcase = [&](auto const& lc, auto const& ic) {
             XEnv mcEnv(*this);
@@ -804,24 +804,24 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             ic.second(mcEnv, false);
             ic.second(scEnv, true);
 
-            auto const& expected = expected_result[test_result.size()];
+            auto const& expected = expectedResult[testResult.size()];
 
             mcEnv.tx(create_bridge(a, bridge(a, ia, b, ib)), Ter(TER::fromInt(expected.first)));
-            TER mcTER = mcEnv.env_.ter();
+            TER mcTER = mcEnv.env.ter();
 
             scEnv.tx(create_bridge(b, bridge(a, ia, b, ib)), Ter(TER::fromInt(expected.second)));
-            TER scTER = scEnv.env_.ter();
+            TER scTER = scEnv.env.ter();
 
             bool pass = isTesSuccess(mcTER) && isTesSuccess(scTER);
 
-            test_result.emplace_back(mcTER, scTER, pass);
+            testResult.emplace_back(mcTER, scTER, pass);
         };
 
-        auto apply_ics = [&](auto const& lc, auto const& ics) {
+        auto applyIcs = [&](auto const& lc, auto const& ics) {
             std::apply([&](auto const&... ic) { (testcase(lc, ic), ...); }, ics);
         };
 
-        std::apply([&](auto const&... lc) { (apply_ics(lc, ics), ...); }, lcs);
+        std::apply([&](auto const&... lc) { (applyIcs(lc, ics), ...); }, lcs);
 
 #if GENERATE_MTX_OUTPUT
         // optional output of matrix results in markdown format
@@ -973,13 +973,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Check that the reward paid from a claim Id was the reward when
@@ -1023,7 +1023,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1031,7 +1031,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure the reward accounts indeed received the original
             // split reward (1 split 5 ways) instead of the updated 2 XRP.
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Check that the signatures used to verify attestations and decide
@@ -1087,7 +1087,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure transfer has not happened as we sent attestations
             // using outdated signers
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
 
             // submit claim using current signers - should succeed
             scEnv
@@ -1096,7 +1096,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1104,7 +1104,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // make sure the transfer went through as we sent attestations
             // using new signers
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum, false));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum, false));
         }
 
         // coverage test: bridge_modify transaction with incorrect flag
@@ -1156,7 +1156,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
     {
         using namespace jtx;
         XRPAmount res1 = reserve(1);
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         testcase("Create ClaimID");
 
@@ -1173,13 +1173,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         {
             XEnv xenv(*this, true);
 
-            test::Balance scAlice_bal(xenv, scAlice);
+            test::Balance scAliceBal(xenv, scAlice);
 
             xenv.tx(create_bridge(Account::kMASTER, jvb))
                 .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            BEAST_EXPECT(scAlice_bal.diff() == -tx_fee);
+            BEAST_EXPECT(scAliceBal.diff() == -txFee);
         }
 
         // Non-existent bridge
@@ -1241,7 +1241,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
     {
         using namespace jtx;
         XRPAmount res0 = reserve(0);
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         testcase("Commit");
 
@@ -1252,7 +1252,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         {
             XEnv xenv(*this);
 
-            test::Balance alice_bal(xenv, mcAlice);
+            test::Balance aliceBal(xenv, mcAlice);
             auto const amt = XRP(1000);
 
             xenv.tx(create_bridge(mcDoor, jvb))
@@ -1260,8 +1260,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .tx(xchain_commit(mcAlice, jvb, 1, amt, scBob))
                 .close();
 
-            STAmount claim_cost = amt;
-            BEAST_EXPECT(alice_bal.diff() == -(claim_cost + tx_fee));
+            STAmount claimCost = amt;
+            BEAST_EXPECT(aliceBal.diff() == -(claimCost + txFee));
         }
 
         // Commit a negative amount
@@ -1302,37 +1302,37 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             .close()
             .tx(xchain_commit(mcuAlice, jvb, 1, res0 + one_xrp, scBob), Ter(tecUNFUNDED_PAYMENT));
 
-        auto jvb_USD = bridge(mcDoor, mcUSD, scGw, scUSD);
+        auto jvbUsd = bridge(mcDoor, mcUSD, scGw, scUSD);
 
         // commit sent from iou issuer (mcGw) succeeds - should it?
         XEnv(*this)
             .tx(trust(mcDoor, mcUSD(10000)))  // door needs to have a trustline
-            .tx(create_bridge(mcDoor, jvb_USD))
+            .tx(create_bridge(mcDoor, jvbUsd))
             .close()
-            .tx(xchain_commit(mcGw, jvb_USD, 1, mcUSD(1), scBob));
+            .tx(xchain_commit(mcGw, jvbUsd, 1, mcUSD(1), scBob));
 
         // commit to a door account from the door account. This should fail.
         XEnv(*this)
             .tx(trust(mcDoor, mcUSD(10000)))  // door needs to have a trustline
-            .tx(create_bridge(mcDoor, jvb_USD))
+            .tx(create_bridge(mcDoor, jvbUsd))
             .close()
-            .tx(xchain_commit(mcDoor, jvb_USD, 1, mcUSD(1), scBob), Ter(tecXCHAIN_SELF_COMMIT));
+            .tx(xchain_commit(mcDoor, jvbUsd, 1, mcUSD(1), scBob), Ter(tecXCHAIN_SELF_COMMIT));
 
         // commit sent from mcAlice which has no IOU balance => should fail
         XEnv(*this)
             .tx(trust(mcDoor, mcUSD(10000)))  // door needs to have a trustline
-            .tx(create_bridge(mcDoor, jvb_USD))
+            .tx(create_bridge(mcDoor, jvbUsd))
             .close()
-            .tx(xchain_commit(mcAlice, jvb_USD, 1, mcUSD(1), scBob), Ter(terNO_LINE));
+            .tx(xchain_commit(mcAlice, jvbUsd, 1, mcUSD(1), scBob), Ter(terNO_LINE));
 
         // commit sent from mcAlice which has no IOU balance => should fail
         // just changed the destination to scGw (which is the door account
         // and may not make much sense)
         XEnv(*this)
             .tx(trust(mcDoor, mcUSD(10000)))  // door needs to have a trustline
-            .tx(create_bridge(mcDoor, jvb_USD))
+            .tx(create_bridge(mcDoor, jvbUsd))
             .close()
-            .tx(xchain_commit(mcAlice, jvb_USD, 1, mcUSD(1), scGw), Ter(terNO_LINE));
+            .tx(xchain_commit(mcAlice, jvbUsd, 1, mcUSD(1), scGw), Ter(terNO_LINE));
 
         // commit sent from mcAlice which has a IOU balance => should
         // succeed
@@ -1341,10 +1341,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             .tx(trust(mcAlice, mcUSD(10000)))
             .close()
             .tx(pay(mcGw, mcAlice, mcUSD(10)))
-            .tx(create_bridge(mcDoor, jvb_USD))
+            .tx(create_bridge(mcDoor, jvbUsd))
             .close()
             //.tx(pay(mcAlice, mcDoor, mcUSD(10)));
-            .tx(xchain_commit(mcAlice, jvb_USD, 1, mcUSD(10), scAlice));
+            .tx(xchain_commit(mcAlice, jvbUsd, 1, mcUSD(10), scAlice));
 
         // coverage test: xchain_commit transaction with incorrect flag
         XEnv(*this)
@@ -1370,10 +1370,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
         testcase("Add Attestation");
         XRPAmount res0 = reserve(0);
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         auto multiTtxFee = [&](std::uint32_t m) -> STAmount {
-            return multiply(tx_fee, STAmount(m), xrpIssue());
+            return multiply(txFee, STAmount(m), xrpIssue());
         };
 
         // Add an attestation to a claim id that has already reached quorum.
@@ -1432,7 +1432,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1440,7 +1440,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 BEAST_EXPECT(scEnv.claimID(jvb) == claimID);
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_everyone));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_everyone));
         }
 
         // Test that signature weights are correctly handled. Assign
@@ -1454,14 +1454,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
 
-            std::uint32_t const quorum_7 = 7;
-            std::vector<Signer> const signers_ = [] {
-                constexpr int numSigners = 4;
+            std::uint32_t const quorum7 = 7;
+            std::vector<Signer> const signers = [] {
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1473,7 +1473,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
-                .tx(jtx::signers(Account::kMASTER, quorum_7, signers_))
+                .tx(jtx::signers(Account::kMASTER, quorum7, signers))
                 .close()
                 .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
                 .close();
@@ -1490,12 +1490,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv
                 .multiTx(claim_attestations(
-                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers_, 3))
+                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers, 3))
                 .close();
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1503,7 +1503,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             BEAST_EXPECT(!scEnv.claimID(jvb, 1));  // claim id deleted
 
-            BEAST_EXPECT(transfer.has_happened(amt, divide(reward, STAmount(3), reward.issue())));
+            BEAST_EXPECT(transfer.hasHappened(amt, divide(reward, STAmount(3), reward.issue())));
         }
 
         // 4,4 => should succeed
@@ -1512,14 +1512,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
 
-            std::uint32_t const quorum_7 = 7;
-            std::vector<Signer> const signers_ = [] {
-                constexpr int numSigners = 4;
+            std::uint32_t const quorum7 = 7;
+            std::vector<Signer> const signers = [] {
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1527,13 +1527,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 }
                 return result;
             }();
-            STAmount const split_reward_ =
-                divide(reward, STAmount(signers_.size()), reward.issue());
+            STAmount const splitReward = divide(reward, STAmount(signers.size()), reward.issue());
 
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
-                .tx(jtx::signers(Account::kMASTER, quorum_7, signers_))
+                .tx(jtx::signers(Account::kMASTER, quorum7, signers))
                 .close()
                 .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
                 .close();
@@ -1550,12 +1549,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv
                 .multiTx(claim_attestations(
-                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers_, 2, 2))
+                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers, 2, 2))
                 .close();
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -1563,7 +1562,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             BEAST_EXPECT(!scEnv.claimID(jvb, claimID));  // claim id deleted
 
-            BEAST_EXPECT(transfer.has_happened(amt, divide(reward, STAmount(2), reward.issue())));
+            BEAST_EXPECT(transfer.hasHappened(amt, divide(reward, STAmount(2), reward.issue())));
         }
 
         // 1,2 => should fail
@@ -1572,14 +1571,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
 
-            std::uint32_t const quorum_7 = 7;
-            std::vector<Signer> const signers_ = [] {
-                constexpr int numSigners = 4;
+            std::uint32_t const quorum7 = 7;
+            std::vector<Signer> const signers = [] {
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1591,7 +1590,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
-                .tx(jtx::signers(Account::kMASTER, quorum_7, signers_))
+                .tx(jtx::signers(Account::kMASTER, quorum7, signers))
                 .close()
                 .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
                 .close();
@@ -1608,11 +1607,11 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv
                 .multiTx(claim_attestations(
-                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers_, 2))
+                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers, 2))
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -1622,7 +1621,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             }
 
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id still present
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // 2,4 => should fail
@@ -1631,14 +1630,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
 
-            std::uint32_t const quorum_7 = 7;
-            std::vector<Signer> const signers_ = [] {
-                constexpr int numSigners = 4;
+            std::uint32_t const quorum7 = 7;
+            std::vector<Signer> const signers = [] {
+                constexpr int kNUM_SIGNERS = 4;
                 std::uint32_t weights[] = {1, 2, 4, 4};
 
                 std::vector<Signer> result;
-                result.reserve(numSigners);
-                for (int i = 0; i < numSigners; ++i)
+                result.reserve(kNUM_SIGNERS);
+                for (int i = 0; i < kNUM_SIGNERS; ++i)
                 {
                     using namespace std::literals;
                     auto const a = Account("signer_"s + std::to_string(i));
@@ -1650,7 +1649,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
-                .tx(jtx::signers(Account::kMASTER, quorum_7, signers_))
+                .tx(jtx::signers(Account::kMASTER, quorum7, signers))
                 .close()
                 .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
                 .close();
@@ -1668,12 +1667,12 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             scEnv
                 .multiTx(claim_attestations(
-                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers_, 2, 1))
+                    scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers, 2, 1))
                 .close();
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -1683,7 +1682,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             }
 
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id still present
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Confirm that account create transactions happen in the correct
@@ -1694,7 +1693,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
             auto const amt = XRP(1000);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             {
                 test::Balance door(mcEnv, mcDoor);
@@ -1708,8 +1707,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
 
                 BEAST_EXPECT(
-                    door.diff() == (multiply(amt_plus_reward, STAmount(3), xrpIssue()) - tx_fee));
-                BEAST_EXPECT(carol.diff() == -(amt + reward + tx_fee));
+                    door.diff() == (multiply(amtPlusReward, STAmount(3), xrpIssue()) - txFee));
+                BEAST_EXPECT(carol.diff() == -(amt + reward + txFee));
             }
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb, reward, XRP(20)))
@@ -1777,7 +1776,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 scEnv.multiTx(att_create_acct_vec(1, amt, scuAlice, 3, 1)).close();
 
-                BEAST_EXPECT(door.diff() == -amt_plus_reward);
+                BEAST_EXPECT(door.diff() == -amtPlusReward);
                 // att_create_acct_vec return vectors of size 3, so 3 txns
                 BEAST_EXPECT(attester.diff() == -multiTtxFee(3));
                 BEAST_EXPECT(scEnv.balance(scuAlice) == amt);
@@ -1813,8 +1812,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 scEnv.multiTx(att_create_acct_vec(2, amt, scuBob, 1)).close();
 
-                BEAST_EXPECT(door.diff() == -amt_plus_reward);
-                BEAST_EXPECT(attester.diff() == -tx_fee);
+                BEAST_EXPECT(door.diff() == -amtPlusReward);
+                BEAST_EXPECT(attester.diff() == -txFee);
                 BEAST_EXPECT(scEnv.balance(scuBob) == amt);
 
                 BEAST_EXPECT(!scEnv.caClaimID(jvb, 2));    // claim id 2 deleted
@@ -1829,8 +1828,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 scEnv.multiTx(att_create_acct_vec(3, amt, scuCarol, 1)).close();
 
-                BEAST_EXPECT(door.diff() == -amt_plus_reward);
-                BEAST_EXPECT(attester.diff() == -tx_fee);
+                BEAST_EXPECT(door.diff() == -amtPlusReward);
+                BEAST_EXPECT(attester.diff() == -txFee);
                 BEAST_EXPECT(scEnv.balance(scuCarol) == amt);
 
                 BEAST_EXPECT(!scEnv.caClaimID(jvb, 3));    // claim id 3 deleted
@@ -1845,7 +1844,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv scEnv(*this, true);
 
             auto const amt = res0 - XRP(1);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             mcEnv.tx(create_bridge(mcDoor, jvb, reward, XRP(20))).close();
 
@@ -1856,8 +1855,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 mcEnv.tx(sidechain_xchain_account_create(mcCarol, jvb, scuAlice, amt, reward))
                     .close();
 
-                BEAST_EXPECT(door.diff() == amt_plus_reward);
-                BEAST_EXPECT(carol.diff() == -(amt_plus_reward + tx_fee));
+                BEAST_EXPECT(door.diff() == amtPlusReward);
+                BEAST_EXPECT(carol.diff() == -(amtPlusReward + txFee));
             }
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb, reward, XRP(20)))
@@ -1887,7 +1886,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv scEnv(*this, true);
 
             auto const amt = XRP(111);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             mcEnv.tx(create_bridge(mcDoor, jvb, reward, XRP(20))).close();
 
@@ -1898,8 +1897,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 mcEnv.tx(sidechain_xchain_account_create(mcCarol, jvb, scAlice, amt, reward))
                     .close();
 
-                BEAST_EXPECT(door.diff() == amt_plus_reward);
-                BEAST_EXPECT(carol.diff() == -(amt_plus_reward + tx_fee));
+                BEAST_EXPECT(door.diff() == amtPlusReward);
+                BEAST_EXPECT(carol.diff() == -(amtPlusReward + txFee));
             }
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb, reward, XRP(20)))
@@ -1918,7 +1917,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             BEAST_EXPECT(!scEnv.caClaimID(jvb, 1));    // claim id deleted
             BEAST_EXPECT(scEnv.claimCount(jvb) == 1);  // claim count was incremented
 
-            BEAST_EXPECT(door.diff() == -amt_plus_reward);
+            BEAST_EXPECT(door.diff() == -amtPlusReward);
             BEAST_EXPECT(attester.diff() == -multiTtxFee(4));
             BEAST_EXPECT(alice.diff() == amt);
         }
@@ -1930,7 +1929,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv scEnv(*this, true);
 
             auto const amt = XRP(1000);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             mcEnv.tx(create_bridge(mcDoor, jvb, reward, XRP(20))).close();
 
@@ -1941,8 +1940,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 mcEnv.tx(sidechain_xchain_account_create(mcCarol, jvb, scAlice, amt, reward))
                     .close();
 
-                BEAST_EXPECT(door.diff() == amt_plus_reward);
-                BEAST_EXPECT(carol.diff() == -(amt_plus_reward + tx_fee));
+                BEAST_EXPECT(door.diff() == amtPlusReward);
+                BEAST_EXPECT(carol.diff() == -(amtPlusReward + txFee));
             }
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb, reward, XRP(20)))
@@ -1976,7 +1975,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
             auto const amt = XRP(1000);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             {
                 test::Balance door(mcEnv, mcDoor);
@@ -1992,26 +1991,26 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();  // and Carol will get claim #3
 
                 BEAST_EXPECT(
-                    door.diff() == (multiply(amt_plus_reward, STAmount(3), xrpIssue()) - tx_fee));
-                BEAST_EXPECT(carol.diff() == -(amt + reward + tx_fee));
+                    door.diff() == (multiply(amtPlusReward, STAmount(3), xrpIssue()) - txFee));
+                BEAST_EXPECT(carol.diff() == -(amt + reward + txFee));
             }
 
-            std::uint32_t const red_quorum = 2;
+            std::uint32_t const redQuorum = 2;
             scEnv.tx(create_bridge(Account::kMASTER, jvb, reward, XRP(20)))
-                .tx(jtx::signers(Account::kMASTER, red_quorum, signers))
+                .tx(jtx::signers(Account::kMASTER, redQuorum, signers))
                 .close();
 
             {
                 test::Balance attester(scEnv, scAttester);
                 test::Balance door(scEnv, Account::kMASTER);
-                auto const bad_amt = XRP(10);
+                auto const badAmt = XRP(10);
                 std::uint32_t txCount = 0;
 
                 // send attestations with incorrect amounts to for all 3
                 // AccountCreate. They will be replaced later
-                scEnv.multiTx(att_create_acct_vec(1, bad_amt, scuAlice, 1))
-                    .multiTx(att_create_acct_vec(2, bad_amt, scuBob, 1, 2))
-                    .multiTx(att_create_acct_vec(3, bad_amt, scuCarol, 1, 1))
+                scEnv.multiTx(att_create_acct_vec(1, badAmt, scuAlice, 1))
+                    .multiTx(att_create_acct_vec(2, badAmt, scuBob, 1, 2))
+                    .multiTx(att_create_acct_vec(3, badAmt, scuCarol, 1, 1))
                     .close();
                 txCount += 3;
 
@@ -2067,7 +2066,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 // sometimes a couple drops are left over unspent in the
                 // door account (here 2 drops)
                 BEAST_EXPECT(
-                    multiply(amt_plus_reward, STAmount(3), xrpIssue()) + door.diff() < drops(3));
+                    multiply(amtPlusReward, STAmount(3), xrpIssue()) + door.diff() < drops(3));
                 BEAST_EXPECT(attester.diff() == -multiTtxFee(txCount));
                 BEAST_EXPECT(scEnv.balance(scuAlice) == amt);
                 BEAST_EXPECT(scEnv.balance(scuBob) == amt);
@@ -2133,7 +2132,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             auto const amt = XRP(1000);
             mcEnv.tx(xchain_commit(mcAlice, jvb, claimID, amt, dst)).close();
 
-            auto const dstStartBalance = scEnv.env_.balance(dst);
+            auto const dstStartBalance = scEnv.env.balance(dst);
 
             for (int i = 0; i < signers.size(); ++i)
             {
@@ -2152,14 +2151,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 if (i + 1 < quorum)
                 {
-                    BEAST_EXPECT(dstStartBalance == scEnv.env_.balance(dst));
+                    BEAST_EXPECT(dstStartBalance == scEnv.env.balance(dst));
                 }
                 else
                 {
-                    BEAST_EXPECT(dstStartBalance + amt == scEnv.env_.balance(dst));
+                    BEAST_EXPECT(dstStartBalance + amt == scEnv.env.balance(dst));
                 }
             }
-            BEAST_EXPECT(dstStartBalance + amt == scEnv.env_.balance(dst));
+            BEAST_EXPECT(dstStartBalance + amt == scEnv.env.balance(dst));
         }
 
         {
@@ -2197,7 +2196,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             Account const dst{scBob};
             mcEnv.tx(xchain_commit(mcAlice, jvb, claimID, amt, dst)).close();
-            auto const dstStartBalance = scEnv.env_.balance(dst);
+            auto const dstStartBalance = scEnv.env.balance(dst);
 
             {
                 // G1: master key
@@ -2272,10 +2271,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[3], true, claimID, dst, alt_signers[3]);
                 att.removeMember(sfAttestationSignerAccount.getJsonName());
                 scEnv.tx(att, Ter(temMALFORMED)).close();
-                BEAST_EXPECT(dstStartBalance == scEnv.env_.balance(dst));
+                BEAST_EXPECT(dstStartBalance == scEnv.env.balance(dst));
                 att[sfAttestationSignerAccount.getJsonName()] = alt_signers[3].account.human();
                 scEnv.tx(att).close();
-                BEAST_EXPECT(dstStartBalance + amt == scEnv.env_.balance(dst));
+                BEAST_EXPECT(dstStartBalance + amt == scEnv.env.balance(dst));
             }
         }
     }
@@ -2290,7 +2289,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         XEnv mcEnv(*this);
         XEnv scEnv(*this, true);
 
-        XRPAmount tx_fee = mcEnv.txFee();
+        XRPAmount txFee = mcEnv.txFee();
 
         Account a{"a"};
         Account doorA{"doorA"};
@@ -2301,7 +2300,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
         Account ua{"ua"};  // unfunded account we want to create
 
-        BridgeDef xrp_b{
+        BridgeDef xrpB{
             doorA,
             xrpIssue(),
             Account::kMASTER,
@@ -2312,47 +2311,47 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             signers,
             Json::nullValue};
 
-        xrp_b.initBridge(mcEnv, scEnv);
+        xrpB.initBridge(mcEnv, scEnv);
 
         auto const amt = XRP(777);
-        auto const amt_plus_reward = amt + xrp_b.reward;
+        auto const amtPlusReward = amt + xrpB.reward;
         {
-            test::Balance bal_doorA(mcEnv, doorA);
-            test::Balance bal_a(mcEnv, a);
+            test::Balance balDoorA(mcEnv, doorA);
+            test::Balance balA(mcEnv, a);
 
-            mcEnv.tx(sidechain_xchain_account_create(a, xrp_b.jvb, ua, amt, xrp_b.reward)).close();
+            mcEnv.tx(sidechain_xchain_account_create(a, xrpB.jvb, ua, amt, xrpB.reward)).close();
 
-            BEAST_EXPECT(bal_doorA.diff() == amt_plus_reward);
-            BEAST_EXPECT(bal_a.diff() == -(amt_plus_reward + tx_fee));
+            BEAST_EXPECT(balDoorA.diff() == amtPlusReward);
+            BEAST_EXPECT(balA.diff() == -(amtPlusReward + txFee));
         }
 
         for (int i = 0; i < signers.size(); ++i)
         {
             auto const att = create_account_attestation(
                 signers[0].account,
-                xrp_b.jvb,
+                xrpB.jvb,
                 a,
                 amt,
-                xrp_b.reward,
+                xrpB.reward,
                 signers[i].account,
                 true,
                 1,
                 ua,
                 signers[i]);
             TER const expectedTER =
-                i < xrp_b.quorum ? tesSUCCESS : TER{tecXCHAIN_ACCOUNT_CREATE_PAST};
+                i < xrpB.quorum ? tesSUCCESS : TER{tecXCHAIN_ACCOUNT_CREATE_PAST};
 
             scEnv.tx(att, Ter(expectedTER)).close();
-            if (i + 1 < xrp_b.quorum)
+            if (i + 1 < xrpB.quorum)
             {
-                BEAST_EXPECT(!scEnv.env_.le(ua));
+                BEAST_EXPECT(!scEnv.env.le(ua));
             }
             else
             {
-                BEAST_EXPECT(scEnv.env_.le(ua));
+                BEAST_EXPECT(scEnv.env.le(ua));
             }
         }
-        BEAST_EXPECT(scEnv.env_.le(ua));
+        BEAST_EXPECT(scEnv.env.le(ua));
     }
 
     void
@@ -2361,7 +2360,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         using namespace jtx;
 
         XRPAmount res0 = reserve(0);
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         testcase("Claim");
 
@@ -2402,13 +2401,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         // Claim with just one attestation signed by the Master key
@@ -2436,22 +2435,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             BalanceTransfer transfer(
                 scEnv, Account::kMASTER, scBob, scAlice, &payees[0], 1, withClaim);
 
-            jtx::Signer master_signer(Account::kMASTER);
+            jtx::Signer masterSigner(Account::kMASTER);
             scEnv
                 .tx(claim_attestation(
-                        scAttester,
-                        jvb,
-                        mcAlice,
-                        amt,
-                        payees[0],
-                        true,
-                        claimID,
-                        dst,
-                        master_signer),
+                        scAttester, jvb, mcAlice, amt, payees[0], true, claimID, dst, masterSigner),
                     Ter(tecXCHAIN_NO_SIGNERS_LIST))
                 .close();
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim with just one attestation signed by a regular key
@@ -2481,22 +2472,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             BalanceTransfer transfer(
                 scEnv, Account::kMASTER, scBob, scAlice, &payees[0], 1, withClaim);
 
-            jtx::Signer master_signer(payees[0]);
+            jtx::Signer masterSigner(payees[0]);
             scEnv
                 .tx(claim_attestation(
-                        scAttester,
-                        jvb,
-                        mcAlice,
-                        amt,
-                        payees[0],
-                        true,
-                        claimID,
-                        dst,
-                        master_signer),
+                        scAttester, jvb, mcAlice, amt, payees[0], true, claimID, dst, masterSigner),
                     Ter(tecXCHAIN_NO_SIGNERS_LIST))
                 .close();
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against non-existent bridge
@@ -2508,25 +2491,25 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
-            auto jvb_unknown = bridge(mcBob, xrpIssue(), Account::kMASTER, xrpIssue());
+            auto jvbUnknown = bridge(mcBob, xrpIssue(), Account::kMASTER, xrpIssue());
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
                 .tx(jtx::signers(Account::kMASTER, quorum, signers))
                 .close()
-                .tx(xchain_create_claim_id(scAlice, jvb_unknown, reward, mcAlice), Ter(tecNO_ENTRY))
+                .tx(xchain_create_claim_id(scAlice, jvbUnknown, reward, mcAlice), Ter(tecNO_ENTRY))
                 .close();
 
             auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
-            mcEnv.tx(xchain_commit(mcAlice, jvb_unknown, claimID, amt, dst), Ter(tecNO_ENTRY))
+            mcEnv.tx(xchain_commit(mcAlice, jvbUnknown, claimID, amt, dst), Ter(tecNO_ENTRY))
                 .close();
 
             BalanceTransfer transfer(scEnv, Account::kMASTER, scBob, scAlice, payees, withClaim);
             scEnv
                 .tx(claim_attestation(
                         scAttester,
-                        jvb_unknown,
+                        jvbUnknown,
                         mcAlice,
                         amt,
                         payees[0],
@@ -2539,14 +2522,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
-                scEnv.tx(xchain_claim(scAlice, jvb_unknown, claimID, amt, scBob), Ter(tecNO_ENTRY))
+                scEnv.tx(xchain_claim(scAlice, jvbUnknown, claimID, amt, scBob), Ter(tecNO_ENTRY))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against non-existent claim id
@@ -2579,14 +2562,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // claim using non-existent claim id
                 scEnv.tx(xchain_claim(scAlice, jvb, 999, amt, scBob), Ter(tecXCHAIN_NO_CLAIM_ID))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against a claim id owned by another account
@@ -2624,17 +2607,17 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // submit a claim transaction with the wrong account (scGw
                 // instead of scAlice)
                 scEnv.tx(xchain_claim(scGw, jvb, claimID, amt, scBob), Ter(tecXCHAIN_BAD_CLAIM_ID))
                     .close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
             }
             else
             {
-                BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+                BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
             }
         }
 
@@ -2664,7 +2647,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2673,7 +2656,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim against a claim id with attestations, but not enough to
@@ -2706,7 +2689,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2715,7 +2698,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim id of zero
@@ -2748,14 +2731,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, 0, amt, scBob), Ter(tecXCHAIN_NO_CLAIM_ID))
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim issue that does not match the expected issue on the bridge
@@ -2797,7 +2780,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2805,7 +2788,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim to a destination that does not already exist on the chain
@@ -2843,13 +2826,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scuBob), Ter(tecNO_DST)).close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim where the claim id owner does not have enough XRP to pay
@@ -2861,13 +2844,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             XEnv scEnv(*this, true);
 
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
-            STAmount huge_reward{XRP(20000)};
-            BEAST_EXPECT(huge_reward > scEnv.balance(scAlice));
+            STAmount hugeReward{XRP(20000)};
+            BEAST_EXPECT(hugeReward > scEnv.balance(scAlice));
 
-            scEnv.tx(create_bridge(Account::kMASTER, jvb, huge_reward))
+            scEnv.tx(create_bridge(Account::kMASTER, jvb, hugeReward))
                 .tx(jtx::signers(Account::kMASTER, quorum, signers))
                 .close()
-                .tx(xchain_create_claim_id(scAlice, jvb, huge_reward, mcAlice))
+                .tx(xchain_create_claim_id(scAlice, jvb, hugeReward, mcAlice))
                 .close();
 
             auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
@@ -2890,7 +2873,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .multiTx(claim_attestations(
                         scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers))
                     .close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), Ter(tecUNFUNDED_PAYMENT))
@@ -2913,7 +2896,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Claim where the claim id owner has enough XRP to pay the reward,
@@ -2950,7 +2933,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv
@@ -2959,7 +2942,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Pay to an account with deposit auth set
@@ -3001,7 +2984,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             {
                 scEnv.tx(txns.back()).close();
 
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), Ter(tecNO_PERMISSION))
@@ -3009,10 +2992,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 // the transfer failed, but check that we can still use the
                 // claimID with a different account
-                test::Balance scCarol_bal(scEnv, scCarol);
+                test::Balance scCarolBal(scEnv, scCarol);
 
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scCarol)).close();
-                BEAST_EXPECT(scCarol_bal.diff() == amt);
+                BEAST_EXPECT(scCarolBal.diff() == amt);
             }
             else
             {
@@ -3026,9 +3009,9 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .tx(fset("scBob", 0, asfDepositAuth))  // clear deposit auth
                     .close();
 
-                test::Balance scBob_bal(scEnv, scBob);
+                test::Balance scBobBal(scEnv, scBob);
                 scEnv.tx(txns.back()).close();
-                BEAST_EXPECT(scBob_bal.diff() == amt);
+                BEAST_EXPECT(scBobBal.diff() == amt);
             }
         }
 
@@ -3070,7 +3053,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             if (withClaim)
             {
                 scEnv.tx(txns.back()).close();
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob), Ter(tecDST_TAG_NEEDED))
@@ -3078,10 +3061,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 // the transfer failed, but check that we can still use the
                 // claimID with a different account
-                test::Balance scCarol_bal(scEnv, scCarol);
+                test::Balance scCarolBal(scEnv, scCarol);
 
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scCarol)).close();
-                BEAST_EXPECT(scCarol_bal.diff() == amt);
+                BEAST_EXPECT(scCarolBal.diff() == amt);
             }
             else
             {
@@ -3095,10 +3078,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .tx(fset("scBob", 0, asfRequireDest))  // clear dest tag
                     .close();
 
-                test::Balance scBob_bal(scEnv, scBob);
+                test::Balance scBobBal(scEnv, scBob);
 
                 scEnv.tx(txns.back()).close();
-                BEAST_EXPECT(scBob_bal.diff() == amt);
+                BEAST_EXPECT(scBobBal.diff() == amt);
             }
         }
 
@@ -3126,18 +3109,18 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             // we should be able to submit the attestations, but the transfer
             // should not occur because dest account has deposit auth set
-            test::Balance scBob_bal(scEnv, scBob);
+            test::Balance scBobBal(scEnv, scBob);
 
             scEnv.multiTx(claim_attestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
-            BEAST_EXPECT(scBob_bal.diff() == STAmount(0));
+            BEAST_EXPECT(scBobBal.diff() == STAmount(0));
 
             // Check that check that we still can use the claimID to transfer
             // the amount to a different account
-            test::Balance scCarol_bal(scEnv, scCarol);
+            test::Balance scCarolBal(scEnv, scCarol);
 
             scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scCarol)).close();
-            BEAST_EXPECT(scCarol_bal.diff() == amt);
+            BEAST_EXPECT(scCarolBal.diff() == amt);
         }
 
         // Claim where the amount different from what is attested to
@@ -3172,7 +3155,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // claim wrong amount
                 scEnv
@@ -3181,7 +3164,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     .close();
             }
 
-            BEAST_EXPECT(transfer.has_not_happened());
+            BEAST_EXPECT(transfer.hasNotHappened());
         }
 
         // Verify that rewards are paid from the account that owns the claim
@@ -3213,23 +3196,23 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 &payees[0],
                 UT_XCHAIN_DEFAULT_QUORUM,
                 withClaim);
-            test::Balance scAlice_bal(scEnv, scAlice);
+            test::Balance scAliceBal(scEnv, scAlice);
             scEnv.multiTx(claim_attestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
 
-            STAmount claim_cost = reward;
+            STAmount claimCost = reward;
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
-                claim_cost += tx_fee;
+                claimCost += txFee;
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
-            BEAST_EXPECT(scAlice_bal.diff() == -claim_cost);  // because reward % 4 == 0
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
+            BEAST_EXPECT(scAliceBal.diff() == -claimCost);  // because reward % 4 == 0
         }
 
         // Verify that if a reward is not evenly divisible among the reward
@@ -3261,22 +3244,22 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 &payees[0],
                 UT_XCHAIN_DEFAULT_QUORUM,
                 withClaim);
-            test::Balance scAlice_bal(scEnv, scAlice);
+            test::Balance scAliceBal(scEnv, scAlice);
             scEnv.multiTx(claim_attestations(
                 scAttester, jvb, mcAlice, amt, payees, true, claimID, dst, signers));
-            STAmount claim_cost = tiny_reward;
+            STAmount claimCost = tiny_reward;
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
-                claim_cost += tx_fee;
+                claimCost += txFee;
             }
 
-            BEAST_EXPECT(transfer.has_happened(amt, tiny_reward_split));
-            BEAST_EXPECT(scAlice_bal.diff() == -(claim_cost - tiny_reward_remainder));
+            BEAST_EXPECT(transfer.hasHappened(amt, tiny_reward_split));
+            BEAST_EXPECT(scAliceBal.diff() == -(claimCost - tiny_reward_remainder));
         }
 
         // If a reward distribution fails for one of the reward accounts
@@ -3291,8 +3274,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
-            std::vector<Account> alt_payees{payees.begin(), payees.end() - 1};
-            alt_payees.back() = Account("inexistent");
+            std::vector<Account> altPayees{payees.begin(), payees.end() - 1};
+            altPayees.back() = Account("inexistent");
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
                 .tx(jtx::signers(Account::kMASTER, quorum, signers))
@@ -3314,11 +3297,11 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 UT_XCHAIN_DEFAULT_QUORUM - 1,
                 withClaim);
             scEnv.multiTx(claim_attestations(
-                scAttester, jvb, mcAlice, amt, alt_payees, true, claimID, dst, signers));
+                scAttester, jvb, mcAlice, amt, altPayees, true, claimID, dst, signers));
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -3327,7 +3310,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             // this also checks that only 3 * split_reward was deducted from
             // scAlice (the payer account), since we passed alt_payees to
             // BalanceTransfer
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
         }
 
         for (auto withClaim : {false, true})
@@ -3350,7 +3333,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             mcEnv.tx(xchain_commit(mcAlice, jvb, claimID, amt, dst)).close();
 
             // balance of last signer should not change (has deposit auth)
-            test::Balance last_signer(scEnv, unpaid);
+            test::Balance lastSigner(scEnv, unpaid);
 
             // make sure all signers except the last one get the
             // split_reward
@@ -3368,7 +3351,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
             if (withClaim)
             {
-                BEAST_EXPECT(transfer.has_not_happened());
+                BEAST_EXPECT(transfer.hasNotHappened());
 
                 // need to submit a claim transactions
                 scEnv.tx(xchain_claim(scAlice, jvb, claimID, amt, scBob)).close();
@@ -3377,10 +3360,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             // this also checks that only 3 * split_reward was deducted from
             // scAlice (the payer account), since we passed payees.size() -
             // 1 to BalanceTransfer
-            BEAST_EXPECT(transfer.has_happened(amt, split_reward_quorum));
+            BEAST_EXPECT(transfer.hasHappened(amt, split_reward_quorum));
 
             // and make sure the account with deposit auth received nothing
-            BEAST_EXPECT(last_signer.diff() == STAmount(0));
+            BEAST_EXPECT(lastSigner.diff() == STAmount(0));
         }
 
         // coverage test: xchain_claim transaction with incorrect flag
@@ -3414,14 +3397,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         using namespace jtx;
 
         testcase("Bridge Create Account");
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         // coverage test: transferHelper() - dst == src
         {
             XEnv scEnv(*this, true);
 
             auto const amt = XRP(111);
-            auto const amt_plus_reward = amt + reward;
+            auto const amtPlusReward = amt + reward;
 
             scEnv.tx(create_bridge(Account::kMASTER, jvb))
                 .tx(jtx::signers(Account::kMASTER, quorum, signers))
@@ -3460,7 +3443,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                 .close();
 
             BEAST_EXPECT(door.diff() == STAmount(0));
-            BEAST_EXPECT(carol.diff() == -tx_fee);
+            BEAST_EXPECT(carol.diff() == -txFee);
         }
 
         // Check that creating an account with invalid flags fails.
@@ -3542,7 +3525,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
                     Ter(tecXCHAIN_SELF_COMMIT))
                 .close();
 
-            BEAST_EXPECT(door.diff() == -tx_fee);
+            BEAST_EXPECT(door.diff() == -txFee);
         }
 
         // Check that reward matches the amount specified in bridge
@@ -3567,14 +3550,14 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
     {
         using namespace jtx;
         XRPAmount res0 = reserve(0);
-        XRPAmount tx_fee = txFee();
+        XRPAmount txFee = txFee();
 
         testcase("Fee dips into reserve");
 
         // commit where the fee dips into the reserve, this should succeed
         XEnv(*this)
             .tx(create_bridge(mcDoor, jvb))
-            .fund(res0 + one_xrp + tx_fee - drops(1), mcuAlice)
+            .fund(res0 + one_xrp + txFee - drops(1), mcuAlice)
             .close()
             .tx(xchain_commit(mcuAlice, jvb, 1, one_xrp, scBob), Ter(tesSUCCESS));
 
@@ -3592,7 +3575,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         // this should succeed
         XEnv(*this)
             .tx(create_bridge(mcDoor, jvb, reward, minAccountCreate))
-            .fund(res0 + tx_fee + minAccountCreate + reward - drops(1), mcuAlice)
+            .fund(res0 + txFee + minAccountCreate + reward - drops(1), mcuAlice)
             .close()
             .tx(sidechain_xchain_account_create(mcuAlice, jvb, scuAlice, minAccountCreate, reward),
                 Ter(tesSUCCESS));
@@ -3614,7 +3597,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
         testcase("Bridge Delete Door Account");
 
-        auto const acctDelFee{drops(XEnv(*this).env_.current()->fees().increment)};
+        auto const acctDelFee{drops(XEnv(*this).env.current()->fees().increment)};
 
         // Deleting an account that owns bridge should fail
         {
@@ -3742,10 +3725,10 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 struct XChainSim_test : public beast::unit_test::suite, public jtx::XChainBridgeObjects
 {
 private:
-    static constexpr size_t num_signers = 5;
+    static constexpr size_t kNUM_SIGNERS = 5;
 
     // --------------------------------------------------
-    enum class WithClaim { no, yes };
+    enum class WithClaim { No, Yes };
     struct Transfer
     {
         jtx::Account from;
@@ -3753,9 +3736,9 @@ private:
         jtx::Account finaldest;
         STAmount amt;
         bool a2b;  // direction of transfer
-        WithClaim with_claim{WithClaim::no};
+        WithClaim with_claim{WithClaim::No};
         uint32_t claim_id{0};
-        std::array<bool, num_signers> attested{};
+        std::array<bool, kNUM_SIGNERS> attested{};
     };
 
     struct AccountCreate
@@ -3766,7 +3749,7 @@ private:
         STAmount reward;
         bool a2b;
         uint32_t claim_id{0};
-        std::array<bool, num_signers> attested{};
+        std::array<bool, kNUM_SIGNERS> attested{};
     };
 
     using ENV = XEnv<XChainSim_test>;
@@ -3802,50 +3785,50 @@ private:
         using CreateClaimVec = jtx::JValueVec;
         using CreateClaimMap = std::map<uint32_t, CreateClaimVec>;
 
-        ChainStateTrack(ENV& env) : env(env), tx_fee(env.env_.current()->fees().base)
+        ChainStateTrack(ENV& env) : env(env), tx_fee(env.env.current()->fees().base)
         {
         }
 
         void
-        sendAttestations(size_t signer_idx, BridgeID bridge, ClaimVec& claims)
+        sendAttestations(size_t signerIdx, BridgeID bridge, ClaimVec& claims)
         {
             for (auto const& c : claims)
             {
                 env.tx(c).close();
-                spendFee(bridge->signers[signer_idx].account);
+                spendFee(bridge->signers[signerIdx].account);
             }
             claims.clear();
         }
 
         uint32_t
-        sendCreateAttestations(size_t signer_idx, BridgeID bridge, CreateClaimVec& claims)
+        sendCreateAttestations(size_t signerIdx, BridgeID bridge, CreateClaimVec& claims)
         {
-            size_t num_successful = 0;
+            size_t numSuccessful = 0;
             for (auto const& c : claims)
             {
                 env.tx(c).close();
-                if (env.Ter() == tesSUCCESS)
+                if (env.ter() == tesSUCCESS)
                 {
-                    counters[bridge].signers.push_back(signer_idx);
-                    num_successful++;
+                    counters[bridge].signers.push_back(signerIdx);
+                    numSuccessful++;
                 }
-                spendFee(bridge->signers[signer_idx].account);
+                spendFee(bridge->signers[signerIdx].account);
             }
             claims.clear();
-            return num_successful;
+            return numSuccessful;
         }
 
         void
         sendAttestations()
         {
-            bool callback_called = false;
+            bool callbackCalled = false;
 
             // we have this "do {} while" loop because we want to process
             // all the account create which can reach quorum at this time
             // stamp.
             do
             {
-                callback_called = false;
+                callbackCalled = false;
                 // cspell: ignore attns
                 for (size_t i = 0; i < signers_attns.size(); ++i)
                 {
@@ -3854,12 +3837,12 @@ private:
                         sendAttestations(i, bridge, claims.xfer_claims);
 
                         auto& c = counters[bridge];
-                        auto& create_claims = claims.create_claims[c.claim_count];
-                        auto num_attns = create_claims.size();
-                        if (num_attns != 0u)
+                        auto& createClaims = claims.create_claims[c.claim_count];
+                        auto numAttns = createClaims.size();
+                        if (numAttns != 0u)
                         {
                             c.num_create_attn_sent +=
-                                sendCreateAttestations(i, bridge, create_claims);
+                                sendCreateAttestations(i, bridge, createClaims);
                         }
                         assert(claims.create_claims[c.claim_count].empty());
                     }
@@ -3868,14 +3851,14 @@ private:
                 {
                     if (c.num_create_attn_sent >= bridge->quorum)
                     {
-                        callback_called = true;
+                        callbackCalled = true;
                         c.create_callbacks[c.claim_count](c.signers);
                         ++c.claim_count;
                         c.num_create_attn_sent = 0;
                         c.signers.clear();
                     }
                 }
-            } while (callback_called);
+            } while (callbackCalled);
         }
 
         void
@@ -3957,7 +3940,7 @@ private:
         };
 
         using SignerAttns = std::unordered_map<BridgeID, Claims>;
-        using SignersAttns = std::array<SignerAttns, num_signers>;
+        using SignersAttns = std::array<SignerAttns, kNUM_SIGNERS>;
 
         ENV& env;
         std::map<jtx::Account, AccountStateTrack> accounts;
@@ -3968,44 +3951,44 @@ private:
 
     struct ChainStateTracker
     {
-        ChainStateTracker(ENV& a_env, ENV& b_env) : a_(a_env), b_(b_env)
+        ChainStateTracker(ENV& aEnv, ENV& bEnv) : a(aEnv), b(bEnv)
         {
         }
 
         bool
         verify() const
         {
-            return a_.verify() && b_.verify();
+            return a.verify() && b.verify();
         }
 
         void
         sendAttestations()
         {
-            a_.sendAttestations();
-            b_.sendAttestations();
+            a.sendAttestations();
+            b.sendAttestations();
         }
 
         void
         init(jtx::Account const& acct)
         {
-            a_.init(acct);
-            b_.init(acct);
+            a.init(acct);
+            b.init(acct);
         }
 
-        ChainStateTrack a_;
-        ChainStateTrack b_;
+        ChainStateTrack a;
+        ChainStateTrack b;
     };
 
     enum SmState {
-        st_initial,
-        st_claim_id_created,
-        st_attesting,
-        st_attested,
-        st_completed,
-        st_closed,
+        StInitial,
+        StClaimIdCreated,
+        StAttesting,
+        StAttested,
+        StCompleted,
+        StClosed,
     };
 
-    enum Act_Flags { af_a2b = 1 << 0 };
+    enum ActFlags { AfA2b = 1 << 0 };
 
     // --------------------------------------------------
     template <class T>
@@ -4020,13 +4003,13 @@ private:
         ChainStateTrack&
         srcState()
         {
-            return static_cast<T&>(*this).a2b() ? st_->a_ : st_->b_;
+            return static_cast<T&>(*this).a2b() ? st_->a : st_->b;
         }
 
         ChainStateTrack&
         destState()
         {
-            return static_cast<T&>(*this).a2b() ? st_->b_ : st_->a_;
+            return static_cast<T&>(*this).a2b() ? st_->b : st_->a;
         }
 
         jtx::Account const&
@@ -4058,28 +4041,29 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             AccountCreate create)
-            : Base(chainstate, bridge), cr(std::move(create))
+            : Base(chainstate, bridge), cr_(std::move(create))
         {
         }
 
         bool
         a2b() const
         {
-            return cr.a2b;
+            return cr_.a2b;
         }
 
         uint32_t
-        issue_account_create()
+        issueAccountCreate()
         {
             ChainStateTrack& st = srcState();
             jtx::Account const& srcdoor = srcDoor();
 
             st.env
-                .tx(sidechain_xchain_account_create(cr.from, bridge_.jvb, cr.to, cr.amt, cr.reward))
+                .tx(sidechain_xchain_account_create(
+                    cr_.from, bridge_.jvb, cr_.to, cr_.amt, cr_.reward))
                 .close();  // needed for claim_id sequence to be correct'
-            st.spendFee(cr.from);
-            st.transfer(cr.from, srcdoor, cr.amt);
-            st.transfer(cr.from, srcdoor, cr.reward);
+            st.spendFee(cr_.from);
+            st.transfer(cr_.from, srcdoor, cr_.amt);
+            st.transfer(cr_.from, srcdoor, cr_.reward);
 
             return ++st.counters[&bridge_].create_count;
         }
@@ -4091,72 +4075,72 @@ private:
 
             // check all signers, but start at a random one
             size_t i = 0;
-            for (i = 0; i < num_signers; ++i)
+            for (i = 0; i < kNUM_SIGNERS; ++i)
             {
-                size_t signer_idx = (rnd + i) % num_signers;
+                size_t signerIdx = (rnd + i) % kNUM_SIGNERS;
 
-                if (!(cr.attested[signer_idx]))
+                if (!(cr_.attested[signerIdx]))
                 {
                     // enqueue one attestation for this signer
-                    cr.attested[signer_idx] = true;
+                    cr_.attested[signerIdx] = true;
 
-                    st.signers_attns[signer_idx][&bridge_]
-                        .create_claims[cr.claim_id - 1]
+                    st.signers_attns[signerIdx][&bridge_]
+                        .create_claims[cr_.claim_id - 1]
                         .emplace_back(create_account_attestation(
-                            bridge_.signers[signer_idx].account,
+                            bridge_.signers[signerIdx].account,
                             bridge_.jvb,
-                            cr.from,
-                            cr.amt,
-                            cr.reward,
-                            bridge_.signers[signer_idx].account,
-                            cr.a2b,
-                            cr.claim_id,
-                            cr.to,
-                            bridge_.signers[signer_idx]));
+                            cr_.from,
+                            cr_.amt,
+                            cr_.reward,
+                            bridge_.signers[signerIdx].account,
+                            cr_.a2b,
+                            cr_.claim_id,
+                            cr_.to,
+                            bridge_.signers[signerIdx]));
                     break;
                 }
             }
 
-            if (i == num_signers)
+            if (i == kNUM_SIGNERS)
                 return;  // did not attest
 
             auto& counters = st.counters[&bridge_];
-            if (counters.create_callbacks.size() < cr.claim_id)
-                counters.create_callbacks.resize(cr.claim_id);
+            if (counters.create_callbacks.size() < cr_.claim_id)
+                counters.create_callbacks.resize(cr_.claim_id);
 
-            auto complete_cb = [&](std::vector<size_t> const& signers) {
-                auto num_attestors = signers.size();
+            auto completeCb = [&](std::vector<size_t> const& signers) {
+                auto numAttestors = signers.size();
                 st.env.close();
-                assert(num_attestors <= std::count(cr.attested.begin(), cr.attested.end(), true));
-                assert(num_attestors >= bridge_.quorum);
-                assert(cr.claim_id - 1 == counters.claim_count);
+                assert(numAttestors <= std::count(cr_.attested.begin(), cr_.attested.end(), true));
+                assert(numAttestors >= bridge_.quorum);
+                assert(cr_.claim_id - 1 == counters.claim_count);
 
-                auto r = cr.reward;
-                auto reward = divide(r, STAmount(num_attestors), r.issue());
+                auto r = cr_.reward;
+                auto reward = divide(r, STAmount(numAttestors), r.issue());
 
                 for (auto i : signers)
                     st.receive(bridge_.signers[i].account, reward);
 
-                st.spend(dstDoor(), reward, num_attestors);
-                st.transfer(dstDoor(), cr.to, cr.amt);
-                st.env.env_.memoize(cr.to);
-                sm_state = st_completed;
+                st.spend(dstDoor(), reward, numAttestors);
+                st.transfer(dstDoor(), cr_.to, cr_.amt);
+                st.env.env.memoize(cr_.to);
+                sm_state_ = StCompleted;
             };
 
-            counters.create_callbacks[cr.claim_id - 1] = std::move(complete_cb);
+            counters.create_callbacks[cr_.claim_id - 1] = std::move(completeCb);
         }
 
         SmState
         advance(uint64_t time, uint32_t rnd)
         {
-            switch (sm_state)
+            switch (sm_state_)
             {
-                case st_initial:
-                    cr.claim_id = issue_account_create();
-                    sm_state = st_attesting;
+                case StInitial:
+                    cr_.claim_id = issueAccountCreate();
+                    sm_state_ = StAttesting;
                     break;
 
-                case st_attesting:
+                case StAttesting:
                     attest(time, rnd);
                     break;
 
@@ -4164,15 +4148,15 @@ private:
                     assert(0);
                     break;
 
-                case st_completed:
+                case StCompleted:
                     break;  // will get this once
             }
-            return sm_state;
+            return sm_state_;
         }
 
     private:
-        SmState sm_state{st_initial};
-        AccountCreate cr;
+        SmState sm_state_{StInitial};
+        AccountCreate cr_;
     };
 
     // --------------------------------------------------
@@ -4185,25 +4169,25 @@ private:
             std::shared_ptr<ChainStateTracker> const& chainstate,
             BridgeDef const& bridge,
             Transfer xfer)
-            : Base(chainstate, bridge), xfer(std::move(xfer))
+            : Base(chainstate, bridge), xfer_(std::move(xfer))
         {
         }
 
         bool
         a2b() const
         {
-            return xfer.a2b;
+            return xfer_.a2b;
         }
 
         uint32_t
-        create_claim_id()
+        createClaimId()
         {
             ChainStateTrack& st = destState();
 
-            st.env.tx(xchain_create_claim_id(xfer.to, bridge_.jvb, bridge_.reward, xfer.from))
+            st.env.tx(xchain_create_claim_id(xfer_.to, bridge_.jvb, bridge_.reward, xfer_.from))
                 .close();  // needed for claim_id sequence to be
                            // correct'
-            st.spendFee(xfer.to);
+            st.spendFee(xfer_.to);
             return ++st.counters[&bridge_].claim_id;
         }
 
@@ -4213,34 +4197,34 @@ private:
             ChainStateTrack& st = srcState();
             jtx::Account const& srcdoor = srcDoor();
 
-            if (xfer.amt.issue() != xrpIssue())
+            if (xfer_.amt.issue() != xrpIssue())
             {
-                st.env.tx(pay(srcdoor, xfer.from, xfer.amt));
+                st.env.tx(pay(srcdoor, xfer_.from, xfer_.amt));
                 st.spendFee(srcdoor);
             }
             st.env.tx(xchain_commit(
-                xfer.from,
+                xfer_.from,
                 bridge_.jvb,
-                xfer.claim_id,
-                xfer.amt,
-                xfer.with_claim == WithClaim::yes ? std::nullopt
-                                                  : std::optional<jtx::Account>(xfer.finaldest)));
-            st.spendFee(xfer.from);
-            st.transfer(xfer.from, srcdoor, xfer.amt);
+                xfer_.claim_id,
+                xfer_.amt,
+                xfer_.with_claim == WithClaim::Yes ? std::nullopt
+                                                   : std::optional<jtx::Account>(xfer_.finaldest)));
+            st.spendFee(xfer_.from);
+            st.transfer(xfer_.from, srcdoor, xfer_.amt);
         }
 
         void
-        distribute_reward(ChainStateTrack& st)
+        distributeReward(ChainStateTrack& st)
         {
             auto r = bridge_.reward;
             auto reward = divide(r, STAmount(bridge_.quorum), r.issue());
 
-            for (size_t i = 0; i < num_signers; ++i)
+            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
             {
-                if (xfer.attested[i])
+                if (xfer_.attested[i])
                     st.receive(bridge_.signers[i].account, reward);
             }
-            st.spend(xfer.to, reward, bridge_.quorum);
+            st.spend(xfer_.to, reward, bridge_.quorum);
         }
 
         bool
@@ -4249,38 +4233,38 @@ private:
             ChainStateTrack& st = destState();
 
             // check all signers, but start at a random one
-            for (size_t i = 0; i < num_signers; ++i)
+            for (size_t i = 0; i < kNUM_SIGNERS; ++i)
             {
-                size_t signer_idx = (rnd + i) % num_signers;
-                if (!(xfer.attested[signer_idx]))
+                size_t signerIdx = (rnd + i) % kNUM_SIGNERS;
+                if (!(xfer_.attested[signerIdx]))
                 {
                     // enqueue one attestation for this signer
-                    xfer.attested[signer_idx] = true;
+                    xfer_.attested[signerIdx] = true;
 
-                    st.signers_attns[signer_idx][&bridge_].xfer_claims.emplace_back(
+                    st.signers_attns[signerIdx][&bridge_].xfer_claims.emplace_back(
                         claim_attestation(
-                            bridge_.signers[signer_idx].account,
+                            bridge_.signers[signerIdx].account,
                             bridge_.jvb,
-                            xfer.from,
-                            xfer.amt,
-                            bridge_.signers[signer_idx].account,
-                            xfer.a2b,
-                            xfer.claim_id,
-                            xfer.with_claim == WithClaim::yes
+                            xfer_.from,
+                            xfer_.amt,
+                            bridge_.signers[signerIdx].account,
+                            xfer_.a2b,
+                            xfer_.claim_id,
+                            xfer_.with_claim == WithClaim::Yes
                                 ? std::nullopt
-                                : std::optional<jtx::Account>(xfer.finaldest),
-                            bridge_.signers[signer_idx]));
+                                : std::optional<jtx::Account>(xfer_.finaldest),
+                            bridge_.signers[signerIdx]));
                     break;
                 }
             }
 
             // return true if quorum was reached, false otherwise
             bool quorum =
-                std::count(xfer.attested.begin(), xfer.attested.end(), true) >= bridge_.quorum;
-            if (quorum && xfer.with_claim == WithClaim::no)
+                std::count(xfer_.attested.begin(), xfer_.attested.end(), true) >= bridge_.quorum;
+            if (quorum && xfer_.with_claim == WithClaim::No)
             {
-                distribute_reward(st);
-                st.transfer(dstDoor(), xfer.finaldest, xfer.amt);
+                distributeReward(st);
+                st.transfer(dstDoor(), xfer_.finaldest, xfer_.amt);
             }
             return quorum;
         }
@@ -4289,55 +4273,56 @@ private:
         claim()
         {
             ChainStateTrack& st = destState();
-            st.env.tx(xchain_claim(xfer.to, bridge_.jvb, xfer.claim_id, xfer.amt, xfer.finaldest));
-            distribute_reward(st);
-            st.transfer(dstDoor(), xfer.finaldest, xfer.amt);
-            st.spendFee(xfer.to);
+            st.env.tx(
+                xchain_claim(xfer_.to, bridge_.jvb, xfer_.claim_id, xfer_.amt, xfer_.finaldest));
+            distributeReward(st);
+            st.transfer(dstDoor(), xfer_.finaldest, xfer_.amt);
+            st.spendFee(xfer_.to);
         }
 
         SmState
         advance(uint64_t time, uint32_t rnd)
         {
-            switch (sm_state)
+            switch (sm_state_)
             {
-                case st_initial:
-                    xfer.claim_id = create_claim_id();
-                    sm_state = st_claim_id_created;
+                case StInitial:
+                    xfer_.claim_id = createClaimId();
+                    sm_state_ = StClaimIdCreated;
                     break;
 
-                case st_claim_id_created:
+                case StClaimIdCreated:
                     commit();
-                    sm_state = st_attesting;
+                    sm_state_ = StAttesting;
                     break;
 
-                case st_attesting:
+                case StAttesting:
                     if (attest(time, rnd))
                     {
-                        sm_state = xfer.with_claim == WithClaim::yes ? st_attested : st_completed;
+                        sm_state_ = xfer_.with_claim == WithClaim::Yes ? StAttested : StCompleted;
                     }
                     else
                     {
-                        sm_state = st_attesting;
+                        sm_state_ = StAttesting;
                     }
                     break;
 
-                case st_attested:
-                    assert(xfer.with_claim == WithClaim::yes);
+                case StAttested:
+                    assert(xfer_.with_claim == WithClaim::Yes);
                     claim();
-                    sm_state = st_completed;
+                    sm_state_ = StCompleted;
                     break;
 
                 default:
-                case st_completed:
+                case StCompleted:
                     assert(0);  // should have been removed
                     break;
             }
-            return sm_state;
+            return sm_state_;
         }
 
     private:
-        Transfer xfer;
-        SmState sm_state{st_initial};
+        Transfer xfer_;
+        SmState sm_state_{StInitial};
     };
 
     // --------------------------------------------------
@@ -4367,7 +4352,7 @@ private:
 
 public:
     void
-    runSimulation(std::shared_ptr<ChainStateTracker> const& st, bool verify_balances = true)
+    runSimulation(std::shared_ptr<ChainStateTracker> const& st, bool verifyBalances = true)
     {
         using namespace jtx;
         uint64_t time = 0;
@@ -4384,7 +4369,7 @@ public:
                     return sm.advance(time, rnd);
                 };
                 auto& [t, sm] = *it;
-                if (t <= time && std::visit(vis, sm) == st_completed)
+                if (t <= time && std::visit(vis, sm) == StCompleted)
                 {
                     it = sm_.erase(it);
                 }
@@ -4398,10 +4383,10 @@ public:
             st->sendAttestations();
 
             // make sure all transactions have been applied
-            st->a_.env.close();
-            st->b_.env.close();
+            st->a.env.close();
+            st->b.env.close();
 
-            if (verify_balances)
+            if (verifyBalances)
             {
                 BEAST_EXPECT(st->verify());
             }
@@ -4425,12 +4410,12 @@ public:
         Account doorXRPLocking("doorXRPLocking"), doorUSDLocking("doorUSDLocking"),
             doorUSDIssuing("doorUSDIssuing");
 
-        constexpr size_t num_acct = 10;
+        constexpr size_t kNUM_ACCT = 10;
         auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(num_acct);
-            for (int i = 0; i < num_acct; ++i)
+            result.reserve(kNUM_ACCT);
+            for (int i = 0; i < kNUM_ACCT; ++i)
             {
                 result.emplace_back(
                     "a"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
@@ -4451,20 +4436,20 @@ public:
             mcEnv.fund(amt, acct);
             scEnv.fund(amt, acct);
         }
-        Account USDLocking{"USDLocking"};
-        IOU usdLocking{USDLocking["USD"]};
+        Account usdLocking{"USDLocking"};
+        IOU usdLocking{usdLocking["USD"]};
         IOU usdIssuing{doorUSDIssuing["USD"]};
 
-        mcEnv.fund(XRP(100000), USDLocking);
+        mcEnv.fund(XRP(100000), usdLocking);
         mcEnv.close();
         mcEnv.tx(trust(doorUSDLocking, usdLocking(100000)));
         mcEnv.close();
-        mcEnv.tx(pay(USDLocking, doorUSDLocking, usdLocking(50000)));
+        mcEnv.tx(pay(usdLocking, doorUSDLocking, usdLocking(50000)));
 
         for (int i = 0; i < a.size(); ++i)
         {
             auto& acct{a[i]};
-            if (i < num_acct)
+            if (i < kNUM_ACCT)
             {
                 mcEnv.tx(trust(acct, usdLocking(100000)));
                 scEnv.tx(trust(acct, usdIssuing(100000)));
@@ -4474,15 +4459,15 @@ public:
         for (auto& s : signers)
             st->init(s.account);
 
-        st->b_.init(Account::kMASTER);
+        st->b.init(Account::kMASTER);
 
         // also create some unfunded accounts
-        constexpr size_t num_ua = 20;
+        constexpr size_t kNUM_UA = 20;
         auto ua = []() {
             using namespace std::literals;
             std::vector<Account> result;
-            result.reserve(num_ua);
-            for (int i = 0; i < num_ua; ++i)
+            result.reserve(kNUM_UA);
+            for (int i = 0; i < kNUM_UA; ++i)
             {
                 result.emplace_back(
                     "ua"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
@@ -4493,13 +4478,13 @@ public:
         // initialize a bridge from a BridgeDef
         auto initBridge = [&mcEnv, &scEnv, &st](BridgeDef& bd) {
             bd.initBridge(mcEnv, scEnv);
-            st->a_.spendFee(bd.doorA, 2);
-            st->b_.spendFee(bd.doorB, 2);
+            st->a.spendFee(bd.doorA, 2);
+            st->b.spendFee(bd.doorB, 2);
         };
 
         // create XRP -> XRP bridge
         // ------------------------
-        BridgeDef xrp_b{
+        BridgeDef xrpB{
             doorXRPLocking,
             xrpIssue(),
             Account::kMASTER,
@@ -4510,11 +4495,11 @@ public:
             signers,
             Json::nullValue};
 
-        initBridge(xrp_b);
+        initBridge(xrpB);
 
         // create USD -> USD bridge
         // ------------------------
-        BridgeDef usd_b{
+        BridgeDef usdB{
             doorUSDLocking,
             usdLocking,
             doorUSDIssuing,
@@ -4525,86 +4510,86 @@ public:
             signers,
             Json::nullValue};
 
-        initBridge(usd_b);
+        initBridge(usdB);
 
         // try a single account create + transfer to validate the simulation
         // engine. Do the transfer 8 time steps after the account create, to
         // give  time enough for ua[0] to be funded now so it can reserve
         // the claimID
         // -----------------------------------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[0], XRP(777), xrp_b.reward, true});
-        xfer(8, st, xrp_b, {a[0], ua[0], a[2], XRP(3), true});
+        ac(0, st, xrpB, {a[0], ua[0], XRP(777), xrpB.reward, true});
+        xfer(8, st, xrpB, {a[0], ua[0], a[2], XRP(3), true});
         runSimulation(st);
 
         // try the same thing in the other direction
         // -----------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[0], XRP(777), xrp_b.reward, false});
-        xfer(8, st, xrp_b, {a[0], ua[0], a[2], XRP(3), false});
+        ac(0, st, xrpB, {a[0], ua[0], XRP(777), xrpB.reward, false});
+        xfer(8, st, xrpB, {a[0], ua[0], a[2], XRP(3), false});
         runSimulation(st);
 
         // run multiple XRP transfers
         // --------------------------
-        xfer(0, st, xrp_b, {a[0], a[0], a[1], XRP(6), true, WithClaim::no});
-        xfer(1, st, xrp_b, {a[0], a[0], a[1], XRP(8), false, WithClaim::no});
-        xfer(1, st, xrp_b, {a[1], a[1], a[1], XRP(1), true});
-        xfer(2, st, xrp_b, {a[0], a[0], a[1], XRP(3), false});
-        xfer(2, st, xrp_b, {a[1], a[1], a[1], XRP(5), false});
-        xfer(2, st, xrp_b, {a[0], a[0], a[1], XRP(7), false, WithClaim::no});
-        xfer(2, st, xrp_b, {a[1], a[1], a[1], XRP(9), true});
+        xfer(0, st, xrpB, {a[0], a[0], a[1], XRP(6), true, WithClaim::No});
+        xfer(1, st, xrpB, {a[0], a[0], a[1], XRP(8), false, WithClaim::No});
+        xfer(1, st, xrpB, {a[1], a[1], a[1], XRP(1), true});
+        xfer(2, st, xrpB, {a[0], a[0], a[1], XRP(3), false});
+        xfer(2, st, xrpB, {a[1], a[1], a[1], XRP(5), false});
+        xfer(2, st, xrpB, {a[0], a[0], a[1], XRP(7), false, WithClaim::No});
+        xfer(2, st, xrpB, {a[1], a[1], a[1], XRP(9), true});
         runSimulation(st);
 
         // run one USD transfer
         // --------------------
-        xfer(0, st, usd_b, {a[0], a[1], a[2], usdLocking(3), true});
+        xfer(0, st, usdB, {a[0], a[1], a[2], usdLocking(3), true});
         runSimulation(st);
 
         // run multiple USD transfers
         // --------------------------
-        xfer(0, st, usd_b, {a[0], a[0], a[1], usdLocking(6), true});
-        xfer(1, st, usd_b, {a[0], a[0], a[1], usdIssuing(8), false});
-        xfer(1, st, usd_b, {a[1], a[1], a[1], usdLocking(1), true});
-        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(3), false});
-        xfer(2, st, usd_b, {a[1], a[1], a[1], usdIssuing(5), false});
-        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(7), false});
-        xfer(2, st, usd_b, {a[1], a[1], a[1], usdLocking(9), true});
+        xfer(0, st, usdB, {a[0], a[0], a[1], usdLocking(6), true});
+        xfer(1, st, usdB, {a[0], a[0], a[1], usdIssuing(8), false});
+        xfer(1, st, usdB, {a[1], a[1], a[1], usdLocking(1), true});
+        xfer(2, st, usdB, {a[0], a[0], a[1], usdIssuing(3), false});
+        xfer(2, st, usdB, {a[1], a[1], a[1], usdIssuing(5), false});
+        xfer(2, st, usdB, {a[0], a[0], a[1], usdIssuing(7), false});
+        xfer(2, st, usdB, {a[1], a[1], a[1], usdLocking(9), true});
         runSimulation(st);
 
         // run mixed transfers
         // -------------------
-        xfer(0, st, xrp_b, {a[0], a[0], a[0], XRP(1), true});
-        xfer(0, st, usd_b, {a[1], a[3], a[3], usdIssuing(3), false});
-        xfer(0, st, usd_b, {a[3], a[2], a[1], usdIssuing(5), false});
+        xfer(0, st, xrpB, {a[0], a[0], a[0], XRP(1), true});
+        xfer(0, st, usdB, {a[1], a[3], a[3], usdIssuing(3), false});
+        xfer(0, st, usdB, {a[3], a[2], a[1], usdIssuing(5), false});
 
-        xfer(1, st, xrp_b, {a[0], a[0], a[0], XRP(4), false});
-        xfer(1, st, xrp_b, {a[1], a[1], a[0], XRP(8), true});
-        xfer(1, st, usd_b, {a[4], a[1], a[1], usdLocking(7), true});
+        xfer(1, st, xrpB, {a[0], a[0], a[0], XRP(4), false});
+        xfer(1, st, xrpB, {a[1], a[1], a[0], XRP(8), true});
+        xfer(1, st, usdB, {a[4], a[1], a[1], usdLocking(7), true});
 
-        xfer(3, st, xrp_b, {a[1], a[1], a[0], XRP(7), true});
-        xfer(3, st, xrp_b, {a[0], a[4], a[3], XRP(2), false});
-        xfer(3, st, xrp_b, {a[1], a[1], a[0], XRP(9), true});
-        xfer(3, st, usd_b, {a[3], a[1], a[1], usdIssuing(11), false});
+        xfer(3, st, xrpB, {a[1], a[1], a[0], XRP(7), true});
+        xfer(3, st, xrpB, {a[0], a[4], a[3], XRP(2), false});
+        xfer(3, st, xrpB, {a[1], a[1], a[0], XRP(9), true});
+        xfer(3, st, usdB, {a[3], a[1], a[1], usdIssuing(11), false});
         runSimulation(st);
 
         // run multiple account create to stress attestation batching
         // ----------------------------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[1], XRP(301), xrp_b.reward, true});
-        ac(0, st, xrp_b, {a[1], ua[2], XRP(302), xrp_b.reward, true});
-        ac(1, st, xrp_b, {a[0], ua[3], XRP(303), xrp_b.reward, true});
-        ac(2, st, xrp_b, {a[1], ua[4], XRP(304), xrp_b.reward, true});
-        ac(3, st, xrp_b, {a[0], ua[5], XRP(305), xrp_b.reward, true});
-        ac(4, st, xrp_b, {a[1], ua[6], XRP(306), xrp_b.reward, true});
-        ac(6, st, xrp_b, {a[0], ua[7], XRP(307), xrp_b.reward, true});
-        ac(7, st, xrp_b, {a[2], ua[8], XRP(308), xrp_b.reward, true});
-        ac(9, st, xrp_b, {a[0], ua[9], XRP(309), xrp_b.reward, true});
-        ac(9, st, xrp_b, {a[0], ua[9], XRP(309), xrp_b.reward, true});
-        ac(10, st, xrp_b, {a[0], ua[10], XRP(310), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[0], ua[11], XRP(311), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[3], ua[12], XRP(312), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[4], ua[13], XRP(313), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[3], ua[14], XRP(314), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[6], ua[15], XRP(315), xrp_b.reward, true});
-        ac(13, st, xrp_b, {a[7], ua[16], XRP(316), xrp_b.reward, true});
-        ac(15, st, xrp_b, {a[3], ua[17], XRP(317), xrp_b.reward, true});
+        ac(0, st, xrpB, {a[0], ua[1], XRP(301), xrpB.reward, true});
+        ac(0, st, xrpB, {a[1], ua[2], XRP(302), xrpB.reward, true});
+        ac(1, st, xrpB, {a[0], ua[3], XRP(303), xrpB.reward, true});
+        ac(2, st, xrpB, {a[1], ua[4], XRP(304), xrpB.reward, true});
+        ac(3, st, xrpB, {a[0], ua[5], XRP(305), xrpB.reward, true});
+        ac(4, st, xrpB, {a[1], ua[6], XRP(306), xrpB.reward, true});
+        ac(6, st, xrpB, {a[0], ua[7], XRP(307), xrpB.reward, true});
+        ac(7, st, xrpB, {a[2], ua[8], XRP(308), xrpB.reward, true});
+        ac(9, st, xrpB, {a[0], ua[9], XRP(309), xrpB.reward, true});
+        ac(9, st, xrpB, {a[0], ua[9], XRP(309), xrpB.reward, true});
+        ac(10, st, xrpB, {a[0], ua[10], XRP(310), xrpB.reward, true});
+        ac(12, st, xrpB, {a[0], ua[11], XRP(311), xrpB.reward, true});
+        ac(12, st, xrpB, {a[3], ua[12], XRP(312), xrpB.reward, true});
+        ac(12, st, xrpB, {a[4], ua[13], XRP(313), xrpB.reward, true});
+        ac(12, st, xrpB, {a[3], ua[14], XRP(314), xrpB.reward, true});
+        ac(12, st, xrpB, {a[6], ua[15], XRP(315), xrpB.reward, true});
+        ac(13, st, xrpB, {a[7], ua[16], XRP(316), xrpB.reward, true});
+        ac(15, st, xrpB, {a[3], ua[17], XRP(317), xrpB.reward, true});
         runSimulation(st, true);  // balances verification working now.
     }
 
