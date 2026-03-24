@@ -52,9 +52,6 @@ protected:
             static BrokerParameters const result{};
             return result;
         }
-
-        // TODO: create an operator() which returns a transaction similar to
-        // LoanParameters
     };
 
     struct BrokerInfo
@@ -244,39 +241,42 @@ protected:
             std::uint32_t ownerCount) const
         {
             using namespace jtx;
-            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-                env.test.BEAST_EXPECT(brokerSle))
+            std::shared_ptr<SLE const> brokerSle;
+            if (brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                !env.test.expect(brokerSle))
             {
-                TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-                auto const brokerDebt = brokerSle->at(sfDebtTotal);
-                auto const expectedDebt = principalOutstanding + interestOwed;
-                env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
-                env.test.BEAST_EXPECT(
-                    env.balance(pseudoAccount, broker.asset).number() ==
-                    brokerSle->at(sfCoverAvailable));
-                env.test.BEAST_EXPECT(brokerSle->at(sfOwnerCount) == ownerCount);
+                return;
+            }
 
-                if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
-                    env.test.BEAST_EXPECT(vaultSle))
+            TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+            auto const brokerDebt = brokerSle->at(sfDebtTotal);
+            auto const expectedDebt = principalOutstanding + interestOwed;
+            env.test.expect(brokerDebt == expectedDebt);
+            env.test.expect(
+                env.balance(pseudoAccount, broker.asset).number() ==
+                brokerSle->at(sfCoverAvailable));
+            env.test.expect(brokerSle->at(sfOwnerCount) == ownerCount);
+
+            if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                env.test.expect(vaultSle))
+            {
+                Account const vaultPseudo{"vaultPseudoAccount", vaultSle->at(sfAccount)};
+                env.test.expect(
+                    vaultSle->at(sfAssetsAvailable) ==
+                    env.balance(vaultPseudo, broker.asset).number());
+                if (ownerCount == 0)
                 {
-                    Account const vaultPseudo{"vaultPseudoAccount", vaultSle->at(sfAccount)};
-                    env.test.BEAST_EXPECT(
-                        vaultSle->at(sfAssetsAvailable) ==
-                        env.balance(vaultPseudo, broker.asset).number());
-                    if (ownerCount == 0)
-                    {
-                        // Allow some slop for rounding IOUs
+                    // Allow some slop for rounding IOUs
 
-                        // TODO: This needs to be an exact match once all the
-                        // other rounding issues are worked out.
-                        auto const total = vaultSle->at(sfAssetsTotal);
-                        auto const available = vaultSle->at(sfAssetsAvailable);
-                        env.test.BEAST_EXPECT(
-                            total == available ||
-                            (!broker.asset.integral() && available != 0 &&
-                             ((total - available) / available < Number(1, -6))));
-                        env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
-                    }
+                    // TODO: This needs to be an exact match once all the
+                    // other rounding issues are worked out.
+                    auto const total = vaultSle->at(sfAssetsTotal);
+                    auto const available = vaultSle->at(sfAssetsAvailable);
+                    env.test.expect(
+                        total == available ||
+                        (!broker.asset.integral() && available != 0 &&
+                         ((total - available) / available < Number(1, -6))));
+                    env.test.expect(vaultSle->at(sfLossUnrealized) == 0);
                 }
             }
         }
@@ -322,47 +322,48 @@ protected:
             std::uint32_t flags) const
         {
             using namespace jtx;
-            if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
+            std::shared_ptr<SLE const> loan;
+            if (loan = env.le(loanKeylet); !env.test.expect(loan))
             {
-                env.test.BEAST_EXPECT(loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
-                env.test.BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentRemaining);
-                env.test.BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
-                env.test.BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
-                env.test.BEAST_EXPECT(loan->at(sfTotalValueOutstanding) == totalValue);
-                env.test.BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalOutstanding);
-                env.test.BEAST_EXPECT(
-                    loan->at(sfManagementFeeOutstanding) == managementFeeOutstanding);
-                env.test.BEAST_EXPECT(loan->at(sfPeriodicPayment) == periodicPayment);
-                env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
+                return;
+            }
+            env.test.expect(loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
+            env.test.expect(loan->at(sfPaymentRemaining) == paymentRemaining);
+            env.test.expect(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
+            env.test.expect(loan->at(sfLoanScale) == loanScale);
+            env.test.expect(loan->at(sfTotalValueOutstanding) == totalValue);
+            env.test.expect(loan->at(sfPrincipalOutstanding) == principalOutstanding);
+            env.test.expect(loan->at(sfManagementFeeOutstanding) == managementFeeOutstanding);
+            env.test.expect(loan->at(sfPeriodicPayment) == periodicPayment);
+            env.test.expect(loan->at(sfFlags) == flags);
 
-                auto const ls = constructRoundedLoanState(loan);
+            auto const ls = constructRoundedLoanState(loan);
 
-                auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
-                auto const paymentInterval = loan->at(sfPaymentInterval);
-                checkBroker(
-                    principalOutstanding,
-                    ls.interestDue,
-                    interestRate,
-                    paymentInterval,
-                    paymentRemaining,
-                    1);
+            auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
+            auto const paymentInterval = loan->at(sfPaymentInterval);
+            checkBroker(
+                principalOutstanding,
+                ls.interestDue,
+                interestRate,
+                paymentInterval,
+                paymentRemaining,
+                1);
 
-                if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-                    env.test.BEAST_EXPECT(brokerSle))
+            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                env.test.expect(brokerSle))
+            {
+                if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                    env.test.expect(vaultSle))
                 {
-                    if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
-                        env.test.BEAST_EXPECT(vaultSle))
+                    if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
                     {
-                        if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
-                        {
-                            env.test.BEAST_EXPECT(
-                                vaultSle->at(sfLossUnrealized) ==
-                                totalValue - managementFeeOutstanding);
-                        }
-                        else
-                        {
-                            env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
-                        }
+                        env.test.expect(
+                            vaultSle->at(sfLossUnrealized) ==
+                            totalValue - managementFeeOutstanding);
+                    }
+                    else
+                    {
+                        env.test.expect(vaultSle->at(sfLossUnrealized) == 0);
                     }
                 }
             }
@@ -1191,311 +1192,6 @@ protected:
             lender,
             borrower,
             PaymentParameters{.showStepBalances = true});
-    }
-
-    /** Runs through the complete lifecycle of a loan
-     *
-     * 1. Create a loan.
-     * 2. Test a bunch of transaction failure conditions.
-     * 3. Use the `toEndOfLife` callback to take the loan to 0. How that is done
-     *    depends on the callback. e.g. Default, Early payoff, make all the
-     * normal payments, etc.
-     * 4. Delete the loan. The loan will alternate between being deleted by the
-     *    lender and the borrower.
-     */
-    void
-    lifecycle(
-        std::string const& caseLabel,
-        char const* label,
-        jtx::Env& env,
-        Number const& loanAmount,
-        int interestExponent,
-        jtx::Account const& lender,
-        jtx::Account const& borrower,
-        jtx::Account const& evan,
-        BrokerInfo const& broker,
-        jtx::Account const& pseudoAcct,
-        std::uint32_t flags,
-        // The end of life callback is expected to take the loan to 0 payments
-        // remaining, one way or another
-        std::function<void(Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus)>
-            toEndOfLife)
-    {
-        auto const [keylet, loanSequence] = [&]() {
-            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-            if (!BEAST_EXPECT(brokerSle))
-            {
-                // will be invalid
-                return std::make_pair(keylet::loan(broker.brokerID), std::uint32_t(0));
-            }
-
-            // Broker has no loans
-            BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
-
-            // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
-            // object.
-            auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
-        }();
-
-        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
-
-        // No loans yet
-        verifyLoanStatus.checkBroker(0, 0, TenthBips32{0}, 1, 0, 0);
-
-        if (!BEAST_EXPECT(loanSequence != 0))
-            return;
-
-        testcase << caseLabel << " " << label;
-
-        using namespace jtx;
-        using namespace loan;
-        using namespace std::chrono_literals;
-
-        auto applyExponent = [interestExponent, this](TenthBips32 value) mutable {
-            BEAST_EXPECT(value > TenthBips32(0));
-            while (interestExponent > 0)
-            {
-                auto const oldValue = value;
-                value *= 10;
-                --interestExponent;
-                BEAST_EXPECT(value / 10 == oldValue);
-            }
-            while (interestExponent < 0)
-            {
-                auto const oldValue = value;
-                value /= 10;
-                ++interestExponent;
-                BEAST_EXPECT(value * 10 == oldValue);
-            }
-            return value;
-        };
-
-        auto const borrowerOwnerCount = env.ownerCount(borrower);
-
-        auto const loanSetFee = env.current()->fees().base * 2;
-        LoanParameters const loanParams{
-            .account = borrower,
-            .counter = lender,
-            .counterpartyExplicit = false,
-            .principalRequest = loanAmount,
-            .setFee = loanSetFee,
-            .originationFee = 1,
-            .serviceFee = 2,
-            .lateFee = 3,
-            .closeFee = 4,
-            .overFee = applyExponent(percentageToTenthBips(5) / 10),
-            .interest = applyExponent(percentageToTenthBips(12)),
-            // 2.4%
-            .lateInterest = applyExponent(percentageToTenthBips(24) / 10),
-            .closeInterest = applyExponent(percentageToTenthBips(36) / 10),
-            .overpaymentInterest = applyExponent(percentageToTenthBips(48) / 10),
-            .payTotal = 12,
-            .payInterval = 600,
-            .gracePd = 60,
-            .flags = flags,
-        };
-        Number const principalRequestAmount = broker.asset(loanParams.principalRequest).value();
-        auto const originationFeeAmount = broker.asset(*loanParams.originationFee).value();
-        auto const serviceFeeAmount = broker.asset(*loanParams.serviceFee).value();
-        auto const lateFeeAmount = broker.asset(*loanParams.lateFee).value();
-        auto const closeFeeAmount = broker.asset(*loanParams.closeFee).value();
-
-        auto const borrowerStartbalance = env.balance(borrower, broker.asset);
-
-        auto createJtx = loanParams(env, broker);
-        // Successfully create a Loan
-        env(createJtx);
-
-        env.close();
-
-        auto const startDate = env.current()->header().parentCloseTime.time_since_epoch().count();
-
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-            BEAST_EXPECT(brokerSle))
-        {
-            BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 1);
-        }
-
-        {
-            // Need to account for fees if the loan is in XRP
-            PrettyAmount adjustment = broker.asset(0);
-            if (broker.asset.native())
-            {
-                adjustment = 2 * env.current()->fees().base;
-            }
-
-            BEAST_EXPECT(
-                env.balance(borrower, broker.asset).value() ==
-                borrowerStartbalance.value() + principalRequestAmount - originationFeeAmount -
-                    adjustment.value());
-        }
-
-        auto const loanFlags =
-            createJtx.stx->isFlag(tfLoanOverpayment) ? lsfLoanOverpayment : LedgerSpecificFlags(0);
-
-        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
-        {
-            // log << "loan after create: " << to_string(loan->getJson())
-            //     << std::endl;
-            BEAST_EXPECT(
-                loan->isFlag(lsfLoanOverpayment) == createJtx.stx->isFlag(tfLoanOverpayment));
-            BEAST_EXPECT(loan->at(sfLoanSequence) == loanSequence);
-            BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
-            BEAST_EXPECT(loan->at(sfLoanBrokerID) == broker.brokerID);
-            BEAST_EXPECT(loan->at(sfLoanOriginationFee) == originationFeeAmount);
-            BEAST_EXPECT(loan->at(sfLoanServiceFee) == serviceFeeAmount);
-            BEAST_EXPECT(loan->at(sfLatePaymentFee) == lateFeeAmount);
-            BEAST_EXPECT(loan->at(sfClosePaymentFee) == closeFeeAmount);
-            BEAST_EXPECT(loan->at(sfOverpaymentFee) == *loanParams.overFee);
-            BEAST_EXPECT(loan->at(sfInterestRate) == *loanParams.interest);
-            BEAST_EXPECT(loan->at(sfLateInterestRate) == *loanParams.lateInterest);
-            BEAST_EXPECT(loan->at(sfCloseInterestRate) == *loanParams.closeInterest);
-            BEAST_EXPECT(loan->at(sfOverpaymentInterestRate) == *loanParams.overpaymentInterest);
-            BEAST_EXPECT(loan->at(sfStartDate) == startDate);
-            BEAST_EXPECT(loan->at(sfPaymentInterval) == *loanParams.payInterval);
-            BEAST_EXPECT(loan->at(sfGracePeriod) == *loanParams.gracePd);
-            BEAST_EXPECT(loan->at(sfPreviousPaymentDueDate) == 0);
-            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == startDate + *loanParams.payInterval);
-            BEAST_EXPECT(loan->at(sfPaymentRemaining) == *loanParams.payTotal);
-            BEAST_EXPECT(
-                loan->at(sfLoanScale) >=
-                (broker.asset.integral()
-                     ? 0
-                     : std::max(broker.vaultScale(env), principalRequestAmount.exponent())));
-            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalRequestAmount);
-        }
-
-        auto state = getCurrentState(env, broker, keylet, verifyLoanStatus);
-
-        auto const loanProperties = computeLoanProperties(
-            broker.asset.raw(),
-            state.principalOutstanding,
-            state.interestRate,
-            state.paymentInterval,
-            state.paymentRemaining,
-            broker.params.managementFeeRate,
-            state.loanScale);
-
-        verifyLoanStatus(
-            0,
-            startDate + *loanParams.payInterval,
-            *loanParams.payTotal,
-            state.loanScale,
-            loanProperties.loanState.valueOutstanding,
-            principalRequestAmount,
-            loanProperties.loanState.managementFeeDue,
-            loanProperties.periodicPayment,
-            loanFlags | 0);
-
-        // Manage the loan
-        // no-op
-        env(manage(lender, keylet.key, 0));
-        {
-            // no flags
-            auto jt = manage(lender, keylet.key, 0);
-            jt.removeMember(sfFlags.getName());
-            env(jt);
-        }
-        // Only the lender can manage
-        env(manage(evan, keylet.key, 0), ter(tecNO_PERMISSION));
-        // unknown flags
-        env(manage(lender, keylet.key, tfLoanManageMask), ter(temINVALID_FLAG));
-        // combinations of flags are not allowed
-        env(manage(lender, keylet.key, tfLoanUnimpair | tfLoanImpair), ter(temINVALID_FLAG));
-        env(manage(lender, keylet.key, tfLoanImpair | tfLoanDefault), ter(temINVALID_FLAG));
-        env(manage(lender, keylet.key, tfLoanUnimpair | tfLoanDefault), ter(temINVALID_FLAG));
-        env(manage(lender, keylet.key, tfLoanUnimpair | tfLoanImpair | tfLoanDefault),
-            ter(temINVALID_FLAG));
-        // invalid loan ID
-        env(manage(lender, broker.brokerID, tfLoanImpair), ter(tecNO_ENTRY));
-        // Loan is unimpaired, can't unimpair it again
-        env(manage(lender, keylet.key, tfLoanUnimpair), ter(tecNO_PERMISSION));
-        // Loan is unimpaired, it can go into default, but only after it's past
-        // due
-        env(manage(lender, keylet.key, tfLoanDefault), ter(tecTOO_SOON));
-
-        // Check the vault
-        bool const canImpair = canImpairLoan(env, broker, state);
-        // Impair the loan, if possible
-        env(manage(lender, keylet.key, tfLoanImpair),
-            canImpair ? ter(tesSUCCESS) : ter(tecLIMIT_EXCEEDED));
-        // Unimpair the loan
-        env(manage(lender, keylet.key, tfLoanUnimpair),
-            canImpair ? ter(tesSUCCESS) : ter(tecNO_PERMISSION));
-
-        auto const nextDueDate = startDate + *loanParams.payInterval;
-
-        env.close();
-
-        verifyLoanStatus(
-            0,
-            nextDueDate,
-            *loanParams.payTotal,
-            loanProperties.loanScale,
-            loanProperties.loanState.valueOutstanding,
-            principalRequestAmount,
-            loanProperties.loanState.managementFeeDue,
-            loanProperties.periodicPayment,
-            loanFlags | 0);
-
-        // Can't delete the loan yet. It has payments remaining.
-        env(del(lender, keylet.key), ter(tecHAS_OBLIGATIONS));
-
-        if (BEAST_EXPECT(toEndOfLife))
-            toEndOfLife(keylet, verifyLoanStatus);
-        env.close();
-
-        // Verify the loan is at EOL
-        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
-        {
-            BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
-            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == 0);
-        }
-        auto const borrowerStartingBalance = env.balance(borrower, broker.asset);
-
-        // Try to delete the loan broker with an active loan
-        env(loanBroker::del(lender, broker.brokerID), ter(tecHAS_OBLIGATIONS));
-        // Ensure the above tx doesn't get ordered after the LoanDelete and
-        // delete our broker!
-        env.close();
-
-        // Test failure cases
-        env(del(lender, keylet.key, tfLoanOverpayment), ter(temINVALID_FLAG));
-        env(del(evan, keylet.key), ter(tecNO_PERMISSION));
-        env(del(lender, broker.brokerID), ter(tecNO_ENTRY));
-
-        // Delete the loan
-        // Either the borrower or the lender can delete the loan. Alternate
-        // between who does it across tests.
-        static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
-        env(del(deleter, keylet.key));
-        env.close();
-
-        PrettyAmount adjustment = broker.asset(0);
-        if (deleter == borrower)
-        {
-            // Need to account for fees if the loan is in XRP
-            if (broker.asset.native())
-            {
-                adjustment = env.current()->fees().base;
-            }
-        }
-
-        // No loans left
-        verifyLoanStatus.checkBroker(0, 0, *loanParams.interest, 1, 0, 0);
-
-        BEAST_EXPECT(
-            env.balance(borrower, broker.asset).value() ==
-            borrowerStartingBalance.value() - adjustment);
-        BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwnerCount);
-
-        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-            BEAST_EXPECT(brokerSle))
-        {
-            BEAST_EXPECT(brokerSle->at(sfOwnerCount) == 0);
-        }
     }
 
     std::string
