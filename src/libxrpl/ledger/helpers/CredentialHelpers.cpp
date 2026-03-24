@@ -335,7 +335,7 @@ verifyDepositPreauth(
     if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
-    if (dst.exists() && (dst->getFlags() & lsfDepositAuth))
+    if (dst.exists() && ((dst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {

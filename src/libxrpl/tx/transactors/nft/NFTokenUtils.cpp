@@ -887,7 +887,7 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (acctDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((acctDst->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -900,7 +900,7 @@ tokenOfferCreatePreclaim(
         if (!acctOwner)
             return tecNO_TARGET;
 
-        if (acctOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((acctOwner->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 

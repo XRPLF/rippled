@@ -313,7 +313,9 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if ((dstAcct->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if (
+        ((dstAcct->getFlags() & lsfRequireDestTag) != 0u) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -614,7 +616,7 @@ Payment::doApply()
     dst->setFieldAmount(sfBalance, dst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((dst->getFlags() & lsfPasswordSpent))
+    if ((dst->getFlags() & lsfPasswordSpent) != 0u)
         dst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;

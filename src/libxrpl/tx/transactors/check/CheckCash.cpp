@@ -82,7 +82,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((acctDst->getFlags() & lsfRequireDestTag) &&
+        if (((acctDst->getFlags() & lsfRequireDestTag) != 0u) &&
             !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
@@ -156,7 +156,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (acctIssuer->at(sfFlags) & lsfRequireAuth)
+            if ((acctIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 

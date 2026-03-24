@@ -108,7 +108,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = acct->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool bDefaultRipple = (acct->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
     if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {

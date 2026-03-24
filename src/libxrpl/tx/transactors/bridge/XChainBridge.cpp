@@ -108,7 +108,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (acctSigner->getFieldU32(sfFlags) & lsfDisableMaster)
+            if ((acctSigner->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -384,7 +384,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if ((acctDst->getFlags() & lsfRequireDestTag) && !dstTag)
+        if (((acctDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -393,7 +393,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
 
-        if (!canBypassDepositAuth && (acctDst->getFlags() & lsfDepositAuth) &&
+        if (!canBypassDepositAuth && ((acctDst->getFlags() & lsfDepositAuth) != 0u) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -1400,7 +1400,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (acctIssuer->getFlags() & lsfAllowTrustLineClawback)
+        if ((acctIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
             return tecNO_PERMISSION;
     }
 

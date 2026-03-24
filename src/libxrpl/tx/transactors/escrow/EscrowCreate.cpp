@@ -413,7 +413,7 @@ EscrowCreate::doApply()
         AccountRoot const acctDest(ctx_.tx[sfDestination], ctx_.view());
         if (!acctDest)
             return tecNO_DST;  // LCOV_EXCL_LINE
-        if ((acctDest->getFlags() & lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
+        if (((acctDest->getFlags() & lsfRequireDestTag) != 0u) && !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
     }
 

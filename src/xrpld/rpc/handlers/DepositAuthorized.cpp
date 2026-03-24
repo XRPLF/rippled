@@ -74,7 +74,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth = (acctDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = ((acctDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;

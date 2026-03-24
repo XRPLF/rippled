@@ -223,7 +223,7 @@ OfferCreate::checkAcceptAsset(
     if (issue.account == id)
         return tesSUCCESS;
 
-    if (issuerAcct->getFlags() & lsfRequireAuth)
+    if ((issuerAcct->getFlags() & lsfRequireAuth) != 0u)
     {
         auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 

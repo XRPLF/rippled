@@ -192,7 +192,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(acctDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP((acctDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 

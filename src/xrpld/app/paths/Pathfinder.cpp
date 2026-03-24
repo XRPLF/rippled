@@ -931,7 +931,7 @@ Pathfinder::addLink(
 
             if (acctEnd)
             {
-                bool const bRequireAuth(acctEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bRequireAuth((acctEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
                 bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & afAC_LAST) != 0u);

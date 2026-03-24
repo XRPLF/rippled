@@ -18,7 +18,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         {
             AccountRoot const acct(id, view);
 
-            if (acct && (!(acct->getFlags() & lsfPasswordSpent)))
+            if (acct && ((acct->getFlags() & lsfPasswordSpent) == 0u))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
