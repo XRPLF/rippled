@@ -6,268 +6,273 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+<xrpl / ledger / helpers / AMMHelpers.h>
 #include <xrpl/tx/transactors/dex/AMMUtils.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-static Number
-number(STAmount const& a)
+    namespace xrpl
 {
-    if (isXRP(a))
-        return a.xrp();
-    return a;
-}
+    namespace test {
+    namespace jtx {
 
-IOUAmount
-AMM::initialTokens()
-{
-    if (!env_.enabled(fixAMMv1_3))
+    static Number
+    number(STAmount const& a)
     {
-        auto const product = number(asset1_) * number(asset2_);
-        return (IOUAmount)(product.mantissa() >= 0 ? root2(product) : root2(-product));
+        if (isXRP(a))
+            return a.xrp();
+        return a;
     }
-    return getLPTokensBalance();
-}
 
-AMM::AMM(
-    Env& env,
-    Account const& account,
-    STAmount const& asset1,
-    STAmount const& asset2,
-    bool log,
-    std::uint16_t tfee,
-    std::uint32_t fee,
-    std::optional<std::uint32_t> flags,
-    std::optional<jtx::seq> seq,
-    std::optional<jtx::msig> ms,
-    std::optional<ter> const& ter,
-    bool close)
-    : env_(env)
-    , creatorAccount_(account)
-    , asset1_(asset1)
-    , asset2_(asset2)
-    , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
-    , log_(log)
-    , doClose_(close)
-    , lastPurchasePrice_(0)
-    , msig_(ms)
-    , fee_(fee)
-    , ammAccount_(create(tfee, flags, seq, ter))
-    , lptIssue_(xrpl::ammLPTIssue(asset1_.issue().currency, asset2_.issue().currency, ammAccount_))
-    , initialLPTokens_(initialTokens())
-{
-}
-
-AMM::AMM(
-    Env& env,
-    Account const& account,
-    STAmount const& asset1,
-    STAmount const& asset2,
-    ter const& ter,
-    bool log,
-    bool close)
-    : AMM(env,
-          account,
-          asset1,
-          asset2,
-          log,
-          0,
-          0,
-          std::nullopt,
-          std::nullopt,
-          std::nullopt,
-          ter,
-          close)
-{
-}
-
-AMM::AMM(
-    Env& env,
-    Account const& account,
-    STAmount const& asset1,
-    STAmount const& asset2,
-    CreateArg const& arg)
-    : AMM(env,
-          account,
-          asset1,
-          asset2,
-          arg.log,
-          arg.tfee,
-          arg.fee,
-          arg.flags,
-          arg.seq,
-          arg.ms,
-          arg.err,
-          arg.close)
-{
-}
-
-[[nodiscard]] AccountID
-AMM::create(
-    std::uint32_t tfee,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
-{
-    Json::Value jv;
-    jv[jss::Account] = creatorAccount_.human();
-    jv[jss::Amount] = asset1_.getJson(JsonOptions::none);
-    jv[jss::Amount2] = asset2_.getJson(JsonOptions::none);
-    jv[jss::TradingFee] = tfee;
-    jv[jss::TransactionType] = jss::AMMCreate;
-    if (flags)
-        jv[jss::Flags] = *flags;
-    if (fee_ != 0)
+    IOUAmount
+    AMM::initialTokens()
     {
-        jv[sfFee] = std::to_string(fee_);
+        if (!env_.enabled(fixAMMv1_3))
+        {
+            auto const product = number(asset1_) * number(asset2_);
+            return (IOUAmount)(product.mantissa() >= 0 ? root2(product) : root2(-product));
+        }
+        return getLPTokensBalance();
     }
-    else
-    {
-        jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
-    }
-    submit(jv, seq, ter);
 
-    if (!ter || env_.ter() == tesSUCCESS)
+    AMM::AMM(
+        Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        bool log,
+        std::uint16_t tfee,
+        std::uint32_t fee,
+        std::optional<std::uint32_t> flags,
+        std::optional<jtx::seq> seq,
+        std::optional<jtx::msig> ms,
+        std::optional<ter> const& ter,
+        bool close)
+        : env_(env)
+        , creatorAccount_(account)
+        , asset1_(asset1)
+        , asset2_(asset2)
+        , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
+        , log_(log)
+        , doClose_(close)
+        , lastPurchasePrice_(0)
+        , msig_(ms)
+        , fee_(fee)
+        , ammAccount_(create(tfee, flags, seq, ter))
+        , lptIssue_(
+              xrpl::ammLPTIssue(asset1_.issue().currency, asset2_.issue().currency, ammAccount_))
+        , initialLPTokens_(initialTokens())
+    {
+    }
+
+    AMM::AMM(
+        Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        ter const& ter,
+        bool log,
+        bool close)
+        : AMM(env,
+              account,
+              asset1,
+              asset2,
+              log,
+              0,
+              0,
+              std::nullopt,
+              std::nullopt,
+              std::nullopt,
+              ter,
+              close)
+    {
+    }
+
+    AMM::AMM(
+        Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        CreateArg const& arg)
+        : AMM(env,
+              account,
+              asset1,
+              asset2,
+              arg.log,
+              arg.tfee,
+              arg.fee,
+              arg.flags,
+              arg.seq,
+              arg.ms,
+              arg.err,
+              arg.close)
+    {
+    }
+
+    [[nodiscard]] AccountID
+    AMM::create(
+        std::uint32_t tfee,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter)
+    {
+        Json::Value jv;
+        jv[jss::Account] = creatorAccount_.human();
+        jv[jss::Amount] = asset1_.getJson(JsonOptions::none);
+        jv[jss::Amount2] = asset2_.getJson(JsonOptions::none);
+        jv[jss::TradingFee] = tfee;
+        jv[jss::TransactionType] = jss::AMMCreate;
+        if (flags)
+            jv[jss::Flags] = *flags;
+        if (fee_ != 0)
+        {
+            jv[sfFee] = std::to_string(fee_);
+        }
+        else
+        {
+            jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
+        }
+        submit(jv, seq, ter);
+
+        if (!ter || env_.ter() == tesSUCCESS)
+        {
+            if (auto const amm =
+                    env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+            {
+                return amm->getAccountID(sfAccount);
+            }
+        }
+        return {};
+    }
+
+    Json::Value
+    AMM::ammRpcInfo(
+        std::optional<AccountID> const& account,
+        std::optional<std::string> const& ledgerIndex,
+        std::optional<Issue> issue1,
+        std::optional<Issue> issue2,
+        std::optional<AccountID> const& ammAccount,
+        bool ignoreParams,
+        unsigned apiVersion) const
+    {
+        Json::Value jv;
+        if (account)
+            jv[jss::account] = to_string(*account);
+        if (ledgerIndex)
+            jv[jss::ledger_index] = *ledgerIndex;
+        if (!ignoreParams)
+        {
+            if (issue1 || issue2)
+            {
+                if (issue1)
+                    jv[jss::asset] = STIssue(sfAsset, *issue1).getJson(JsonOptions::none);
+                if (issue2)
+                    jv[jss::asset2] = STIssue(sfAsset2, *issue2).getJson(JsonOptions::none);
+            }
+            else if (!ammAccount)
+            {
+                jv[jss::asset] = STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
+                jv[jss::asset2] = STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+            }
+            if (ammAccount)
+                jv[jss::amm_account] = to_string(*ammAccount);
+        }
+        auto jr =
+            (apiVersion == RPC::apiInvalidVersion
+                 ? env_.rpc("json", "amm_info", to_string(jv))
+                 : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
+        if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
+            return jr[jss::result];
+        return Json::nullValue;
+    }
+
+    std::tuple<STAmount, STAmount, STAmount>
+    AMM::balances(Issue const& issue1, Issue const& issue2, std::optional<AccountID> const& account)
+        const
     {
         if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
         {
-            return amm->getAccountID(sfAccount);
+            auto const ammAccountID = amm->getAccountID(sfAccount);
+            auto const [asset1Balance, asset2Balance] = ammPoolHolds(
+                *env_.current(),
+                ammAccountID,
+                issue1,
+                issue2,
+                FreezeHandling::fhIGNORE_FREEZE,
+                env_.journal);
+            auto const lptAMMBalance = account
+                ? ammLPHolds(*env_.current(), *amm, *account, env_.journal)
+                : amm->getFieldAmount(sfLPTokenBalance);
+            return {asset1Balance, asset2Balance, lptAMMBalance};
         }
+        return {STAmount{}, STAmount{}, STAmount{}};
     }
-    return {};
-}
 
-Json::Value
-AMM::ammRpcInfo(
-    std::optional<AccountID> const& account,
-    std::optional<std::string> const& ledgerIndex,
-    std::optional<Issue> issue1,
-    std::optional<Issue> issue2,
-    std::optional<AccountID> const& ammAccount,
-    bool ignoreParams,
-    unsigned apiVersion) const
-{
-    Json::Value jv;
-    if (account)
-        jv[jss::account] = to_string(*account);
-    if (ledgerIndex)
-        jv[jss::ledger_index] = *ledgerIndex;
-    if (!ignoreParams)
+    bool
+    AMM::expectBalances(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& lpt,
+        std::optional<AccountID> const& account) const
     {
-        if (issue1 || issue2)
+        auto const [asset1Balance, asset2Balance, lptAMMBalance] =
+            balances(asset1.issue(), asset2.issue(), account);
+        return asset1 == asset1Balance && asset2 == asset2Balance &&
+            lptAMMBalance == STAmount{lpt, lptIssue_};
+    }
+
+    IOUAmount
+    AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
+    {
+        if (account)
         {
-            if (issue1)
-                jv[jss::asset] = STIssue(sfAsset, *issue1).getJson(JsonOptions::none);
-            if (issue2)
-                jv[jss::asset2] = STIssue(sfAsset2, *issue2).getJson(JsonOptions::none);
+            return accountHolds(
+                       *env_.current(),
+                       *account,
+                       lptIssue_,
+                       FreezeHandling::fhZERO_IF_FROZEN,
+                       env_.journal)
+                .iou();
         }
-        else if (!ammAccount)
+        if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+            return amm->getFieldAmount(sfLPTokenBalance).iou();
+        return IOUAmount{0};
+    }
+
+    bool
+    AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
+    {
+        if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
         {
-            jv[jss::asset] = STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
-            jv[jss::asset2] = STIssue(sfAsset2, asset2_.issue()).getJson(JsonOptions::none);
+            auto const lptAMMBalance = ammLPHolds(*env_.current(), *amm, account, env_.journal);
+            return lptAMMBalance == STAmount{expTokens, lptIssue_};
         }
-        if (ammAccount)
-            jv[jss::amm_account] = to_string(*ammAccount);
+        return false;
     }
-    auto jr =
-        (apiVersion == RPC::apiInvalidVersion
-             ? env_.rpc("json", "amm_info", to_string(jv))
-             : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
-    if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
-        return jr[jss::result];
-    return Json::nullValue;
-}
 
-std::tuple<STAmount, STAmount, STAmount>
-AMM::balances(Issue const& issue1, Issue const& issue2, std::optional<AccountID> const& account)
-    const
-{
-    if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+    bool
+    AMM::expectAuctionSlot(
+        std::uint32_t fee,
+        std::optional<std::uint8_t> timeSlot,
+        IOUAmount expectedPrice) const
     {
-        auto const ammAccountID = amm->getAccountID(sfAccount);
-        auto const [asset1Balance, asset2Balance] = ammPoolHolds(
-            *env_.current(),
-            ammAccountID,
-            issue1,
-            issue2,
-            FreezeHandling::fhIGNORE_FREEZE,
-            env_.journal);
-        auto const lptAMMBalance = account
-            ? ammLPHolds(*env_.current(), *amm, *account, env_.journal)
-            : amm->getFieldAmount(sfLPTokenBalance);
-        return {asset1Balance, asset2Balance, lptAMMBalance};
+        return expectAuctionSlot([&](std::uint32_t slotFee,
+                                     std::optional<std::uint8_t> slotInterval,
+                                     IOUAmount const& slotPrice,
+                                     auto const&) {
+            return slotFee == fee &&
+                // Auction slot might be expired, in which case slotInterval is
+                // 0
+                ((!timeSlot && slotInterval == 0) || slotInterval == timeSlot) &&
+                slotPrice == expectedPrice;
+        });
     }
-    return {STAmount{}, STAmount{}, STAmount{}};
-}
 
-bool
-AMM::expectBalances(
-    STAmount const& asset1,
-    STAmount const& asset2,
-    IOUAmount const& lpt,
-    std::optional<AccountID> const& account) const
-{
-    auto const [asset1Balance, asset2Balance, lptAMMBalance] =
-        balances(asset1.issue(), asset2.issue(), account);
-    return asset1 == asset1Balance && asset2 == asset2Balance &&
-        lptAMMBalance == STAmount{lpt, lptIssue_};
-}
-
-IOUAmount
-AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
-{
-    if (account)
+    bool
+    AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
     {
-        return accountHolds(
-                   *env_.current(),
-                   *account,
-                   lptIssue_,
-                   FreezeHandling::fhZERO_IF_FROZEN,
-                   env_.journal)
-            .iou();
-    }
-    if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
-        return amm->getFieldAmount(sfLPTokenBalance).iou();
-    return IOUAmount{0};
-}
-
-bool
-AMM::expectLPTokens(AccountID const& account, IOUAmount const& expTokens) const
-{
-    if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
-    {
-        auto const lptAMMBalance = ammLPHolds(*env_.current(), *amm, account, env_.journal);
-        return lptAMMBalance == STAmount{expTokens, lptIssue_};
-    }
-    return false;
-}
-
-bool
-AMM::expectAuctionSlot(
-    std::uint32_t fee,
-    std::optional<std::uint8_t> timeSlot,
-    IOUAmount expectedPrice) const
-{
-    return expectAuctionSlot([&](std::uint32_t slotFee,
-                                 std::optional<std::uint8_t> slotInterval,
-                                 IOUAmount const& slotPrice,
-                                 auto const&) {
-        return slotFee == fee &&
-            // Auction slot might be expired, in which case slotInterval is
-            // 0
-            ((!timeSlot && slotInterval == 0) || slotInterval == timeSlot) &&
-            slotPrice == expectedPrice;
-    });
-}
-
-bool
-AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
-{
-    return expectAuctionSlot(
-        [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
+        return expectAuctionSlot([&](std::uint32_t,
+                                     std::optional<std::uint8_t>,
+                                     IOUAmount const&,
+                                     STArray const& accounts) {
             for (auto const& account : accounts)
             {
                 if (std::find(
@@ -278,569 +283,569 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
             }
             return true;
         });
-}
-
-bool
-AMM::expectTradingFee(std::uint16_t fee) const
-{
-    auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue()));
-    return amm && (*amm)[sfTradingFee] == fee;
-}
-
-bool
-AMM::ammExists() const
-{
-    return env_.current()->read(keylet::account(ammAccount_)) != nullptr &&
-        env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())) != nullptr;
-}
-
-bool
-AMM::expectAmmRpcInfo(
-    STAmount const& asset1,
-    STAmount const& asset2,
-    IOUAmount const& balance,
-    std::optional<AccountID> const& account,
-    std::optional<std::string> const& ledger_index,
-    std::optional<AccountID> const& ammAccount) const
-{
-    auto const jv = ammRpcInfo(account, ledger_index, std::nullopt, std::nullopt, ammAccount);
-    return expectAmmInfo(asset1, asset2, balance, jv);
-}
-
-bool
-AMM::expectAmmInfo(
-    STAmount const& asset1,
-    STAmount const& asset2,
-    IOUAmount const& balance,
-    Json::Value const& jvRes) const
-{
-    if (!jvRes.isMember(jss::amm))
-        return false;
-    auto const& jv = jvRes[jss::amm];
-    if (!jv.isMember(jss::amount) || !jv.isMember(jss::amount2) || !jv.isMember(jss::lp_token))
-        return false;
-    STAmount asset1Info;
-    if (!amountFromJsonNoThrow(asset1Info, jv[jss::amount]))
-        return false;
-    STAmount asset2Info;
-    if (!amountFromJsonNoThrow(asset2Info, jv[jss::amount2]))
-        return false;
-    STAmount lptBalance;
-    if (!amountFromJsonNoThrow(lptBalance, jv[jss::lp_token]))
-        return false;
-    // ammRpcInfo returns unordered assets
-    if (asset1Info.issue() != asset1.issue())
-        std::swap(asset1Info, asset2Info);
-    return asset1 == asset1Info && asset2 == asset2Info &&
-        lptBalance == STAmount{balance, lptIssue_};
-}
-
-void
-AMM::setTokens(Json::Value& jv, std::optional<std::pair<Issue, Issue>> const& assets)
-{
-    if (assets)
-    {
-        jv[jss::Asset] = STIssue(sfAsset, assets->first).getJson(JsonOptions::none);
-        jv[jss::Asset2] = STIssue(sfAsset, assets->second).getJson(JsonOptions::none);
     }
-    else
+
+    bool
+    AMM::expectTradingFee(std::uint16_t fee) const
     {
-        jv[jss::Asset] = STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
-        jv[jss::Asset2] = STIssue(sfAsset, asset2_.issue()).getJson(JsonOptions::none);
+        auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue()));
+        return amm && (*amm)[sfTradingFee] == fee;
     }
-}
 
-IOUAmount
-AMM::deposit(
-    std::optional<Account> const& account,
-    Json::Value& jv,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
-{
-    auto const& acct = account ? *account : creatorAccount_;
-    auto const lpTokens = getLPTokensBalance(acct);
-    jv[jss::Account] = acct.human();
-    setTokens(jv, assets);
-    jv[jss::TransactionType] = jss::AMMDeposit;
-    if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, seq, ter);
-    return getLPTokensBalance(acct) - lpTokens;
-}
-
-IOUAmount
-AMM::deposit(
-    std::optional<Account> const& account,
-    LPToken tokens,
-    std::optional<STAmount> const& asset1In,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<ter> const& ter)
-{
-    return deposit(
-        account,
-        tokens,
-        asset1In,
-        std::nullopt,
-        std::nullopt,
-        flags,
-        std::nullopt,
-        std::nullopt,
-        std::nullopt,
-        ter);
-}
-
-IOUAmount
-AMM::deposit(
-    std::optional<Account> const& account,
-    STAmount const& asset1In,
-    std::optional<STAmount> const& asset2In,
-    std::optional<STAmount> const& maxEP,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<ter> const& ter)
-{
-    assert(!(asset2In && maxEP));
-    return deposit(
-        account,
-        std::nullopt,
-        asset1In,
-        asset2In,
-        maxEP,
-        flags,
-        std::nullopt,
-        std::nullopt,
-        std::nullopt,
-        ter);
-}
-
-IOUAmount
-AMM::deposit(
-    std::optional<Account> const& account,
-    std::optional<LPToken> tokens,
-    std::optional<STAmount> const& asset1In,
-    std::optional<STAmount> const& asset2In,
-    std::optional<STAmount> const& maxEP,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::uint16_t> const& tfee,
-    std::optional<ter> const& ter)
-{
-    Json::Value jv;
-    if (tokens)
-        tokens->tokens(lptIssue_).setJson(jv[jss::LPTokenOut]);
-    if (asset1In)
-        asset1In->setJson(jv[jss::Amount]);
-    if (asset2In)
-        asset2In->setJson(jv[jss::Amount2]);
-    if (maxEP)
-        maxEP->setJson(jv[jss::EPrice]);
-    if (tfee)
-        jv[jss::TradingFee] = *tfee;
-    std::uint32_t jvFlags = 0;
-    if (flags)
-        jvFlags = *flags;
-    // If including asset1In and asset2In or tokens as
-    // deposit min amounts then must set the flags
-    // explicitly instead of relying on this logic.
-    if ((jvFlags & tfDepositSubTx) == 0u)
+    bool
+    AMM::ammExists() const
     {
-        if (tokens && !asset1In)
-        {
-            jvFlags |= tfLPToken;
-        }
-        else if (tokens && asset1In)
-        {
-            jvFlags |= tfOneAssetLPToken;
-        }
-        else if (asset1In && asset2In)
-        {
-            jvFlags |= tfTwoAsset;
-        }
-        else if (maxEP && asset1In)
-        {
-            jvFlags |= tfLimitLPToken;
-        }
-        else if (asset1In)
-        {
-            jvFlags |= tfSingleAsset;
-        }
+        return env_.current()->read(keylet::account(ammAccount_)) != nullptr &&
+            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())) != nullptr;
     }
-    jv[jss::Flags] = jvFlags;
-    return deposit(account, jv, assets, seq, ter);
-}
 
-IOUAmount
-AMM::deposit(DepositArg const& arg)
-{
-    return deposit(
-        arg.account,
-        arg.tokens,
-        arg.asset1In,
-        arg.asset2In,
-        arg.maxEP,
-        arg.flags,
-        arg.assets,
-        arg.seq,
-        arg.tfee,
-        arg.err);
-}
-
-IOUAmount
-AMM::withdraw(
-    std::optional<Account> const& account,
-    Json::Value& jv,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
-{
-    auto const& acct = account ? *account : creatorAccount_;
-    auto const lpTokens = getLPTokensBalance(acct);
-    jv[jss::Account] = acct.human();
-    setTokens(jv, assets);
-    jv[jss::TransactionType] = jss::AMMWithdraw;
-    if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, seq, ter);
-    return lpTokens - getLPTokensBalance(acct);
-}
-
-IOUAmount
-AMM::withdraw(
-    std::optional<Account> const& account,
-    std::optional<LPToken> const& tokens,
-    std::optional<STAmount> const& asset1Out,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<ter> const& ter)
-{
-    return withdraw(
-        account,
-        tokens,
-        asset1Out,
-        std::nullopt,
-        std::nullopt,
-        flags,
-        std::nullopt,
-        std::nullopt,
-        ter);
-}
-
-IOUAmount
-AMM::withdraw(
-    std::optional<Account> const& account,
-    STAmount const& asset1Out,
-    std::optional<STAmount> const& asset2Out,
-    std::optional<IOUAmount> const& maxEP,
-    std::optional<ter> const& ter)
-{
-    assert(!(asset2Out && maxEP));
-    return withdraw(
-        account,
-        std::nullopt,
-        asset1Out,
-        asset2Out,
-        maxEP,
-        std::nullopt,
-        std::nullopt,
-        std::nullopt,
-        ter);
-}
-
-IOUAmount
-AMM::withdraw(
-    std::optional<Account> const& account,
-    std::optional<LPToken> const& tokens,
-    std::optional<STAmount> const& asset1Out,
-    std::optional<STAmount> const& asset2Out,
-    std::optional<IOUAmount> const& maxEP,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
-{
-    Json::Value jv;
-    if (tokens)
-        tokens->tokens(lptIssue_).setJson(jv[jss::LPTokenIn]);
-    if (asset1Out)
-        asset1Out->setJson(jv[jss::Amount]);
-    if (asset2Out)
-        asset2Out->setJson(jv[jss::Amount2]);
-    if (maxEP)
+    bool
+    AMM::expectAmmRpcInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        std::optional<AccountID> const& account,
+        std::optional<std::string> const& ledger_index,
+        std::optional<AccountID> const& ammAccount) const
     {
-        STAmount const saMaxEP{*maxEP, lptIssue_};
-        saMaxEP.setJson(jv[jss::EPrice]);
+        auto const jv = ammRpcInfo(account, ledger_index, std::nullopt, std::nullopt, ammAccount);
+        return expectAmmInfo(asset1, asset2, balance, jv);
     }
-    std::uint32_t jvFlags = 0;
-    if (flags)
-        jvFlags = *flags;
-    if ((jvFlags & tfWithdrawSubTx) == 0u)
+
+    bool
+    AMM::expectAmmInfo(
+        STAmount const& asset1,
+        STAmount const& asset2,
+        IOUAmount const& balance,
+        Json::Value const& jvRes) const
     {
-        if (tokens && !asset1Out)
-        {
-            jvFlags |= tfLPToken;
-        }
-        else if (asset1Out && asset2Out)
-        {
-            jvFlags |= tfTwoAsset;
-        }
-        else if (tokens && asset1Out)
-        {
-            jvFlags |= tfOneAssetLPToken;
-        }
-        else if (asset1Out && maxEP)
-        {
-            jvFlags |= tfLimitLPToken;
-        }
-        else if (asset1Out)
-        {
-            jvFlags |= tfSingleAsset;
-        }
+        if (!jvRes.isMember(jss::amm))
+            return false;
+        auto const& jv = jvRes[jss::amm];
+        if (!jv.isMember(jss::amount) || !jv.isMember(jss::amount2) || !jv.isMember(jss::lp_token))
+            return false;
+        STAmount asset1Info;
+        if (!amountFromJsonNoThrow(asset1Info, jv[jss::amount]))
+            return false;
+        STAmount asset2Info;
+        if (!amountFromJsonNoThrow(asset2Info, jv[jss::amount2]))
+            return false;
+        STAmount lptBalance;
+        if (!amountFromJsonNoThrow(lptBalance, jv[jss::lp_token]))
+            return false;
+        // ammRpcInfo returns unordered assets
+        if (asset1Info.issue() != asset1.issue())
+            std::swap(asset1Info, asset2Info);
+        return asset1 == asset1Info && asset2 == asset2Info &&
+            lptBalance == STAmount{balance, lptIssue_};
     }
-    jv[jss::Flags] = jvFlags;
-    return withdraw(account, jv, seq, assets, ter);
-}
 
-IOUAmount
-AMM::withdraw(WithdrawArg const& arg)
-{
-    return withdraw(
-        arg.account,
-        arg.tokens,
-        arg.asset1Out,
-        arg.asset2Out,
-        arg.maxEP,
-        arg.flags,
-        arg.assets,
-        arg.seq,
-        arg.err);
-}
-
-void
-AMM::vote(
-    std::optional<Account> const& account,
-    std::uint32_t feeVal,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
-{
-    Json::Value jv;
-    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    setTokens(jv, assets);
-    jv[jss::TradingFee] = feeVal;
-    jv[jss::TransactionType] = jss::AMMVote;
-    if (flags)
-        jv[jss::Flags] = *flags;
-    if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, seq, ter);
-}
-
-void
-AMM::vote(VoteArg const& arg)
-{
-    vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
-}
-
-Json::Value
-AMM::bid(BidArg const& arg)
-{
-    if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+    void
+    AMM::setTokens(Json::Value& jv, std::optional<std::pair<Issue, Issue>> const& assets)
     {
-        assert(
-            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
-            amm->isFieldPresent(sfAuctionSlot));
-        if (amm->isFieldPresent(sfAuctionSlot))
+        if (assets)
         {
-            auto const& auctionSlot =
-                safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
-            lastPurchasePrice_ = auctionSlot[sfPrice].iou();
-        }
-    }
-    bidMin_ = std::nullopt;
-    bidMax_ = std::nullopt;
-
-    Json::Value jv;
-    jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
-    setTokens(jv, arg.assets);
-    auto getBid = [&](auto const& bid) {
-        if (std::holds_alternative<int>(bid))
-        {
-            return STAmount{lptIssue_, std::get<int>(bid)};
-        }
-        if (std::holds_alternative<IOUAmount>(bid))
-        {
-            return toSTAmount(std::get<IOUAmount>(bid), lptIssue_);
-        }
-
-        return std::get<STAmount>(bid);
-    };
-    if (arg.bidMin)
-    {
-        STAmount saTokens = getBid(*arg.bidMin);
-        saTokens.setJson(jv[jss::BidMin]);
-        bidMin_ = saTokens.iou();
-    }
-    if (arg.bidMax)
-    {
-        STAmount saTokens = getBid(*arg.bidMax);
-        saTokens.setJson(jv[jss::BidMax]);
-        bidMax_ = saTokens.iou();
-    }
-    if (!arg.authAccounts.empty())
-    {
-        Json::Value accounts(Json::arrayValue);
-        for (auto const& account : arg.authAccounts)
-        {
-            Json::Value acct;
-            Json::Value authAcct;
-            acct[jss::Account] = account.human();
-            authAcct[jss::AuthAccount] = acct;
-            accounts.append(authAcct);
-        }
-        jv[jss::AuthAccounts] = accounts;
-    }
-    if (arg.flags)
-        jv[jss::Flags] = *arg.flags;
-    jv[jss::TransactionType] = jss::AMMBid;
-    if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
-    return jv;
-}
-
-void
-AMM::submit(
-    Json::Value const& jv,
-    std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
-{
-    if (log_)
-        std::cout << jv.toStyledString();
-    if (msig_)
-    {
-        if (seq && ter)
-        {
-            env_(jv, *msig_, *seq, *ter);
-        }
-        else if (seq)
-        {
-            env_(jv, *msig_, *seq);
-        }
-        else if (ter)
-        {
-            env_(jv, *msig_, *ter);
+            jv[jss::Asset] = STIssue(sfAsset, assets->first).getJson(JsonOptions::none);
+            jv[jss::Asset2] = STIssue(sfAsset, assets->second).getJson(JsonOptions::none);
         }
         else
         {
-            env_(jv, *msig_);
+            jv[jss::Asset] = STIssue(sfAsset, asset1_.issue()).getJson(JsonOptions::none);
+            jv[jss::Asset2] = STIssue(sfAsset, asset2_.issue()).getJson(JsonOptions::none);
         }
     }
-    else if (seq && ter)
-    {
-        env_(jv, *seq, *ter);
-    }
-    else if (seq)
-    {
-        env_(jv, *seq);
-    }
-    else if (ter)
-    {
-        env_(jv, *ter);
-    }
-    else
-    {
-        env_(jv);
-    }
-    if (doClose_)
-        env_.close();
-}
 
-bool
-AMM::expectAuctionSlot(auto&& cb) const
-{
-    if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+    IOUAmount
+    AMM::deposit(
+        std::optional<Account> const& account,
+        Json::Value& jv,
+        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter)
     {
-        assert(
-            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
-            amm->isFieldPresent(sfAuctionSlot));
-        if (amm->isFieldPresent(sfAuctionSlot))
+        auto const& acct = account ? *account : creatorAccount_;
+        auto const lpTokens = getLPTokensBalance(acct);
+        jv[jss::Account] = acct.human();
+        setTokens(jv, assets);
+        jv[jss::TransactionType] = jss::AMMDeposit;
+        if (fee_ != 0)
+            jv[jss::Fee] = std::to_string(fee_);
+        submit(jv, seq, ter);
+        return getLPTokensBalance(acct) - lpTokens;
+    }
+
+    IOUAmount
+    AMM::deposit(
+        std::optional<Account> const& account,
+        LPToken tokens,
+        std::optional<STAmount> const& asset1In,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<ter> const& ter)
+    {
+        return deposit(
+            account,
+            tokens,
+            asset1In,
+            std::nullopt,
+            std::nullopt,
+            flags,
+            std::nullopt,
+            std::nullopt,
+            std::nullopt,
+            ter);
+    }
+
+    IOUAmount
+    AMM::deposit(
+        std::optional<Account> const& account,
+        STAmount const& asset1In,
+        std::optional<STAmount> const& asset2In,
+        std::optional<STAmount> const& maxEP,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<ter> const& ter)
+    {
+        assert(!(asset2In && maxEP));
+        return deposit(
+            account,
+            std::nullopt,
+            asset1In,
+            asset2In,
+            maxEP,
+            flags,
+            std::nullopt,
+            std::nullopt,
+            std::nullopt,
+            ter);
+    }
+
+    IOUAmount
+    AMM::deposit(
+        std::optional<Account> const& account,
+        std::optional<LPToken> tokens,
+        std::optional<STAmount> const& asset1In,
+        std::optional<STAmount> const& asset2In,
+        std::optional<STAmount> const& maxEP,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<jtx::seq> const& seq,
+        std::optional<std::uint16_t> const& tfee,
+        std::optional<ter> const& ter)
+    {
+        Json::Value jv;
+        if (tokens)
+            tokens->tokens(lptIssue_).setJson(jv[jss::LPTokenOut]);
+        if (asset1In)
+            asset1In->setJson(jv[jss::Amount]);
+        if (asset2In)
+            asset2In->setJson(jv[jss::Amount2]);
+        if (maxEP)
+            maxEP->setJson(jv[jss::EPrice]);
+        if (tfee)
+            jv[jss::TradingFee] = *tfee;
+        std::uint32_t jvFlags = 0;
+        if (flags)
+            jvFlags = *flags;
+        // If including asset1In and asset2In or tokens as
+        // deposit min amounts then must set the flags
+        // explicitly instead of relying on this logic.
+        if ((jvFlags & tfDepositSubTx) == 0u)
         {
-            auto const& auctionSlot =
-                safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
-            if (auctionSlot.isFieldPresent(sfAccount))
+            if (tokens && !asset1In)
             {
-                // This could fail in pre-fixInnerObjTemplate tests
-                // if the submitted transactions recreate one of
-                // the failure scenarios. Access as optional
-                // to avoid the failure.
-                auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
-                auto const slotInterval = ammAuctionTimeSlot(
-                    env_.app().timeKeeper().now().time_since_epoch().count(), auctionSlot);
-                auto const slotPrice = auctionSlot[sfPrice].iou();
-                auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
-                return cb(slotFee, slotInterval, slotPrice, authAccounts);
+                jvFlags |= tfLPToken;
+            }
+            else if (tokens && asset1In)
+            {
+                jvFlags |= tfOneAssetLPToken;
+            }
+            else if (asset1In && asset2In)
+            {
+                jvFlags |= tfTwoAsset;
+            }
+            else if (maxEP && asset1In)
+            {
+                jvFlags |= tfLimitLPToken;
+            }
+            else if (asset1In)
+            {
+                jvFlags |= tfSingleAsset;
             }
         }
+        jv[jss::Flags] = jvFlags;
+        return deposit(account, jv, assets, seq, ter);
     }
-    return false;
-}
 
-void
-AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
-{
-    Json::Value jv;
-    jv[jss::Account] = to_string(deleter);
-    setTokens(jv);
-    jv[jss::TransactionType] = jss::AMMDelete;
-    if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, std::nullopt, ter);
-}
+    IOUAmount
+    AMM::deposit(DepositArg const& arg)
+    {
+        return deposit(
+            arg.account,
+            arg.tokens,
+            arg.asset1In,
+            arg.asset2In,
+            arg.maxEP,
+            arg.flags,
+            arg.assets,
+            arg.seq,
+            arg.tfee,
+            arg.err);
+    }
 
-namespace amm {
-Json::Value
-trust(AccountID const& account, STAmount const& amount, std::uint32_t flags)
-{
-    if (isXRP(amount))
-        Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = to_string(account);
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
-    jv[jss::TransactionType] = jss::TrustSet;
-    jv[jss::Flags] = flags;
-    return jv;
-}
-Json::Value
-pay(Account const& account, AccountID const& to, STAmount const& amount)
-{
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
-    jv[jss::Destination] = to_string(to);
-    jv[jss::TransactionType] = jss::Payment;
-    return jv;
-}
+    IOUAmount
+    AMM::withdraw(
+        std::optional<Account> const& account,
+        Json::Value& jv,
+        std::optional<jtx::seq> const& seq,
+        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<ter> const& ter)
+    {
+        auto const& acct = account ? *account : creatorAccount_;
+        auto const lpTokens = getLPTokensBalance(acct);
+        jv[jss::Account] = acct.human();
+        setTokens(jv, assets);
+        jv[jss::TransactionType] = jss::AMMWithdraw;
+        if (fee_ != 0)
+            jv[jss::Fee] = std::to_string(fee_);
+        submit(jv, seq, ter);
+        return lpTokens - getLPTokensBalance(acct);
+    }
 
-Json::Value
-ammClawback(
-    Account const& issuer,
-    Account const& holder,
-    Issue const& asset,
-    Issue const& asset2,
-    std::optional<STAmount> const& amount)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::AMMClawback;
-    jv[jss::Account] = issuer.human();
-    jv[jss::Holder] = holder.human();
-    jv[jss::Asset] = to_json(asset);
-    jv[jss::Asset2] = to_json(asset2);
-    if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+    IOUAmount
+    AMM::withdraw(
+        std::optional<Account> const& account,
+        std::optional<LPToken> const& tokens,
+        std::optional<STAmount> const& asset1Out,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<ter> const& ter)
+    {
+        return withdraw(
+            account,
+            tokens,
+            asset1Out,
+            std::nullopt,
+            std::nullopt,
+            flags,
+            std::nullopt,
+            std::nullopt,
+            ter);
+    }
 
-    return jv;
-}
-}  // namespace amm
-}  // namespace jtx
-}  // namespace test
+    IOUAmount
+    AMM::withdraw(
+        std::optional<Account> const& account,
+        STAmount const& asset1Out,
+        std::optional<STAmount> const& asset2Out,
+        std::optional<IOUAmount> const& maxEP,
+        std::optional<ter> const& ter)
+    {
+        assert(!(asset2Out && maxEP));
+        return withdraw(
+            account,
+            std::nullopt,
+            asset1Out,
+            asset2Out,
+            maxEP,
+            std::nullopt,
+            std::nullopt,
+            std::nullopt,
+            ter);
+    }
+
+    IOUAmount
+    AMM::withdraw(
+        std::optional<Account> const& account,
+        std::optional<LPToken> const& tokens,
+        std::optional<STAmount> const& asset1Out,
+        std::optional<STAmount> const& asset2Out,
+        std::optional<IOUAmount> const& maxEP,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter)
+    {
+        Json::Value jv;
+        if (tokens)
+            tokens->tokens(lptIssue_).setJson(jv[jss::LPTokenIn]);
+        if (asset1Out)
+            asset1Out->setJson(jv[jss::Amount]);
+        if (asset2Out)
+            asset2Out->setJson(jv[jss::Amount2]);
+        if (maxEP)
+        {
+            STAmount const saMaxEP{*maxEP, lptIssue_};
+            saMaxEP.setJson(jv[jss::EPrice]);
+        }
+        std::uint32_t jvFlags = 0;
+        if (flags)
+            jvFlags = *flags;
+        if ((jvFlags & tfWithdrawSubTx) == 0u)
+        {
+            if (tokens && !asset1Out)
+            {
+                jvFlags |= tfLPToken;
+            }
+            else if (asset1Out && asset2Out)
+            {
+                jvFlags |= tfTwoAsset;
+            }
+            else if (tokens && asset1Out)
+            {
+                jvFlags |= tfOneAssetLPToken;
+            }
+            else if (asset1Out && maxEP)
+            {
+                jvFlags |= tfLimitLPToken;
+            }
+            else if (asset1Out)
+            {
+                jvFlags |= tfSingleAsset;
+            }
+        }
+        jv[jss::Flags] = jvFlags;
+        return withdraw(account, jv, seq, assets, ter);
+    }
+
+    IOUAmount
+    AMM::withdraw(WithdrawArg const& arg)
+    {
+        return withdraw(
+            arg.account,
+            arg.tokens,
+            arg.asset1Out,
+            arg.asset2Out,
+            arg.maxEP,
+            arg.flags,
+            arg.assets,
+            arg.seq,
+            arg.err);
+    }
+
+    void
+    AMM::vote(
+        std::optional<Account> const& account,
+        std::uint32_t feeVal,
+        std::optional<std::uint32_t> const& flags,
+        std::optional<jtx::seq> const& seq,
+        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<ter> const& ter)
+    {
+        Json::Value jv;
+        jv[jss::Account] = account ? account->human() : creatorAccount_.human();
+        setTokens(jv, assets);
+        jv[jss::TradingFee] = feeVal;
+        jv[jss::TransactionType] = jss::AMMVote;
+        if (flags)
+            jv[jss::Flags] = *flags;
+        if (fee_ != 0)
+            jv[jss::Fee] = std::to_string(fee_);
+        submit(jv, seq, ter);
+    }
+
+    void
+    AMM::vote(VoteArg const& arg)
+    {
+        vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
+    }
+
+    Json::Value
+    AMM::bid(BidArg const& arg)
+    {
+        if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+        {
+            assert(
+                !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+                amm->isFieldPresent(sfAuctionSlot));
+            if (amm->isFieldPresent(sfAuctionSlot))
+            {
+                auto const& auctionSlot =
+                    safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+                lastPurchasePrice_ = auctionSlot[sfPrice].iou();
+            }
+        }
+        bidMin_ = std::nullopt;
+        bidMax_ = std::nullopt;
+
+        Json::Value jv;
+        jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
+        setTokens(jv, arg.assets);
+        auto getBid = [&](auto const& bid) {
+            if (std::holds_alternative<int>(bid))
+            {
+                return STAmount{lptIssue_, std::get<int>(bid)};
+            }
+            if (std::holds_alternative<IOUAmount>(bid))
+            {
+                return toSTAmount(std::get<IOUAmount>(bid), lptIssue_);
+            }
+
+            return std::get<STAmount>(bid);
+        };
+        if (arg.bidMin)
+        {
+            STAmount saTokens = getBid(*arg.bidMin);
+            saTokens.setJson(jv[jss::BidMin]);
+            bidMin_ = saTokens.iou();
+        }
+        if (arg.bidMax)
+        {
+            STAmount saTokens = getBid(*arg.bidMax);
+            saTokens.setJson(jv[jss::BidMax]);
+            bidMax_ = saTokens.iou();
+        }
+        if (!arg.authAccounts.empty())
+        {
+            Json::Value accounts(Json::arrayValue);
+            for (auto const& account : arg.authAccounts)
+            {
+                Json::Value acct;
+                Json::Value authAcct;
+                acct[jss::Account] = account.human();
+                authAcct[jss::AuthAccount] = acct;
+                accounts.append(authAcct);
+            }
+            jv[jss::AuthAccounts] = accounts;
+        }
+        if (arg.flags)
+            jv[jss::Flags] = *arg.flags;
+        jv[jss::TransactionType] = jss::AMMBid;
+        if (fee_ != 0)
+            jv[jss::Fee] = std::to_string(fee_);
+        return jv;
+    }
+
+    void
+    AMM::submit(
+        Json::Value const& jv,
+        std::optional<jtx::seq> const& seq,
+        std::optional<ter> const& ter)
+    {
+        if (log_)
+            std::cout << jv.toStyledString();
+        if (msig_)
+        {
+            if (seq && ter)
+            {
+                env_(jv, *msig_, *seq, *ter);
+            }
+            else if (seq)
+            {
+                env_(jv, *msig_, *seq);
+            }
+            else if (ter)
+            {
+                env_(jv, *msig_, *ter);
+            }
+            else
+            {
+                env_(jv, *msig_);
+            }
+        }
+        else if (seq && ter)
+        {
+            env_(jv, *seq, *ter);
+        }
+        else if (seq)
+        {
+            env_(jv, *seq);
+        }
+        else if (ter)
+        {
+            env_(jv, *ter);
+        }
+        else
+        {
+            env_(jv);
+        }
+        if (doClose_)
+            env_.close();
+    }
+
+    bool
+    AMM::expectAuctionSlot(auto&& cb) const
+    {
+        if (auto const amm = env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+        {
+            assert(
+                !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+                amm->isFieldPresent(sfAuctionSlot));
+            if (amm->isFieldPresent(sfAuctionSlot))
+            {
+                auto const& auctionSlot =
+                    safe_downcast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+                if (auctionSlot.isFieldPresent(sfAccount))
+                {
+                    // This could fail in pre-fixInnerObjTemplate tests
+                    // if the submitted transactions recreate one of
+                    // the failure scenarios. Access as optional
+                    // to avoid the failure.
+                    auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
+                    auto const slotInterval = ammAuctionTimeSlot(
+                        env_.app().timeKeeper().now().time_since_epoch().count(), auctionSlot);
+                    auto const slotPrice = auctionSlot[sfPrice].iou();
+                    auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
+                    return cb(slotFee, slotInterval, slotPrice, authAccounts);
+                }
+            }
+        }
+        return false;
+    }
+
+    void
+    AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
+    {
+        Json::Value jv;
+        jv[jss::Account] = to_string(deleter);
+        setTokens(jv);
+        jv[jss::TransactionType] = jss::AMMDelete;
+        if (fee_ != 0)
+            jv[jss::Fee] = std::to_string(fee_);
+        submit(jv, std::nullopt, ter);
+    }
+
+    namespace amm {
+    Json::Value
+    trust(AccountID const& account, STAmount const& amount, std::uint32_t flags)
+    {
+        if (isXRP(amount))
+            Throw<std::runtime_error>("trust() requires IOU");
+        Json::Value jv;
+        jv[jss::Account] = to_string(account);
+        jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
+        jv[jss::TransactionType] = jss::TrustSet;
+        jv[jss::Flags] = flags;
+        return jv;
+    }
+    Json::Value
+    pay(Account const& account, AccountID const& to, STAmount const& amount)
+    {
+        Json::Value jv;
+        jv[jss::Account] = account.human();
+        jv[jss::Amount] = amount.getJson(JsonOptions::none);
+        jv[jss::Destination] = to_string(to);
+        jv[jss::TransactionType] = jss::Payment;
+        return jv;
+    }
+
+    Json::Value
+    ammClawback(
+        Account const& issuer,
+        Account const& holder,
+        Issue const& asset,
+        Issue const& asset2,
+        std::optional<STAmount> const& amount)
+    {
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::AMMClawback;
+        jv[jss::Account] = issuer.human();
+        jv[jss::Holder] = holder.human();
+        jv[jss::Asset] = to_json(asset);
+        jv[jss::Asset2] = to_json(asset2);
+        if (amount)
+            jv[jss::Amount] = amount->getJson(JsonOptions::none);
+
+        return jv;
+    }
+    }  // namespace amm
+    }  // namespace jtx
+    }  // namespace test
 }  // namespace xrpl
