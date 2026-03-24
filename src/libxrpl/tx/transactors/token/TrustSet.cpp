@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
@@ -8,7 +9,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/TrustSet.h>
 
 namespace {

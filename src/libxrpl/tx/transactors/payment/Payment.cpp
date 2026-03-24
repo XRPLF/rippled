@@ -2,6 +2,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -10,7 +11,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 <xrpl / ledger / helpers / PermissionedDEXHelpers.h>
 #include <xrpl/tx/transactors/payment/Payment.h>
 

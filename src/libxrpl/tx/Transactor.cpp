@@ -5,6 +5,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -18,7 +19,6 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 
