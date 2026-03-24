@@ -4,7 +4,7 @@
 #include <xrpld/app/misc/FeeVote.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>

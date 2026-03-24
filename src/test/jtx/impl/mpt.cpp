@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
