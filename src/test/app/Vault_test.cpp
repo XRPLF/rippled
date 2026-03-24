@@ -9,8 +9,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -629,8 +630,7 @@ class Vault_test : public beast::unit_test::suite
 
         testCase(testDisabled(), {.features = testableAmendments() - featureSingleAssetVault});
 
-        testCase(
-            testDisabled(tecNO_ENTRY), {.features = testableAmendments() - featureMPTokensV1});
+        testCase(testDisabled(tecNO_ENTRY), {.features = testableAmendments() - featureMPTokensV1});
 
         testCase(
             [&](Env& env,
@@ -1897,7 +1897,7 @@ class Vault_test : public beast::unit_test::suite
                     env.close();
                 }
             },
-            {.requireAuth = false, .initialXRP = acctReserve + incReserve * 4 + 1});
+            {.requireAuth = false, .initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([this](
                      Env& env,
@@ -2329,7 +2329,8 @@ class Vault_test : public beast::unit_test::suite
                     Json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
-                        auto& ja = jv[jss::LimitAmount] = foo(0).value().getJson(JsonOptions::kNONE);
+                        auto& ja = jv[jss::LimitAmount] =
+                            foo(0).value().getJson(JsonOptions::kNONE);
                         ja[jss::issuer] = toBase58(account);
                     }
                     jv[jss::TransactionType] = jss::TrustSet;
@@ -2744,7 +2745,7 @@ class Vault_test : public beast::unit_test::suite
                 env(vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
-                     .amount = asset(Number(1000 + 37 * 5, -1))}));
+                     .amount = asset(Number(1000 + (37 * 5), -1))}));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
@@ -2807,7 +2808,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase(
             [&, this](
@@ -2842,7 +2843,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([&, this](
                      Env& env,

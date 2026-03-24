@@ -123,7 +123,9 @@ private:
 
         template <class Hasher>
         friend void
-        hash_append(Hasher& h, Ledger::Instance const& instance)  // NOLINT(readability-identifier-naming)
+        hash_append(
+            Hasher& h,
+            Ledger::Instance const& instance)  // NOLINT(readability-identifier-naming)
         {
             using beast::hash_append;
             hash_append(h, instance.asTie());
@@ -278,8 +280,8 @@ public:
         O
           \--> B
     */
-    std::size_t
-    branches(std::set<Ledger> const& ledgers) const;
+    static std::size_t
+    branches(std::set<Ledger> const& ledgers);
 };
 
 /** Helper for writing unit tests with controlled ledger histories.

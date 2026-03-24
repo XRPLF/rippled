@@ -176,13 +176,13 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
 }
 
 uint32_t
-Permission::txToPermissionType(TxType const& type) const
+Permission::txToPermissionType(TxType const& type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const& value) const
+Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
 }

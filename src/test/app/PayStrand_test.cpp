@@ -127,7 +127,6 @@ ape(AccountID const& a)
     return STPathElement(STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
 };
 
-
 // Issuer path element
 STPathElement
 iape(AccountID const& account)
@@ -166,7 +165,7 @@ class ElementComboIter
     bool
     has(SB s) const
     {
-        return state_ & (1 << safe_cast<int>(s));
+        return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
     bool
@@ -202,7 +201,7 @@ public:
     valid() const
     {
         return (allowCompound_ || !(has(SB::Acc) && hasAny({SB::Cur, SB::Iss}))) &&
-            (!hasAny({SB::PrevAcc, SB::PrevCur, SB::PrevIss}) || prev_) &&
+            (!hasAny({SB::PrevAcc, SB::PrevCur, SB::PrevIss}) || (prev_ != nullptr)) &&
             (!hasAny({SB::RootAcc, SB::SameAccIss, SB::ExistingAcc, SB::PrevAcc}) ||
              has(SB::Acc)) &&
             (!hasAny({SB::RootIss, SB::SameAccIss, SB::ExistingIss, SB::PrevIss}) ||

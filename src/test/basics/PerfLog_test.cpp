@@ -63,21 +63,21 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-        path
-        logDir() const
+        static path
+        logDir()
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        path
-        logFile() const
+        static path
+        logFile()
         {
             return logDir() / "perf_log.txt";
         }
 
-        std::chrono::milliseconds
-        logInterval() const
+        static std::chrono::milliseconds
+        logInterval()
         {
             return std::chrono::milliseconds{10};
         }
@@ -96,8 +96,8 @@ class PerfLog_test : public beast::unit_test::suite
         // Block until the log file has grown in size, indicating that the
         // PerfLog has written new values to the file and _should_ have the
         // latest update.
-        void
-        wait() const
+        static void
+        wait()
         {
             using namespace boost::filesystem;
 

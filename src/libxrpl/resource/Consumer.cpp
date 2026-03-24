@@ -23,7 +23,7 @@ Consumer::Consumer() : logic_(nullptr), entry_(nullptr)
 
 Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr)
 {
-    if (logic_ && other.entry_)
+    if ((logic_ != nullptr) && (other.entry_ != nullptr))
     {
         entry_ = other.entry_;
         logic_->acquire(*entry_);
@@ -32,7 +32,7 @@ Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr
 
 Consumer::~Consumer()
 {
-    if (logic_ && entry_)
+    if ((logic_ != nullptr) && (entry_ != nullptr))
         logic_->release(*entry_);
 }
 
@@ -43,14 +43,14 @@ Consumer::operator=(Consumer const& other)
         return *this;
 
     // remove old ref
-    if (logic_ && entry_)
+    if ((logic_ != nullptr) && (entry_ != nullptr))
         logic_->release(*entry_);
 
     logic_ = other.logic_;
     entry_ = other.entry_;
 
     // add new ref
-    if (logic_ && entry_)
+    if ((logic_ != nullptr) && (entry_ != nullptr))
         logic_->acquire(*entry_);
 
     return *this;
@@ -68,7 +68,7 @@ Consumer::to_string() const
 bool
 Consumer::isUnlimited() const
 {
-    if (entry_)
+    if (entry_ != nullptr)
         return entry_->isUnlimited();
 
     return false;
@@ -78,7 +78,7 @@ Disposition
 Consumer::disposition() const
 {
     Disposition d = ok;
-    if (logic_ && entry_)
+    if ((logic_ != nullptr) && (entry_ != nullptr))
         d = logic_->charge(*entry_, Charge(0));
 
     return d;
@@ -89,7 +89,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 {
     Disposition d = ok;
 
-    if (logic_ && entry_ && !entry_->isUnlimited())
+    if ((logic_ != nullptr) && (entry_ != nullptr) && !entry_->isUnlimited())
         d = logic_->charge(*entry_, what, context);
 
     return d;

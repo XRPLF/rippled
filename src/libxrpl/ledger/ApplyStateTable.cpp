@@ -275,9 +275,7 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
         case Action::modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto

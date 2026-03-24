@@ -71,13 +71,8 @@ canHaveDeliveredAmount(
     TxType const tt{serializedTx->getTxnType()};
     // Transaction type should be ttPAYMENT, ttACCOUNT_DELETE or ttCHECK_CASH
     // and if the transaction failed nothing could have been delivered.
-    if ((tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
-        transactionMeta.getResultTER() == tesSUCCESS)
-    {
-        return true;
-    }
-
-    return false;
+    return (tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
+        transactionMeta.getResultTER() == tesSUCCESS;
 }
 
 void

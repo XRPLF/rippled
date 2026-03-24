@@ -59,6 +59,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     makeGet(std::string const& strPath, boost::asio::streambuf& sb, std::string const& strHost)
     {
         std::ostream osRequest(&sb);

@@ -61,7 +61,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (iType == STPathElement::typeNone)
                 return;
         }
-        else if (iType & ~STPathElement::typeAll)
+        else if ((iType & ~STPathElement::typeAll) != 0)
         {
             JLOG(debugLog().error()) << "Bad path element " << iType << " in pathset";
             Throw<std::runtime_error>("bad path element");
@@ -76,13 +76,13 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             Currency currency;
             AccountID issuer;
 
-            if (hasAccount)
+            if (hasAccount != 0)
                 account = sit.get160();
 
-            if (hasCurrency)
+            if (hasCurrency != 0)
                 currency = sit.get160();
 
-            if (hasIssuer)
+            if (hasIssuer != 0)
                 issuer = sit.get160();
 
             path.emplace_back(account, currency, issuer, hasCurrency);
@@ -127,7 +127,7 @@ bool
 STPathSet::isEquivalent(STBase const& t) const
 {
     STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
-    return v && (value == v->value);
+    return (v != nullptr) && (value == v->value);
 }
 
 bool
@@ -160,13 +160,13 @@ STPath::getJson(JsonOptions) const
 
         elem[jss::type] = iType;
 
-        if (iType & STPathElement::typeAccount)
+        if ((iType & STPathElement::typeAccount) != 0u)
             elem[jss::account] = to_string(it.getAccountID());
 
-        if (iType & STPathElement::typeCurrency)
+        if ((iType & STPathElement::typeCurrency) != 0u)
             elem[jss::currency] = to_string(it.getCurrency());
 
-        if (iType & STPathElement::typeIssuer)
+        if ((iType & STPathElement::typeIssuer) != 0u)
             elem[jss::issuer] = to_string(it.getIssuerID());
 
         ret.append(elem);
@@ -209,13 +209,13 @@ STPathSet::add(Serializer& s) const
 
             s.add8(iType);
 
-            if (iType & STPathElement::typeAccount)
+            if ((iType & STPathElement::typeAccount) != 0)
                 s.addBitString(speElement.getAccountID());
 
-            if (iType & STPathElement::typeCurrency)
+            if ((iType & STPathElement::typeCurrency) != 0)
                 s.addBitString(speElement.getCurrency());
 
-            if (iType & STPathElement::typeIssuer)
+            if ((iType & STPathElement::typeIssuer) != 0)
                 s.addBitString(speElement.getIssuerID());
         }
 

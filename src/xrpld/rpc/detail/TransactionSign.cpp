@@ -79,7 +79,7 @@ public:
     AccountID const&
     getSigner() const
     {
-        if (!multiSigningAcctID_)
+        if (multiSigningAcctID_ == nullptr)
             LogicError("Accessing unknown SigningForParams::getSigner()");
         return *multiSigningAcctID_;
     }
@@ -207,7 +207,7 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) && ((doPath == false) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -281,7 +281,8 @@ checkPayment(
             }
 
             auto j = app.journal("RPCHandler");
-            JLOG(j.debug()) << "transactionSign: build_path: " << result.getJson(JsonOptions::kNONE);
+            JLOG(j.debug()) << "transactionSign: build_path: "
+                            << result.getJson(JsonOptions::kNONE);
 
             if (!result.empty())
                 txJson[jss::Paths] = result.getJson(JsonOptions::kNONE);
@@ -428,7 +429,7 @@ transactionPreProcessImpl(
         : nullptr;
     if (signatureTarget)
     {
-        if (!signatureTemplate)
+        if (signatureTemplate == nullptr)
         {  // Invalid target field
             return RPC::make_error(rpcINVALID_PARAMS, signatureTarget->get().getName());
         }

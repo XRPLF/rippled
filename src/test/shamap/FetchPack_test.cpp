@@ -66,7 +66,7 @@ public:
         beast::Journal journal;
     };
 
-    boost::intrusive_ptr<Item>
+    static boost::intrusive_ptr<Item>
     makeRandomItemMember(beast::xor_shift_engine& r)
     {
         Serializer s;
@@ -75,10 +75,10 @@ public:
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
-    void
+    static void
     addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while (n--)
+        while ((n--) != 0u)
         {
             auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomItemMember(r)));
             assert(result);

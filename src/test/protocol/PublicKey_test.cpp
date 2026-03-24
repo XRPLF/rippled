@@ -46,7 +46,7 @@ public:
         }
     }
 
-    blob
+    static blob
     sig(std::string const& hex)
     {
         blob b;
@@ -54,7 +54,7 @@ public:
         return b;
     }
 
-    bool
+    static bool
     check(std::optional<ECDSACanonicality> answer, std::string const& s)
     {
         return ecdsaCanonicality(makeSlice(sig(s))) == answer;

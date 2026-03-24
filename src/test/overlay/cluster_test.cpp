@@ -29,7 +29,7 @@ public:
         return cluster;
     }
 
-    PublicKey
+    static PublicKey
     randomNode()
     {
         return derivePublicKey(KeyType::secp256k1, randomSecretKey());

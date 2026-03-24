@@ -10,7 +10,7 @@ namespace xrpl {
 
 class AccountTxPaging_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
         return (
@@ -18,7 +18,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
-    auto
+    static auto
     next(
         test::jtx::Env& env,
         test::jtx::Account const& account,

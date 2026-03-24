@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 

@@ -141,7 +141,7 @@ LoadMonitor::isOver()
     update();
 
     if (latencyEvents_ == 0)
-        return 0;
+        return false;
 
     return isOverTarget(
         latencyMSAvg_ / (latencyEvents_ * 4), latencyMSPeak_ / (latencyEvents_ * 4));

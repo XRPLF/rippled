@@ -10,7 +10,7 @@ namespace test {
 
 class HashRouter_test : public beast::unit_test::suite
 {
-    HashRouter::Setup
+    static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
     {
         HashRouter::Setup setup;

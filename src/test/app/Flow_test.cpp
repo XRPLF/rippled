@@ -6,6 +6,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -240,7 +241,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require(Balance(bob, usda(10)));
             env(pay(bob, carol, usda(5)), sendmax(usda(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(Balance(bob, usda(10.0 - 5.0 / effectiveQ)));
+            env.require(Balance(bob, usda(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.

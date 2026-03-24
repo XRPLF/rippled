@@ -28,7 +28,7 @@ public:
     }
 
     // Declarations in Account.h
-    void
+    static void
     testAccount()
     {
         using namespace jtx;
@@ -686,7 +686,8 @@ public:
 
             auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) +
                 " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
-            envs(noop(alice), Fee(kNONE), Seq(kNONE), rpc(rpcHIGH_FEE, expectedErrorString))(params);
+            envs(
+                noop(alice), Fee(kNONE), Seq(kNONE), rpc(rpcHIGH_FEE, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);

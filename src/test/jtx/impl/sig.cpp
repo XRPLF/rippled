@@ -10,7 +10,7 @@ Sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    if (!subField_)
+    if (subField_ == nullptr)
         jt.fillSig = false;
     if (account_)
     {
@@ -22,7 +22,7 @@ Sig::operator()(Env&, JTx& jt) const
 
             jtx::sign(jtx.jv, account, sigObject);
         };
-        if (!subField_)
+        if (subField_ == nullptr)
         {
             jt.mainSigners.emplace_back(callback);
         }

@@ -263,7 +263,7 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
+    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = kALPHABET_REVERSE[*psz];
@@ -308,7 +308,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // Lay the data out as
     //      <type><token><checksum>
     buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
-    if (size)
+    if (size != 0u)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
@@ -383,7 +383,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             {
                 break;
             }
-            auto const srcIEnd = input.size() - i * 8;
+            auto const srcIEnd = input.size() - (i * 8);
             if (srcIEnd >= 8)
             {
                 std::memcpy(&base264CoeffBuf[numCoeff], &input[srcIEnd - 8], 8);
@@ -450,7 +450,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             toSkip = countLeadingZeros(b58BeS);
             skipZeros = false;
-            if (out.size() < (i + 1) * 10 - toSkip)
+            if (out.size() < ((i + 1) * 10) - toSkip)
             {
                 return Unexpected(TokenCodecErrc::outputTooSmall);
             }
@@ -502,7 +502,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b5810Coeff{};
     auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
-    auto const numPartialCoeffs = partial_coeff_len ? 1 : 0;
+    auto const numPartialCoeffs = (partial_coeff_len != 0u) ? 1 : 0;
     auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
     XRPL_ASSERT(
         numB5810Coeffs <= b5810Coeff.size(),
@@ -521,7 +521,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
-            unsigned char c = input[partial_coeff_len + j * 10 + i];
+            unsigned char c = input[partial_coeff_len + (j * 10) + i];
             auto curVal = ::xrpl::kALPHABET_REVERSE[c];
             if (curVal < 0)
             {
@@ -586,7 +586,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             curOutI += 1;
         }
     }
-    if ((curOutI + 8 * (curResultSize - 1)) > out.size())
+    if ((curOutI + (8 * (curResultSize - 1))) > out.size())
     {
         return Unexpected(TokenCodecErrc::outputTooSmall);
     }

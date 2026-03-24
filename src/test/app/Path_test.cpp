@@ -39,7 +39,7 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t numSrc)
     {
         auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
         Json::Value j = Json::objectValue;
-        while (numSrc--)
+        while ((numSrc--) != 0u)
         {
             j[jss::currency] = std::to_string(numSrc + 100);
             sc.append(j);

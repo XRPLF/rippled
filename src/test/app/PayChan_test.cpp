@@ -1096,7 +1096,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             auto leftToFind = bobsB58;
             auto const numFull = bobs.size() / limit;
-            auto const numNonFull = bobs.size() % limit ? 1 : 0;
+            auto const numNonFull = ((bobs.size() % limit) != 0u) ? 1 : 0;
 
             Json::Value marker = Json::nullValue;
 
@@ -1122,7 +1122,7 @@ struct PayChan_test : public beast::unit_test::suite
                 testIt(expectMarker, limit);
             }
 
-            if (numNonFull)
+            if (numNonFull != 0)
             {
                 testIt(false, bobs.size() % limit);
             }

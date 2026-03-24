@@ -7,6 +7,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
@@ -17,19 +18,19 @@ namespace {
 bool
 isFull(LedgerFill const& fill)
 {
-    return fill.options & LedgerFill::Full;
+    return (fill.options & LedgerFill::Full) != 0;
 }
 
 bool
 isExpanded(LedgerFill const& fill)
 {
-    return isFull(fill) || (fill.options & LedgerFill::Expand);
+    return isFull(fill) || ((fill.options & LedgerFill::Expand) != 0);
 }
 
 bool
 isBinary(LedgerFill const& fill)
 {
-    return fill.options & LedgerFill::Binary;
+    return (fill.options & LedgerFill::Binary) != 0;
 }
 
 void
@@ -172,7 +173,7 @@ fillJsonTx(
         }
     }
 
-    if ((fill.options & LedgerFill::OwnerFunds) && txn->getTxnType() == ttOFFER_CREATE)
+    if (((fill.options & LedgerFill::OwnerFunds) != 0) && txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
         auto const amount = txn->getFieldAmount(sfTakerGets);
@@ -215,7 +216,7 @@ fillJsonTx(Json::Value& json, LedgerFill const& fill)
     catch (std::exception const& ex)
     {
         // Nothing the user can do about this.
-        if (fill.context)
+        if (fill.context != nullptr)
         {
             JLOG(fill.context->j.error()) << "Exception in " << __func__ << ": " << ex.what();
         }
@@ -303,13 +304,14 @@ fillJson(Json::Value& json, LedgerFill const& fill)
             !fill.ledger.open(),
             fill.ledger.header(),
             bFull,
-            (fill.context ? fill.context->apiVersion : RPC::apiMaximumSupportedVersion));
+            ((fill.context != nullptr) ? fill.context->apiVersion
+                                       : RPC::apiMaximumSupportedVersion));
     }
 
-    if (bFull || fill.options & LedgerFill::DumpTxrp)
+    if (bFull || ((fill.options & LedgerFill::DumpTxrp) != 0))
         fillJsonTx(json, fill);
 
-    if (bFull || fill.options & LedgerFill::DumpState)
+    if (bFull || ((fill.options & LedgerFill::DumpState) != 0))
         fillJsonState(json, fill);
 }
 
@@ -321,7 +323,7 @@ addJson(Json::Value& json, LedgerFill const& fill)
     auto& object = json[jss::ledger] = Json::objectValue;
     fillJson(object, fill);
 
-    if ((fill.options & LedgerFill::DumpQueue) && !fill.txQueue.empty())
+    if (((fill.options & LedgerFill::DumpQueue) != 0) && !fill.txQueue.empty())
         fillJsonQueue(json, fill);
 }
 

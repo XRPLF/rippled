@@ -36,7 +36,7 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 
     auto node = start;
 
-    if (page)
+    if (page != 0u)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)

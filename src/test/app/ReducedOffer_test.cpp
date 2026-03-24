@@ -491,7 +491,7 @@ public:
         }
     }
 
-    Amounts
+    static Amounts
     jsonOfferToAmounts(Json::Value const& json)
     {
         STAmount const in = amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);
@@ -518,8 +518,7 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {testableAmendments() - fixReducedOffersV2,
-              testableAmendments() | fixReducedOffersV2})
+             {testableAmendments() - fixReducedOffersV2, testableAmendments() | fixReducedOffersV2})
         {
             // Make sure kNONE of the offers we generate are under funded.
             Env env{*this, features};

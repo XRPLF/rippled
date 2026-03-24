@@ -204,13 +204,13 @@ getSingleSection(
 {
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (pmtEntries && pmtEntries->size() == 1)
+    if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
         return true;
     }
 
-    if (pmtEntries)
+    if (pmtEntries != nullptr)
     {
         JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
                        << pmtEntries->size() << " lines.";
@@ -416,7 +416,7 @@ checkZeroPorts(Config const& config)
         if (optResult)
         {
             auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
-            if (!port)
+            if (port == 0u)
             {
                 std::stringstream ss;
                 ss << "Invalid value '" << *optResult << "' for key 'port' in [" << name << "]";
@@ -1000,30 +1000,30 @@ Config::loadFromString(std::string const& fileContents)
 
             auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
 
-            if (entries)
+            if (entries != nullptr)
                 section(SECTION_VALIDATORS).append(*entries);
 
             auto valKeyEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
 
-            if (valKeyEntries)
+            if (valKeyEntries != nullptr)
                 section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
 
             auto valSiteEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
 
-            if (valSiteEntries)
+            if (valSiteEntries != nullptr)
                 section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
 
             auto valListKeys = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
 
-            if (valListKeys)
+            if (valListKeys != nullptr)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
             auto valListThreshold = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
 
-            if (valListThreshold)
+            if (valListThreshold != nullptr)
                 section(SECTION_VALIDATOR_LIST_THRESHOLD).append(*valListThreshold);
 
-            if (!entries && !valKeyEntries && !valListKeys)
+            if ((entries == nullptr) && (valKeyEntries == nullptr) && (valListKeys == nullptr))
             {
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -1256,7 +1256,8 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
             {
-                result->emplace_back(boost::str(boost::format(kCOMMON_DB_PRAGMA_SYNC) % synchronous));
+                result->emplace_back(
+                    boost::str(boost::format(kCOMMON_DB_PRAGMA_SYNC) % synchronous));
             }
             else
             {
@@ -1316,7 +1317,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         if (pageSize < 512 || pageSize > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
-        if (pageSize & (pageSize - 1))
+        if ((pageSize & (pageSize - 1)) != 0)
             Throw<std::runtime_error>("Invalid page_size. Must be a power of 2.");
     }
 

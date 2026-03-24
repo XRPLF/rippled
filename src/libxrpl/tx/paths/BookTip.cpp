@@ -1,3 +1,5 @@
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/tx/paths/BookTip.h>
 
 namespace xrpl {

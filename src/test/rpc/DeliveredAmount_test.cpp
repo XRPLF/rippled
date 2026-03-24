@@ -76,7 +76,8 @@ public:
     bool
     checkExpectedCounters() const
     {
-        return !numExpectedAvailable_ && !numExpectedNotSet_ && !numExpectedSetUnavailable_;
+        return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&
+            (numExpectedSetUnavailable_ == 0);
     }
 
     // Check if the transaction has `delivered_amount` in the metaData as

@@ -133,7 +133,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
     Json::Value ret(transaction_->getJson(options & ~JsonOptions::kINCLUDE_DATE, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
-    if (ret.isObject() && ledgerIndex_)
+    if (ret.isObject() && (ledgerIndex_ != 0u))
     {
         if (!(options & JsonOptions::kDISABLE_API_PRIOR_V2))
         {

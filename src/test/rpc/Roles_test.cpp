@@ -12,7 +12,7 @@ namespace test {
 
 class Roles_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     isValidIpAddress(std::string const& addr)
     {
         boost::system::error_code ec;

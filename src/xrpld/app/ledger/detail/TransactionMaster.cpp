@@ -110,7 +110,7 @@ TransactionMaster::fetch(
     }
     else
     {
-        if (uCommitLedger)
+        if (uCommitLedger != 0u)
             iTx->setStatus(COMMITTED, uCommitLedger);
 
         txn = iTx->getSTransaction();

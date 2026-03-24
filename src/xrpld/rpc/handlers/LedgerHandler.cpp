@@ -103,7 +103,7 @@ LedgerHandler::writeResult(Json::Value& value)
             "and update your request. Field `type` is deprecated.";
     }
 
-    if (warnings.size())
+    if (warnings.size() != 0u)
         value[jss::warnings] = std::move(warnings);
 }
 

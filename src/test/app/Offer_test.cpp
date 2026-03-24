@@ -11,13 +11,13 @@ namespace test {
 
 class OfferBaseUtil_test : public beast::unit_test::suite
 {
-    XRPAmount
+    static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
         return env.current()->fees().accountReserve(count);
     }
 
-    std::uint32_t
+    static std::uint32_t
     lastClose(jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -1525,7 +1525,8 @@ public:
         env.require(Owners(alice, 1), Owners(bob, 2));
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(500).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::kNONE));
 
         env(pay(alice, alice, XRP(500)), sendmax(usd(100)));
 
@@ -2253,7 +2254,7 @@ public:
 
             // The gateway optionally creates an offer that would be crossed.
             auto const book = t.bookAmount;
-            if (book)
+            if (book != 0)
                 env(offer(gw, XRP(book), usd(book)));
             env.close();
             std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
@@ -2285,7 +2286,7 @@ public:
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
-            if (!acctOffers.empty() && t.offers)
+            if (!acctOffers.empty() && (t.offers != 0))
             {
                 auto const& acctOffer = *(acctOffers.front());
 
@@ -2296,7 +2297,7 @@ public:
 
             if (t.preTrust == NoPreTrust)
             {
-                if (t.balanceUsd.value().signum())
+                if (t.balanceUsd.value().signum() != 0)
                 {
                     // Verify the correct contents of the trustline
                     verifyDefaultTrustline(env, acct, t.balanceUsd);
@@ -2773,7 +2774,7 @@ public:
             env.require(offers(acct, t.offers));
             env.require(Owners(acct, t.owners));
 
-            if (t.offers)
+            if (t.offers != 0)
             {
                 auto const acctOffers = offersOnAccount(env, acct);
                 if (!acctOffers.empty())
@@ -3875,10 +3876,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {0, 0, 1, btc(20), {{"ann", 0, drops(3900000'000000 - 4 * baseFee), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - 3 * baseFee), btc( 0), usd(750)}}},  // no BTC xfer fee
-            {0, 1, 0, btc(20), {{"bev", 0, drops(4100000'000000 - 4 * baseFee), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - 3 * baseFee), btc(10), usd(  0)}}},  // no USD xfer fee
-            {0, 0, 0, btc(20), {{"cam", 0, drops(4000000'000000 - 5 * baseFee), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
-            {0, 1, 0, btc( 5), {{"deb", 1, drops(4040000'000000 - 4 * baseFee), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - 3 * baseFee), btc( 4), usd(  0)}}},  // no USD xfer fee
+            {0, 0, 1, btc(20), {{"ann", 0, drops(3900000'000000 - (4 * baseFee)), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), btc( 0), usd(750)}}},  // no BTC xfer fee
+            {0, 1, 0, btc(20), {{"bev", 0, drops(4100000'000000 - (4 * baseFee)), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), btc(10), usd(  0)}}},  // no USD xfer fee
+            {0, 0, 0, btc(20), {{"cam", 0, drops(4000000'000000 - (5 * baseFee)), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
+            {0, 1, 0, btc( 5), {{"deb", 1, drops(4040000'000000 - (4 * baseFee)), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), btc( 4), usd(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -4026,8 +4027,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, btc(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), btc(0), usd(1375)}}}, // no BTC xfer fee
-            {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), btc(5), usd(2000)}                                                     }}  // no xfer fee
+            {0, 0, 1, btc(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
+            {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 

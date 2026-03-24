@@ -1,6 +1,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -80,7 +82,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -153,7 +156,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
@@ -170,7 +173,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 bool const canonicalGt(dstId > issuerId);
 
                 bool const isAuthorized(
-                    sleTrustLine->at(sfFlags) & (canonicalGt ? lsfLowAuth : lsfHighAuth));
+                    (sleTrustLine->at(sfFlags) & (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
                 if (!isAuthorized)
                 {

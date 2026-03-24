@@ -1,8 +1,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -73,7 +73,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth = (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
@@ -122,7 +122,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if (!(sleCred->getFlags() & lsfAccepted))
+            if ((sleCred->getFlags() & lsfAccepted) == 0u)
             {
                 RPC::inject_error(rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
                 return result;

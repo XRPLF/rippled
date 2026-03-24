@@ -523,7 +523,7 @@ public:
     testArrayCreate();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    typename std::enable_if<!(IsMap && !IsMulti)>::type
+    typename std::enable_if<!IsMap || IsMulti>::type
     testArrayCreate()
     {
     }

@@ -1394,7 +1394,7 @@ PeerImp::handleTransaction(
         if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
-                                       "tfInnerBatchTxn (handleTransaction).";
+                                      "tfInnerBatchTxn (handleTransaction).";
             fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
             return;
         }
@@ -1474,7 +1474,7 @@ PeerImp::handleTransaction(
     catch (std::exception const& ex)
     {
         JLOG(pJournal_.warn()) << "Transaction invalid: " << strHex(m->rawtransaction())
-                                << ". Exception: " << ex.what();
+                               << ". Exception: " << ex.what();
     }
 }
 
@@ -1509,7 +1509,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
     else if (
-        !m->has_ledgerhash() && !m->has_ledgerseq() && !(ltype && *ltype == protocol::ltCLOSED))
+        !m->has_ledgerhash() && !m->has_ledgerseq() && (!ltype || *ltype != protocol::ltCLOSED))
     {
         badData("Invalid request");
         return;
@@ -2168,9 +2168,9 @@ PeerImp::onValidatorListMessage(
         app_.getOPs());
 
     JLOG(pJournal_.debug()) << "Processed " << messageType << " version " << version << " from "
-                             << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
-                                                          : "unknown or invalid publisher")
-                             << " with best result " << toString(applyResult.bestDisposition());
+                            << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
+                                                         : "unknown or invalid publisher")
+                            << " with best result " << toString(applyResult.bestDisposition());
 
     // Act based on the best result
     switch (applyResult.bestDisposition())
@@ -2328,8 +2328,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
         if (!supportsFeature(ProtocolFeature::ValidatorListPropagation))
         {
             JLOG(pJournal_.debug()) << "ValidatorList: received validator list from peer using "
-                                     << "protocol version " << toString(protocol_)
-                                     << " which shouldn't support this feature.";
+                                    << "protocol version " << toString(protocol_)
+                                    << " which shouldn't support this feature.";
             fee_.update(Resource::feeUselessData, "unsupported peer");
             return;
         }
@@ -2351,10 +2351,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
     {
         if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
         {
-            JLOG(pJournal_.debug())
-                << "ValidatorListCollection: received validator list from peer "
-                << "using protocol version " << toString(protocol_)
-                << " which shouldn't support this feature.";
+            JLOG(pJournal_.debug()) << "ValidatorListCollection: received validator list from peer "
+                                    << "using protocol version " << toString(protocol_)
+                                    << " which shouldn't support this feature.";
             fee_.update(Resource::feeUselessData, "unsupported peer");
             return;
         }
@@ -2490,7 +2489,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     protocol::TMGetObjectByHash& packet = *m;
 
     JLOG(pJournal_.trace()) << "received TMGetObjectByHash " << packet.type() << " "
-                             << packet.objects_size();
+                            << packet.objects_size();
 
     if (packet.query())
     {
@@ -2584,7 +2583,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         }
 
         JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of "
-                                 << packet.objects_size();
+                                << packet.objects_size();
         send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
     }
     else
@@ -2826,7 +2825,7 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
     protocol::TMTransactions reply;
 
     JLOG(pJournal_.trace()) << "received TMGetObjectByHash requesting tx "
-                             << packet->objects_size();
+                            << packet->objects_size();
 
     if (packet->objects_size() > reduce_relay::kMAX_TX_QUEUE_SIZE)
     {
@@ -2902,7 +2901,7 @@ PeerImp::checkTransaction(
         if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(pJournal_.warn()) << "Ignoring Network relayed Tx containing "
-                                       "tfInnerBatchTxn (checkSignature).";
+                                      "tfInnerBatchTxn (checkSignature).";
             charge(Resource::feeModerateBurdenPeer, "inner batch txn");
             return;
         }
@@ -2913,7 +2912,7 @@ PeerImp::checkTransaction(
             (stx->getFieldU32(sfLastLedgerSequence) < app_.getLedgerMaster().getValidLedgerIndex()))
         {
             JLOG(pJournal_.info()) << "Marking transaction " << stx->getTransactionID()
-                                    << "as BAD because it's expired";
+                                   << "as BAD because it's expired";
             app_.getHashRouter().setFlags(stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeUselessData, "expired tx");
             return;
@@ -2932,7 +2931,7 @@ PeerImp::checkTransaction(
             if (tx->getStatus() == NEW)
             {
                 JLOG(pJournal_.debug()) << "Processing " << (batch ? "batch" : "unsolicited")
-                                         << " pseudo-transaction tx " << tx->getID();
+                                        << " pseudo-transaction tx " << tx->getID();
 
                 app_.getMasterTransaction().canonicalize(&tx);
                 // Tell the overlay about it, but don't relay it.
@@ -2945,8 +2944,7 @@ PeerImp::checkTransaction(
                 }
                 if (!batch)
                 {
-                    JLOG(pJournal_.debug())
-                        << "Charging for pseudo-transaction tx " << tx->getID();
+                    JLOG(pJournal_.debug()) << "Charging for pseudo-transaction tx " << tx->getID();
                     charge(Resource::feeUselessData, "pseudo tx");
                 }
 
@@ -3376,7 +3374,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    if (!map)
+    if (map == nullptr)
     {
         JLOG(pJournal_.warn()) << "processLedgerRequest: Unable to find map";
         return;
@@ -3457,8 +3455,8 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
 
         JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                                << " nodes at depth " << queryDepth << ", return "
-                                << ledgerData.nodes_size() << " nodes";
+                               << " nodes at depth " << queryDepth << ", return "
+                               << ledgerData.nodes_size() << " nodes";
     }
 
     if (ledgerData.nodes_size() == 0)

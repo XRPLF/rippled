@@ -240,7 +240,7 @@ private:
                     sink.messages().str());
             }
 
-            if (u.cfg.expectedRefreshMin)
+            if (u.cfg.expectedRefreshMin != 0)
             {
                 BEAST_EXPECTS(
                     myStatus[jss::refresh_interval_min].asInt() == u.cfg.expectedRefreshMin,

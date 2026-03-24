@@ -18,7 +18,7 @@ public:
         testNetworkID();
     }
 
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;

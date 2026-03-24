@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -14,7 +15,7 @@ namespace test {
 
 class Book_test : public beast::unit_test::suite
 {
-    std::string
+    static std::string
     getBookDir(
         jtx::Env& env,
         Issue const& in,
@@ -1523,7 +1524,7 @@ public:
         auto usd = gw["USD"];
 
         for (auto i = 0; i <= RPC::Tuning::bookOffers.rmax; i++)
-            env(offer(gw, XRP(50 + 1 * i), usd(1.0 + 0.1 * i)));
+            env(offer(gw, XRP(50 + (1 * i)), usd(1.0 + (0.1 * i))));
 
         if (asAdmin)
             env.close();

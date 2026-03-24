@@ -8,7 +8,7 @@ namespace test {
 
 class LedgerMaster_test : public beast::unit_test::suite
 {
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;

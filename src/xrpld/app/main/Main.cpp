@@ -295,7 +295,7 @@ runUnitTests(
             try
             {
                 c.wait();
-                if (c.exit_code())
+                if (c.exit_code() != 0)
                     ++badChildExits;
             }
             catch (...)
@@ -309,7 +309,7 @@ runUnitTests(
         parentRunner.addFailures(terminatedChildExits);
         anyMissing(parentRunner, MultiSelector(pattern));
 
-        if (parentRunner.anyFailed() || badChildExits)
+        if (parentRunner.anyFailed() || (badChildExits != 0))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }

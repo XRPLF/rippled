@@ -131,8 +131,8 @@ class Simulate_test : public beast::unit_test::suite
         BEAST_EXPECTS(env.current()->txCount() == 0, std::to_string(env.current()->txCount()));
     }
 
-    Json::Value
-    getJsonMetadata(Json::Value txResult) const
+    static Json::Value
+    getJsonMetadata(Json::Value txResult)
     {
         if (txResult.isMember(jss::meta_blob))
         {

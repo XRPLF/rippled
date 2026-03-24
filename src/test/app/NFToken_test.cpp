@@ -53,7 +53,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     // Helper function returns the close time of the parent ledger.
-    std::uint32_t
+    static std::uint32_t
     lastClose(test::jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -243,7 +243,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(alice, token::getID(env, alice, 0, seq++)));
             env.close();
-            checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
+            checkAliceOwnerMintedBurned(((33 - seq) != 0u) ? 1 : 0, 33, seq, __LINE__);
         }
 
         // alice burns a non-existent NFT.
@@ -352,7 +352,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(minter, token::getID(env, alice, 0, nftSeq++)));
             env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
+            checkMintersOwnerMintedBurned(
+                0, 66, nftSeq, ((65 - seq) != 0u) ? 1 : 0, 0, 0, __LINE__);
         }
 
         // minter has one more NFT to burn.  Should take her owner count to
@@ -1529,7 +1530,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // becky attempts to sell the nft for AUD.
-                TER const createOfferTER = xferFee ? TER(tecNO_LINE) : TER(tesSUCCESS);
+                TER const createOfferTER = (xferFee != 0u) ? TER(tecNO_LINE) : TER(tesSUCCESS);
                 uint256 const beckyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
                     txflags(tfSellNFToken),
@@ -4532,7 +4533,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         };
 
         // There are no sell offers.
-        checkOffers("nft_sell_offers", 0, false, __LINE__);
+        checkOffers("nft_sell_offers", 0, 0, __LINE__);
 
         // A lambda that generates sell offers.
         STAmount sellPrice = XRP(0);

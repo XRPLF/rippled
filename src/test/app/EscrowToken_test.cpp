@@ -35,7 +35,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         return 0;
     }
 
-    jtx::PrettyAmount
+    static jtx::PrettyAmount
     issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
     {
         Json::Value params;
@@ -49,7 +49,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         return {amount, account.name()};
     }
 
-    jtx::PrettyAmount
+    static jtx::PrettyAmount
     issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
     {
         Json::Value params;

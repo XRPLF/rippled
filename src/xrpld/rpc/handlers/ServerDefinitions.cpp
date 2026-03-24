@@ -24,7 +24,7 @@ namespace detail {
 class ServerDefinitions
 {
 private:
-    std::string
+    static std::string
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 

@@ -1,5 +1,6 @@
 #include <xrpld/app/paths/TrustLine.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <memory>

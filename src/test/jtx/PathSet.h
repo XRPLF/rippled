@@ -3,6 +3,7 @@
 #include <test/jtx.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {

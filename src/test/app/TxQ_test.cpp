@@ -24,7 +24,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     static constexpr FeeLevel64 kBASE_FEE_LEVEL{256};
     static constexpr FeeLevel64 kMIN_ESCALATION_FEE_LEVEL = kBASE_FEE_LEVEL * 500;
 
-    void
+    static void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
@@ -32,7 +32,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
             env(noop(account));
     }
 
-    auto
+    static auto
     openLedgerCost(jtx::Env& env)
     {
         using namespace jtx;
@@ -52,7 +52,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Get a fee level of a transaction made by an account
     // This fee level is used to ensure we can place transaction into TxQ
-    auto
+    static auto
     txFeeLevelByAccount(jtx::Env& env, jtx::Account const& account)
     {
         using namespace jtx;
@@ -65,7 +65,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Calculating expected median fee level based on known fee levels of median
     // transaction levels.
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel1, FeeLevel64 const feeLevel2)
     {
         FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
@@ -73,7 +73,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         return std::max(expectedMedFeeLevel, kMIN_ESCALATION_FEE_LEVEL).fee();
     }
 
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel)
     {
         return calcMedFeeLevel(feeLevel, feeLevel);
@@ -551,16 +551,16 @@ public:
         // The lowest fee ticket is baseFee * 2.1, trying to replace it
         env(noop(alice),
             ticket::use(tkt1 + 18),
-            Fee(baseFee * 2.1 * 1.25 - 1),
+            Fee((baseFee * 2.1 * 1.25) - 1),
             Ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt1 + 18), Fee(baseFee * 2.1 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt1 + 18), Fee((baseFee * 2.1 * 1.25) + 1), queued);
 
         // New lowest fee ticket is baseFee * 2.2
         env(noop(alice),
             ticket::use(tkt250 - 4),
-            Fee(baseFee * 2.2 * 1.25 - 1),
+            Fee((baseFee * 2.2 * 1.25) - 1),
             Ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt250 - 4), Fee(baseFee * 2.2 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt250 - 4), Fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
         env.require(Owners(alice, 227), tickets(alice, 227));
@@ -859,7 +859,7 @@ public:
             ++seqCarol;
         }
         // clang-format off
-        checkMetrics(*this, env, 6, 6, 4, 3, kBASE_FEE_LEVEL.fee() * kALICE_FEE_MULTIPLIER + 1);
+        checkMetrics(*this, env, 6, 6, 4, 3, (kBASE_FEE_LEVEL.fee() * kALICE_FEE_MULTIPLIER) + 1);
         // clang-format on
 
         // Carol submits high enough to beat Bob's average fee which kicks
@@ -2633,7 +2633,7 @@ public:
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
-        env(ticket::create(alice, 11), Seq(aliceSeq + 0), Fee(baseFee * 20 + 1), Ter(terQUEUED));
+        env(ticket::create(alice, 11), Seq(aliceSeq + 0), Fee((baseFee * 20) + 1), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 11), LastLedgerSeq(11), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 12), LastLedgerSeq(11), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 13), LastLedgerSeq(11), Ter(terQUEUED));
@@ -3050,8 +3050,8 @@ public:
             }
         }
 
-        envs(
-            noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(telCAN_NOT_QUEUE_BLOCKED))(submitParams);
+        envs(noop(alice), Fee(baseFee * 10), Seq(kNONE), Ter(telCAN_NOT_QUEUE_BLOCKED))(
+            submitParams);
         checkMetrics(*this, env, 1, 8, 5, 4);
 
         {
@@ -4084,7 +4084,7 @@ public:
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
         auto prepareFee = [&](uint64_t multiplier) {
-            return Fee(txFee - multiplier * baseFee / 10);
+            return Fee(txFee - (multiplier * baseFee / 10));
         };
 
         uint64_t multiplier = 0;

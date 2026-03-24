@@ -76,7 +76,7 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
         Throw<std::logic_error>("Incorrect mask for " + to_string(*this));
 
     SHAMapNodeID node{depth_ + 1, id_};
-    node.id_.begin()[depth_ / 2] |= (depth_ & 1) ? m : (m << 4);
+    node.id_.begin()[depth_ / 2] |= ((depth_ & 1) != 0u) ? m : (m << 4);
     return node;
 }
 
@@ -106,7 +106,7 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
     auto const depth = id.getDepth();
     auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
 
-    if (depth & 1)
+    if ((depth & 1) != 0u)
     {
         branch &= 0xf;
     }

@@ -443,7 +443,7 @@ AMM::deposit(
     // If including asset1In and asset2In or tokens as
     // deposit min amounts then must set the flags
     // explicitly instead of relying on this logic.
-    if (!(jvFlags & tfDepositSubTx))
+    if ((jvFlags & tfDepositSubTx) == 0u)
     {
         if (tokens && !asset1In)
         {
@@ -573,7 +573,7 @@ AMM::withdraw(
     std::uint32_t jvFlags = 0;
     if (flags)
         jvFlags = *flags;
-    if (!(jvFlags & tfWithdrawSubTx))
+    if ((jvFlags & tfWithdrawSubTx) == 0u)
     {
         if (tokens && !asset1Out)
         {

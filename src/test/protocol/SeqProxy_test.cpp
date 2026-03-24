@@ -42,7 +42,7 @@ struct SeqProxy_test : public beast::unit_test::suite
     }
 
     // Verify streaming.
-    bool
+    static bool
     streamTest(SeqProxy seqProx)
     {
         std::string const type{seqProx.isSeq() ? "sequence" : "ticket"};

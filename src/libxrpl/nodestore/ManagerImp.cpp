@@ -55,7 +55,7 @@ ManagerImp::makeBackend(
         missing_backend();
 
     auto factory{find(type)};
-    if (!factory)
+    if (factory == nullptr)
     {
         missing_backend();
     }

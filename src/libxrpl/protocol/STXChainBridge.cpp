@@ -167,7 +167,7 @@ bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
     STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool
