@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 

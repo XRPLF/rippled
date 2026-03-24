@@ -9,8 +9,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>

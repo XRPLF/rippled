@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
