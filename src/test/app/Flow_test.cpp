@@ -6,6 +6,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>

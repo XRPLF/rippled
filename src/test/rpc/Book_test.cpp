@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>

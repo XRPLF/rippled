@@ -3,6 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>

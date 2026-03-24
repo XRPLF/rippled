@@ -2,6 +2,10 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>

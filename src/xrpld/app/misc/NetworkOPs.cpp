@@ -43,11 +43,15 @@
 #include <xrpl/git/Git.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>

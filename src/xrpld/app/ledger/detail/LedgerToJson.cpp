@@ -7,6 +7,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
