@@ -46,11 +46,11 @@ bool
 ValidLoanBroker::goodZeroDirectory(
     ReadView const& view,
     SLE::const_ref dir,
-    beast::Journal const& j) const
+    beast::Journal const& j)
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
-    if ((prev && *prev) || (next && *next))
+    if ((prev && (*prev != 0u)) || (next && (*next != 0u)))
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
                            "OwnerCount has multiple directory pages";

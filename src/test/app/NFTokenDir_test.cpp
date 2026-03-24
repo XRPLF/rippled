@@ -20,7 +20,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         noisy = true,
     };
 
-    void
+    static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
         Json::Value jvParams;

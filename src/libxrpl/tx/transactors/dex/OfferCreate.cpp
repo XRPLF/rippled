@@ -30,10 +30,7 @@ OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 bool
 OfferCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDEX))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDEX);
 }
 
 std::uint32_t
@@ -59,8 +56,8 @@ OfferCreate::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
-    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill(uTxFlags & tfFillOrKill);
+    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
+    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
 
     if (bImmediateOrCancel && bFillOrKill)
     {
@@ -215,7 +212,7 @@ OfferCreate::checkAcceptAsset(
         JLOG(j.debug()) << "delay: can't receive IOUs from non-existent issuer: "
                         << to_string(issue.account);
 
-        return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
+        return ((flags & tapRETRY) != 0u) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
 
     // An account cannot create a trustline to itself, so no line can exist
@@ -224,13 +221,13 @@ OfferCreate::checkAcceptAsset(
     if (issue.account == id)
         return tesSUCCESS;
 
-    if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+    if (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u)
     {
         auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
 
         if (!trustLine)
         {
-            return (flags & tapRETRY) ? TER{terNO_LINE} : TER{tecNO_LINE};
+            return ((flags & tapRETRY) != 0u) ? TER{terNO_LINE} : TER{tecNO_LINE};
         }
 
         // Entries have a canonical representation, determined by a
@@ -238,13 +235,14 @@ OfferCreate::checkAcceptAsset(
         // ordering. Determine which entry we need to access.
         bool const canonical_gt(id > issue.account);
 
-        bool const is_authorized((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+        bool const is_authorized(
+            ((*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
         if (!is_authorized)
         {
             JLOG(j.debug()) << "delay: can't receive IOUs from issuer without auth.";
 
-            return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
+            return ((flags & tapRETRY) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
     }
 
@@ -257,7 +255,7 @@ OfferCreate::checkAcceptAsset(
 
     // There's no difference which side enacted deep freeze, accepting
     // tokens shouldn't be possible.
-    bool const deepFrozen = (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+    bool const deepFrozen = ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
     if (deepFrozen)
     {
@@ -313,7 +311,7 @@ OfferCreate::flowCross(
         // If we're creating a passive offer adjust the threshold so we only
         // cross offers that have a better quality than this one.
         std::uint32_t const txFlags = ctx_.tx.getFlags();
-        if (txFlags & tfPassive)
+        if ((txFlags & tfPassive) != 0u)
             ++threshold;
 
         // Don't send more than our balance.
@@ -334,7 +332,7 @@ OfferCreate::flowCross(
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
         OfferCrossing offerCrossing = OfferCrossing::yes;
-        if (txFlags & tfSell)
+        if ((txFlags & tfSell) != 0u)
         {
             offerCrossing = OfferCrossing::sell;
             // We are selling, so we will accept *more* than the offer
@@ -362,9 +360,9 @@ OfferCreate::flowCross(
             account_,
             account_,
             paths,
-            true,                       // default path
-            !(txFlags & tfFillOrKill),  // partial payment
-            true,                       // owner pays transfer fee
+            true,                            // default path
+            (txFlags & tfFillOrKill) == 0u,  // partial payment
+            true,                            // owner pays transfer fee
             offerCrossing,
             threshold,
             sendMax,
@@ -398,7 +396,7 @@ OfferCreate::flowCross(
             {
                 STAmount const rate{Quality{takerAmount.out, takerAmount.in}.rate()};
 
-                if (txFlags & tfSell)
+                if ((txFlags & tfSell) != 0u)
                 {
                     // If selling then scale the new out amount based on how
                     // much we sold during crossing.  This preserves the offer
@@ -517,11 +515,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
-    bool const bPassive(uTxFlags & tfPassive);
-    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill(uTxFlags & tfFillOrKill);
-    bool const bSell(uTxFlags & tfSell);
-    bool const bHybrid(uTxFlags & tfHybrid);
+    bool const bPassive((uTxFlags & tfPassive) != 0u);
+    bool const bImmediateOrCancel((uTxFlags & tfImmediateOrCancel) != 0u);
+    bool const bFillOrKill((uTxFlags & tfFillOrKill) != 0u);
+    bool const bSell((uTxFlags & tfSell) != 0u);
+    bool const bHybrid((uTxFlags & tfHybrid) != 0u);
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];

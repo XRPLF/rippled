@@ -140,7 +140,7 @@ private:
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
-    NodeID
+    static NodeID
     choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**

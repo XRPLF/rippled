@@ -782,7 +782,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
                         // skip half my validations.
-                        return !(history.UNLNodeIDs[idx] == myId && l->seq() % 2 == 0);
+                        return history.UNLNodeIDs[idx] != myId || l->seq() % 2 != 0;
                     });
                 NegativeUNLVote vote(myId, history.env.journal);
                 BEAST_EXPECT(!vote.buildScoreTable(
@@ -890,7 +890,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
      * @param numReEnable number of ReEnable candidates expected
      * @return true if the number of candidates meets expectation
      */
-    bool
+    static bool
     checkCandidateSizes(
         NegativeUNLVote& vote,
         hash_set<NodeID> const& unl,

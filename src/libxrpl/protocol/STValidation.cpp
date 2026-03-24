@@ -107,7 +107,7 @@ STValidation::isValid() const noexcept
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+            (getFlags() & vfFullyCanonicalSig) != 0u);
     }
 
     return valid_.value();

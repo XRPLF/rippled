@@ -162,7 +162,7 @@ class base58_test : public beast::unit_test::suite
         for (int i = 0; i < iters; ++i)
         {
             std::uint64_t const d = dist(eng);
-            if (!d)
+            if (d == 0u)
                 continue;
             auto bigInt = multiprecision_utils::randomBigInt();
             auto const boostBigInt = multiprecision_utils::toBoostMP(

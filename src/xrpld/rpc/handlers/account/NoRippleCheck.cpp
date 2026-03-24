@@ -107,16 +107,16 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
-    if (bDefaultRipple & !roleGateway)
+    if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {
         problems.append(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
-    else if (roleGateway & !bDefaultRipple)
+    else if ((static_cast<int>(roleGateway) & static_cast<int>(!bDefaultRipple)) != 0)
     {
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
