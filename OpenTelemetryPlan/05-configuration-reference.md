@@ -7,6 +7,8 @@
 
 ## 5.1 rippled Configuration
 
+> **OTLP** = OpenTelemetry Protocol | **TxQ** = Transaction Queue
+
 ### 5.1.1 Configuration File Section
 
 Add to `cfg/xrpld-example.cfg`:
@@ -38,6 +40,9 @@ Add to `cfg/xrpld-example.cfg`:
 #
 # # Sampling ratio: 0.0-1.0 (default: 1.0 = 100% sampling)
 # # Use lower values in production to reduce overhead
+# # Default: 1.0 (all traces). For production deployments with high
+# # throughput, 0.1 (10%) is recommended to reduce overhead.
+# # See Section 7.4.2 for sampling strategy details.
 # sampling_ratio=0.1
 #
 # # Batch processor settings
@@ -51,6 +56,10 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_rpc=1              # RPC request handling
 # trace_peer=0             # Peer messages (high volume, disabled by default)
 # trace_ledger=1           # Ledger acquisition and building
+# trace_pathfind=1         # Path computation (can be expensive)
+# trace_txq=1              # Transaction queue and fee escalation
+# trace_validator=0        # Validator list and manifest updates (low volume)
+# trace_amendment=0        # Amendment voting (very low volume)
 #
 # # Service identification (automatically detected if not specified)
 # # service_name=rippled
@@ -78,12 +87,18 @@ enabled=0
 | `trace_rpc`           | bool   | `true`           | Enable RPC tracing                        |
 | `trace_peer`          | bool   | `false`          | Enable peer message tracing (high volume) |
 | `trace_ledger`        | bool   | `true`           | Enable ledger tracing                     |
+| `trace_pathfind`      | bool   | `true`           | Enable path computation tracing           |
+| `trace_txq`           | bool   | `true`           | Enable transaction queue tracing          |
+| `trace_validator`     | bool   | `false`          | Enable validator list/manifest tracing    |
+| `trace_amendment`     | bool   | `false`          | Enable amendment voting tracing           |
 | `service_name`        | string | `"rippled"`      | Service name for traces                   |
 | `service_instance_id` | string | `<node_pubkey>`  | Instance identifier                       |
 
 ---
 
 ## 5.2 Configuration Parser
+
+> **TxQ** = Transaction Queue
 
 ```cpp
 // src/libxrpl/telemetry/TelemetryConfig.cpp
@@ -140,6 +155,10 @@ setup_Telemetry(
     setup.traceRpc = section.value_or("trace_rpc", true);
     setup.tracePeer = section.value_or("trace_peer", false);
     setup.traceLedger = section.value_or("trace_ledger", true);
+    setup.tracePathfind = section.value_or("trace_pathfind", true);
+    setup.traceTxQ = section.value_or("trace_txq", true);
+    setup.traceValidator = section.value_or("trace_validator", false);
+    setup.traceAmendment = section.value_or("trace_amendment", false);
 
     return setup;
 }
@@ -238,6 +257,8 @@ public:
 ---
 
 ## 5.4 CMake Integration
+
+> **OTLP** = OpenTelemetry Protocol
 
 ### 5.4.1 Find OpenTelemetry Module
 
@@ -354,6 +375,8 @@ endif()
 
 ## 5.5 OpenTelemetry Collector Configuration
 
+> **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
+
 ### 5.5.1 Development Configuration
 
 ```yaml
@@ -380,9 +403,9 @@ exporters:
     sampling_initial: 5
     sampling_thereafter: 200
 
-  # Jaeger for trace visualization
-  jaeger:
-    endpoint: jaeger:14250
+  # Tempo for trace visualization
+  otlp/tempo:
+    endpoint: tempo:4317
     tls:
       insecure: true
 
@@ -391,7 +414,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, jaeger]
+      exporters: [logging, otlp/tempo]
 ```
 
 ### 5.5.2 Production Configuration
@@ -504,6 +527,8 @@ service:
 
 ## 5.6 Docker Compose Development Environment
 
+> **OTLP** = OpenTelemetry Protocol
+
 ```yaml
 # docker-compose-telemetry.yaml
 version: "3.8"
@@ -521,17 +546,15 @@ services:
       - "4318:4318" # OTLP HTTP
       - "13133:13133" # Health check
     depends_on:
-      - jaeger
+      - tempo
 
-  # Jaeger for trace visualization
-  jaeger:
-    image: jaegertracing/all-in-one:1.53
-    container_name: jaeger
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
+  # Tempo for trace visualization
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
     ports:
-      - "16686:16686" # UI
-      - "14250:14250" # gRPC
+      - "3200:3200" # Tempo HTTP API
+      - "4317" # OTLP gRPC (internal)
 
   # Grafana for dashboards
   grafana:
@@ -546,7 +569,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - jaeger
+      - tempo
 
   # Prometheus for metrics (optional, for correlation)
   prometheus:
@@ -565,6 +588,8 @@ networks:
 ---
 
 ## 5.7 Configuration Architecture
+
+> **OTLP** = OpenTelemetry Protocol
 
 ```mermaid
 flowchart TB
@@ -605,9 +630,19 @@ flowchart TB
     style collector fill:#fff3e0,stroke:#ff9800
 ```
 
+**Reading the diagram:**
+
+- **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, sampling) while the CMake flag controls whether telemetry is compiled in at all.
+- **Initialization**: `setup_Telemetry()` parses config values, then `make_Telemetry()` constructs the provider, processor, and exporter objects.
+- **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
+- **OTLP arrow to Collector**: Trace data leaves the rippled process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
+- **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).
+
 ---
 
 ## 5.8 Grafana Integration
+
+> **APM** = Application Performance Monitoring
 
 Step-by-step instructions for integrating rippled traces with Grafana.
 
@@ -640,23 +675,6 @@ datasources:
         hide: false
       lokiSearch:
         datasourceUid: loki
-```
-
-#### Jaeger
-
-```yaml
-# grafana/provisioning/datasources/jaeger.yaml
-apiVersion: 1
-
-datasources:
-  - name: Jaeger
-    type: jaeger
-    access: proxy
-    url: http://jaeger:16686
-    jsonData:
-      tracesToLogs:
-        datasourceUid: loki
-        tags: ["service.name"]
 ```
 
 #### Elastic APM

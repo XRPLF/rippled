@@ -7,33 +7,36 @@
 
 ## 7.1 Development/Testing Backends
 
-| Backend    | Pros                | Cons              | Use Case          |
-| ---------- | ------------------- | ----------------- | ----------------- |
-| **Jaeger** | Easy setup, good UI | Limited retention | Local dev, CI     |
-| **Zipkin** | Simple, lightweight | Basic features    | Quick prototyping |
+> **OTLP** = OpenTelemetry Protocol
 
-### Quick Start with Jaeger
+| Backend    | Pros                                | Cons                   | Use Case            |
+| ---------- | ----------------------------------- | ---------------------- | ------------------- |
+| **Tempo**  | Cost-effective, Grafana integration | Requires Grafana stack | Local dev, CI, Prod |
+| **Zipkin** | Simple, lightweight                 | Basic features         | Quick prototyping   |
+
+### Quick Start with Tempo
 
 ```bash
-# Start Jaeger with OTLP support
-docker run -d --name jaeger \
-  -e COLLECTOR_OTLP_ENABLED=true \
-  -p 16686:16686 \
+# Start Tempo with OTLP support
+docker run -d --name tempo \
+  -p 3200:3200 \
   -p 4317:4317 \
   -p 4318:4318 \
-  jaegertracing/all-in-one:latest
+  grafana/tempo:2.6.1
 ```
 
 ---
 
 ## 7.2 Production Backends
 
-| Backend           | Pros                                      | Cons               | Use Case                    |
-| ----------------- | ----------------------------------------- | ------------------ | --------------------------- |
-| **Grafana Tempo** | Cost-effective, Grafana integration       | Newer project      | Most production deployments |
-| **Elastic APM**   | Full observability stack, log correlation | Resource intensive | Existing Elastic users      |
-| **Honeycomb**     | Excellent query, high cardinality         | SaaS cost          | Deep debugging needs        |
-| **Datadog APM**   | Full platform, easy setup                 | SaaS cost          | Enterprise with budget      |
+> **APM** = Application Performance Monitoring
+
+| Backend           | Pros                                      | Cons                   | Use Case                    |
+| ----------------- | ----------------------------------------- | ---------------------- | --------------------------- |
+| **Grafana Tempo** | Cost-effective, Grafana integration       | Requires Grafana stack | Most production deployments |
+| **Elastic APM**   | Full observability stack, log correlation | Resource intensive     | Existing Elastic users      |
+| **Honeycomb**     | Excellent query, high cardinality         | SaaS cost              | Deep debugging needs        |
+| **Datadog APM**   | Full platform, easy setup                 | SaaS cost              | Enterprise with budget      |
 
 ### Backend Selection Flowchart
 
@@ -73,9 +76,18 @@ flowchart TD
     style datadog fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
+**Reading the diagram:**
+
+- **Budget Constraints? (Yes)**: Leads to open-source options. If you already run Grafana or Elastic, pick the matching backend; otherwise default to Grafana Tempo.
+- **Budget Constraints? (No) → Prefer SaaS?**: If you want a managed service, choose between Datadog (enterprise support) and Honeycomb (developer-focused). If not, fall back to open-source.
+- **Terminal nodes (Tempo / Elastic / Honeycomb / Datadog)**: Each represents a concrete backend choice, all of which feed into the same final step.
+- **Configure Collector**: Regardless of backend, you always finish by configuring the OTel Collector to export to your chosen destination.
+
 ---
 
 ## 7.3 Recommended Production Architecture
+
+> **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring | **HA** = High Availability
 
 ```mermaid
 flowchart TB
@@ -117,12 +129,24 @@ flowchart TB
     tempo --> grafana
     elastic --> grafana
 
+    %% Note: simplified single-collector-per-DC topology shown for clarity
+
     style validators fill:#b71c1c,stroke:#7f1d1d,color:#ffffff
     style stock fill:#0d47a1,stroke:#082f6a,color:#ffffff
     style collector fill:#bf360c,stroke:#8c2809,color:#ffffff
     style backends fill:#1b5e20,stroke:#0d3d14,color:#ffffff
     style ui fill:#4a148c,stroke:#2e0d57,color:#ffffff
 ```
+
+**Reading the diagram:**
+
+- **Validator / Stock Nodes**: All rippled nodes emit trace data via OTLP. Validators and stock nodes are grouped separately because they may reside in different network zones.
+- **Collector Cluster (DC1, DC2)**: Regional collectors receive OTLP from nodes in their datacenter, apply processing (sampling, enrichment), and fan out to multiple backends.
+- **Storage Backends**: Tempo and Elastic provide queryable trace storage; S3/GCS Archive provides long-term cold storage for compliance or post-incident analysis.
+- **Grafana Dashboards**: The single visualization layer that queries both Tempo and Elastic, giving operators a unified view of all traces.
+- **Data flow direction**: Nodes → Collectors → Storage → Grafana. Each arrow represents a network hop; minimizing collector-to-backend hops reduces latency.
+
+> **Note**: Production deployments should use multiple collector instances behind a load balancer for high availability. The diagram shows a simplified single-collector topology for clarity.
 
 ---
 
@@ -147,7 +171,7 @@ flowchart TB
 ```mermaid
 flowchart LR
     subgraph head["Head Sampling (Node)"]
-        hs[10% probabilistic]
+        hs[Node-level head sampling<br/>configurable, default: 100%<br/>recommended production: 10%]
     end
 
     subgraph tail["Tail Sampling (Collector)"]
@@ -170,6 +194,13 @@ flowchart LR
     style ts3 fill:#1b5e20,stroke:#0d3d14,color:#fff
     style final fill:#bf360c,stroke:#8c2809,color:#fff
 ```
+
+**Reading the diagram:**
+
+- **Head Sampling (Node)**: The first filter -- each rippled node decides whether to sample a trace at creation time (default 100%, recommended 10% in production). This controls the volume leaving the node.
+- **Tail Sampling (Collector)**: The second filter -- the collector inspects completed traces and applies rules: keep all errors, keep anything slower than 5 seconds, and keep 10% of the remainder.
+- **Arrow head → tail**: All head-sampled traces flow to the collector, where tail sampling further reduces volume while preserving the most valuable data.
+- **Final Traces**: The output after both sampling stages; this is what gets stored and queried. The two-stage approach balances cost with debuggability.
 
 ### 7.4.3 Data Retention
 
@@ -355,6 +386,9 @@ groups:
             model:
               queryType: traceql
               query: '{resource.service.name="rippled" && name="consensus.round"} | avg(duration) > 5s'
+              # Note: Verify TraceQL aggregate queries are supported by your
+              # Tempo version. Aggregate alerting (e.g., avg(duration)) requires
+              # Tempo 2.3+ with TraceQL metrics enabled.
         for: 5m
         annotations:
           summary: Consensus rounds taking >5 seconds
@@ -371,6 +405,9 @@ groups:
             model:
               queryType: traceql
               query: '{resource.service.name="rippled" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05'
+              # Note: Verify TraceQL aggregate queries are supported by your
+              # Tempo version. Aggregate alerting (e.g., rate()) requires
+              # Tempo 2.3+ with TraceQL metrics enabled.
         for: 2m
         annotations:
           summary: RPC error rate >5%
@@ -396,6 +433,8 @@ groups:
 ---
 
 ## 7.7 PerfLog and Insight Correlation
+
+> **OTLP** = OpenTelemetry Protocol
 
 How to correlate OpenTelemetry traces with existing rippled observability.
 
@@ -458,6 +497,13 @@ flowchart TB
     style metrics fill:#4a148c,stroke:#2e0d57,color:#fff
     style corr fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
+
+**Reading the diagram:**
+
+- **rippled Node (three sources)**: A single node emits three independent data streams -- OpenTelemetry spans, PerfLog JSON logs, and Beast Insight StatsD metrics.
+- **Data Collection layer**: Each stream has its own collector -- OTel Collector for spans, Promtail/Fluentd for logs, and a StatsD exporter for metrics. They operate independently.
+- **Storage layer (Tempo, Loki, Prometheus)**: Each data type lands in a purpose-built store optimized for its query patterns (trace search, log grep, metric aggregation).
+- **Grafana Correlation Panel**: The key integration point -- Grafana queries all three stores and links them via shared fields (`trace_id`, `xrpl.tx.hash`, `ledger_seq`), enabling a single-pane debugging experience.
 
 ### 7.7.2 Correlation Fields
 

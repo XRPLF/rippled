@@ -81,12 +81,14 @@ flowchart TB
 
 ## 3.3 Performance Overhead Summary
 
-| Metric        | Overhead   | Notes                               |
-| ------------- | ---------- | ----------------------------------- |
-| CPU           | 1-3%       | Span creation and attribute setting |
-| Memory        | 2-5 MB     | Batch buffer for pending spans      |
-| Network       | 10-50 KB/s | Compressed OTLP export to collector |
-| Latency (p99) | <2%        | With proper sampling configuration  |
+> **OTLP** = OpenTelemetry Protocol
+
+| Metric        | Overhead   | Notes                                            |
+| ------------- | ---------- | ------------------------------------------------ |
+| CPU           | 1-3%       | Of per-transaction CPU cost (~200μs baseline)    |
+| Memory        | ~10 MB     | SDK statics + batch buffer + worker thread stack |
+| Network       | 10-50 KB/s | Compressed OTLP export to collector              |
+| Latency (p99) | <2%        | With proper sampling configuration               |
 
 ---
 
@@ -94,16 +96,25 @@ flowchart TB
 
 ### 3.4.1 Per-Operation Costs
 
+> **Note on hardware assumptions**: The costs below are based on the official OTel C++ SDK CI benchmarks
+> (969 runs on GitHub Actions 2-core shared runners). On production server hardware (3+ GHz Xeon),
+> expect costs at the **lower end** of each range (~30-50% improvement over CI hardware).
+
 | Operation             | Time (ns) | Frequency              | Impact     |
 | --------------------- | --------- | ---------------------- | ---------- |
-| Span creation         | 200-500   | Every traced operation | Low        |
+| Span creation         | 500-1000  | Every traced operation | Low        |
 | Span end              | 100-200   | Every traced operation | Low        |
 | SetAttribute (string) | 80-120    | 3-5 per span           | Low        |
 | SetAttribute (int)    | 40-60     | 2-3 per span           | Negligible |
-| AddEvent              | 50-80     | 0-2 per span           | Negligible |
+| AddEvent              | 100-200   | 0-2 per span           | Low        |
 | Context injection     | 150-250   | Per outgoing message   | Low        |
 | Context extraction    | 100-180   | Per incoming message   | Low        |
 | GetCurrent context    | 10-20     | Thread-local access    | Negligible |
+
+**Source**: Span creation based on OTel C++ SDK `BM_SpanCreation` benchmark (AlwaysOnSampler +
+SimpleSpanProcessor + InMemoryExporter), median ~1,000 ns on CI hardware. AddEvent includes
+timestamp read + string copy + vector push + mutex acquisition. Context injection/extraction
+confirmed by `BM_SpanCreationWithScope` benchmark delta (~160 ns).
 
 ### 3.4.2 Transaction Processing Overhead
 
@@ -112,67 +123,91 @@ flowchart TB
 ```mermaid
 %%{init: {'pie': {'textPosition': 0.75}}}%%
 pie showData
-    "tx.receive (800ns)" : 800
-    "tx.validate (500ns)" : 500
-    "tx.relay (500ns)" : 500
-    "Context inject (600ns)" : 600
+    "tx.receive (1400ns)" : 1400
+    "tx.validate (1200ns)" : 1200
+    "tx.relay (1200ns)" : 1200
+    "Context inject (200ns)" : 200
 ```
 
-**Transaction Tracing Overhead (~2.4μs total)**
+**Transaction Tracing Overhead (~4.0μs total)**
 
 </div>
 
-**Overhead percentage**: 2.4 μs / 200 μs (avg tx processing) = **~1.2%**
+**Overhead percentage**: 4.0 μs / 200 μs (avg tx processing) = **~2.0%**
+
+> **Breakdown**: Each span (tx.receive, tx.validate, tx.relay) costs ~1,000 ns for creation plus
+> ~200-400 ns for 3-5 attribute sets. Context injection is ~200 ns (confirmed by benchmarks).
+> On production hardware, expect ~2.6 μs total (~1.3% overhead) due to faster span creation (~500-600 ns).
 
 ### 3.4.3 Consensus Round Overhead
 
 | Operation              | Count | Cost (ns) | Total      |
 | ---------------------- | ----- | --------- | ---------- |
-| consensus.round span   | 1     | ~1000     | ~1 μs      |
-| consensus.phase spans  | 3     | ~700      | ~2.1 μs    |
-| proposal.receive spans | ~20   | ~600      | ~12 μs     |
-| proposal.send spans    | ~3    | ~600      | ~1.8 μs    |
+| consensus.round span   | 1     | ~1200     | ~1.2 μs    |
+| consensus.phase spans  | 3     | ~1100     | ~3.3 μs    |
+| proposal.receive spans | ~20   | ~1100     | ~22 μs     |
+| proposal.send spans    | ~3    | ~1100     | ~3.3 μs    |
 | Context operations     | ~30   | ~200      | ~6 μs      |
-| **TOTAL**              |       |           | **~23 μs** |
+| **TOTAL**              |       |           | **~36 μs** |
 
-**Overhead percentage**: 23 μs / 3s (typical round) = **~0.0008%** (negligible)
+> **Why higher**: Each span costs ~1,000 ns creation + ~100-200 ns for 1-2 attributes, totaling ~1,100-1,200 ns.
+> Context operations remain ~200 ns (confirmed by benchmarks). On production hardware, expect ~24 μs total.
+
+**Overhead percentage**: 36 μs / 3s (typical round) = **~0.001%** (negligible)
 
 ### 3.4.4 RPC Request Overhead
 
 | Operation        | Cost (ns)    |
 | ---------------- | ------------ |
-| rpc.request span | ~700         |
-| rpc.command span | ~600         |
+| rpc.request span | ~1200        |
+| rpc.command span | ~1100        |
 | Context extract  | ~250         |
 | Context inject   | ~200         |
-| **TOTAL**        | **~1.75 μs** |
+| **TOTAL**        | **~2.75 μs** |
 
-- Fast RPC (1ms): 1.75 μs / 1ms = **~0.175%**
-- Slow RPC (100ms): 1.75 μs / 100ms = **~0.002%**
+> **Why higher**: Each span costs ~1,000 ns creation + ~100-200 ns for attributes (command name,
+> version, role). Context extract/inject costs are confirmed by OTel C++ benchmarks.
+
+- Fast RPC (1ms): 2.75 μs / 1ms = **~0.275%**
+- Slow RPC (100ms): 2.75 μs / 100ms = **~0.003%**
 
 ---
 
 ## 3.5 Memory Overhead Analysis
 
+> **OTLP** = OpenTelemetry Protocol
+
 ### 3.5.1 Static Memory
 
-| Component                | Size        | Allocated  |
-| ------------------------ | ----------- | ---------- |
-| TracerProvider singleton | ~64 KB      | At startup |
-| BatchSpanProcessor       | ~128 KB     | At startup |
-| OTLP exporter            | ~256 KB     | At startup |
-| Propagator registry      | ~8 KB       | At startup |
-| **Total static**         | **~456 KB** |            |
+| Component                            | Size        | Allocated  |
+| ------------------------------------ | ----------- | ---------- |
+| TracerProvider singleton             | ~64 KB      | At startup |
+| BatchSpanProcessor (circular buffer) | ~16 KB      | At startup |
+| BatchSpanProcessor (worker thread)   | ~8 MB       | At startup |
+| OTLP exporter (gRPC channel init)    | ~256 KB     | At startup |
+| Propagator registry                  | ~8 KB       | At startup |
+| **Total static**                     | **~8.3 MB** |            |
+
+> **Why higher than earlier estimate**: The BatchSpanProcessor's circular buffer itself is only ~16 KB
+> (2049 x 8-byte `AtomicUniquePtr` entries), but it spawns a dedicated worker thread whose default
+> stack size on Linux is ~8 MB. The OTLP gRPC exporter allocates memory for channel stubs and TLS
+> initialization. The worker thread stack dominates the static footprint.
 
 ### 3.5.2 Dynamic Memory
 
-| Component            | Size per unit | Max units  | Peak        |
-| -------------------- | ------------- | ---------- | ----------- |
-| Active span          | ~200 bytes    | 1000       | ~200 KB     |
-| Queued span (export) | ~500 bytes    | 2048       | ~1 MB       |
-| Attribute storage    | ~50 bytes     | 5 per span | Included    |
-| Context storage      | ~64 bytes     | Per thread | ~6.4 KB     |
-| **Total dynamic**    |               |            | **~1.2 MB** |
+| Component            | Size per unit  | Max units  | Peak            |
+| -------------------- | -------------- | ---------- | --------------- |
+| Active span          | ~500-800 bytes | 1000       | ~500-800 KB     |
+| Queued span (export) | ~500 bytes     | 2048       | ~1 MB           |
+| Attribute storage    | ~80 bytes      | 5 per span | Included        |
+| Context storage      | ~64 bytes      | Per thread | ~6.4 KB         |
+| **Total dynamic**    |                |            | **~1.5-1.8 MB** |
+
+> **Why active spans are larger**: An active `Span` object includes the wrapper (~88 bytes: shared_ptr,
+> mutex, unique_ptr to Recordable) plus `SpanData` (~250 bytes: SpanContext, timestamps, name, status,
+> empty containers) plus attribute storage (~200-500 bytes for 3-5 string attributes in a `std::map`).
+> Source: `sdk/src/trace/span.h` and `sdk/include/opentelemetry/sdk/trace/span_data.h`.
+> Queued spans release the wrapper, keeping only `SpanData` + attributes (~500 bytes).
 
 ### 3.5.3 Memory Growth Characteristics
 
@@ -184,24 +219,45 @@ config:
         height: 400
 ---
 xychart-beta
-    title "Memory Usage vs Span Rate"
+    title "Memory Usage vs Span Rate (bounded by queue limit)"
     x-axis "Spans/second" [0, 200, 400, 600, 800, 1000]
-    y-axis "Memory (MB)" 0 --> 6
-    line [1, 1.8, 2.6, 3.4, 4.2, 5]
+    y-axis "Memory (MB)" 0 --> 12
+    line [8.5, 9.2, 9.6, 9.9, 10.0, 10.0]
 ```
 
 **Notes**:
 
-- Memory increases linearly with span rate
+- Memory increases with span rate but **plateaus at queue capacity** (default 2048 spans)
 - Batch export prevents unbounded growth
-- Queue size is configurable (default 2048 spans)
 - At queue limit, oldest spans are dropped (not blocked)
+- Maximum memory is bounded: ~8.3 MB static (dominated by worker thread stack) + 2048 queued spans x ~500 bytes (~1 MB) + active spans (~0.8 MB) ≈ **~10 MB ceiling**
+- The worker thread stack (~8 MB) is virtual memory; actual RSS depends on stack usage (typically much less)
+
+### 3.5.4 Performance Data Sources
+
+The overhead estimates in Sections 3.3-3.5 are derived from the following sources:
+
+| Source                                           | What it covers                                        | URL                                                                                                                                        |
+| ------------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| OTel C++ SDK CI benchmarks (969 runs)            | Span creation, context activation, sampler overhead   | [Benchmark Dashboard](https://open-telemetry.github.io/opentelemetry-cpp/benchmarks/)                                                      |
+| `api/test/trace/span_benchmark.cc`               | API-level span creation (~22 ns no-op)                | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/api/test/trace/span_benchmark.cc)                                   |
+| `sdk/test/trace/sampler_benchmark.cc`            | SDK span creation with samplers (~1,000 ns AlwaysOn)  | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/sdk/test/trace/sampler_benchmark.cc)                                |
+| `sdk/include/.../span_data.h`                    | SpanData memory layout (~250 bytes base)              | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/sdk/include/opentelemetry/sdk/trace/span_data.h)                    |
+| `sdk/src/trace/span.h`                           | Span wrapper memory layout (~88 bytes)                | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/sdk/src/trace/span.h)                                               |
+| `sdk/include/.../batch_span_processor_options.h` | Default queue size (2048), batch size (512)           | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/sdk/include/opentelemetry/sdk/trace/batch_span_processor_options.h) |
+| `sdk/include/.../circular_buffer.h`              | CircularBuffer implementation (AtomicUniquePtr array) | [Source](https://github.com/open-telemetry/opentelemetry-cpp/blob/main/sdk/include/opentelemetry/sdk/common/circular_buffer.h)             |
+| OTLP proto definition                            | Serialized span size estimation                       | [Proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto)                          |
 
 ---
 
 ## 3.6 Network Overhead Analysis
 
 ### 3.6.1 Export Bandwidth
+
+> **Bytes per span**: Estimates use ~500 bytes/span (conservative upper bound). OTLP protobuf analysis
+> shows a typical span with 3-5 string attributes serializes to ~200-300 bytes raw; with gzip
+> compression (~60-70% of raw) and batching (amortized headers), ~350 bytes/span is more realistic.
+> The table uses the conservative estimate for capacity planning.
 
 | Sampling Rate | Spans/sec | Bandwidth | Notes            |
 | ------------- | --------- | --------- | ---------------- |
@@ -214,16 +270,18 @@ xychart-beta
 
 | Message Type           | Context Size | Messages/sec | Overhead    |
 | ---------------------- | ------------ | ------------ | ----------- |
-| TMTransaction          | 32 bytes     | ~100         | ~3.2 KB/s   |
-| TMProposeSet           | 32 bytes     | ~10          | ~320 B/s    |
-| TMValidation           | 32 bytes     | ~50          | ~1.6 KB/s   |
-| **Total P2P overhead** |              |              | **~5 KB/s** |
+| TMTransaction          | 25 bytes     | ~100         | ~2.5 KB/s   |
+| TMProposeSet           | 25 bytes     | ~10          | ~250 B/s    |
+| TMValidation           | 25 bytes     | ~50          | ~1.25 KB/s  |
+| **Total P2P overhead** |              |              | **~4 KB/s** |
 
 ---
 
 ## 3.7 Optimization Strategies
 
 ### 3.7.1 Sampling Strategies
+
+#### Tail Sampling
 
 ```mermaid
 flowchart TD
@@ -284,6 +342,8 @@ if (telemetry.shouldTracePeer())
 
 ## 3.9 Code Intrusiveness Assessment
 
+> **TxQ** = Transaction Queue
+
 This section provides a detailed assessment of how intrusive the OpenTelemetry integration is to the existing rippled codebase.
 
 ### 3.9.1 Files Modified Summary
@@ -297,7 +357,10 @@ This section provides a detailed assessment of how intrusive the OpenTelemetry i
 | **Consensus**         | 3 files        | ~100        | ~30           | Low-Medium           |
 | **Protocol Buffers**  | 1 file         | ~25         | 0             | Low                  |
 | **CMake/Build**       | 3 files        | ~50         | ~10           | Minimal              |
-| **Total**             | **~21 files**  | **~1,205**  | **~105**      | **Low**              |
+| **PathFinding**       | 2              | ~80         | ~5            | Minimal              |
+| **TxQ/Fee**           | 2              | ~60         | ~5            | Minimal              |
+| **Validator/Amend**   | 3              | ~40         | ~5            | Minimal              |
+| **Total**             | **~28 files**  | **~1,490**  | **~120**      | **Low**              |
 
 ### 3.9.2 Detailed File Impact
 
@@ -307,6 +370,9 @@ pie title Code Changes by Component
     "Transaction Relay" : 160
     "Consensus" : 130
     "RPC Layer" : 100
+    "PathFinding" : 80
+    "TxQ/Fee" : 60
+    "Validator/Amendment" : 40
     "Application Init" : 35
     "Protocol Buffers" : 25
     "Build System" : 60
@@ -337,6 +403,14 @@ pie title Code Changes by Component
 | `src/xrpld/app/consensus/RCLConsensus.cpp`        | ~50         | ~15           | Medium     |
 | `src/xrpld/app/consensus/RCLConsensusAdaptor.cpp` | ~40         | ~12           | Medium     |
 | `src/xrpld/core/JobQueue.cpp`                     | ~20         | ~5            | Low        |
+| `src/xrpld/app/paths/PathRequest.cpp`             | ~40         | ~3            | Low        |
+| `src/xrpld/app/paths/Pathfinder.cpp`              | ~40         | ~2            | Low        |
+| `src/xrpld/app/misc/TxQ.cpp`                      | ~40         | ~3            | Low        |
+| `src/xrpld/app/main/LoadManager.cpp`              | ~20         | ~2            | Low        |
+| `src/xrpld/app/misc/ValidatorList.cpp`            | ~20         | ~2            | Low        |
+| `src/xrpld/app/misc/AmendmentTable.cpp`           | ~10         | ~2            | Low        |
+| `src/xrpld/app/misc/Manifest.cpp`                 | ~10         | ~1            | Low        |
+| `src/xrpld/shamap/SHAMap.cpp`                     | ~20         | ~3            | Low        |
 | `src/xrpld/overlay/detail/ripple.proto`           | ~25         | 0             | Low        |
 | `CMakeLists.txt`                                  | ~40         | ~8            | Low        |
 | `cmake/FindOpenTelemetry.cmake`                   | ~50         | 0             | None (new) |
@@ -353,12 +427,15 @@ quadrantChart
     x-axis Low Risk --> High Risk
     y-axis Low Value --> High Value
 
-    RPC Tracing: [0.2, 0.8]
-    Transaction Relay: [0.5, 0.9]
-    Consensus Tracing: [0.7, 0.95]
-    Peer Message Tracing: [0.8, 0.4]
-    JobQueue Context: [0.4, 0.5]
-    Ledger Acquisition: [0.5, 0.6]
+    RPC Tracing: [0.2, 0.55]
+    Transaction Relay: [0.55, 0.85]
+    Consensus Tracing: [0.75, 0.92]
+    Peer Message Tracing: [0.85, 0.35]
+    JobQueue Context: [0.3, 0.42]
+    Ledger Acquisition: [0.48, 0.65]
+    PathFinding: [0.38, 0.72]
+    TxQ and Fees: [0.25, 0.62]
+    Validator Mgmt: [0.15, 0.35]
 ```
 
 **Optional** ↙ ↘ **Avoid**
@@ -375,15 +452,15 @@ quadrantChart
 
 ### 3.9.4 Architectural Impact Assessment
 
-| Aspect               | Impact  | Justification                                                         |
-| -------------------- | ------- | --------------------------------------------------------------------- |
-| **Data Flow**        | None    | Tracing is purely observational; no business logic changes            |
-| **Threading Model**  | Minimal | Context propagation uses thread-local storage (standard OTel pattern) |
-| **Memory Model**     | Low     | Bounded queues prevent unbounded growth; RAII ensures cleanup         |
-| **Network Protocol** | Low     | Optional fields in protobuf (high field numbers); backward compatible |
-| **Configuration**    | None    | New config section; existing configs unaffected                       |
-| **Build System**     | Low     | Optional CMake flag; builds work without OpenTelemetry                |
-| **Dependencies**     | Low     | OpenTelemetry SDK is optional; null implementation when disabled      |
+| Aspect               | Impact  | Justification                                                                    |
+| -------------------- | ------- | -------------------------------------------------------------------------------- |
+| **Data Flow**        | Minimal | Read-only instrumentation; no modification to consensus or transaction data flow |
+| **Threading Model**  | Minimal | Context propagation uses thread-local storage (standard OTel pattern)            |
+| **Memory Model**     | Low     | Bounded queues prevent unbounded growth; RAII ensures cleanup                    |
+| **Network Protocol** | Low     | Optional fields in protobuf (high field numbers); backward compatible            |
+| **Configuration**    | None    | New config section; existing configs unaffected                                  |
+| **Build System**     | Low     | Optional CMake flag; builds work without OpenTelemetry                           |
+| **Dependencies**     | Low     | OpenTelemetry SDK is optional; null implementation when disabled                 |
 
 ### 3.9.5 Backward Compatibility
 
