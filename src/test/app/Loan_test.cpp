@@ -1946,7 +1946,7 @@ protected:
                 NumberRoundModeGuard mg(Number::upward);
                 auto const totalDefaultAmount = state.totalValue - state.managementFeeOutstanding;
                 auto const defaultAmount = [&] {
-                    if (env.enabled(fixLendingProtocolV1_1))
+                    if (env.enabled(featureLendingProtocolV1_1))
                     {
                         // DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
                         return roundToAsset(
@@ -1957,13 +1957,14 @@ protected:
                     else
                     {
                         // From XLS-66 spec, section 3.2.3.2:
-                        // DefaultCovered = min(DebtTotal × CoverRateMinimum × CoverRateLiquidation, DefaultAmount,
-                        // CoverAvailable)
+                        // DefaultCovered = min(DebtTotal × CoverRateMinimum × CoverRateLiquidation,
+                        // DefaultAmount, CoverAvailable)
                         return roundToAsset(
                             broker.asset,
                             std::min(
                                 tenthBipsOfValue(
-                                    tenthBipsOfValue(brokerSle->at(sfDebtTotal), broker.params.coverRateMin),
+                                    tenthBipsOfValue(
+                                        brokerSle->at(sfDebtTotal), broker.params.coverRateMin),
                                     broker.params.coverRateLiquidation),
                                 state.totalValue - state.managementFeeOutstanding),
                             state.loanScale);
@@ -3603,22 +3604,14 @@ protected:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
+        bool const lendingBatchEnabled = !std::any_of(
+            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
+                return disabled == ttLOAN_BROKER_SET;
+            });
+
         using namespace jtx;
         using namespace std::chrono_literals;
         Env env(*this, all);
-
-        bool const lendingBatchEnabled =
-            !std::any_of(
-                Batch::disabledTxTypes.begin(),
-                Batch::disabledTxTypes.end(),
-                [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; }) ||
-            env.enabled(fixLendingProtocolV1_1);
-
-        if (!lendingBatchEnabled)
-        {
-            pass();
-            return;
-        }
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -6986,7 +6979,7 @@ protected:
         auto const afterFirstDebtTotal = brokerSle->at(sfDebtTotal);
         auto const afterFirstCoverAvailable = brokerSle->at(sfCoverAvailable);
 
-        if (env.enabled(fixLendingProtocolV1_1))
+        if (env.enabled(featureLendingProtocolV1_1))
         {
             // Proportional default cover
             // Loan 1 Defaults: 20% of Loan A (50,134) = 10,027 seizure
@@ -7023,7 +7016,7 @@ protected:
         // Both scenarios: DebtTotal should be 0 after both loans default
         BEAST_EXPECT(afterSecondDebtTotal == 0);
 
-        if (env.enabled(fixLendingProtocolV1_1))
+        if (env.enabled(featureLendingProtocolV1_1))
         {
             // Proportional default cover
             // Loan 2 Defaults: 20% of Loan B (50,134) = 10,027 seizure
@@ -7226,7 +7219,7 @@ public:
         testLoanPayBrokerOwnerUnauthorizedMPT();
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
-        testSequentialFLCDepletion(all - fixLendingProtocolV1_1);
+        testSequentialFLCDepletion(all - featureLendingProtocolV1_1);
         testSequentialFLCDepletion(all);
     }
 };
