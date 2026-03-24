@@ -156,12 +156,18 @@ class Feature_test : public beast::unit_test::suite
                 feature[jss::vetoed].asBool() == (expectVeto || expectObsolete),
                 feature[jss::name].asString() + " vetoed value");
             if (expectObsolete)
+            {
                 BEAST_EXPECTS(
                     feature.isMember(jss::obsolete) && feature[jss::obsolete].isBool() &&
                         feature[jss::obsolete].asBool() == true,
                     feature[jss::name].asString() + " obsolete");
+            }
             else
-                BEAST_EXPECTS(!feature.isMember(jss::obsolete), feature[jss::name].asString() + " no obsolete");
+            {
+                BEAST_EXPECTS(
+                    !feature.isMember(jss::obsolete),
+                    feature[jss::name].asString() + " no obsolete");
+            }
             BEAST_EXPECTS(
                 feature.isMember(jss::supported) && feature[jss::supported].asBool(),
                 feature[jss::name].asString() + " supported");
@@ -367,12 +373,18 @@ class Feature_test : public beast::unit_test::suite
                     (*it)[jss::vetoed].asBool() == (expectVeto || expectObsolete),
                     (*it)[jss::name].asString() + " vetoed value");
                 if (expectObsolete)
+                {
                     BEAST_EXPECTS(
                         (*it).isMember(jss::obsolete) && (*it)[jss::obsolete].isBool() &&
                             (*it)[jss::obsolete].asBool() == true,
                         (*it)[jss::name].asString() + " obsolete");
+                }
                 else
-                    BEAST_EXPECTS(!(*it).isMember(jss::obsolete), (*it)[jss::name].asString() + " no obsolete");
+                {
+                    BEAST_EXPECTS(
+                        !(*it).isMember(jss::obsolete),
+                        (*it)[jss::name].asString() + " no obsolete");
+                }
             }
             BEAST_EXPECTS(
                 (*it).isMember(jss::supported) && (*it)[jss::supported].asBool() == expectSupported,
@@ -447,12 +459,18 @@ class Feature_test : public beast::unit_test::suite
                 feature[jss::vetoed].asBool() == (expectVeto || expectObsolete),
                 feature[jss::name].asString() + " vetoed value");
             if (expectObsolete)
+            {
                 BEAST_EXPECTS(
                     feature.isMember(jss::obsolete) && feature[jss::obsolete].isBool() &&
                         feature[jss::obsolete].asBool() == true,
                     feature[jss::name].asString() + " obsolete");
+            }
             else
-                BEAST_EXPECTS(!feature.isMember(jss::obsolete), feature[jss::name].asString() + " no obsolete");
+            {
+                BEAST_EXPECTS(
+                    !feature.isMember(jss::obsolete),
+                    feature[jss::name].asString() + " no obsolete");
+            }
             BEAST_EXPECTS(feature.isMember(jss::count), feature[jss::name].asString() + " count");
             BEAST_EXPECTS(
                 feature.isMember(jss::threshold), feature[jss::name].asString() + " threshold");
@@ -542,8 +560,10 @@ class Feature_test : public beast::unit_test::suite
             return;
         auto feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
-        BEAST_EXPECTS(feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
-        BEAST_EXPECTS(feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
+        BEAST_EXPECTS(
+            feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
+        BEAST_EXPECTS(
+            feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
 
         jrr = env.rpc("feature", featureName, "reject")[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -553,8 +573,10 @@ class Feature_test : public beast::unit_test::suite
             return;
         feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
-        BEAST_EXPECTS(feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
-        BEAST_EXPECTS(feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
+        BEAST_EXPECTS(
+            feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
+        BEAST_EXPECTS(
+            feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
 
         jrr = env.rpc("feature", featureName, "accept")[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -564,8 +586,10 @@ class Feature_test : public beast::unit_test::suite
             return;
         feature = *(jrr.begin());
         BEAST_EXPECTS(feature[jss::name] == featureName, "name");
-        BEAST_EXPECTS(feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
-        BEAST_EXPECTS(feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
+        BEAST_EXPECTS(
+            feature[jss::vetoed].isBool() && feature[jss::vetoed].asBool() == true, "vetoed");
+        BEAST_EXPECTS(
+            feature[jss::obsolete].isBool() && feature[jss::obsolete].asBool() == true, "obsolete");
 
         // anything other than accept or reject is an error
         jrr = env.rpc("feature", featureName, "maybe");
