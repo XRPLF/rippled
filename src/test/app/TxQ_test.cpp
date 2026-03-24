@@ -20,7 +20,6 @@ namespace test {
 
 class TxQPosNegFlows_test : public beast::unit_test::suite
 {
-
     void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {

@@ -511,6 +511,7 @@ multiSignHelper(
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 (errorWhat ? ": " + *errorWhat : "") + ".");
+        }
     }
     // All signatures verified.
     return {};

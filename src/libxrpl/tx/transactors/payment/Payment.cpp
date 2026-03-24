@@ -286,7 +286,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (ctx.view.open() && partialPaymentAllowed)
+        if (partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -323,7 +323,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if ((hasPaths || sendMax || !dstAmount.native()) && ctx.view.open())
+    if (hasPaths || sendMax || !dstAmount.native())
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 

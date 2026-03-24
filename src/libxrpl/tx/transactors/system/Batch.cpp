@@ -89,7 +89,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     // Calculate the Signers/BatchSigners Fees
-    std::int32_t signerCount = 0;
+    std::uint32_t signerCount = 0;
     if (tx.isFieldPresent(sfBatchSigners))
     {
         auto const& signers = tx.getFieldArray(sfBatchSigners);
@@ -413,7 +413,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
         // Check that the batch signers array is not too large.
-        if (signers.size() > maxBatchTxCount)
+        if (signers.size() > rawTxns.size())
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "signers array exceeds 8 entries.";
