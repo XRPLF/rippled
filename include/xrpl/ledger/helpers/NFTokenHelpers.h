@@ -6,7 +6,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nft.h>
-#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 

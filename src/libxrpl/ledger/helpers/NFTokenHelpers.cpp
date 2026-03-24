@@ -1,3 +1,4 @@
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
