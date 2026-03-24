@@ -584,14 +584,6 @@ Number::exponent() const noexcept
     return e;
 }
 
-template <class STAmount, class Asset>
-int
-Number::scale(Asset const& asset) const
-    requires CanUseAsScale<STAmount, Asset>
-{
-    return STAmount{asset, *this}.exponent();
-}
-
 inline constexpr Number
 Number::operator+() const noexcept
 {
