@@ -229,29 +229,25 @@ public:
 
     //--------------------------------------------------------------------------
 private:
-    // Helper to safely adjust a size_t counter by a signed value.
-    // Direct `counter += n` triggers UBSAN unsigned-integer-overflow
-    // when n is negative, because the implicit conversion of a negative
-    // int to size_t wraps.
-    static void
-    adjustCounter(std::size_t& counter, int const n)
-    {
-        if (n >= 0)
-            counter += static_cast<std::size_t>(n);
-        else
-            // Widen to int64_t before negating to avoid UB if n == INT_MIN
-            counter -= static_cast<std::size_t>(-static_cast<std::int64_t>(n));
-    }
-
     // Adjusts counts based on the specified slot, in the direction indicated.
+    // n must be 1 (add) or -1 (remove). Using ++/-- instead of += n avoids
+    // UBSan unsigned-integer-overflow from implicit conversion of -1 to
+    // SIZE_MAX. A decrement on a zero counter is a real bug that UBSan
+    // should catch.
     void
     adjust(Slot const& s, int const n)
     {
+        XRPL_ASSERT(n == 1 || n == -1, "xrpl::PeerFinder::Counts::adjust : n must be 1 or -1");
+
         if (s.fixed())
-            adjustCounter(m_fixed, n);
+        {
+            n > 0 ? ++m_fixed : --m_fixed;
+        }
 
         if (s.reserved())
-            adjustCounter(m_reserved, n);
+        {
+            n > 0 ? ++m_reserved : --m_reserved;
+        }
 
         switch (s.state())
         {
@@ -271,15 +267,21 @@ private:
 
             case Slot::active:
                 if (s.fixed())
-                    adjustCounter(m_fixed_active, n);
+                {
+                    n > 0 ? ++m_fixed_active : --m_fixed_active;
+                }
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
-                        adjustCounter(m_in_active, n);
+                    {
+                        n > 0 ? ++m_in_active : --m_in_active;
+                    }
                     else
-                        adjustCounter(m_out_active, n);
+                    {
+                        n > 0 ? ++m_out_active : --m_out_active;
+                    }
                 }
-                adjustCounter(m_active, n);
+                n > 0 ? ++m_active : --m_active;
                 break;
 
             case Slot::closing:
