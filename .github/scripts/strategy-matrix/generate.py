@@ -252,7 +252,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "build_type": build_type,
                     "os": os,
                     "architecture": architecture,
-                    "sanitizers": "undefinedbehavior",
+                    "sanitizers": "address,undefinedbehavior",
                 }
             )
             # TSAN is deactivated due to seg faults with latest compilers.
