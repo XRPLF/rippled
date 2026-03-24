@@ -189,7 +189,7 @@ struct DID_test : public beast::unit_test::suite
         Account const edna{"edna"};
         Account const francis{"francis"};
         Account const george{"george"};
-        env.fund(XRP(5000), alice, bob, charlie, dave, edna, francis);
+        env.fund(XRP(5000), alice, bob, charlie, dave, edna, francis, george);
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, bob) == 0);
@@ -355,12 +355,14 @@ struct DID_test : public beast::unit_test::suite
         testAccountReserve(all);
         testSetInvalid(all);
         testDeleteInvalid(all);
+        testSetValidInitial(all);
         testSetModify(all);
 
         testEnabled(all - emptyDID);
         testAccountReserve(all - emptyDID);
         testSetInvalid(all - emptyDID);
         testDeleteInvalid(all - emptyDID);
+        testSetValidInitial(all - emptyDID);
         testSetModify(all - emptyDID);
     }
 };

@@ -185,7 +185,7 @@ OpenView::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
-    return txs_.find(key) != txs_.end();
+    return txs_.contains(key);
 }
 
 auto
@@ -198,9 +198,13 @@ OpenView::txRead(key_type const& key) const -> tx_type
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
     if (item.meta)
+    {
         sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
+    }
     else
+    {
         sto = nullptr;
+    }
     return {std::move(stx), std::move(sto)};
 }
 

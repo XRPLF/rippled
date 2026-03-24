@@ -11,9 +11,11 @@ auto
 DeferredCredits::makeKey(AccountID const& a1, AccountID const& a2, Currency const& c) -> Key
 {
     if (a1 < a2)
+    {
         return std::make_tuple(a1, a2, c);
-    else
-        return std::make_tuple(a2, a1, c);
+    }
+
+    return std::make_tuple(a2, a1, c);
 }
 
 void
@@ -53,9 +55,13 @@ DeferredCredits::credit(
         // only record the balance the first time, do not record it here
         auto& v = i->second;
         if (sender < receiver)
+        {
             v.highAcctCredits += amount;
+        }
         else
+        {
             v.lowAcctCredits += amount;
+        }
     }
 }
 
@@ -101,11 +107,9 @@ DeferredCredits::adjustments(
         result.emplace(v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
         return result;
     }
-    else
-    {
-        result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
-        return result;
-    }
+
+    result.emplace(v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+    return result;
 }
 
 void
@@ -179,11 +183,13 @@ PaymentSandbox::balanceHook(
     adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
+    {
         // A calculated negative XRP balance is not an error case. Consider a
         // payment snippet that credits a large XRP amount and then debits the
         // same amount. The credit can't be used but we subtract the debit and
         // calculate a negative value. It's not an error case.
         adjustedAmt.clear();
+    }
 
     return adjustedAmt;
 }

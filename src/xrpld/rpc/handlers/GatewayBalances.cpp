@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -131,6 +132,10 @@ doGatewayBalances(RPC::JsonContext& context)
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
+                // Gateway Balance should not include MPTs
+                if (escrow.holds<MPTIssue>())
+                    return;
+
                 auto& bal = locked[escrow.getCurrency()];
                 if (bal == beast::zero)
                 {
@@ -169,7 +174,7 @@ doGatewayBalances(RPC::JsonContext& context)
             // A positive balance means the cold wallet has an asset
             // (unusual)
 
-            if (hotWallets.count(peer) > 0)
+            if (hotWallets.contains(peer))
             {
                 // This is a specified hot wallet
                 hotBalances[peer].push_back(-rs->getBalance());

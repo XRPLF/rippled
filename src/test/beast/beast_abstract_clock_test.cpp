@@ -37,8 +37,6 @@ public:
         using clock_type = manual_clock<std::chrono::steady_clock>;
         clock_type c;
 
-        std::stringstream ss;
-
         auto c1 = c.now().time_since_epoch();
         c.set(clock_type::time_point(std::chrono::seconds(1)));
         auto c2 = c.now().time_since_epoch();
