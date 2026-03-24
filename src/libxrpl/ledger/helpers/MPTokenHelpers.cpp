@@ -20,12 +20,12 @@ isVaultPseudoAccountFrozen(
     MPTIssue const& mptShare,
     int depth);
 
-//[[nodiscard]] TER
-// dirLink(
-//    ApplyView& view,
-//    AccountID const& owner,
-//    std::shared_ptr<SLE>& object,
-//    SF_UINT64 const& node = sfOwnerNode);
+[[nodiscard]] TER
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node = sfOwnerNode);
 
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
