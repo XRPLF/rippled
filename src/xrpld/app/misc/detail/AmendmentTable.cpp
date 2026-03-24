@@ -924,17 +924,15 @@ AmendmentTableImpl::injectJson(
         v[jss::name] = fs.name;
 
     v[jss::supported] = fs.supported;
-    if (!fs.enabled && isAdmin)
+    if (fs.vote == AmendmentVote::obsolete)
     {
-        if (fs.vote == AmendmentVote::obsolete)
-        {
+        v[jss::obsolete] = true;
+        if (isAdmin)
             v[jss::vetoed] = true;
-            v[jss::obsolete] = true;
-        }
-        else
-        {
-            v[jss::vetoed] = fs.vote == AmendmentVote::down;
-        }
+    }
+    else if (isAdmin)
+    {
+        v[jss::vetoed] = fs.vote == AmendmentVote::down;
     }
     v[jss::enabled] = fs.enabled;
 
