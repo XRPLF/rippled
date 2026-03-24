@@ -1,6 +1,10 @@
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
