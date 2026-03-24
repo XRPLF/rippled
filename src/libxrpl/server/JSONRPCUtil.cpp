@@ -23,7 +23,7 @@ getHTTPHeaderTimestamp()
 #ifndef _MSC_VER
     gmtime_r(&now, &nowGmt);
 #else
-    gmtime_s(&now_gmt, &now);
+    gmtime_s(&nowGmt, &now);
 #endif
     strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &nowGmt);
     return std::string(buffer);
