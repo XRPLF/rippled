@@ -87,7 +87,7 @@ public:
         }
     }
 
-    std::string
+    static std::string
     makeManifestString(
         PublicKey const& pk,
         SecretKey const& sk,
@@ -190,7 +190,7 @@ public:
         return *deserializeManifest(std::string{});  // Silence compiler warning.
     }
 
-    Manifest
+    static Manifest
     clone(Manifest const& m)
     {
         Manifest m2(m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);

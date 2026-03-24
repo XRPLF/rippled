@@ -49,7 +49,7 @@ doCanDelete(RPC::JsonContext& context)
             else if (canDeleteStr == "now")
             {
                 canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
-                if (!canDeleteSeq)
+                if (canDeleteSeq == 0u)
                     return RPC::make_error(rpcNOT_READY);
             }
             else if (uint256 lh; lh.parseHex(canDeleteStr))
