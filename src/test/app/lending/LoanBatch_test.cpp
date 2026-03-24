@@ -44,11 +44,16 @@ protected:
             auto loanSet = set(alice, keylet.key, Number(10000));
             loanSet[sfCounterparty] = bob.human();
             auto const batchTxn = env.jt(
-                batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
-                batch::inner(loanSet, aliceSeq),
-                batch::inner(del(alice, loanKeylet.key), aliceSeq + 1),
-                batch::inner(manage(alice, loanKeylet.key, tfLoanImpair), aliceSeq + 2),
-                batch::inner(pay(alice, loanKeylet.key, XRP(500)), aliceSeq + 3),
+                batch::make(
+                    bob,
+                    bobSeq,
+                    batchFee,
+                    tfAllOrNothing,
+                    {loanSet,
+                     del(alice, loanKeylet.key),
+                     manage(alice, loanKeylet.key, tfLoanImpair),
+                     pay(alice, loanKeylet.key, XRP(500))},
+                    aliceSeq),
                 batch::sig(alice));
             env(batchTxn, ter(temINVALID_INNER_BATCH));
         };
@@ -90,11 +95,13 @@ protected:
         auto const batchFee = batch::calcBatchFee(env, 0, 4);
 
         auto const batchTxn = env.jt(
-            batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
-            batch::inner(txns.vaultCreateTx, brokerSeq + 1),
-            batch::inner(txns.vaultDepositTx, brokerSeq + 2),
-            batch::inner(txns.brokerSetTx, brokerSeq + 3),
-            batch::inner(*txns.coverDepositTx, brokerSeq + 4));
+            batch::make(
+                broker,
+                brokerSeq,
+                batchFee,
+                tfAllOrNothing,
+                {txns.vaultCreateTx, txns.vaultDepositTx, txns.brokerSetTx, *txns.coverDepositTx},
+                brokerSeq + 1));
 
         env(batchTxn);
         env.close();
@@ -155,9 +162,8 @@ protected:
 
         // Create the batch transaction with both LoanSet and LoanDelete
         auto const batchTxn = env.jt(
-            batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
-            batch::inner(loanSetTx, brokerSeq + 1),
-            batch::inner(loanDelTx, brokerSeq + 2),
+            batch::make(
+                broker, brokerSeq, batchFee, tfAllOrNothing, {loanSetTx, loanDelTx}, brokerSeq + 1),
             batch::sig(borrower));
 
         env(batchTxn);
@@ -222,9 +228,8 @@ protected:
 
         // Create the batch transaction with LoanSet and impair
         auto const batchTxn = env.jt(
-            batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
-            batch::inner(loanSetTx, brokerSeq + 1),
-            batch::inner(impairTx, brokerSeq + 2),
+            batch::make(
+                broker, brokerSeq, batchFee, tfAllOrNothing, {loanSetTx, impairTx}, brokerSeq + 1),
             batch::sig(borrower));
 
         auto currentTime = env.now().time_since_epoch().count();
@@ -364,10 +369,13 @@ protected:
 
         // Create the batch transaction
         auto const batchTxn = env.jt(
-            batch::outer(broker, brokerSeq, batchFee, tfAllOrNothing),
-            batch::inner(defaultTx, brokerSeq + 1),
-            batch::inner(withdrawTx, brokerSeq + 2),
-            batch::inner(paymentTx, brokerSeq + 3));
+            batch::make(
+                broker,
+                brokerSeq,
+                batchFee,
+                tfAllOrNothing,
+                {defaultTx, withdrawTx, paymentTx},
+                brokerSeq + 1));
 
         env(batchTxn);
         env.close();
@@ -498,11 +506,13 @@ protected:
 
         // Create the batch transaction with tfAllOrNothing
         auto const batchTxn = env.jt(
-            batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
-            batch::inner(loanSetTx, borrowerSeq + 1),
-            batch::inner(buyTx, borrowerSeq + 2),
-            batch::inner(sellTx, borrowerSeq + 3),
-            batch::inner(payTx, borrowerSeq + 4),
+            batch::make(
+                borrower,
+                borrowerSeq,
+                batchFee,
+                tfAllOrNothing,
+                {loanSetTx, buyTx, sellTx, payTx},
+                borrowerSeq + 1),
             batch::sig(broker));
 
         env(batchTxn);
@@ -638,11 +648,11 @@ protected:
         auto const loanSetTx = loanParams.getTransaction(env, brokerInfo);
 
         // Transaction 2: Buy 400 XRP for $1000 from MM1
-        auto const buyTx = offer(borrower, XRP(400), IOU(1000));
+        auto buyTx = offer(borrower, XRP(400), IOU(1000));
         buyTx[jss::Flags] = tfFillOrKill;
 
         // Transaction 3: Try to sell 400 XRP for $1008 - this will FAIL
-        auto const sellTx = offer(borrower, XRP(400), IOU(1008));
+        auto sellTx = offer(borrower, XRP(400), IOU(1008));
         sellTx[jss::Flags] = tfFillOrKill;
 
         // Transaction 4: Repay the loan
@@ -653,11 +663,13 @@ protected:
 
         // Create the batch transaction with tfAllOrNothing
         auto const batchTxn = env.jt(
-            batch::outer(borrower, borrowerSeq, batchFee, tfAllOrNothing),
-            batch::inner(loanSetTx, borrowerSeq + 1),
-            batch::inner(buyTx, borrowerSeq + 2),
-            batch::inner(sellTx, borrowerSeq + 3),
-            batch::inner(payTx, borrowerSeq + 4),
+            batch::make(
+                borrower,
+                borrowerSeq,
+                batchFee,
+                tfAllOrNothing,
+                {loanSetTx, buyTx, sellTx, payTx},
+                borrowerSeq + 1),
             batch::sig(broker));
 
         env(batchTxn);
