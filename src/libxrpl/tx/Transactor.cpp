@@ -364,6 +364,13 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
+    // NOTE: For delegation transactions, because preclaim evaluates against a readview,
+    // it does not reflect fee deductions from other delegated transactions
+    // submitted by the same account within the current ledger.
+    // As a result, if the delegated account’s balance is over-committed,
+    // this check may pass optimistically. Any actual fee shortfall will be
+    // correctly detected later during doApply via payFee, which will return
+    // tecINSUFF_FEE.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
