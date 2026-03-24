@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/rpc/handlers/LedgerHandler.h>
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
 
 namespace xrpl {
 

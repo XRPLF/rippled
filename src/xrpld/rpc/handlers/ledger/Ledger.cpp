@@ -3,7 +3,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
-#include <xrpld/rpc/handlers/LedgerHandler.h>
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
