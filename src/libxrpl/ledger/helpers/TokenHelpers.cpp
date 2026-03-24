@@ -3,7 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -385,7 +387,7 @@ rippleCreditIOU(
 
         if (bDelete)
         {
-            return trustDelete(
+            return WritableRippleState::trustDelete(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
@@ -413,7 +415,7 @@ rippleCreditIOU(
 
     bool const noRipple = (wrappedAccount->getFlags() & lsfDefaultRipple) == 0;
 
-    return trustCreate(
+    return WritableRippleState::trustCreate(
         view,
         bSenderHigh,
         uSenderID,
@@ -823,15 +825,15 @@ rippleCreditMPT(
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), uSenderID);
-        if (auto sle = view.peek(mptokenID))
+        WritableMPToken mpt(mptIssuance, uSenderID);
+        if (mpt.exists())
         {
-            auto const amt = sle->getFieldU64(sfMPTAmount);
+            auto const amt = mpt->getFieldU64(sfMPTAmount);
             auto const pay = saAmount.mpt().value();
             if (amt < pay)
                 return tecINSUFFICIENT_FUNDS;
-            (*sle)[sfMPTAmount] = amt - pay;
-            view.update(sle);
+            (*mpt)[sfMPTAmount] = amt - pay;
+            mpt.update();
         }
         else
         {
@@ -855,11 +857,11 @@ rippleCreditMPT(
     }
     else
     {
-        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), uReceiverID);
-        if (auto sle = view.peek(mptokenID))
+        WritableMPToken mptoken(mptIssuance, uReceiverID);
+        if (mptoken.exists())
         {
-            (*sle)[sfMPTAmount] += saAmount.mpt().value();
-            view.update(sle);
+            (*mptoken)[sfMPTAmount] += saAmount.mpt().value();
+            mptoken.update();
         }
         else
         {

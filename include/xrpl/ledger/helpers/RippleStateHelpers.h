@@ -49,6 +49,12 @@ public:
         return currency_;
     }
 
+    [[nodiscard]] Issue const&
+    getIssue() const
+    {
+        return issue_;
+    }
+
     [[nodiscard]] bool
     isGlobalFrozen() const override
     {
@@ -131,6 +137,12 @@ public:
 
     [[nodiscard]] bool
     requiresAuth() const override;
+
+    [[nodiscard]] bool
+    hasHolder(AccountID const& holder) const override
+    {
+        return readView_.exists(keylet::line(issuer_, holder, currency_));
+    }
 
 protected:
     Issue const issue_;
@@ -243,44 +255,6 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency);
 /** @} */
-
-//------------------------------------------------------------------------------
-//
-// Trust line operations
-//
-//------------------------------------------------------------------------------
-
-/** Create a trust line
-
-    This can set an initial balance.
-*/
-[[nodiscard]] TER
-trustCreate(
-    ApplyView& view,
-    bool const bSrcHigh,
-    AccountID const& uSrcAccountID,
-    AccountID const& uDstAccountID,
-    uint256 const& uIndex,             // ripple state entry
-    WritableAccountRoot& wrappedAcct,  // the account being set.
-    bool const bAuth,                  // authorize account.
-    bool const bNoRipple,              // others cannot ripple through
-    bool const bFreeze,                // funds cannot leave
-    bool bDeepFreeze,                  // can neither receive nor send funds
-    STAmount const& saBalance,         // balance of account being set.
-                                       // Issuer should be noAccount()
-    STAmount const& saLimit,           // limit for account being set.
-                                       // Issuer should be the account being set.
-    std::uint32_t uQualityIn,
-    std::uint32_t uQualityOut,
-    beast::Journal j);
-
-[[nodiscard]] TER
-trustDelete(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
-    AccountID const& uLowAccountID,
-    AccountID const& uHighAccountID,
-    beast::Journal j);
 
 //------------------------------------------------------------------------------
 //

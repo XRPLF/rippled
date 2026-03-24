@@ -2,6 +2,7 @@
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -194,8 +195,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
             // However, the trustline from destination to issuer may not
             // be frozen.
-            IOUToken wrapped(ctx.view, Issue{currency, issuerId});
-            if (wrapped.isFrozen(dstId))
+            if (iouToken.isFrozen(dstId))
             {
                 JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
                 return tecFROZEN;
@@ -335,7 +335,7 @@ CheckCash::doApply()
                 initialBalance.setIssuer(noAccount());
 
                 // clang-format off
-                if (TER const ter = trustCreate(
+                if (TER const ter = WritableRippleState::trustCreate(
                         psb,                            // payment sandbox
                         destLow,                        // is dest low?
                         issuer,                         // source

@@ -4,6 +4,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -60,10 +61,7 @@ MPTokenIssuance::isAnyFrozen(std::initializer_list<AccountID> const& accounts, i
     {
         if (isIndividualFrozen(account))
             return true;
-    }
 
-    for (auto const& account : accounts)
-    {
         if (isVaultPseudoAccountFrozen(readView_, account, mptIssue_, depth))
             return true;
     }
@@ -156,18 +154,17 @@ WritableMPTokenIssuance::authorizeMPToken(
         //      - delete the MPToken
         if (flags & tfMPTUnauthorize)
         {
-            auto const mptokenKey = keylet::mptoken(mptID_, account);
-            auto const sleMpt = applyView_.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+            WritableMPToken mptoken(*this, account);
+            if (!mptoken.exists() || (*mptoken)[sfMPTAmount] != 0)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!applyView_.dirRemove(
-                    keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
+                    keylet::ownerDir(account), (*mptoken)[sfOwnerNode], mptoken->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             wrappedAcct.adjustOwnerCount(-1, journal);
 
-            applyView_.erase(sleMpt);
+            mptoken.erase();
             return tesSUCCESS;
         }
 
@@ -370,8 +367,7 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
     if (account == mutableSle_->at(sfIssuer))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const keylet = keylet::mptoken(mptID_, account);
-    auto const sleToken = readView_.read(keylet);  //  NOTE: might be null
+    MPToken mptoken(*this, account);
     auto const maybeDomainID = mutableSle_->at(~sfDomainID);
     bool expired = false;
     bool const authorizedByDomain = [&]() -> bool {
@@ -387,7 +383,7 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         return false;
     }();
 
-    if (!authorizedByDomain && sleToken == nullptr)
+    if (!authorizedByDomain && !mptoken.exists())
     {
         // Could not find MPToken and won't create one, could be either of:
         //
@@ -410,14 +406,14 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.
         XRPL_ASSERT(
-            sleToken != nullptr && !maybeDomainID,
+            mptoken.exists() && !maybeDomainID,
             "xrpl::enforceMPTokenAuthorization : found MPToken");
-        if (sleToken->isFlag(lsfMPTAuthorized))
+        if (mptoken->isFlag(lsfMPTAuthorized))
             return tesSUCCESS;
 
         return tecNO_AUTH;
     }
-    if (authorizedByDomain && sleToken != nullptr)
+    if (authorizedByDomain && mptoken.exists())
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
@@ -429,7 +425,7 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         // Could not find MPToken but there should be one because we are
         // authorized by domain. Proceed to create it, then return tesSUCCESS
         XRPL_ASSERT(
-            maybeDomainID && sleToken == nullptr,
+            maybeDomainID && !mptoken.exists(),
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
                 priorBalance,  // priorBalance
@@ -640,15 +636,14 @@ rippleUnlockEscrowMPT(
     if (issuer != receiver)
     {
         // Increase the MPT Holder MPTAmount
-        auto const mptokenID = keylet::mptoken(mptIssue.getMptID(), receiver);
-        auto sle = view.peek(mptokenID);
-        if (!sle)
+        WritableMPToken mpt(mptIssuance, receiver);
+        if (!mpt)
         {  // LCOV_EXCL_START
             JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
-        auto current = sle->getFieldU64(sfMPTAmount);
+        auto current = mpt->getFieldU64(sfMPTAmount);
         auto delta = netAmount.mpt().value();
 
         // Overflow check for addition
@@ -659,8 +654,8 @@ rippleUnlockEscrowMPT(
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        (*sle)[sfMPTAmount] += delta;
-        view.update(sle);
+        (*mpt)[sfMPTAmount] += delta;
+        mpt.update();
     }
     else
     {
@@ -687,22 +682,21 @@ rippleUnlockEscrowMPT(
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
     // Decrease the MPT Holder EscrowedAmount
-    auto const mptokenID = keylet::mptoken(mptIssue.getMptID(), sender);
-    auto sle = view.peek(mptokenID);
-    if (!sle)
+    WritableMPToken mpt(mptIssuance, sender);
+    if (!mpt.exists())
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
-    if (!sle->isFieldPresent(sfLockedAmount))
+    if (!mpt->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
                         << to_string(sender);
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
-    auto const locked = sle->getFieldU64(sfLockedAmount);
+    auto const locked = mpt->getFieldU64(sfLockedAmount);
     auto const delta = grossAmount.mpt().value();
 
     // Underflow check for subtraction
@@ -716,13 +710,13 @@ rippleUnlockEscrowMPT(
     auto const newLocked = locked - delta;
     if (newLocked == 0)
     {
-        sle->makeFieldAbsent(sfLockedAmount);
+        mpt->makeFieldAbsent(sfLockedAmount);
     }
     else
     {
-        sle->setFieldU64(sfLockedAmount, newLocked);
+        mpt->setFieldU64(sfLockedAmount, newLocked);
     }
-    view.update(sle);
+    mpt.update();
 
     // Note: The gross amount is the amount that was locked, the net
     // amount is the amount that is being unlocked. The difference is the fee
@@ -782,9 +776,9 @@ MPTokenIssuance::accountHolds(
 
     STAmount amount;
 
-    auto const sleMpt = readView_.read(keylet::mptoken(mptID_, account));
+    MPToken mpt(*this, account);
 
-    if (!sleMpt)
+    if (!mpt.exists())
     {
         amount.clear(mptIssue_);
     }
@@ -794,7 +788,7 @@ MPTokenIssuance::accountHolds(
     }
     else
     {
-        amount = STAmount{mptIssue_, sleMpt->getFieldU64(sfMPTAmount)};
+        amount = STAmount{mptIssue_, mpt->getFieldU64(sfMPTAmount)};
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
@@ -808,7 +802,7 @@ MPTokenIssuance::accountHolds(
         {
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
-            if (sle_ && sle_->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
+            if (sle_ && sle_->isFlag(lsfMPTRequireAuth) && !mpt->isFlag(lsfMPTAuthorized))
                 amount.clear(mptIssue_);
         }
     }

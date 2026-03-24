@@ -160,6 +160,9 @@ public:
     [[nodiscard]] virtual bool
     requiresAuth() const = 0;
 
+    [[nodiscard]] virtual bool
+    hasHolder(AccountID const& holder) const = 0;
+
 protected:
     TokenBase(ReadView const& view, std::shared_ptr<SLE const> sle) : ReadOnlySLE(sle, view)
     {

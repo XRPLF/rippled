@@ -830,6 +830,7 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
+    IOUToken token(view, amount.issue());
     if (!(nftFlags & nft::flagCreateTrustLines) && !amount.native() && xferFee)
     {
         if (!view.exists(keylet::account(nftIssuer)))
@@ -843,13 +844,12 @@ tokenOfferCreatePreclaim(
                 !view.read(keylet::line(nftIssuer, amount.issue())))
                 return tecNO_LINE;
         }
-        else if (!view.exists(keylet::line(nftIssuer, amount.issue())))
+        else if (!token.hasHolder(nftIssuer))
         {
             return tecNO_LINE;
         }
 
-        IOUToken wrapped(view, amount.issue());
-        if (wrapped.isFrozen(nftIssuer))
+        if (token.isFrozen(nftIssuer))
             return tecFROZEN;
     }
 
@@ -862,7 +862,7 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (IOUToken(view, amount.issue()).isFrozen(acctID))
+    if (token.isFrozen(acctID))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the

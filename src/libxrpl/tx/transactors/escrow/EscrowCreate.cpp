@@ -4,6 +4,10 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPToken.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -159,24 +163,25 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    IOUToken const token(ctx.view, amount.issue());
+    AccountID const& issuer = token.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    AccountRoot const acctIssuer(issuer, ctx.view);
-    if (!acctIssuer)
+    if (!token.exists())
         return tecNO_ISSUER;
-    if (!acctIssuer->isFlag(lsfAllowTrustLineLocking))
+    if (!token->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, amount.getCurrency()));
-    if (!sleRippleState)
+    RippleState const accountHolder(token, account);
+    RippleState const destHolder(token, dest);
+    if (!accountHolder)
         return tecNO_LINE;
 
-    STAmount const balance = (*sleRippleState)[sfBalance];
+    STAmount const balance = (*accountHolder)[sfBalance];
 
     // If balance is positive, issuer must have higher address than account
     if (balance > beast::zero && issuer < account)
@@ -187,24 +192,23 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    auto const token = IOUToken(ctx.view, amount.issue());
-    if (auto const ter = token.requireAuth(account); !isTesSuccess(ter))
+    if (auto const ter = accountHolder.requireAuth(); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = token.requireAuth(dest); !isTesSuccess(ter))
+    if (auto const ter = destHolder.requireAuth(); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
-    if (token.isFrozen(account))
+    if (accountHolder.isFrozen())
         return tecFROZEN;
 
     // If the issuer has frozen the destination, return tecFROZEN
-    if (token.isFrozen(dest))
+    if (destHolder.isFrozen())
         return tecFROZEN;
 
     STAmount const spendableAmount =
-        accountHolds(ctx.view, account, amount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j);
+        accountHolder.accountHolds(fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -230,13 +234,13 @@ escrowCreatePreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    auto const mptIssuance = MPTokenIssuance(ctx.view, amount.get<MPTIssue>());
+    AccountID const& issuer = mptIssuance.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const mptIssuance = MPTokenIssuance(ctx.view, amount.get<MPTIssue>());
     if (!mptIssuance.exists())
         return tecOBJECT_NOT_FOUND;
 
@@ -249,34 +253,36 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (mptIssuance->getAccountID(sfIssuer) != issuer)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
+    MPToken const accountHolder(mptIssuance, account);
+    MPToken const destHolder(mptIssuance, dest);
     // If the account does not have the mpt, return tecOBJECT_NOT_FOUND
-    if (!ctx.view.exists(keylet::mptoken(mptIssuance.getMptID(), account)))
+    if (!accountHolder.exists())
         return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the account is
     // authorized
-    if (auto const ter = mptIssuance.requireAuth(account, AuthType::WeakAuth); !isTesSuccess(ter))
+    if (auto const ter = accountHolder.requireAuth(AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
-    if (auto const ter = mptIssuance.requireAuth(dest, AuthType::WeakAuth); !isTesSuccess(ter))
+    if (auto const ter = destHolder.requireAuth(AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (mptIssuance.isFrozen(account))
+    if (accountHolder.isFrozen())
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (mptIssuance.isFrozen(dest))
+    if (destHolder.isFrozen())
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
-    if (auto const ter = mptIssuance.canTransfer(account, dest); !isTesSuccess(ter))
+    if (auto const ter = accountHolder.canTransfer(dest); !isTesSuccess(ter))
         return ter;
 
-    STAmount const spendableAmount = accountHolds(
-        ctx.view, account, amount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
+    STAmount const spendableAmount =
+        accountHolder.accountHolds(fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)

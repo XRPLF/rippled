@@ -6,6 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/RippleState.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -303,7 +304,7 @@ IOUToken::transferRate() const
 //------------------------------------------------------------------------------
 
 TER
-trustCreate(
+WritableRippleState::trustCreate(
     ApplyView& view,
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
@@ -417,7 +418,7 @@ trustCreate(
 }
 
 TER
-trustDelete(
+WritableRippleState::trustDelete(
     ApplyView& view,
     std::shared_ptr<SLE> const& sleRippleState,
     AccountID const& uLowAccountID,
@@ -553,7 +554,7 @@ issueIOU(
         state->setFieldAmount(sfBalance, final_balance);
         if (must_delete)
         {
-            return trustDelete(
+            return WritableRippleState::trustDelete(
                 view,
                 state,
                 bSenderHigh ? account : issue.account,
@@ -580,7 +581,7 @@ issueIOU(
 
     bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
-    return trustCreate(
+    return WritableRippleState::trustCreate(
         view,
         bSenderHigh,
         issue.account,
@@ -646,7 +647,7 @@ redeemIOU(
 
         if (must_delete)
         {
-            return trustDelete(
+            return WritableRippleState::trustDelete(
                 applyView,
                 state,
                 bSenderHigh ? issue.account : account,
@@ -794,7 +795,7 @@ WritableIOUToken::addEmptyHolding(
     if (priorBalance < readView_.fees().accountReserve(ownerCount + 1))
         return tecNO_LINE_INSUF_RESERVE;
 
-    return trustCreate(
+    return WritableRippleState::trustCreate(
         applyView_,
         high,
         srcId,
@@ -867,7 +868,7 @@ WritableIOUToken::removeEmptyHolding(AccountID const& accountID, beast::Journal 
         line->clearFlag(lsfHighReserve);
     }
 
-    return trustDelete(
+    return WritableRippleState::trustDelete(
         applyView_,
         line,
         line->at(sfLowLimit)->getIssuer(),
@@ -908,7 +909,8 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
+    if (auto const ter = WritableRippleState::trustDelete(view, sleState, low, high, j);
+        !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
         return ter;
