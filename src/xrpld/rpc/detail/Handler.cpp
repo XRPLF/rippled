@@ -150,8 +150,7 @@ private:
 
     // Use with equal_range to enforce that API range of a newly added handler
     // does not overlap with API range of an existing handler with same name
-    [[nodiscard]] bool
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    [[nodiscard]] static bool
     overlappingApiVersion(
         std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
         unsigned minVer,

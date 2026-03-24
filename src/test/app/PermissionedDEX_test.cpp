@@ -34,15 +34,13 @@ using namespace jtx;
 
 class PermissionedDEX_test : public beast::unit_test::suite
 {
-    [[nodiscard]] bool
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
     }
 
-    [[nodiscard]] bool
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    [[nodiscard]] static bool
     checkOffer(
         Env const& env,
         Account const& account,
@@ -137,8 +135,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return {};
     }
 
-    [[nodiscard]] bool
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    [[nodiscard]] static bool
     checkDirectorySize(Env const& env, uint256 directory, std::uint32_t dirSize)
     {
         std::optional<std::uint64_t> pageIndex{0};
