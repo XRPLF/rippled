@@ -98,7 +98,7 @@ getConnection(soci::session& s)
     if (auto b = dynamic_cast<soci::sqlite3_session_backend*>(be))
         result = b->conn_;
 
-    if (!result)
+    if (result == nullptr)
         Throw<std::logic_error>("Didn't get a database connection.");
 
     return result;
@@ -107,7 +107,7 @@ getConnection(soci::session& s)
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
-    if (!getConnection(s))
+    if (getConnection(s) == nullptr)
         Throw<std::logic_error>("No connection found.");
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
@@ -249,7 +249,7 @@ public:
     {
         auto [conn, keepAlive] = getConnection();
         (void)keepAlive;
-        if (!conn)
+        if (conn == nullptr)
             return;
 
         int log = 0, ckpt = 0;
