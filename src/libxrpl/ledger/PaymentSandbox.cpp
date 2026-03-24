@@ -164,7 +164,7 @@ PaymentSandbox::balanceHook(
     auto delta = amount.zeroed();
     auto lastBal = amount;
     auto minBal = amount;
-    for (auto curSB = this; curSB; curSB = curSB->ps_)
+    for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.adjustments(account, issuer, currency))
         {
@@ -198,7 +198,7 @@ std::uint32_t
 PaymentSandbox::ownerCountHook(AccountID const& account, std::uint32_t count) const
 {
     std::uint32_t result = count;
-    for (auto curSB = this; curSB; curSB = curSB->ps_)
+    for (auto curSB = this; curSB != nullptr; curSB = curSB->ps_)
     {
         if (auto adj = curSB->tab_.ownerCount(account))
             result = std::max(result, *adj);

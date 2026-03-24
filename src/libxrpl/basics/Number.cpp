@@ -981,7 +981,7 @@ root(Number f, unsigned d)
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
         int k = (e >= 0 ? e : e - (di - 1)) / di;
-        int k2 = e - k * di;
+        int k2 = e - (k * di);
         if (k2 == 0)
             return 0;
         return di - k2;
@@ -998,7 +998,7 @@ root(Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;

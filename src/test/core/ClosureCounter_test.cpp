@@ -299,7 +299,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.
-        while (threadExited == false)
+        while (!threadExited)
             ;
         localThread.join();
     }

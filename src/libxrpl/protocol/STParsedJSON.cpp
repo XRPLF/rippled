@@ -1075,20 +1075,20 @@ parseArray(
             // TODO: There doesn't seem to be a nice way to get just the
             // first/only key in an object without copying all keys into
             // a vector
-            std::string const objectName(json[i].getMemberNames()[0]);
+            std::string const memberName(json[i].getMemberNames()[0]);
             ;
-            auto const& nameField(SField::getField(objectName));
+            auto const& nameField(SField::getField(memberName));
 
             if (nameField == sfInvalid)
             {
-                error = unknown_field(json_name, objectName);
+                error = unknown_field(json_name, memberName);
                 return std::nullopt;
             }
 
-            Json::Value const objectFields(json[i][objectName]);
+            Json::Value const objectFields(json[i][memberName]);
 
             std::stringstream ss;
-            ss << json_name << "." << "[" << i << "]." << objectName;
+            ss << json_name << "." << "[" << i << "]." << memberName;
 
             auto ret = parseObject(ss.str(), objectFields, nameField, depth + 1, error);
             if (!ret)

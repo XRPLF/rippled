@@ -2127,7 +2127,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
-            if (!port)
+            if (port == 0u)
                 section.set("port", std::to_string(ep.port()));
         }
     }
