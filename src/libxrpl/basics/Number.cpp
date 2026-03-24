@@ -955,9 +955,13 @@ ln(Number const& x, int iterations = 50)
     static Number const LN2(693'147'180'559'945'309ll, -18);
 
     if (x <= 0)
+    {
         throw std::runtime_error("Not a positive value");
-    else if (x == 1)
+    }
+    if (x == 1)
+    {
         return N0;
+    }
 
     int exponent = 0;
     Number mantissa = x;
@@ -993,9 +997,13 @@ log10(Number const& x, int iterations)
     static Number const LN10(2'302'585'092'994'046ll, -15);
 
     if (x <= 0)
+    {
         throw std::runtime_error("Not a positive value");
-    else if (x == 1)
+    }
+    if (x == 1)
+    {
         return N0;
+    }
 
     if (x <= Number(10))
     {

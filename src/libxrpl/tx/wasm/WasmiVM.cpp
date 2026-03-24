@@ -33,7 +33,9 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
               << std::string_view(error_message.data, error_message.size - 1);
         }
         else
+        {
             j << "WASMI Error: " << msg;
+        }
 
         if (error_message.size)
             wasm_byte_vec_delete(&error_message);
@@ -331,7 +333,7 @@ makeImpReturn(WasmImportFunc const& imp)
 }
 
 WasmExternVec
-ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
+ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
 {
     WasmImporttypeVec importTypes;
     wasm_module_imports(module_.get(), &importTypes.vec_);
@@ -355,8 +357,10 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports)
 
         wasm_externkind_t const itype = wasm_externtype_kind(wasm_importtype_type(importType));
         if ((itype) != WASM_EXTERN_FUNC)
+        {
             throw std::runtime_error(
                 "Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
+        }
 
         // for multi-module support
         // if ((W_ENV != modName) && (W_HOST_LIB != modName))
@@ -471,7 +475,7 @@ ModuleWrapper::addInstance(StorePtr& s, WasmExternVec const& imports)
 // }
 
 std::int64_t
-ModuleWrapper::getGas()
+ModuleWrapper::getGas() const
 {
     return instanceWrap_ ? instanceWrap_.getGas() : -1;
 }
@@ -491,8 +495,10 @@ WasmiEngine::init()
 {
     wasm_config_t* config = wasm_config_new();
     if (!config)
+    {
         return std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>{
             nullptr, &wasm_engine_delete};  // LCOV_EXCL_LINE
+    }
     wasmi_config_consume_fuel_set(config, true);
     wasmi_config_ignore_custom_sections_set(config, true);
     wasmi_config_wasm_mutable_globals_set(config, false);
@@ -792,14 +798,20 @@ WasmiEngine::runHlp(
     auto const res = call<1>(f, p);
 
     if (res.f)
+    {
         throw std::runtime_error("<" + std::string(funcName) + "> failure");
-    else if (!res.r.vec_.size)
+    }
+    if (!res.r.vec_.size)
+    {
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return nothing");  // LCOV_EXCL_LINE
-    else if (res.r.vec_.data[0].kind != WASM_I32)
+    }
+    if (res.r.vec_.data[0].kind != WASM_I32)
+    {
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return type mismatch, ret: " +
             std::to_string(static_cast<int>(res.r.vec_.data[0].kind)));
+    }
 
     if (gas == -1)
         gas = std::numeric_limits<decltype(gas)>::max();

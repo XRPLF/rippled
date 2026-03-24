@@ -27,7 +27,7 @@ protected:
     bool good_;
 
 public:
-    Number2(Slice const& data) : Number(), good_(false)
+    Number2(Slice const& data) : good_(false)
     {
         if (data.size() != encodedFloatSize)
             return;
@@ -124,16 +124,20 @@ public:
         {
             return floatNull;
         }
-        else if (absM > maxEncodedMantissa)
+        if (absM > maxEncodedMantissa)
         {
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
         v |= absM;
 
         if (e > wasmMaxExponent)
+        {
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (e < wasmMinExponent)
+        }
+        if (e < wasmMinExponent)
+        {
             return floatNull;
+        }
         uint64_t const normExp = e - wasmMinExponent + 1;  //+97
         v |= normExp << encodedMantissaBits;
 
@@ -160,10 +164,9 @@ struct FloatState
 {
     Number::rounding_mode oldMode_;
     MantissaRange::mantissa_scale oldScale_;
-    bool good_;
+    bool good_{false};
 
-    FloatState(int32_t mode)
-        : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale()), good_(false)
+    FloatState(int32_t mode) : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale())
     {
         if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
@@ -281,7 +284,11 @@ floatCompareImpl(Slice const& x, Slice const& y)
         detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        return xx < yy ? 2 : (xx == yy ? 0 : 1);
+        if (xx < yy)
+            return 2;
+        if (xx == yy)
+            return 0;
+        return 1;
     }
     // LCOV_EXCL_START
     catch (...)

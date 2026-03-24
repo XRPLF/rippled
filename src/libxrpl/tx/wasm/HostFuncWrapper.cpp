@@ -78,9 +78,13 @@ getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     T x;
     uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
     if (p & (alignof(T) - 1))  // unaligned
+    {
         memcpy(&x, r->data(), sizeof(T));
+    }
     else
+    {
         x = *reinterpret_cast<T const*>(r->data());
+    }
     x = adjustWasmEndianess(x);
 
     return x;

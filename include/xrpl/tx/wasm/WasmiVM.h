@@ -182,11 +182,11 @@ public:
     addInstance(StorePtr& s, WasmExternVec const& imports);
 
     std::int64_t
-    getGas();
+    getGas() const;
 
 private:
     WasmExternVec
-    buildImports(StorePtr& s, ImportVec const& imports);
+    buildImports(StorePtr& s, ImportVec const& imports) const;
 };
 
 class WasmiEngine
