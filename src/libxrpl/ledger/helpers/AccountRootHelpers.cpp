@@ -99,11 +99,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
     auto const sle = view.read(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent(sfTransferRate))
-    {
-        auto const fee = sle->getFieldU16(sfTransferFee);
-        XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
-        return Rate{1'000'000'000u + 10'000 * fee};
-    }
+        return Rate{sle->getFieldU32(sfTransferRate)};
 
     return parityRate;
 }
