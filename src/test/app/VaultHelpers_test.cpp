@@ -1,6 +1,7 @@
 #include <test/jtx.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -706,6 +707,86 @@ class VaultHelpers_test : public beast::unit_test::suite
         }
     }
 
+    // Creates a Sandbox with vault and issuance SLEs inserted.
+    Sandbox
+    makeSandbox(SLE::pointer vault, SLE::pointer issuance)
+    {
+        Sandbox sb(env_->current().get(), tapNONE);
+        sb.insert(vault);
+        sb.insert(issuance);
+        return sb;
+    }
+
+    void
+    testBorrowFromVault()
+    {
+        using namespace vault;
+
+        testcase("borrowFromVault: normal");
+        {
+            auto vaultSle = makeVault(1000, 0, 0, 0);
+            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
+            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            auto issuanceSle = makeIssuance(1000);
+
+            auto sb = makeSandbox(vaultSle, issuanceSle);
+            auto const ter = borrowFromVault(sb, vaultSle, 100, 10, env_->journal);
+            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == 900);
+            BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == 1010);
+            BEAST_EXPECT(vaultSle->at(sfInterestUnrealized) == 10);
+        }
+
+        testcase("borrowFromVault: zero yield");
+        {
+            auto vaultSle = makeVault(1000, 0, 0, 0);
+            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
+            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            auto issuanceSle = makeIssuance(1000);
+
+            auto sb = makeSandbox(vaultSle, issuanceSle);
+            auto const ter = borrowFromVault(sb, vaultSle, 100, 0, env_->journal);
+            BEAST_EXPECT(ter == tesSUCCESS);
+            BEAST_EXPECT(vaultSle->at(sfAssetsAvailable) == 900);
+            BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == 1000);
+            BEAST_EXPECT(vaultSle->at(sfInterestUnrealized) == 0);
+        }
+
+        testcase("borrowFromVault: invalid amount");
+        {
+            auto vaultSle = makeVault(1000, 0, 0, 0);
+            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
+            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            auto issuanceSle = makeIssuance(1000);
+
+            auto sb = makeSandbox(vaultSle, issuanceSle);
+            BEAST_EXPECT(borrowFromVault(sb, vaultSle, 0, 10, env_->journal) == tecINTERNAL);
+            BEAST_EXPECT(borrowFromVault(sb, vaultSle, -1, 10, env_->journal) == tecINTERNAL);
+        }
+
+        testcase("borrowFromVault: negative yield");
+        {
+            auto vaultSle = makeVault(1000, 0, 0, 0);
+            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
+            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            auto issuanceSle = makeIssuance(1000);
+
+            auto sb = makeSandbox(vaultSle, issuanceSle);
+            BEAST_EXPECT(borrowFromVault(sb, vaultSle, 100, -1, env_->journal) == tecINTERNAL);
+        }
+
+        testcase("borrowFromVault: insufficient available");
+        {
+            auto vaultSle = makeVault(1000, 0, 0, 0);
+            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 50};
+            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            auto issuanceSle = makeIssuance(1000);
+
+            auto sb = makeSandbox(vaultSle, issuanceSle);
+            BEAST_EXPECT(borrowFromVault(sb, vaultSle, 100, 10, env_->journal) == tecINTERNAL);
+        }
+    }
+
 public:
     void
     run() override
@@ -725,6 +806,7 @@ public:
         testComputeWithdrawByAssets();
         testComputeWithdrawByShares();
         testComputeClawback();
+        testBorrowFromVault();
     }
 };
 

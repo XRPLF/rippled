@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -93,6 +94,31 @@ computeClawback(
     SLE::const_ref issuance,
     STAmount const& clawbackAmount,
     Number const& assetsAvailable,
+    beast::Journal j);
+
+/**
+ * Updates vault state when a loan is issued: reduces available assets by the
+ * borrowed amount and increases total assets by the yield (accrued interest).
+ * With featureLendingProtocolV1_1, also tracks the yield in InterestUnrealized
+ * and validates vault state after modification.
+ *
+ * @param view    The ledger view to read issuance from and update.
+ * @param vault   The vault SLE to modify. Must be of type ltVAULT.
+ * @param amount  The principal to borrow. Must be > 0 and <= AssetsAvailable.
+ * @param yield   The accrued interest to add. Must be >= 0. Added to both
+ *                AssetsTotal and InterestUnrealized (v1_1 only).
+ * @param j       Journal for error logging.
+ *
+ * @return tesSUCCESS on success, tecINTERNAL on invalid inputs or if the
+ *         resulting vault state fails validation. The caller should validate
+ *         inputs beforehand to return a user-facing error code.
+ */
+[[nodiscard]] TER
+borrowFromVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& amount,
+    Number const& yield,
     beast::Journal j);
 
 }  // namespace xrpl::vault

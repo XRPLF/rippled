@@ -171,25 +171,43 @@ sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount c
 
 }  // namespace v1
 
-// v2 vault state validation — checks ledger invariants before math.
+// v2 vault state validation — checks ledger invariants.
 // Returns tecINTERNAL and logs on invalid state. Returns tesSUCCESS if valid.
 TER
 validateVaultState(SLE::const_ref vault, SLE::const_ref issuance, beast::Journal j)
 {
-    Number const assetTotal = vault->at(sfAssetsTotal);
-    if (assetTotal == 0)
+    Number const assetsTotal = vault->at(sfAssetsTotal);
+    if (assetsTotal == 0)
         return tesSUCCESS;
 
-    Number const interestUnrealized = vault->at(sfInterestUnrealized);
-    Number const lossUnrealized = vault->at(sfLossUnrealized);
+    auto const interestUnrealized = vault->at(sfInterestUnrealized);
+    auto const lossUnrealized = vault->at(sfLossUnrealized);
+    auto const assetsMaximum = vault->at(sfAssetsMaximum);
+
+    // Cannot exceed asset cap
+    if (assetsMaximum > 0 && assetsTotal > assetsMaximum)
+    {
+        JLOG(j.error()) << "vault state: assets total exceeds maximum"
+                        << " (assetsTotal=" << assetsTotal << ", assetsMaximum=" << assetsMaximum
+                        << ")";
+        return tecINTERNAL;
+    }
+
+    if (vault->at(sfAssetsAvailable) > assetsTotal)
+    {
+        JLOG(j.error()) << "vault state: assets available exceeds assets total"
+                        << " (assetsAvailable=" << vault->at(sfAssetsAvailable)
+                        << ", assetsTotal=" << assetsTotal << ")";
+        return tecINTERNAL;
+    }
 
     // Deposit NAV excludes loss; withdrawal NAV excludes both.
     // Deposit NAV <= 0 means all vault value is unrealized interest, which should be impossible.
-    Number const depositNAV = assetTotal - interestUnrealized;
+    Number const depositNAV = assetsTotal - interestUnrealized;
     if (depositNAV <= 0)
     {
         JLOG(j.error()) << "vault state: deposit NAV <= 0"
-                        << " (assetsTotal=" << assetTotal
+                        << " (assetsTotal=" << assetsTotal
                         << ", interestUnrealized=" << interestUnrealized << ")";
         return tecINTERNAL;
     }
@@ -198,7 +216,7 @@ validateVaultState(SLE::const_ref vault, SLE::const_ref issuance, beast::Journal
     if (withdrawNAV < 0)
     {
         JLOG(j.error()) << "vault state: withdrawal NAV < 0"
-                        << " (assetsTotal=" << assetTotal
+                        << " (assetsTotal=" << assetsTotal
                         << ", interestUnrealized=" << interestUnrealized
                         << ", lossUnrealized=" << lossUnrealized << ")";
         return tecINTERNAL;
@@ -475,4 +493,50 @@ computeClawback(
     }
 }
 
+[[nodiscard]] TER
+borrowFromVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& amount,
+    Number const& yield,
+    beast::Journal j)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::vault::borrowFromVault : vault SLE");
+
+    if (amount <= 0 || yield < 0)
+    {
+        JLOG(j.error()) << "borrowFromVault: invalid input"
+                        << " (amount=" << amount << ", yield=" << yield << ")";
+        return tecINTERNAL;
+    }
+
+    // Cannot borrow more than available assets
+    if (vault->at(sfAssetsAvailable) < amount)
+    {
+        JLOG(j.error()) << "borrowFromVault: insufficient available assets"
+                        << " (available=" << *vault->at(sfAssetsAvailable) << ", amount=" << amount
+                        << ")";
+        return tecINTERNAL;
+    }
+
+    // Update vault state
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+        vault->at(sfInterestUnrealized) += yield;
+    vault->at(sfAssetsAvailable) -= amount;
+    vault->at(sfAssetsTotal) += yield;
+
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        std::shared_ptr<SLE const> issuance =
+            view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+        if (!issuance)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (auto const ter = validateVaultState(vault, issuance, j))
+            return ter;
+    }
+
+    view.update(vault);
+    return tesSUCCESS;
+}
 }  // namespace xrpl::vault
