@@ -983,7 +983,7 @@ ln(Number const& x, int iterations = 50)
 
     for (int i = 1; i <= iterations; ++i)
     {
-        sum = sum + z / (2 * i - 1);
+        sum = sum + z / ((2 * i) - 1);
         z = z * zz;
     }
 

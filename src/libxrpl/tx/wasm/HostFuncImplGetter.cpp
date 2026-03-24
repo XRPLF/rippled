@@ -24,7 +24,7 @@ getIntBytes(STBase const* obj)
 static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
-    if (!obj)
+    if (obj == nullptr)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     auto const stype = obj->getSType();
@@ -117,13 +117,14 @@ getAnyFieldData(FieldValue const& variantObj)
 static inline bool
 noField(STBase const* field)
 {
-    return !field || (STI_NOTPRESENT == field->getSType()) || (STI_UNKNOWN == field->getSType());
+    return (field == nullptr) || (STI_NOTPRESENT == field->getSType()) ||
+        (STI_UNKNOWN == field->getSType());
 }
 
 static Expected<FieldValue, HostFunctionError>
 locateField(STObject const& obj, Slice const& locator)
 {
-    if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
+    if (locator.empty() || ((locator.size() & 3) != 0u))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
     static_assert(maxWasmParamLength % sizeof(int32_t) == 0);
@@ -133,7 +134,7 @@ locateField(STObject const& obj, Slice const& locator)
 
     {
         uintptr_t const p = reinterpret_cast<uintptr_t>(locator.data());
-        if (p & (alignof(int32_t) - 1))
+        if ((p & (alignof(int32_t) - 1)) != 0u)
         {  // unaligned
             memcpy(&locBuf[0], locator.data(), locator.size());
         }

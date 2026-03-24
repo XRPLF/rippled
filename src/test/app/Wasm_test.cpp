@@ -62,7 +62,7 @@ uleb128(IT&& it)
 
     do
     {
-        if (shift > sizeof(std::uint64_t) * 8 - 7)
+        if (shift > (sizeof(std::uint64_t) * 8) - 7)
             return {0, 0};
         byte = *it++;
         val |= (byte & 0x7F) << shift;
@@ -100,7 +100,7 @@ getSection(Bytes const& module, std::uint8_t n)
             return {0, 0};
 
         auto [sz, cnt] = uleb128(module.cbegin() + pos);
-        if (!cnt)
+        if (cnt == 0u)
             return {0, 0};
         if (pos + cnt + sz > module.size())
             return {0, 0};

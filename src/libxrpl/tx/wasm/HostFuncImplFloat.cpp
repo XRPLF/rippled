@@ -39,7 +39,7 @@ public:
         }
 
         uint64_t const v = SerialIter(data).get64();
-        if (!(v & STAmount::cIssuedCurrency))
+        if ((v & STAmount::cIssuedCurrency) == 0u)
             return;
 
         int32_t const e = static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
@@ -47,9 +47,9 @@ public:
         if (decodedExponent < wasmMinExponent || decodedExponent > wasmMaxExponent)
             return;
 
-        int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
+        int64_t const neg = ((v & STAmount::cPositive) != 0u) ? 1 : -1;
         int64_t const m = neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
-        if (!m)
+        if (m == 0)
             return;
 
         Number x(makeNumber(m, decodedExponent));
@@ -120,7 +120,7 @@ public:
         v |= STAmount::cIssuedCurrency;
 
         uint64_t const absM = std::abs(m);
-        if (!absM)
+        if (absM == 0u)
         {
             return floatNull;
         }
@@ -450,7 +450,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        if (xx == Number() && !n)
+        if (xx == Number() && (n == 0))
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
         detail::Number2 res(power(xx, n, 1));

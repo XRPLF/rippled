@@ -273,7 +273,7 @@ private:
     FuncInfo
     getFunc(std::string_view funcName) const;
 
-    std::vector<wasm_val_t>
+    static std::vector<wasm_val_t>
     convertParams(std::vector<WasmParam> const& params);
 
     static int

@@ -24,10 +24,10 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
     {
         wasm_byte_vec_t error_message WASM_EMPTY_VEC;
 
-        if (trap)
+        if (trap != nullptr)
             wasm_trap_message(trap, &error_message);
 
-        if (error_message.size)
+        if (error_message.size != 0u)
         {
             j << "WASMI Error: " << msg << ", "
               << std::string_view(error_message.data, error_message.size - 1);
@@ -37,11 +37,11 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
             j << "WASMI Error: " << msg;
         }
 
-        if (error_message.size)
+        if (error_message.size != 0u)
             wasm_byte_vec_delete(&error_message);
     }
 
-    if (trap)
+    if (trap != nullptr)
         wasm_trap_delete(trap);
 
 #ifdef DEBUG_OUTPUT
@@ -64,7 +64,7 @@ InstanceWrapper::init(
     InstancePtr mi = InstancePtr(
         wasm_instance_new(s.get(), m.get(), &imports.vec_, &trap), &wasm_instance_delete);
 
-    if (!mi || trap)
+    if (!mi || (trap != nullptr))
     {
         print_wasm_error("can't create instance", trap, j);
         throw std::runtime_error("can't create instance");
@@ -126,7 +126,7 @@ InstanceWrapper::getFunc(std::string_view funcName, WasmExporttypeVec const& exp
     if (!instance_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
-    if (!exportTypes.vec_.size)
+    if (exportTypes.vec_.size == 0u)
         throw std::runtime_error("no export");  // LCOV_EXCL_LINE
     if (exportTypes.vec_.size != exports_.vec_.size)
         throw std::runtime_error("invalid export");  // LCOV_EXCL_LINE
@@ -152,7 +152,7 @@ InstanceWrapper::getFunc(std::string_view funcName, WasmExporttypeVec const& exp
         }
     }
 
-    if (!f || !ft)
+    if ((f == nullptr) || (ft == nullptr))
         throw std::runtime_error("can't find function <" + std::string(funcName) + ">");
 
     return {f, ft};
@@ -180,7 +180,7 @@ InstanceWrapper::getMem() const
         }
     }
 
-    if (!mem)
+    if (mem == nullptr)
         return {};  // LCOV_EXCL_LINE
 
     return {reinterpret_cast<std::uint8_t*>(wasm_memory_data(mem)), wasm_memory_data_size(mem)};
@@ -189,7 +189,7 @@ InstanceWrapper::getMem() const
 std::int64_t
 InstanceWrapper::getGas() const
 {
-    if (!store_)
+    if (store_ == nullptr)
         return -1;  // LCOV_EXCL_LINE
     std::uint64_t gas = 0;
     wasm_store_get_fuel(store_, &gas);
@@ -199,13 +199,13 @@ InstanceWrapper::getGas() const
 std::int64_t
 InstanceWrapper::setGas(std::int64_t gas) const
 {
-    if (!store_)
+    if (store_ == nullptr)
         return -1;  // LCOV_EXCL_LINE
 
     if (gas < 0)
         gas = std::numeric_limits<decltype(gas)>::max();
     wasmi_error_t* err = wasm_store_set_fuel(store_, static_cast<std::uint64_t>(gas));
-    if (err)
+    if (err != nullptr)
     {
         // LCOV_EXCL_START
         print_wasm_error("Can't set instance gas", nullptr, j_);
@@ -284,7 +284,7 @@ static WasmValtypeVec
 makeImpParams(WasmImportFunc const& imp)
 {
     auto const paramSize = imp.params.size();
-    if (!paramSize)
+    if (paramSize == 0u)
         return {};
 
     WasmValtypeVec v(paramSize);
@@ -338,7 +338,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
     WasmImporttypeVec importTypes;
     wasm_module_imports(module_.get(), &importTypes.vec_);
 
-    if (!importTypes.vec_.size)
+    if (importTypes.vec_.size == 0u)
         return {};
     if (imports.empty())
         throw std::runtime_error("Missing imports");
@@ -388,7 +388,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
                 reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
                 (void*)&obj,
                 nullptr);
-            if (!func)
+            if (func == nullptr)
             {
                 // LCOV_EXCL_START
                 throw std::runtime_error("can't create import function " + imp.name);
@@ -494,7 +494,7 @@ std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>
 WasmiEngine::init()
 {
     wasm_config_t* config = wasm_config_new();
-    if (!config)
+    if (config == nullptr)
     {
         return std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>{
             nullptr, &wasm_engine_delete};  // LCOV_EXCL_LINE
@@ -537,7 +537,7 @@ WasmiEngine::addModule(
     if (gas < 0)
         gas = std::numeric_limits<decltype(gas)>::max();
     wasmi_error_t* err = wasm_store_set_fuel(store_.get(), static_cast<std::uint64_t>(gas));
-    if (err)
+    if (err != nullptr)
     {
         // LCOV_EXCL_START
         print_wasm_error("Error setting gas", nullptr, j_);
@@ -801,7 +801,7 @@ WasmiEngine::runHlp(
     {
         throw std::runtime_error("<" + std::string(funcName) + "> failure");
     }
-    if (!res.r.vec_.size)
+    if (res.r.vec_.size == 0u)
     {
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return nothing");  // LCOV_EXCL_LINE
