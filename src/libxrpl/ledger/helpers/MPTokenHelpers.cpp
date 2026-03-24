@@ -153,7 +153,7 @@ authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if (flags & tfMPTUnauthorize)
+        if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
@@ -233,7 +233,7 @@ authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if (flags & tfMPTUnauthorize)
+    if ((flags & tfMPTUnauthorize) != 0u)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
@@ -494,7 +494,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    if ((sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer) == 0u)
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
