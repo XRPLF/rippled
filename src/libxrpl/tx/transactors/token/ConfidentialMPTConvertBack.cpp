@@ -99,34 +99,19 @@ verifyProofs(
         valid = false;
     }
 
-    // Parse proof components using offset
-    auto const proof = tx[sfZKProof];
-    size_t remainingLength = proof.size();
-    size_t currentOffset = 0;
+    // Extract proof components
+    ProofReader reader(tx[sfZKProof]);
 
-    // Extract Pedersen linkage proof
-    if (remainingLength < ecPedersenProofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    auto const pedersenProof = reader.read(ecPedersenProofLength);
+    auto const bulletproof = reader.read(ecSingleBulletproofLength);
 
-    auto const pedersenProof = proof.substr(currentOffset, ecPedersenProofLength);
-    currentOffset += ecPedersenProofLength;
-    remainingLength -= ecPedersenProofLength;
-
-    // Extract bulletproof
-    if (remainingLength < ecSingleBulletproofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const bulletproof = proof.substr(currentOffset, ecSingleBulletproofLength);
-    currentOffset += ecSingleBulletproofLength;
-    remainingLength -= ecSingleBulletproofLength;
-
-    if (remainingLength != 0)
+    if (!pedersenProof || !bulletproof || !reader.done())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // verify el gamal pedersen linkage
     if (auto const ter = verifyPcmLinkage(
             PcmLinkageType::balance,
-            pedersenProof,
+            *pedersenProof,
             (*mptoken)[sfConfidentialBalanceSpending],
             holderPubKey,
             tx[sfBalanceCommitment],
@@ -144,7 +129,7 @@ verifyProofs(
             // The bulletproof verifies that the remaining balance is non-negative
             std::vector<Slice> commitments{Slice(pcRem->data(), pcRem->size())};
 
-            if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
+            if (auto const ter = verifyAggregatedBulletproof(*bulletproof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;

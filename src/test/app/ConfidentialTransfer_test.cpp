@@ -1376,6 +1376,76 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = tecBAD_PROOF,
             });
         }
+
+        // no holder key on ledger and no key in tx
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // bob has not registered a holder key, and doesn't provide one
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // all public balance already converted, try to convert more
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            // convert entire public balance
+            mptAlice.convert({
+                .account = bob,
+                .amt = 100,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            env.require(mptbalance(mptAlice, bob, 0));
+
+            // try to convert 1 more — no public balance left
+            mptAlice.convert({
+                .account = bob,
+                .amt = 1,
+                .err = tecINSUFFICIENT_FUNDS,
+            });
+        }
     }
 
     void

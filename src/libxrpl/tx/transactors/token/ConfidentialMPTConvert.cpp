@@ -167,9 +167,12 @@ ConfidentialMPTConvert::doApply()
 
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
+    auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+    if (amtToConvert > maxMPTokenAmount - currentCOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
-    (*sleIssuance)[sfConfidentialOutstandingAmount] =
-        (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) + amtToConvert;
+    (*sleIssuance)[sfConfidentialOutstandingAmount] = currentCOA + amtToConvert;
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
