@@ -12,14 +12,14 @@ if(is_root_project AND TARGET xrpld)
 
     install(
         FILES "${CMAKE_CURRENT_SOURCE_DIR}/cfg/xrpld-example.cfg"
-        DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/xrpld"
+        DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}"
         RENAME xrpld.cfg
         COMPONENT runtime
     )
 
     install(
         FILES "${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt"
-        DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/xrpld"
+        DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}"
         RENAME validators.txt
         COMPONENT runtime
     )

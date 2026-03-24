@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export DH_OPTIONS = -v
+
+%:
+	dh $@
+
+override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
+	@:
+
+override_dh_auto_install:
+	install -Dm0755 xrpld           debian/tmp/opt/xrpld/bin/xrpld
+	install -Dm0644 xrpld.cfg       debian/tmp/opt/xrpld/etc/xrpld.cfg
+	install -Dm0644 validators.txt  debian/tmp/opt/xrpld/etc/validators.txt
+	install -Dm0644 xrpld.logrotate debian/tmp/opt/xrpld/bin/xrpld.logrotate
+	install -Dm0755 update-xrpld.sh debian/tmp/opt/xrpld/bin/update-xrpld.sh
+	install -Dm0644 update-xrpld-cron debian/tmp/opt/xrpld/bin/update-xrpld-cron
+	install -Dm0644 README.md       debian/tmp/usr/share/doc/xrpld/README.md
+	install -Dm0644 LICENSE.md      debian/tmp/usr/share/doc/xrpld/LICENSE.md
+
+override_dh_installsystemd:
+	dh_installsystemd
+#	see if this still works
+#	dh_installsystemd --no-start
+
+override_dh_installsysusers:
+	dh_installsysusers
+
+override_dh_installtmpfiles:
+	dh_installtmpfiles
+
+override_dh_install:
+	dh_install
+
+override_dh_dwz:
+	@:

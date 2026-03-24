@@ -64,6 +64,11 @@ jobs:
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-clang-tidy.yml
+<<<<<<< HEAD
+=======
+            .github/workflows/reusable-clang-tidy-files.yml
+            .github/workflows/reusable-package.yml
+>>>>>>> 7721bda445 (feat: Build Linux packages in GitHub)
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
@@ -78,6 +83,8 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            package/**
+
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
         # run. The rest of the workflow will run if this job runs AND at
@@ -133,6 +140,39 @@ jobs:
       os: ${{ matrix.os }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  generate-version:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate version
+        id: version
+        uses: ./.github/actions/generate-version
+
+  package-deb:
+    needs: [should-run, build-test, generate-version]
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: deb
+      artifact_name: xrpld-ubuntu-jammy-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+
+  package-rpm:
+    needs: [should-run, build-test, generate-version]
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: rpm
+      artifact_name: xrpld-rhel-9-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12
 
   upload-recipe:
     needs:

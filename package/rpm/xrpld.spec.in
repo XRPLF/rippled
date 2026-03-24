@@ -1,0 +1,113 @@
+%global xrpld_version  @xrpld_version@
+%global pkg_release    @pkg_release@
+%global _opt_prefix    /opt/xrpld
+%global ver_base       %(v=%{xrpld_version}; echo ${v%%-*})
+%global _has_dash      %(v=%{xrpld_version}; [ "${v#*-}" != "$v" ] && echo 1 || echo 0)
+%if 0%{?_has_dash}
+  %global ver_suffix   %(v=%{xrpld_version}; printf %s "${v#*-}")
+%endif
+Name:     xrpld
+Version:  %{ver_base}
+Release:  %{?ver_suffix:0.%{ver_suffix}.}%{pkg_release}%{?dist}
+Summary:  XRP Ledger daemon
+
+License:  ISC
+URL:      https://github.com/XRPLF/rippled
+
+Source0:  xrpld
+Source1:  xrpld.cfg
+Source2:  validators.txt
+Source3:  xrpld.service
+Source4:  xrpld.sysusers
+Source5:  xrpld.tmpfiles
+Source6:  xrpld.logrotate
+Source7:  update-xrpld.sh
+Source8:  update-xrpld-cron
+
+BuildArch:     x86_64
+BuildRequires: systemd-rpm-macros
+
+%undefine _debugsource_packages
+%debug_package
+
+%{?systemd_requires}
+%{?sysusers_requires_compat}
+
+%description
+xrpld is the reference implementation of the XRP Ledger protocol. It
+participates in the peer-to-peer XRP Ledger network, processes
+transactions, and maintains the ledger database.
+
+%install
+rm -rf %{buildroot}
+
+# Suppress debugsource subpackage — no source files in the build tree.
+touch %{_builddir}/debugsourcefiles.list
+
+# Install binary and config files.
+install -Dm0755 %{SOURCE0} %{buildroot}%{_opt_prefix}/bin/xrpld
+install -Dm0644 %{SOURCE1} %{buildroot}%{_opt_prefix}/etc/xrpld.cfg
+install -Dm0644 %{SOURCE2} %{buildroot}%{_opt_prefix}/etc/validators.txt
+
+# Compatibility symlinks (matches debian/xrpld.links).
+mkdir -p %{buildroot}/etc/opt %{buildroot}/usr/bin %{buildroot}/usr/local/bin \
+         %{buildroot}/var/log %{buildroot}/var/lib
+ln -s %{_opt_prefix}/etc       %{buildroot}/etc/opt/xrpld
+ln -s %{_opt_prefix}/bin/xrpld %{buildroot}/usr/bin/xrpld
+
+## remove when "rippled" deprecated
+ln -s xrpld                     %{buildroot}%{_opt_prefix}/bin/rippled
+ln -s %{_opt_prefix}/bin/xrpld  %{buildroot}/usr/bin/rippled
+ln -s %{_opt_prefix}/bin/xrpld  %{buildroot}/usr/local/bin/rippled
+ln -s xrpld.cfg                 %{buildroot}%{_opt_prefix}/etc/rippled.cfg
+ln -s %{_opt_prefix}            %{buildroot}/opt/ripple
+ln -s /etc/opt/xrpld            %{buildroot}/etc/opt/ripple
+ln -s xrpld                     %{buildroot}/var/log/rippled
+ln -s xrpld                     %{buildroot}/var/lib/rippled
+
+# Install systemd/sysusers/tmpfiles support files.
+install -Dm0644 %{SOURCE3} %{buildroot}%{_unitdir}/xrpld.service
+install -Dm0644 %{SOURCE4} %{buildroot}%{_sysusersdir}/xrpld.conf
+install -Dm0644 %{SOURCE5} %{buildroot}%{_tmpfilesdir}/xrpld.conf
+install -Dm0644 %{SOURCE6} %{buildroot}%{_opt_prefix}/bin/xrpld.logrotate
+install -Dm0755 %{SOURCE7} %{buildroot}%{_opt_prefix}/bin/update-xrpld.sh
+install -Dm0644 %{SOURCE8} %{buildroot}%{_opt_prefix}/bin/update-xrpld-cron
+
+%pre
+%sysusers_create_compat %{SOURCE4}
+
+%post
+%systemd_post xrpld.service
+
+%preun
+%systemd_preun xrpld.service
+
+%postun
+%systemd_postun_with_restart xrpld.service
+
+%files
+%dir %{_opt_prefix}
+%dir %{_opt_prefix}/bin
+%{_opt_prefix}/bin/xrpld
+%{_opt_prefix}/bin/xrpld.logrotate
+%{_opt_prefix}/bin/update-xrpld.sh
+%{_opt_prefix}/bin/update-xrpld-cron
+%{_opt_prefix}/bin/rippled
+/usr/bin/xrpld
+/usr/bin/rippled
+/usr/local/bin/rippled
+%dir %{_opt_prefix}/etc
+%config(noreplace) %{_opt_prefix}/etc/xrpld.cfg
+%config(noreplace) %{_opt_prefix}/etc/validators.txt
+%{_opt_prefix}/etc/rippled.cfg
+/etc/opt/xrpld
+/etc/opt/ripple
+/opt/ripple
+%{_unitdir}/xrpld.service
+%{_sysusersdir}/xrpld.conf
+%{_tmpfilesdir}/xrpld.conf
+/var/log/rippled
+/var/lib/rippled
+%ghost %dir /var/opt/ripple
+%ghost %dir /var/opt/ripple/lib
+%ghost %dir /var/opt/ripple/log

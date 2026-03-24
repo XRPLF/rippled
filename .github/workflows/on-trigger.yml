@@ -35,6 +35,8 @@ on:
       - "CMakeLists.txt"
       - "conanfile.py"
       - "conan.lock"
+      - "package/**"
+      - ".github/workflows/reusable-package.yml"
 
   # Run at 06:32 UTC on every day of the week from Monday through Friday. This
   # will force all dependencies to be rebuilt, which is useful to verify that
@@ -74,7 +76,7 @@ jobs:
     strategy:
       fail-fast: ${{ github.event_name == 'merge_group' }}
       matrix:
-        os: [linux, macos, windows]
+        os: [linux]
     with:
       # Enable ccache only for events targeting the XRPLF repository, since
       # other accounts will not have access to our remote cache storage.
@@ -95,3 +97,32 @@ jobs:
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  generate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate version
+        id: version
+        uses: ./.github/actions/generate-version
+
+  package-deb:
+    needs: [build-test, generate-version]
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: deb
+      artifact_name: xrpld-ubuntu-jammy-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+
+  package-rpm:
+    needs: [build-test, generate-version]
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: rpm
+      artifact_name: xrpld-rhel-9-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12

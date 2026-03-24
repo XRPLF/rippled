@@ -100,14 +100,15 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     continue
 
             # RHEL:
-            # - 9 using GCC 12: Debug on linux/amd64.
+            # - 9 using GCC 12: Debug and Release on linux/amd64
+            #   (Release is required for RPM packaging).
             # - 10 using Clang: Release on linux/amd64.
             if os["distro_name"] == "rhel":
                 skip = True
                 if os["distro_version"] == "9":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Debug"
+                        and build_type in ["Debug", "Release"]
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -122,7 +123,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     continue
 
             # Ubuntu:
-            # - Jammy using GCC 12: Debug on linux/arm64.
+            # - Jammy using GCC 12: Debug on linux/arm64, Release on
+            #   linux/amd64 (Release is required for DEB packaging).
             # - Noble using GCC 14: Release on linux/amd64.
             # - Noble using Clang 18: Debug on linux/amd64.
             # - Noble using Clang 19: Release on linux/arm64.
@@ -133,6 +135,12 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/arm64"
+                    ):
+                        skip = False
+                    if (
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
+                        and build_type == "Release"
+                        and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
                 elif os["distro_version"] == "noble":

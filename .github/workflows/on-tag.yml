@@ -1,5 +1,5 @@
-# This workflow uploads the libxrpl recipe to the Conan remote when a versioned
-# tag is pushed.
+# This workflow uploads the libxrpl recipe to the Conan remote and builds
+# release packages when a versioned tag is pushed.
 name: Tag
 
 on:
@@ -22,3 +22,49 @@ jobs:
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  build-test:
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    uses: ./.github/workflows/reusable-build-test.yml
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [linux]
+    with:
+      ccache_enabled: false
+      os: ${{ matrix.os }}
+      strategy_matrix: minimal
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  generate-version:
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate version
+        id: version
+        uses: ./.github/actions/generate-version
+
+  package-deb:
+    needs: [build-test, generate-version]
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: deb
+      artifact_name: xrpld-ubuntu-jammy-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+
+  package-rpm:
+    needs: [build-test, generate-version]
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    uses: ./.github/workflows/reusable-package.yml
+    with:
+      pkg_type: rpm
+      artifact_name: xrpld-rhel-9-gcc-12-amd64-release
+      version: ${{ needs.generate-version.outputs.version }}
+      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12

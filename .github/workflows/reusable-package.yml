@@ -1,0 +1,76 @@
+# Build a Linux package (DEB or RPM) from a pre-built binary artifact.
+name: Package
+
+on:
+  workflow_call:
+    inputs:
+      pkg_type:
+        description: "Package type to build: deb or rpm."
+        required: true
+        type: string
+      artifact_name:
+        description: "Name of the pre-built binary artifact to download."
+        required: true
+        type: string
+      version:
+        description: "Version string used for naming the output artifact."
+        required: true
+        type: string
+      pkg_release:
+        description: "Package release number. Increment when repackaging the same executable."
+        required: false
+        type: string
+        default: "1"
+      container_image:
+        description: "Container image to use for packaging."
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+
+jobs:
+  package:
+    name: ${{ inputs.pkg_type }} (${{ inputs.version }})
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: ${{ inputs.container_image }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download pre-built binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binary executable
+        run: chmod +x ${{ env.BUILD_DIR }}/xrpld
+
+      - name: Generate RPM spec from template
+        if: ${{ inputs.pkg_type == 'rpm' }}
+        run: |
+          mkdir -p ${{ env.BUILD_DIR }}/package/rpm
+          sed -e "s/@xrpld_version@/${{ inputs.version }}/" \
+              -e "s/@pkg_release@/${{ inputs.pkg_release }}/" \
+            package/rpm/xrpld.spec.in > ${{ env.BUILD_DIR }}/package/rpm/xrpld.spec
+
+      - name: Build package
+        run: |
+          ./package/build_pkg.sh ${{ inputs.pkg_type }} . ${{ env.BUILD_DIR }} "${{ inputs.version }}" "${{ inputs.pkg_release }}"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: xrpld-${{ inputs.pkg_type }}-${{ inputs.version }}
+          path: |
+            ${{ env.BUILD_DIR }}/debbuild/*.deb
+            ${{ env.BUILD_DIR }}/debbuild/*.ddeb
+            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
+          if-no-files-found: error

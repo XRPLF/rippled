@@ -1,0 +1,10 @@
+opt/xrpld/bin/xrpld
+opt/xrpld/bin/xrpld.logrotate
+opt/xrpld/bin/update-xrpld.sh
+opt/xrpld/bin/update-xrpld-cron
+
+opt/xrpld/etc/xrpld.cfg
+opt/xrpld/etc/validators.txt
+
+usr/share/doc/xrpld/README.md
+usr/share/doc/xrpld/LICENSE.md
