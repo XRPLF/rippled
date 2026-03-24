@@ -19,7 +19,7 @@ doAccountObjects(RPC::JsonContext&);
 Json::Value
 doAccountOffers(RPC::JsonContext&);
 Json::Value
-doAccountTxJson(RPC::JsonContext&);
+doAccountTx(RPC::JsonContext&);
 Json::Value
 doAMMInfo(RPC::JsonContext&);
 Json::Value
