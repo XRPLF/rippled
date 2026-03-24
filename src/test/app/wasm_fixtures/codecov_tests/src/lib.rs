@@ -340,7 +340,7 @@ pub extern "C" fn finish() -> i32 {
         error_codes::INVALID_PARAMS,
         "get_tx_nested_array_len_neg_len",
     );
-    let long_len = 4 * 1024 + 1;
+    let long_len = 1024 + 1;
     check_result(
         unsafe {
             host_bindings_loose::get_tx_nested_array_len(locator.as_ptr() as i32, long_len as i32)
@@ -705,8 +705,9 @@ pub extern "C" fn finish() -> i32 {
         error_codes::DATA_FIELD_TOO_LARGE,
         "get_ledger_obj_nested_array_len_too_big_slice",
     );
+    let too_big_data_len = 4 * 1024 + 1;
     check_result(
-        unsafe { host::update_data(locator.as_ptr(), long_len) },
+        unsafe { host::update_data(locator.as_ptr(), too_big_data_len) },
         error_codes::DATA_FIELD_TOO_LARGE,
         "update_data_too_big_slice",
     );
