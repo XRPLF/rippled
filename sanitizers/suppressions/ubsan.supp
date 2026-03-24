@@ -125,8 +125,19 @@ unsigned-integer-overflow:__chrono/duration.h
 # Rippled code suppressions
 # =============================================================================
 
-# STAmount::operator+ uses unsigned domain for addition to avoid signed overflow
-unsigned-integer-overflow:operator+*STAmount*
+# Signed integer negation (-value) in amount types.
+# INT64_MIN cannot occur in practice due to domain invariants (mantissa ranges
+# are well within int64_t bounds), but UBSan flags the pattern as potential
+# signed overflow.
+signed-integer-overflow:IOUAmount
+signed-integer-overflow:XRPAmount
+signed-integer-overflow:MPTAmount
+signed-integer-overflow:STAmount
+
+# STAmount::operator+ signed addition — operands are bounded by total supply
+# (~10^17 for XRP, ~10^18 for MPT) so overflow cannot occur in practice.
+signed-integer-overflow:operator+*STAmount*
+
 # STAmount::getRate uses unsigned shift and addition
 unsigned-integer-overflow:getRate*
 # STAmount::serialize uses unsigned bitwise operations

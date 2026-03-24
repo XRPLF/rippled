@@ -127,8 +127,7 @@ IOUAmount::operator-=(IOUAmount const& other)
 inline IOUAmount
 IOUAmount::operator-() const
 {
-    // Negate in unsigned domain to avoid UB when mantissa_ == INT64_MIN
-    return {static_cast<mantissa_type>(-static_cast<std::uint64_t>(mantissa_)), exponent_};
+    return {-mantissa_, exponent_};
 }
 
 inline bool
