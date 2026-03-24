@@ -6,6 +6,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/protocol/st.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 namespace xrpl {

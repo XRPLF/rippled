@@ -3,6 +3,7 @@
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
 
 #include <random>
 

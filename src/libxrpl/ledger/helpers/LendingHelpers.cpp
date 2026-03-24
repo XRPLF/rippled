@@ -1,13 +1,23 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 //
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 namespace xrpl {
 
+struct PreflightContext;
+
 bool
-checkLendingProtocolDependencies(PreflightContext const& ctx)
+checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
-    return ctx.rules.enabled(featureSingleAssetVault) && VaultCreate::checkExtraFeatures(ctx);
+    if (!rules.enabled(featureSingleAssetVault))
+        return false;
+
+    if (!rules.enabled(featureMPTokensV1))
+        return false;
+
+    if (tx.isFieldPresent(sfDomainID) && !rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 LoanPaymentParts&

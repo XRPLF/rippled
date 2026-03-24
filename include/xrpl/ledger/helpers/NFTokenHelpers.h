@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/AccountID.h>
