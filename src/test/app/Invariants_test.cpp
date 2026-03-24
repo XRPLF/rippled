@@ -2956,7 +2956,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"interest unrealized must be positive"},
+            {"interest unrealized must be non-negative"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {

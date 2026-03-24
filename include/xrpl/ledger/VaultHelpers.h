@@ -8,8 +8,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <optional>
-
 namespace xrpl::vault {
 
 enum class TruncateShares : bool { no = false, yes = true };
@@ -37,12 +35,28 @@ sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount c
 
 // High-level API — orchestrates forward+reverse conversions, handles overflow.
 
+/** The actual amounts exchanged after the forward+reverse round-trip.
+ *  Both values reflect post-rounding quantities: assets is the amount
+ *  transferred, shares is the number of share tokens created or destroyed.
+ */
 struct ExchangeResult
 {
     STAmount assets;
     STAmount shares;
 };
 
+/**
+ * Computes the asset/share exchange for a vault deposit. Converts the
+ * requested asset amount to shares (forward), then back-calculates the
+ * actual assets consumed (reverse) to ensure the vault never takes more
+ * than offered.
+ *
+ * @param assets  The asset amount the depositor is offering.
+ *
+ * @return {assetsDeposited, sharesCreated} on success. assetsDeposited
+ *         is always <= assets. Returns tecPRECISION_LOSS if shares
+ *         truncate to zero, tecPATH_DRY on overflow.
+ */
 [[nodiscard]] Expected<ExchangeResult, TER>
 computeDeposit(
     Rules const& rules,
@@ -51,25 +65,21 @@ computeDeposit(
     STAmount const& assets,
     beast::Journal j);
 
-/** Compute a withdrawal given a fixed asset amount.
+/**
+ * Computes the asset/share exchange for a withdrawal by asset amount.
+ * Converts the requested assets to shares, then back-calculates the
+ * actual assets returned.
  *
- *  Converts assets → shares → assets (round-trip) to determine the
- *  exact shares to redeem and assets to return.
+ * Note: due to banker's rounding on the intermediate share value, the
+ * returned assets may slightly exceed the requested amount. This is by
+ * design — the user burns more shares to receive proportionally more
+ * assets. The per-share price is preserved. See XLS-0065 §3.1.7.1.
  *
- *  The intermediate shares value is stored as an MPT (integer), which
- *  uses banker's rounding (round-to-nearest, even on tie). When shares
- *  round up, the back-calculated assets may exceed the requested amount.
+ * @param assets  The asset amount the withdrawer is requesting.
  *
- *  Example (scale=1, vault=87.5 IOU, 875 shares):
- *    assetsToSharesWithdraw(3.75) → round(37.5) = 38 shares
- *    sharesToAssetsWithdraw(38)   → 3.8 IOU  (> 3.75 requested)
- *
- *  This matches v1 behaviour. See XLS-0065 §3.1.7.1.
- *
- *  @return ExchangeResult{assets, shares} on success.
- *  @return tecPRECISION_LOSS if computed shares are zero.
- *  @return tecPATH_DRY on arithmetic overflow.
- *  @return tecINTERNAL on invalid input or vault state.
+ * @return {assetsWithdrawn, sharesRedeemed} on success. Returns
+ *         tecPRECISION_LOSS if shares truncate to zero, tecPATH_DRY
+ *         on overflow.
  */
 [[nodiscard]] Expected<ExchangeResult, TER>
 computeWithdrawByAssets(
@@ -79,6 +89,15 @@ computeWithdrawByAssets(
     STAmount const& assets,
     beast::Journal j);
 
+/**
+ * Computes the asset/share exchange for a withdrawal by share amount.
+ * Converts the given shares directly to assets.
+ *
+ * @param shares  The number of shares the withdrawer is redeeming.
+ *
+ * @return {assetsWithdrawn, shares} on success. Returns tecPATH_DRY
+ *         on overflow.
+ */
 [[nodiscard]] Expected<ExchangeResult, TER>
 computeWithdrawByShares(
     Rules const& rules,
@@ -87,6 +106,19 @@ computeWithdrawByShares(
     STAmount const& shares,
     beast::Journal j);
 
+/**
+ * Computes the asset/share exchange for a clawback. Performs a two-pass
+ * computation: first converts the clawback amount to shares and back to
+ * assets. If the result exceeds assetsAvailable, re-computes with
+ * truncated shares to ensure the recovered amount stays within the limit.
+ *
+ * @param clawbackAmount   The asset amount being clawed back.
+ * @param assetsAvailable  Hard ceiling — recovered assets must not exceed
+ *                         this value.
+ *
+ * @return {assetsRecovered, sharesDestroyed} on success. assetsRecovered
+ *         is always <= assetsAvailable. Returns tecPATH_DRY on overflow.
+ */
 [[nodiscard]] Expected<ExchangeResult, TER>
 computeClawback(
     Rules const& rules,

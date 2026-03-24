@@ -391,7 +391,7 @@ ValidVault::finalize(
     {
         if (afterVault.interestUnrealized < zero)
         {
-            JLOG(j.fatal()) << "Invariant failed: interest unrealized must be positive";
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized must be non-negative";
             result = false;
         }
 

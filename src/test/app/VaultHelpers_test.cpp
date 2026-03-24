@@ -35,12 +35,12 @@ class VaultHelpers_test : public beast::unit_test::suite
         std::int32_t scale)
     {
         auto sle = std::make_shared<SLE>(keylet::vault(AccountID(0x1), 1));
-        (*sle)[sfAsset] = STIssue{sfAsset, assetIssue};
-        (*sle)[sfShareMPTID] = shareMPTID;
-        (*sle)[sfAssetsTotal] = STNumber{sfAssetsTotal, assetsTotal};
-        (*sle)[sfLossUnrealized] = STNumber{sfLossUnrealized, lossUnrealized};
-        (*sle)[sfInterestUnrealized] = STNumber{sfInterestUnrealized, interestUnrealized};
-        (*sle)[sfScale] = scale;
+        sle->setFieldIssue(sfAsset, STIssue{sfAsset, assetIssue});
+        sle->at(sfShareMPTID) = shareMPTID;
+        sle->at(sfAssetsTotal) = assetsTotal;
+        sle->at(sfLossUnrealized) = lossUnrealized;
+        sle->at(sfInterestUnrealized) = interestUnrealized;
+        sle->at(sfScale) = scale;
         return sle;
     }
 
@@ -48,7 +48,7 @@ class VaultHelpers_test : public beast::unit_test::suite
     makeIssuance(std::uint64_t outstandingAmount)
     {
         auto sle = std::make_shared<SLE>(keylet::mptIssuance(shareMPTID));
-        (*sle)[sfOutstandingAmount] = outstandingAmount;
+        sle->setFieldU64(sfOutstandingAmount, outstandingAmount);
         return sle;
     }
 
@@ -725,8 +725,8 @@ class VaultHelpers_test : public beast::unit_test::suite
         testcase("borrowFromVault: normal");
         {
             auto vaultSle = makeVault(1000, 0, 0, 0);
-            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
-            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            vaultSle->at(sfAssetsAvailable) = 1000;
+            vaultSle->at(sfAssetsMaximum) = 0;
             auto issuanceSle = makeIssuance(1000);
 
             auto sb = makeSandbox(vaultSle, issuanceSle);
@@ -740,8 +740,8 @@ class VaultHelpers_test : public beast::unit_test::suite
         testcase("borrowFromVault: zero yield");
         {
             auto vaultSle = makeVault(1000, 0, 0, 0);
-            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
-            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            vaultSle->at(sfAssetsAvailable) = 1000;
+            vaultSle->at(sfAssetsMaximum) = 0;
             auto issuanceSle = makeIssuance(1000);
 
             auto sb = makeSandbox(vaultSle, issuanceSle);
@@ -755,8 +755,8 @@ class VaultHelpers_test : public beast::unit_test::suite
         testcase("borrowFromVault: invalid amount");
         {
             auto vaultSle = makeVault(1000, 0, 0, 0);
-            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
-            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            vaultSle->at(sfAssetsAvailable) = 1000;
+            vaultSle->at(sfAssetsMaximum) = 0;
             auto issuanceSle = makeIssuance(1000);
 
             auto sb = makeSandbox(vaultSle, issuanceSle);
@@ -767,8 +767,8 @@ class VaultHelpers_test : public beast::unit_test::suite
         testcase("borrowFromVault: negative yield");
         {
             auto vaultSle = makeVault(1000, 0, 0, 0);
-            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 1000};
-            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            vaultSle->at(sfAssetsAvailable) = 1000;
+            vaultSle->at(sfAssetsMaximum) = 0;
             auto issuanceSle = makeIssuance(1000);
 
             auto sb = makeSandbox(vaultSle, issuanceSle);
@@ -778,12 +778,87 @@ class VaultHelpers_test : public beast::unit_test::suite
         testcase("borrowFromVault: insufficient available");
         {
             auto vaultSle = makeVault(1000, 0, 0, 0);
-            (*vaultSle)[sfAssetsAvailable] = STNumber{sfAssetsAvailable, 50};
-            (*vaultSle)[sfAssetsMaximum] = STNumber{sfAssetsMaximum, 0};
+            vaultSle->at(sfAssetsAvailable) = 50;
+            vaultSle->at(sfAssetsMaximum) = 0;
             auto issuanceSle = makeIssuance(1000);
 
             auto sb = makeSandbox(vaultSle, issuanceSle);
             BEAST_EXPECT(borrowFromVault(sb, vaultSle, 100, 10, env_->journal) == tecINTERNAL);
+        }
+    }
+
+    void
+    testV1Routing()
+    {
+        using namespace vault;
+
+        // Use non-zero interestUnrealized to distinguish v1 from v2.
+        // v1 ignores interestUnrealized in NAV, v2 subtracts it.
+        // With assetsTotal=100, interestUnrealized=20, shares=100, scale=0:
+        //   v1 deposit NAV  = 100 (raw assetsTotal)
+        //   v2 deposit NAV  = 80  (assetsTotal - interestUnrealized)
+        //   v1 withdraw NAV = 100 (assetsTotal - lossUnrealized)
+        //   v2 withdraw NAV = 80  (assetsTotal - interestUnrealized - lossUnrealized)
+
+        testcase("v1 routing: computeDeposit");
+        {
+            auto const vaultSle = makeVault(100, 0, 20, 0);
+            auto const issuanceSle = makeIssuance(100);
+
+            auto const result =
+                computeDeposit(rules(), vaultSle, issuanceSle, asset(40), env_->journal);
+            BEAST_EXPECT(result.has_value());
+            if (result)
+            {
+                // v1: 100 * 40 / 100 = 40 shares (v2 would give 50)
+                BEAST_EXPECT(result->shares == shares(40));
+            }
+        }
+
+        testcase("v1 routing: computeWithdrawByShares");
+        {
+            auto const vaultSle = makeVault(100, 0, 20, 0);
+            auto const issuanceSle = makeIssuance(100);
+
+            auto const result =
+                computeWithdrawByShares(rules(), vaultSle, issuanceSle, shares(50), env_->journal);
+            BEAST_EXPECT(result.has_value());
+            if (result)
+            {
+                // v1: 100 * 50 / 100 = 50 assets (v2 would give 40)
+                BEAST_EXPECT(result->assets == asset(50));
+            }
+        }
+
+        testcase("v1 routing: computeWithdrawByAssets");
+        {
+            auto const vaultSle = makeVault(100, 0, 20, 0);
+            auto const issuanceSle = makeIssuance(100);
+
+            auto const result =
+                computeWithdrawByAssets(rules(), vaultSle, issuanceSle, asset(50), env_->journal);
+            BEAST_EXPECT(result.has_value());
+            if (result)
+            {
+                // v1: 100 * 50 / 100 = 50 shares (v2 would give 62.5 → 62)
+                BEAST_EXPECT(result->shares == shares(50));
+            }
+        }
+
+        testcase("v1 routing: computeClawback");
+        {
+            auto const vaultSle = makeVault(100, 0, 20, 0);
+            auto const issuanceSle = makeIssuance(100);
+
+            auto const result = computeClawback(
+                rules(), vaultSle, issuanceSle, asset(50), Number{100}, env_->journal);
+            BEAST_EXPECT(result.has_value());
+            if (result)
+            {
+                // v1 uses same withdraw NAV (100), so shares = 50
+                BEAST_EXPECT(result->shares == shares(50));
+                BEAST_EXPECT(result->assets == asset(50));
+            }
         }
     }
 
@@ -807,6 +882,15 @@ public:
         testComputeWithdrawByShares();
         testComputeClawback();
         testBorrowFromVault();
+
+        // v1 routing tests (amendment disabled)
+        {
+            Env v1Env{*this};
+            v1Env.disableFeature(featureLendingProtocolV1_1);
+            env_ = &v1Env;
+            testV1Routing();
+            env_ = &env;
+        }
     }
 };
 

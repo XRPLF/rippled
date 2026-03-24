@@ -201,6 +201,23 @@ validateVaultState(SLE::const_ref vault, SLE::const_ref issuance, beast::Journal
         return tecINTERNAL;
     }
 
+    if (interestUnrealized < 0)
+    {
+        JLOG(j.error()) << "vault state: interest unrealized is negative"
+                        << " (interestUnrealized=" << interestUnrealized << ")";
+        return tecINTERNAL;
+    }
+
+    // Interest can only accrue on lent assets (assetsTotal - assetsAvailable).
+    Number const lentAssets = assetsTotal - vault->at(sfAssetsAvailable);
+    if (interestUnrealized > lentAssets)
+    {
+        JLOG(j.error()) << "vault state: interest unrealized exceeds lent assets"
+                        << " (interestUnrealized=" << interestUnrealized
+                        << ", lentAssets=" << lentAssets << ")";
+        return tecINTERNAL;
+    }
+
     // Deposit NAV excludes loss; withdrawal NAV excludes both.
     // Deposit NAV <= 0 means all vault value is unrealized interest, which should be impossible.
     Number const depositNAV = assetsTotal - interestUnrealized;
@@ -307,7 +324,7 @@ computeDeposit(
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
-        if (auto const ter = validateVaultState(vault, issuance, j); ter != tesSUCCESS)
+        if (auto const ter = validateVaultState(vault, issuance, j))
             return Unexpected(ter);
     }
     try
@@ -362,7 +379,7 @@ computeWithdrawByAssets(
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
-        if (auto const ter = validateVaultState(vault, issuance, j); ter != tesSUCCESS)
+        if (auto const ter = validateVaultState(vault, issuance, j))
             return Unexpected(ter);
     }
     try
@@ -409,7 +426,7 @@ computeWithdrawByShares(
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
-        if (auto const ter = validateVaultState(vault, issuance, j); ter != tesSUCCESS)
+        if (auto const ter = validateVaultState(vault, issuance, j))
             return Unexpected(ter);
     }
     try
@@ -452,7 +469,7 @@ computeClawback(
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
-        if (auto const ter = validateVaultState(vault, issuance, j); ter != tesSUCCESS)
+        if (auto const ter = validateVaultState(vault, issuance, j))
             return Unexpected(ter);
     }
     try
@@ -463,7 +480,7 @@ computeClawback(
         // Clamp to maximum.
         if (assetsRecovered > assetsAvailable)
         {
-            assetsRecovered = assetsAvailable;
+            assetsRecovered = STAmount{assetsRecovered.asset(), assetsAvailable};
             // Note, it is important to truncate the number of shares,
             // otherwise the corresponding assets might breach the
             // AssetsAvailable
