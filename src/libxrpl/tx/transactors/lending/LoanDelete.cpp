@@ -1,8 +1,8 @@
 #include <xrpl/tx/transactors/lending/LoanDelete.h>
 //
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 namespace xrpl {
 

@@ -1,5 +1,5 @@
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
-// DO NOT REMOVE forces header file include to sort first
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+//
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 namespace xrpl {

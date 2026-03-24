@@ -1,11 +1,11 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 //
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <bit>
