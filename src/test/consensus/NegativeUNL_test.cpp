@@ -6,7 +6,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/tx/apply.h>
 
 namespace xrpl {
