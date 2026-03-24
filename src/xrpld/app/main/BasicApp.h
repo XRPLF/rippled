@@ -7,10 +7,8 @@
 #include <vector>
 
 /** Manages an io_context and its worker threads.
- *
  *  Ensures the io_context outlives all derived classes by joining worker
  *  threads in the destructor. Supports immediate or deferred thread startup.
- *
  *  @note Thread-safe after construction completes. The deferred-start
  *        constructor and startIOThreads() must be called from a single thread.
  */
@@ -42,7 +40,6 @@ public:
 
 protected:
     /** Tag type for deferred thread startup.
-     *
      *  Pass to the protected constructor to construct without starting IO
      *  threads. The derived class must call startIOThreads() once its own
      *  construction is complete.
@@ -52,14 +49,12 @@ protected:
     };
 
     /** Construct without starting IO threads.
-     *
      *  @param numberOfThreads Desired number of IO worker threads.
      *  @param  Tag to select deferred startup.
      */
     BasicApp(std::size_t numberOfThreads, DeferStart);
 
     /** Start the IO worker threads.
-     *
      *  @note Must be called exactly once after the deferred-start constructor.
      */
     void

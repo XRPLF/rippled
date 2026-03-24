@@ -25,18 +25,18 @@
      * -O1: Minimum optimization for reasonable performance
      * -fsanitize=<types>: Enables sanitizer instrumentation
      * -fsanitize-ignorelist=<path>: (Clang only) Compile-time ignorelist
-     * -mcmodel=medium: (GCC only) Code model for large binaries
+     * -mcmodel=large: (GCC only) Code model for large binaries
      * -Wno-stringop-overflow: (GCC only) Suppresses false positive warnings
      * -Wno-tsan: (For GCC TSAN combination only) Suppresses atomic_thread_fence warnings
 
    - SANITIZERS_LINK_FLAGS: Linker flags for sanitizer runtime libraries.
      Includes:
      * -fsanitize=<types>: Links sanitizer runtime libraries
-     * -mcmodel=medium: (GCC only) Matches compile-time code model
+     * -mcmodel=large: (GCC only) Matches compile-time code model
 
    - SANITIZERS_RELOCATION_FLAGS: (GCC only) Code model flags for linking.
      Used to handle large instrumented binaries on x86_64:
-     * -mcmodel=medium: For both ASAN and TSAN (large model collides with
+     * -mcmodel=large: For both ASAN and TSAN (large model collides with
      *   ASAN shadow memory; is incompatible with TSAN)
 #]===================================================================]
 
@@ -147,9 +147,9 @@ if(is_gcc)
     list(APPEND SANITIZERS_COMPILE_FLAGS "-Wno-stringop-overflow")
 
     if(is_amd64 AND enable_asan)
-        message(STATUS "  Using medium code model (-mcmodel=medium)")
-        list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=medium")
-        list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=medium")
+        message(STATUS "  Using large code model (-mcmodel=large)")
+        list(APPEND SANITIZERS_COMPILE_FLAGS "-mcmodel=large")
+        list(APPEND SANITIZERS_RELOCATION_FLAGS "-mcmodel=large")
     elseif(enable_tsan)
         # GCC doesn't support atomic_thread_fence with tsan. Suppress warnings.
         list(APPEND SANITIZERS_COMPILE_FLAGS "-Wno-tsan")

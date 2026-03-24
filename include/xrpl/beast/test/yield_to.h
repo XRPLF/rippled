@@ -29,15 +29,15 @@ namespace test {
  *        constraint).
  */
 #if defined(__SANITIZE_THREAD__) || defined(__SANITIZE_ADDRESS__)
-inline constexpr std::size_t yieldStackSize = 4 * 1024 * 1024;
+inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
 #elif defined(__has_feature)
 #if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
-inline constexpr std::size_t yieldStackSize = 4 * 1024 * 1024;
-#else
 inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+#else
+inline constexpr std::size_t yieldStackSize = 1.5 * 1024 * 1024;
 #endif
 #else
-inline constexpr std::size_t yieldStackSize = 2 * 1024 * 1024;
+inline constexpr std::size_t yieldStackSize = 1.5 * 1024 * 1024;
 #endif
 
 /** Mix-in to support tests using asio coroutines.

@@ -13,7 +13,7 @@ include(default)
 
             {% if "address" in sanitizers %}
                 {% set _ = sanitizer_list.append("address") %}
-                {% set model_code = "-mcmodel=medium" %}
+                {% set model_code = "-mcmodel=large" %}
                 {% set _ = defines.append("BOOST_USE_ASAN")%}
                 {% set _ = defines.append("BOOST_USE_UCONTEXT")%}
             {% elif "thread" in sanitizers %}
