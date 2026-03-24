@@ -18,11 +18,7 @@ struct Request
         std::string const& method,
         Json::Value& params,
         Application& app)
-        : journal(journal)
-        , method(method)
-        , params(params)
-        , fee(Resource::feeReferenceRPC)
-        , app(app)
+        : journal(journal), method(method), params(params), fee(Resource::feeReferenceRPC), app(app)
     {
     }
 

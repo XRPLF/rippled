@@ -176,7 +176,7 @@ private:
     int yays_;      //< Number of yes votes
     int nays_;      //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
-    Tx tx_;       //< Transaction under dispute
+    Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;

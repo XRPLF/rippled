@@ -1355,11 +1355,11 @@ private:
         STPathSet st;
         STAmount sa;
         STAmount da;
-        std::tie(st, sa, da) =
-            findPaths(env, alice_, bob_, bob_["AUD"](-1), std::optional<STAmount>(XRP(100'000'000)));
+        std::tie(st, sa, da) = findPaths(
+            env, alice_, bob_, bob_["AUD"](-1), std::optional<STAmount>(XRP(100'000'000)));
         BEAST_EXPECT(st.empty());
-        std::tie(st, sa, da) =
-            findPaths(env, alice_, bob_, bob_["USD"](-1), std::optional<STAmount>(XRP(100'000'000)));
+        std::tie(st, sa, da) = findPaths(
+            env, alice_, bob_, bob_["USD"](-1), std::optional<STAmount>(XRP(100'000'000)));
         // Alice sends all requested 100,000,000XRP
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99USD. This is the amount Bob
@@ -2069,7 +2069,11 @@ private:
             Account const ed("ed");
 
             fund(
-                env, gw_, {alice_, bob_, carol_, ed}, XRP(1'000), {USD(1'000), EUR(1'000), GBP(1'000)});
+                env,
+                gw_,
+                {alice_, bob_, carol_, ed},
+                XRP(1'000),
+                {USD(1'000), EUR(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2106,7 +2110,11 @@ private:
             Account const ed("ed");
 
             fund(
-                env, gw_, {alice_, bob_, carol_, ed}, XRP(1'000), {USD(1'000), EUR(1'000), GBP(1'000)});
+                env,
+                gw_,
+                {alice_, bob_, carol_, ed},
+                XRP(1'000),
+                {USD(1'000), EUR(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2253,7 +2261,11 @@ private:
             Account const ed("ed");
 
             fund(
-                env, gw_, {alice_, bob_, carol_, ed}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
+                env,
+                gw_,
+                {alice_, bob_, carol_, ed},
+                XRP(1'000),
+                {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2337,7 +2349,11 @@ private:
             Account const ed("ed");
 
             fund(
-                env, gw_, {alice_, bob_, carol_, ed}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
+                env,
+                gw_,
+                {alice_, bob_, carol_, ed},
+                XRP(1'000),
+                {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2409,7 +2425,11 @@ private:
             Account const ed("ed");
 
             fund(
-                env, gw_, {alice_, bob_, carol_, ed}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
+                env,
+                gw_,
+                {alice_, bob_, carol_, ed},
+                XRP(1'000),
+                {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2471,7 +2491,8 @@ private:
             // deliver less than requested
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
+            fund(
+                env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2695,7 +2716,8 @@ private:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 Ter(tecPATH_PARTIAL));
-            env.require(Balance(alice_, drops(10'000'000'000 - env.current()->fees().base.drops())));
+            env.require(
+                Balance(alice_, drops(10'000'000'000 - env.current()->fees().base.drops())));
             env.require(Balance(bob_, XRP(10'000)));
         }
 

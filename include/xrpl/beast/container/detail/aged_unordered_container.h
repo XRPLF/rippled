@@ -986,8 +986,7 @@ public:
     // multimap, multiset
     template <bool maybe_multi = IsMulti, bool MaybeMap = IsMap>
     auto
-    insert(value_type&& value) ->
-        typename std::enable_if<maybe_multi && !MaybeMap, iterator>::type;
+    insert(value_type&& value) -> typename std::enable_if<maybe_multi && !MaybeMap, iterator>::type;
 
     // map, set
     template <bool maybe_multi = IsMulti>

@@ -33,7 +33,7 @@ public:
             env.memoize(env.master);
             env.memoize(alice);
 
-            auto const jtx = env.jt(ticket::create(alice, 1), Seq(1),Fee(10));
+            auto const jtx = env.jt(ticket::create(alice, 1), Seq(1), Fee(10));
 
             auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(transactionId, HashRouterFlags::HELD);

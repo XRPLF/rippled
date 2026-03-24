@@ -50,8 +50,7 @@ public:
     /// a subfield.
     static constexpr SField* const kTOP_LEVEL = nullptr;
 
-    Msig(SField const* sf, std::vector<Reg> s)
-        : signers(std::move(s)), subField(sf)
+    Msig(SField const* sf, std::vector<Reg> s) : signers(std::move(s)), subField(sf)
     {
         sortSigners(signers);
     }
@@ -67,18 +66,14 @@ public:
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
     explicit Msig(SField const* sf, AccountType&& a0, Accounts&&... aN)
-        : Msig{
-              sf,
-              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+        : Msig{sf, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
     explicit Msig(SField const& sf, AccountType&& a0, Accounts&&... aN)
-        : Msig{
-              &sf,
-              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+        : Msig{&sf, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 

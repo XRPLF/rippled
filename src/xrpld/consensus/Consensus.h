@@ -1076,8 +1076,8 @@ Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
     {
         std::stringstream ss;
         ss << "View of consensus changed during " << toString(phase_)
-           << " mode=" << toString(mode_.get()) << ", " << prevLedgerID_ << " to " << netLgr
-           << ", " << Json::Compact{previousLedger_.getJson()} << ". ";
+           << " mode=" << toString(mode_.get()) << ", " << prevLedgerID_ << " to " << netLgr << ", "
+           << Json::Compact{previousLedger_.getJson()} << ". ";
         JLOG(j_.warn()) << ss.str();
         CLOG(clog) << ss.str();
         CLOG(clog) << "State on consensus change " << Json::Compact{getJson(true)} << ". ";

@@ -979,10 +979,7 @@ public:
         // Now multisign a ttOFFER_CANCEL canceling the offer we just created.
         {
             aliceSeq = env.seq(alice);
-            env(offerCancel(alice, offerSeq),
-                Seq(aliceSeq),
-                Msig(becky, bogie_),
-                Fee(3 * baseFee));
+            env(offerCancel(alice, offerSeq), Seq(aliceSeq), Msig(becky, bogie_), Fee(3 * baseFee));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
             env.require(Owners(alice, 2));

@@ -89,7 +89,7 @@ public:
         Squelch,
         SquelchSuppressed,  // egress traffic amount suppressed by squelching
         SquelchIgnored,     // the traffic amount that came from peers ignoring
-                             // squelch messages
+                            // squelch messages
 
         // TMHaveSet message:
         GetSet,    // transaction sets we try to get

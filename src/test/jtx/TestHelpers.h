@@ -464,11 +464,7 @@ Json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
 Json::Value
-ledgerEntryState(
-    Env& env,
-    Account const& acctA,
-    Account const& acctB,
-    std::string const& currency);
+ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
@@ -706,11 +702,13 @@ coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const kLOAN_BROKER_ID = JTxFieldWrapper<Uint256Field>(sfLoanBrokerID);
 
-auto const kMANAGEMENT_FEE_RATE = valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+auto const kMANAGEMENT_FEE_RATE =
+    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
 
 auto const kDEBT_MAXIMUM = simpleField<SF_NUMBER>(sfDebtMaximum);
 
-auto const kCOVER_RATE_MINIMUM = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+auto const kCOVER_RATE_MINIMUM =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
 auto const kCOVER_RATE_LIQUIDATION =
     valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
@@ -745,9 +743,11 @@ auto const kOVERPAYMENT_FEE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sf
 
 auto const kINTEREST_RATE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
 
-auto const kLATE_INTEREST_RATE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+auto const kLATE_INTEREST_RATE =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
 
-auto const kCLOSE_INTEREST_RATE = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+auto const kCLOSE_INTEREST_RATE =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
 
 auto const kOVERPAYMENT_INTEREST_RATE =
     valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);

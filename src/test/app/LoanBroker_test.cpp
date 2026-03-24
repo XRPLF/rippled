@@ -686,9 +686,13 @@ class LoanBroker_test : public beast::unit_test::suite
 
                     // fields that can't be changed
                     // LoanBrokerID
-                    env(set(alice, vault.vaultID), kLOAN_BROKER_ID(nextKeylet.key), Ter(tecNO_ENTRY));
+                    env(set(alice, vault.vaultID),
+                        kLOAN_BROKER_ID(nextKeylet.key),
+                        Ter(tecNO_ENTRY));
                     // VaultID
-                    env(set(alice, nextKeylet.key), kLOAN_BROKER_ID(broker->key()), Ter(tecNO_ENTRY));
+                    env(set(alice, nextKeylet.key),
+                        kLOAN_BROKER_ID(broker->key()),
+                        Ter(tecNO_ENTRY));
                     // Owner
                     env(set(evan, vault.vaultID),
                         kLOAN_BROKER_ID(broker->key()),
@@ -1313,7 +1317,9 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Issuer can always cover clawback. The holder authorization is n/a.
         forUnauthAuth([&](bool) {
-            env(coverClawback(issuer), kLOAN_BROKER_ID(brokerKeylet.key), kAMOUNT(vaultInfo.asset(1)));
+            env(coverClawback(issuer),
+                kLOAN_BROKER_ID(brokerKeylet.key),
+                kAMOUNT(vaultInfo.asset(1)));
         });
     }
 

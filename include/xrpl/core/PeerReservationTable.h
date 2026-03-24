@@ -27,7 +27,9 @@ public:
 
     template <typename Hasher>
     friend void
-    hash_append(Hasher& h, PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
+    hash_append(
+        Hasher& h,
+        PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);

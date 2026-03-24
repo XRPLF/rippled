@@ -280,7 +280,7 @@ struct Escrow_test : public beast::unit_test::suite
         auto const seqFt = env.seq("alice");
         env(escrow::create("alice", "bob", XRP(100)),
             escrow::kFINISH_TIME(env.now()),  // Set finish time to now so that
-                                             // we can call finish immediately.
+                                              // we can call finish immediately.
             escrow::kCANCEL_TIME(env.now() + 50s),
             Fee(baseFee * 150));
         env.close();
