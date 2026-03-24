@@ -7,6 +7,8 @@
 
 ## 4.1 Core Interfaces
 
+> **OTLP** = OpenTelemetry Protocol
+
 ### 4.1.1 Main Telemetry Interface
 
 ```cpp
@@ -69,6 +71,10 @@ public:
         bool traceRpc = true;
         bool tracePeer = false;  // High volume, disabled by default
         bool traceLedger = true;
+        bool tracePathfind = true;
+        bool traceTxQ = true;
+        bool traceValidator = false;  // Low volume, disabled by default
+        bool traceAmendment = false;  // Very low volume, disabled by default
     };
 
     virtual ~Telemetry() = default;
@@ -140,6 +146,21 @@ public:
 
     /** Check if peer message tracing is enabled */
     virtual bool shouldTracePeer() const = 0;
+
+    /** Check if ledger tracing is enabled */
+    virtual bool shouldTraceLedger() const = 0;
+
+    /** Check if path finding tracing is enabled */
+    virtual bool shouldTracePathfind() const = 0;
+
+    /** Check if transaction queue tracing is enabled */
+    virtual bool shouldTraceTxQ() const = 0;
+
+    /** Check if validator list/manifest tracing is enabled */
+    virtual bool shouldTraceValidator() const = 0;
+
+    /** Check if amendment voting tracing is enabled */
+    virtual bool shouldTraceAmendment() const = 0;
 };
 
 // Factory functions
@@ -191,11 +212,17 @@ public:
     /**
      * Construct guard with span.
      * The span becomes the current span in thread-local context.
+     *
+     * @note If span is nullptr (e.g., telemetry disabled), the guard
+     * becomes a no-op. All methods safely check for null before access.
      */
     explicit SpanGuard(
         opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> span)
-        : span_(std::move(span))
-        , scope_(span_)
+        : span_(span ? std::move(span) : nullptr)
+        , scope_(span_ ? opentelemetry::trace::Scope(span_)
+                       : opentelemetry::trace::Scope(
+                           opentelemetry::nostd::shared_ptr<
+                               opentelemetry::trace::Span>(nullptr)))
     {
     }
 
@@ -277,6 +304,12 @@ public:
 
     void addEvent(std::string_view) {}
     void recordException(std::exception const&) {}
+
+    /** Return a default empty context (matches SpanGuard interface) */
+    opentelemetry::context::Context context() const
+    {
+        return opentelemetry::context::Context{};
+    }
 };
 
 } // namespace telemetry
@@ -332,17 +365,66 @@ namespace telemetry {
         _xrpl_guard_.emplace((telemetry).startSpan(name)); \
     }
 
-// Set attribute on current span (if exists)
-#define XRPL_TRACE_SET_ATTR(key, value) \
-    if (_xrpl_guard_.has_value()) { \
-        _xrpl_guard_->setAttribute(key, value); \
+#define XRPL_TRACE_PEER(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTracePeer()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
     }
+
+#define XRPL_TRACE_LEDGER(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTraceLedger()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
+    }
+
+#define XRPL_TRACE_PATHFIND(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTracePathfind()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
+    }
+
+#define XRPL_TRACE_TXQ(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTraceTxQ()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
+    }
+
+#define XRPL_TRACE_VALIDATOR(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTraceValidator()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
+    }
+
+#define XRPL_TRACE_AMENDMENT(telemetry, name) \
+    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
+    if ((telemetry).shouldTraceAmendment()) { \
+        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
+    }
+
+// Set attribute on current span (if exists).
+// Works with both std::optional<SpanGuard> (from conditional macros)
+// and bare SpanGuard (from XRPL_TRACE_SPAN). Uses 'if constexpr'-like
+// dispatch via a helper that checks for .has_value().
+#define XRPL_TRACE_SET_ATTR(key, value) \
+    do { \
+        if constexpr (requires { _xrpl_guard_.has_value(); }) { \
+            if (_xrpl_guard_.has_value()) \
+                _xrpl_guard_->setAttribute(key, value); \
+        } else { \
+            _xrpl_guard_.setAttribute(key, value); \
+        } \
+    } while(0)
 
 // Record exception on current span
 #define XRPL_TRACE_EXCEPTION(e) \
-    if (_xrpl_guard_.has_value()) { \
-        _xrpl_guard_->recordException(e); \
-    }
+    do { \
+        if constexpr (requires { _xrpl_guard_.has_value(); }) { \
+            if (_xrpl_guard_.has_value()) \
+                _xrpl_guard_->recordException(e); \
+        } else { \
+            _xrpl_guard_.recordException(e); \
+        } \
+    } while(0)
 
 #else  // XRPL_ENABLE_TELEMETRY not defined
 
@@ -351,6 +433,12 @@ namespace telemetry {
 #define XRPL_TRACE_TX(telemetry, name) ((void)0)
 #define XRPL_TRACE_CONSENSUS(telemetry, name) ((void)0)
 #define XRPL_TRACE_RPC(telemetry, name) ((void)0)
+#define XRPL_TRACE_PEER(telemetry, name) ((void)0)
+#define XRPL_TRACE_LEDGER(telemetry, name) ((void)0)
+#define XRPL_TRACE_PATHFIND(telemetry, name) ((void)0)
+#define XRPL_TRACE_TXQ(telemetry, name) ((void)0)
+#define XRPL_TRACE_VALIDATOR(telemetry, name) ((void)0)
+#define XRPL_TRACE_AMENDMENT(telemetry, name) ((void)0)
 #define XRPL_TRACE_SET_ATTR(key, value) ((void)0)
 #define XRPL_TRACE_EXCEPTION(e) ((void)0)
 
@@ -369,6 +457,9 @@ namespace telemetry {
 Add to `src/xrpld/overlay/detail/ripple.proto`:
 
 ```protobuf
+// Note: rippled uses proto2 syntax. The 'optional' keyword below is valid
+// in proto2 (it is the default field rule) and is included for clarity.
+
 // Trace context for distributed tracing across nodes
 // Uses W3C Trace Context format internally
 message TraceContext {
@@ -423,6 +514,8 @@ message TMLedgerData {
 #pragma once
 
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/default_span.h>
 #include <opentelemetry/trace/span_context.h>
 #include <protocol/messages.h>  // Generated protobuf
 
@@ -480,7 +573,14 @@ TraceContextPropagator::extract(protocol::TraceContext const& proto)
     using namespace opentelemetry::trace;
 
     if (proto.trace_id().size() != 16 || proto.span_id().size() != 8)
-        return opentelemetry::context::Context{};  // Invalid, return empty
+    {
+        // Log malformed trace context for debugging. Silent failures in
+        // context extraction make distributed tracing issues hard to diagnose.
+        JLOG(j_.warn()) << "Malformed trace context: trace_id size="
+                        << proto.trace_id().size()
+                        << " span_id size=" << proto.span_id().size();
+        return opentelemetry::context::Context{};
+    }
 
     // Construct TraceId and SpanId from bytes
     TraceId traceId(reinterpret_cast<uint8_t const*>(proto.trace_id().data()));
@@ -490,11 +590,15 @@ TraceContextPropagator::extract(protocol::TraceContext const& proto)
     // Create SpanContext from extracted data
     SpanContext spanContext(traceId, spanId, flags, /* remote = */ true);
 
-    // Create context with extracted span as parent
-    return opentelemetry::context::Context{}.SetValue(
-        opentelemetry::trace::kSpanKey,
+    // DefaultSpan wraps SpanContext for use as a non-recording parent.
+    // This is the standard OTel C++ pattern for remote context propagation.
+    // DefaultSpan carries the remote SpanContext without recording any data.
+    auto parentCtx = opentelemetry::trace::SetSpan(
+        opentelemetry::context::Context{},
         opentelemetry::nostd::shared_ptr<Span>(
             new DefaultSpan(spanContext)));
+
+    return parentCtx;
 }
 
 inline void
@@ -750,8 +854,8 @@ ServerHandler::onRequest(
     // Extract trace context from HTTP headers (W3C Trace Context)
     auto parentCtx = telemetry::TraceContextPropagator::extractFromHeaders(
         [&req](std::string_view name) -> std::optional<std::string> {
-            auto it = req.find(boost::beast::http::field{
-                std::string(name)});
+            // Beast's find() accepts a string_view for custom header lookup
+            auto it = req.find(name);
             if (it != req.end())
                 return std::string(it->value());
             return std::nullopt;
@@ -976,6 +1080,14 @@ flowchart TB
 ```
 
 </div>
+
+**Reading the diagram:**
+
+- **Client / Submit TX**: An external client submits a transaction, creating the root span that initiates the trace.
+- **Node A (RPC layer)**: The receiving node processes the submission through `rpc.request` and `rpc.command.submit`, then hands off to the transaction pipeline (`tx.receive` → `tx.validate` → `tx.relay`).
+- **Dashed arrows (TraceContext)**: Cross-node boundaries where trace context is propagated via the protobuf protocol extension, linking spans across independent processes.
+- **Node B (relay hop)**: A peer node that receives, validates, and relays the transaction further, demonstrating multi-hop propagation.
+- **Node C (consensus)**: The final node where the transaction enters consensus (`consensus.round` → `consensus.phase.establish`), showing how a single client action produces an end-to-end distributed trace.
 
 ---
 

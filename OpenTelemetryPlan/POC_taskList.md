@@ -1,6 +1,6 @@
 # OpenTelemetry POC Task List
 
-> **Goal**: Build a minimal end-to-end proof of concept that demonstrates distributed tracing in rippled. A successful POC will show RPC request traces flowing from rippled through an OTel Collector into Jaeger, viewable in a browser UI.
+> **Goal**: Build a minimal end-to-end proof of concept that demonstrates distributed tracing in rippled. A successful POC will show RPC request traces flowing from rippled through an OTel Collector into Tempo, viewable in Grafana.
 >
 > **Scope**: RPC tracing only (highest value, lowest risk per the [CRAWL phase](./06-implementation-phases.md#6102-quick-wins-immediate-value) in the implementation phases). No cross-node P2P context propagation or consensus tracing in the POC.
 
@@ -15,28 +15,29 @@
 | [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard (§4.2), macros (§4.3), RPC instrumentation (§4.5.3)                                                                 |
 | [05-configuration-reference.md](./05-configuration-reference.md) | rippled config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8) |
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                       |
-| [07-observability-backends.md](./07-observability-backends.md)   | Jaeger dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                  |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                   |
 
 ---
 
 ## Task 0: Docker Observability Stack Setup
+
+> **OTLP** = OpenTelemetry Protocol
 
 **Objective**: Stand up the backend infrastructure to receive, store, and display traces.
 
 **What to do**:
 
 - Create `docker/telemetry/docker-compose.yml` in the repo with three services:
-  1. **OpenTelemetry Collector** (`otel/opentelemetry-collector-contrib:latest`)
+  1. **OpenTelemetry Collector** (`otel/opentelemetry-collector-contrib:0.92.0`)
      - Expose ports `4317` (OTLP gRPC) and `4318` (OTLP HTTP)
      - Expose port `13133` (health check)
      - Mount a config file `docker/telemetry/otel-collector-config.yaml`
-  2. **Jaeger** (`jaegertracing/all-in-one:latest`)
-     - Expose port `16686` (UI) and `14250` (gRPC collector)
-     - Set env `COLLECTOR_OTLP_ENABLED=true`
+  2. **Tempo** (`grafana/tempo:2.6.1`)
+     - Expose port `3200` (HTTP API) and `4317` (OTLP gRPC, internal)
   3. **Grafana** (`grafana/grafana:latest`) — optional but useful
      - Expose port `3000`
      - Enable anonymous admin access for local dev (`GF_AUTH_ANONYMOUS_ENABLED=true`, `GF_AUTH_ANONYMOUS_ORG_ROLE=Admin`)
-     - Provision Jaeger as a data source via `docker/telemetry/grafana/provisioning/datasources/jaeger.yaml`
+     - Provision Tempo as a data source via `docker/telemetry/grafana/provisioning/datasources/tempo.yaml`
 
 - Create `docker/telemetry/otel-collector-config.yaml`:
 
@@ -57,8 +58,8 @@
   exporters:
     logging:
       verbosity: detailed
-    otlp/jaeger:
-      endpoint: jaeger:4317
+    otlp/tempo:
+      endpoint: tempo:4317
       tls:
         insecure: true
 
@@ -67,30 +68,29 @@
       traces:
         receivers: [otlp]
         processors: [batch]
-        exporters: [logging, otlp/jaeger]
+        exporters: [logging, otlp/tempo]
   ```
 
-- Create Grafana Jaeger datasource provisioning file at `docker/telemetry/grafana/provisioning/datasources/jaeger.yaml`:
+- Create Grafana Tempo datasource provisioning file at `docker/telemetry/grafana/provisioning/datasources/tempo.yaml`:
   ```yaml
   apiVersion: 1
   datasources:
-    - name: Jaeger
-      type: jaeger
+    - name: Tempo
+      type: tempo
       access: proxy
-      url: http://jaeger:16686
+      url: http://tempo:3200
   ```
 
 **Verification**: Run `docker compose -f docker/telemetry/docker-compose.yml up -d`, then:
 
 - `curl http://localhost:13133` returns healthy (Collector)
-- `http://localhost:16686` opens Jaeger UI (no traces yet)
-- `http://localhost:3000` opens Grafana (optional)
+- `http://localhost:3000` opens Grafana (Tempo datasource available, no traces yet)
 
 **Reference**:
 
-- [05-configuration-reference.md §5.5](./05-configuration-reference.md) — Collector config (dev YAML with Jaeger exporter)
+- [05-configuration-reference.md §5.5](./05-configuration-reference.md) — Collector config (dev YAML with Tempo exporter)
 - [05-configuration-reference.md §5.6](./05-configuration-reference.md) — Docker Compose development environment
-- [07-observability-backends.md §7.1](./07-observability-backends.md) — Jaeger quick start and backend selection
+- [07-observability-backends.md §7.1](./07-observability-backends.md) — Tempo quick start and backend selection
 - [05-configuration-reference.md §5.8](./05-configuration-reference.md) — Grafana datasource provisioning and dashboards
 
 ---
@@ -175,6 +175,8 @@
 
 ## Task 3: Implement OTel-Backed Telemetry
 
+> **OTLP** = OpenTelemetry Protocol
+
 **Objective**: Implement the real `Telemetry` class that initializes the OTel SDK, configures the OTLP exporter and batch processor, and creates tracers/spans.
 
 **What to do**:
@@ -183,7 +185,7 @@
   - `class TelemetryImpl : public Telemetry` that:
     - In `start()`: creates a `TracerProvider` with:
       - Resource attributes: `service.name`, `service.version`, `service.instance.id`
-      - An `OtlpGrpcExporter` pointed at `setup.exporterEndpoint` (default `localhost:4317`)
+      - An `OtlpHttpExporter` pointed at `setup.exporterEndpoint` (default `localhost:4318`)
       - A `BatchSpanProcessor` with configurable batch size and delay
       - A `TraceIdRatioBasedSampler` using `setup.samplingRatio`
     - Sets the global `TracerProvider`
@@ -316,6 +318,8 @@
 
 ## Task 6: Instrument RPC ServerHandler
 
+> **WS** = WebSocket
+
 **Objective**: Add tracing to the HTTP RPC entry point so every incoming RPC request creates a span.
 
 **What to do**:
@@ -338,7 +342,7 @@
   rpc.request
     └── rpc.process
   ```
-  in Jaeger for every HTTP RPC call.
+  in Tempo/Grafana for every HTTP RPC call.
 
 **Key modified file**:
 
@@ -372,7 +376,7 @@
     - On success: `XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");`
     - On error: `XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");` and set the error message
 
-- After this, traces in Jaeger should look like:
+- After this, traces in Tempo/Grafana should look like:
   ```
   rpc.request  (xrpl.rpc.command=account_info)
     └── rpc.process
@@ -396,7 +400,9 @@
 
 ## Task 8: Build, Run, and Verify End-to-End
 
-**Objective**: Prove the full pipeline works: rippled emits traces -> OTel Collector receives them -> Jaeger displays them.
+> **OTLP** = OpenTelemetry Protocol
+
+**Objective**: Prove the full pipeline works: rippled emits traces -> OTel Collector receives them -> Tempo stores them for Grafana visualization.
 
 **What to do**:
 
@@ -453,10 +459,10 @@
      -d '{"method":"account_info","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}'
    ```
 
-6. **Verify in Jaeger**:
-   - Open `http://localhost:16686`
-   - Select service `rippled` from the dropdown
-   - Click "Find Traces"
+6. **Verify in Grafana (Tempo)**:
+   - Open `http://localhost:3000`
+   - Navigate to Explore → select Tempo datasource
+   - Search for service `rippled`
    - Confirm you see traces with spans: `rpc.request` -> `rpc.process` -> `rpc.command.server_info`
    - Click into a trace and verify attributes: `xrpl.rpc.command`, `xrpl.rpc.status`, `xrpl.rpc.version`
 
@@ -470,7 +476,7 @@
 - [ ] Docker stack starts without errors
 - [ ] rippled builds with `-DXRPL_ENABLE_TELEMETRY=ON`
 - [ ] rippled starts and connects to OTel Collector (check rippled logs for telemetry messages)
-- [ ] Traces appear in Jaeger UI under service "rippled"
+- [ ] Traces appear in Grafana/Tempo under service "rippled"
 - [ ] Span hierarchy is correct (parent-child relationships)
 - [ ] Span attributes are populated (`xrpl.rpc.command`, `xrpl.rpc.status`, etc.)
 - [ ] Error spans show error status and message
@@ -479,8 +485,8 @@
 
 **Reference**:
 
-- [06-implementation-phases.md §6.11.1](./06-implementation-phases.md) — Phase 1 definition of done: SDK compiles, runtime toggle works, span creation verified in Jaeger, config validation passes
-- [06-implementation-phases.md §6.11.2](./06-implementation-phases.md) — Phase 2 definition of done: 100% RPC coverage, traceparent propagation, <1ms p99 overhead, dashboard deployed
+- [06-implementation-phases.md §6.11.1](./06-implementation-phases.md) — Phase 1 definition of done: SDK compiles, runtime toggle works, span creation verified in Tempo, config validation passes
+- [06-implementation-phases.md §6.11.2](./06-implementation-phases.md#6112-phase-2-rpc-tracing) — Phase 2 definition of done: 100% RPC coverage, traceparent propagation, <1ms p99 overhead, dashboard deployed
 - [06-implementation-phases.md §6.8](./06-implementation-phases.md) — Success metrics: trace coverage >95%, CPU overhead <3%, memory <5 MB, latency impact <2%
 - [03-implementation-strategy.md §3.9.5](./03-implementation-strategy.md) — Backward compatibility: config optional, protocol unchanged, `XRPL_ENABLE_TELEMETRY=OFF` produces identical binary
 - [01-architecture-analysis.md §1.8](./01-architecture-analysis.md) — Observable outcomes: what traces, metrics, and dashboards to expect
@@ -489,11 +495,13 @@
 
 ## Task 9: Document POC Results and Next Steps
 
+> **OTLP** = OpenTelemetry Protocol | **WS** = WebSocket
+
 **Objective**: Capture findings, screenshots, and remaining work for the team.
 
 **What to do**:
 
-- Take screenshots of Jaeger showing:
+- Take screenshots of Grafana/Tempo showing:
   - The service list with "rippled"
   - A trace with the full span tree
   - Span detail view showing attributes
@@ -541,9 +549,11 @@
 
 ## Next Steps (Post-POC)
 
+> **OTLP** = OpenTelemetry Protocol | **WS** = WebSocket
+
 ### Metrics Pipeline for Grafana Dashboards
 
-The current POC exports **traces only**. Grafana's Explore view can query Jaeger for individual traces, but time-series charts (latency histograms, request throughput, error rates) require a **metrics pipeline**. To enable this:
+The current POC exports **traces only**. Grafana's Explore view can query Tempo for individual traces, but time-series charts (latency histograms, request throughput, error rates) require a **metrics pipeline**. To enable this:
 
 1. **Add a `spanmetrics` connector** to the OTel Collector config that derives RED metrics (Rate, Errors, Duration) from trace spans automatically:
 
@@ -566,7 +576,7 @@ The current POC exports **traces only**. Grafana's Explore view can query Jaeger
        traces:
          receivers: [otlp]
          processors: [batch]
-         exporters: [debug, otlp/jaeger, spanmetrics]
+         exporters: [debug, otlp/tempo, spanmetrics]
        metrics:
          receivers: [spanmetrics]
          exporters: [prometheus]

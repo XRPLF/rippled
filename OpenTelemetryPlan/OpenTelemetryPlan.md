@@ -2,6 +2,8 @@
 
 ## Executive Summary
 
+> **OTLP** = OpenTelemetry Protocol
+
 This document provides a comprehensive implementation plan for integrating OpenTelemetry distributed tracing into the rippled XRP Ledger node software. The plan addresses the unique challenges of a decentralized peer-to-peer system where trace context must propagate across network boundaries between independent nodes.
 
 ### Key Benefits
@@ -33,6 +35,10 @@ This implementation plan is organized into modular documents for easier navigati
 flowchart TB
     overview["📋 OpenTelemetryPlan.md<br/>(This Document)"]
 
+    subgraph fundamentals["Fundamentals"]
+        fund["00-tracing-fundamentals.md"]
+    end
+
     subgraph analysis["Analysis & Design"]
         arch["01-architecture-analysis.md"]
         design["02-design-decisions.md"]
@@ -48,12 +54,15 @@ flowchart TB
         phases["06-implementation-phases.md"]
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
+        poc["POC_taskList.md"]
     end
 
+    overview --> fundamentals
     overview --> analysis
     overview --> impl
     overview --> deploy
 
+    fund --> arch
     arch --> design
     design --> strategy
     strategy --> code
@@ -61,8 +70,11 @@ flowchart TB
     config --> phases
     phases --> backends
     backends --> appendix
+    phases --> poc
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
+    style fundamentals fill:#00695c,stroke:#004d40,color:#fff
+    style fund fill:#00695c,stroke:#004d40,color:#fff
     style analysis fill:#0d47a1,stroke:#082f6a,color:#fff
     style impl fill:#bf360c,stroke:#8c2809,color:#fff
     style deploy fill:#4a148c,stroke:#2e0d57,color:#fff
@@ -74,6 +86,7 @@ flowchart TB
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
+    style poc fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
 </div>
@@ -84,22 +97,34 @@ flowchart TB
 
 | Section | Document                                                   | Description                                                            |
 | ------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **0**   | [Tracing Fundamentals](./00-tracing-fundamentals.md)       | Distributed tracing concepts, span relationships, context propagation  |
 | **1**   | [Architecture Analysis](./01-architecture-analysis.md)     | rippled component analysis, trace points, instrumentation priorities   |
 | **2**   | [Design Decisions](./02-design-decisions.md)               | SDK selection, exporters, span naming, attributes, context propagation |
 | **3**   | [Implementation Strategy](./03-implementation-strategy.md) | Directory structure, key principles, performance optimization          |
-| **4**   | [Code Samples](./04-code-samples.md)                       | Complete C++ implementation examples for all components                |
+| **4**   | [Code Samples](./04-code-samples.md)                       | C++ implementation examples for core infrastructure and key modules    |
 | **5**   | [Configuration Reference](./05-configuration-reference.md) | rippled config, CMake integration, Collector configurations            |
 | **6**   | [Implementation Phases](./06-implementation-phases.md)     | 5-phase timeline, tasks, risks, success metrics                        |
 | **7**   | [Observability Backends](./07-observability-backends.md)   | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                               | Glossary, references, version history                                  |
+| **POC** | [POC Task List](./POC_taskList.md)                         | Proof of concept tasks for RPC tracing end-to-end demo                 |
+
+---
+
+## 0. Tracing Fundamentals
+
+This document introduces distributed tracing concepts for readers unfamiliar with the domain. It covers what traces and spans are, how parent-child and follows-from relationships model causality, how context propagates across service boundaries, and how sampling controls data volume. It also maps these concepts to rippled-specific scenarios like transaction relay and consensus.
+
+➡️ **[Read Tracing Fundamentals](./00-tracing-fundamentals.md)**
 
 ---
 
 ## 1. Architecture Analysis
 
-The rippled node consists of several key components that require instrumentation for comprehensive distributed tracing. The main areas include the RPC server (HTTP/WebSocket), Overlay P2P network, Consensus mechanism (RCLConsensus), JobQueue for async task execution, and existing observability infrastructure (PerfLog, Insight/StatsD, Journal logging).
+> **WS** = WebSocket | **TxQ** = Transaction Queue
 
-Key trace points span across transaction submission via RPC, peer-to-peer message propagation, consensus round execution, and ledger building. The implementation prioritizes high-value, low-risk components first: RPC handlers provide immediate value with minimal risk, while consensus tracing requires careful implementation to avoid timing impacts.
+The rippled node consists of several key components that require instrumentation for comprehensive distributed tracing. The main areas include the RPC server (HTTP/WebSocket), Overlay P2P network, Consensus mechanism (RCLConsensus), JobQueue for async task execution, PathFinding, Transaction Queue (TxQ), fee escalation (LoadManager), ledger acquisition, validator management, and existing observability infrastructure (PerfLog, Insight/StatsD, Journal logging).
+
+Key trace points span across transaction submission via RPC, peer-to-peer message propagation, consensus round execution, ledger building, path computation, transaction queue behavior, fee escalation, and validator health. The implementation prioritizes high-value, low-risk components first: RPC handlers provide immediate value with minimal risk, while consensus tracing requires careful implementation to avoid timing impacts.
 
 ➡️ **[Read full Architecture Analysis](./01-architecture-analysis.md)**
 
@@ -107,11 +132,13 @@ Key trace points span across transaction submission via RPC, peer-to-peer messag
 
 ## 2. Design Decisions
 
+> **OTLP** = OpenTelemetry Protocol | **CNCF** = Cloud Native Computing Foundation
+
 The OpenTelemetry C++ SDK is selected for its CNCF backing, active development, and native performance characteristics. Traces are exported via OTLP/gRPC (primary) or OTLP/HTTP (fallback) to an OpenTelemetry Collector, which provides flexible routing and sampling.
 
 Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `rpc.submit`, `tx.relay`, `consensus.round`). Context propagation uses W3C Trace Context headers for HTTP and embedded Protocol Buffer fields for P2P messages. The implementation coexists with existing PerfLog and Insight observability systems through correlation IDs.
 
-**Data Collection & Privacy**: Telemetry collects only operational metadata (timing, counts, hashes) — never sensitive content (private keys, balances, amounts, raw payloads). Privacy protection includes account hashing, configurable redaction, sampling, and collector-level filtering. Node operators retain full control(not penned down in this document yet) over what data is exported.
+**Data Collection & Privacy**: Telemetry collects only operational metadata (timing, counts, hashes) — never sensitive content (private keys, balances, amounts, raw payloads). Privacy protection includes account hashing, configurable redaction, sampling, and collector-level filtering. Node operators retain full control over telemetry configuration.
 
 ➡️ **[Read full Design Decisions](./02-design-decisions.md)**
 
@@ -129,13 +156,14 @@ Performance optimization strategies include probabilistic head sampling (10% def
 
 ## 4. Code Samples
 
-Complete C++ implementation examples are provided for all telemetry components:
+C++ implementation examples are provided for the core telemetry infrastructure and key modules:
 
 - `Telemetry.h` - Core interface for tracer access and span creation
 - `SpanGuard.h` - RAII wrapper for automatic span lifecycle management
 - `TracingInstrumentation.h` - Macros for conditional instrumentation
 - Protocol Buffer extensions for trace context propagation
 - Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
+- Remaining modules (PathFinding, TxQ, Validator, etc.) follow the same patterns
 
 ➡️ **[View all Code Samples](./04-code-samples.md)**
 
@@ -143,9 +171,11 @@ Complete C++ implementation examples are provided for all telemetry components:
 
 ## 5. Configuration Reference
 
+> **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
+
 Configuration is handled through the `[telemetry]` section in `xrpld.cfg` with options for enabling/disabling, exporter selection, endpoint configuration, sampling ratios, and component-level filtering. CMake integration includes a `XRPL_ENABLE_TELEMETRY` option for compile-time control.
 
-OpenTelemetry Collector configurations are provided for development (with Jaeger) and production (with tail-based sampling, Tempo, and Elastic APM). Docker Compose examples enable quick local development environment setup.
+OpenTelemetry Collector configurations are provided for development and production (with tail-based sampling, Tempo, and Elastic APM). Docker Compose examples enable quick local development environment setup.
 
 ➡️ **[View full Configuration Reference](./05-configuration-reference.md)**
 
@@ -163,7 +193,7 @@ The implementation spans 9 weeks across 5 phases:
 | 4     | Weeks 7-8 | Consensus Tracing   | Round spans, Proposal/validation tracing            |
 | 5     | Week 9    | Documentation       | Runbook, Dashboards, Training                       |
 
-**Total Effort**: 47 developer-days with 2 developers
+**Total Effort**: 47 person-days (2 developers working in parallel)
 
 ➡️ **[View full Implementation Phases](./06-implementation-phases.md)**
 
@@ -171,7 +201,9 @@ The implementation spans 9 weeks across 5 phases:
 
 ## 7. Observability Backends
 
-For development and testing, Jaeger provides easy setup with a good UI. For production deployments, Grafana Tempo is recommended for its cost-effectiveness and Grafana integration, while Elastic APM is ideal for organizations with existing Elastic infrastructure.
+> **APM** = Application Performance Monitoring | **GCS** = Google Cloud Storage
+
+Grafana Tempo is recommended for all environments due to its cost-effectiveness and Grafana integration, while Elastic APM is ideal for organizations with existing Elastic infrastructure.
 
 The recommended production architecture uses a gateway collector pattern with regional collectors performing tail-based sampling, routing traces to multiple backends (Tempo for primary storage, Elastic for log correlation, S3/GCS for long-term archive).
 
@@ -184,6 +216,14 @@ The recommended production architecture uses a gateway collector pattern with re
 The appendix contains a glossary of OpenTelemetry and rippled-specific terms, references to external documentation and specifications, version history for this implementation plan, and a complete document index.
 
 ➡️ **[View Appendix](./08-appendix.md)**
+
+---
+
+## POC Task List
+
+A step-by-step task list for building a minimal end-to-end proof of concept that demonstrates distributed tracing in rippled. The POC scope is limited to RPC tracing — showing request traces flowing from rippled through an OpenTelemetry Collector into Tempo, viewable in Grafana.
+
+➡️ **[View POC Task List](./POC_taskList.md)**
 
 ---
 

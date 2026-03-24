@@ -7,6 +7,8 @@
 
 ## 2.1 OpenTelemetry Components
 
+> **OTLP** = OpenTelemetry Protocol
+
 ### 2.1.1 SDK Selection
 
 **Primary Choice**: OpenTelemetry C++ SDK (`opentelemetry-cpp`)
@@ -32,6 +34,8 @@
 
 ## 2.2 Exporter Configuration
 
+> **OTLP** = OpenTelemetry Protocol
+
 ```mermaid
 flowchart TB
     subgraph nodes["rippled Nodes"]
@@ -43,8 +47,7 @@ flowchart TB
     collector["OpenTelemetry<br/>Collector<br/>(sidecar or standalone)"]
 
     subgraph backends["Observability Backends"]
-        jaeger["Jaeger<br/>(Dev)"]
-        tempo["Tempo<br/>(Prod)"]
+        tempo["Tempo"]
         elastic["Elastic<br/>APM"]
     end
 
@@ -52,7 +55,6 @@ flowchart TB
     node2 -->|"OTLP/gRPC<br/>:4317"| collector
     node3 -->|"OTLP/gRPC<br/>:4317"| collector
 
-    collector --> jaeger
     collector --> tempo
     collector --> elastic
 
@@ -60,6 +62,13 @@ flowchart TB
     style backends fill:#1b5e20,stroke:#0d3d14,color:#ffffff
     style collector fill:#bf360c,stroke:#8c2809,color:#ffffff
 ```
+
+**Reading the diagram:**
+
+- **rippled Nodes (blue)**: The source of telemetry data. Each rippled node exports spans via OTLP/gRPC on port 4317.
+- **OpenTelemetry Collector (red)**: The central aggregation point that receives spans from all nodes. Can run as a sidecar (per-node) or standalone (shared). Handles batching, filtering, and routing.
+- **Observability Backends (green)**: The storage and visualization destinations. Tempo is the recommended backend for both development and production, and Elastic APM is an alternative. The Collector routes to one or more backends.
+- **Arrows (nodes to collector to backends)**: The data pipeline -- spans flow from nodes to the Collector over gRPC, then the Collector fans out to the configured backends.
 
 ### 2.2.1 OTLP/gRPC (Recommended)
 
@@ -69,8 +78,8 @@ namespace otlp = opentelemetry::exporter::otlp;
 
 otlp::OtlpGrpcExporterOptions opts;
 opts.endpoint = "localhost:4317";
-opts.use_ssl_credentials = true;
-opts.ssl_credentials_cacert_path = "/path/to/ca.crt";
+opts.useTls = true;
+opts.sslCaCertPath = "/path/to/ca.crt";
 ```
 
 ### 2.2.2 OTLP/HTTP (Alternative)
@@ -87,6 +96,8 @@ opts.content_type = otlp::HttpRequestContentType::kJson;  // or kBinary
 ---
 
 ## 2.3 Span Naming Conventions
+
+> **TxQ** = Transaction Queue | **UNL** = Unique Node List | **WS** = WebSocket
 
 ### 2.3.1 Naming Schema
 
@@ -145,6 +156,36 @@ ledger:
   build: "Build new ledger"
   validate: "Ledger validation"
   close: "Close ledger"
+  replay: "Ledger replay executed"
+  delta: "Delta-based ledger acquired"
+
+# PathFinding Spans
+pathfind:
+  request: "Path request initiated"
+  compute: "Path computation executed"
+
+# TxQ Spans
+txq:
+  enqueue: "Transaction queued"
+  apply: "Queued transaction applied"
+
+# Fee/Load Spans
+fee:
+  escalate: "Fee escalation triggered"
+
+# Validator Spans
+validator:
+  list:
+    fetch: "UNL list fetched"
+  manifest: "Manifest update processed"
+
+# Amendment Spans
+amendment:
+  vote: "Amendment voting executed"
+
+# SHAMap Spans
+shamap:
+  sync: "State tree synchronization"
 
 # Job Spans
 job:
@@ -155,6 +196,8 @@ job:
 ---
 
 ## 2.4 Attribute Schema
+
+> **TxQ** = Transaction Queue | **UNL** = Unique Node List | **OTLP** = OpenTelemetry Protocol
 
 ### 2.4.1 Resource Attributes (Set Once at Startup)
 
@@ -231,20 +274,74 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 "xrpl.job.worker"        = int64    // Worker thread ID
 ```
 
+#### PathFinding Attributes
+
+```cpp
+"xrpl.pathfind.source_currency"  = string   // Source currency code
+"xrpl.pathfind.dest_currency"    = string   // Destination currency code
+"xrpl.pathfind.path_count"       = int64    // Number of paths found
+"xrpl.pathfind.cache_hit"        = bool     // RippleLineCache hit
+```
+
+#### TxQ Attributes
+
+```cpp
+"xrpl.txq.queue_depth"      = int64    // Current queue depth
+"xrpl.txq.fee_level"        = int64    // Fee level of transaction
+"xrpl.txq.eviction_reason"  = string   // Why transaction was evicted
+```
+
+#### Fee Attributes
+
+```cpp
+"xrpl.fee.load_factor"      = int64    // Current load factor
+"xrpl.fee.escalation_level" = int64    // Fee escalation multiplier
+```
+
+#### Validator Attributes
+
+```cpp
+"xrpl.validator.list_size"    = int64    // UNL size
+"xrpl.validator.list_age_sec" = int64    // Seconds since last update
+```
+
+#### Amendment Attributes
+
+```cpp
+"xrpl.amendment.name"         = string   // Amendment name
+"xrpl.amendment.status"       = string   // "enabled", "vetoed", "supported"
+```
+
+#### SHAMap Attributes
+
+```cpp
+"xrpl.shamap.type"            = string   // "transaction", "state", "account_state"
+"xrpl.shamap.missing_nodes"   = int64    // Number of missing nodes during sync
+"xrpl.shamap.duration_ms"     = float64  // Sync duration
+```
+
 ### 2.4.3 Data Collection Summary
 
 The following table summarizes what data is collected by category:
 
-| Category        | Attributes Collected                                                 | Purpose                     |
-| --------------- | -------------------------------------------------------------------- | --------------------------- |
-| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`          | Trace transaction lifecycle |
-| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`   | Analyze consensus timing    |
-| **RPC**         | `command`, `version`, `status`, `duration_ms`                        | Monitor RPC performance     |
-| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size` | Network topology analysis   |
-| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`              | Ledger progression tracking |
-| **Job**         | `job.type`, `queue_ms`, `worker`                                     | JobQueue performance        |
+| Category        | Attributes Collected                                                   | Purpose                      |
+| --------------- | ---------------------------------------------------------------------- | ---------------------------- |
+| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`            | Trace transaction lifecycle  |
+| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`     | Analyze consensus timing     |
+| **RPC**         | `command`, `version`, `status`, `duration_ms`                          | Monitor RPC performance      |
+| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`   | Network topology analysis    |
+| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                | Ledger progression tracking  |
+| **Job**         | `job.type`, `queue_ms`, `worker`                                       | JobQueue performance         |
+| **PathFinding** | `pathfind.source_currency`, `dest_currency`, `path_count`, `cache_hit` | Payment path analysis        |
+| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                      | Queue depth and fee tracking |
+| **Fee**         | `fee.load_factor`, `escalation_level`                                  | Fee escalation monitoring    |
+| **Validator**   | `validator.list_size`, `list_age_sec`                                  | UNL health monitoring        |
+| **Amendment**   | `amendment.name`, `status`                                             | Protocol upgrade tracking    |
+| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                          | State tree sync performance  |
 
 ### 2.4.4 Privacy & Sensitive Data Policy
+
+> **PII** = Personally Identifiable Information
 
 OpenTelemetry instrumentation is designed to collect **operational metadata only**, never sensitive content.
 
@@ -310,18 +407,22 @@ redact_account=1      # Hash account addresses before export
 redact_peer_address=1 # Remove peer IP addresses
 ```
 
+> **Note**: The `redact_account` configuration in `rippled.cfg` controls SDK-level redaction before export, while collector-level filtering (see [Collector-Level Data Protection](#collector-level-data-protection) above) provides an additional defense-in-depth layer. Both can operate independently.
+
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
 
 ---
 
 ## 2.5 Context Propagation Design
 
+> **WS** = WebSocket
+
 ### 2.5.1 Propagation Boundaries
 
 ```mermaid
 flowchart TB
     subgraph http["HTTP/WebSocket (RPC)"]
-        w3c["W3C Trace Context Headers:<br/>traceparent: 00-{trace_id}-{span_id}-{flags}<br/>tracestate: rippled=<state>"]
+        w3c["W3C Trace Context Headers:<br/>traceparent:<br/>00-trace_id-span_id-flags<br/>tracestate: rippled=..."]
     end
 
     subgraph protobuf["Protocol Buffers (P2P)"]
@@ -329,7 +430,7 @@ flowchart TB
     end
 
     subgraph jobqueue["JobQueue (Internal Async)"]
-        job["Context captured at job creation,<br/>restored at execution<br/><br/>class Job {<br/>  opentelemetry::context::Context traceContext_;<br/>};"]
+        job["Context captured at job creation,<br/>restored at execution<br/><br/>class Job {<br/>  otel::context::Context<br/>    traceContext_;<br/>};"]
     end
 
     style http fill:#0d47a1,stroke:#082f6a,color:#ffffff
@@ -337,9 +438,17 @@ flowchart TB
     style jobqueue fill:#bf360c,stroke:#8c2809,color:#ffffff
 ```
 
+**Reading the diagram:**
+
+- **HTTP/WebSocket - RPC (blue)**: For client-facing RPC requests, trace context is propagated using the W3C `traceparent` header. This is the standard approach and works with any OTel-compatible client.
+- **Protocol Buffers - P2P (green)**: For peer-to-peer messages between rippled nodes, trace context is embedded as a protobuf `TraceContext` message carrying trace_id, span_id, flags, and optional trace_state.
+- **JobQueue - Internal Async (red)**: For asynchronous work within a single node, the OTel context is captured when a job is created and restored when the job executes on a worker thread. This bridges the async gap so spans remain linked.
+
 ---
 
 ## 2.6 Integration with Existing Observability
+
+> **OTLP** = OpenTelemetry Protocol | **WS** = WebSocket
 
 ### 2.6.1 Existing Frameworks Comparison
 
@@ -422,7 +531,7 @@ span->SetAttribute("peer.id", peerId);
 
 | Scenario                                | PerfLog    | StatsD | OpenTelemetry |
 | --------------------------------------- | ---------- | ------ | ------------- |
-| "How many TXs per second?"              | ❌         | ✅     | ❌            |
+| "How many TXs per second?"              | ❌         | ✅     | ✅            |
 | "What's the p99 RPC latency?"           | ❌         | ✅     | ✅            |
 | "Why was this specific TX slow?"        | ⚠️ partial | ❌     | ✅            |
 | "Which node delayed consensus?"         | ❌         | ❌     | ✅            |
@@ -450,6 +559,14 @@ flowchart TB
     style rippled fill:#212121,stroke:#0a0a0a,color:#ffffff
     style grafana fill:#bf360c,stroke:#8c2809,color:#ffffff
 ```
+
+**Reading the diagram:**
+
+- **rippled Process (dark gray)**: The single rippled node running all three observability frameworks side by side. Each framework operates independently with no interference.
+- **PerfLog to perf.log**: PerfLog writes JSON-formatted event logs to a local file. Grafana can ingest these via Loki or a file-based datasource.
+- **Beast Insight to StatsD Server**: Insight sends aggregated metrics (counters, gauges) over UDP to a StatsD server. Grafana reads from StatsD-compatible backends like Graphite or Prometheus (via StatsD exporter).
+- **OpenTelemetry to OTLP Collector**: OTel exports spans over OTLP/gRPC to a Collector, which then forwards to a trace backend (Tempo).
+- **Grafana (red, unified UI)**: All three data streams converge in Grafana, enabling operators to correlate logs, metrics, and traces in a single dashboard.
 
 ### 2.6.5 Correlation with PerfLog
 

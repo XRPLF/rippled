@@ -276,6 +276,7 @@ words:
   - txjson
   - txn
   - txns
+  - txqueue
   - txs
   - UBSAN
   - ubsan
