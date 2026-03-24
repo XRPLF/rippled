@@ -11,12 +11,13 @@
 
 namespace xrpl {
 
+template <typename ViewT>
 bool
-AccountRoot::isGlobalFrozen() const
+AccountRoot<ViewT>::isGlobalFrozen() const
 {
-    if (!exists())
+    if (!this->exists())
         return false;
-    return sle_->isFlag(lsfGlobalFreeze);
+    return this->sle_->isFlag(lsfGlobalFreeze);
 }
 
 // An owner count cannot be negative. If adjustment would cause a negative
@@ -61,23 +62,24 @@ confineOwnerCount(
     return adjusted;
 }
 
+template <typename ViewT>
 XRPAmount
-AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
+AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
 {
-    if (!exists())
+    if (!this->exists())
         return beast::zero;
 
     // Return balance minus reserve
     std::uint32_t const ownerCount = confineOwnerCount(
-        readView_.ownerCountHook(id_, sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
+        this->readView().ownerCountHook(id_, this->sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount() ? XRPAmount{0} : readView_.fees().accountReserve(ownerCount);
+        this->isPseudoAccount() ? XRPAmount{0} : this->readView().fees().accountReserve(ownerCount);
 
-    auto const fullBalance = sle_->getFieldAmount(sfBalance);
+    auto const fullBalance = this->sle_->getFieldAmount(sfBalance);
 
-    auto const balance = readView_.balanceHook(id_, xrpAccount(), fullBalance);
+    auto const balance = this->readView().balanceHook(id_, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
@@ -90,26 +92,29 @@ AccountRoot::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
     return amount.xrp();
 }
 
+template <typename ViewT>
 Rate
-AccountRoot::transferRate() const
+AccountRoot<ViewT>::transferRate() const
 {
-    if (sle_ && sle_->isFieldPresent(sfTransferRate))
-        return Rate{sle_->getFieldU32(sfTransferRate)};
+    if (this->sle_ && this->sle_->isFieldPresent(sfTransferRate))
+        return Rate{this->sle_->getFieldU32(sfTransferRate)};
 
     return parityRate;
 }
 
+template <typename ViewT>
 void
-WritableAccountRoot::adjustOwnerCount(std::int32_t amount, beast::Journal j)
+AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount, beast::Journal j)
+    requires is_writable
 {
-    XRPL_ASSERT(canModify(), "xrpl::adjustOwnerCount : can modify");
+    XRPL_ASSERT(this->canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{mutableSle_->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*mutableSle_)[sfAccount];
+    std::uint32_t const current{this->sle_->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*this->sle_)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
-    applyView_.adjustOwnerCountHook(id_, current, adjusted);
-    mutableSle_->at(sfOwnerCount) = adjusted;
-    update();
+    this->applyView().adjustOwnerCountHook(id_, current, adjusted);
+    this->sle_->at(sfOwnerCount) = adjusted;
+    this->update();
 }
 
 AccountID
@@ -161,17 +166,18 @@ getPseudoAccountFields()
     return pseudoFields;
 }
 
+template <typename ViewT>
 [[nodiscard]] bool
-AccountRoot::isPseudoAccount(std::set<SField const*> const& pseudoFieldFilter) const
+AccountRoot<ViewT>::isPseudoAccount(std::set<SField const*> const& pseudoFieldFilter) const
 {
     auto const& fields = getPseudoAccountFields();
 
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
-    return sle_ && sle_->getType() == ltACCOUNT_ROOT &&
+    return this->sle_ && this->sle_->getType() == ltACCOUNT_ROOT &&
         std::count_if(
             fields.begin(), fields.end(), [this, &pseudoFieldFilter](SField const* sf) -> bool {
-                return sle_->isFieldPresent(*sf) &&
+                return this->sle_->isFieldPresent(*sf) &&
                     (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
             }) > 0;
 }
@@ -235,18 +241,23 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
     return account;
 }
 
+template <typename ViewT>
 [[nodiscard]] TER
-AccountRoot::checkDestinationAndTag(bool hasDestinationTag) const
+AccountRoot<ViewT>::checkDestinationAndTag(bool hasDestinationTag) const
 {
-    if (sle_ == nullptr)
+    if (this->sle_ == nullptr)
         return tecNO_DST;
 
     // The tag is basically account-specific information we don't
     // understand, but we can require someone to fill it in.
-    if (sle_->isFlag(lsfRequireDestTag) && !hasDestinationTag)
+    if (this->sle_->isFlag(lsfRequireDestTag) && !hasDestinationTag)
         return tecDST_TAG_NEEDED;  // Cannot send without a tag
 
     return tesSUCCESS;
 }
+
+// Explicit template instantiations
+template class AccountRoot<ReadView>;
+template class AccountRoot<ApplyView>;
 
 }  // namespace xrpl

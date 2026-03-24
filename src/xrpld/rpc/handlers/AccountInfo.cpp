@@ -29,7 +29,7 @@ namespace xrpl {
  * If the entry is not an account root, sets the 'Invalid' field to true.
  */
 void
-injectSLE(Json::Value& jv, AccountRoot const& account)
+injectSLE(Json::Value& jv, ReadOnlyAccountRoot const& account)
 {
     jv = account->getJson(JsonOptions::none);
     if (account->isFieldPresent(sfEmailHash))

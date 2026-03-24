@@ -321,7 +321,7 @@ verifyDepositPreauth(
     STTx const& tx,
     ApplyView& view,
     AccountID const& src,
-    AccountRoot const& dst,
+    ReadOnlyAccountRoot const& dst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
