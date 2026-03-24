@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/VaultHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>

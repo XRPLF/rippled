@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -407,7 +408,7 @@ ValidVault::finalize(
         if (afterVault.assetsTotal > zero &&
             afterVault.assetsTotal - afterVault.interestUnrealized <= zero)
         {
-            JLOG(j.fatal()) << "Invariant failed: deposit NAV must be positive";
+            JLOG(j.fatal()) << "Invariant failed: deposit net asset value must be positive";
             result = false;
         }
 
@@ -416,7 +417,7 @@ ValidVault::finalize(
         if (afterVault.assetsTotal - afterVault.interestUnrealized - afterVault.lossUnrealized <
             zero)
         {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal NAV must not be negative";
+            JLOG(j.fatal()) << "Invariant failed: withdrawal net asset value must not be negative";
             result = false;
         }
 
