@@ -1,349 +1,352 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
-<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
-    namespace xrpl
+namespace xrpl {
+bool
+AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
-    bool AMMBid::checkExtraFeatures(PreflightContext const& ctx)
+    return ammEnabled(ctx.rules);
+}
+
+NotTEC
+AMMBid::preflight(PreflightContext const& ctx)
+{
+    if (auto const res =
+            invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
-        return ammEnabled(ctx.rules);
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
+        return res;
     }
 
-    NotTEC AMMBid::preflight(PreflightContext const& ctx)
+    if (auto const bidMin = ctx.tx[~sfBidMin])
     {
-        if (auto const res =
-                invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+        if (auto const res = invalidAMMAmount(*bidMin))
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
+            JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
             return res;
         }
-
-        if (auto const bidMin = ctx.tx[~sfBidMin])
-        {
-            if (auto const res = invalidAMMAmount(*bidMin))
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: invalid min slot price.";
-                return res;
-            }
-        }
-
-        if (auto const bidMax = ctx.tx[~sfBidMax])
-        {
-            if (auto const res = invalidAMMAmount(*bidMax))
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: invalid max slot price.";
-                return res;
-            }
-        }
-
-        if (ctx.tx.isFieldPresent(sfAuthAccounts))
-        {
-            auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-            if (authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
-                return temMALFORMED;
-            }
-            if (ctx.rules.enabled(fixAMMv1_3))
-            {
-                AccountID account = ctx.tx[sfAccount];
-                std::set<AccountID> unique;
-                for (auto const& obj : authAccounts)
-                {
-                    auto authAccount = obj[sfAccount];
-                    if (authAccount == account || unique.contains(authAccount))
-                    {
-                        JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
-                        return temMALFORMED;
-                    }
-                    unique.insert(authAccount);
-                }
-            }
-        }
-
-        return tesSUCCESS;
     }
 
-    TER AMMBid::preclaim(PreclaimContext const& ctx)
+    if (auto const bidMax = ctx.tx[~sfBidMax])
     {
-        auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
-        if (!ammSle)
+        if (auto const res = invalidAMMAmount(*bidMax))
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
-            return terNO_AMM;
+            JLOG(ctx.j.debug()) << "AMM Bid: invalid max slot price.";
+            return res;
         }
-
-        auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-        if (lpTokensBalance == beast::zero)
-            return tecAMM_EMPTY;
-
-        if (ctx.tx.isFieldPresent(sfAuthAccounts))
-        {
-            for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
-            {
-                if (!ctx.view.read(keylet::account(account[sfAccount])))
-                {
-                    JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
-                    return terNO_ACCOUNT;
-                }
-            }
-        }
-
-        auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-        // Not LP
-        if (lpTokens == beast::zero)
-        {
-            JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
-            return tecAMM_INVALID_TOKENS;
-        }
-
-        auto const bidMin = ctx.tx[~sfBidMin];
-
-        if (bidMin)
-        {
-            if (bidMin->issue() != lpTokens.issue())
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-                return temBAD_AMM_TOKENS;
-            }
-            if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-                return tecAMM_INVALID_TOKENS;
-            }
-        }
-
-        auto const bidMax = ctx.tx[~sfBidMax];
-        if (bidMax)
-        {
-            if (bidMax->issue() != lpTokens.issue())
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-                return temBAD_AMM_TOKENS;
-            }
-            if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
-            {
-                JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
-                return tecAMM_INVALID_TOKENS;
-            }
-        }
-
-        if (bidMin && bidMax && bidMin > bidMax)
-        {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Max/MinSlotPrice.";
-            return tecAMM_INVALID_TOKENS;
-        }
-
-        return tesSUCCESS;
     }
 
-    static std::pair<TER, bool> applyBid(
-        ApplyContext & ctx_, Sandbox & sb, AccountID const& account_, beast::Journal j_)
+    if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        using namespace std::chrono;
-        auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
-        if (!ammSle)
+        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+        if (authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
+            return temMALFORMED;
+        }
+        if (ctx.rules.enabled(fixAMMv1_3))
+        {
+            AccountID account = ctx.tx[sfAccount];
+            std::set<AccountID> unique;
+            for (auto const& obj : authAccounts)
+            {
+                auto authAccount = obj[sfAccount];
+                if (authAccount == account || unique.contains(authAccount))
+                {
+                    JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
+                    return temMALFORMED;
+                }
+                unique.insert(authAccount);
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+AMMBid::preclaim(PreclaimContext const& ctx)
+{
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    if (!ammSle)
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
+        return terNO_AMM;
+    }
+
+    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
+    if (lpTokensBalance == beast::zero)
+        return tecAMM_EMPTY;
+
+    if (ctx.tx.isFieldPresent(sfAuthAccounts))
+    {
+        for (auto const& account : ctx.tx.getFieldArray(sfAuthAccounts))
+        {
+            if (!ctx.view.read(keylet::account(account[sfAccount])))
+            {
+                JLOG(ctx.j.debug()) << "AMM Bid: Invalid Account.";
+                return terNO_ACCOUNT;
+            }
+        }
+    }
+
+    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    // Not LP
+    if (lpTokens == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
+        return tecAMM_INVALID_TOKENS;
+    }
+
+    auto const bidMin = ctx.tx[~sfBidMin];
+
+    if (bidMin)
+    {
+        if (bidMin->issue() != lpTokens.issue())
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
+            return temBAD_AMM_TOKENS;
+        }
+        if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
+            return tecAMM_INVALID_TOKENS;
+        }
+    }
+
+    auto const bidMax = ctx.tx[~sfBidMax];
+    if (bidMax)
+    {
+        if (bidMax->issue() != lpTokens.issue())
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
+            return temBAD_AMM_TOKENS;
+        }
+        if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: Invalid Tokens.";
+            return tecAMM_INVALID_TOKENS;
+        }
+    }
+
+    if (bidMin && bidMax && bidMin > bidMax)
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: Invalid Max/MinSlotPrice.";
+        return tecAMM_INVALID_TOKENS;
+    }
+
+    return tesSUCCESS;
+}
+
+static std::pair<TER, bool>
+applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Journal j_)
+{
+    using namespace std::chrono;
+    auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    if (!ammSle)
+        return {tecINTERNAL, false};
+    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
+    auto const& rules = ctx_.view().rules();
+    if (!rules.enabled(fixInnerObjTemplate))
+    {
+        if (!ammSle->isFieldPresent(sfAuctionSlot))
+            ammSle->makeFieldPresent(sfAuctionSlot);
+    }
+    else
+    {
+        XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
+        if (!ammSle->isFieldPresent(sfAuctionSlot))
             return {tecINTERNAL, false};
-        STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-        auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
-        auto const& rules = ctx_.view().rules();
-        if (!rules.enabled(fixInnerObjTemplate))
+    }
+    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    auto const current =
+        duration_cast<seconds>(ctx_.view().header().parentCloseTime.time_since_epoch()).count();
+    // Auction slot discounted fee
+    auto const discountedFee = (*ammSle)[sfTradingFee] / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
+    auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
+    // Min price
+    auto const minSlotPrice = lptAMMBalance * tradingFee / AUCTION_SLOT_MIN_FEE_FRACTION;
+
+    std::uint32_t constexpr tailingSlot = AUCTION_SLOT_TIME_INTERVALS - 1;
+
+    // If seated then it is the current slot-holder time slot, otherwise
+    // the auction slot is not owned. Slot range is in {0-19}
+    auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
+
+    // Account must exist and the slot not expired.
+    auto validOwner = [&](AccountID const& account) {
+        // Valid range is 0-19 but the tailing slot pays MinSlotPrice
+        // and doesn't refund so the check is < instead of <= to optimize.
+        return timeSlot && *timeSlot < tailingSlot && sb.read(keylet::account(account));
+    };
+
+    auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
+        auctionSlot.setAccountID(sfAccount, account_);
+        auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
+        if (fee != 0)
         {
-            if (!ammSle->isFieldPresent(sfAuctionSlot))
-                ammSle->makeFieldPresent(sfAuctionSlot);
+            auctionSlot.setFieldU16(sfDiscountedFee, fee);
+        }
+        else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        {
+            auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
+        auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
+        if (ctx_.tx.isFieldPresent(sfAuthAccounts))
+        {
+            auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
         }
         else
         {
-            XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
-            if (!ammSle->isFieldPresent(sfAuctionSlot))
-                return {tecINTERNAL, false};
+            auctionSlot.makeFieldAbsent(sfAuthAccounts);
         }
-        auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-        auto const current =
-            duration_cast<seconds>(ctx_.view().header().parentCloseTime.time_since_epoch()).count();
-        // Auction slot discounted fee
-        auto const discountedFee = (*ammSle)[sfTradingFee] / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION;
-        auto const tradingFee = getFee((*ammSle)[sfTradingFee]);
-        // Min price
-        auto const minSlotPrice = lptAMMBalance * tradingFee / AUCTION_SLOT_MIN_FEE_FRACTION;
+        // Burn the remaining bid amount
+        auto const saBurn =
+            adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
+        if (saBurn >= lptAMMBalance)
+        {
+            // This error case should never occur.
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.fatal())
+                << "AMM Bid: LP Token burn exceeds AMM balance " << burn << " " << lptAMMBalance;
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
+        if (!isTesSuccess(res))
+        {
+            JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
+            return res;
+        }
+        ammSle->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
+        sb.update(ammSle);
+        return tesSUCCESS;
+    };
 
-        std::uint32_t constexpr tailingSlot = AUCTION_SLOT_TIME_INTERVALS - 1;
+    TER res = tesSUCCESS;
 
-        // If seated then it is the current slot-holder time slot, otherwise
-        // the auction slot is not owned. Slot range is in {0-19}
-        auto const timeSlot = ammAuctionTimeSlot(current, auctionSlot);
+    auto const bidMin = ctx_.tx[~sfBidMin];
+    auto const bidMax = ctx_.tx[~sfBidMax];
 
-        // Account must exist and the slot not expired.
-        auto validOwner = [&](AccountID const& account) {
-            // Valid range is 0-19 but the tailing slot pays MinSlotPrice
-            // and doesn't refund so the check is < instead of <= to optimize.
-            return timeSlot && *timeSlot < tailingSlot && sb.read(keylet::account(account));
-        };
-
-        auto updateSlot =
-            [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
-            auctionSlot.setAccountID(sfAccount, account_);
-            auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
-            if (fee != 0)
+    auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
+        auto const payPrice = [&]() -> std::optional<Number> {
+            // Both min/max bid price are defined
+            if (bidMin && bidMax)
             {
-                auctionSlot.setFieldU16(sfDiscountedFee, fee);
-            }
-            else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-            {
-                auctionSlot.makeFieldAbsent(sfDiscountedFee);
-            }
-            auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
-            if (ctx_.tx.isFieldPresent(sfAuthAccounts))
-            {
-                auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
-            }
-            else
-            {
-                auctionSlot.makeFieldAbsent(sfAuthAccounts);
-            }
-            // Burn the remaining bid amount
-            auto const saBurn = adjustLPTokens(
-                lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
-            if (saBurn >= lptAMMBalance)
-            {
-                // This error case should never occur.
-                // LCOV_EXCL_START
-                JLOG(ctx_.journal.fatal()) << "AMM Bid: LP Token burn exceeds AMM balance " << burn
-                                           << " " << lptAMMBalance;
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-            auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
-            if (!isTesSuccess(res))
-            {
-                JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
-                return res;
-            }
-            ammSle->setFieldAmount(sfLPTokenBalance, lptAMMBalance - saBurn);
-            sb.update(ammSle);
-            return tesSUCCESS;
-        };
-
-        TER res = tesSUCCESS;
-
-        auto const bidMin = ctx_.tx[~sfBidMin];
-        auto const bidMax = ctx_.tx[~sfBidMax];
-
-        auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
-            auto const payPrice = [&]() -> std::optional<Number> {
-                // Both min/max bid price are defined
-                if (bidMin && bidMax)
-                {
-                    if (computedPrice <= *bidMax)
-                        return std::max(computedPrice, Number(*bidMin));
-                    JLOG(ctx_.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
-                                               << *bidMin << " " << *bidMax;
-                    return std::nullopt;
-                }
-                // Bidder pays max(bidPrice, computedPrice)
-                if (bidMin)
-                {
+                if (computedPrice <= *bidMax)
                     return std::max(computedPrice, Number(*bidMin));
-                }
-                if (bidMax)
-                {
-                    if (computedPrice <= *bidMax)
-                        return computedPrice;
-                    JLOG(ctx_.journal.debug())
-                        << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
-                    return std::nullopt;
-                }
-
-                return computedPrice;
-            }();
-            if (!payPrice)
-            {
-                return Unexpected(tecAMM_FAILED);
+                JLOG(ctx_.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
+                                           << *bidMin << " " << *bidMax;
+                return std::nullopt;
             }
-            if (payPrice > lpTokens)
+            // Bidder pays max(bidPrice, computedPrice)
+            if (bidMin)
             {
-                return Unexpected(tecAMM_INVALID_TOKENS);
+                return std::max(computedPrice, Number(*bidMin));
             }
-            return *payPrice;
-        };
+            if (bidMax)
+            {
+                if (computedPrice <= *bidMax)
+                    return computedPrice;
+                JLOG(ctx_.journal.debug())
+                    << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
+                return std::nullopt;
+            }
 
-        // No one owns the slot or expired slot.
-        if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
+            return computedPrice;
+        }();
+        if (!payPrice)
         {
-            auto const payPrice = getPayPrice(minSlotPrice);
-            if (!payPrice)
-            {
-                return {payPrice.error(), false};
-            }
-
-            res = updateSlot(discountedFee, *payPrice, *payPrice);
+            return Unexpected(tecAMM_FAILED);
         }
-        else
+        if (payPrice > lpTokens)
         {
-            // Price the slot was purchased at.
-            STAmount const pricePurchased = auctionSlot[sfPrice];
-            XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
-            auto const fractionUsed = (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
-            auto const fractionRemaining = Number(1) - fractionUsed;
-            auto const computedPrice = [&]() -> Number {
-                auto const p1_05 = Number(105, -2);
-                // First interval slot price
-                if (*timeSlot == 0)
-                    return pricePurchased * p1_05 + minSlotPrice;
-                // Other intervals slot price
-                return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) + minSlotPrice;
-            }();
-
-            auto const payPrice = getPayPrice(computedPrice);
-
-            if (!payPrice)
-                return {payPrice.error(), false};
-
-            // Refund the previous owner. If the time slot is 0 then
-            // the owner is refunded 95% of the amount.
-            auto const refund = fractionRemaining * pricePurchased;
-            if (refund > *payPrice)
-            {
-                // This error case should never occur.
-                JLOG(ctx_.journal.fatal())
-                    << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
-                return {tecINTERNAL, false};
-            }
-            res = accountSend(
-                sb,
-                account_,
-                auctionSlot[sfAccount],
-                toSTAmount(lpTokens.issue(), refund),
-                ctx_.journal);
-            if (!isTesSuccess(res))
-            {
-                JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
-                return {res, false};
-            }
-
-            auto const burn = *payPrice - refund;
-            res = updateSlot(discountedFee, *payPrice, burn);
+            return Unexpected(tecAMM_INVALID_TOKENS);
         }
+        return *payPrice;
+    };
 
-        return {res, isTesSuccess(res)};
-    }
-
-    TER AMMBid::doApply()
+    // No one owns the slot or expired slot.
+    if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        // This is the ledger view that we work against. Transactions are applied
-        // as we go on processing transactions.
-        Sandbox sb(&ctx_.view());
+        auto const payPrice = getPayPrice(minSlotPrice);
+        if (!payPrice)
+        {
+            return {payPrice.error(), false};
+        }
 
-        auto const result = applyBid(ctx_, sb, account_, j_);
-        if (result.second)
-            sb.apply(ctx_.rawView());
-
-        return result.first;
+        res = updateSlot(discountedFee, *payPrice, *payPrice);
     }
+    else
+    {
+        // Price the slot was purchased at.
+        STAmount const pricePurchased = auctionSlot[sfPrice];
+        XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
+        auto const fractionUsed = (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
+        auto const fractionRemaining = Number(1) - fractionUsed;
+        auto const computedPrice = [&]() -> Number {
+            auto const p1_05 = Number(105, -2);
+            // First interval slot price
+            if (*timeSlot == 0)
+                return pricePurchased * p1_05 + minSlotPrice;
+            // Other intervals slot price
+            return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) + minSlotPrice;
+        }();
+
+        auto const payPrice = getPayPrice(computedPrice);
+
+        if (!payPrice)
+            return {payPrice.error(), false};
+
+        // Refund the previous owner. If the time slot is 0 then
+        // the owner is refunded 95% of the amount.
+        auto const refund = fractionRemaining * pricePurchased;
+        if (refund > *payPrice)
+        {
+            // This error case should never occur.
+            JLOG(ctx_.journal.fatal())
+                << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
+            return {tecINTERNAL, false};
+        }
+        res = accountSend(
+            sb,
+            account_,
+            auctionSlot[sfAccount],
+            toSTAmount(lpTokens.issue(), refund),
+            ctx_.journal);
+        if (!isTesSuccess(res))
+        {
+            JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
+            return {res, false};
+        }
+
+        auto const burn = *payPrice - refund;
+        res = updateSlot(discountedFee, *payPrice, burn);
+    }
+
+    return {res, isTesSuccess(res)};
+}
+
+TER
+AMMBid::doApply()
+{
+    // This is the ledger view that we work against. Transactions are applied
+    // as we go on processing transactions.
+    Sandbox sb(&ctx_.view());
+
+    auto const result = applyBid(ctx_, sb, account_, j_);
+    if (result.second)
+        sb.apply(ctx_.rawView());
+
+    return result.first;
+}
 
 }  // namespace xrpl
