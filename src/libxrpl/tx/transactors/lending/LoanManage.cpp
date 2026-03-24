@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 //
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>

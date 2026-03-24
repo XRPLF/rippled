@@ -9,8 +9,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -5252,7 +5253,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 disabled");
             env.disableFeature(featureLendingProtocolV1_1);
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(temDISABLED), THISLINE);
+            env(delTx, ter(temDISABLED));
             env.close();
             env.enableFeature(featureLendingProtocolV1_1);
         }
@@ -5261,7 +5262,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data too large");
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength + 1, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5269,7 +5270,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data empty");
             delTx[sfMemoData] = strHex(std::string(0, 'A'));
-            env(delTx, ter(temMALFORMED), THISLINE);
+            env(delTx, ter(temMALFORMED));
             env.close();
         }
 
@@ -5277,12 +5278,12 @@ class Vault_test : public beast::unit_test::suite
             testcase("VaultDelete data featureLendingProtocolV1_1 enabled data valid");
             PrettyAsset const xrpAsset = xrpIssue();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
-            env(tx, ter(tesSUCCESS), THISLINE);
+            env(tx, ter(tesSUCCESS));
             env.close();
             // Recreate the transaction as the vault keylet changed
             auto delTx = vault.del({.owner = owner, .id = keylet.key});
             delTx[sfMemoData] = strHex(std::string(maxDataPayloadLength, 'A'));
-            env(delTx, ter(tesSUCCESS), THISLINE);
+            env(delTx, ter(tesSUCCESS));
             env.close();
         }
     }
