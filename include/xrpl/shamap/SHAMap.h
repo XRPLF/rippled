@@ -520,7 +520,7 @@ private:
     // getMissingNodes helper functions
     void
     gmn_ProcessNodes(MissingNodes&, MissingNodes::StackEntry& node);
-    void
+    static void
     gmn_ProcessDeferredReads(MissingNodes&);
 
     // fetch from DB helper function

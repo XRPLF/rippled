@@ -21,7 +21,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    STAmount
+    static STAmount
     roundSelf(STAmount const& amount)
     {
         if (amount.native())

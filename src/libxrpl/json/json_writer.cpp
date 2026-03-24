@@ -23,7 +23,7 @@ isControlCharacter(char ch)
 static bool
 containsControlCharacter(char const* str)
 {
-    while (*str)
+    while (*str != 0)
     {
         if (isControlCharacter(*(str++)))
             return true;
@@ -106,7 +106,7 @@ valueToQuotedString(char const* value)
     // We have to walk value and escape any special characters.
     // Appending to std::string is not efficient, but this should be rare.
     // (Note: forward slashes are *not* rare, but I am not escaping them.)
-    unsigned maxsize = strlen(value) * 2 + 3;  // all-escaped+quotes+NULL
+    unsigned maxsize = (strlen(value) * 2) + 3;  // all-escaped+quotes+NULL
     std::string result;
     result.reserve(maxsize);  // to avoid lots of mallocs
     result += "\"";
@@ -416,7 +416,7 @@ StyledWriter::isMultilineArray(Value const& value)
     {
         childValues_.reserve(size);
         addChildValues_ = true;
-        int lineLength = 4 + (size - 1) * 2;  // '[ ' + ', '*n + ' ]'
+        int lineLength = 4 + ((size - 1) * 2);  // '[ ' + ', '*n + ' ]'
 
         for (int index = 0; index < size; ++index)
         {
@@ -651,7 +651,7 @@ StyledStreamWriter::isMultilineArray(Value const& value)
     {
         childValues_.reserve(size);
         addChildValues_ = true;
-        int lineLength = 4 + (size - 1) * 2;  // '[ ' + ', '*n + ' ]'
+        int lineLength = 4 + ((size - 1) * 2);  // '[ ' + ', '*n + ' ]'
 
         for (int index = 0; index < size; ++index)
         {
