@@ -149,7 +149,7 @@ applyBatchTransactions(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
+        batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
         "Batch transaction missing sfRawTransactions");
 
     auto const parentBatchId = batchTxn.getTransactionID();
@@ -188,13 +188,13 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if (mode & tfAllOrNothing)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if (mode & tfUntilFailure)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if (mode & tfOnlyOne)
+        else if ((mode & tfOnlyOne) != 0u)
         {
             break;
         }

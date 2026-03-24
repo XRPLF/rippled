@@ -279,7 +279,7 @@ public:
                 {Number{Number::maxRep}, Number{6, -1}, Number{Number::maxRep - 1}},
                 {Number{false, Number::maxRep + 1, 0, Number::normalized{}},
                  Number{1, 0},
-                 Number{Number::maxRep / 10 + 1, 1}},
+                 Number{(Number::maxRep / 10) + 1, 1}},
                 {Number{false, Number::maxRep + 1, 0, Number::normalized{}},
                  Number{3, 0},
                  Number{Number::maxRep}},
@@ -456,7 +456,7 @@ public:
                     // 99'999'999'999'999'999'800'000'000'000'000'000'100
                     {Number{false, maxMantissa, 0, Number::normalized{}},
                      Number{false, maxMantissa, 0, Number::normalized{}},
-                     Number{false, maxMantissa / 10 - 1, 20, Number::normalized{}}},
+                     Number{false, (maxMantissa / 10) - 1, 20, Number::normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
                     {Number{Number::maxRep, 0},
@@ -523,7 +523,7 @@ public:
                     // 99'999'999'999'999'999'800'000'000'000'000'000'100
                     {Number{false, maxMantissa, 0, Number::normalized{}},
                      Number{false, maxMantissa, 0, Number::normalized{}},
-                     Number{false, maxMantissa / 10 - 1, 20, Number::normalized{}}},
+                     Number{false, (maxMantissa / 10) - 1, 20, Number::normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
                     {Number{Number::maxRep, 0},
@@ -1238,10 +1238,10 @@ public:
                     auto const maxMantissa = Number::maxMantissa();
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
                     test(
-                        Number{false, maxMantissa * 1000 + 999, -3, Number::normalized()},
+                        Number{false, (maxMantissa * 1000) + 999, -3, Number::normalized()},
                         "9999999999999999");
                     test(
-                        Number{true, maxMantissa * 1000 + 999, -3, Number::normalized()},
+                        Number{true, (maxMantissa * 1000) + 999, -3, Number::normalized()},
                         "-9999999999999999");
 
                     test(Number{std::numeric_limits<std::int64_t>::max(), -3}, "9223372036854775");
@@ -1537,7 +1537,7 @@ public:
             // 99'999'999'999'999'999'800'000'000'000'000'000'100 - also 38
             // digits
             BEAST_EXPECT(
-                (power(max, 2) == Number{false, maxMantissa / 10 - 1, 20, Number::normalized{}}));
+                (power(max, 2) == Number{false, (maxMantissa / 10) - 1, 20, Number::normalized{}}));
         }
     }
 

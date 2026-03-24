@@ -241,7 +241,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require(balance(bob, USDA(10)));
             env(pay(bob, carol, USDA(5)), sendmax(USDA(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(balance(bob, USDA(10.0 - 5.0 / effectiveQ)));
+            env.require(balance(bob, USDA(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.

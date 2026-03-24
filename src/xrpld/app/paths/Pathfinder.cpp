@@ -615,7 +615,7 @@ Pathfinder::getBestPaths(
             ++pathsIterator;
 
         auto iPathsLeft = maxPaths - bestPaths.size();
-        if (!(iPathsLeft > 0 || fullLiquidityPath.empty()))
+        if (iPathsLeft <= 0 && !fullLiquidityPath.empty())
             break;
 
         if (path.empty())
@@ -850,7 +850,7 @@ Pathfinder::isNoRipple(
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && (sleRipple->getFieldU32(sfFlags) & flag);
+    return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
 }
 
 // Does this path end on an account-to-account link whose last account has
@@ -864,7 +864,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if (!(endElement.getNodeType() & STPathElement::typeAccount))
+    if ((endElement.getNodeType() & STPathElement::typeAccount) == 0u)
         return false;
 
     // If there's only one item in the path, return true if that item specifies
@@ -911,7 +911,7 @@ Pathfinder::addLink(
                      << " completePaths size=" << mCompletePaths.size();
     JLOG(j_.trace()) << currentPath.getJson(JsonOptions::none);
 
-    if (addFlags & afADD_ACCOUNTS)
+    if ((addFlags & afADD_ACCOUNTS) != 0u)
     {
         // add accounts
         if (bOnXRP)
@@ -930,10 +930,10 @@ Pathfinder::addLink(
 
             if (sleEnd)
             {
-                bool const bRequireAuth(sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
                 bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
-                bool const bDestOnly(addFlags & afAC_LAST);
+                bool const bDestOnly((addFlags & afAC_LAST) != 0u);
 
                 if (auto const lines = mRLCache->getRippleLines(
                         uEndAccount,
@@ -1012,7 +1012,7 @@ Pathfinder::addLink(
                                     bIsEndCurrency,
                                     mEffectiveDst,
                                     continueCallback);
-                                if (out)
+                                if (out != 0)
                                     candidates.push_back({out, acct});
                             }
                         }
@@ -1060,10 +1060,10 @@ Pathfinder::addLink(
             }
         }
     }
-    if (addFlags & afADD_BOOKS)
+    if ((addFlags & afADD_BOOKS) != 0u)
     {
         // add order books
-        if (addFlags & afOB_XRP)
+        if ((addFlags & afOB_XRP) != 0u)
         {
             // to XRP only
             if (!bOnXRP && app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}, mDomain))

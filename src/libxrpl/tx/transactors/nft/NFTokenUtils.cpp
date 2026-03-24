@@ -601,7 +601,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
             if (maxDeletableOffers == deletedOffersCount)
                 break;
         }
-    } while (pageIndex.value_or(0) && maxDeletableOffers != deletedOffersCount);
+    } while ((pageIndex.value_or(0) != 0u) && maxDeletableOffers != deletedOffersCount);
 
     return deletedOffersCount;
 }
@@ -647,8 +647,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            ((*offer)[sfFlags] & lsfSellNFToken) ? keylet::nft_sells(nftokenID)
-                                                 : keylet::nft_buys(nftokenID),
+            (((*offer)[sfFlags] & lsfSellNFToken) != 0u) ? keylet::nft_sells(nftokenID)
+                                                         : keylet::nft_buys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
@@ -799,7 +799,7 @@ tokenOfferCreatePreflight(
 
     if (!isXRP(amount))
     {
-        if (nftFlags & nft::flagOnlyXRP)
+        if ((nftFlags & nft::flagOnlyXRP) != 0)
             return temBAD_AMOUNT;
 
         if (!amount)
@@ -808,7 +808,7 @@ tokenOfferCreatePreflight(
 
     // If this is an offer to buy, you must offer something; if it's an
     // offer to sell, you can ask for nothing.
-    bool const isSellOffer = txFlags & tfSellNFToken;
+    bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
     if (!isSellOffer && !amount)
         return temBAD_AMOUNT;
 
@@ -844,7 +844,7 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
-    if (!(nftFlags & nft::flagCreateTrustLines) && !amount.native() && xferFee)
+    if (((nftFlags & nft::flagCreateTrustLines) == 0) && !amount.native() && (xferFee != 0u))
     {
         if (!view.exists(keylet::account(nftIssuer)))
             return tecNO_ISSUER;
@@ -866,7 +866,7 @@ tokenOfferCreatePreclaim(
             return tecFROZEN;
     }
 
-    if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
+    if (nftIssuer != acctID && ((nftFlags & nft::flagTransferable) == 0))
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
@@ -899,7 +899,7 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -912,7 +912,7 @@ tokenOfferCreatePreclaim(
         if (!sleOwner)
             return tecNO_TARGET;
 
-        if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -960,7 +960,7 @@ tokenOfferCreateApply(
         if (!ownerNode)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        bool const isSellOffer = txFlags & tfSellNFToken;
+        bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
 
         // Token offers are also added to the token's buy or sell offer
         // directory
@@ -1094,7 +1094,8 @@ checkTrustlineDeepFrozen(
 
         // There's no difference which side enacted deep freeze, accepting
         // tokens shouldn't be possible.
-        bool const deepFrozen = (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+        bool const deepFrozen =
+            ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
         if (deepFrozen)
         {
