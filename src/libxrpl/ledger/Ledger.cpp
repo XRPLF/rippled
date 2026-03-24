@@ -780,9 +780,15 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 bool
 Ledger::isSensible() const
 {
-    return header_.hash.isNonZero() && header_.accountHash.isNonZero() &&
-        (header_.accountHash == stateMap_.getHash().as_uint256()) &&
-        (header_.txHash == txMap_.getHash().as_uint256());
+    if (header_.hash.isZero())
+        return false;
+    if (header_.accountHash.isZero())
+        return false;
+    if (header_.accountHash != stateMap_.getHash().as_uint256())
+        return false;
+    if (header_.txHash != txMap_.getHash().as_uint256())
+        return false;
+    return true;
 }
 
 // update the skip list with the information from our previous ledger
