@@ -981,12 +981,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    if (trustLines.size() > maxDeletableAMMTrustLines)
-    {
-        JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
-                            << trustLines.size();
-        return;
-    }
+    std::size_t removed = 0;
 
     for (auto const& index : trustLines)
     {
@@ -995,6 +990,8 @@ removeDeletedTrustLines(
         {
             JLOG(viewJ.error()) << "removeDeletedTrustLines: failed to delete AMM trustline";
         }
+        if (++removed == maxDeletableAMMTrustLines)
+            return;
     }
 }
 
