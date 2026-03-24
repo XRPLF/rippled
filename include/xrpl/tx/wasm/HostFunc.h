@@ -55,6 +55,15 @@ Expected<Bytes, HostFunctionError>
 floatFromUintImpl(uint64_t x, int32_t mode);
 
 Expected<Bytes, HostFunctionError>
+floatFromSTAmountImpl(STAmount const& x, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatFromSTNumberImpl(STNumber const& x, int32_t mode);
+
+Expected<int64_t, HostFunctionError>
+floatToIntImpl(Slice const& x, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
 Expected<int32_t, HostFunctionError>
@@ -436,6 +445,24 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromUint(uint64_t x, int32_t mode) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    floatFromSTAmount(STAmount const& x, int32_t mode) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    floatFromSTNumber(STNumber const& x, int32_t mode) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int64_t, HostFunctionError>
+    floatToInt(Slice const& x, int32_t mode) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

@@ -47,7 +47,7 @@ setData(
 }
 
 template <class IW>
-Expected<int32_t, HostFunctionError>
+static Expected<int32_t, HostFunctionError>
 getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
@@ -56,7 +56,7 @@ getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<int64_t, HostFunctionError>
+static Expected<int64_t, HostFunctionError>
 getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
@@ -65,7 +65,7 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class T, class IW>
-Expected<T, HostFunctionError>
+static Expected<T, HostFunctionError>
 getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(std::is_unsigned_v<T>);
@@ -91,21 +91,21 @@ getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<uint32_t, HostFunctionError>
+static Expected<uint32_t, HostFunctionError>
 getDataUInt32(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint32_t>(runtime, params, i);
 }
 
 template <class IW>
-Expected<uint64_t, HostFunctionError>
+static Expected<uint64_t, HostFunctionError>
 getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
 template <class IW>
-Expected<SFieldCRef, HostFunctionError>
+static Expected<SFieldCRef, HostFunctionError>
 getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
@@ -119,7 +119,7 @@ getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<Slice, HostFunctionError>
+static Expected<Slice, HostFunctionError>
 getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i, bool isUpdate = false)
 {
     int64_t const ptr = params->data[i].of.i32;
@@ -148,7 +148,7 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i, bool i
 }
 
 template <class IW>
-Expected<uint256, HostFunctionError>
+static Expected<uint256, HostFunctionError>
 getDataUInt256(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
@@ -165,7 +165,7 @@ getDataUInt256(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<AccountID, HostFunctionError>
+static Expected<AccountID, HostFunctionError>
 getDataAccountID(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
@@ -240,7 +240,7 @@ getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<std::string_view, HostFunctionError>
+static Expected<std::string_view, HostFunctionError>
 getDataString(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
@@ -249,7 +249,7 @@ getDataString(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     return std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
 }
 
-std::nullptr_t
+static std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
     results->data[0] = WASM_I32_VAL(value);
@@ -257,7 +257,15 @@ hfResult(wasm_val_vec_t* results, int32_t value)
     return nullptr;
 }
 
-std::nullptr_t
+static std::nullptr_t
+hfResult(wasm_val_vec_t* results, int64_t value)
+{
+    results->data[0] = WASM_I64_VAL(value);
+    // results->size = 1;
+    return nullptr;
+}
+
+static std::nullptr_t
 hfResult(wasm_val_vec_t* results, HostFunctionError value)
 {
     results->data[0] = WASM_I32_VAL(HfErrorToInt(value));
@@ -266,7 +274,7 @@ hfResult(wasm_val_vec_t* results, HostFunctionError value)
 }
 
 template <typename T>
-std::nullptr_t
+static std::nullptr_t
 returnResult(
     InstanceWrapper const* runtime,
     wasm_val_vec_t const* params,
@@ -282,6 +290,9 @@ returnResult(
     using t = std::decay_t<decltype(*res)>;
     if constexpr (std::is_same_v<t, Bytes>)
     {
+        if (index < 0 || index + 1 >= params->size)
+            return hfResult(results, HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+
         return hfResult(
             results,
             setData(
@@ -293,6 +304,9 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, Hash>)
     {
+        if (index < 0 || index + 1 >= params->size)
+            return hfResult(results, HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+
         return hfResult(
             results,
             setData(
@@ -308,6 +322,9 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, std::uint32_t>)
     {
+        if (index < 0 || index + 1 >= params->size)
+            return hfResult(results, HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+
         auto const resultValue = adjustWasmEndianess(res.value());
         return hfResult(
             results,
@@ -317,6 +334,10 @@ returnResult(
                 params->data[index + 1].of.i32,
                 reinterpret_cast<uint8_t const*>(&resultValue),
                 static_cast<int32_t>(sizeof(resultValue))));
+    }
+    else if constexpr (std::is_same_v<t, int64_t>)
+    {
+        return hfResult(results, res.value());
     }
     else
     {
@@ -1566,6 +1587,97 @@ floatFromUint_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
 
     i = 2;
     return returnResult(runtime, params, results, hf->floatFromUint(*x, *rounding), i);
+}
+
+wasm_trap_t*
+floatFromSTAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    auto serialIter = SerialIter(*x);
+    std::optional<STAmount> amount;
+    try
+    {
+        amount = STAmount(serialIter, sfGeneric);
+    }
+    catch (std::exception const&)
+    {
+        amount = std::nullopt;
+    }
+    if (!amount)
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+
+    i = 4;
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
+
+    i = 2;
+    return returnResult(runtime, params, results, hf->floatFromSTAmount(*amount, *rounding), i);
+}
+
+wasm_trap_t*
+floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    auto serialIter = SerialIter(*x);
+    std::optional<STNumber> num;
+    try
+    {
+        num = STNumber(serialIter, sfGeneric);
+    }
+    catch (std::exception const&)
+    {
+        num = std::nullopt;
+    }
+    if (!num)
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+
+    i = 4;
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
+
+    i = 2;
+    return returnResult(runtime, params, results, hf->floatFromSTNumber(*num, *rounding), i);
+}
+
+wasm_trap_t*
+floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    i = 2;
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
+
+    return returnResult(runtime, params, results, hf->floatToInt(*x, *rounding), i);
 }
 
 wasm_trap_t*

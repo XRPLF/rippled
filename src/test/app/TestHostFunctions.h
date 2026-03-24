@@ -459,6 +459,24 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
+    floatFromSTAmount(STAmount const& x, int32_t mode) const override
+    {
+        return wasm_float::floatFromSTAmountImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatFromSTNumber(STNumber const& x, int32_t mode) const override
+    {
+        return wasm_float::floatFromSTNumberImpl(x, mode);
+    }
+
+    Expected<int64_t, HostFunctionError>
+    floatToInt(Slice const& x, int32_t mode) const override
+    {
+        return wasm_float::floatToIntImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {
         return wasm_float::floatSetImpl(mantissa, exponent, mode);
