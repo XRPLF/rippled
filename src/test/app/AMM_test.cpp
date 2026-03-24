@@ -13,8 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
 #include <boost/regex.hpp>
 

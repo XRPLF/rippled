@@ -5,8 +5,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMDeposit.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
     namespace xrpl
 {

@@ -6,8 +6,7 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
     namespace xrpl
 {

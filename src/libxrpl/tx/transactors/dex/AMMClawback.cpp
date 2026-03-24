@@ -5,8 +5,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/AMMClawback.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <tuple>

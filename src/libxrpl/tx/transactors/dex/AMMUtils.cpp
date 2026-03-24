@@ -3,8 +3,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
     namespace xrpl
 {

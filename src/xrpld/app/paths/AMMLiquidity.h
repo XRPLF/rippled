@@ -5,8 +5,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-<xrpl / ledger / helpers / AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMHelpers.h><xrpl / ledger / helpers / AMMUtils.h>
 
     namespace xrpl
 {

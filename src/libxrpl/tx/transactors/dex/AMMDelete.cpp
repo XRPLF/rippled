@@ -3,52 +3,48 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMDelete.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+<xrpl / ledger / helpers / AMMUtils.h>
 
-namespace xrpl {
-
-bool
-AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
+    namespace xrpl
 {
-    return ammEnabled(ctx.rules);
-}
-
-NotTEC
-AMMDelete::preflight(PreflightContext const& ctx)
-{
-    return tesSUCCESS;
-}
-
-TER
-AMMDelete::preclaim(PreclaimContext const& ctx)
-{
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
-    if (!ammSle)
+    bool AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
     {
-        JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
-        return terNO_AMM;
+        return ammEnabled(ctx.rules);
     }
 
-    auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
-    if (lpTokensBalance != beast::zero)
-        return tecAMM_NOT_EMPTY;
+    NotTEC AMMDelete::preflight(PreflightContext const& ctx)
+    {
+        return tesSUCCESS;
+    }
 
-    return tesSUCCESS;
-}
+    TER AMMDelete::preclaim(PreclaimContext const& ctx)
+    {
+        auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+        if (!ammSle)
+        {
+            JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
+            return terNO_AMM;
+        }
 
-TER
-AMMDelete::doApply()
-{
-    // This is the ledger view that we work against. Transactions are applied
-    // as we go on processing transactions.
-    Sandbox sb(&ctx_.view());
+        auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
+        if (lpTokensBalance != beast::zero)
+            return tecAMM_NOT_EMPTY;
 
-    auto const ter =
-        deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
-    if (isTesSuccess(ter) || ter == tecINCOMPLETE)
-        sb.apply(ctx_.rawView());
+        return tesSUCCESS;
+    }
 
-    return ter;
-}
+    TER AMMDelete::doApply()
+    {
+        // This is the ledger view that we work against. Transactions are applied
+        // as we go on processing transactions.
+        Sandbox sb(&ctx_.view());
+
+        auto const ter =
+            deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
+        if (isTesSuccess(ter) || ter == tecINCOMPLETE)
+            sb.apply(ctx_.rawView());
+
+        return ter;
+    }
 
 }  // namespace xrpl
