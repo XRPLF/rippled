@@ -23,9 +23,13 @@ sig::operator()(Env&, JTx& jt) const
             jtx::sign(jtx.jv, account, sigObject);
         };
         if (!subField_)
+        {
             jt.mainSigners.emplace_back(callback);
+        }
         else
+        {
             jt.postSigners.emplace_back(callback);
+        }
     }
 }
 

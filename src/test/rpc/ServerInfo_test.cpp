@@ -85,7 +85,7 @@ admin = 127.0.0.1
                     (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
-                    (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
+                    (git[jss::branch].isString() && !git[jss::branch].asString().empty()));
             }
         }
 

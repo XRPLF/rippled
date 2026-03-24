@@ -1,7 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -85,7 +85,7 @@ CredentialAccept::doApply()
     {
         STAmount const reserve{
             view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
+        if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
 
