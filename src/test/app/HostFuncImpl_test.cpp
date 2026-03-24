@@ -117,8 +117,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
             auto const result = hfs.getParentLedgerTime();
             if (BEAST_EXPECT(result.has_value()))
+            {
                 BEAST_EXPECT(
                     result.value() == env.current()->parentCloseTime().time_since_epoch().count());
+            }
         }
     }
 
@@ -301,9 +303,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto const credentialIds = hfs.getTxField(sfCredentialIDs);
             if (BEAST_EXPECT(!credentialIds.has_value()))
+            {
                 BEAST_EXPECTS(
                     credentialIds.error() == HostFunctionError::NOT_LEAF_FIELD,
                     std::to_string(HfErrorToInt(credentialIds.error())));
+            }
 
             auto const nonField = hfs.getTxField(sfInvalid);
             if (BEAST_EXPECT(!nonField.has_value()))
@@ -583,9 +587,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
         // Locator for non-existent base field
         expectError(
@@ -729,9 +735,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
         // Locator for non-existent base field
         expectError(
@@ -770,9 +778,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
                     std::to_string(static_cast<int>(result.error())));
+            }
         }
     }
 
@@ -873,9 +883,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedField(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Error: base field not found
@@ -1062,8 +1074,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const arrLen = hfs.getLedgerObjArrayLen(1, sfSignerEntries);
             if (BEAST_EXPECT(arrLen.has_value()))
+            {
                 // Should return 2 for sfSignerEntries
                 BEAST_EXPECT(arrLen.value() == 2);
+            }
         }
         {
             auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
@@ -1123,9 +1137,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Locator for sfMemos
@@ -1173,9 +1189,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Locator for sfSignerEntries
@@ -1203,9 +1221,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
                     std::to_string(static_cast<int>(result.error())));
+            }
         }
     }
 
@@ -1249,9 +1269,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedArrayLen(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Error: non-array field

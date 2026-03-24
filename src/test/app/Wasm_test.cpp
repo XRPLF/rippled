@@ -25,7 +25,7 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
-std::vector<uint8_t> const
+std::vector<uint8_t>
 hexToBytes(std::string const& hex)
 {
     auto const ws = boost::algorithm::unhex(hex);
@@ -123,10 +123,8 @@ runFinishFunction(std::string const& code)
     {
         return std::optional<int32_t>(re->result);
     }
-    else
-    {
-        return std::nullopt;
-    }
+
+    return std::nullopt;
 }
 
 struct Wasm_test : public beast::unit_test::suite
