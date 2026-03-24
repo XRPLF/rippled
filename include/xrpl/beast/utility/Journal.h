@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <atomic>
 #include <sstream>
 
 namespace beast {
@@ -56,7 +57,7 @@ public:
     {
     protected:
         Sink() = delete;
-        explicit Sink(Sink const& sink) = default;
+        explicit Sink(Sink const& sink);
         Sink(Severity thresh, bool console);
         Sink&
         operator=(Sink const& lhs) = delete;
@@ -104,7 +105,9 @@ public:
         writeAlways(Severity level, std::string const& text) = 0;
 
     private:
-        Severity thresh_;
+        /// Minimum severity level. Atomic for safe concurrent reads/writes
+        /// (e.g. RPC threshold changes vs. hot-path log checks).
+        std::atomic<Severity> thresh_;
         bool m_console;
     };
 

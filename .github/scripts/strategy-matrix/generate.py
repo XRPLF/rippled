@@ -55,7 +55,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             #   fee to 500.
             # - Bookworm using GCC 15: Debug on linux/amd64, enable code
             #   coverage (which will be done below).
-            # - Bookworm using Clang 16: Debug on linux/arm64, enable voidstar.
+            # - Bookworm using Clang 16: Debug on linux/amd64, enable voidstar.
             # - Bookworm using Clang 17: Release on linux/amd64, set the
             #   reference fee to 1000.
             # - Bookworm using Clang 20: Debug on linux/amd64.
@@ -64,7 +64,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 if os["distro_version"] == "bookworm":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
@@ -78,7 +78,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "clang-16"
                         and build_type == "Debug"
-                        and architecture["platform"] == "linux/arm64"
+                        and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-Dvoidstar=ON {cmake_args}"
                         skip = False
@@ -234,13 +234,55 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
-        # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
-        # GCC-Asan rippled-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if (
-            os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
-        ):
-            # Add ASAN + UBSAN configuration.
+        # Add sanitizer jobs for specific bookworm distros.
+        # GCC sanitizers run independently because combining ASAN+UBSAN inflates
+        # GCC data sections past ASAN's 2GB shadow memory limit
+        # (see https://github.com/google/sanitizers/issues/856).
+        # Clang doesn't have this issue, so ASAN+UBSAN and TSAN+UBSAN stay combined.
+        compiler_id = f"{os['compiler_name']}-{os['compiler_version']}"
+        if os["distro_version"] == "bookworm" and compiler_id == "gcc-13":
+            # Add separate ASAN, TSAN, and UBSAN configurations for GCC.
+            configurations.append(
+                {
+                    "config_name": config_name + "-asan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "address",
+                }
+            )
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
+            configurations.append(
+                {
+                    "config_name": config_name + "-tsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "thread",
+                    "nproc_subtract": 20,
+                }
+            )
+            configurations.append(
+                {
+                    "config_name": config_name + "-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "undefinedbehavior",
+                }
+            )
+        elif os["distro_version"] == "bookworm" and compiler_id == "clang-20":
+            # Add combined ASAN+UBSAN and TSAN+UBSAN configurations for Clang.
             configurations.append(
                 {
                     "config_name": config_name + "-asan-ubsan",
@@ -253,21 +295,21 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     "sanitizers": "address,undefinedbehavior",
                 }
             )
-            # TSAN is deactivated due to seg faults with latest compilers.
-            activate_tsan = True
-            if activate_tsan:
-                configurations.append(
-                    {
-                        "config_name": config_name + "-tsan",
-                        "cmake_args": cmake_args,
-                        "cmake_target": cmake_target,
-                        "build_only": build_only,
-                        "build_type": build_type,
-                        "os": os,
-                        "architecture": architecture,
-                        "sanitizers": "thread",
-                    }
-                )
+            # TSAN instrumentation significantly increases memory usage during
+            # compilation, so reduce build parallelism to avoid OOM on CI runners.
+            configurations.append(
+                {
+                    "config_name": config_name + "-tsan-ubsan",
+                    "cmake_args": cmake_args,
+                    "cmake_target": cmake_target,
+                    "build_only": build_only,
+                    "build_type": build_type,
+                    "os": os,
+                    "architecture": architecture,
+                    "sanitizers": "thread,undefinedbehavior",
+                    "nproc_subtract": 20,
+                }
+            )
         else:
             configurations.append(
                 {

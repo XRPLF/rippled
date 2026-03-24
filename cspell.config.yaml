@@ -100,6 +100,7 @@ words:
   - eventfd
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -112,6 +113,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation
@@ -205,6 +207,7 @@ words:
   - ptrs
   - pushd
   - pyenv
+  - pyparsing
   - qalloc
   - queuable
   - Raphson
@@ -230,6 +233,7 @@ words:
   - seqit
   - sf
   - SFIELD
+  - sfields
   - shamap
   - shamapitem
   - sidechain

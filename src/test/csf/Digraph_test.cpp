@@ -24,13 +24,15 @@ public:
 
         BEAST_EXPECT(graph.connect('a', 'b', "foobar"));
         BEAST_EXPECT(graph.connected('a', 'b'));
-        BEAST_EXPECT(*graph.edge('a', 'b') == "foobar");
+        BEAST_EXPECT(
+            *graph.edge('a', 'b') == "foobar");  // NOLINT(bugprone-unchecked-optional-access)
 
         BEAST_EXPECT(!graph.connect('a', 'b', "repeat"));
         BEAST_EXPECT(graph.disconnect('a', 'b'));
         BEAST_EXPECT(graph.connect('a', 'b', "repeat"));
         BEAST_EXPECT(graph.connected('a', 'b'));
-        BEAST_EXPECT(*graph.edge('a', 'b') == "repeat");
+        BEAST_EXPECT(
+            *graph.edge('a', 'b') == "repeat");  // NOLINT(bugprone-unchecked-optional-access)
 
         BEAST_EXPECT(graph.connect('a', 'c', "tree"));
 

@@ -181,7 +181,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status;
+        Status status = ok;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
@@ -216,9 +216,13 @@ public:
             std::shared_ptr<NodeObject> nObj;
             Status status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -239,7 +243,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
         do_insert(no);
@@ -251,7 +255,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
         for (auto const& e : batch)

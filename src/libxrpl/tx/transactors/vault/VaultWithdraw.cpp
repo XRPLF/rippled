@@ -144,7 +144,9 @@ VaultWithdraw::doApply()
             assetsWithdrawn = *maybeAssets;
         }
         else
+        {
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     catch (std::overflow_error const&)
     {
@@ -230,7 +232,7 @@ VaultWithdraw::doApply()
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, mPriorBalance, assetsWithdrawn, j_);
+        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 }  // namespace xrpl

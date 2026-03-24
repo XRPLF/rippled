@@ -1,5 +1,6 @@
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -46,7 +47,7 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
     : f_(other.f_)
     , journal_(other.f_.journal())
     , cowid_(other.cowid_ + 1)
-    , ledgerSeq_(other.ledgerSeq_)
+    , ledgerSeq_(other.ledgerSeq_.load(std::memory_order_relaxed))
     , root_(other.root_)
     , state_(isMutable ? SHAMapState::Modifying : SHAMapState::Immutable)
     , type_(other.type_)
@@ -122,7 +123,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 
     if (stack != nullptr)
         stack->push({inNode, nodeID});
-    return static_cast<SHAMapLeafNode*>(inNode.get());
+    return safe_downcast<SHAMapLeafNode*>(inNode.get());
 }
 
 SHAMapLeafNode*
@@ -138,7 +139,8 @@ intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
-    auto obj = f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_);
+    auto obj =
+        f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_.load(std::memory_order_relaxed));
     return finishFetch(hash, obj);
 }
 
@@ -154,7 +156,8 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
             if (full_)
             {
                 full_ = false;
-                f_.missingNodeAcquireBySeq(ledgerSeq_, hash.as_uint256());
+                f_.missingNodeAcquireBySeq(
+                    ledgerSeq_.load(std::memory_order_relaxed), hash.as_uint256());
             }
             return {};
         }
@@ -187,7 +190,12 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
             auto node = SHAMapTreeNode::makeFromPrefix(makeSlice(*nodeData), hash);
             if (node)
             {
-                filter->gotNode(true, hash, ledgerSeq_, std::move(*nodeData), node->getType());
+                filter->gotNode(
+                    true,
+                    hash,
+                    ledgerSeq_.load(std::memory_order_relaxed),
+                    std::move(*nodeData),
+                    node->getType());
                 if (backed_)
                     canonicalize(hash, node);
             }
@@ -368,7 +376,7 @@ SHAMap::descendAsync(
         {
             f_.db().asyncFetch(
                 hash.as_uint256(),
-                ledgerSeq_,
+                ledgerSeq_.load(std::memory_order_relaxed),
                 [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
                     auto node = finishFetch(hash, object);
                     cb(node, hash);
@@ -417,9 +425,13 @@ SHAMap::belowHelper(
     }
     auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
+    {
         stack.push({inner, SHAMapNodeID{}});
+    }
     else
+    {
         stack.push({inner, stack.top().second.getChildNodeID(branch)});
+    }
     for (int i = init; cmp(i);)
     {
         if (!inner->isEmptyBranch(i))
@@ -437,7 +449,9 @@ SHAMap::belowHelper(
             i = init;  // descend and reset loop
         }
         else
+        {
             incr(i);  // scan next branch
+        }
     }
     return nullptr;
 }
@@ -471,7 +485,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
     while (!node->isLeaf())
     {
         SHAMapTreeNode* nextNode = nullptr;
-        auto inner = static_cast<SHAMapInnerNode*>(node);
+        auto inner = safe_downcast<SHAMapInnerNode*>(node);
         for (int i = 0; i < branchFactor; ++i)
         {
             if (!inner->isEmptyBranch(i))
@@ -496,7 +510,7 @@ SHAMap::onlyBelow(SHAMapTreeNode* node) const
 
     // An inner node must have at least one leaf
     // below it, unless it's the root_
-    auto const leaf = static_cast<SHAMapLeafNode const*>(node);
+    auto const leaf = safe_downcast<SHAMapLeafNode const*>(node);
     XRPL_ASSERT(
         leaf->peekItem() || (leaf == root_.get()), "xrpl::SHAMap::onlyBelow : valid inner node");
     return leaf->peekItem();
@@ -578,7 +592,7 @@ SHAMap::upper_bound(uint256 const& id) const
         auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = static_cast<SHAMapLeafNode*>(node.get());
+            auto leaf = safe_downcast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() > id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
@@ -611,7 +625,7 @@ SHAMap::lower_bound(uint256 const& id) const
         auto [node, nodeID] = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = static_cast<SHAMapLeafNode*>(node.get());
+            auto leaf = safe_downcast<SHAMapLeafNode*>(node.get());
             if (leaf->peekItem()->key() < id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
@@ -662,9 +676,10 @@ SHAMap::delItem(uint256 const& id)
 
     SHAMapNodeType type = leaf->getType();
 
-    // What gets attached to the end of the chain
-    // (For now, nothing, since we deleted the leaf)
-    intr_ptr::SharedPtr<SHAMapTreeNode> prevNode;
+    using TreeNodeType = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
+    // What gets attached to the end of the chain (For now, nothing, since we deleted the leaf)
+    TreeNodeType prevNode;
 
     while (!stack.empty())
     {
@@ -673,7 +688,12 @@ SHAMap::delItem(uint256 const& id)
         stack.pop();
 
         node = unshareNode(std::move(node), nodeID);
-        node->setChild(selectBranch(nodeID, id), std::move(prevNode));
+        node->setChild(
+            selectBranch(nodeID, id), std::move(prevNode));  // NOLINT(bugprone-use-after-move)
+
+        XRPL_ASSERT(
+            not prevNode,  // NOLINT(bugprone-use-after-move)
+            "xrpl::SHAMap::delItem : prevNode should be nullptr after std::move");
 
         if (!nodeID.isRoot())
         {
@@ -683,7 +703,9 @@ SHAMap::delItem(uint256 const& id)
             if (bc == 0)
             {
                 // no children below this branch
-                prevNode.reset();
+                //
+                // Note: This is unnecessary due to the std::move above but left here for safety
+                prevNode = TreeNodeType{};
             }
             else if (bc == 1)
             {
@@ -696,7 +718,7 @@ SHAMap::delItem(uint256 const& id)
                     {
                         if (!node->isEmptyBranch(i))
                         {
-                            node->setChild(i, intr_ptr::SharedPtr<SHAMapTreeNode>{});
+                            node->setChild(i, TreeNodeType{});
                             break;
                         }
                     }
@@ -764,7 +786,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         node = intr_ptr::make_shared<SHAMapInnerNode>(node->cowid());
 
-        unsigned int b1, b2;
+        unsigned int b1 = 0, b2 = 0;
 
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
@@ -779,7 +801,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
         // we can add the two leaf nodes here
         XRPL_ASSERT(node->isInner(), "xrpl::SHAMap::addGiveItem : node is inner");
 
-        auto inner = static_cast<SHAMapInnerNode*>(node.get());
+        auto inner = safe_downcast<SHAMapInnerNode*>(node.get());
         inner->setChild(b1, makeTypedLeaf(type, std::move(item), cowid_));
         inner->setChild(b2, makeTypedLeaf(type, std::move(otherItem), cowid_));
     }
@@ -902,7 +924,11 @@ SHAMap::writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) co
 
     Serializer s;
     node->serializeWithPrefix(s);
-    f_.db().store(t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
+    f_.db().store(
+        t,
+        std::move(s.modData()),
+        node->getHash().as_uint256(),
+        ledgerSeq_.load(std::memory_order_relaxed));
     return node;
 }
 
@@ -1088,7 +1114,7 @@ SHAMap::dump(bool hash) const
 
         if (node->isInner())
         {
-            auto inner = static_cast<SHAMapInnerNode*>(node);
+            auto inner = safe_downcast<SHAMapInnerNode*>(node);
             for (int i = 0; i < branchFactor; ++i)
             {
                 if (!inner->isEmptyBranch(i))
@@ -1105,7 +1131,9 @@ SHAMap::dump(bool hash) const
             }
         }
         else
+        {
             ++leafCount;
+        }
     } while (!stack.empty());
 
     JLOG(journal_.info()) << leafCount << " resident leaves";

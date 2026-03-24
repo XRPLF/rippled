@@ -34,16 +34,24 @@ public:
 
     /** Construct the node store.
 
+        Construction configures the database but does not start read threads.
+        Call startReadThreads() after construction to begin asynchronous reads.
+
         @param scheduler The scheduler to use for performing asynchronous tasks.
-        @param readThreads The number of asynchronous read threads to create.
-        @param config The configuration settings
+        @param readThreads The desired number of asynchronous read threads.
+        @param config The configuration settings.
         @param journal Destination for logging output.
     */
     Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal j);
 
     /** Start the asynchronous read threads.
-        Must be called after construction to start read threads.
-        It is safe to destroy the Database without calling this.
+
+        Must be called after construction to start read threads. It is safe
+        to destroy the Database without calling this; in that case no
+        asynchronous reads will be serviced.
+
+        @note Not thread-safe. Must be called exactly once, before any
+              concurrent access to the database.
     */
     void
     startReadThreads();
@@ -259,6 +267,8 @@ private:
     std::atomic<bool> readStopping_ = false;
     std::atomic<int> readThreads_ = 0;
     std::atomic<int> runningThreads_ = 0;
+
+    /// The number of read threads to create when startReadThreads() is called.
     int const desiredReadThreads_;
 
     virtual std::shared_ptr<NodeObject>

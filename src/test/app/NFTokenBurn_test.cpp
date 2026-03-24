@@ -96,14 +96,18 @@ class NFTokenBurn_test : public beast::unit_test::suite
                     else
                     {
                         if (tokenCount > 0)
+                        {
                             std::cout
                                 << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
                                 << std::endl;
+                        }
                         if (tokenCount > 1)
+                        {
                             std::cout
                                 << "last: "
                                 << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
                                 << std::endl;
+                        }
                     }
                 }
             }
@@ -256,7 +260,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         std::uniform_int_distribution<std::size_t> acctDist(0, 2);
         std::uniform_int_distribution<std::size_t> mintDist(0, 1);
 
-        while (stats[0]->nfts.size() > 0 || stats[1]->nfts.size() > 0 || stats[2]->nfts.size() > 0)
+        while (!stats[0]->nfts.empty() || !stats[1]->nfts.empty() || !stats[2]->nfts.empty())
         {
             // Pick an account to burn an nft.  If there are no nfts left
             // pick again.
@@ -273,14 +277,20 @@ class NFTokenBurn_test : public beast::unit_test::suite
             // Decide which of the accounts should burn the nft.  If the
             // owner is becky then any of the three accounts can burn.
             // Otherwise either alice or minter can burn.
-            AcctStat& burner = owner.acct == becky.acct ? *(stats[acctDist(engine)])
-                : mintDist(engine)                      ? alice
-                                                        : minter;
+            AcctStat& burner = [&]() -> AcctStat& {
+                if (owner.acct == becky.acct)
+                    return *(stats[acctDist(engine)]);
+                return mintDist(engine) ? alice : minter;
+            }();
 
             if (owner.acct == burner.acct)
+            {
                 env(token::burn(burner, nft));
+            }
             else
+            {
                 env(token::burn(burner, nft), token::owner(owner));
+            }
             env.close();
 
             // Every time we burn an nft, the number of nfts they hold should

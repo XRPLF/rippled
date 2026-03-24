@@ -40,8 +40,10 @@ parseSection(Section const& section)
         uint256 id;
 
         if (!id.parseHex(match[1]))
+        {
             Throw<std::runtime_error>(
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
+        }
 
         names.push_back(std::make_pair(id, match[2]));
     }
@@ -357,7 +359,7 @@ private:
     mutable std::mutex mutex_;
 
     hash_map<uint256, AmendmentState> amendmentMap_;
-    std::uint32_t lastUpdateSeq_;
+    std::uint32_t lastUpdateSeq_{0};
 
     // Record of the last votes seen from trusted validators.
     TrustedVotes previousTrustedVotes_;
@@ -370,7 +372,7 @@ private:
     std::unique_ptr<AmendmentSet> lastVote_;
 
     // True if an unsupported amendment is enabled
-    bool unsupportedEnabled_;
+    bool unsupportedEnabled_{false};
 
     // Unset if no unsupported amendments reach majority,
     // else set to the earliest time an unsupported amendment
@@ -477,11 +479,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
-    : lastUpdateSeq_(0)
-    , majorityTime_(majorityTime)
-    , unsupportedEnabled_(false)
-    , j_(journal)
-    , db_(registry.getWalletDB())
+    : majorityTime_(majorityTime), j_(journal), db_(registry.getWalletDB())
 {
     std::lock_guard lock(mutex_);
 
@@ -529,11 +527,10 @@ AmendmentTableImpl::AmendmentTableImpl(
                                " in favor of data in db/wallet.db.";
             break;
         }
-        else
-        {  // Otherwise transfer config data into the table
-            detect_conflict.insert(a.first);
-            persistVote(a.first, a.second, AmendmentVote::up);
-        }
+
+        // Otherwise transfer config data into the table
+        detect_conflict.insert(a.first);
+        persistVote(a.first, a.second, AmendmentVote::up);
     }
 
     // Parse vetoed amendments from config
@@ -545,18 +542,17 @@ AmendmentTableImpl::AmendmentTableImpl(
                                " in favor of data in db/wallet.db.";
             break;
         }
+
+        // Otherwise transfer config data into the table
+        if (!detect_conflict.contains(a.first))
+        {
+            persistVote(a.first, a.second, AmendmentVote::down);
+        }
         else
-        {  // Otherwise transfer config data into the table
-            if (detect_conflict.count(a.first) == 0)
-            {
-                persistVote(a.first, a.second, AmendmentVote::down);
-            }
-            else
-            {
-                JLOG(j_.warn()) << "[veto_amendments] section in config has amendment " << '('
-                                << a.first << ", " << a.second
-                                << ") both [veto_amendments] and [amendments].";
-            }
+        {
+            JLOG(j_.warn()) << "[veto_amendments] section in config has amendment " << '('
+                            << a.first << ", " << a.second
+                            << ") both [veto_amendments] and [amendments].";
         }
     }
 
@@ -749,7 +745,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
         for (auto const& e : amendmentMap_)
         {
             if (e.second.supported && e.second.vote == AmendmentVote::up &&
-                (enabled.count(e.first) == 0))
+                (!enabled.contains(e.first)))
             {
                 amendments.push_back(e.first);
                 JLOG(j_.info()) << "Voting for amendment " << e.second.name;
@@ -931,9 +927,13 @@ AmendmentTableImpl::injectJson(
     if (!fs.enabled && isAdmin)
     {
         if (fs.vote == AmendmentVote::obsolete)
+        {
             v[jss::vetoed] = "Obsolete";
+        }
         else
+        {
             v[jss::vetoed] = fs.vote == AmendmentVote::down;
+        }
     }
     v[jss::enabled] = fs.enabled;
 

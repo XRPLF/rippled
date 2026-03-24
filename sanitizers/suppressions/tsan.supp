@@ -36,6 +36,25 @@ deadlock:pthread_create
 deadlock:pthread_rwlock_rdlock
 deadlock:boost::asio
 
+# Known lock-order-inversion between getMasterMutex() and RCLConsensus::mutex_.
+# NetworkOPsImp::processHeartbeatTimer acquires master → consensus, while
+# RCLConsensus::startRound (via acceptLedger) acquires consensus → master.
+# Requires a larger lock-ordering redesign to fix properly.
+deadlock:RCLConsensus
+
+# Lock-order-inversion in LedgerReplay subsystem.
+# LedgerDeltaAcquire::notify() calls LedgerReplayTask::deltaReady() while
+# holding LedgerDeltaAcquire's mutex, which then acquires LedgerReplayTask's
+# mutex. The reverse order also occurs. Pre-existing design issue.
+deadlock:LedgerReplayTask
+deadlock:LedgerDeltaAcquire
+
+# Data race on LedgerHeader::validated (bool mutable).
+# This is a monotonic flag (false→true, never back) set by LedgerMaster
+# worker threads and read by test/RPC code. Benign but technically UB.
+# Proper fix: make validated std::atomic<bool>.
+race:Ledger::setValidated
+
 # Signal/crash suppressions for GCC TSAN instrumentation issues
 signal:std::__cxx11::basic_stringbuf
 signal:basic_stringbuf

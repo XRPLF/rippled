@@ -44,7 +44,7 @@ private:
     // The largest "small object" we can accommodate
     static std::size_t constexpr max_size = 72;
 
-    std::aligned_storage<max_size>::type d_;
+    std::aligned_storage<max_size>::type d_ = {};
     STBase* p_ = nullptr;
 
 public:

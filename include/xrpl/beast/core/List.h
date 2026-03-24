@@ -43,8 +43,8 @@ private:
     template <typename>
     friend class ListIterator;
 
-    ListNode* m_next;
-    ListNode* m_prev;
+    ListNode* m_next = nullptr;
+    ListNode* m_prev = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -567,7 +567,7 @@ private:
     }
 
 private:
-    size_type m_size;
+    size_type m_size = 0u;
     Node m_head;
     Node m_tail;
 };
