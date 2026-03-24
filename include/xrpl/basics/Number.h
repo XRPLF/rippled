@@ -257,26 +257,6 @@ public:
     constexpr int
     exponent() const noexcept;
 
-    /** Get the scale of this Number for the given asset.
-     *
-     * "scale" is similar to "exponent", but from the perspective of STAmount,
-     * which has different rules for determining the exponent than Number.
-     *
-     * Because Number does not have access to STAmount or Asset, this function
-     * is implemented as a template, with the expectation that it will only be
-     * used by those types. Any types that fit the requirements will work,
-     * though, if there's a need.
-     *
-     * @tparam STAmount The STAmount type.
-     * @tparam Asset The Asset type.
-     * @param asset The asset to use for determining the scale.
-     * @return The scale of this Number for the given asset.
-     */
-    template <class STAmount, class Asset>
-    int
-    scale(Asset const& asset) const
-        requires CanUseAsScale<STAmount, Asset>;
-
     constexpr Number
     operator+() const noexcept;
     constexpr Number
