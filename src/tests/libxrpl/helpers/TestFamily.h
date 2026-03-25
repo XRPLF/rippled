@@ -17,9 +17,9 @@ class TestFamily : public Family
 {
 private:
     std::unique_ptr<NodeStore::Database> db_;
+    TestStopwatch clock_;
     std::shared_ptr<FullBelowCache> fbCache_;
     std::shared_ptr<TreeNodeCache> tnCache_;
-    TestStopwatch clock_;
     NodeStore::DummyScheduler scheduler_;
     beast::Journal j_;
 

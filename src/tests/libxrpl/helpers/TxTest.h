@@ -53,7 +53,7 @@ XRP(T xrp)
  * @return The equivalent amount in drops as XRPAmount.
  */
 template <std::floating_point T>
-constexpr XRPAmount
+XRPAmount
 XRP(T xrp)
 {
     return XRPAmount{static_cast<std::int64_t>(std::round(xrp * DROPS_PER_XRP.drops()))};
@@ -141,10 +141,10 @@ allFeatures();
  */
 struct TxResult
 {
-    TER ter;                        /**< The transaction engine result code. */
-    bool applied;                   /**< Whether the transaction was applied to the ledger. */
-    std::optional<TxMeta> metadata; /**< Transaction metadata, if available. */
-    STTx const* tx;                 /**< Pointer to the submitted transaction. */
+    TER ter;                         /**< The transaction engine result code. */
+    bool applied;                    /**< Whether the transaction was applied to the ledger. */
+    std::optional<TxMeta> metadata;  /**< Transaction metadata, if available. */
+    std::shared_ptr<STTx const&> tx; /**< Pointer to the submitted transaction. */
 };
 
 /**
@@ -216,7 +216,7 @@ public:
         if (!obj.isFieldPresent(sfTicketSequence))
             builder.setSequence(getAccountRoot(accountId).getSequence());
         builder.setFee(XRPAmount(10));
-        return submit(*builder.build(signer.pk(), signer.sk()).getSTTx());
+        return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
     }
 
     /**
@@ -232,7 +232,7 @@ public:
      * @return TxResult containing the result code, applied status, and metadata.
      */
     [[nodiscard]] TxResult
-    submit(STTx const& stx);
+    submit(std::shared_ptr<STTx const> stx);
 
     /**
      * @brief Create a new account in the ledger.

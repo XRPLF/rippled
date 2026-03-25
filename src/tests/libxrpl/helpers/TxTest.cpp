@@ -2,10 +2,10 @@
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/ledger/TrustLine.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
+#include <xrpl/protocol_autogen/ledger_entries/RippleState.h>
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
 #include <xrpl/protocol_autogen/transactions/Payment.h>
 #include <xrpl/tx/apply.h>
@@ -81,20 +81,20 @@ TxTest::getRules() const
 }
 
 [[nodiscard]] TxResult
-TxTest::submit(STTx const& stx)
+TxTest::submit(std::shared_ptr<STTx const> stx)
 {
-    auto const result = apply(registry_, *openLedger_, stx, tapNONE, registry_.journal("apply"));
+    auto const result = apply(registry_, *openLedger_, *stx, tapNONE, registry_.journal("apply"));
 
     // Track successfully applied transactions for canonical reordering on close
     // We make a copy since the TransactionBase doesn't own the STTx
     if (result.applied)
-        pendingTxs_.push_back(std::make_shared<STTx>(stx));
+        pendingTxs_.push_back(stx);
 
     return TxResult{
         .ter = result.ter,
         .applied = result.applied,
         .metadata = std::move(result.metadata),
-        .tx = &stx};
+        .tx = stx};
 }
 
 void
@@ -173,7 +173,8 @@ TxTest::close()
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
         {
-            apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
+            auto result = apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
+            EXPECT_TRUE(result.applied) << "TxTest::close: failed to apply transaction";
         }
         accum.apply(*newLedger);
     }
@@ -215,10 +216,15 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     if (!sle)
         return STAmount{iou.issue(), 0};
 
-    auto trustLine = TrustLine::makeItem(account, sle);
-    if (!trustLine)
-        Throw<std::runtime_error>("TxTest::getBalance: failed to create TrustLine");
-    return trustLine->getBalance();
+    auto const rippleState = ledger_entries::RippleState{sle};
+
+    auto balance = rippleState.getBalance();
+
+    if (rippleState.getLowLimit().getIssuer() == account)
+    {
+        balance.negate();
+    }
+    return balance;
 }
 
 }  // namespace xrpl::test
