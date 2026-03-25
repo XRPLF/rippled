@@ -75,6 +75,9 @@ DerivedData
 /.claude
 /CLAUDE.md
 
+# Python
+__pycache__
+
 # Direnv's directory
 /.direnv
 

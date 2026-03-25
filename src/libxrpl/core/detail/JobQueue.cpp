@@ -8,7 +8,6 @@ namespace xrpl {
 
 JobQueue::JobQueue(
     int threadCount,
-    int updatePathsJobLimit,
     beast::insight::Collector::ptr const& collector,
     beast::Journal journal,
     Logs& logs,
@@ -17,7 +16,6 @@ JobQueue::JobQueue(
     , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
-    , updatePathsJobLimit_(updatePathsJobLimit > 0 ? updatePathsJobLimit : 1)
     , m_workers(*this, &perfLog, "JobQueue", threadCount)
     , perfLog_(perfLog)
     , m_collector(collector)
@@ -86,8 +84,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 
         JobType const type(job.getType());
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : has valid job type");
-        XRPL_ASSERT(
-            m_jobSet.find(job) != m_jobSet.end(), "xrpl::JobQueue::addRefCountedJob : job found");
+        XRPL_ASSERT(m_jobSet.contains(job), "xrpl::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));
@@ -333,7 +330,7 @@ JobQueue::finishJob(JobType type)
 void
 JobQueue::processTask(int instance)
 {
-    JobType type;
+    JobType type = jtINVALID;
 
     {
         using namespace std::chrono;
@@ -384,9 +381,6 @@ JobQueue::processTask(int instance)
 int
 JobQueue::getJobLimit(JobType type)
 {
-    if (type == jtUPDATE_PF)
-        return updatePathsJobLimit_;
-
     JobTypeInfo const& j(JobTypes::instance().get(type));
     XRPL_ASSERT(j.type() != jtINVALID, "xrpl::JobQueue::getJobLimit : valid job type");
 

@@ -3,6 +3,7 @@
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <boost/preprocessor/stringize.hpp>
 
@@ -80,7 +81,7 @@ getVersionString()
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = "rippled-" + getVersionString();
+    static std::string const value = systemName() + "-" + getVersionString();
     return value;
 }
 
@@ -139,7 +140,7 @@ encodeSoftwareVersion(std::string_view versionStr)
                 if (x == 0)
                     x = parsePreRelease(id, "b", 0x40, 0, 63);
 
-                if (x & 0xC0)
+                if ((x & 0xC0) != 0)
                 {
                     c |= static_cast<std::uint64_t>(x) << 16;
                     break;

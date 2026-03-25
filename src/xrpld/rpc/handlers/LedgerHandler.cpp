@@ -103,7 +103,7 @@ LedgerHandler::writeResult(Json::Value& value)
             "and update your request. Field `type` is deprecated.";
     }
 
-    if (warnings.size())
+    if (warnings.size() != 0u)
         value[jss::warnings] = std::move(warnings);
 }
 
@@ -215,11 +215,17 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 obj->set_data(inDesired->data(), inDesired->size());
             }
             if (inBase && inDesired)
+            {
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            }
             else if (inBase && !inDesired)
+            {
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
+            }
             else
+            {
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
+            }
             auto const blob = inDesired ? inDesired->slice() : inBase->slice();
             auto const objectType = static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
 

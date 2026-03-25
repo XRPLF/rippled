@@ -138,11 +138,11 @@ applyTransactions(
         count += changes;
 
         // A non-retry pass made no changes
-        if (!changes && !certainRetry)
+        if ((changes == 0) && !certainRetry)
             break;
 
         // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
             certainRetry = false;
     }
 
@@ -181,10 +181,12 @@ buildLedger(
             auto const applied = applyTransactions(app, built, txns, failedTxns, accum, j);
 
             if (!txns.empty() || !failedTxns.empty())
+            {
                 JLOG(j.debug()) << "Applied " << applied << " transactions; " << failedTxns.size()
                                 << " failed and " << txns.size() << " will be retried. "
                                 << "Total transactions in ledger (including Inner Batch): "
                                 << accum.txCount();
+            }
             else
                 JLOG(j.debug()) << "Applied " << applied << " transactions. "
                                 << "Total transactions in ledger (including Inner Batch): "
