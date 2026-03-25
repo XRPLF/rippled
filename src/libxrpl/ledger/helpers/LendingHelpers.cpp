@@ -3,7 +3,6 @@
 
 namespace xrpl {
 
-struct PreflightContext;
 
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
