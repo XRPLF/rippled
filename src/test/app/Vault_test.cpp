@@ -4991,8 +4991,6 @@ class Vault_test : public beast::unit_test::suite
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(100).value());
                 }
 
-                auto const sharesBefore = env.balance(depositor, shares.raw().get<MPTIssue>());
-
                 // Zero-amount clawback (= "clawback all") should succeed,
                 // clamped to assetsAvailable (60) rather than the full
                 // share value (100).
@@ -5012,7 +5010,7 @@ class Vault_test : public beast::unit_test::suite
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(40).value());
 
                     // 60 of 100 shares destroyed (1:1 ratio), 40 remain
-                    auto const sharesAfter = env.balance(depositor, shares.raw().get<MPTIssue>());
+                    auto const sharesAfter = env.balance(depositor, shares);
                     BEAST_EXPECT(sharesAfter == shares(Number{4, sle->at(sfScale) + 1}));
                 }
             }
@@ -5068,11 +5066,11 @@ class Vault_test : public beast::unit_test::suite
                     BEAST_EXPECT(sle != nullptr);
                     BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(0).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(40).value());
-                }
 
-                auto const sharesAfter = env.balance(depositor, shares);
-                BEAST_EXPECT(sharesAfter < sharesBefore);
-                BEAST_EXPECT(sharesAfter > shares(0));
+                    // 60 of 100 shares destroyed (1:1 ratio), 40 remain
+                    auto const sharesAfter = env.balance(depositor, shares);
+                    BEAST_EXPECT(sharesAfter == shares(Number{4, sle->at(sfScale) + 1}));
+                }
             }
         };
 
@@ -5107,6 +5105,74 @@ class Vault_test : public beast::unit_test::suite
         env(pay(issuer, depositor, MPT(1000)));
         env.close();
         testCase(MPT, "MPT", owner, depositor, issuer);
+
+        // Test pre-fixAssortedFixes legacy path: zero-amount clawback
+        // returns early without clamping to assetsAvailable.
+        {
+            testcase(
+                "VaultClawback (asset) - IOU pre-fixAssortedFixes"
+                " zero-amount clawback unclamped with outstanding loan");
+
+            env.disableFeature(fixAssortedFixes);
+
+            auto [vault, vaultKeylet] = setupVault(IOU, owner, depositor, issuer);
+
+            auto const vaultSle = env.le(vaultKeylet);
+            BEAST_EXPECT(vaultSle != nullptr);
+            if (!vaultSle)
+                return;
+
+            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+
+            // Create a loan broker backed by this vault
+            auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            env(set(owner, vaultKeylet.key));
+            env.close();
+
+            // Depositor borrows 40 units, reducing assetsAvailable to 60
+            // while assetsTotal stays at 100
+            env(set(depositor, brokerKeylet.key, IOU(40).value()),
+                loan::interestRate(TenthBips32(0)),
+                gracePeriod(60),
+                paymentInterval(120),
+                paymentTotal(10),
+                sig(sfCounterpartySignature, owner),
+                fee(env.current()->fees().base * 2),
+                ter(tesSUCCESS));
+            env.close();
+
+            {
+                auto const sle = env.le(vaultKeylet);
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == IOU(60).value());
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == IOU(100).value());
+            }
+
+            auto const sharesBefore = env.balance(depositor, shares);
+
+            // Legacy: zero-amount clawback tries to recover the full
+            // share value (100) without clamping to assetsAvailable (60).
+            // This causes the vault balance to go negative, triggering
+            // the sanity check in doApply → tefINTERNAL.
+            env(vault.clawback({
+                    .issuer = issuer,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                }),
+                ter(tefINTERNAL));
+            env.close();
+
+            {
+                // Transaction rolled back — vault and shares unchanged
+                auto const sle = env.le(vaultKeylet);
+                BEAST_EXPECT(sle != nullptr);
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == IOU(60).value());
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == IOU(100).value());
+                auto const sharesAfter = env.balance(depositor, shares);
+                BEAST_EXPECT(sharesAfter == sharesBefore);
+            }
+
+            env.enableFeature(fixAssortedFixes);
+        }
     }
 
     void
