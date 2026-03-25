@@ -85,6 +85,7 @@ public:
      * validated.
      *
      * @param tx The transaction to verify.
+     * @param heldPermissions The granular permissions that the sender hold.
      * @return true if the transaction fields and flags comply with the granular template.
      */
     [[nodiscard]] bool
