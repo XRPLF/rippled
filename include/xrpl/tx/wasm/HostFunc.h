@@ -69,6 +69,12 @@ Expected<FloatPair, HostFunctionError>
 floatToMantissaAndExponentImpl(Slice const& x);
 
 Expected<Bytes, HostFunctionError>
+floatNegateImpl(Slice const& x);
+
+Expected<Bytes, HostFunctionError>
+floatAbsImpl(Slice const& x);
+
+Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
 
 Expected<int32_t, HostFunctionError>
@@ -474,6 +480,18 @@ struct HostFunctions
 
     virtual Expected<FloatPair, HostFunctionError>
     floatToMantissaAndExponent(Slice const& x) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    floatNegate(Slice const& x) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    floatAbs(Slice const& x) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

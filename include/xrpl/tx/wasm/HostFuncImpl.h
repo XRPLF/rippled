@@ -267,6 +267,12 @@ public:
     floatToMantissaAndExponent(Slice const& x) const override;
 
     Expected<Bytes, HostFunctionError>
+    floatNegate(Slice const& x) const override;
+
+    Expected<Bytes, HostFunctionError>
+    floatAbs(Slice const& x) const override;
+
+    Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
     Expected<int32_t, HostFunctionError>

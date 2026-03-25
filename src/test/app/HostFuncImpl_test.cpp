@@ -3057,6 +3057,113 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testFloatNegate()
+    {
+        testcase("floatNegate");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(invalid));
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(floatIntZero));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(float1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(floatMinus1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(floatIntMax));
+            auto const expected = hfs.floatFromInt(std::numeric_limits<int64_t>::min() + 1, 0);
+            BEAST_EXPECT(result && expected) && BEAST_EXPECT(*result == *expected);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(floatMaxExp));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+        }
+
+        {
+            auto const result = hfs.floatNegate(makeSlice(floatPi));
+            auto const negPi = hfs.floatNegate(makeSlice(*result));
+            BEAST_EXPECT(result && negPi) && BEAST_EXPECT(*negPi == floatPi);
+        }
+    }
+
+    void
+    testFloatAbs()
+    {
+        testcase("floatAbs");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(invalid));
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatIntZero));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(float1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatMinus1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatIntMax));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMax);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatIntMin));
+            auto const negated = hfs.floatNegate(makeSlice(floatIntMin));
+            BEAST_EXPECT(result && negated) && BEAST_EXPECT(*result == *negated);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatMinusMaxExp));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+        }
+
+        {
+            auto const result = hfs.floatAbs(makeSlice(floatMinus3));
+            auto const expected = hfs.floatFromInt(3, 0);
+            BEAST_EXPECT(result && expected) && BEAST_EXPECT(*result == *expected);
+        }
+    }
+
+    void
     testFloats()
     {
         // for checking binary formats manually
@@ -3069,6 +3176,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatFromSTNumber();
         testFloatToInt();
         testFloatToMantissaAndExponent();
+        testFloatNegate();
+        testFloatAbs();
         testFloatSet();
         testFloatCompare();
         testFloatAdd();

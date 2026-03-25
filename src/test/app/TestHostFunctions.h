@@ -483,6 +483,18 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
+    floatNegate(Slice const& x) const override
+    {
+        return wasm_float::floatNegateImpl(x);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatAbs(Slice const& x) const override
+    {
+        return wasm_float::floatAbsImpl(x);
+    }
+
+    Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {
         return wasm_float::floatSetImpl(mantissa, exponent, mode);

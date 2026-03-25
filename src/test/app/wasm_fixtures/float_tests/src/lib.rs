@@ -53,6 +53,17 @@ unsafe extern "C" {
         exponent_ptr: *mut u8,
         exponent_len: i32,
     ) -> i32;
+
+    #[link_name = "float_negate"]
+    fn float_negate(
+        float_ptr: *const u8,
+        float_len: i32,
+        out_ptr: *mut u8,
+        out_len: i32,
+    ) -> i32;
+
+    #[link_name = "float_abs"]
+    fn float_abs(float_ptr: *const u8, float_len: i32, out_ptr: *mut u8, out_len: i32) -> i32;
 }
 
 // Float size constant (8 bytes mantissa + 4 bytes exponent)
@@ -748,6 +759,189 @@ fn test_float_to_mantissa_and_exponent() -> bool {
     all_pass
 }
 
+fn test_float_negate_host() -> bool {
+    let _ = trace("\n$$$ test_float_negate $$$");
+    let mut all_pass = true;
+
+    // Test with FLOAT_ONE (value 1) -> should become -1
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_negate(
+            FLOAT_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+        )
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == FLOAT_NEGATIVE_ONE {
+            let _ = trace("  float_negate(1): good");
+        } else {
+            let _ = trace("  float_negate(1): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_negate(1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    // Test with FLOAT_NEGATIVE_ONE (value -1) -> should become 1
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_negate(
+            FLOAT_NEGATIVE_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+        )
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == FLOAT_ONE {
+            let _ = trace("  float_negate(-1): good");
+        } else {
+            let _ = trace("  float_negate(-1): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_negate(-1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    // Test with zero -> should remain zero
+    let mut f0: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    unsafe { float_from_int(0, f0.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_negate(f0.as_ptr(), FLOAT_SIZE as i32, result.as_mut_ptr(), FLOAT_SIZE as i32)
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == f0 {
+            let _ = trace("  float_negate(0): good");
+        } else {
+            let _ = trace("  float_negate(0): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_negate(0): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    all_pass
+}
+
+fn test_float_abs_host() -> bool {
+    let _ = trace("\n$$$ test_float_abs $$$");
+    let mut all_pass = true;
+
+    // Test with FLOAT_ONE (value 1) -> should remain 1
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_abs(
+            FLOAT_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+        )
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == FLOAT_ONE {
+            let _ = trace("  float_abs(1): good");
+        } else {
+            let _ = trace("  float_abs(1): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_abs(1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    // Test with FLOAT_NEGATIVE_ONE (value -1) -> should become 1
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_abs(
+            FLOAT_NEGATIVE_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+        )
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == FLOAT_ONE {
+            let _ = trace("  float_abs(-1): good");
+        } else {
+            let _ = trace("  float_abs(-1): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_abs(-1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    // Test with zero -> should remain zero
+    let mut f0: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    unsafe { float_from_int(0, f0.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret =
+        unsafe { float_abs(f0.as_ptr(), FLOAT_SIZE as i32, result.as_mut_ptr(), FLOAT_SIZE as i32) };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == f0 {
+            let _ = trace("  float_abs(0): good");
+        } else {
+            let _ = trace("  float_abs(0): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_abs(0): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    // Test with negative value -> should become positive
+    let mut f_neg10: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    unsafe { float_from_int(-10, f_neg10.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+
+    let mut f_pos10: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    unsafe { float_from_int(10, f_pos10.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
+
+    let mut result: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
+    let ret = unsafe {
+        float_abs(
+            f_neg10.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+        )
+    };
+
+    if ret == FLOAT_SIZE as i32 {
+        if result == f_pos10 {
+            let _ = trace("  float_abs(-10): good");
+        } else {
+            let _ = trace("  float_abs(-10): failed - result mismatch");
+            all_pass = false;
+        }
+    } else {
+        let _ = trace("  float_abs(-10): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
+        all_pass = false;
+    }
+
+    all_pass
+}
+
 fn test_float_from_stamount() -> bool {
     let _ = trace("\n$$$ test_float_from_stamount $$$");
     let mut all_pass = true;
@@ -885,6 +1079,8 @@ pub extern "C" fn finish() -> i32 {
     all_pass &= test_float_invert();
     all_pass &= test_float_to_int();
     all_pass &= test_float_to_mantissa_and_exponent();
+    all_pass &= test_float_negate_host();
+    all_pass &= test_float_abs_host();
     all_pass &= test_float_from_stamount();
     all_pass &= test_float_from_stnumber();
 

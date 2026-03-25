@@ -1726,6 +1726,40 @@ floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_va
 }
 
 wasm_trap_t*
+floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    i = 2;
+    return returnResult(runtime, params, results, hf->floatNegate(*x), i);
+}
+
+wasm_trap_t*
+floatAbs_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    i = 2;
+    return returnResult(runtime, params, results, hf->floatAbs(*x), i);
+}
+
+wasm_trap_t*
 floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)

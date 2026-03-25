@@ -282,6 +282,54 @@ floatToMantissaAndExponentImpl(Slice const& x)
 }
 
 Expected<Bytes, HostFunctionError>
+floatNegateImpl(Slice const& x)
+{
+    try
+    {
+        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        detail::WasmNumber num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        detail::WasmNumber res = -num;
+        return res.toBytes();
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    }
+    // LCOV_EXCL_STOP
+}
+
+Expected<Bytes, HostFunctionError>
+floatAbsImpl(Slice const& x)
+{
+    try
+    {
+        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        detail::WasmNumber num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        detail::WasmNumber res = abs(num);
+        return res.toBytes();
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    }
+    // LCOV_EXCL_STOP
+}
+
+Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
@@ -554,6 +602,18 @@ Expected<FloatPair, HostFunctionError>
 WasmHostFunctionsImpl::floatToMantissaAndExponent(Slice const& x) const
 {
     return wasm_float::floatToMantissaAndExponentImpl(x);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatNegate(Slice const& x) const
+{
+    return wasm_float::floatNegateImpl(x);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatAbs(Slice const& x) const
+{
+    return wasm_float::floatAbsImpl(x);
 }
 
 Expected<Bytes, HostFunctionError>
