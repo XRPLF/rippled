@@ -1539,7 +1539,7 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
@@ -1809,9 +1809,9 @@ protected:
                 if (!BEAST_EXPECT(vaultSle))
                 {
                     // This will be wrong, but the test has failed anyway.
-                    return lender;
+                    return Account{lender};
                 }
-                auto const vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
+                auto vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
                 return vaultPseudo;
             }();
 
@@ -4568,7 +4568,7 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();

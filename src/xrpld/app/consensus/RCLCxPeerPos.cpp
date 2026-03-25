@@ -10,7 +10,7 @@ RCLCxPeerPos::RCLCxPeerPos(
     PublicKey const& publicKey,
     Slice const& signature,
     uint256 const& suppression,
-    Proposal&& proposal)
+    Proposal const& proposal)  // trivially copyable
     : publicKey_(publicKey), suppression_(suppression), proposal_(proposal)
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
