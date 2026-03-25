@@ -63,17 +63,21 @@ public:
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
         PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const tokenSecretKey = *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
         auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
@@ -90,7 +94,7 @@ public:
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
             ValidatorKeys k{c, journal};
-            if (BEAST_EXPECT(k.keys))
+            if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
                 BEAST_EXPECT(test::equal(k.keys->secretKey, seedSecretKey));
@@ -117,7 +121,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, journal};
 
-            if (BEAST_EXPECT(k.keys))
+            if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
                 BEAST_EXPECT(test::equal(k.keys->secretKey, tokenSecretKey));

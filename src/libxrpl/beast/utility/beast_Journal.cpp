@@ -124,9 +124,13 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
+        {
             m_sink.write(m_level, "");
+        }
         else
+        {
             m_sink.write(m_level, s);
+        }
     }
 }
 

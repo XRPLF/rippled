@@ -75,7 +75,7 @@ static std::string
 sliceToHex(Slice const& slice)
 {
     std::string s;
-    if (slice[0] & 0x80)
+    if ((slice[0] & 0x80) != 0)
     {
         s.reserve(2 * (slice.size() + 2));
         s = "0x00";
@@ -171,9 +171,11 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < size_)
+    {
         LogicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
+    }
 
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
@@ -270,7 +272,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         {
             return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        else if (*type == KeyType::ed25519)
+        if (*type == KeyType::ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;

@@ -55,8 +55,8 @@ toStep(
 {
     auto& j = ctx.j;
 
-    if (ctx.isFirst && e1->isAccount() && (e1->getNodeType() & STPathElement::typeCurrency) &&
-        isXRP(e1->getCurrency()))
+    if (ctx.isFirst && e1->isAccount() &&
+        ((e1->getNodeType() & STPathElement::typeCurrency) != 0u) && isXRP(e1->getCurrency()))
     {
         return make_XRPEndpointStep(ctx, e1->getAccountID());
     }
@@ -83,10 +83,12 @@ toStep(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
         "xrpl::toStep : currency or issuer");
-    auto const outCurrency =
-        e2->getNodeType() & STPathElement::typeCurrency ? e2->getCurrency() : curIssue.currency;
-    auto const outIssuer =
-        e2->getNodeType() & STPathElement::typeIssuer ? e2->getIssuerID() : curIssue.account;
+    auto const outCurrency = ((e2->getNodeType() & STPathElement::typeCurrency) != 0u)
+        ? e2->getCurrency()
+        : curIssue.currency;
+    auto const outIssuer = ((e2->getNodeType() & STPathElement::typeIssuer) != 0u)
+        ? e2->getIssuerID()
+        : curIssue.account;
 
     if (isXRP(curIssue.currency) && isXRP(outCurrency))
     {
@@ -132,12 +134,12 @@ toStrand(
     {
         auto const t = pe.getNodeType();
 
-        if ((t & ~STPathElement::typeAll) || !t)
+        if (((t & ~STPathElement::typeAll) != 0u) || (t == 0u))
             return {temBAD_PATH, Strand{}};
 
-        bool const hasAccount = t & STPathElement::typeAccount;
-        bool const hasIssuer = t & STPathElement::typeIssuer;
-        bool const hasCurrency = t & STPathElement::typeCurrency;
+        bool const hasAccount = (t & STPathElement::typeAccount) != 0u;
+        bool const hasIssuer = (t & STPathElement::typeIssuer) != 0u;
+        bool const hasCurrency = (t & STPathElement::typeCurrency) != 0u;
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -192,7 +194,7 @@ toStrand(
             STPathElement const& lastCurrency =
                 *std::find_if(normPath.rbegin(), normPath.rend(), hasCurrency);
             if ((lastCurrency.getCurrency() != deliver.currency) ||
-                (offerCrossing && lastCurrency.getIssuerID() != deliver.account))
+                ((offerCrossing != 0u) && lastCurrency.getIssuerID() != deliver.account))
             {
                 normPath.emplace_back(std::nullopt, deliver.currency, deliver.account);
             }
@@ -264,9 +266,13 @@ toStrand(
         auto const next = &normPath[i + 1];
 
         if (cur->isAccount())
+        {
             curIssue.account = cur->getAccountID();
+        }
         else if (cur->hasIssuer())
+        {
             curIssue.account = cur->getIssuerID();
+        }
 
         if (cur->hasCurrency())
         {
@@ -283,7 +289,7 @@ toStrand(
                 JLOG(j.trace()) << "Inserting implied account";
                 auto msr = make_DirectStepI(
                     ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
-                if (msr.first != tesSUCCESS)
+                if (!isTesSuccess(msr.first))
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
@@ -298,7 +304,7 @@ toStrand(
                 JLOG(j.trace()) << "Inserting implied account before offer";
                 auto msr = make_DirectStepI(
                     ctx(), cur->getAccountID(), curIssue.account, curIssue.currency);
-                if (msr.first != tesSUCCESS)
+                if (!isTesSuccess(msr.first))
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
                 impliedPE.emplace(
@@ -314,21 +320,19 @@ toStrand(
                 {
                     if (i != normPath.size() - 2)
                         return {temBAD_PATH, Strand{}};
-                    else
-                    {
-                        // Last step. insert xrp endpoint step
-                        auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
-                        if (msr.first != tesSUCCESS)
-                            return {msr.first, Strand{}};
-                        result.push_back(std::move(msr.second));
-                    }
+
+                    // Last step. insert xrp endpoint step
+                    auto msr = make_XRPEndpointStep(ctx(), next->getAccountID());
+                    if (!isTesSuccess(msr.first))
+                        return {msr.first, Strand{}};
+                    result.push_back(std::move(msr.second));
                 }
                 else
                 {
                     JLOG(j.trace()) << "Inserting implied account after offer";
                     auto msr = make_DirectStepI(
                         ctx(), curIssue.account, next->getAccountID(), curIssue.currency);
-                    if (msr.first != tesSUCCESS)
+                    if (!isTesSuccess(msr.first))
                         return {msr.first, Strand{}};
                     result.push_back(std::move(msr.second));
                 }
@@ -346,8 +350,10 @@ toStrand(
         }
 
         auto s = toStep(ctx(/*isLast*/ i == normPath.size() - 2), cur, next, curIssue);
-        if (s.first == tesSUCCESS)
+        if (isTesSuccess(s.first))
+        {
             result.emplace_back(std::move(s.second));
+        }
         else
         {
             JLOG(j.debug()) << "toStep failed: " << s.first;
@@ -457,7 +463,7 @@ toStrands(
         auto const ter = sp.first;
         auto& strand = sp.second;
 
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
         {
             JLOG(j.trace()) << "failed to add default path";
             if (isTemMalformed(ter) || paths.empty())
@@ -501,7 +507,7 @@ toStrands(
         auto ter = sp.first;
         auto& strand = sp.second;
 
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter

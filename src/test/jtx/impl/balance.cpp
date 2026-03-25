@@ -66,7 +66,7 @@ doBalance(
 void
 balance::operator()(Env& env) const
 {
-    return std::visit(
+    std::visit(
         [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
         value_.asset().value());
 }

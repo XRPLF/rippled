@@ -13,7 +13,7 @@ namespace xrpl {
 class Seed
 {
 private:
-    std::array<uint8_t, 16> buf_;
+    std::array<uint8_t, 16> buf_{};
 
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;

@@ -91,39 +91,43 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            std::unique_ptr<stream_type>&& bundle,
-            http_request_type&& request,
+            std::unique_ptr<stream_type> const& bundle,
+            http_request_type const& request,
             boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            http_request_type&& request,
+            http_request_type const& request,
             boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
             if (beast::rfc2616::is_keep_alive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void
@@ -299,26 +303,26 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                std::unique_ptr<stream_type>&& bundle,
-                http_request_type&& request,
+                std::unique_ptr<stream_type> const& bundle,
+                http_request_type const& request,
                 boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                http_request_type&& request,
+                http_request_type const& request,
                 boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};

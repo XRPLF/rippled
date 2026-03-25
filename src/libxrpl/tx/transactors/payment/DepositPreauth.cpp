@@ -1,6 +1,8 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -17,10 +19,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -44,7 +43,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (authPresent)
+    if (authPresent != 0)
     {
         // Make sure that the passed account is valid.
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
@@ -147,7 +146,7 @@ DepositPreauth::doApply()
             STAmount const reserve{
                 view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-            if (mPriorBalance < reserve)
+            if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
 
@@ -194,7 +193,7 @@ DepositPreauth::doApply()
             STAmount const reserve{
                 view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-            if (mPriorBalance < reserve)
+            if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
 
@@ -249,7 +248,7 @@ DepositPreauth::doApply()
 TER
 DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
-    // Existence already checked in preclaim and DeleteAccount
+    // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {

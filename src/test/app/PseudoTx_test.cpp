@@ -11,7 +11,7 @@ namespace test {
 
 struct PseudoTx_test : public beast::unit_test::suite
 {
-    std::vector<STTx>
+    static std::vector<STTx>
     getPseudoTxs(Rules const& rules, std::uint32_t seq)
     {
         std::vector<STTx> res;
@@ -43,7 +43,7 @@ struct PseudoTx_test : public beast::unit_test::suite
         return res;
     }
 
-    std::vector<STTx>
+    static std::vector<STTx>
     getRealTxs()
     {
         std::vector<STTx> res;

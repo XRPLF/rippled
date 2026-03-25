@@ -24,6 +24,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 
+#include <algorithm>
+
 namespace xrpl {
 
 namespace CrawlOptions {
@@ -479,9 +481,13 @@ OverlayImpl::start()
             for (auto const& addr : addresses)
             {
                 if (addr.port() == 0)
+                {
                     ips.push_back(to_string(addr.at_port(DEFAULT_PEER_PORT)));
+                }
                 else
+                {
                     ips.push_back(to_string(addr));
+                }
             }
 
             std::string const base("config: ");
@@ -501,9 +507,13 @@ OverlayImpl::start()
                 for (auto& addr : addresses)
                 {
                     if (addr.port() == 0)
+                    {
                         ips.emplace_back(addr.address(), DEFAULT_PEER_PORT);
+                    }
                     else
+                    {
                         ips.emplace_back(addr);
+                    }
                 }
 
                 if (!ips.empty())
@@ -634,8 +644,10 @@ OverlayImpl::onManifests(
     }
 
     if (!relay.list().empty())
+    {
         for_each([m2 = std::make_shared<Message>(relay, protocol::mtMANIFESTS)](
-                     std::shared_ptr<PeerImp>&& p) { p->send(m2); });
+                     std::shared_ptr<PeerImp> const& p) { p->send(m2); });
+    }
 }
 
 void
@@ -667,16 +679,16 @@ OverlayImpl::limit()
 }
 
 Json::Value
-OverlayImpl::getOverlayInfo()
+OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
     Json::Value jv;
-    auto& av = jv["active"] = Json::Value(Json::arrayValue);
+    auto& av = jv[jss::active] = Json::Value(Json::arrayValue);
 
-    for_each([&](std::shared_ptr<PeerImp>&& sp) {
+    for_each([&](std::shared_ptr<PeerImp> const& sp) {
         auto& pv = av.append(Json::Value(Json::objectValue));
         pv[jss::public_key] = base64_encode(sp->getNodePublic().data(), sp->getNodePublic().size());
-        pv[jss::type] = sp->slot()->inbound() ? "in" : "out";
+        pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
         if (sp->crawl())
         {
@@ -688,18 +700,20 @@ OverlayImpl::getOverlayInfo()
             }
             else
             {
-                pv[jss::port] = std::to_string(sp->getRemoteAddress().port());
+                pv[jss::port] = sp->getRemoteAddress().port();
             }
         }
 
         {
             auto version{sp->getVersion()};
             if (!version.empty())
+            {
                 // Could move here if Json::value supported moving from strings
                 pv[jss::version] = std::string{version};
+            }
         }
 
-        std::uint32_t minSeq, maxSeq;
+        std::uint32_t minSeq = 0, maxSeq = 0;
         sp->ledgerRange(minSeq, maxSeq);
         if (minSeq != 0 || maxSeq != 0)
             pv[jss::complete_ledgers] = std::to_string(minSeq) + "-" + std::to_string(maxSeq);
@@ -796,19 +810,19 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Connection", "close");
     msg.body()["version"] = Json::Value(2u);
 
-    if (setup_.crawlOptions & CrawlOptions::Overlay)
+    if ((setup_.crawlOptions & CrawlOptions::Overlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if (setup_.crawlOptions & CrawlOptions::ServerInfo)
+    if ((setup_.crawlOptions & CrawlOptions::ServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if (setup_.crawlOptions & CrawlOptions::ServerCounts)
+    if ((setup_.crawlOptions & CrawlOptions::ServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if (setup_.crawlOptions & CrawlOptions::Unl)
+    if ((setup_.crawlOptions & CrawlOptions::Unl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -868,20 +882,18 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         // 404 not found
         return fail(boost::beast::http::status::not_found);
     }
-    else if (!*vl)
+    if (!*vl)
     {
         return fail(boost::beast::http::status::bad_request);
     }
-    else
-    {
-        msg.result(boost::beast::http::status::ok);
 
-        msg.body() = *vl;
+    msg.result(boost::beast::http::status::ok);
 
-        msg.prepare_payload();
-        handoff.response = std::make_shared<SimpleWriter>(msg);
-        return true;
-    }
+    msg.body() = *vl;
+
+    msg.prepare_payload();
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return true;
 }
 
 bool
@@ -907,36 +919,41 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     std::string server_state = info[jss::server_state].asString();
     auto load_factor = info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
 
-    enum { healthy, warning, critical };
-    int health = healthy;
-    auto set_health = [&health](int state) {
-        if (health < state)
-            health = state;
-    };
+    enum class HealthState { healthy, warning, critical };
+    auto health = HealthState::healthy;
+    auto set_health = [&health](HealthState state) { health = std::max(health, state); };
 
     msg.body()[jss::info] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
         msg.body()[jss::info][jss::validated_ledger] = last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
-            set_health(warning);
+        {
+            set_health(HealthState::warning);
+        }
         else
-            set_health(critical);
+        {
+            set_health(HealthState::critical);
+        }
     }
 
     if (amendment_blocked)
     {
         msg.body()[jss::info][jss::amendment_blocked] = true;
-        set_health(critical);
+        set_health(HealthState::critical);
     }
 
     if (number_peers <= 7)
     {
         msg.body()[jss::info][jss::peers] = number_peers;
         if (number_peers != 0)
-            set_health(warning);
+        {
+            set_health(HealthState::warning);
+        }
         else
-            set_health(critical);
+        {
+            set_health(HealthState::critical);
+        }
     }
 
     if (!(server_state == "full" || server_state == "validating" || server_state == "proposing"))
@@ -944,30 +961,36 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
         msg.body()[jss::info][jss::server_state] = server_state;
         if (server_state == "syncing" || server_state == "tracking" || server_state == "connected")
         {
-            set_health(warning);
+            set_health(HealthState::warning);
         }
         else
-            set_health(critical);
+        {
+            set_health(HealthState::critical);
+        }
     }
 
     if (load_factor > 100)
     {
         msg.body()[jss::info][jss::load_factor] = load_factor;
         if (load_factor < 1000)
-            set_health(warning);
+        {
+            set_health(HealthState::warning);
+        }
         else
-            set_health(critical);
+        {
+            set_health(HealthState::critical);
+        }
     }
 
     switch (health)
     {
-        case healthy:
+        case HealthState::healthy:
             msg.result(boost::beast::http::status::ok);
             break;
-        case warning:
+        case HealthState::warning:
             msg.result(boost::beast::http::status::service_unavailable);
             break;
-        case critical:
+        case HealthState::critical:
             msg.result(boost::beast::http::status::internal_server_error);
             break;
     }
@@ -991,7 +1014,7 @@ OverlayImpl::getActivePeers() const
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
-    for_each([&ret](std::shared_ptr<PeerImp>&& sp) { ret.emplace_back(std::move(sp)); });
+    for_each([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
 
     return ret;
 }
@@ -1021,10 +1044,14 @@ OverlayImpl::getActivePeers(
             if (!reduceRelayEnabled)
                 ++disabled;
 
-            if (toSkip.count(id) == 0)
+            if (!toSkip.contains(id))
+            {
                 ret.emplace_back(std::move(p));
+            }
             else if (reduceRelayEnabled)
+            {
                 ++enabledInSkip;
+            }
         }
     }
 
@@ -1034,7 +1061,7 @@ OverlayImpl::getActivePeers(
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
-    for_each([index](std::shared_ptr<PeerImp>&& sp) { sp->checkTracking(index); });
+    for_each([index](std::shared_ptr<PeerImp> const& sp) { sp->checkTracking(index); });
 }
 
 std::shared_ptr<Peer>
@@ -1070,7 +1097,7 @@ void
 OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
-    for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
+    for_each([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1079,8 +1106,8 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
-        for_each([&](std::shared_ptr<PeerImp>&& p) {
-            if (toSkip->find(p->id()) == toSkip->end())
+        for_each([&](std::shared_ptr<PeerImp> const& p) {
+            if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
         return *toSkip;
@@ -1092,7 +1119,7 @@ void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
-    for_each([sm](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
+    for_each([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
@@ -1101,8 +1128,8 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
-        for_each([&](std::shared_ptr<PeerImp>&& p) {
-            if (toSkip->find(p->id()) == toSkip->end())
+        for_each([&](std::shared_ptr<PeerImp> const& p) {
+            if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
         return *toSkip;
@@ -1195,7 +1222,7 @@ OverlayImpl::relay(
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
     auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-        (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
+        ((total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100);
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 
@@ -1297,7 +1324,7 @@ OverlayImpl::sendEndpoints()
 }
 
 void
-OverlayImpl::sendTxQueue()
+OverlayImpl::sendTxQueue() const
 {
     for_each([](auto const& p) {
         if (p->txReduceRelayEnabled())
@@ -1347,17 +1374,23 @@ OverlayImpl::updateSlotAndSquelch(
         return;
 
     if (!strand_.running_in_this_thread())
-        return post(
+    {
+        post(
             strand_,
             // Must capture copies of reference parameters (i.e. key, validator)
             [this, key = key, validator = validator, peers = std::move(peers), type]() mutable {
                 updateSlotAndSquelch(key, validator, std::move(peers), type);
             });
 
+        return;
+    }
+
     for (auto id : peers)
+    {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
             reportInboundTraffic(TrafficCount::squelch_ignored, 0);
         });
+    }
 }
 
 void
@@ -1371,12 +1404,17 @@ OverlayImpl::updateSlotAndSquelch(
         return;
 
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_,
-            // Must capture copies of reference parameters (i.e. key, validator)
-            [this, key = key, validator = validator, peer, type]() {
-                updateSlotAndSquelch(key, validator, peer, type);
-            });
+    {
+        {
+            post(
+                strand_,
+                // Must capture copies of reference parameters (i.e. key, validator)
+                [this, key = key, validator = validator, peer, type]() {
+                    updateSlotAndSquelch(key, validator, peer, type);
+                });
+        }
+        return;
+    }
 
     slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
         reportInboundTraffic(TrafficCount::squelch_ignored, 0);
@@ -1387,7 +1425,10 @@ void
 OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+    {
+        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+        return;
+    }
 
     slots_.deletePeer(id, true);
 }
@@ -1396,7 +1437,10 @@ void
 OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+    {
+        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+        return;
+    }
 
     slots_.deleteIdlePeers();
 }
