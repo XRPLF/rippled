@@ -1,5 +1,5 @@
-#include <xrpld/app/paths/AMMLiquidity.h>
-#include <xrpld/app/paths/AMMOffer.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 
 namespace xrpl {
 

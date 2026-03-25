@@ -1,9 +1,9 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/AccountCurrencies.h>
-#include <xrpld/app/paths/PathRequest.h>
-#include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/paths/detail/PathfinderUtils.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/AccountCurrencies.h>
+#include <xrpld/rpc/detail/PathRequest.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -24,7 +24,7 @@ PathRequest::PathRequest(
     Application& app,
     std::shared_ptr<InfoSub> const& subscriber,
     int id,
-    PathRequests& owner,
+    PathRequestManager& owner,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
@@ -47,7 +47,7 @@ PathRequest::PathRequest(
     std::function<void(void)> const& completion,
     Resource::Consumer& consumer,
     int id,
-    PathRequests& owner,
+    PathRequestManager& owner,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)

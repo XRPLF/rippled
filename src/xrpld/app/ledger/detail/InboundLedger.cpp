@@ -224,8 +224,9 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
+            Rules const rules{app_.config().features};
             mLedger = std::make_shared<Ledger>(
-                deserializePrefixedHeader(makeSlice(data)), app_.config(), app_.getNodeFamily());
+                deserializePrefixedHeader(makeSlice(data)), rules, app_.getNodeFamily());
             if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
             {
                 // We know for a fact the ledger can never be acquired
@@ -777,7 +778,8 @@ InboundLedger::takeHeader(std::string const& data)
         return true;
 
     auto* f = &app_.getNodeFamily();
-    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), app_.config(), *f);
+    Rules const rules{app_.config().features};
+    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), rules, *f);
     if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
     {
         JLOG(journal_.warn()) << "Acquire hash mismatch: " << mLedger->header().hash

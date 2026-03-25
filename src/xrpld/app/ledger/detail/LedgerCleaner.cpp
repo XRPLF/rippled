@@ -1,6 +1,8 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
@@ -261,7 +263,9 @@ private:
             return false;
         }
 
-        auto dbLedger = loadByIndex(ledgerIndex, app_);
+        Rules const rules{app_.config().features};
+        Fees const fees = app_.config().FEES.toFees();
+        auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {

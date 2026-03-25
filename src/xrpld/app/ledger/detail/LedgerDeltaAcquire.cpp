@@ -124,7 +124,8 @@ LedgerDeltaAcquire::processData(
     if (info.seq == ledgerSeq_)
     {
         // create a temporary ledger for building a LedgerReplay object later
-        replayTemp_ = std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
+        Rules const rules{app_.config().features};
+        replayTemp_ = std::make_shared<Ledger>(info, rules, app_.getNodeFamily());
         if (replayTemp_)
         {
             complete_ = true;

@@ -1,7 +1,7 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/app/paths/detail/PathfinderUtils.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/PathfinderUtils.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>

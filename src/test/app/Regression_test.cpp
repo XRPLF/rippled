@@ -45,7 +45,11 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
