@@ -231,8 +231,11 @@ jobs:
           CONFIG_NAME: ${{ inputs.config_name }}
         run: |
           ASAN_OPTS="include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-asan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
+          # GCC ASAN's detect_stack_use_after_return produces false positives with
+          # Boost.Context fiber stack switching (used by boost::asio::spawn).
+          # See: https://github.com/google/sanitizers/issues/856
           if [[ "${CONFIG_NAME}" == *gcc* ]]; then
-            ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
+            ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0:detect_stack_use_after_return=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >> ${GITHUB_ENV}
           echo "TSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-tsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
@@ -242,10 +245,11 @@ jobs:
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ env.BUILD_DIR }}
-        # Windows locks some of the build files while running tests, and parallel jobs can collide
+        # Windows locks some of the build files while running tests, and parallel jobs can collide.
+        # Sanitizer builds use single-threaded execution to reduce memory pressure.
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
-          PARALLELISM: ${{ runner.os == 'Windows' && '1' || steps.nproc.outputs.nproc }}
+          PARALLELISM: ${{ env.SANITIZERS_ENABLED == 'true' && '1' || (runner.os == 'Windows' && '1' || steps.nproc.outputs.nproc) }}
         run: |
           ctest \
             --output-on-failure \
@@ -256,12 +260,21 @@ jobs:
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         env:
-          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+          # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
+          NPROC: ${{ steps.nproc.outputs.nproc }}
+          COVERAGE_ON: ${{ env.COVERAGE_ENABLED }}
+          SANITIZERS_ON: ${{ env.SANITIZERS_ENABLED }}
         run: |
           set -o pipefail
-          # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
-          [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$(( BUILD_NPROC - 2 ))
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          if [ "${COVERAGE_ON}" = "true" ]; then
+            PARALLELISM=$(( NPROC > 2 ? NPROC - 2 : 1 ))
+          else
+            PARALLELISM="${NPROC}"
+          fi
+          if [ "${SANITIZERS_ON}" = "true" ]; then
+            PARALLELISM=1
+          fi
+          ./xrpld --unittest --unittest-jobs "${PARALLELISM}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}

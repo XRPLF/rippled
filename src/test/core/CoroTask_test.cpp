@@ -44,6 +44,7 @@ namespace test {
  *   testValueException        | CoroTask<T> exception via co_await
  *   testValueChaining         | nested CoroTask<T> -> CoroTask<T>
  *   testShutdownRejection     | postCoroTask returns nullptr when stopping
+ *   testExpectEarlyExit       | expectEarlyExit() with finished_ == false
  */
 class CoroTask_test : public beast::unit_test::suite
 {
@@ -514,6 +515,41 @@ public:
         BEAST_EXPECT(!runner);
     }
 
+    /**
+     * Exercises expectEarlyExit() when the coroutine has never run
+     * (finished_ is false). This covers the if-body that decrements
+     * nSuspend_ and sets finished_ = true.
+     */
+    void
+    testExpectEarlyExit()
+    {
+        using namespace jtx;
+
+        testcase("expectEarlyExit with unfinished coroutine");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        auto& jq = env.app().getJobQueue();
+
+        // Create a runner directly (bypassing postCoroTask) so we can
+        // control the lifecycle and exercise the early-exit path.
+        auto runner = std::make_shared<JobQueue::CoroTaskRunner>(
+            JobQueue::CoroTaskRunner::create_t{}, jq, jtCLIENT, "TestEarlyExit");
+        runner->init([](auto) -> CoroTask<void> { co_return; });
+
+        // Simulate the nSuspend_ increment that postCoroTask normally does.
+        runner->onSuspend();
+
+        // expectEarlyExit: finished_ is false, so the if-body runs
+        // (decrements nSuspend_, sets finished_ = true, destroys frame).
+        runner->expectEarlyExit();
+
+        BEAST_EXPECT(!runner->runnable());
+    }
+
     void
     run() override
     {
@@ -528,6 +564,7 @@ public:
         testValueException();
         testValueChaining();
         testShutdownRejection();
+        testExpectEarlyExit();
     }
 };
 

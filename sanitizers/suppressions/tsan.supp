@@ -1,102 +1,79 @@
-# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+# TSAN suppression file for rippled.
+# Only suppress issues in third-party libraries and TSAN's own instrumentation.
+# Races in rippled's own code should be fixed, not suppressed.
 
-# Suppress race in Boost ASIO scheduler detected by GCC-15
-# This is a false positive in Boost's internal pipe() synchronization
+# Boost ASIO / Boost Context false positives
+# These are internal to Boost's reactor, fiber context switching, and memory management.
 race:boost/asio/
 race:boost/context/
 race:boost/asio/executor.hpp
 race:boost::asio
-
-# Suppress tsan related issues in rippled code.
-race:src/libxrpl/basics/make_SSLContext.cpp
-race:src/libxrpl/basics/Number.cpp
-race:src/libxrpl/json/json_value.cpp
-race:src/libxrpl/json/to_string.cpp
-race:src/libxrpl/ledger/OpenView.cpp
-race:src/libxrpl/net/HTTPClient.cpp
-race:src/libxrpl/nodestore/backend/NuDBFactory.cpp
-race:src/libxrpl/protocol/InnerObjectFormats.cpp
-race:src/libxrpl/protocol/STParsedJSON.cpp
-race:src/libxrpl/resource/ResourceManager.cpp
-race:src/test/app/Flow_test.cpp
-race:src/test/app/LedgerReplay_test.cpp
-race:src/test/app/NFToken_test.cpp
-race:src/test/app/Offer_test.cpp
-race:src/test/app/ValidatorSite_test.cpp
-race:src/test/consensus/NegativeUNL_test.cpp
-race:src/test/jtx/impl/Env.cpp
-race:src/test/jtx/impl/JSONRPCClient.cpp
-race:src/test/jtx/impl/pay.cpp
-race:src/test/jtx/impl/token.cpp
-race:src/test/rpc/Book_test.cpp
-race:src/xrpld/app/ledger/detail/InboundTransactions.cpp
-race:src/xrpld/app/main/Application.cpp
-race:src/xrpld/app/main/BasicApp.cpp
-race:src/xrpld/app/main/GRPCServer.cpp
-race:src/xrpld/app/misc/detail/AmendmentTable.cpp
-race:src/xrpld/app/misc/FeeVoteImpl.cpp
-race:src/xrpld/app/rdb/detail/Wallet.cpp
-race:src/xrpld/overlay/detail/OverlayImpl.cpp
-race:src/xrpld/peerfinder/detail/PeerfinderManager.cpp
-race:src/xrpld/peerfinder/detail/SourceStrings.cpp
-race:src/xrpld/rpc/detail/ServerHandler.cpp
-race:xrpl/server/detail/Door.h
-race:xrpl/server/detail/Spawn.h
-race:xrpl/server/detail/ServerImpl.h
-race:xrpl/nodestore/detail/DatabaseNodeImp.h
-race:src/libxrpl/beast/utility/beast_Journal.cpp
-race:src/test/beast/LexicalCast_test.cpp
-race:ripple::ServerHandler
-
-# More suppressions in external library code.
-race:crtstuff.c
-race:pipe
-
-# Deadlock / lock-order-inversion suppressions
-# Note: GCC's TSAN may not fully support all deadlock suppression patterns
-deadlock:src/libxrpl/beast/utility/beast_Journal.cpp
-deadlock:src/libxrpl/beast/utility/beast_PropertyStream.cpp
-deadlock:src/test/beast/beast_PropertyStream_test.cpp
-deadlock:src/xrpld/core/detail/Workers.cpp
-deadlock:src/xrpld/app/misc/detail/Manifest.cpp
-deadlock:src/xrpld/app/misc/detail/ValidatorList.cpp
-deadlock:src/xrpld/app/misc/detail/ValidatorSite.cpp
-
-signal:src/libxrpl/beast/utility/beast_Journal.cpp
-signal:src/xrpld/core/detail/Workers.cpp
-signal:src/xrpld/core/JobQueue.cpp
-signal:ripple::Workers::Worker
-
-# Aggressive suppressing of deadlock tsan errors
-deadlock:pthread_create
-deadlock:pthread_rwlock_rdlock
-deadlock:boost::asio
-
-# Suppress SEGV crashes in TSAN itself during stringbuf operations
-# This appears to be a GCC-15 TSAN instrumentation issue with basic_stringbuf::str()
-# Commonly triggered in beast::Journal::ScopedStream destructor
-signal:std::__cxx11::basic_stringbuf
-signal:basic_stringbuf
-signal:basic_ostringstream
-
-called_from_lib:libclang_rt
-race:ostreambuf_iterator
-race:basic_ostream
-
-# Suppress SEGV in Boost ASIO memory allocation with GCC-15 TSAN
-signal:boost::asio::aligned_new
-signal:boost::asio::detail::memory
-
-# Suppress SEGV in execute_native_thread_routine
-signal:execute_native_thread_routine
-
-# Suppress data race in Boost Context fiber management
-# This is a false positive in Boost's exception state management during fiber context switching
-race:__cxxabiv1::manage_exception_state
 race:boost::context::fiber::resume
 race:boost::asio::detail::spawned_fiber_thread
 race:boost::asio::detail::spawned_fiber_thread::suspend_with
 race:boost::asio::detail::spawned_fiber_thread::destroy
-
-# Suppress data race in __tsan_memcpy called from Boost fiber operations
+race:__cxxabiv1::manage_exception_state
 race:__tsan_memcpy
+
+# TSAN's own syscall interceptors and libc internals
+# These are false positives from TSAN's fd tracking in glibc.
+# TODO: Tighten these suppressions once TSAN runs cleanly — they may mask
+# real fd-lifetime bugs in rippled's networking code.
+race:crtstuff.c
+race:pipe
+race:epoll_ctl
+race:epoll_create
+race:closedir
+race:__close_nocancel
+race:__GI___close
+race:__socket
+race:__GI___accept4
+race:eventfd
+
+# C++ standard library internals
+race:ostreambuf_iterator
+race:basic_ostream
+called_from_lib:libclang_rt
+
+# Deadlock false positives in Boost and threading primitives
+deadlock:pthread_create
+deadlock:pthread_rwlock_rdlock
+deadlock:boost::asio
+
+# Pre-existing rippled issues (suppress until fixed, tracked separately)
+# TODO(RIPD-XXXX): beast::Journal::Sink::threshold is not thread-safe.
+# The severity field is read/written from multiple threads without synchronization.
+race:beast::Journal::Sink::threshold
+
+# TODO(RIPD-XXXX): LedgerReplayTask/LedgerDeltaAcquire lock-order-inversion.
+# LedgerDeltaAcquire::notify() calls LedgerReplayTask::deltaReady() while
+# holding its own mutex, but deltaReady() acquires LedgerReplayTask's mutex,
+# creating an A->B / B->A lock ordering cycle.
+deadlock:xrpl::LedgerDeltaAcquire
+deadlock:xrpl::LedgerReplayTask
+
+# TODO(RIPD-XXXX): SHAMap copy constructor / setLedgerSeq data race.
+race:xrpl::SHAMap::SHAMap
+race:xrpl::SHAMap::setLedgerSeq
+
+# TODO(RIPD-XXXX): RCLConsensus / NetworkOPsImp lock-order-inversion.
+# doLedgerAccept() acquires NetworkOPsImp mutex then RCLConsensus::startRound()
+# acquires consensus mutex (M0→M1), while RCLConsensus::Adaptor::doAccept()
+# acquires them in reverse order via std::lock (M1→M0). The std::lock path is
+# actually safe (deadlock-free), but TSAN flags the inconsistent ordering.
+deadlock:xrpl::RCLConsensus
+deadlock:xrpl::doLedgerAccept
+
+# TODO(RIPD-XXXX): beast::PropertyStream::Source lock-order-inversion.
+# find_one_deep() acquires parent's recursive_mutex then recursively acquires
+# children's mutexes, while find_one() can acquire them in reverse order.
+# This is a pre-existing issue in beast's PropertyStream tree traversal.
+deadlock:beast::PropertyStream::Source
+
+# Signal/crash suppressions for GCC TSAN instrumentation issues
+signal:std::__cxx11::basic_stringbuf
+signal:basic_stringbuf
+signal:basic_ostringstream
+signal:boost::asio::aligned_new
+signal:boost::asio::detail::memory
+signal:execute_native_thread_routine

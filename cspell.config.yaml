@@ -98,6 +98,7 @@ words:
   - doxyfile
   - dxrpl
   - endmacro
+  - eventfd
   - exceptioned
   - Falco
   - fcontext
@@ -268,6 +269,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - TOCTOU
   - trixie
   - tx
   - txid

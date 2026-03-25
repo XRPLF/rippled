@@ -307,7 +307,10 @@ public:
         // called. Asserted in the destructor (debug) to catch leaked
         // runners. Available in all builds to guard expectEarlyExit()
         // against double-decrementing nSuspend_.
-        bool finished_ = false;
+        // Atomic to allow lock-free reads from runnable(), join(), and
+        // the destructor without requiring the same mutex that guards
+        // the write in resume().
+        std::atomic<bool> finished_{false};
 
     public:
         /**
@@ -693,15 +696,14 @@ template <class F>
 std::shared_ptr<JobQueue::CoroTaskRunner>
 JobQueue::postCoroTask(JobType t, std::string const& name, F&& f)
 {
-    // Reject if the JQ is shutting down — matches addJob()'s stopping_ check.
-    // Must check before incrementing nSuspend_ to avoid leaving an orphan
-    // count that would cause stop() to hang.
-    if (stopping_)
-        return nullptr;
-
-    // Account for the initial suspension (CoroTask uses lazy start).
+    // Reject if the JQ is shutting down and atomically increment
+    // nSuspend_ under the same lock. Without the lock, a TOCTOU race
+    // exists: stopping_ could become true between the check and the
+    // increment, leaving an orphan nSuspend_ that causes stop() to hang.
     {
         std::lock_guard lock(m_mutex);
+        if (stopping_)
+            return nullptr;
         ++nSuspend_;
     }
 
