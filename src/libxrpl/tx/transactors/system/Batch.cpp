@@ -270,7 +270,7 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
-        if (!(stx.getFlags() & tfInnerBatchTxn))
+        if ((stx.getFlags() & tfInnerBatchTxn) == 0u)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have the tfInnerBatchTxn flag. "
@@ -335,7 +335,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Duplicate sequence and ticket checks
-        if (flags & (tfAllOrNothing | tfUntilFailure))
+        if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
             {

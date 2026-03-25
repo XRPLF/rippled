@@ -358,8 +358,8 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                x ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
 
             // The XDG config directory is not set: the config file must be in a
@@ -394,8 +394,8 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x)
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                if (x != nullptr)
                     setenv("XDG_CONFIG_HOME", x, 1);
             }
         }

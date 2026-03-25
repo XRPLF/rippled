@@ -674,13 +674,13 @@ transactionsSQL(
     std::string maxClause;
     std::string minClause;
 
-    if (options.maxLedger)
+    if (options.maxLedger != 0u)
     {
         maxClause = boost::str(
             boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
     }
 
-    if (options.minLedger)
+    if (options.minLedger != 0u)
     {
         minClause = boost::str(
             boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);
