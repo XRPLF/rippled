@@ -1,4 +1,7 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
@@ -37,7 +40,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (sponsorAccountID == sponseeAccountID)
         return temMALFORMED;
 
-    if (flags & tfDeleteObject)
+    if ((flags & tfDeleteObject) != 0u)
     {
         // can not combine with any modification flags when deleting
         constexpr std::uint32_t modifyFlags = tfSponsorshipSetRequireSignForFee |

@@ -1,8 +1,12 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/RippleCalc.h>
@@ -84,12 +88,13 @@ Payment::preflight(PreflightContext const& ctx)
 
     std::uint32_t const txFlags = tx.getFlags();
 
-    if (txFlags & tfSponsorCreatedAccount)
+    if ((txFlags & tfSponsorCreatedAccount) != 0u)
     {
         if (!ctx.rules.enabled(featureSponsor))
             return temDISABLED;
 
-        if (txFlags & tfNoRippleDirect || txFlags & tfPartialPayment || txFlags & tfLimitQuality)
+        if ((txFlags & tfNoRippleDirect) != 0u || (txFlags & tfPartialPayment) != 0u ||
+            (txFlags & tfLimitQuality) != 0u)
             return temINVALID_FLAG;
 
         if (!dstAmount.native())
@@ -99,9 +104,9 @@ Payment::preflight(PreflightContext const& ctx)
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
-    bool const limitQuality = txFlags & tfLimitQuality;
-    bool const defaultPathsAllowed = !(txFlags & tfNoRippleDirect);
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
+    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
     bool const hasPaths = tx.isFieldPresent(sfPaths);
     bool const hasMax = tx.isFieldPresent(sfSendMax);
 
@@ -277,7 +282,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx.tx[~sfSendMax];
 
@@ -309,7 +314,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        if (txFlags & tfSponsorCreatedAccount)
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
         {
             // The minimum amount when creating a Sponsored Account is 1 drop.
             // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment
@@ -333,10 +338,11 @@ Payment::preclaim(PreclaimContext const& ctx)
         // The tfSponsorCreatedAccount flag is specific to account creation via
         // sponsorship. If the destination account already exists, applying this
         // flag is invalid.
-        if (txFlags & tfSponsorCreatedAccount)
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
             return tecNO_SPONSOR_PERMISSION;
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !ctx.tx.isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -386,9 +392,9 @@ Payment::doApply()
 
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx_.tx.getFlags();
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
-    bool const limitQuality = txFlags & tfLimitQuality;
-    bool const defaultPathsAllowed = !(txFlags & tfNoRippleDirect);
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
+    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -411,7 +417,7 @@ Payment::doApply()
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
 
-        if (txFlags & tfSponsorCreatedAccount)
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
         {
             auto const sponsor = view().peek(keylet::account(account_));
             if (!sponsor)
@@ -590,7 +596,7 @@ Payment::doApply()
     // the number of reserves in this ledger for this account that require a
     // reserve.
     auto const reserve = calculateReserve(sleSrc, view().fees()) +
-        ((txFlags & tfSponsorCreatedAccount) ? view().fees().reserve : beast::zero);
+        (((txFlags & tfSponsorCreatedAccount) != 0u) ? view().fees().reserve : beast::zero);
 
     // preFeeBalance_ is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve
@@ -653,7 +659,7 @@ Payment::doApply()
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent))
+    if ((sleDst->getFlags() & lsfPasswordSpent) != 0u)
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;

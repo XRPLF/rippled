@@ -33,7 +33,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
     };
 
-    auto
+    static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
         auto const section_name = boost::starts_with(proto, "h") ? "port_rpc" : "port_ws";
@@ -69,7 +69,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return p;
     }
 
-    auto
+    static auto
     makeWSUpgrade(std::string const& host, uint16_t port)
     {
         using namespace boost::asio;
@@ -97,7 +97,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return req;
     }
 
-    auto
+    static auto
     makeHTTPRequest(
         std::string const& host,
         uint16_t port,
@@ -217,7 +217,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return;
     }
 
-    auto
+    static auto
     makeAdminRequest(
         jtx::Env& env,
         std::string const& proto,

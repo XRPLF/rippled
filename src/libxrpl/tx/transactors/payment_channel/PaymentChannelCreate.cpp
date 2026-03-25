@@ -1,6 +1,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -85,10 +87,10 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (flags & lsfDisallowIncomingPayChan)
+        if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
-        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native

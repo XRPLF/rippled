@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/SponsorHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 
 #include <libxrpl/tx/transactors/payment_channel/PaymentChannelHelpers.h>

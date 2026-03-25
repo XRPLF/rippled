@@ -1,4 +1,7 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
@@ -45,7 +48,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if (ctx.tx.getFlags() & tfMPTUnauthorize)
+        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -113,7 +116,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if (!(mptIssuanceFlags & lsfMPTRequireAuth))
+    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.

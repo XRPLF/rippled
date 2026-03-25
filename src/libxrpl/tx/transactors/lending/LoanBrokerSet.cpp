@@ -1,5 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 

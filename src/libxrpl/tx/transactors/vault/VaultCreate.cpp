@@ -1,4 +1,7 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -179,7 +182,7 @@ VaultCreate::doApply()
     std::uint32_t mptFlags = 0;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -226,7 +229,7 @@ VaultCreate::doApply()
     {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     }
-    if (scale)
+    if (scale != 0u)
         vault->at(sfScale) = scale;
     view().insert(vault);
 
@@ -237,7 +240,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
     {
         if (auto const err = authorizeMPToken(
                 view(), tx, preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
