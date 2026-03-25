@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>

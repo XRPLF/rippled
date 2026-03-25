@@ -2,7 +2,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>

@@ -2,7 +2,6 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 

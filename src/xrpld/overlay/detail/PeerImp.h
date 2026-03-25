@@ -7,7 +7,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/core/HashRouter.h>

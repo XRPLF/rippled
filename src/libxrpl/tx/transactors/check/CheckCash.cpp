@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>

@@ -6,7 +6,6 @@
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>

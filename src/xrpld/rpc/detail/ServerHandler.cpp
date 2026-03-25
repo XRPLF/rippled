@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>

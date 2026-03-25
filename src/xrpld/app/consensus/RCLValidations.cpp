@@ -6,7 +6,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/core/TimeKeeper.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>

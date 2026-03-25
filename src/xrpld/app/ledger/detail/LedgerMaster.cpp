@@ -13,7 +13,6 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>

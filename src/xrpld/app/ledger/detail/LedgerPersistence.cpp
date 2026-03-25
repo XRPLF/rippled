@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/LedgerPersistence.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>

@@ -3,7 +3,6 @@
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>

@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/DecayingSample.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/core/JobQueue.h>

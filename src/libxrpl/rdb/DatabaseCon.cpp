@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/rdb/DatabaseCon.h>

@@ -3,7 +3,6 @@
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
