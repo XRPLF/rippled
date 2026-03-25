@@ -191,7 +191,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
@@ -406,10 +406,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
             jvStatus = rpcError(rpcDOMAIN_MALFORMED);
             return PFR_PJ_INVALID;
         }
-        else
-        {
-            domain = num;
-        }
+
+        domain = num;
     }
 
     return PFR_PJ_NOCHANGE;
@@ -461,9 +459,13 @@ PathRequest::getPathFinder(
         domain,
         app_);
     if (pathfinder->findPaths(level, continueCallback))
+    {
         pathfinder->computePathRanks(max_paths_, continueCallback);
+    }
     else
+    {
         pathfinder.reset();  // It's a bad request - clear it.
+    }
     return currency_map[currency] = std::move(pathfinder);
 }
 
@@ -565,7 +567,7 @@ PathRequest::findPaths(
                 domain,         // --> Domain.
                 app_);
 
-            if (rc.result() != tesSUCCESS)
+            if (!isTesSuccess(rc.result()))
             {
                 JLOG(m_journal.warn())
                     << iIdentifier << " Failed with covering path " << transHuman(rc.result());
@@ -607,7 +609,7 @@ PathRequest::findPaths(
         after four source currencies, 50 - (4 * 4) = 34.
     */
     int const size = sourceCurrencies.size();
-    consumer_.charge({std::clamp(size * size + 34, 50, 400), "path update"});
+    consumer_.charge({std::clamp((size * size) + 34, 50, 400), "path update"});
     return true;
 }
 
@@ -652,9 +654,13 @@ PathRequest::doUpdate(
     {
         // first pass
         if (loaded || fast)
+        {
             iLevel = app_.config().PATH_SEARCH_FAST;
+        }
         else
+        {
             iLevel = app_.config().PATH_SEARCH;
+        }
     }
     else if ((iLevel == app_.config().PATH_SEARCH_FAST) && !fast)
     {

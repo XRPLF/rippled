@@ -227,7 +227,7 @@ public:
         static typename Base::Key const&
         extract(Value const& value)
         {
-            return value;
+            return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
         }
 
         static Values
@@ -523,7 +523,7 @@ public:
     testArrayCreate();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    typename std::enable_if<!(IsMap && !IsMulti)>::type
+    typename std::enable_if<!IsMap || IsMulti>::type
     testArrayCreate()
     {
     }

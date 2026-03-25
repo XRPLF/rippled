@@ -1,8 +1,9 @@
+#include <xrpl/tx/ApplyContext.h>
+//
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/InvariantCheck.h>
+#include <xrpl/tx/invariants/InvariantCheck.h>
 
 namespace xrpl {
 
@@ -39,7 +40,7 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_->apply(base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
+    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & tapDRY_RUN) != 0u, journal);
 }
 
 std::size_t

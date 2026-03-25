@@ -101,11 +101,11 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status;
+        Status status = ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
-            status = backend->fetch(hash.data(), &nodeObject);
+            status = backend->fetch(hash, &nodeObject);
         }
         catch (std::exception const& e)
         {

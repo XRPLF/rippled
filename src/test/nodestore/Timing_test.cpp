@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -110,7 +111,7 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
@@ -314,7 +315,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash().data(), &result);
+                    backend_.fetch(obj->getHash(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -377,9 +378,9 @@ public:
             {
                 try
                 {
-                    auto const key = seq2_.key(i);
+                    auto const hash = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(key.data(), &result);
+                    backend_.fetch(hash, &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -449,9 +450,9 @@ public:
                 {
                     if (rand_(gen_) < missingNodePercent)
                     {
-                        auto const key = seq2_.key(dist_(gen_));
+                        auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(key.data(), &result);
+                        backend_.fetch(hash, &result);
                         suite_.expect(!result);
                     }
                     else
@@ -459,7 +460,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -523,7 +524,7 @@ public:
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }
@@ -540,8 +541,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -551,6 +551,7 @@ public:
                     p[1] = 1 - p[0];
                     for (int q = 0; q < 2; ++q)
                     {
+                        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
                         switch (p[q])
                         {
                             case 0: {
@@ -559,7 +560,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash().data(), &result);
+                                backend_.fetch(obj->getHash(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
@@ -621,8 +622,9 @@ public:
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
-            if (w < test.first.size())
-                w = test.first.size();
+        {
+            w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
+        }
         log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
             << " Objects" << std::endl;
         {
@@ -638,10 +640,10 @@ public:
 
         for (auto const& config_string : config_strings)
         {
-            Params params;
+            Params params{};
             params.items = default_items;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
                 beast::temp_dir tempDir;
                 Section config = parse(config_string);
@@ -649,8 +651,10 @@ public:
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
+                {
                     ss << " " << setw(w)
                        << to_string(do_test(test.second, config, params, journal));
+                }
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
@@ -690,10 +694,16 @@ public:
         std::vector<std::string> config_strings;
         boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
         for (auto iter = config_strings.begin(); iter != config_strings.end();)
+        {
             if (iter->empty())
+            {
                 iter = config_strings.erase(iter);
+            }
             else
+            {
                 ++iter;
+            }
+        }
 
         do_tests(1, tests, config_strings);
         do_tests(4, tests, config_strings);

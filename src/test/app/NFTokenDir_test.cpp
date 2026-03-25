@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <initializer_list>
 
@@ -20,7 +20,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         noisy = true,
     };
 
-    void
+    static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
         Json::Value jvParams;
@@ -57,14 +57,18 @@ class NFTokenDir_test : public beast::unit_test::suite
                     else
                     {
                         if (tokenCount > 0)
+                        {
                             std::cout
                                 << "first: " << state[i][sfNFTokens.jsonName][0u].toStyledString()
                                 << std::endl;
+                        }
                         if (tokenCount > 1)
+                        {
                             std::cout
                                 << "last: "
                                 << state[i][sfNFTokens.jsonName][tokenCount - 1].toStyledString()
                                 << std::endl;
+                        }
                     }
                 }
             }

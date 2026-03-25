@@ -6,6 +6,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -196,6 +197,7 @@ struct Flow_test : public beast::unit_test::suite
 
         //   Dan -> Bob -> Alice -> Carol; vary bobDanQIn and bobAliceQOut
         for (auto bobDanQIn : {80, 100, 120})
+        {
             for (auto bobAliceQOut : {80, 100, 120})
             {
                 Env env(*this, features);
@@ -213,12 +215,17 @@ struct Flow_test : public beast::unit_test::suite
                     txflags(tfNoRippleDirect));
                 env.require(balance(bob, USDA(90)));
                 if (bobAliceQOut > bobDanQIn)
+                {
                     env.require(
                         balance(bob, USDD(10.0 * double(bobAliceQOut) / double(bobDanQIn))));
+                }
                 else
+                {
                     env.require(balance(bob, USDD(10)));
+                }
                 env.require(balance(carol, USDA(10)));
             }
+        }
 
         // bob -> alice -> carol; vary carolAliceQIn
         for (auto carolAliceQIn : {80, 100, 120})
@@ -234,7 +241,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require(balance(bob, USDA(10)));
             env(pay(bob, carol, USDA(5)), sendmax(USDA(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(balance(bob, USDA(10.0 - 5.0 / effectiveQ)));
+            env.require(balance(bob, USDA(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.
@@ -472,8 +479,10 @@ struct Flow_test : public beast::unit_test::suite
                     return false;
                 Sandbox sb(&view, tapNONE);
                 for (auto const& o : flowResult.removableOffers)
+                {
                     if (auto ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
+                }
                 sb.apply(view);
                 return true;
             });

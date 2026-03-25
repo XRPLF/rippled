@@ -166,8 +166,10 @@ public:
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
                 config_options, table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") + s.ToString());
+            }
         }
 
         m_options.table_factory.reset(NewBlockBasedTableFactory(table_options));
@@ -177,8 +179,10 @@ public:
             auto const s =
                 rocksdb::GetOptionsFromString(m_options, get(keyValues, "options"), &m_options);
             if (!s.ok())
+            {
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB options: ") + s.ToString());
+            }
         }
 
         std::string s1, s2;
@@ -209,9 +213,11 @@ public:
         rocksdb::DB* db = nullptr;
         m_options.create_if_missing = createIfMissing;
         rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
-        if (!status.ok() || !db)
+        if (!status.ok() || (db == nullptr))
+        {
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
+        }
         m_db.reset(db);
     }
 
@@ -244,7 +250,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
@@ -252,7 +258,7 @@ public:
         Status status(ok);
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(static_cast<char const*>(key), m_keyBytes);
+        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
 
         std::string string;
 
@@ -260,7 +266,7 @@ public:
 
         if (getStatus.ok())
         {
-            DecodedBlob decoded(key, string.data(), string.size());
+            DecodedBlob decoded(hash.data(), string.data(), string.size());
 
             if (decoded.wasOk())
             {
@@ -295,18 +301,22 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -332,9 +342,8 @@ public:
             EncodedBlob encoded(e);
 
             wb.Put(
-                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), m_keyBytes),
-                rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
+                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;

@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        uses: XRPLF/actions/prepare-runner@2bbc2dc1abeec7bfaa886804ab86871ac201764e
         with:
           enable_ccache: false
 
@@ -78,13 +78,13 @@ jobs:
         id: run_clang_tidy
         continue-on-error: true
         env:
-          FILES: ${{ inputs.files }}
+          TARGETS: ${{ inputs.files != '' && inputs.files || 'src tests' }}
         run: |
-          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "$BUILD_DIR" $FILES 2>&1 | tee clang-tidy-output.txt
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" ${TARGETS} 2>&1 | tee clang-tidy-output.txt
 
       - name: Upload clang-tidy output
         if: steps.run_clang_tidy.outcome != 'success'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: clang-tidy-results
           path: clang-tidy-output.txt

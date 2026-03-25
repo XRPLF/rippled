@@ -19,6 +19,7 @@ libxrpl.nodestore > xrpl.protocol
 libxrpl.protocol > xrpl.basics
 libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
+libxrpl.protocol_autogen > xrpl.protocol_autogen
 libxrpl.rdb > xrpl.basics
 libxrpl.rdb > xrpl.rdb
 libxrpl.resource > xrpl.basics
@@ -134,6 +135,7 @@ test.peerfinder > xrpld.core
 test.peerfinder > xrpld.peerfinder
 test.peerfinder > xrpl.protocol
 test.protocol > test.toplevel
+test.protocol > test.unit_test
 test.protocol > xrpl.basics
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
@@ -171,9 +173,12 @@ test.shamap > xrpl.shamap
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
+test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
+tests.libxrpl > xrpl.protocol
+tests.libxrpl > xrpl.protocol_autogen
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
@@ -190,6 +195,8 @@ xrpl.nodestore > xrpl.basics
 xrpl.nodestore > xrpl.protocol
 xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
+xrpl.protocol_autogen > xrpl.json
+xrpl.protocol_autogen > xrpl.protocol
 xrpl.rdb > xrpl.basics
 xrpl.rdb > xrpl.core
 xrpl.rdb > xrpl.protocol

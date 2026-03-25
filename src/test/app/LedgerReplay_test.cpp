@@ -232,9 +232,7 @@ public:
     bool
     supportsFeature(ProtocolFeature f) const override
     {
-        if (f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_)
-            return true;
-        return false;
+        return f == ProtocolFeature::LedgerReplay && ledgerReplayEnabled_;
     }
     std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
@@ -355,11 +353,15 @@ struct TestPeerSet : public PeerSet
     {
         int dropRate = 0;
         if (behavior == PeerSetBehavior::Drop50)
+        {
             dropRate = 50;
+        }
         else if (behavior == PeerSetBehavior::DropAll)
+        {
             dropRate = 100;
+        }
 
-        if ((rand() % 100 + 1) <= dropRate)
+        if (((rand() % 100) + 1) <= dropRate)
             return;
 
         switch (type)
@@ -497,7 +499,7 @@ struct LedgerServer
         auto updateIdx = [&]() {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
-            while (senders.count(fromIdx) != 0)
+            while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
             toIdx = (toIdx + r * 2) % fundedAccounts;
@@ -748,9 +750,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -767,9 +767,7 @@ public:
         auto t = findTask(hash, totalReplay);
         if (!t)
         {
-            if (taskExpect == TaskStatus::NotExist)
-                return true;
-            return false;
+            return taskExpect == TaskStatus::NotExist;
         }
 
         return asExpected(t, taskExpect, skiplistExpect, deltaExpects);
@@ -968,7 +966,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     {
         testcase("TaskParameter");
 
-        auto makeSkipList = [](int count) -> std::vector<uint256> const {
+        auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);
@@ -1062,10 +1060,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             auto http_resp = xrpl::makeResponse(
                 true, http_request, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
             auto const clientResult = peerFeatureEnabled(http_resp, FEATURE_LEDGER_REPLAY, client);
-            if (clientResult != expecting)
-                return false;
-
-            return true;
+            return clientResult == expecting;
         };
 
         BEAST_EXPECT(handshake(false, false, false));
@@ -1095,7 +1090,9 @@ struct LedgerReplayer_test : public beast::unit_test::suite
                 l = net.server.ledgerMaster.getLedgerByHash(l->header().parentHash);
             }
             else
+            {
                 break;
+            }
         }
 
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay);
@@ -1128,9 +1125,27 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash, totalReplay, TaskStatus::Completed, TaskStatus::Completed, deltaStatuses));
 
-        // sweep
-        net.client.replayer.sweep();
-        BEAST_EXPECT(net.client.countsAsExpected(0, 0, 0));
+        // sweep() cleans up skipLists_ and deltas_ by removing entries whose
+        // weak_ptr can no longer be locked. Those weak_ptrs expire only when the
+        // last shared_ptr holder releases the sub-task. The sole owner is the
+        // LedgerReplayTask, but a JobQueue worker thread may still hold a
+        // temporary shared_ptr to a sub-task (from wptr.lock()) while executing
+        // the timer job that drove the task to completion. If sweep() runs before
+        // that thread unwinds, the weak_ptr is still lockable and the map entry
+        // is not removed. We retry until the worker thread finishes.
+        auto waitForSweep = [&net]() {
+            for (auto numAttempts = 0; numAttempts < 20; ++numAttempts)
+            {
+                net.client.replayer.sweep();
+                if (net.client.countsAsExpected(0, 0, 0))
+                {
+                    return true;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            return false;
+        };
+        BEAST_EXPECT(waitForSweep());
     }
 
     void
@@ -1277,7 +1292,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int totalReplay = 5;
         NetworkOfTwo net(
             *this,
-            {totalReplay * 3 + 1},
+            {(totalReplay * 3) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1324,11 +1339,11 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses no change
         BEAST_EXPECT(net.client.waitForLedgers(finalHash_moreEarly, totalReplay));
-        BEAST_EXPECT(net.client.countsAsExpected(4, 3, 2 * (totalReplay - 1) + 2));
+        BEAST_EXPECT(net.client.countsAsExpected(4, 3, (2 * (totalReplay - 1)) + 2));
 
         // cover
         net.client.replayer.replay(InboundLedger::Reason::GENERIC, finalHash, totalReplay * 3);
-        deltaStatuses = std::vector<TaskStatus>(totalReplay * 3 - 1, TaskStatus::Completed);
+        deltaStatuses = std::vector<TaskStatus>((totalReplay * 3) - 1, TaskStatus::Completed);
         BEAST_EXPECT(net.client.waitAndCheckStatus(
             finalHash,
             totalReplay * 3,
@@ -1336,7 +1351,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
             TaskStatus::Completed,
             deltaStatuses));  // deltaStatuses changed
         BEAST_EXPECT(net.client.waitForLedgers(finalHash, totalReplay * 3));
-        BEAST_EXPECT(net.client.countsAsExpected(5, 3, totalReplay * 3 - 1));
+        BEAST_EXPECT(net.client.countsAsExpected(5, 3, (totalReplay * 3) - 1));
 
         // sweep
         net.client.replayer.sweep();
@@ -1440,7 +1455,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
         int rounds = 4;
         NetworkOfTwo net(
             *this,
-            {totalReplay * rounds + 1},
+            {(totalReplay * rounds) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);

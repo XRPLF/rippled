@@ -27,9 +27,13 @@ doPeers(RPC::JsonContext& context)
                 auto const s = p[jss::track].asString();
 
                 if (s == "diverged")
+                {
                     p["sanity"] = "insane";
+                }
                 else if (s == "unknown")
+                {
                     p["sanity"] = "unknown";
+                }
             }
         }
     }
@@ -53,8 +57,10 @@ doPeers(RPC::JsonContext& context)
             json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
 
         if (node.getReportTime() != NetClock::time_point{})
+        {
             json[jss::age] =
                 (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count();
+        }
     });
 
     return jvResult;

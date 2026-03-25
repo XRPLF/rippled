@@ -59,7 +59,7 @@ class RCLValidations_test : public beast::unit_test::suite
         auto prev = std::make_shared<Ledger const>(
             create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
         history.push_back(prev);
-        for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
+        for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
         {
             auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
@@ -112,9 +112,13 @@ class RCLValidations_test : public beast::unit_test::suite
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
+                {
                     BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
+                }
                 else
+                {
                     BEAST_EXPECT(a[s] == ID{0});
+                }
             }
         }
 

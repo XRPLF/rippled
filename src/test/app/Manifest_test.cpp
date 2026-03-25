@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
 
@@ -71,7 +72,7 @@ public:
         {
             setupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -81,12 +82,12 @@ public:
         {
             cleanupDatabaseDir(getDatabasePath());
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
 
-    std::string
+    static std::string
     makeManifestString(
         PublicKey const& pk,
         SecretKey const& sk,
@@ -99,7 +100,10 @@ public:
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
@@ -186,7 +190,7 @@ public:
         return *deserializeManifest(std::string{});  // Silence compiler warning.
     }
 
-    Manifest
+    static Manifest
     clone(Manifest const& m)
     {
         Manifest m2(m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
@@ -248,7 +252,6 @@ public:
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
-                std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
@@ -348,7 +351,9 @@ public:
         ss.add32(HashPrefix::manifest);
         st.addWithoutSigningFields(ss);
         auto const sig = sign(KeyType::secp256k1, kp.second, ss.slice());
-        BEAST_EXPECT(strHex(sig) == strHex(*m.getSignature()));
+        BEAST_EXPECT(
+            strHex(sig) ==
+            strHex(*m.getSignature()));  // NOLINT(bugprone-unchecked-optional-access)
 
         auto const masterSig = sign(KeyType::ed25519, sk, ss.slice());
         BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));
@@ -424,24 +429,15 @@ public:
 
             // Format token string to test trim()
             std::vector<std::string> const tokenBlob = {
-                "    "
-                "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3ND"
-                "diNT\n",
-                " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2Iiwib"
-                "WFuaWZl     \n",
-                "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncx"
-                "L3ZDeE\n",
-                "\t "
-                "hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4"
-                "U0tG\t  \t\n",
-                "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUz"
-                "ZQU2\n",
-                "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZ"
-                "eXd1\n",
-                "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZW"
-                "RGdj\n",
-                "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0i"
-                "fQ==\n"};
+                "    eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
+                " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl     \n",
+                "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n",
+                "\t hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\t  \t\n",
+                "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n",
+                "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n",
+                "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n",
+                "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n",
+            };
 
             auto const manifest =
                 "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/"
@@ -456,7 +452,9 @@ public:
 
             auto const token = loadValidatorToken(tokenBlob);
             BEAST_EXPECT(token);
-            BEAST_EXPECT(token->validationSecret == *valSecret);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(test::equal(token->validationSecret, *valSecret));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(token->manifest == manifest);
         }
         {
@@ -584,12 +582,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // invalid manifest (empty domain)
@@ -621,12 +621,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // valid manifest with invalid signature
@@ -637,12 +639,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence + 1);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(!manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // reject missing sequence
@@ -726,15 +730,16 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
 
-                        // Since this manifest is revoked, it should not have
-                        // a signingKey
+                        // Since this manifest is revoked, it should not have a signingKey
                         BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // can't specify an ephemeral signing key

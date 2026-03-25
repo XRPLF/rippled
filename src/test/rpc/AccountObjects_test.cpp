@@ -7,7 +7,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
-#include <xrpl/tx/transactors/NFT/NFTokenMint.h>
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -305,9 +305,13 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 3)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                }
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
@@ -1309,7 +1313,7 @@ public:
             auto resp = env.rpc("json", "account_objects", to_string(params));
             auto& accountObjects = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
-            BEAST_EXPECT(accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(accountObjects.size() == accountObjectSize - (limit * 2));
             BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
         }
 

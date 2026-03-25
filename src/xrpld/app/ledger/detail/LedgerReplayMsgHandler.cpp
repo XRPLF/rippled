@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <memory>
@@ -136,7 +137,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         return false;
     }
 
-    if (auto item = static_cast<SHAMapLeafNode*>(node.get())->peekItem())
+    if (auto item = safe_downcast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
         return true;

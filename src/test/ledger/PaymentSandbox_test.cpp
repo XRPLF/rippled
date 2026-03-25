@@ -2,7 +2,8 @@
 
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -109,14 +110,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
             {
                 auto r = accountSend(av, gw1, alice, toCredit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
                 startingAmount + toCredit);
             {
                 auto r = accountSend(av, alice, gw1, toDebit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -153,7 +154,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             {
                 auto r = accountSend(pv, gw1, alice, toCredit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -161,7 +162,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             {
                 auto r = accountSend(pv, alice, gw1, toDebit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -224,7 +225,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             {
                 auto r = accountSend(pv, gw1, alice, toCredit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -237,7 +238,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
                     startingAmount);
                 {
                     auto r = accountSend(pv2, gw1, alice, toCredit, j);
-                    BEAST_EXPECT(r == tesSUCCESS);
+                    BEAST_EXPECT(isTesSuccess(r));
                 }
                 BEAST_EXPECT(
                     accountHolds(pv2, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -246,7 +247,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             {
                 auto r = accountSend(pv, alice, gw1, toDebit, j);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
@@ -314,11 +315,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             {
                 auto r = accountSend(sb, xrpAccount(), alice, XRP(100), env.journal);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             {
                 auto r = accountSend(sb, alice, xrpAccount(), XRP(100), env.journal);
-                BEAST_EXPECT(r == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(r));
             }
             BEAST_EXPECT(accountFundsXRP(sb, alice, env.journal) == beast::zero);
         }

@@ -59,7 +59,7 @@ struct Regression_test : public beast::unit_test::suite
             OpenView accum(&*next);
 
             auto const result = xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
@@ -270,7 +270,7 @@ struct Regression_test : public beast::unit_test::suite
             if (BEAST_EXPECT(bob_index.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
                 auto& cache = env.app().getCachedSLEs();
-                cache.del(*digest, false);
+                cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));

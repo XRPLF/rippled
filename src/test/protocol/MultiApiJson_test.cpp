@@ -556,7 +556,7 @@ struct MultiApiJson_test : beast::unit_test::suite
             static_assert([](auto&& v) {
                 return !requires {
                     v.visitor(
-                        std::move(v),  // cannot bind rvalue
+                        decltype(v){},  // cannot bind rvalue
                         1,
                         [](Json::Value&, auto) {});
                 };
@@ -830,6 +830,7 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             // Rvalue MultivarJson visitor only binds to regular reference
             static_assert([](auto&& v) {
+                // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
                 return !requires { std::forward<decltype(v)>(v).visit(1, [](Json::Value&&) {}); };
             }(std::move(s1)));
             static_assert([](auto&& v) {
@@ -846,6 +847,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                 };
             }(std::move(s1)));
             static_assert([](auto&& v) {
+                // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
                 return !requires { std::forward<decltype(v)>(v).visit()(1, [](Json::Value&&) {}); };
             }(std::move(s1)));
             static_assert([](auto&& v) {

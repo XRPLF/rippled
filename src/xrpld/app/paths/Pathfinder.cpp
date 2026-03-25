@@ -95,7 +95,7 @@ struct PathCost
 };
 using PathCostList = std::vector<PathCost>;
 
-static PathTable mPathTable;
+PathTable mPathTable;
 
 std::string
 pathTypeToString(Pathfinder::PathType const& type)
@@ -260,7 +260,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
 
     // Now compute the payment type from the types of the source and destination
     // currencies.
-    PaymentType paymentType;
+    PaymentType paymentType = pt_XRP_to_XRP;
     if (bSrcXrp && bDstXrp)
     {
         // XRP -> XRP
@@ -348,7 +348,7 @@ Pathfinder::getPathLiquidity(
             app_,
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
-        if (rc.result() != tesSUCCESS)
+        if (!isTesSuccess(rc.result()))
             return rc.result();
 
         qualityOut = getRate(rc.actualAmountOut, rc.actualAmountIn);
@@ -491,10 +491,10 @@ Pathfinder::rankPaths(
         if (!currentPath.empty())
         {
             STAmount liquidity;
-            uint64_t uQuality;
+            uint64_t uQuality = 0;
             auto const resultCode =
                 getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
-            if (resultCode != tesSUCCESS)
+            if (!isTesSuccess(resultCode))
             {
                 JLOG(j_.debug()) << "findPaths: dropping : " << transToken(resultCode) << ": "
                                  << currentPath.getJson(JsonOptions::none);
@@ -574,17 +574,29 @@ Pathfinder::getBestPaths(
         bool useExtraPath = false;
 
         if (pathsIterator == mPathRanks.end())
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator == extraPathRanks.end())
+        {
             usePath = true;
+        }
         else if (extraPathsIterator->quality < pathsIterator->quality)
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator->quality > pathsIterator->quality)
+        {
             usePath = true;
+        }
         else if (extraPathsIterator->liquidity > pathsIterator->liquidity)
+        {
             useExtraPath = true;
+        }
         else if (extraPathsIterator->liquidity < pathsIterator->liquidity)
+        {
             usePath = true;
+        }
         else
         {
             // Risk is high they have identical liquidity
@@ -603,7 +615,7 @@ Pathfinder::getBestPaths(
             ++pathsIterator;
 
         auto iPathsLeft = maxPaths - bestPaths.size();
-        if (!(iPathsLeft > 0 || fullLiquidityPath.empty()))
+        if (iPathsLeft <= 0 && !fullLiquidityPath.empty())
             break;
 
         if (path.empty())
@@ -838,7 +850,7 @@ Pathfinder::isNoRipple(
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && (sleRipple->getFieldU32(sfFlags) & flag);
+    return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
 }
 
 // Does this path end on an account-to-account link whose last account has
@@ -852,7 +864,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if (!(endElement.getNodeType() & STPathElement::typeAccount))
+    if ((endElement.getNodeType() & STPathElement::typeAccount) == 0u)
         return false;
 
     // If there's only one item in the path, return true if that item specifies
@@ -899,7 +911,7 @@ Pathfinder::addLink(
                      << " completePaths size=" << mCompletePaths.size();
     JLOG(j_.trace()) << currentPath.getJson(JsonOptions::none);
 
-    if (addFlags & afADD_ACCOUNTS)
+    if ((addFlags & afADD_ACCOUNTS) != 0u)
     {
         // add accounts
         if (bOnXRP)
@@ -918,10 +930,10 @@ Pathfinder::addLink(
 
             if (sleEnd)
             {
-                bool const bRequireAuth(sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
                 bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
-                bool const bDestOnly(addFlags & afAC_LAST);
+                bool const bDestOnly((addFlags & afAC_LAST) != 0u);
 
                 if (auto const lines = mRLCache->getRippleLines(
                         uEndAccount,
@@ -1000,7 +1012,7 @@ Pathfinder::addLink(
                                     bIsEndCurrency,
                                     mEffectiveDst,
                                     continueCallback);
-                                if (out)
+                                if (out != 0)
                                     candidates.push_back({out, acct});
                             }
                         }
@@ -1020,9 +1032,13 @@ Pathfinder::addLink(
                         int count = candidates.size();
                         // allow more paths from source
                         if ((count > 10) && (uEndAccount != mSrcAccount))
+                        {
                             count = 10;
+                        }
                         else if (count > 50)
+                        {
                             count = 50;
+                        }
 
                         auto it = candidates.begin();
                         while (count-- != 0)
@@ -1044,10 +1060,10 @@ Pathfinder::addLink(
             }
         }
     }
-    if (addFlags & afADD_BOOKS)
+    if ((addFlags & afADD_BOOKS) != 0u)
     {
         // add order books
-        if (addFlags & afOB_XRP)
+        if ((addFlags & afOB_XRP) != 0u)
         {
             // to XRP only
             if (!bOnXRP && app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}, mDomain))
@@ -1090,7 +1106,9 @@ Pathfinder::addLink(
                             addUniquePath(mCompletePaths, newPath);
                         }
                         else
+                        {
                             incompletePaths.push_back(newPath);
+                        }
                     }
                     else if (!currentPath.hasSeen(
                                  book.out.account, book.out.currency, book.out.account))
@@ -1158,6 +1176,7 @@ makePath(char const* string)
 
     while (true)
     {
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (*string++)
         {
             case 's':  // source

@@ -16,7 +16,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/PermissionedDomain/PermissionedDomainSet.h>
+#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
 #include <atomic>
 #include <cstdint>
@@ -34,13 +34,13 @@ using namespace jtx;
 
 class PermissionedDEX_test : public beast::unit_test::suite
 {
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
     }
 
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     checkOffer(
         Env const& env,
         Account const& account,
@@ -120,13 +120,13 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return true;
     }
 
-    uint256
+    static uint256
     getBookDirKey(Book const& book, STAmount const& takerPays, STAmount const& takerGets)
     {
         return keylet::quality(keylet::book(book), getRate(takerGets, takerPays)).key;
     }
 
-    std::optional<uint256>
+    static std::optional<uint256>
     getDefaultOfferDirKey(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
         if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
@@ -135,7 +135,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         return {};
     }
 
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     checkDirectorySize(Env const& env, uint256 directory, std::uint32_t dirSize)
     {
         std::optional<std::uint64_t> pageIndex{0};
@@ -143,14 +143,15 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         do
         {
-            auto const page = env.le(keylet::page(directory, *pageIndex));
+            auto const page = env.le(
+                keylet::page(directory, *pageIndex));  // NOLINT(bugprone-unchecked-optional-access)
             if (!page)
                 break;
 
             pageIndex = (*page)[~sfIndexNext];
             dirCnt += (*page)[sfIndexes].size();
 
-        } while (pageIndex.value_or(0));
+        } while (pageIndex.value_or(0) != 0u);
 
         return dirCnt == dirSize;
     }
@@ -524,7 +525,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto const regularDirKey = getDefaultOfferDirKey(env, bob, regularOfferSeq);
             BEAST_EXPECT(regularDirKey);
-            BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
+            BEAST_EXPECT(checkDirectorySize(
+                env, *regularDirKey, 1));  // NOLINT(bugprone-unchecked-optional-access)
 
             // a domain payment cannot consume regular offers
             env(pay(alice, carol, USD(10)),
@@ -543,7 +545,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
             auto const domainDirKey = getDefaultOfferDirKey(env, bob, domainOfferSeq);
             BEAST_EXPECT(domainDirKey);
-            BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 1));
+            BEAST_EXPECT(checkDirectorySize(
+                env, *domainDirKey, 1));  // NOLINT(bugprone-unchecked-optional-access)
 
             // cross-currency permissioned payment consumed
             // domain offer instead of regular offer
@@ -553,8 +556,10 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
             // domain directory is empty
-            BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 0));
-            BEAST_EXPECT(checkDirectorySize(env, *regularDirKey, 1));
+            BEAST_EXPECT(checkDirectorySize(
+                env, *domainDirKey, 0));  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(checkDirectorySize(
+                env, *regularDirKey, 1));  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // test domain payment consuming two offers in the path
@@ -889,7 +894,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         auto const domainDirKey = getDefaultOfferDirKey(env, bob, bobOfferSeq);
         BEAST_EXPECT(domainDirKey);
-        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 2));
+        BEAST_EXPECT(checkDirectorySize(
+            env, *domainDirKey, 2));  // NOLINT(bugprone-unchecked-optional-access)
 
         // remove alice from domain and thus alice's offer becomes unfunded
         env(credentials::deleteCred(domainOwner, alice, domainOwner, credType));
@@ -902,7 +908,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // alice's unfunded offer is removed implicitly
         BEAST_EXPECT(!offerExists(env, alice, aliceOfferSeq));
-        BEAST_EXPECT(checkDirectorySize(env, *domainDirKey, 1));
+        BEAST_EXPECT(checkDirectorySize(
+            env, *domainDirKey, 1));  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void

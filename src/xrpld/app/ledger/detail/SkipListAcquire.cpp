@@ -127,7 +127,7 @@ SkipListAcquire::processData(
             return;
         }
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
 

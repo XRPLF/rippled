@@ -95,7 +95,9 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                     return (bool)getSubscriber(request);
                 };
                 if (!request->needsUpdate(newRequests, cache->getLedger()->seq()))
+                {
                     remove = false;
+                }
                 else
                 {
                     if (auto ipSub = getSubscriber(request))

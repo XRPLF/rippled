@@ -47,7 +47,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
     if (m_numberOfThreads == numberOfThreads)
         return;
 
-    if (perfLog_)
+    if (perfLog_ != nullptr)
         perfLog_->resizeJobs(numberOfThreads);
 
     if (numberOfThreads > m_numberOfThreads)
@@ -205,11 +205,9 @@ Workers::Worker::run()
                     // We got paused
                     break;
                 }
-                else
-                {
-                    // Undo our decrement
-                    ++m_workers.m_pauseCount;
-                }
+
+                // Undo our decrement
+                ++m_workers.m_pauseCount;
             }
 
             // We couldn't pause so we must have gotten

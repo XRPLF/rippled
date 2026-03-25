@@ -25,10 +25,7 @@ namespace xrpl {
 namespace RPCCall {
 
 int
-fromCommandLine(
-    Config const& config,
-    std::vector<std::string> const& vCmd,
-    ServiceRegistry& registry);
+fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
 
 void
 fromNetwork(
@@ -42,7 +39,7 @@ fromNetwork(
     Json::Value const& jvParams,
     bool const bSSL,
     bool quiet,
-    ServiceRegistry& registry,
+    Logs& logs,
     std::function<void(Json::Value const& jvInput)> callbackFuncP =
         std::function<void(Json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
@@ -62,7 +59,7 @@ std::pair<int, Json::Value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
-    ServiceRegistry& registry,
+    Logs& logs,
     unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers = {});
 

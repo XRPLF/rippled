@@ -13,7 +13,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/Batch.h>
+#include <xrpl/tx/transactors/system/Batch.h>
 
 namespace xrpl {
 namespace test {
@@ -35,7 +35,7 @@ class Batch_test : public beast::unit_test::suite
         std::string txHash;
     };
 
-    Json::Value
+    static Json::Value
     getTxByIndex(Json::Value const& jrr, int const index)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
@@ -46,7 +46,7 @@ class Batch_test : public beast::unit_test::suite
         return {};
     }
 
-    Json::Value
+    static Json::Value
     getLastLedger(jtx::Env& env)
     {
         Json::Value params;
@@ -125,7 +125,7 @@ class Batch_test : public beast::unit_test::suite
         return p;
     }
 
-    auto
+    static auto
     openLedgerFee(jtx::Env& env, XRPAmount const& batchFee)
     {
         using namespace jtx;
@@ -2259,7 +2259,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfTxnSignature] = "DEADBEEF";
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate("TxnSignature set", s.slice(), __LINE__);
         }
 
@@ -2273,7 +2273,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfSigningPubKey] = strHex(alice.pk());
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "SigningPubKey set",
                 s.slice(),
@@ -2292,7 +2292,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfSigners] = Json::arrayValue;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Signers set",
                 s.slice(),
@@ -2308,7 +2308,7 @@ class Batch_test : public beast::unit_test::suite
 
             STParsedJSONObject parsed("test", jt.jv);
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Fully signed", s.slice(), __LINE__, std::nullopt, std::nullopt, !withBatch);
         }
@@ -2322,7 +2322,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "No signing fields set",
                 s.slice(),
@@ -2347,7 +2347,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn = batch::inner(amendTx.getJson(JsonOptions::none), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Pseudo-transaction",
                 s.slice(),
@@ -3280,7 +3280,6 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
 
             auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
             env.close();
 
@@ -3373,7 +3372,6 @@ class Batch_test : public beast::unit_test::suite
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
 
             // Batch Txn
@@ -4355,6 +4353,7 @@ public:
     run() override
     {
         using namespace test::jtx;
+
         auto const sa = testable_amendments();
         testWithFeats(sa - fixBatchInnerSigs);
         testWithFeats(sa);

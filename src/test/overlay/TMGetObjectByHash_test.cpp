@@ -121,7 +121,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         return peer;
     }
 
-    std::shared_ptr<protocol::TMGetObjectByHash>
+    static std::shared_ptr<protocol::TMGetObjectByHash>
     createRequest(size_t const numObjects, Env& env)
     {
         // Store objects in the NodeStore that will be found during the query

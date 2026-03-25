@@ -53,8 +53,8 @@ class Peers_test : public beast::unit_test::suite
                 continue;
             if (!BEAST_EXPECT((*it).isMember(jss::tag)))
                 continue;
-            auto tag = (*it)[jss::tag].asString();
-            BEAST_EXPECTS((*it)[jss::tag].asString() == nodes[key], key);
+            auto const tag = (*it)[jss::tag].asString();
+            BEAST_EXPECTS(tag == nodes[key], key);
         }
         BEAST_EXPECT(peers.isMember(jss::peers) && peers[jss::peers].isNull());
     }

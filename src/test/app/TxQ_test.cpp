@@ -24,7 +24,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     static constexpr FeeLevel64 baseFeeLevel{256};
     static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 
-    void
+    static void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
@@ -32,7 +32,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
             env(noop(account));
     }
 
-    auto
+    static auto
     openLedgerCost(jtx::Env& env)
     {
         using namespace jtx;
@@ -52,7 +52,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Get a fee level of a transaction made by an account
     // This fee level is used to ensure we can place transaction into TxQ
-    auto
+    static auto
     txFeeLevelByAccount(jtx::Env& env, jtx::Account const& account)
     {
         using namespace jtx;
@@ -65,7 +65,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Calculating expected median fee level based on known fee levels of median
     // transaction levels.
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel1, FeeLevel64 const feeLevel2)
     {
         FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
@@ -73,7 +73,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         return std::max(expectedMedFeeLevel, minEscalationFeeLevel).fee();
     }
 
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel)
     {
         return calcMedFeeLevel(feeLevel, feeLevel);
@@ -551,16 +551,16 @@ public:
         // The lowest fee ticket is baseFee * 2.1, trying to replace it
         env(noop(alice),
             ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1 * 1.25 - 1),
+            fee((baseFee * 2.1 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt1 + 18), fee((baseFee * 2.1 * 1.25) + 1), queued);
 
         // New lowest fee ticket is baseFee * 2.2
         env(noop(alice),
             ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2 * 1.25 - 1),
+            fee((baseFee * 2.2 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt250 - 4), fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
         env.require(owners(alice, 227), tickets(alice, 227));
@@ -722,6 +722,7 @@ public:
             auto aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.size() == 1);
             BEAST_EXPECT(aliceStat.begin()->feeLevel == baseFeeLevel);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(aliceStat.begin()->lastValid && *aliceStat.begin()->lastValid == 8);
             BEAST_EXPECT(!aliceStat.begin()->consequences.isBlocker());
 
@@ -857,7 +858,7 @@ public:
             ++seqCarol;
         }
         // clang-format off
-        checkMetrics(*this, env, 6, 6, 4, 3, baseFeeLevel.fee() * aliceFeeMultiplier + 1);
+        checkMetrics(*this, env, 6, 6, 4, 3, (baseFeeLevel.fee() * aliceFeeMultiplier) + 1);
         // clang-format on
 
         // Carol submits high enough to beat Bob's average fee which kicks
@@ -2309,7 +2310,7 @@ public:
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2321,7 +2322,7 @@ public:
             auto const jtx = env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2331,7 +2332,7 @@ public:
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2631,7 +2632,7 @@ public:
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
-        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee(baseFee * 20 + 1), ter(terQUEUED));
+        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee((baseFee * 20) + 1), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 11), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 12), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 13), last_ledger_seq(11), ter(terQUEUED));
@@ -2756,14 +2757,18 @@ public:
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
+            {
                 envs(
                     noop(alice),
                     fee(baseFee * 100),
                     seq(none),
                     json(jss::LastLedgerSequence, lastLedgerSeq),
                     ter(terQUEUED))(submitParams);
+            }
             else
+            {
                 envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
+            }
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
@@ -3871,7 +3876,7 @@ public:
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -3939,7 +3944,7 @@ public:
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), ticket::use(tktSeq0 + 1), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -4078,7 +4083,7 @@ public:
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
         auto prepareFee = [&](uint64_t multiplier) {
-            return fee(txFee - multiplier * baseFee / 10);
+            return fee(txFee - (multiplier * baseFee / 10));
         };
 
         uint64_t multiplier = 0;
