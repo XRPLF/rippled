@@ -87,7 +87,7 @@ public:
     [[nodiscard]] STAmount
     amount(T value) const
     {
-        return amountFromString(issue(), std::to_string(value));
+        return amountFromString(issue(), to_string(value));
     }
 
     /**

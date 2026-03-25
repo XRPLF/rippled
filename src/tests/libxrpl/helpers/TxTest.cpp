@@ -100,7 +100,7 @@ TxTest::submit(std::shared_ptr<STTx const> stx)
 void
 TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags)
 {
-    EXPECT_EQ(
+    ASSERT_EQ(
         submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter,
         tesSUCCESS);
 
