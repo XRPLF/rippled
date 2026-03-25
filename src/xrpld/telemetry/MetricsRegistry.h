@@ -40,6 +40,10 @@
                             +-- CountedObject counts
                             +-- Load factor breakdown
                             +-- NodeStore I/O gauges
+                            +-- Server info (state, uptime, peers, consensus)
+                            +-- Build info (version label)
+                            +-- Complete ledger ranges (start/end pairs)
+                            +-- DB metrics (storage KB, fetch rate)
 
     Control-flow for async gauges:
 
@@ -271,6 +275,15 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> loadFactorGauge_;
     /// Observable gauges for NodeStore write_load and read_queue.
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> nodeStoreGauge_;
+    /// Observable gauge for server-level health metrics (state, uptime, peers, etc.).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> serverInfoGauge_;
+    /// Observable gauge for build version info (label-based, value=1).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
+    /// Observable gauge for complete ledger range start/end pairs.
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        completeLedgersGauge_;
+    /// Observable gauge for database sizes and historical fetch rate.
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> dbMetricsGauge_;
 
     /** Register all observable gauge callbacks with the OTel SDK.
         Called once during start().

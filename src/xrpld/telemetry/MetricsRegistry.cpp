@@ -24,14 +24,21 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UptimeClock.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -43,6 +50,8 @@
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/resource/semantic_conventions.h>
+
+#include <sstream>
 
 namespace metric_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
@@ -318,6 +327,12 @@ MetricsRegistry::registerAsyncGauges()
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(static_cast<double>(fbSize), {{"metric", "fullbelow_size"}});
+
+                // AcceptedLedger cache size (entry count).
+                auto alSize = app.getAcceptedLedgerCache().size();
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<double>>>(result)
+                    ->Observe(static_cast<double>(alSize), {{"metric", "AL_size"}});
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -498,10 +513,200 @@ MetricsRegistry::registerAsyncGauges()
                 {
                     observe("read_queue", static_cast<int64_t>(obj["read_queue"].asUInt()));
                 }
+
+                // Cumulative read duration (stored as JSON string, not int).
+                if (obj.isMember(jss::node_reads_duration_us))
+                {
+                    auto durStr = obj[jss::node_reads_duration_us].asString();
+                    if (!durStr.empty())
+                    {
+                        observe("node_reads_duration_us", static_cast<int64_t>(std::stoll(durStr)));
+                    }
+                }
+
+                // Read thread pool stats (native JSON ints, no jss:: constants).
+                if (obj.isMember("read_request_bundle"))
+                    observe(
+                        "read_request_bundle",
+                        static_cast<int64_t>(obj["read_request_bundle"].asInt()));
+                if (obj.isMember("read_threads_running"))
+                    observe(
+                        "read_threads_running",
+                        static_cast<int64_t>(obj["read_threads_running"].asInt()));
+                if (obj.isMember("read_threads_total"))
+                    observe(
+                        "read_threads_total",
+                        static_cast<int64_t>(obj["read_threads_total"].asInt()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
                 // Silently skip on error.
+            }
+        },
+        this);
+
+    // --- Task 9.7a: Server info gauges ---
+    serverInfoGauge_ =
+        meter_->CreateInt64ObservableGauge("rippled_server_info", "Server-level health metrics");
+    serverInfoGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Server operating mode (DISCONNECTED=0 .. FULL=4).
+                observe("server_state", static_cast<int64_t>(app.getOPs().getOperatingMode()));
+
+                // Uptime in seconds since server start.
+                observe(
+                    "uptime", static_cast<int64_t>(UptimeClock::now().time_since_epoch().count()));
+
+                // Total peer count (inbound + outbound).
+                observe("peers", static_cast<int64_t>(app.overlay().size()));
+
+                // Validated ledger sequence (0 if none yet).
+                observe(
+                    "validated_ledger_seq",
+                    static_cast<int64_t>(app.getLedgerMaster().getValidLedgerIndex()));
+
+                // Current open ledger sequence.
+                observe(
+                    "ledger_current_index",
+                    static_cast<int64_t>(app.getLedgerMaster().getCurrentLedgerIndex()));
+
+                // Cumulative resource-related peer disconnects.
+                observe(
+                    "peer_disconnects_resources",
+                    static_cast<int64_t>(app.overlay().getPeerDisconnectCharges()));
+
+                // Last consensus round data (from JSON — only public API).
+                auto const consensusInfo = app.getOPs().getConsensusInfo();
+                if (consensusInfo.isMember("previous_proposers"))
+                {
+                    observe(
+                        "last_close_proposers",
+                        static_cast<int64_t>(consensusInfo["previous_proposers"].asUInt()));
+                }
+                if (consensusInfo.isMember("previous_mseconds"))
+                {
+                    observe(
+                        "last_close_converge_time_ms",
+                        static_cast<int64_t>(consensusInfo["previous_mseconds"].asUInt()));
+                }
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+
+    // --- Task 9.7b: Build info gauge ---
+    buildInfoGauge_ =
+        meter_->CreateInt64ObservableGauge("rippled_build_info", "Build version information");
+    buildInfoGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* /* state */) {
+            try
+            {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(1, {{"version", std::string(BuildInfo::getVersionString())}});
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+            }
+        },
+        nullptr);
+
+    // --- Task 9.7c: Complete ledgers range gauge ---
+    completeLedgersGauge_ = meter_->CreateInt64ObservableGauge(
+        "rippled_complete_ledgers", "Complete ledger range start/end pairs");
+    completeLedgersGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto const rangeStr = app.getLedgerMaster().getCompleteLedgers();
+                if (rangeStr.empty() || rangeStr == "empty")
+                    return;
+
+                // Parse comma-separated ranges like
+                // "32570-50000,50005-75891421".
+                std::size_t rangeIndex = 0;
+                std::istringstream stream(rangeStr);
+                std::string segment;
+                while (std::getline(stream, segment, ','))
+                {
+                    auto const dashPos = segment.find('-');
+                    if (dashPos == std::string::npos || dashPos == 0 ||
+                        dashPos == segment.size() - 1)
+                        continue;
+
+                    auto const startStr = segment.substr(0, dashPos);
+                    auto const endStr = segment.substr(dashPos + 1);
+
+                    auto const idxStr = std::to_string(rangeIndex);
+
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(
+                            static_cast<int64_t>(std::stoll(startStr)),
+                            {{"bound", "start"}, {"index", idxStr}});
+
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(
+                            static_cast<int64_t>(std::stoll(endStr)),
+                            {{"bound", "end"}, {"index", idxStr}});
+
+                    ++rangeIndex;
+                }
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on parse error or if services not ready.
+            }
+        },
+        this);
+
+    // --- Task 9.7d: Database size and fetch rate gauges ---
+    dbMetricsGauge_ = meter_->CreateInt64ObservableGauge(
+        "rippled_db_metrics", "Database storage sizes and fetch rates");
+    dbMetricsGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                auto& rdb = app.getRelationalDatabase();
+                observe("db_kb_total", static_cast<int64_t>(rdb.getKBUsedAll()));
+                observe("db_kb_ledger", static_cast<int64_t>(rdb.getKBUsedLedger()));
+                observe("db_kb_transaction", static_cast<int64_t>(rdb.getKBUsedTransaction()));
+
+                // Historical ledger fetches per minute.
+                observe(
+                    "historical_perminute",
+                    static_cast<int64_t>(app.getInboundLedgers().fetchRate()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
             }
         },
         this);
