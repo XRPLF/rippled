@@ -141,10 +141,10 @@ allFeatures();
  */
 struct TxResult
 {
-    TER ter;                         /**< The transaction engine result code. */
-    bool applied;                    /**< Whether the transaction was applied to the ledger. */
-    std::optional<TxMeta> metadata;  /**< Transaction metadata, if available. */
-    std::shared_ptr<STTx const&> tx; /**< Pointer to the submitted transaction. */
+    TER ter;                        /**< The transaction engine result code. */
+    bool applied;                   /**< Whether the transaction was applied to the ledger. */
+    std::optional<TxMeta> metadata; /**< Transaction metadata, if available. */
+    std::shared_ptr<STTx const> tx; /**< Pointer to the submitted transaction. */
 };
 
 /**
