@@ -3,7 +3,6 @@
 
 namespace xrpl {
 
-
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
