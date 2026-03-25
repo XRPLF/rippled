@@ -1,6 +1,3 @@
-#include <xrpld/app/paths/AMMLiquidity.h>
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -11,6 +8,8 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/paths/OfferStream.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
