@@ -244,6 +244,8 @@ private:
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
+    int updatePathsJobLimit_;
+
     Workers m_workers;
 
     // Statistics tracking

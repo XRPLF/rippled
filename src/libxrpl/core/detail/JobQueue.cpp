@@ -16,6 +16,7 @@ JobQueue::JobQueue(
     , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
     , m_processCount(0)
+    , updatePathsJobLimit_(std::max(2, threadCount * 3 / 4))
     , m_workers(*this, &perfLog, "JobQueue", threadCount)
     , perfLog_(perfLog)
     , m_collector(collector)
