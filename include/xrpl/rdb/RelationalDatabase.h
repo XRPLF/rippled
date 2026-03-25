@@ -456,7 +456,7 @@ public:
 template <typename T, typename C>
 T
 rangeCheckedCast(C c)
-    requires(std::is_arithmetic_v<T> && std::convertible_to<C, T>)
+    requires(std::is_arithmetic_v<T> && std::is_arithmetic_v<C> && std::convertible_to<C, T>)
 {
     if ((c > std::numeric_limits<T>::max()) || (!std::numeric_limits<T>::is_signed && c < 0) ||
         (std::numeric_limits<T>::is_signed && std::numeric_limits<C>::is_signed &&
