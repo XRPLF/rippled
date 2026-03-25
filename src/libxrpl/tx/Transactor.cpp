@@ -1264,6 +1264,8 @@ Transactor::operator()()
 
     if (applied)
     {
+        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
+        // proceed to apply the tx
         result = checkInvariants(result, fee);
         if (result == tecINVARIANT_FAILED)
         {

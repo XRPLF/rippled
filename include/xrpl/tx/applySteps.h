@@ -3,8 +3,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 
-#include <memory>
-
 namespace xrpl {
 
 class ServiceRegistry;

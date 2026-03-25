@@ -295,6 +295,9 @@ invoke_apply(ApplyContext& ctx)
     }
 }
 
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor.
 std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
