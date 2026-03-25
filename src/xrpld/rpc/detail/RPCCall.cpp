@@ -817,7 +817,8 @@ private:
         Json::Value jvRequest(Json::objectValue);
         for (auto i = 0; i < nParams; ++i)
         {
-            std::string strParam = jvParams[i].asString();
+            // This was non-const. see comment below
+            std::string const strParam = jvParams[i].asString();
 
             if (i == 1 && strParam.empty())
                 continue;
@@ -827,6 +828,8 @@ private:
             {
                 if (parseBase58<AccountID>(strParam))
                 {
+                    // TODO: this was std::move'd before but it does not work in practice.
+                    // We would need a Value(std::string&&) for it to work.
                     jvRequest[accFields[i]] = strParam;
                 }
                 else
