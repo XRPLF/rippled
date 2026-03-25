@@ -19,7 +19,7 @@ class VaultCreateBuilder;
  * @brief Transaction: VaultCreate
  *
  * Type: ttVAULT_CREATE (65)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: createPseudoAcct | createMPTIssuance | mustModifyVault
  *

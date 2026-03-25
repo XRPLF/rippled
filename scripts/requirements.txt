@@ -11,9 +11,3 @@ pyparsing>=3.0.0
 
 # Template engine - used to generate C++ code from templates
 Mako>=1.2.0
-
-# Pre-commit - used to format generated C++ code
-pre-commit>=3.0.0
-
-# Code formatter - used to format generated C++ code
-clang-format>=18.1.0

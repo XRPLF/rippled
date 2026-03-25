@@ -145,9 +145,13 @@ InboundLedger::checkLocal()
     if (!isDone())
     {
         if (mLedger)
+        {
             tryDB(mLedger->stateMap().family().db());
+        }
         else
+        {
             tryDB(app_.getNodeFamily().db());
+        }
         if (failed_ || complete_)
         {
             done();
@@ -184,7 +188,9 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter
     if (!root.isZero())
     {
         if (map.getHash().isZero())
+        {
             ret.push_back(root);
+        }
         else
         {
             auto mn = map.getMissingNodes(max, filter);
@@ -436,7 +442,9 @@ InboundLedger::done()
             self->app_.getLedgerMaster().tryAdvance();
         }
         else
+        {
             self->app_.getInboundLedgers().logFailure(self->hash_, self->mSeq);
+        }
     });
 }
 
@@ -462,9 +470,13 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             ss << " from " << peer;
 
         if (complete_ || failed_)
+        {
             ss << " complete=" << complete_ << " failed=" << failed_;
+        }
         else
+        {
             ss << " header=" << mHaveHeader << " tx=" << mHaveTransactions << " as=" << mHaveState;
+        }
         stream << ss.str();
     }
 
@@ -563,7 +575,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         tmGL.set_querydepth(2);
     }
     else
+    {
         tmGL.set_querydepth(1);
+    }
 
     // Get the state data first because it's the most likely to be useful
     // if we wind up abandoning this fetch.
@@ -603,7 +617,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 if (nodes.empty())
                 {
                     if (!mLedger->stateMap().isValid())
+                    {
                         failed_ = true;
+                    }
                     else
                     {
                         mHaveState = true;
@@ -629,10 +645,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         mPeerSet->sendRequest(tmGL, peer);
                         return;
                     }
-                    else
-                    {
-                        JLOG(journal_.trace()) << "All AS nodes filtered";
-                    }
+
+                    JLOG(journal_.trace()) << "All AS nodes filtered";
                 }
             }
         }
@@ -668,7 +682,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             if (nodes.empty())
             {
                 if (!mLedger->txMap().isValid())
+                {
                     failed_ = true;
+                }
                 else
                 {
                     mHaveTransactions = true;
@@ -693,10 +709,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     mPeerSet->sendRequest(tmGL, peer);
                     return;
                 }
-                else
-                {
-                    JLOG(journal_.trace()) << "All TX nodes filtered";
-                }
+
+                JLOG(journal_.trace()) << "All TX nodes filtered";
             }
         }
     }
@@ -825,11 +839,13 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
     auto [map, rootHash, filter] =
         [&]() -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
+        {
             return {
                 mLedger->txMap(),
                 SHAMapHash{mLedger->header().txHash},
                 std::make_unique<TransactionStateSF>(
                     mLedger->txMap().family().db(), app_.getLedgerMaster())};
+        }
         return {
             mLedger->stateMap(),
             SHAMapHash{mLedger->header().accountHash},
@@ -874,9 +890,13 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
     if (!map.isSynching())
     {
         if (packet.type() == protocol::liTX_NODE)
+        {
             mHaveTransactions = true;
+        }
         else
+        {
             mHaveState = true;
+        }
 
         if (mHaveTransactions && mHaveState)
         {
@@ -1131,9 +1151,13 @@ struct PeerDataCounts
         while (i != counts.end())
         {
             if (i->second < thresh)
+            {
                 i = counts.erase(i);
+            }
             else
+            {
                 ++i;
+            }
         }
     }
 

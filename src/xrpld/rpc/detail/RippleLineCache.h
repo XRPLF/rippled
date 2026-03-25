@@ -1,9 +1,10 @@
 #pragma once
 
+#include <xrpld/rpc/detail/TrustLine.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/ledger/TrustLine.h>
 
 #include <cstddef>
 #include <mutex>
@@ -36,7 +37,7 @@ public:
        @accountID's side.
        @return Returns a vector of the usable trust lines.
     */
-    std::shared_ptr<std::vector<TrustLine>>
+    std::shared_ptr<std::vector<PathFindTrustLine>>
     getRippleLines(AccountID const& accountID, LineDirection direction);
 
 private:
@@ -93,7 +94,7 @@ private:
     // most accounts are not going to have any entries (estimated over 90%), so
     // vectors will not need to be created for them. This should lead to far
     // less memory usage overall.
-    hash_map<AccountKey, std::shared_ptr<std::vector<TrustLine>>, AccountKey::Hash> lines_;
+    hash_map<AccountKey, std::shared_ptr<std::vector<PathFindTrustLine>>, AccountKey::Hash> lines_;
     std::size_t totalLineCount_ = 0;
 };
 

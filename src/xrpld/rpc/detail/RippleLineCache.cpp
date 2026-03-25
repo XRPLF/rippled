@@ -1,6 +1,5 @@
 #include <xrpld/rpc/detail/RippleLineCache.h>
-
-#include <xrpl/ledger/TrustLine.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 namespace xrpl {
 
@@ -17,7 +16,7 @@ RippleLineCache::~RippleLineCache()
                            << " distinct trust lines.";
 }
 
-std::shared_ptr<std::vector<TrustLine>>
+std::shared_ptr<std::vector<PathFindTrustLine>>
 RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 {
     auto const hash = hasher_(accountID);
@@ -76,16 +75,16 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     if (inserted)
     {
         XRPL_ASSERT(it->second == nullptr, "xrpl::RippleLineCache::getRippleLines : null lines");
-        auto lines = TrustLine::getItems(accountID, *ledger_, direction);
-        if (lines.size())
+        auto lines = PathFindTrustLine::getItems(accountID, *ledger_, direction);
+        if (!lines.empty())
         {
-            it->second = std::make_shared<std::vector<TrustLine>>(std::move(lines));
+            it->second = std::make_shared<std::vector<PathFindTrustLine>>(std::move(lines));
             totalLineCount_ += it->second->size();
         }
     }
 
     XRPL_ASSERT(
-        !it->second || (it->second->size() > 0),
+        !it->second || (!it->second->empty()),
         "xrpl::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "

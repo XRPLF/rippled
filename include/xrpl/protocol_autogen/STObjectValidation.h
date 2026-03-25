@@ -13,7 +13,7 @@ validateSTObject(STObject const& obj, SOTemplate const& format)
     {
         if (!obj.isFieldPresent(field.sField()) && field.style() == soeREQUIRED)
         {
-            return false;
+            return false;  // LCOV_EXCL_LINE
         }
 
         if (field.supportMPT() == soeMPTNotSupported && obj.isFieldPresent(field.sField()))
@@ -23,16 +23,16 @@ validateSTObject(STObject const& obj, SOTemplate const& format)
                 auto const& amount = obj.getFieldAmount(field.sField());
 
                 if (amount.asset().holds<MPTIssue>())
-                    return false;
+                    return false;  // LCOV_EXCL_LINE
             }
             else if (field.sField().fieldType == STI_ISSUE)
             {
                 auto issue = dynamic_cast<STIssue const*>(obj.peekAtPField(field.sField()));
                 if (!issue)
-                    return false;
+                    return false;  // LCOV_EXCL_LINE
 
                 if (issue->holds<MPTIssue>())
-                    return false;
+                    return false;  // LCOV_EXCL_LINE
             }
         }
     }

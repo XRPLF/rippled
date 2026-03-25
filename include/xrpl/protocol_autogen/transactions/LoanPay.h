@@ -19,7 +19,7 @@ class LoanPayBuilder;
  * @brief Transaction: LoanPay
  *
  * Type: ttLOAN_PAY (84)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: mayAuthorizeMPT | mustModifyVault
  *

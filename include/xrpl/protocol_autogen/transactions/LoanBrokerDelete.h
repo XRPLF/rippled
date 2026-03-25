@@ -19,7 +19,7 @@ class LoanBrokerDeleteBuilder;
  * @brief Transaction: LoanBrokerDelete
  *
  * Type: ttLOAN_BROKER_DELETE (75)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: mustDeleteAcct | mayAuthorizeMPT
  *

@@ -7,26 +7,54 @@ and ledger_entries.macro files using pcpp and pyparsing.
 """
 
 import re
+import shutil
 from pathlib import Path
 import pyparsing as pp
 from pcpp import Preprocessor
 
 
+def clear_output_directory(directory):
+    """Clear all generated files from an output directory.
+
+    Removes all .h and .cpp files from the directory, but preserves
+    the directory itself and any subdirectories.
+
+    Args:
+        directory: Path to the directory to clear
+    """
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        return
+
+    # Remove generated files (headers and source files)
+    for pattern in ["*.h", "*.cpp"]:
+        for file_path in dir_path.glob(pattern):
+            file_path.unlink()
+
+    print(f"Cleared output directory: {dir_path}")
+
+
 class CppCleaner(Preprocessor):
     """C preprocessor that removes C++ noise while preserving macro calls."""
 
-    def __init__(self, macro_include_name):
+    def __init__(self, macro_include_name, macro_name):
         """
         Initialize the preprocessor.
 
         Args:
             macro_include_name: The name of the include flag to set to 0
                                (e.g., "TRANSACTION_INCLUDE" or "LEDGER_ENTRY_INCLUDE")
+            macro_name: The name of the macro to define so #if !defined() checks pass
+                       (e.g., "TRANSACTION" or "LEDGER_ENTRY")
         """
         super(CppCleaner, self).__init__()
         # Define flags so #if blocks evaluate correctly
         # We set the include flag to 0 so includes are skipped
         self.define(f"{macro_include_name} 0")
+        # Define the macro so #if !defined(MACRO) / #error checks pass
+        # We define it to expand to itself so the macro calls remain in the output
+        # for pyparsing to find and parse
+        self.define(f"{macro_name}(...) {macro_name}(__VA_ARGS__)")
         # Suppress line directives
         self.line_directive = None
 

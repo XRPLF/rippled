@@ -18,7 +18,7 @@ accountSourceCurrencies(
     {
         for (auto const& rspEntry : *lines)
         {
-            auto saBalance = rspEntry.getBalance();
+            auto& saBalance = rspEntry.getBalance();
 
             // Filter out non
             if (saBalance > beast::zero
@@ -52,7 +52,7 @@ accountDestCurrencies(
     {
         for (auto const& rspEntry : *lines)
         {
-            auto saBalance = rspEntry.getBalance();
+            auto& saBalance = rspEntry.getBalance();
 
             if (saBalance < rspEntry.getLimit())  // Can take more
                 currencies.insert(saBalance.getCurrency());

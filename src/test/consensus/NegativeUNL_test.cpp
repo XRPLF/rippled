@@ -5,8 +5,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/ledger/Ledger.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/tx/apply.h>
 
 namespace xrpl {
@@ -787,7 +786,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
                         // skip half my validations.
-                        return !(history.UNLNodeIDs[idx] == myId && l->seq() % 2 == 0);
+                        return history.UNLNodeIDs[idx] != myId || l->seq() % 2 != 0;
                     });
                 NegativeUNLVote vote(myId, history.env.journal);
                 BEAST_EXPECT(!vote.buildScoreTable(
@@ -840,9 +839,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                     for (auto const& [n, score] : *scoreTable)
                     {
                         if (n == myId)
+                        {
                             BEAST_EXPECT(score == 256);
+                        }
                         else
+                        {
                             BEAST_EXPECT(score == 0);
+                        }
                     }
                 }
 
@@ -891,7 +894,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
      * @param numReEnable number of ReEnable candidates expected
      * @return true if the number of candidates meets expectation
      */
-    bool
+    static bool
     checkCandidateSizes(
         NegativeUNLVote& vote,
         hash_set<NodeID> const& unl,
@@ -1309,13 +1312,19 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                     NodeID myId = history.UNLNodeIDs[3];
                     history.walkHistoryAndAddValidations(
                         [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
-                            std::size_t k;
+                            std::size_t k = 0;
                             if (idx < 2)
+                            {
                                 k = 0;
+                            }
                             else if (idx < 4)
+                            {
                                 k = 1;
+                            }
                             else
+                            {
                                 k = 2;
+                            }
 
                             bool add_50 = scorePattern[sp][k] == 50 && l->seq() % 2 == 0;
                             bool add_100 = scorePattern[sp][k] == 100;
@@ -1338,9 +1347,11 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                             if (scorePattern[sp][k] == 50)
                                 return score == 256 / 2;
                             if (scorePattern[sp][k] == 100)
+                            {
                                 return score == 256;
-                            else
-                                return false;
+                            }
+
+                            return false;
                         };
                         for (; i < 2; ++i)
                         {
@@ -1475,6 +1486,7 @@ class NegativeUNLVoteOffline_test : public beast::unit_test::suite
             if (history.goodHistory)
             {
                 NodeID n1 = calcNodeID(*history.lastLedger()->negativeUNL().begin());
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 NodeID n2 = calcNodeID(*history.lastLedger()->validatorToDisable());
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
@@ -1761,9 +1773,11 @@ applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 {
     auto const res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
     if (pass)
-        return res.ter == tesSUCCESS;
-    else
-        return res.ter == tefFAILURE || res.ter == temDISABLED;
+    {
+        return isTesSuccess(res.ter);
+    }
+
+    return res.ter == tefFAILURE || res.ter == temDISABLED;
 }
 
 bool
@@ -1799,7 +1813,7 @@ VerifyPubKeyAndSeq(
             return false;
         nUnlLedgerSeq.erase(it);
     }
-    return nUnlLedgerSeq.size() == 0;
+    return nUnlLedgerSeq.empty();
 }
 
 std::size_t

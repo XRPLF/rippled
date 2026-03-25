@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
-#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -522,6 +522,7 @@ struct Credentials_test : public beast::unit_test::suite
                     directory::adjustOwnerNode);
                 BEAST_EXPECT(res1);
 
+                // NOLINTNEXTLINE(readability-suspicious-call-argument)
                 auto const jv = credentials::create(issuer, subject, credType);
                 env(jv, ter(tecDIR_FULL));
                 // Free one directory entry by using a ticket

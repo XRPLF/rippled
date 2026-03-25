@@ -19,7 +19,7 @@ class VaultWithdrawBuilder;
  * @brief Transaction: VaultWithdraw
  *
  * Type: ttVAULT_WITHDRAW (69)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: mayDeleteMPT | mayAuthorizeMPT | mustModifyVault
  *

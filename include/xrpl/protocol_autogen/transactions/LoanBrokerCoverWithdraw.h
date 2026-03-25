@@ -19,7 +19,7 @@ class LoanBrokerCoverWithdrawBuilder;
  * @brief Transaction: LoanBrokerCoverWithdraw
  *
  * Type: ttLOAN_BROKER_COVER_WITHDRAW (77)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: mayAuthorizeMPT
  *

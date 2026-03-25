@@ -19,7 +19,7 @@ class LoanManageBuilder;
  * @brief Transaction: LoanManage
  *
  * Type: ttLOAN_MANAGE (82)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureLendingProtocol
  * Privileges: mayModifyVault
  *

@@ -246,9 +246,11 @@ public:
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
+        {
             BEAST_EXPECT(
                 result.isMember(jss::deposit_authorized) &&
                 (result[jss::deposit_authorized] == true));
+        }
 
         BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
         if (!error.empty())

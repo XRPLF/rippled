@@ -139,7 +139,7 @@ private:
 
     std::optional<uint256> domain;
 
-    bool convert_all_;
+    bool convert_all_{};
 
     std::recursive_mutex mIndexLock;
     LedgerIndex mLastIndex;

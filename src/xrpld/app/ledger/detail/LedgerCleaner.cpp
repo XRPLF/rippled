@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -94,7 +95,9 @@ public:
         std::lock_guard lock(mutex_);
 
         if (maxRange_ == 0)
+        {
             map["status"] = "idle";
+        }
         else
         {
             map["status"] = "running";
@@ -262,7 +265,7 @@ private:
 
         Rules const rules{app_.config().features};
         Fees const fees = app_.config().FEES.toFees();
-        auto dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
+        auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
@@ -359,10 +362,10 @@ private:
 
         while (!shouldExit())
         {
-            LedgerIndex ledgerIndex;
+            LedgerIndex ledgerIndex = 0;
             LedgerHash ledgerHash;
-            bool doNodes;
-            bool doTxns;
+            bool doNodes = false;
+            bool doTxns = false;
 
             if (app_.getFeeTrack().isLoadedLocal())
             {

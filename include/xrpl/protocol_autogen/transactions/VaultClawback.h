@@ -19,7 +19,7 @@ class VaultClawbackBuilder;
  * @brief Transaction: VaultClawback
  *
  * Type: ttVAULT_CLAWBACK (70)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: mayDeleteMPT | mustModifyVault
  *

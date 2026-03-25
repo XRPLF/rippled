@@ -19,7 +19,7 @@ class VaultSetBuilder;
  * @brief Transaction: VaultSet
  *
  * Type: ttVAULT_SET (66)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::notDelegable
  * Amendment: featureSingleAssetVault
  * Privileges: mustModifyVault
  *

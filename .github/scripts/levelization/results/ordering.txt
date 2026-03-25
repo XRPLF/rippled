@@ -7,12 +7,9 @@ libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
-libxrpl.ledger > xrpl.core
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
-libxrpl.ledger > xrpl.nodestore
 libxrpl.ledger > xrpl.protocol
-libxrpl.ledger > xrpl.rdb
 libxrpl.net > xrpl.basics
 libxrpl.net > xrpl.net
 libxrpl.nodestore > xrpl.basics
@@ -139,6 +136,7 @@ test.peerfinder > xrpld.core
 test.peerfinder > xrpld.peerfinder
 test.peerfinder > xrpl.protocol
 test.protocol > test.toplevel
+test.protocol > test.unit_test
 test.protocol > xrpl.basics
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
@@ -176,17 +174,12 @@ test.shamap > xrpl.shamap
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
+test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
-tests.libxrpl > xrpl.core
 tests.libxrpl > xrpl.json
-tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
-tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
-tests.libxrpl > xrpl.server
-tests.libxrpl > xrpl.shamap
-tests.libxrpl > xrpl.tx
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
@@ -196,7 +189,6 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
-xrpl.ledger > xrpl.protocol_autogen
 xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
