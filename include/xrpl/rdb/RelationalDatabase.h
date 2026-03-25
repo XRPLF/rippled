@@ -49,6 +49,8 @@ public:
     struct AccountTxOptions
     {
         AccountID const& account;
+        /// Ledger sequence range to search. A value of 0 for min or max
+        /// means unbounded in that direction (no constraint applied).
         LedgerRange ledgerRange;
         std::uint32_t offset;
         std::uint32_t limit;
