@@ -122,10 +122,10 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    if (!Permission::getInstance().checkGranularSandbox(tx))
-        return terNO_DELEGATE_PERMISSION;
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
-    if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
+    if (!Permission::getInstance().checkGranularSandbox(tx, granularPermissions))
         return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
@@ -136,17 +136,6 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
     if (!sleRippleState)
-        return terNO_DELEGATE_PERMISSION;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
-
-    std::uint32_t const txFlags = tx.getFlags();
-    if (((txFlags & tfSetfAuth) != 0u) && !granularPermissions.contains(TrustlineAuthorize))
-        return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfSetFreeze) != 0u) && !granularPermissions.contains(TrustlineFreeze))
-        return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfClearFreeze) != 0u) && !granularPermissions.contains(TrustlineUnfreeze))
         return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,

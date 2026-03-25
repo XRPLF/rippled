@@ -1,72 +1,54 @@
-#if !defined(PERMISSION) || !defined(GRANULAR_TEMPLATE)
-#error "undefined macro: PERMISSION or GRANULAR_TEMPLATE"
+#if !defined(GRANULAR_PERMISSION)
+#error "undefined macro: GRANULAR_PERMISSION"
 #endif
 
 /**
- * PERMISSION(name, txType, value)
+ * GRANULAR_PERMISSION(name, txType, value, allowedFlags, allowedFields)
  *
- * This macro defines a permission:
- * name: the name of the permission.
- * txType: the corresponding TxType for this permission.
- * value: the uint32 numeric value for the enum type.
+ * Defines a granular permission:
+ *   name:          the granular permission name.
+ *   txType:        the corresponding TxType for this permission.
+ *   value:         the uint32 numeric value for the enum type.
+ *   allowedFlags:  transaction flags permitted under this permission.
+ *   allowedFields: transaction fields permitted under this permission.
  */
 
-/** This permission grants the delegated account the ability to authorize a trustline. */
-PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537)
-
-/** This permission grants the delegated account the ability to freeze a trustline. */
-PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538)
-
-/** This permission grants the delegated account the ability to unfreeze a trustline. */
-PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539)
-
-/** This permission grants the delegated account the ability to set Domain. */
-PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540)
-
-/** This permission grants the delegated account the ability to set EmailHashSet. */
-PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541)
-
-/** This permission grants the delegated account the ability to set MessageKey. */
-PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542)
-
-/** This permission grants the delegated account the ability to set TransferRate. */
-PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543)
-
-/** This permission grants the delegated account the ability to set TickSize. */
-PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544)
-
-/** This permission grants the delegated account the ability to mint payment, which means sending a payment for a currency where the sending account is the issuer. */
-PERMISSION(PaymentMint, ttPAYMENT, 65545)
-
-/** This permission grants the delegated account the ability to burn payment, which means sending a payment for a currency where the destination account is the issuer */
-PERMISSION(PaymentBurn, ttPAYMENT, 65546)
-
-/** This permission grants the delegated account the ability to lock MPToken. */
-PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
-
-/** This permission grants the delegated account the ability to unlock MPToken. */
-PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
-
-/**
- * GRANULAR_TEMPLATE(txType, allowedFlags, allowedFields)
- *
- * This macro defines a the permitted flags and fields for delegation:
- * txType: the transaction type.
- * allowedFlags: permitted flags for delegation.
- * allowedFields: permitted fields for delegation.
- */
-GRANULAR_TEMPLATE(ttTRUST_SET, tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze,
+/** Grants the ability to authorize a trustline. */
+GRANULAR_PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537, tfUniversal | tfSetfAuth,
     ({{sfLimitAmount, soeREQUIRED}}))
 
-GRANULAR_TEMPLATE(ttACCOUNT_SET, tfUniversal,
-    ({{sfDomain, soeOPTIONAL},
-      {sfEmailHash, soeOPTIONAL},
-      {sfMessageKey, soeOPTIONAL},
-      {sfTransferRate, soeOPTIONAL},
-      {sfTickSize, soeOPTIONAL}}))
+/** Grants the ability to freeze a trustline. */
+GRANULAR_PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538, tfUniversal | tfSetFreeze,
+    ({{sfLimitAmount, soeREQUIRED}}))
 
-GRANULAR_TEMPLATE(ttPAYMENT, tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
-   ({{sfDestination, soeREQUIRED},
+/** Grants the ability to unfreeze a trustline. */
+GRANULAR_PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539, tfUniversal | tfClearFreeze,
+    ({{sfLimitAmount, soeREQUIRED}}))
+
+/** Grants the ability to set Domain. */
+GRANULAR_PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540, tfUniversal,
+    ({{sfDomain, soeOPTIONAL}}))
+
+/** Grants the ability to set EmailHash. */
+GRANULAR_PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541, tfUniversal,
+    ({{sfEmailHash, soeOPTIONAL}}))
+
+/** Grants the ability to set MessageKey. */
+GRANULAR_PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542, tfUniversal,
+    ({{sfMessageKey, soeOPTIONAL}}))
+
+/** Grants the ability to set TransferRate. */
+GRANULAR_PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543, tfUniversal,
+    ({{sfTransferRate, soeOPTIONAL}}))
+
+/** Grants the ability to set TickSize. */
+GRANULAR_PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544, tfUniversal,
+    ({{sfTickSize, soeOPTIONAL}}))
+
+/** Grants the ability to mint payment (sending account is the issuer). */
+GRANULAR_PERMISSION(PaymentMint, ttPAYMENT, 65545,
+    tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+    ({{sfDestination, soeREQUIRED},
       {sfAmount, soeREQUIRED},
       {sfSendMax, soeOPTIONAL},
       {sfInvoiceID, soeOPTIONAL},
@@ -75,6 +57,24 @@ GRANULAR_TEMPLATE(ttPAYMENT, tfUniversal | tfPartialPayment | tfLimitQuality | t
       {sfCredentialIDs, soeOPTIONAL},
       {sfDomainID, soeOPTIONAL}}))
 
-GRANULAR_TEMPLATE(ttMPTOKEN_ISSUANCE_SET, tfUniversal | tfMPTLock | tfMPTUnlock,
+/** Grants the ability to burn payment (destination account is the issuer). */
+GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546,
+    tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+    ({{sfDestination, soeREQUIRED},
+      {sfAmount, soeREQUIRED},
+      {sfSendMax, soeOPTIONAL},
+      {sfInvoiceID, soeOPTIONAL},
+      {sfDestinationTag, soeOPTIONAL},
+      {sfDeliverMin, soeOPTIONAL},
+      {sfCredentialIDs, soeOPTIONAL},
+      {sfDomainID, soeOPTIONAL}}))
+
+/** Grants the ability to lock an MPToken. */
+GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniversal | tfMPTLock,
+    ({{sfMPTokenIssuanceID, soeREQUIRED},
+      {sfHolder, soeOPTIONAL}}))
+
+/** Grants the ability to unlock an MPToken. */
+GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
     ({{sfMPTokenIssuanceID, soeREQUIRED},
       {sfHolder, soeOPTIONAL}}))

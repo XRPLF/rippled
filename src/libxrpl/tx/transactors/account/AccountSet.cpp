@@ -170,25 +170,10 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    if (!Permission::getInstance().checkGranularSandbox(tx))
-        return terNO_DELEGATE_PERMISSION;
-
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
 
-    if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfMessageKey) && !granularPermissions.contains(AccountMessageKeySet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfDomain) && !granularPermissions.contains(AccountDomainSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfTransferRate) && !granularPermissions.contains(AccountTransferRateSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfTickSize) && !granularPermissions.contains(AccountTickSizeSet))
+    if (!Permission::getInstance().checkGranularSandbox(tx, granularPermissions))
         return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
