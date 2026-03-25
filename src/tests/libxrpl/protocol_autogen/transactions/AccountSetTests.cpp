@@ -363,4 +363,4 @@ TEST(TransactionsAccountSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getNFTokenMinter().has_value());
 }
 
-}
+} // namespace xrpl::transactions

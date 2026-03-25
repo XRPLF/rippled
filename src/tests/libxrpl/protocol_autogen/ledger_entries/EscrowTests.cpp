@@ -488,4 +488,4 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasIssuerNode());
     EXPECT_FALSE(entry.getIssuerNode().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

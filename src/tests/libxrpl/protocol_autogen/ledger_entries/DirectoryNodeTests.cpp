@@ -481,4 +481,4 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

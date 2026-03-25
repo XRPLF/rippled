@@ -321,4 +321,4 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getReserveIncrementDrops().has_value());
 }
 
-}
+} // namespace xrpl::transactions

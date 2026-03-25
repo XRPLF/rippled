@@ -192,4 +192,4 @@ TEST(TransactionsMPTokenAuthorizeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getHolder().has_value());
 }
 
-}
+} // namespace xrpl::transactions

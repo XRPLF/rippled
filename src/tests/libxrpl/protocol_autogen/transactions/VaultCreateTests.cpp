@@ -297,4 +297,4 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getScale().has_value());
 }
 
-}
+} // namespace xrpl::transactions

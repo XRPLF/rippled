@@ -213,4 +213,4 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getIssuer().has_value());
 }
 
-}
+} // namespace xrpl::transactions

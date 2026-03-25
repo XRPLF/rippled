@@ -159,4 +159,4 @@ TEST(TransactionsLoanBrokerCoverDepositTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

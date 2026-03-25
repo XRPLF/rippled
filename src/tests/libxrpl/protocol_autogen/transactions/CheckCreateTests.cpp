@@ -252,4 +252,4 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getInvoiceID().has_value());
 }
 
-}
+} // namespace xrpl::transactions

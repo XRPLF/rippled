@@ -220,4 +220,4 @@ TEST(PermissionedDomainTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(PermissionedDomainBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-}
+} // namespace xrpl::ledger_entries

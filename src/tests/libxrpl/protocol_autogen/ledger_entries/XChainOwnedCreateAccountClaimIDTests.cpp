@@ -240,4 +240,4 @@ TEST(XChainOwnedCreateAccountClaimIDTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(XChainOwnedCreateAccountClaimIDBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-}
+} // namespace xrpl::ledger_entries

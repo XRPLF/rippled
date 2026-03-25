@@ -392,4 +392,4 @@ TEST(OfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAdditionalBooks());
     EXPECT_FALSE(entry.getAdditionalBooks().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

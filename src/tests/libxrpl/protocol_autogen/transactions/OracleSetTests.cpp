@@ -270,4 +270,4 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getAssetClass().has_value());
 }
 
-}
+} // namespace xrpl::transactions

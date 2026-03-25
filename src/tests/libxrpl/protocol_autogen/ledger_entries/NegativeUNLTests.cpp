@@ -248,4 +248,4 @@ TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

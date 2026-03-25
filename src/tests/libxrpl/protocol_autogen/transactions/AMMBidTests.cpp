@@ -252,4 +252,4 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getAuthAccounts().has_value());
 }
 
-}
+} // namespace xrpl::transactions

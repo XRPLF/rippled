@@ -213,4 +213,4 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDeliverMin().has_value());
 }
 
-}
+} // namespace xrpl::transactions

@@ -252,4 +252,4 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDomainID().has_value());
 }
 
-}
+} // namespace xrpl::transactions

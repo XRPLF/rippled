@@ -143,4 +143,4 @@ TEST(TransactionsOracleDeleteTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

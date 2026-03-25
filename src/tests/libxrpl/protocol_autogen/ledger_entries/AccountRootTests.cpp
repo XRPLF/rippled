@@ -704,4 +704,4 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

@@ -189,4 +189,4 @@ TEST(LedgerHashesTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLastLedgerSequence());
     EXPECT_FALSE(entry.getLastLedgerSequence().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

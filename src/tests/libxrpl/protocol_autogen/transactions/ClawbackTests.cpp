@@ -192,4 +192,4 @@ TEST(TransactionsClawbackTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getHolder().has_value());
 }
 
-}
+} // namespace xrpl::transactions

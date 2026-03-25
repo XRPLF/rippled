@@ -397,4 +397,4 @@ TEST(CheckTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDestinationTag());
     EXPECT_FALSE(entry.getDestinationTag().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

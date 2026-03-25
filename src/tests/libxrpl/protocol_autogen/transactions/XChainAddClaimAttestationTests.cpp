@@ -336,4 +336,4 @@ TEST(TransactionsXChainAddClaimAttestationTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDestination().has_value());
 }
 
-}
+} // namespace xrpl::transactions

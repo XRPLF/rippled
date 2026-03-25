@@ -159,4 +159,4 @@ TEST(TransactionsLoanPayTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

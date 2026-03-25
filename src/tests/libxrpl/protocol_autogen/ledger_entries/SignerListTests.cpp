@@ -272,4 +272,4 @@ TEST(SignerListTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasOwner());
     EXPECT_FALSE(entry.getOwner().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

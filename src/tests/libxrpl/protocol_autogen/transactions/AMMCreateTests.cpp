@@ -175,4 +175,4 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

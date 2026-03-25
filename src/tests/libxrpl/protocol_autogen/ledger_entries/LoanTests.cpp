@@ -792,4 +792,4 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLoanScale());
     EXPECT_FALSE(entry.getLoanScale().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

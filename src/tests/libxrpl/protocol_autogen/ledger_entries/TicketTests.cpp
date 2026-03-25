@@ -206,4 +206,4 @@ TEST(TicketTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(TicketBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-}
+} // namespace xrpl::ledger_entries

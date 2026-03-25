@@ -297,4 +297,4 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCoverRateLiquidation().has_value());
 }
 
-}
+} // namespace xrpl::transactions

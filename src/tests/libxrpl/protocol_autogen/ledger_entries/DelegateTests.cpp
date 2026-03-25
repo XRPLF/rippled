@@ -220,4 +220,4 @@ TEST(DelegateTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(DelegateBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-}
+} // namespace xrpl::ledger_entries

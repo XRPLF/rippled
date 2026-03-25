@@ -159,4 +159,4 @@ TEST(TransactionsVaultDepositTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

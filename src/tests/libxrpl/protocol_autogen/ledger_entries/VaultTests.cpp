@@ -473,4 +473,4 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

@@ -174,4 +174,4 @@ TEST(TransactionsSetRegularKeyTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getRegularKey().has_value());
 }
 
-}
+} // namespace xrpl::transactions

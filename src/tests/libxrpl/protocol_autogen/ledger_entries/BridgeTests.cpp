@@ -338,4 +338,4 @@ TEST(BridgeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasMinAccountCreateAmount());
     EXPECT_FALSE(entry.getMinAccountCreateAmount().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

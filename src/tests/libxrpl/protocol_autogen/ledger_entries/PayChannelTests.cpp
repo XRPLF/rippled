@@ -473,4 +473,4 @@ TEST(PayChannelTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDestinationNode());
     EXPECT_FALSE(entry.getDestinationNode().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

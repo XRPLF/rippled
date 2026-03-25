@@ -234,4 +234,4 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getData().has_value());
 }
 
-}
+} // namespace xrpl::transactions

@@ -237,4 +237,4 @@ TEST(TransactionsDepositPreauthTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getUnauthorizeCredentials().has_value());
 }
 
-}
+} // namespace xrpl::transactions

@@ -192,4 +192,4 @@ TEST(TransactionsBatchTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getBatchSigners().has_value());
 }
 
-}
+} // namespace xrpl::transactions

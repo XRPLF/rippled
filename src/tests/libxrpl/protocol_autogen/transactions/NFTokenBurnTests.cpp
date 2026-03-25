@@ -192,4 +192,4 @@ TEST(TransactionsNFTokenBurnTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getOwner().has_value());
 }
 
-}
+} // namespace xrpl::transactions

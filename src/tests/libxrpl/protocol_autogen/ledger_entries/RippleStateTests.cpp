@@ -385,4 +385,4 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasHighQualityOut());
     EXPECT_FALSE(entry.getHighQualityOut().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

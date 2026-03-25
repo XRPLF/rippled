@@ -143,4 +143,4 @@ TEST(TransactionsTicketCreateTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

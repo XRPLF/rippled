@@ -95,6 +95,7 @@ Checks: "-*,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
+  llvm-namespace-comment,
   performance-implicit-conversion-in-loop,
   performance-move-constructor-init,
   performance-trivially-destructible,
@@ -127,7 +128,6 @@ Checks: "-*,
 # ---
 # checks that have some issues that need to be resolved:
 #
-# llvm-namespace-comment,
 # misc-const-correctness,
 # misc-include-cleaner,
 # misc-redundant-expression,

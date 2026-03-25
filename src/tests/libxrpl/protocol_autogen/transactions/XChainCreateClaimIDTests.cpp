@@ -175,4 +175,4 @@ TEST(TransactionsXChainCreateClaimIDTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

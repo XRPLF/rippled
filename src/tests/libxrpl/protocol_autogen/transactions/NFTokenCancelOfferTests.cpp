@@ -143,4 +143,4 @@ TEST(TransactionsNFTokenCancelOfferTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

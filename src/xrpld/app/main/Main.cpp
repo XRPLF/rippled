@@ -215,7 +215,7 @@ public:
 
 namespace test {
 extern std::atomic<bool> envUseIPv4;
-}
+}  // namespace test
 
 template <class Runner>
 static bool

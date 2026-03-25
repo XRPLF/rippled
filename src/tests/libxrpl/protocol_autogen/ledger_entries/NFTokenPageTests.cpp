@@ -233,4 +233,4 @@ TEST(NFTokenPageTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasNextPageMin());
     EXPECT_FALSE(entry.getNextPageMin().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

@@ -280,4 +280,4 @@ TEST(XChainOwnedClaimIDTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(XChainOwnedClaimIDBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-}
+} // namespace xrpl::ledger_entries

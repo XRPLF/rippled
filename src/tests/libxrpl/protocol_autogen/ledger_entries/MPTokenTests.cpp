@@ -277,4 +277,4 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLockedAmount());
     EXPECT_FALSE(entry.getLockedAmount().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

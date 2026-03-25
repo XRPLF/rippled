@@ -255,4 +255,4 @@ TEST(DepositPreauthTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAuthorizeCredentials());
     EXPECT_FALSE(entry.getAuthorizeCredentials().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

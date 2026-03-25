@@ -159,4 +159,4 @@ TEST(TransactionsEscrowCancelTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

@@ -527,4 +527,4 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasCoverRateLiquidation());
     EXPECT_FALSE(entry.getCoverRateLiquidation().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

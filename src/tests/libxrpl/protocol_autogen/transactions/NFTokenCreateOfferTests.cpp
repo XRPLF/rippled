@@ -252,4 +252,4 @@ TEST(TransactionsNFTokenCreateOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getExpiration().has_value());
 }
 
-}
+} // namespace xrpl::transactions

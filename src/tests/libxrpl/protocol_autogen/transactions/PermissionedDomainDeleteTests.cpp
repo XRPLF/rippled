@@ -143,4 +143,4 @@ TEST(TransactionsPermissionedDomainDeleteTests, BuilderThrowsOnWrongTxType)
 }
 
 
-}
+} // namespace xrpl::transactions

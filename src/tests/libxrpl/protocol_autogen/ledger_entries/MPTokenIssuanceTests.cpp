@@ -434,4 +434,4 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasMutableFlags());
     EXPECT_FALSE(entry.getMutableFlags().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

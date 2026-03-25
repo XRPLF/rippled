@@ -321,4 +321,4 @@ TEST(NFTokenOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
 }
-}
+} // namespace xrpl::ledger_entries

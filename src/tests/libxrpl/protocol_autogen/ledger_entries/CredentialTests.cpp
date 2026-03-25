@@ -326,4 +326,4 @@ TEST(CredentialTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasSubjectNode());
     EXPECT_FALSE(entry.getSubjectNode().has_value());
 }
-}
+} // namespace xrpl::ledger_entries
