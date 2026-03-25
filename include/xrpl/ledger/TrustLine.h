@@ -78,50 +78,67 @@ public:
      * @brief Returns the state map key for the ledger entry.
      * @return The key (hash) of the RippleState entry.
      */
-    uint256
-    key() const;
+    uint256 const&
+    key() const
+    {
+        return key_;
+    }
 
     /**
      * @brief Get our account ID.
      * @return The account ID from whose perspective this line is viewed.
      */
-    AccountID
-    getAccountID() const;
+    AccountID const&
+    getAccountID() const
+    {
+        return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+    }
 
     /**
      * @brief Get the peer's account ID.
      * @return The account ID of the other party on this trust line.
      */
-    AccountID
-    getAccountIDPeer() const;
+    AccountID const&
+    getAccountIDPeer() const
+    {
+        return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
+    }
 
     /**
      * @brief Check if we have authorised the peer.
      * @return True if we have provided authorisation to the peer.
      */
     bool
-    getAuth() const;
+    getAuth() const
+    {
+        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+    }
 
     /**
      * @brief Check if the peer has authorised us.
      * @return True if the peer has provided authorisation to us.
      */
     bool
-    getAuthPeer() const;
+    getAuthPeer() const
+    {
+        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+    }
 
     /**
      * @brief Check if we have the NoRipple flag set.
      * @return True if NoRipple is set on our side.
      */
     bool
-    getNoRipple() const;
+    getNoRipple() const
+    {
+        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+    }
 
-    /**
-     * @brief Check if the peer has the NoRipple flag set.
-     * @return True if NoRipple is set on the peer's side.
-     */
     bool
-    getNoRipplePeer() const;
+    getNoRipplePeer() const
+    {
+        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+    }
 
     /**
      * @brief Get our line direction based on NoRipple flag.
@@ -148,63 +165,70 @@ public:
      * @return True if we have set the freeze flag on the peer.
      */
     bool
-    getFreeze() const;
+    getFreeze() const
+    {
+        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+    }
 
     /**
      * @brief Check if we have deep frozen the peer.
      * @return True if we have set the deep freeze flag on the peer.
      */
     bool
-    getDeepFreeze() const;
+    getDeepFreeze() const
+    {
+        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+    }
 
     /**
      * @brief Check if the peer has frozen us.
      * @return True if the peer has set the freeze flag on us.
      */
     bool
-    getFreezePeer() const;
+    getFreezePeer() const
+    {
+        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+    }
 
     /**
      * @brief Check if the peer has deep frozen us.
      * @return True if the peer has set the deep freeze flag on us.
      */
     bool
-    getDeepFreezePeer() const;
+    getDeepFreezePeer() const
+    {
+        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+    }
 
     /**
      * @brief Get the balance on this trust line.
      * @return The balance from our perspective (positive = we hold IOUs).
      */
-    STAmount
-    getBalance() const;
+    STAmount const&
+    getBalance() const
+    {
+        return mBalance;
+    }
 
     /**
      * @brief Get our trust limit.
      * @return The maximum amount we are willing to hold.
      */
-    STAmount
-    getLimit() const;
+    STAmount const&
+    getLimit() const
+    {
+        return mViewLowest ? mLowLimit : mHighLimit;
+    }
 
     /**
      * @brief Get the peer's trust limit.
      * @return The maximum amount the peer is willing to hold.
      */
-    STAmount
-    getLimitPeer() const;
-
-    /**
-     * @brief Get the quality in rate.
-     * @return The rate applied to incoming payments.
-     */
-    Rate
-    getQualityIn() const;
-
-    /**
-     * @brief Get the quality out rate.
-     * @return The rate applied to outgoing payments.
-     */
-    Rate
-    getQualityOut() const;
+    STAmount const&
+    getLimitPeer() const
+    {
+        return !mViewLowest ? mLowLimit : mHighLimit;
+    }
 
     /**
      * @brief Get a JSON representation of this trust line.
@@ -212,13 +236,18 @@ public:
      * @return JSON value representing this trust line.
      */
     Json::Value
-    getJson(int level);
+    getJson(int);
 
-private:
-    TrustLine(std::shared_ptr<SLE const> sle, AccountID const& viewAccount);
+protected:
+    /** The RippleState fields. */
+    uint256 key_;
+    STAmount const mLowLimit;
+    STAmount const mHighLimit;
+    STAmount mBalance;
+    std::uint32_t mFlags;
 
-    ledger_entries::RippleState rippleState_; /**< The underlying RippleState entry. */
-    bool viewLowest_;                         /**< True if viewAccount is the low account. */
+    /** True if viewAccount is the low account. */
+    bool mViewLowest;
 };
 
 }  // namespace xrpl
