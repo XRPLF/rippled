@@ -3272,6 +3272,90 @@ class MPToken_test : public beast::unit_test::suite
         mptAlice.claw(alice, bob, 1, tecNO_PERMISSION);
     }
 
+    void
+    testMultiSendMaximumAmount(FeatureBitset features)
+    {
+        // Verify that rippleSendMultiMPT correctly enforces MaximumAmount
+        // when the issuer sends to multiple receivers. Pre-fixAssortedFixes,
+        // a stale view.read() snapshot caused per-iteration checks to miss
+        // aggregate overflows. Post-fix, a running total is used instead.
+        testcase("Multi-send MaximumAmount enforcement");
+
+        using namespace test::jtx;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        std::uint64_t constexpr maxAmt = 150;
+        Env env{*this, features};
+
+        MPTTester mptt(env, issuer, {.holders = {alice, bob}});
+        mptt.create({.maxAmt = maxAmt, .ownerCount = 1, .flags = tfMPTCanTransfer});
+        mptt.authorize({.account = alice});
+        mptt.authorize({.account = bob});
+
+        Asset const asset{MPTIssue{mptt.issuanceID()}};
+
+        // Each test case creates a fresh ApplyView and calls
+        // accountSendMulti from the issuer to the given receivers.
+        auto const runTest = [&](MultiplePaymentDestinations const& receivers,
+                                 TER expectedTer,
+                                 std::optional<std::uint64_t> expectedOutstanding,
+                                 std::string const& label) {
+            ApplyViewImpl av(&*env.current(), tapNONE);
+            auto const ter =
+                accountSendMulti(av, issuer.id(), asset, receivers, env.app().journal("View"));
+            BEAST_EXPECTS(ter == expectedTer, label);
+
+            // Only verify OutstandingAmount on success — on error the
+            // view may contain partial state and must be discarded.
+            if (expectedOutstanding)
+            {
+                auto const sle = av.peek(keylet::mptIssuance(mptt.issuanceID()));
+                if (!BEAST_EXPECT(sle))
+                    return;
+                BEAST_EXPECTS(sle->getFieldU64(sfOutstandingAmount) == *expectedOutstanding, label);
+            }
+        };
+
+        using R = MultiplePaymentDestinations;
+
+        // Post-amendment: aggregate check with running total
+        runTest(
+            R{{alice.id(), 100}, {bob.id(), 100}},
+            tecPATH_DRY,
+            std::nullopt,
+            "aggregate exceeds max");
+
+        runTest(R{{alice.id(), 75}, {bob.id(), 75}}, tesSUCCESS, maxAmt, "aggregate at boundary");
+
+        runTest(R{{alice.id(), 50}, {bob.id(), 50}}, tesSUCCESS, 100, "aggregate within limit");
+
+        runTest(
+            R{{alice.id(), 150}, {bob.id(), 0}},
+            tesSUCCESS,
+            maxAmt,
+            "one receiver at max, other zero");
+
+        runTest(
+            R{{alice.id(), 151}, {bob.id(), 0}},
+            tecPATH_DRY,
+            std::nullopt,
+            "one receiver exceeds max, other zero");
+
+        // Pre-amendment: the stale per-iteration check allows each
+        // individual send (100 <= 150) even though the aggregate (200)
+        // exceeds MaximumAmount. Preserved for ledger replay.
+        env.disableFeature(fixAssortedFixes);
+        env.close();
+        runTest(
+            R{{alice.id(), 100}, {bob.id(), 100}},
+            tesSUCCESS,
+            200,
+            "pre-amendment allows over-send");
+    }
+
 public:
     void
     run() override
@@ -3279,6 +3363,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
 
+        testMultiSendMaximumAmount(all);
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);

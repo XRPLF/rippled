@@ -2507,57 +2507,74 @@ rippleSendMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    // Safe to get MPT since rippleSendMultiMPT is only called by
-    // accountSendMultiMPT
     auto const& issuer = mptIssue.getIssuer();
 
     auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
-    // These may diverge
+    // For the issuer-as-sender case, track the running total to validate
+    // against MaximumAmount. The read-only SLE (view.read) is not updated
+    // by rippleCreditMPT, so a per-iteration SLE read would be stale.
+    Number totalSendAmount;
+    auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+    auto const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
+
+    // actual accumulates the total cost to the sender (includes transfer
+    // fees for third-party transit sends). takeFromSender accumulates only
+    // the transit portion that is debited to the issuer in bulk after the
+    // loop. They diverge when there are transfer fees.
     STAmount takeFromSender{mptIssue};
     actual = takeFromSender;
 
-    for (auto const& r : receivers)
+    for (auto const& [receiverID, amt] : receivers)
     {
-        auto const& receiverID = r.first;
-        STAmount amount{mptIssue, r.second};
+        STAmount const amount{mptIssue, amt};
 
         if (amount < beast::zero)
-        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
 
-        /* If we aren't sending anything or if the sender is the same as the
-         * receiver then we don't need to do anything.
-         */
-        if (!amount || (senderID == receiverID))
+        if (!amount || senderID == receiverID)
             continue;
 
         if (senderID == issuer || receiverID == issuer)
         {
-            // if sender is issuer, check that the new OutstandingAmount will
-            // not exceed MaximumAmount
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
                     takeFromSender == beast::zero,
                     "rippler::rippleSendMultiMPT",
                     "sender == issuer, takeFromSender == zero");
+
                 auto const sendAmount = amount.mpt().value();
-                auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-                if (sendAmount > maximumAmount ||
-                    sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
-                    return tecPATH_DRY;
+
+                if (view.rules().enabled(fixAssortedFixes))
+                {
+                    // Post-fixAssortedFixes: aggregate MaximumAmount check
+                    // using a running total.
+                    totalSendAmount += sendAmount;
+                    if (sendAmount > maximumAmount ||
+                        outstandingAmount + totalSendAmount > maximumAmount)
+                        return tecPATH_DRY;
+                }
+                else
+                {
+                    // Pre-fixAssortedFixes: per-iteration MaximumAmount
+                    // check. Reads sfOutstandingAmount from a stale
+                    // view.read() snapshot — incorrect for multi-destination
+                    // sends but retained for ledger replay compatibility.
+                    if (sendAmount > maximumAmount ||
+                        outstandingAmount + sendAmount > maximumAmount)
+                        return tecPATH_DRY;
+                }
             }
 
             // Direct send: redeeming MPTs and/or sending own MPTs.
             if (auto const ter = rippleCreditMPT(view, senderID, receiverID, amount, j))
                 return ter;
             actual += amount;
-            // Do not add amount to takeFromSender, because rippleCreditMPT took
-            // it
+            // Do not add amount to takeFromSender, because rippleCreditMPT
+            // took it.
 
             continue;
         }
