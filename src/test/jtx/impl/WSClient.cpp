@@ -27,7 +27,7 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv_) : jv(jv_)
+        explicit msg(Json::Value&& jv_) : jv(std::move(jv_))
         {
         }
     };
@@ -49,13 +49,15 @@ class WSClientImpl : public WSClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
 
-            return {*pp.ip, *pp.port};
+            return {*pp.ip, *pp.port};  // NOLINT(bugprone-unchecked-optional-access)
         }
         Throw<std::runtime_error>("Missing WebSocket port");
         return {};  // Silence compiler control paths return value warning
@@ -178,7 +180,9 @@ public:
                 jp[jss::id] = 5;
             }
             else
+            {
                 jp[jss::command] = cmd;
+            }
             auto const s = to_string(jp);
             ws_.write_some(true, buffer(s));
         }

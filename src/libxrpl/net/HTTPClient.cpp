@@ -26,6 +26,12 @@ HTTPClient::initializeSSLContext(
     httpClientSSLContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
 }
 
+void
+HTTPClient::cleanupSSLContext()
+{
+    httpClientSSLContext.reset();
+}
+
 //------------------------------------------------------------------------------
 //
 // Fetch a web page via http or https.
@@ -472,7 +478,7 @@ public:
 private:
     using pointer = std::shared_ptr<HTTPClient>;
 
-    bool mSSL;
+    bool mSSL{};
     AutoSocket mSocket;
     boost::asio::ip::tcp::resolver mResolver;
 
@@ -490,7 +496,7 @@ private:
     std::string mBody;
     unsigned short const mPort;
     std::size_t const maxResponseSize_;
-    int mStatus;
+    int mStatus{};
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> mBuild;
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
@@ -502,7 +508,7 @@ private:
     boost::system::error_code mShutdown;
 
     std::deque<std::string> mDeqSites;
-    std::chrono::seconds mTimeout;
+    std::chrono::seconds mTimeout{};
     beast::Journal j_;
 };
 

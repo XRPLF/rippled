@@ -16,8 +16,7 @@ make_Manager(
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector,
-    bool useSqliteStore = true);
+    beast::insight::Collector::ptr const& collector);
 
 }  // namespace PeerFinder
 }  // namespace xrpl

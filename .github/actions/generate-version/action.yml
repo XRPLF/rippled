@@ -11,7 +11,7 @@ runs:
   steps:
     # When a tag is pushed, the version is used as-is.
     - name: Generate version for tag event
-      if: ${{ github.event_name == 'tag' }}
+      if: ${{ startsWith(github.ref, 'refs/tags/') }}
       shell: bash
       env:
         VERSION: ${{ github.ref_name }}
@@ -22,7 +22,7 @@ runs:
     # We use a plus sign instead of a hyphen because Conan recipe versions do
     # not support two hyphens.
     - name: Generate version for non-tag event
-      if: ${{ github.event_name != 'tag' }}
+      if: ${{ !startsWith(github.ref, 'refs/tags/') }}
       shell: bash
       run: |
         echo 'Extracting version from BuildInfo.cpp.'
