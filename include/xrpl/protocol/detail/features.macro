@@ -32,6 +32,7 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FIX    (Security3_1_3,              Supported::no, VoteBehavior::DefaultNo)
 XRPL_FIX    (BatchInnerSigs,             Supported::no, VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)
