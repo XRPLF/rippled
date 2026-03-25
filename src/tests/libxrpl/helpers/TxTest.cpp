@@ -174,7 +174,7 @@ TxTest::close()
         for (auto const& [key, tx] : txSet)
         {
             auto result = apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
-            EXPECT_TRUE(result.applied) << "TxTest::close: failed to apply transaction";
+            ASSERT_TRUE(result.applied) << "TxTest::close: failed to apply transaction";
         }
         accum.apply(*newLedger);
     }
