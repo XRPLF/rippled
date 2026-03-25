@@ -1,10 +1,10 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/TrustLine.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -14,7 +14,7 @@
 namespace xrpl {
 
 void
-addLine(Json::Value& jsonLines, TrustLine const& line)
+addLine(Json::Value& jsonLines, RPCTrustLine const& line)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
@@ -111,7 +111,7 @@ doAccountLines(RPC::JsonContext& context)
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);
     struct VisitData
     {
-        std::vector<TrustLine> items;
+        std::vector<RPCTrustLine> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raPeerAccount;
         bool ignoreDefault;
@@ -203,7 +203,7 @@ doAccountLines(RPC::JsonContext& context)
 
                     if (!ignore && count <= limit)
                     {
-                        auto const line = TrustLine::makeItem(visitData.accountID, sleCur);
+                        auto const line = RPCTrustLine::makeItem(visitData.accountID, sleCur);
 
                         if (line &&
                             (!visitData.raPeerAccount ||
