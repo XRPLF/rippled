@@ -258,6 +258,29 @@ floatToIntImpl(Slice const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
+Expected<FloatPair, HostFunctionError>
+floatToMantissaAndExponentImpl(Slice const& x)
+{
+    try
+    {
+        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        detail::WasmNumber num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);  // LCOV_EXCL_LINE
+
+        return FloatPair(num.mantissa(), num.exponent());
+    }
+    // LCOV_EXCL_START
+    catch (...)
+    {
+        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    }
+    // LCOV_EXCL_STOP
+}
+
 Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
@@ -525,6 +548,12 @@ Expected<int64_t, HostFunctionError>
 WasmHostFunctionsImpl::floatToInt(Slice const& x, int32_t mode) const
 {
     return wasm_float::floatToIntImpl(x, mode);
+}
+
+Expected<FloatPair, HostFunctionError>
+WasmHostFunctionsImpl::floatToMantissaAndExponent(Slice const& x) const
+{
+    return wasm_float::floatToMantissaAndExponentImpl(x);
 }
 
 Expected<Bytes, HostFunctionError>

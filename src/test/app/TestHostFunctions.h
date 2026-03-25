@@ -476,6 +476,12 @@ public:
         return wasm_float::floatToIntImpl(x, mode);
     }
 
+    virtual Expected<FloatPair, HostFunctionError>
+    floatToMantissaAndExponent(Slice const& x) const override
+    {
+        return wasm_float::floatToMantissaAndExponentImpl(x);
+    }
+
     Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override
     {

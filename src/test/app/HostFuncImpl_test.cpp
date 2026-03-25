@@ -2988,6 +2988,75 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testFloatToMantissaAndExponent()
+    {
+        testcase("floatToMantissaAndExponent");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(invalid));
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 0) &&
+                BEAST_EXPECT(result->second == std::numeric_limits<int32_t>::min());
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(float1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
+                BEAST_EXPECT(result->second == -normalExp);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == -1000000000000000000) &&
+                BEAST_EXPECT(result->second == -normalExp);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(float10));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
+                BEAST_EXPECT(result->second == -normalExp + 1);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatPi));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 3141592653589793000) &&
+                BEAST_EXPECT(result->second == -normalExp);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntMax));
+            BEAST_EXPECT(result) &&
+                BEAST_EXPECT(result->first == std::numeric_limits<int64_t>::max()) &&
+                BEAST_EXPECT(result->second == 0);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntMin));
+            BEAST_EXPECT(result) &&
+                BEAST_EXPECT(result->first == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
+                BEAST_EXPECT(result->second == 1);
+        }
+
+        {
+            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMax));
+            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == Number::maxRep) &&
+                BEAST_EXPECT(result->second == Number::maxExponent);
+        }
+    }
+
+    void
     testFloats()
     {
         // for checking binary formats manually
@@ -2999,6 +3068,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatFromSTAmount();
         testFloatFromSTNumber();
         testFloatToInt();
+        testFloatToMantissaAndExponent();
         testFloatSet();
         testFloatCompare();
         testFloatAdd();

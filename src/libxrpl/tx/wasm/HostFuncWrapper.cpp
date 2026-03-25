@@ -339,6 +339,34 @@ returnResult(
     {
         return hfResult(results, res.value());
     }
+    else if constexpr (std::is_same_v<t, FloatPair>)
+    {
+        if (index < 0 || index + 3 >= params->size)
+            return hfResult(results, HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+
+        auto const mantissa = adjustWasmEndianess(res->first);
+        auto const r1 = setData(
+            runtime,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
+            reinterpret_cast<uint8_t const*>(&mantissa),
+            static_cast<int32_t>(sizeof(mantissa)));
+        if (r1 < 0)
+            return hfResult(results, r1);
+
+        index += 2;
+        auto const exponent = adjustWasmEndianess(res->second);
+        auto const r2 = setData(
+            runtime,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
+            reinterpret_cast<uint8_t const*>(&exponent),
+            sizeof(exponent));
+        if (r2 < 0)
+            return hfResult(results, r2);
+
+        return hfResult(results, r1 + r2);  // 12
+    }
     else
     {
         static_assert([] { return false; }(), "Unhandled return type in returnResult");
@@ -1678,6 +1706,23 @@ floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     return returnResult(runtime, params, results, hf->floatToInt(*x, *rounding), i);
+}
+
+wasm_trap_t*
+floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (auto g = checkGas(env); !g)
+        return g.error();  // LCOV_EXCL_LINE
+    auto* hf = getHF(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    int i = 0;
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    i = 2;
+    return returnResult(runtime, params, results, hf->floatToMantissaAndExponent(*x), i);
 }
 
 wasm_trap_t*

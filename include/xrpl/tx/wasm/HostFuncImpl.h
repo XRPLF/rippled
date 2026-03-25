@@ -263,6 +263,9 @@ public:
     Expected<int64_t, HostFunctionError>
     floatToInt(Slice const& x, int32_t mode) const override;
 
+    Expected<FloatPair, HostFunctionError>
+    floatToMantissaAndExponent(Slice const& x) const override;
+
     Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 

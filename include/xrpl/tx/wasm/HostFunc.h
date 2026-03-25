@@ -37,6 +37,8 @@ enum class HostFunctionError : int32_t {
     OUT_OF_GAS = -22,
 };
 
+using FloatPair = std::pair<int64_t, int32_t>;
+
 inline int32_t
 HfErrorToInt(HostFunctionError e)
 {
@@ -62,6 +64,9 @@ floatFromSTNumberImpl(STNumber const& x, int32_t mode);
 
 Expected<int64_t, HostFunctionError>
 floatToIntImpl(Slice const& x, int32_t mode);
+
+Expected<FloatPair, HostFunctionError>
+floatToMantissaAndExponentImpl(Slice const& x);
 
 Expected<Bytes, HostFunctionError>
 floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
@@ -463,6 +468,12 @@ struct HostFunctions
 
     virtual Expected<int64_t, HostFunctionError>
     floatToInt(Slice const& x, int32_t mode) const
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<FloatPair, HostFunctionError>
+    floatToMantissaAndExponent(Slice const& x) const
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
