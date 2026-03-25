@@ -433,8 +433,7 @@ doWithdraw(
             j) < amount)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "
-                           "broker cover assets.";
+        JLOG(j.error()) << "doWithdraw: negative balance of broker cover assets.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
