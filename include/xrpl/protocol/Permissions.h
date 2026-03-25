@@ -14,19 +14,15 @@ namespace xrpl {
 class STTx;
 
 enum GranularPermissionType : std::uint32_t {
-#pragma push_macro("PERMISSION")
-#pragma push_macro("GRANULAR_TEMPLATE")
-#undef PERMISSION
-#undef GRANULAR_TEMPLATE
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
 
-#define PERMISSION(type, txType, value) type = (value),
+#define GRANULAR_PERMISSION(name, txType, value, allowedFlags, allowedFields) name = value,
 
 #include <xrpl/protocol/detail/permissions.macro>
 
-#undef PERMISSION
-#undef GRANULAR_TEMPLATE
-#pragma pop_macro("GRANULAR_TEMPLATE")
-#pragma pop_macro("PERMISSION")
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
 };
 
 enum Delegation { delegable, notDelegable };
@@ -43,8 +39,8 @@ private:
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
     std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap_;
 
-    std::unordered_map<TxType, std::uint32_t> granularPermittedFlags_;
-    std::unordered_map<TxType, SOTemplate> granularTemplates_;
+    std::unordered_map<GranularPermissionType, std::uint32_t> granularPermittedFlags_;
+    std::unordered_map<GranularPermissionType, SOTemplate> granularTemplates_;
 
 public:
     static Permission const&
@@ -92,7 +88,9 @@ public:
      * @return true if the transaction fields and flags comply with the granular template.
      */
     [[nodiscard]] bool
-    checkGranularSandbox(STTx const& tx) const;
+    checkGranularSandbox(
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldPermissions) const;
 };
 
 }  // namespace xrpl
