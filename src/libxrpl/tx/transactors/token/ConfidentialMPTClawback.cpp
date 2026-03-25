@@ -68,6 +68,10 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
+    // Check if issuance allows confidential transfer
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
+        return tecNO_PERMISSION;
+
     // Check holder's MPToken
     auto const sleHolderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
     if (!sleHolderMPToken)
@@ -75,6 +79,10 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if holder has confidential balances to claw back
     if (!sleHolderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
+        return tecNO_PERMISSION;
+
+    // Check if Holder has ElGamal public Key
+    if (!sleHolderMPToken->isFieldPresent(sfHolderEncryptionKey))
         return tecNO_PERMISSION;
 
     // Sanity check: claw amount can not exceed confidential outstanding amount

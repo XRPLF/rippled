@@ -2734,8 +2734,149 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
+        // send when spending balance is 0 (key registered, inbox merged, but nothing converted)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // Register keys only (amt=0) for both parties, then merge — spending stays 0.
+            mptAlice.convert({.account = bob, .amt = 0, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = bob});
+            mptAlice.convert(
+                {.account = carol, .amt = 0, .holderPubKey = mptAlice.getPubKey(carol)});
+
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
+
+            // Trying to send any amount with 0 spending balance must fail:
+            // the range proof for < 0 is invalid.
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 1,
+                .err = tecBAD_PROOF,
+            });
+
+            BEAST_EXPECT(
+                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
+        }
+
         // todo: test m exceeding range, require using scala and refactor
     }
+
+    /* TODO: uncomment when MPT crypto supports proof generation with value 0
+     * Tests verifier behavior when the send amount is 0.
+     *
+     * Background: the equality proof library and range proof library do not
+     * support generating proofs for amt=0 (they require a positive witness).
+     * To test the VERIFIER without crashing the helper, we bypass normal proof
+     * generation by supplying explicit ciphertexts, commitments, and a dummy
+     * (all-zero) proof.  The preflight has no temBAD_AMOUNT guard for
+     * ConfidentialMPTSend, so all validation occurs in verifySendProofs.
+     *
+     * Case 1 — equality proof component: all ciphertexts encrypt 0; the
+     *   multi-ciphertext equality proof in ZKProof is a dummy zero buffer.
+     *   verifyMultiCiphertextEqualityProof must reject this.
+     *
+     * Case 2 — range proof component: same construction, focusing on the
+     *   bulletproof range-check portion of ZKProof.  The range check for
+     *   amount=0 must also reject the dummy proof. */
+    /*void
+    testSendZeroAmount(FeatureBitset features)
+    {
+        testcase("Send: zero amount — equality and range proof verifier behavior");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        Buffer const bf = generateBlindingFactor();
+
+        // Case 1: equality proof verification for amt=0.
+        // Encrypt 0 under each participant's key.  The amount commitment is
+        // getTrivialCommitment() — a valid EC point that passes preflight's
+        // isValidCompressedECPoint check but is not the true PC for amt=0.
+        // The dummy ZKProof's equality component must be rejected by
+        // verifyMultiCiphertextEqualityProof.
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 0,
+            .proof = getTrivialSendProofHex(3),
+            .senderEncryptedAmt = mptAlice.encryptAmount(bob, 0, bf),
+            .destEncryptedAmt = mptAlice.encryptAmount(carol, 0, bf),
+            .issuerEncryptedAmt = mptAlice.encryptAmount(alice, 0, bf),
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // Case 2: range proof verification for amt=0.
+        // Identical construction; focuses on the bulletproof range check
+        // embedded in ZKProof.  The range proof for amount=0 with a dummy
+        // (all-zero) proof must also be rejected.
+        Buffer const bf2 = generateBlindingFactor();
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 0,
+            .proof = getTrivialSendProofHex(3),
+            .senderEncryptedAmt = mptAlice.encryptAmount(bob, 0, bf2),
+            .destEncryptedAmt = mptAlice.encryptAmount(carol, 0, bf2),
+            .issuerEncryptedAmt = mptAlice.encryptAmount(alice, 0, bf2),
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // All rejected sends must leave balances unchanged.
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+    }*/
 
     void
     testDelete(FeatureBitset features)
@@ -6302,6 +6443,89 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
+    /* This test ensures that when sending confidential tokens, the encrypted
+     * amounts are securely locked to the correct accounts' official public keys.
+     *
+     * Attack scenario — Encrypting the issuer's copy with the wrong key:
+     * A sender correctly encrypts the hidden transfer amount for themselves
+     * and the receiver. However, they intentionally encrypt the issuer's
+     * copy of the data using the wrong public key (for example, using the
+     * receiver's key instead of the official issuer's key).
+     */
+
+    void
+    testSendWrongIssuerPublicKey(FeatureBitset features)
+    {
+        testcase("Send: issuer ciphertext encrypted under wrong public key");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        auto const bobSpendingBefore =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(bobSpendingBefore == 100);
+
+        // issuer ciphertext encrypted under carol's holder key
+        // (should be under alice's registered issuer key).
+        {
+            Buffer const bf = generateBlindingFactor();
+            Buffer const wrongIssuerCt = mptAlice.encryptAmount(carol, 10, bf);
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .issuerEncryptedAmt = wrongIssuerCt,
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        // issuer ciphertext encrypted under bob's holder key
+        // (the sender's own key — still not the registered issuer key).
+        {
+            Buffer const bf = generateBlindingFactor();
+            Buffer const wrongIssuerCt = mptAlice.encryptAmount(bob, 10, bf);
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .issuerEncryptedAmt = wrongIssuerCt,
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        // all balances unchanged
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) ==
+            bobSpendingBefore);
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+    }
+
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
@@ -6531,6 +6755,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendPreflight(features);
         testSendPreclaim(features);
         testSendRangeProof(features);
+        // testSendZeroAmount(features);
         testSendDepositPreauth(features);
         testSendCredentialValidation(features);
         testSendWithAuditor(features);
@@ -6556,6 +6781,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendHomomorphicOverflow(features);
         testHomomorphicCiphertextModification(features);
         testConvertBackHomomorphicUnderflow(features);
+
+        testSendWrongIssuerPublicKey(features);
 
         // Replay Tests
         testMutatePrivacy(features);
