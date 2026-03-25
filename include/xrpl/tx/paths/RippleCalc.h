@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/STAmount.h>

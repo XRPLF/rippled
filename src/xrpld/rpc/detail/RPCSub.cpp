@@ -29,7 +29,7 @@ public:
         , mUsername(strUsername)
         , mPassword(strPassword)
         , j_(registry.getJournal("RPCSub"))
-        , registry_(registry)
+        , logs_(registry.getLogs())
     {
         parsedURL pUrl;
 
@@ -153,7 +153,7 @@ private:
                         jvEvent,
                         mSSL,
                         true,
-                        registry_.getLogs());
+                        logs_);
                 }
                 catch (std::exception const& e)
                 {
@@ -182,7 +182,7 @@ private:
     std::deque<std::pair<int, Json::Value>> mDeque;
 
     beast::Journal const j_;
-    ServiceRegistry& registry_;
+    Logs& logs_;
 };
 
 //------------------------------------------------------------------------------

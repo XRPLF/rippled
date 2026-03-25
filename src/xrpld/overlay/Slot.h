@@ -542,7 +542,7 @@ public:
      */
     Slots(ServiceRegistry& registry, SquelchHandler const& handler, Config const& config)
         : handler_(handler)
-        , registry_(registry)
+        , logs_(registry.getLogs())
         , journal_(registry.getJournal("Slots"))
         , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
@@ -689,7 +689,7 @@ private:
 
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
-    ServiceRegistry& registry_;
+    Logs& logs_;
     beast::Journal const journal_;
 
     bool const baseSquelchEnabled_;
@@ -753,8 +753,7 @@ Slots<clock_type>::updateSlotAndSquelch(
                       .emplace(
                           std::make_pair(
                               validator,
-                              Slot<clock_type>(
-                                  handler_, registry_.getJournal("Slot"), maxSelectedPeers_)))
+                              Slot<clock_type>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
                       .first;
         it->second.update(validator, id, type, callback);
     }
