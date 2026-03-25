@@ -10,6 +10,7 @@ namespace xrpl {
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
 struct WasmVec
 {
+    using TD = std::remove_pointer_t<decltype(T::data)>;
     T vec_;
 
     WasmVec(size_t s = 0) : vec_ WASM_EMPTY_VEC
@@ -57,6 +58,40 @@ struct WasmVec
         T result = vec_;
         vec_ = WASM_EMPTY_VEC;
         return result;
+    }
+
+    T*
+    get()
+    {
+        return &vec_;
+    }
+
+    T const*
+    get() const
+    {
+        return &vec_;
+    }
+
+    TD&
+    operator[](size_t i)
+    {
+        if (i >= vec_.size)
+            Throw<std::runtime_error>("Out of bound");
+        return vec_.data[i];
+    }
+
+    TD const&
+    operator[](size_t i) const
+    {
+        if (i >= vec_.size)
+            Throw<std::runtime_error>("Out of bound");
+        return vec_.data[i];
+    }
+
+    size_t
+    size() const
+    {
+        return vec_.size;
     }
 };
 
@@ -175,8 +210,8 @@ public:
     wmem
     getMem() const;
 
-    InstanceWrapper const&
-    getInstance(int i = 0) const;
+    InstanceWrapper&
+    getInstance(int i = 0);
 
     int
     addInstance(StorePtr& s, WasmExternVec const& imports);
@@ -234,7 +269,7 @@ public:
     getJournal() const;
 
 private:
-    InstanceWrapper const&
+    InstanceWrapper&
     getRT(int m = 0, int i = 0) const;
 
     wmem

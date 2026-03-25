@@ -113,11 +113,11 @@ struct HostFunctions
 
     // LCOV_EXCL_START
     virtual void
-    setRT(void const*)
+    setRT(void*)
     {
     }
 
-    virtual void const*
+    virtual void*
     getRT() const
     {
         return nullptr;

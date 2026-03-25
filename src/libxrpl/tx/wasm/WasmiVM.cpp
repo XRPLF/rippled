@@ -52,6 +52,33 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 
 }  // namespace
 
+struct WasmiRuntimeWrapper : public WasmRuntimeWrapper
+{
+    InstanceWrapper& iw_;
+
+    WasmiRuntimeWrapper(InstanceWrapper& iw) : iw_(iw)
+    {
+    }
+
+    virtual wmem
+    getMem() override
+    {
+        return iw_.getMem();
+    }
+
+    virtual std::int64_t
+    getGas() override
+    {
+        return iw_.getGas();
+    }
+
+    virtual std::int64_t
+    setGas(std::int64_t gas) override
+    {
+        return iw_.setGas(gas);
+    }
+};
+
 InstancePtr
 InstanceWrapper::init(
     StorePtr& s,
@@ -451,8 +478,8 @@ ModuleWrapper::getMem() const
     return instanceWrap_.getMem();
 }
 
-InstanceWrapper const&
-ModuleWrapper::getInstance(int) const
+InstanceWrapper&
+ModuleWrapper::getInstance(int)
 {
     return instanceWrap_;
 }
@@ -673,7 +700,7 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
     auto const start = usecs();
 #endif
 
-    wasm_trap_t* trap = wasm_func_call(f.first, &inv, &ret.r.vec_);
+    wasm_trap_t* trap = wasm_func_call(f.first, &inv, ret.r.get());
 
 #ifdef SHOW_CALL_TIME
     auto const finish = usecs();
@@ -782,7 +809,8 @@ WasmiEngine::runHlp(
     if (!moduleWrap_ || !moduleWrap_->instanceWrap_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
-    hfs.setRT(&getRT());
+    WasmiRuntimeWrapper iw(getRT());
+    hfs.setRT(&iw);
 
     // Call main
     auto const f = getFunc(!funcName.empty() ? funcName : "_start");
@@ -901,7 +929,7 @@ WasmiEngine::getMem() const
     return moduleWrap_ ? moduleWrap_->getMem() : wmem();
 }
 
-InstanceWrapper const&
+InstanceWrapper&
 WasmiEngine::getRT(int m, int i) const
 {
     if (!moduleWrap_)
