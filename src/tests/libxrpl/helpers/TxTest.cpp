@@ -219,11 +219,9 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     auto const rippleState = ledger_entries::RippleState{sle};
 
     auto balance = rippleState.getBalance();
-
-    if (rippleState.getLowLimit().getIssuer() == account)
-    {
+    balance.setIssuer(iou.issue().account);
+    if (account > iou.issue().account)
         balance.negate();
-    }
     return balance;
 }
 

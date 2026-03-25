@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
@@ -636,7 +637,7 @@ TEST(AccountSet, BadSigningKey)
     STObject obj = *stx;
     obj.setFieldVL(sfSigningPubKey, makeSlice(std::string("badkey")));
 
-    auto result = env.submit(STTx{std::move(obj)});
+    auto result = env.submit(std::make_shared<STTx>(std::move(obj)));
     EXPECT_EQ(result.ter, temBAD_SIGNATURE);
     EXPECT_FALSE(result.applied);
 }

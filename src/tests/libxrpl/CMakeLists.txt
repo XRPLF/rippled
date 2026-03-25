@@ -35,6 +35,10 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(tx)
+target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.tx)
+
 # protocol_autogen tests use explicit source list (not GLOB) because sources are generated
 # Mark generated sources so CMake knows they'll be created at build time
 set_source_files_properties(
