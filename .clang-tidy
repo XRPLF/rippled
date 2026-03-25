@@ -197,4 +197,3 @@ CheckOptions:
 #
 # HeaderFilterRegex: '^.*/(src|tests)/.*\.(h|hpp)$'
 WarningsAsErrors: "*"
-# FORCE
