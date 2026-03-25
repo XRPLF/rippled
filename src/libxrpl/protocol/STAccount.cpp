@@ -16,7 +16,7 @@
 
 namespace xrpl {
 
-STAccount::STAccount() : STBase(), value_(beast::zero), default_(true)
+STAccount::STAccount() : value_(beast::zero), default_(true)
 {
 }
 
@@ -84,7 +84,7 @@ bool
 STAccount::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
-    return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);
+    return (tPtr != nullptr) && (default_ == tPtr->default_) && (value_ == tPtr->value_);
 }
 
 bool

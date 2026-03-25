@@ -5,7 +5,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -108,7 +109,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster)
+            if ((sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -267,8 +268,9 @@ onNewAttestations(
     bool changed = false;
     for (auto att = attBegin; att != attEnd; ++att)
     {
-        if (checkAttestationPublicKey(
-                view, signersList, att->attestationSignerAccount, att->publicKey, j) != tesSUCCESS)
+        auto const ter = checkAttestationPublicKey(
+            view, signersList, att->attestationSignerAccount, att->publicKey, j);
+        if (!isTesSuccess(ter))
         {
             // The checkAttestationPublicKey is not strictly necessary here (it
             // should be checked in a preclaim step), but it would be bad to let
@@ -384,7 +386,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !dstTag)
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -393,7 +395,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
 
-        if (!canBypassDepositAuth && (sleDst->getFlags() & lsfDepositAuth) &&
+        if (!canBypassDepositAuth && ((sleDst->getFlags() & lsfDepositAuth) != 0u) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -508,15 +510,15 @@ struct FinalizeClaimHelperResult
     bool
     isTesSuccess() const
     {
-        return mainFundsTer == tesSUCCESS && rewardTer == tesSUCCESS &&
-            (!rmSleTer || *rmSleTer == tesSUCCESS);
+        return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
+            (!rewardTer || xrpl::isTesSuccess(*rewardTer)) &&
+            (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
     TER
     ter() const
     {
-        if ((!mainFundsTer || *mainFundsTer == tesSUCCESS) &&
-            (!rewardTer || *rewardTer == tesSUCCESS) && (!rmSleTer || *rmSleTer == tesSUCCESS))
+        if (isTesSuccess())
             return tesSUCCESS;
 
         // if any phase return a tecINTERNAL or a tef, prefer returning those
@@ -530,11 +532,11 @@ struct FinalizeClaimHelperResult
 
         // Only after the tecINTERNAL and tef are checked, return the first
         // non-success error code.
-        if (mainFundsTer && mainFundsTer != tesSUCCESS)
+        if (mainFundsTer && !xrpl::isTesSuccess(*mainFundsTer))
             return *mainFundsTer;
-        if (rewardTer && rewardTer != tesSUCCESS)
+        if (rewardTer && !xrpl::isTesSuccess(*rewardTer))
             return *rewardTer;
-        if (rmSleTer && rmSleTer != tesSUCCESS)
+        if (rmSleTer && !xrpl::isTesSuccess(*rmSleTer))
             return *rmSleTer;
         return tesSUCCESS;
     }
@@ -1026,8 +1028,10 @@ applyCreateAccountAttestations(
 
         XChainCreateAccountAttestations curAtts = [&] {
             if (sleClaimID)
+            {
                 return XChainCreateAccountAttestations{
                     sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+            }
             return XChainCreateAccountAttestations{};
         }();
 
@@ -1202,8 +1206,10 @@ attestationDoApply(ApplyContext& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
+    {
         // Should already be checked in preflight
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1232,11 +1238,17 @@ attestationDoApply(ApplyContext& ctx)
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1391,7 +1403,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (sleIssuer->getFlags() & lsfAllowTrustLineClawback)
+        if ((sleIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -1470,7 +1482,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = ctx.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1528,7 +1540,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = ctx_.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
@@ -1597,11 +1609,17 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     {
@@ -1630,9 +1648,13 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     auto const otherChainAmount = [&]() -> STAmount {
         STAmount r(thisChainAmount);
         if (isLockingChain)
+        {
             r.setIssue(bridgeSpec.issuingChainIssue());
+        }
         else
+        {
             r.setIssue(bridgeSpec.lockingChainIssue());
+        }
         return r;
     }();
 
@@ -1695,11 +1717,17 @@ XChainClaim::doApply()
         STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::locking;
+            }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
+            {
                 dstChain = STXChainBridge::ChainType::issuing;
+            }
             else
+            {
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
 
@@ -1822,11 +1850,17 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     bool isLockingChain = false;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             isLockingChain = true;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             isLockingChain = false;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
 
     if (isLockingChain)
@@ -2094,11 +2128,17 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::locking;
+        }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
+        {
             srcChain = STXChainBridge::ChainType::issuing;
+        }
         else
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 

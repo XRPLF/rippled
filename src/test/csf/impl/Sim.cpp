@@ -33,7 +33,7 @@ Sim::synchronized() const
 }
 
 bool
-Sim::synchronized(PeerGroup const& g) const
+Sim::synchronized(PeerGroup const& g)
 {
     if (g.size() < 1)
         return true;

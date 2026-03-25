@@ -72,7 +72,7 @@ DatabaseCon::~DatabaseCon()
         // checkpoint is currently in progress. Wait for it to end, otherwise
         // creating a new DatabaseCon to the same database may fail due to the
         // database being locked by our (now old) Checkpointer.
-        while (wk.use_count())
+        while (wk.use_count() != 0)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
@@ -84,7 +84,7 @@ std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
 {
-    if (!q)
+    if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
     checkpointer_ = checkpointers.create(session_, *q, l);
 }

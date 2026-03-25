@@ -10,7 +10,7 @@ namespace test {
 
 class HashRouter_test : public beast::unit_test::suite
 {
-    HashRouter::Setup
+    static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
     {
         HashRouter::Setup setup;
@@ -231,7 +231,7 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
         // Confirm that peers list is empty.
         peers = router.shouldRelay(key1);
-        BEAST_EXPECT(peers && peers->size() == 0);
+        BEAST_EXPECT(peers && peers->empty());
     }
 
     void

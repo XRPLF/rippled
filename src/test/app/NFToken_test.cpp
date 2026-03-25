@@ -53,7 +53,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     // Helper function returns the close time of the parent ledger.
-    std::uint32_t
+    static std::uint32_t
     lastClose(test::jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -171,7 +171,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                                                int line) {
             auto oneCheck = [line, this](char const* type, std::uint32_t found, std::uint32_t exp) {
                 if (found == exp)
+                {
                     pass();
+                }
                 else
                 {
                     std::stringstream ss;
@@ -241,7 +243,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(alice, token::getID(env, alice, 0, seq++)));
             env.close();
-            checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
+            checkAliceOwnerMintedBurned(((33 - seq) != 0u) ? 1 : 0, 33, seq, __LINE__);
         }
 
         // alice burns a non-existent NFT.
@@ -269,7 +271,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             auto oneCheck =
                 [this](char const* type, std::uint32_t found, std::uint32_t exp, int line) {
                     if (found == exp)
+                    {
                         pass();
+                    }
                     else
                     {
                         std::stringstream ss;
@@ -348,7 +352,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(minter, token::getID(env, alice, 0, nftSeq++)));
             env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
+            checkMintersOwnerMintedBurned(
+                0, 66, nftSeq, ((65 - seq) != 0u) ? 1 : 0, 0, 0, __LINE__);
         }
 
         // minter has one more NFT to burn.  Should take her owner count to
@@ -1525,7 +1530,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // becky attempts to sell the nft for AUD.
-                TER const createOfferTER = xferFee ? TER(tecNO_LINE) : TER(tesSUCCESS);
+                TER const createOfferTER = (xferFee != 0u) ? TER(tecNO_LINE) : TER(tesSUCCESS);
                 uint256 const beckyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
                     txflags(tfSellNFToken),
@@ -2171,9 +2176,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         for (auto NumberSwitchOver : {true})
         {
             if (NumberSwitchOver)
+            {
                 env.enableFeature(fixUniversalNumber);
+            }
             else
+            {
                 env.disableFeature(fixUniversalNumber);
+            }
 
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID = token::getNextID(env, alice, 0u, tfTransferable, 1);
@@ -2347,7 +2356,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 auto check = [this](std::uint32_t taxon, uint256 const& nftID) {
                     nft::Taxon const gotTaxon = nft::getTaxon(nftID);
                     if (nft::toTaxon(taxon) == gotTaxon)
+                    {
                         pass();
+                    }
                     else
                     {
                         std::stringstream ss;
@@ -2490,7 +2501,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testCreateOfferDestination(FeatureBitset features)
     {
-        // Explore the CreateOffer Destination field.
+        // Explore the OfferCreate Destination field.
         testcase("Create offer destination");
 
         using namespace test::jtx;
@@ -2905,7 +2916,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testCreateOfferExpiration(FeatureBitset features)
     {
-        // Explore the CreateOffer Expiration field.
+        // Explore the OfferCreate Expiration field.
         testcase("Create offer expiration");
 
         using namespace test::jtx;
@@ -4522,7 +4533,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         };
 
         // There are no sell offers.
-        checkOffers("nft_sell_offers", 0, false, __LINE__);
+        checkOffers("nft_sell_offers", 0, 0, __LINE__);
 
         // A lambda that generates sell offers.
         STAmount sellPrice = XRP(0);
@@ -4791,7 +4802,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     env(pay(secondarySeller, gw, env.balance(secondarySeller, gwXPB)));
                 auto brokerDiff = gwXAU(5000) - env.balance(broker, gwXAU);
                 if (brokerDiff > gwXAU(0))
+                {
                     env(pay(gw, broker, brokerDiff));
+                }
                 else if (brokerDiff < gwXAU(0))
                 {
                     brokerDiff.negate();
@@ -6976,7 +6989,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             auto checkURI = [&accountNFTs, this](Account const& acct, char const* uri, int line) {
                 auto const nfts = accountNFTs(acct);
                 if (nfts.size() == 1)
+                {
                     pass();
+                }
                 else
                 {
                     std::ostringstream text;
@@ -6988,7 +7003,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 if (uri == nullptr)
                 {
                     if (!nfts[0u].isMember(sfURI.jsonName))
+                    {
                         pass();
+                    }
                     else
                     {
                         std::ostringstream text;
@@ -6999,7 +7016,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 }
 
                 if (nfts[0u][sfURI.jsonName] == strHex(std::string(uri)))
+                {
                     pass();
+                }
                 else
                 {
                     std::ostringstream text;

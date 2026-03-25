@@ -24,9 +24,13 @@ ValidPermissionedDEX::visitEntry(
     if (after && after->getType() == ltOFFER)
     {
         if (after->isFieldPresent(sfDomainID))
+        {
             domains_.insert(after->getFieldH256(sfDomainID));
+        }
         else
+        {
             regularOffers_ = true;
+        }
 
         // if a hybrid offer is missing domain or additional book, there's
         // something wrong
@@ -46,7 +50,7 @@ ValidPermissionedDEX::finalize(
     beast::Journal const& j)
 {
     auto const txType = tx.getTxnType();
-    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || result != tesSUCCESS)
+    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) || !isTesSuccess(result))
         return true;
 
     // For each offercreate transaction, check if

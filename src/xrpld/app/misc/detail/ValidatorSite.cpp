@@ -52,7 +52,9 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
             pUrl.port = 443;
     }
     else
+    {
         throw std::runtime_error("Unsupported scheme: '" + pUrl.scheme + "'");
+    }
 }
 
 ValidatorSite::Site::Site(std::string uri)
@@ -61,7 +63,6 @@ ValidatorSite::Site::Site(std::string uri)
     , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestEndpoint{}
     , lastRequestSuccessful{false}
 {
 }
@@ -301,7 +302,9 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         // first, which will leave activeResource empty.
         auto const& site = sites_[siteIdx];
         if (site.activeResource)
+        {
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
+        }
         else
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
@@ -459,7 +462,7 @@ ValidatorSite::processRedirect(
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
-    if (res.find(field::location) == res.end() || res[field::location].empty())
+    if (!res.contains(field::location) || res[field::location].empty())
     {
         JLOG(j_.warn()) << "Request for validator list at " << sites_[siteIdx].activeResource->uri
                         << " returned a redirect with no Location.";

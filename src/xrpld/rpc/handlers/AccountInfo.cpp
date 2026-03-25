@@ -6,6 +6,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -84,7 +85,9 @@ doAccountInfo(RPC::JsonContext& context)
         strIdent = params[jss::ident].asString();
     }
     else
+    {
         return RPC::missing_field_error(jss::account);
+    }
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
@@ -150,12 +153,16 @@ doAccountInfo(RPC::JsonContext& context)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
+        {
             acctFlags[allowTrustLineClawbackFlag.first.data()] =
                 sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
+        }
 
         if (ledger->rules().enabled(featureTokenEscrow))
+        {
             acctFlags[allowTrustLineLockingFlag.first.data()] =
                 sleAccepted->isFlag(allowTrustLineLockingFlag.second);
+        }
 
         result[jss::account_flags] = std::move(acctFlags);
 
@@ -283,9 +290,9 @@ doAccountInfo(RPC::JsonContext& context)
                     jvQueueTx.append(std::move(jvTx));
                 }
 
-                if (seqCount)
+                if (seqCount != 0u)
                     jvQueueData[jss::sequence_count] = seqCount;
-                if (ticketCount)
+                if (ticketCount != 0u)
                     jvQueueData[jss::ticket_count] = ticketCount;
                 if (lowestSeq)
                     jvQueueData[jss::lowest_sequence] = *lowestSeq;
@@ -300,7 +307,9 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::max_spend_drops_total] = to_string(totalSpend);
             }
             else
+            {
                 jvQueueData[jss::txn_count] = 0u;
+            }
 
             result[jss::queue_data] = std::move(jvQueueData);
         }

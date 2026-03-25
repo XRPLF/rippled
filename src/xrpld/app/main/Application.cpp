@@ -92,7 +92,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(ev), m_journal(journal), m_probe(interval, ios), lastSample_{}
+            : m_event(ev), m_journal(journal), m_probe(interval, ios)
         {
         }
 
@@ -278,11 +278,17 @@ public:
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
                       if (config->NODE_SIZE >= 4 && count >= 16)
+                      {
                           count = 6 + std::min(count, 8);
+                      }
                       else if (config->NODE_SIZE >= 3 && count >= 8)
+                      {
                           count = 4 + std::min(count, 6);
+                      }
                       else
+                      {
                           count = 2 + std::min(count, 4);
+                      }
 
                       return count;
                   }(config_),
@@ -600,7 +606,7 @@ public:
     }
 
     void
-    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire)
+    gotTXSet(std::shared_ptr<SHAMap> const& set, bool fromAcquire) const
     {
         if (set)
             m_networkOPs->mapComplete(set, fromAcquire);
@@ -822,7 +828,7 @@ public:
     }
 
     bool
-    initNodeStore()
+    initNodeStore() const
     {
         if (config_->doImport)
         {
@@ -1572,7 +1578,9 @@ ApplicationImp::signalStop(std::string msg)
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
         if (msg.empty())
+        {
             JLOG(m_journal.warn()) << "Server stopping";
+        }
         else
             JLOG(m_journal.warn()) << "Server stopping: " << msg;
 
@@ -2118,7 +2126,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
-            if (!port)
+            if (port == 0u)
                 section.set("port", std::to_string(ep.port()));
         }
     }

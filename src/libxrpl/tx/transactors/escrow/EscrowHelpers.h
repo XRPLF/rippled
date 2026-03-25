@@ -3,9 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
@@ -148,7 +152,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!receiverIssuer)
     {
         auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;

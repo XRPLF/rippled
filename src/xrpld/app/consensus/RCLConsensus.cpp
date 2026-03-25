@@ -498,7 +498,7 @@ RCLConsensus::Adaptor::doAccept(
             std::move(accepted),
             [curr = built.seq(), j = app_.journal("CensorshipDetector"), &failed](
                 uint256 const& id, LedgerIndex seq) {
-                if (failed.count(id))
+                if (failed.contains(id))
                     return true;
 
                 auto const wait = curr - seq;
@@ -585,9 +585,13 @@ RCLConsensus::Adaptor::doAccept(
         auto const lastVal = ledgerMaster_.getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
+        {
             rules = makeRulesGivenLedger(*lastVal, app_.config().features);
+        }
         else
+        {
             rules.emplace(app_.config().features);
+        }
         app_.openLedger().accept(
             app_,
             *rules,
@@ -664,9 +668,13 @@ RCLConsensus::Adaptor::notify(
     protocol::TMStatusChange s;
 
     if (!haveCorrectLCL)
+    {
         s.set_newevent(protocol::neLOST_SYNC);
+    }
     else
+    {
         s.set_newevent(ne);
+    }
 
     s.set_ledgerseq(ledger.seq());
     s.set_networktime(app_.timeKeeper().now().time_since_epoch().count());
@@ -726,9 +734,13 @@ RCLConsensus::Adaptor::buildLCL(
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(built))
+    {
         JLOG(j_.debug()) << "Consensus built ledger we already had";
+    }
     else if (app_.getInboundLedgers().find(built->header().hash))
+    {
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
+    }
     else
         JLOG(j_.debug()) << "Consensus built new ledger";
     return RCLCxLedger{std::move(built)};
@@ -913,7 +925,7 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
 
     // If we are not running in standalone mode and there's a configured UNL,
     // check to make sure that it's not expired.
-    if (validating_ && !app_.config().standalone() && app_.validators().count())
+    if (validating_ && !app_.config().standalone() && (app_.validators().count() != 0u))
     {
         auto const when = app_.validators().expires();
 
@@ -985,7 +997,7 @@ RCLConsensus::Adaptor::validator() const
 void
 RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
-    if (!positions && app_.getOPs().isFull())
+    if ((positions == 0u) && app_.getOPs().isFull())
         app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 

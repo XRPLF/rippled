@@ -70,8 +70,8 @@ PerfLogImp::Counters::countersJson() const
         Rpc value;
         {
             std::lock_guard lock(proc.second.mutex);
-            if (!proc.second.value.started && !proc.second.value.finished &&
-                !proc.second.value.errored)
+            if ((proc.second.value.started == 0u) && (proc.second.value.finished == 0u) &&
+                (proc.second.value.errored == 0u))
             {
                 continue;
             }
@@ -90,7 +90,7 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[proc.first] = p;
     }
 
-    if (totalRpc.started)
+    if (totalRpc.started != 0u)
     {
         Json::Value totalRpcJson(Json::objectValue);
         totalRpcJson[jss::started] = std::to_string(totalRpc.started);
@@ -108,8 +108,8 @@ PerfLogImp::Counters::countersJson() const
         Jq value;
         {
             std::lock_guard lock(proc.second.mutex);
-            if (!proc.second.value.queued && !proc.second.value.started &&
-                !proc.second.value.finished)
+            if ((proc.second.value.queued == 0u) && (proc.second.value.started == 0u) &&
+                (proc.second.value.finished == 0u))
             {
                 continue;
             }
@@ -130,7 +130,7 @@ PerfLogImp::Counters::countersJson() const
         jobQueueObj[JobTypes::name(proc.first)] = j;
     }
 
-    if (totalJq.queued)
+    if (totalJq.queued != 0u)
     {
         Json::Value totalJqJson(Json::objectValue);
         totalJqJson[jss::queued] = std::to_string(totalJq.queued);
@@ -257,8 +257,10 @@ void
 PerfLogImp::report()
 {
     if (!logFile_)
+    {
         // If logFile_ is not writable do no further work.
         return;
+    }
 
     auto const present = system_clock::now();
     if (present < lastLog_ + setup_.logInterval)
@@ -345,9 +347,13 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
     }
     std::lock_guard lock(counter->second.mutex);
     if (finish)
+    {
         ++counter->second.value.finished;
+    }
     else
+    {
         ++counter->second.value.errored;
+    }
     counter->second.value.duration +=
         std::chrono::duration_cast<microseconds>(steady_clock::now() - startTime);
 }
@@ -437,7 +443,7 @@ PerfLogImp::rotate()
 void
 PerfLogImp::start()
 {
-    if (setup_.perfLog.size())
+    if (!setup_.perfLog.empty())
         thread_ = std::thread(&PerfLogImp::run, this);
 }
 
@@ -463,7 +469,7 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     PerfLog::Setup setup;
     std::string perfLog;
     set(perfLog, "perf_log", section);
-    if (perfLog.size())
+    if (!perfLog.empty())
     {
         setup.perfLog = boost::filesystem::path(perfLog);
         if (setup.perfLog.is_relative())

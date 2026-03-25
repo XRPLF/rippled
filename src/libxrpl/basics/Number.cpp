@@ -94,7 +94,7 @@ public:
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
     int
-    round() noexcept;
+    round() const noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -114,7 +114,7 @@ public:
 
     // Modify the result to the correctly rounded value
     void
-    doRound(rep& drops, std::string location);
+    doRound(rep& drops, std::string location) const;
 
 private:
     void
@@ -171,7 +171,7 @@ Number::Guard::pop() noexcept
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
 int
-Number::Guard::round() noexcept
+Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
@@ -282,7 +282,7 @@ Number::Guard::doRoundDown(
 
 // Modify the result to the correctly rounded value
 void
-Number::Guard::doRound(rep& drops, std::string location)
+Number::Guard::doRound(rep& drops, std::string location) const
 {
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
@@ -911,9 +911,13 @@ to_string(Number const& amount)
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {
@@ -977,7 +981,7 @@ root(Number f, unsigned d)
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
         int k = (e >= 0 ? e : e - (di - 1)) / di;
-        int k2 = e - k * di;
+        int k2 = e - (k * di);
         if (k2 == 0)
             return 0;
         return di - k2;
@@ -994,7 +998,7 @@ root(Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;

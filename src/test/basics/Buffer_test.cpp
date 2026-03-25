@@ -9,10 +9,10 @@ namespace test {
 
 struct Buffer_test : beast::unit_test::suite
 {
-    bool
-    sane(Buffer const& b) const
+    static bool
+    sane(Buffer const& b)
     {
-        if (b.size() == 0)
+        if (b.empty())
             return b.data() == nullptr;
 
         return b.data() != nullptr;
@@ -241,13 +241,13 @@ struct Buffer_test : beast::unit_test::suite
                 // Try to clear:
                 x.clear();
                 BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
+                BEAST_EXPECT(x.empty());
                 BEAST_EXPECT(x.data() == nullptr);
 
                 // Try to clear again:
                 x.clear();
                 BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
+                BEAST_EXPECT(x.empty());
                 BEAST_EXPECT(x.data() == nullptr);
             };
 

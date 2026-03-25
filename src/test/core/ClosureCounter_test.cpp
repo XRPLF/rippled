@@ -221,7 +221,7 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);  // NOLINT(bugprone-use-after-move)
+            BEAST_EXPECT(strRValue.str.empty());  // NOLINT(bugprone-use-after-move)
         }
     }
 
@@ -299,7 +299,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.
-        while (threadExited == false)
+        while (!threadExited)
             ;
         localThread.join();
     }

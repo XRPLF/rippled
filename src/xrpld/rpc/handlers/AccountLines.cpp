@@ -5,6 +5,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
@@ -191,9 +192,13 @@ doAccountLines(RPC::JsonContext& context)
                     if (visitData.ignoreDefault)
                     {
                         if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfLowReserve);
+                        }
                         else
+                        {
                             ignore = !(sleCur->getFieldU32(sfFlags) & lsfHighReserve);
+                        }
                     }
 
                     if (!ignore && count <= limit)

@@ -53,7 +53,7 @@ bool
 STBlob::isEquivalent(STBase const& t) const
 {
     STBlob const* v = dynamic_cast<STBlob const*>(&t);
-    return v && (value_ == v->value_);
+    return (v != nullptr) && (value_ == v->value_);
 }
 
 bool

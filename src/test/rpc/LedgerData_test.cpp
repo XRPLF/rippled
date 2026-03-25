@@ -13,7 +13,7 @@ public:
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void
@@ -198,8 +198,10 @@ public:
             jvParams[jss::ledger_index] = "closed";
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
                 BEAST_EXPECT(
                     jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
+            }
         }
         {
             // Closed ledger with binary form
