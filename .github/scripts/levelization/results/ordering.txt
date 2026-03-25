@@ -189,7 +189,6 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
-xrpl.ledger > xrpl.protocol_autogen
 xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
