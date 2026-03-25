@@ -486,7 +486,7 @@ public:
         env.close();
 
         auto const baseFee = env.current()->fees().base;
-        std::uint32_t aliceSeq;
+        std::uint32_t aliceSeq = 0;
 
         // these represent oft-repeated setup for input json below
         auto setup_tx = [&]() -> Json::Value {

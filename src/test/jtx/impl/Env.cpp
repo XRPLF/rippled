@@ -76,7 +76,7 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    if (app)
+    if (app != nullptr)
     {
         app->getJobQueue().rendezvous();
         app->signalStop("~AppBundle");
@@ -107,7 +107,9 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
     if (consensusDelay)
+    {
         app().getOPs().acceptLedger(consensusDelay);
+    }
     else
     {
         auto resp = rpc("ledger_accept");
@@ -115,11 +117,17 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
         {
             std::string reason = "internal error";
             if (resp.isMember("error_what"))
+            {
                 reason = resp["error_what"].asString();
+            }
             else if (resp.isMember("error_message"))
+            {
                 reason = resp["error_message"].asString();
+            }
             else if (resp.isMember("error"))
+            {
                 reason = resp["error"].asString();
+            }
 
             JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
@@ -199,19 +207,18 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
         return {amount, lookup(issuer).name()};
     }
-    else
-    {
-        // Holder balance
-        auto const sle = le(keylet::mptoken(id, account));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
 
-        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        return {amount, lookup(issuer).name()};
-    }
+    // Holder balance
+    auto const sle = le(keylet::mptoken(id, account));
+    if (!sle)
+        return {STAmount(mptIssue, 0), account.name()};
+
+    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+    return {amount, lookup(issuer).name()};
 }
 
 PrettyAmount
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Env::balance(Account const& account, Asset const& asset) const
 {
     return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());
@@ -336,10 +343,14 @@ Env::parseResult(Json::Value const& jr)
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
         else
+        {
             error(parsed, result);
+        }
     }
     else
+    {
         error(parsed, jr);
+    }
 
     return parsed;
 }
@@ -362,16 +373,14 @@ Env::submit(JTx const& jt, std::source_location const& loc)
 
             return jr;
         }
-        else
-        {
-            // Parsing failed or the JTx is
-            // otherwise missing the stx field.
-            parsedResult.ter = ter_ = temMALFORMED;
 
-            return Json::Value();
-        }
+        // Parsing failed or the JTx is
+        // otherwise missing the stx field.
+        parsedResult.ter = ter_ = temMALFORMED;
+
+        return Json::Value();
     }();
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
@@ -409,7 +418,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location con
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
@@ -419,16 +428,15 @@ Env::postconditions(
     Json::Value const& jr,
     std::source_location const& loc)
 {
-    auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
-    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!" + line);
+    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!");
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
              "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" +
                  transHuman(*parsed.ter) + "); Expected " + transToken(*jt.ter) + " (" +
-                 transHuman(*jt.ter) + ")" + line));
+                 transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
@@ -438,7 +446,7 @@ Env::postconditions(
                                    : "NO RESULT") +
                    " (" + parsed.rpcMessage + "); Expected " +
                    RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")" + line)) ||
+                   jt.rpcCode->second + ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
@@ -450,7 +458,7 @@ Env::postconditions(
                     (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
                "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" +
                    parsed.rpcException + "); Expected " + jt.rpcException->first + " (" +
-                   jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+                   jt.rpcException->second.value_or("n/a") + ")")) ||
         bad;
     if (bad)
     {
@@ -461,7 +469,7 @@ Env::postconditions(
         // we didn't get the expected result.
         return;
     }
-    if (trace_)
+    if (trace_ != 0)
     {
         if (trace_ > 0)
             --trace_;
@@ -533,9 +541,13 @@ Env::autofill_sig(JTx& jt)
     }
     auto const ar = le(account);
     if (ar && ar->isFieldPresent(sfRegularKey))
+    {
         jtx::sign(jv, lookup(ar->getAccountID(sfRegularKey)));
+    }
     else
+    {
         jtx::sign(jv, account);
+    }
 }
 
 void

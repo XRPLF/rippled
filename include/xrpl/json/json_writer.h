@@ -108,7 +108,7 @@ private:
     std::string indentString_;
     int rightMargin_;
     int indentSize_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 /** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
@@ -175,7 +175,7 @@ private:
     std::string indentString_;
     int rightMargin_;
     std::string indentation_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 std::string

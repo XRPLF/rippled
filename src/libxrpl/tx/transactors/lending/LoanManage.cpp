@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 //
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -25,7 +26,7 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    if (auto const flagField = ctx.tx[~sfFlags]; flagField && *flagField)
+    if (auto const flagField = ctx.tx[~sfFlags]; flagField && (*flagField != 0u))
     {
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)

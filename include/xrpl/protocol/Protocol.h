@@ -209,7 +209,7 @@ std::size_t constexpr maxDIDDocumentLength = 256;
 std::size_t constexpr maxDIDURILength = 256;
 
 /** The maximum length of an Attestation inside a DID */
-std::size_t constexpr maxDIDAttestationLength = 256;
+std::size_t constexpr maxDIDDataLength = 256;
 
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
