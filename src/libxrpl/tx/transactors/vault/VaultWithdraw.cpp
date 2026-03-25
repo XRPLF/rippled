@@ -41,16 +41,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
@@ -81,15 +71,22 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
+        auto const mptIssuanceID = vault->at(sfShareMPTID);
+        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+        if (!sleIssuance)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
         auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
         if (!maybeAssets)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const from = ctx.tx[sfAccount];
-        auto const to = ctx.tx[~sfDestination].value_or(from);
-
         if (auto const ret = canWithdraw(
-                ctx.view, from, to, *maybeAssets, ctx.tx.isFieldPresent(sfDestinationTag)))
+                ctx.view, account, dstAcct, *maybeAssets, ctx.tx.isFieldPresent(sfDestinationTag)))
             return ret;
     }
     else
