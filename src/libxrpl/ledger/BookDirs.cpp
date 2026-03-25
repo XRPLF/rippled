@@ -1,5 +1,6 @@
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 
 namespace xrpl {

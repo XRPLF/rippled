@@ -4,7 +4,7 @@
 #include <xrpld/app/misc/FeeVote.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -642,7 +642,7 @@ class FeeVote_test : public beast::unit_test::suite
                     v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
                     v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
                 });
-            if (i % 2)
+            if ((i % 2) != 0)
                 val->setTrusted();
             validations.push_back(val);
         }

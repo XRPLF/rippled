@@ -278,8 +278,8 @@ public:
         O
           \--> B
     */
-    std::size_t
-    branches(std::set<Ledger> const& ledgers) const;
+    static std::size_t
+    branches(std::set<Ledger> const& ledgers);
 };
 
 /** Helper for writing unit tests with controlled ledger histories.

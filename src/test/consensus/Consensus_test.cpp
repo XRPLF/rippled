@@ -1295,10 +1295,10 @@ public:
 
             for (int i = 0; i < 1; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);
@@ -1333,10 +1333,10 @@ public:
             }
             for (int i = 1; i < 3; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);
@@ -1369,10 +1369,10 @@ public:
             }
             for (int i = 3; i < 5; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);

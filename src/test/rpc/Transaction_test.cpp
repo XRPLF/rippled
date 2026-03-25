@@ -20,7 +20,7 @@ namespace xrpl {
 
 class Transaction_test : public beast::unit_test::suite
 {
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace test::jtx;
@@ -114,7 +114,7 @@ class Transaction_test : public beast::unit_test::suite
                 result[jss::result][jss::status] == jss::error &&
                 result[jss::result][jss::error] == NOT_FOUND);
 
-            if (deltaEndSeq)
+            if (deltaEndSeq != 0)
             {
                 BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
             }
@@ -358,7 +358,7 @@ class Transaction_test : public beast::unit_test::suite
                 result[jss::result][jss::status] == jss::error &&
                 result[jss::result][jss::error] == NOT_FOUND);
 
-            if (deltaEndSeq)
+            if (deltaEndSeq != 0)
             {
                 BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
             }
