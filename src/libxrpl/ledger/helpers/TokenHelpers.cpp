@@ -570,17 +570,18 @@ rippleCreditIOU(
             // Sender balance was positive.
             && saBalance <= beast::zero
             // Sender is zero or negative.
-            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
                 static_cast<bool>(
                     view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
-            !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
+            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            &&
+            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -592,7 +593,7 @@ rippleCreditIOU(
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
             // Receiver reserve is clear.
         }
 
