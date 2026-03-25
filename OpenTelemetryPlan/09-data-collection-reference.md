@@ -650,6 +650,56 @@ Tracked types: `Transaction`, `Ledger`, `NodeObject`, `STTx`, `STLedgerEntry`, `
 | `rippled_load_factor_fee_escalation` | Gauge | Open ledger fee escalation           |
 | `rippled_load_factor_fee_queue`      | Gauge | Queue entry fee level                |
 
+#### Server Info (via OTel MetricsRegistry)
+
+| Prometheus Metric                                           | Type  | Labels   | Description                                  |
+| ----------------------------------------------------------- | ----- | -------- | -------------------------------------------- |
+| `rippled_server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)    |
+| `rippled_server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                   |
+| `rippled_server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                        |
+| `rippled_server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number             |
+| `rippled_server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                 |
+| `rippled_server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects |
+| `rippled_server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round               |
+| `rippled_server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)   |
+
+#### Build Info (via OTel MetricsRegistry)
+
+| Prometheus Metric                     | Type  | Labels    | Description                       |
+| ------------------------------------- | ----- | --------- | --------------------------------- |
+| `rippled_build_info{version="<ver>"}` | Gauge | `version` | Info-style metric, always value 1 |
+
+#### Complete Ledger Ranges (via OTel MetricsRegistry)
+
+| Prometheus Metric                                     | Type  | Labels          | Description                 |
+| ----------------------------------------------------- | ----- | --------------- | --------------------------- |
+| `rippled_complete_ledgers{bound="start",index="<N>"}` | Gauge | `bound`,`index` | Start of contiguous range N |
+| `rippled_complete_ledgers{bound="end",index="<N>"}`   | Gauge | `bound`,`index` | End of contiguous range N   |
+
+#### Database Metrics (via OTel MetricsRegistry)
+
+| Prometheus Metric                                   | Type  | Labels   | Description                       |
+| --------------------------------------------------- | ----- | -------- | --------------------------------- |
+| `rippled_db_metrics{metric="db_kb_total"}`          | Gauge | `metric` | Total database size (KB)          |
+| `rippled_db_metrics{metric="db_kb_ledger"}`         | Gauge | `metric` | Ledger database size (KB)         |
+| `rippled_db_metrics{metric="db_kb_transaction"}`    | Gauge | `metric` | Transaction database size (KB)    |
+| `rippled_db_metrics{metric="historical_perminute"}` | Gauge | `metric` | Historical ledger fetches per min |
+
+#### Extended Cache Metrics (additions to existing rippled_cache_metrics)
+
+| Prometheus Metric                         | Type  | Labels   | Description               |
+| ----------------------------------------- | ----- | -------- | ------------------------- |
+| `rippled_cache_metrics{metric="AL_size"}` | Gauge | `metric` | AcceptedLedger cache size |
+
+#### Extended NodeStore Metrics (additions to existing rippled_nodestore_state)
+
+| Prometheus Metric                                          | Type  | Labels   | Description                         |
+| ---------------------------------------------------------- | ----- | -------- | ----------------------------------- |
+| `rippled_nodestore_state{metric="node_reads_duration_us"}` | Gauge | `metric` | Cumulative read time (microseconds) |
+| `rippled_nodestore_state{metric="read_request_bundle"}`    | Gauge | `metric` | Read request bundle count           |
+| `rippled_nodestore_state{metric="read_threads_running"}`   | Gauge | `metric` | Active read threads                 |
+| `rippled_nodestore_state{metric="read_threads_total"}`     | Gauge | `metric` | Total read threads configured       |
+
 ### New Grafana Dashboards (Phase 9)
 
 | Dashboard          | UID                  | Data Source | Key Panels                                                        |
@@ -674,7 +724,7 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 | Trace spans        | 16             | Jaeger/Tempo API query           |
 | Span attributes    | 22             | Per-span attribute assertion     |
 | StatsD metrics     | 255+           | Prometheus query                 |
-| Phase 9 metrics    | 50+            | Prometheus query                 |
+| Phase 9 metrics    | 68+            | Prometheus query                 |
 | SpanMetrics RED    | 4 per span     | Prometheus query                 |
 | Grafana dashboards | 10             | Dashboard API "no data" check    |
 | Log-trace links    | Present        | Loki query + Tempo reverse check |

@@ -231,6 +231,48 @@ These metrics serve multiple external consumer categories identified during rese
 
 ---
 
+## Task 9.7a: push_metrics.py Parity — Missing Observable Gauges
+
+**Objective**: Fill the remaining metric gaps between the external `push_metrics.py` script (in `ripplex-ansible`) and the internal OTel `MetricsRegistry` observable gauges. After this task, all metrics collected by `push_metrics.py` that CAN be collected internally are covered.
+
+**What was done**:
+
+- Extended existing `cacheHitRateGauge_` callback with `AL_size` (AcceptedLedger cache size)
+- Extended existing `nodeStoreGauge_` callback with 4 new metrics from `getCountsJson()`:
+  - `node_reads_duration_us` (JSON string — uses `std::stoll(asString())`)
+  - `read_request_bundle` (native JSON int)
+  - `read_threads_running` (native JSON int)
+  - `read_threads_total` (native JSON int)
+- Added new `rippled_server_info` Int64ObservableGauge with 8 metrics:
+  - `server_state` — operating mode as int (0=DISCONNECTED .. 4=FULL)
+  - `uptime` — seconds since server start
+  - `peers` — total peer count
+  - `validated_ledger_seq` — validated ledger sequence (atomic read)
+  - `ledger_current_index` — current open ledger sequence
+  - `peer_disconnects_resources` — cumulative resource-related disconnects
+  - `last_close_proposers` — from `getConsensusInfo()["previous_proposers"]`
+  - `last_close_converge_time_ms` — from `getConsensusInfo()["previous_mseconds"]`
+- Added new `rippled_build_info` Int64ObservableGauge (info-style, value=1 with `version` label)
+- Added new `rippled_complete_ledgers` Int64ObservableGauge parsing comma-separated ranges into `{bound, index}` pairs
+- Added new `rippled_db_metrics` Int64ObservableGauge with 4 metrics:
+  - `db_kb_total`, `db_kb_ledger`, `db_kb_transaction` (SQLite stat queries)
+  - `historical_perminute` (historical ledger fetch rate)
+
+**Key modified files**:
+
+- `src/xrpld/telemetry/MetricsRegistry.h` (4 new gauge members, updated ASCII diagram)
+- `src/xrpld/telemetry/MetricsRegistry.cpp` (4 new callback registrations, 2 callback extensions)
+
+**Not implementable inside rippled**:
+
+- `connection_count_51233/51234` — OS-level port connection counts from external shell script (`get_connection.sh`)
+
+**Derived Prometheus metrics**: `rippled_server_info{metric="server_state"}`, `rippled_build_info{version="2.4.0"}`, `rippled_complete_ledgers{bound="start",index="0"}`, `rippled_db_metrics{metric="db_kb_total"}`, etc.
+
+**Grafana dashboard**: New panels added to _Node Health_ dashboard (`system-node-health.json`).
+
+---
+
 ## Task 9.8: New Grafana Dashboards
 
 **Objective**: Create Grafana dashboards for the new metric categories.

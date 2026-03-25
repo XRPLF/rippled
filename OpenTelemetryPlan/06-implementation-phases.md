@@ -671,7 +671,7 @@ flowchart LR
 
 ### Motivation
 
-Phases 1-8 establish trace spans, StatsD metrics bridge, native OTel metrics, and log-trace correlation. However, ~50+ metrics that exist inside rippled's `get_counts`, `server_info`, TxQ, PerfLog, and `CountedObject` systems have **no time-series export path**. These are the metrics that exchanges, payment processors, analytics providers, validators, and researchers need most — NodeStore I/O performance, cache hit rates, per-RPC-method counters, transaction queue depth, fee escalation levels, and live object instance counts.
+Phases 1-8 establish trace spans, StatsD metrics bridge, native OTel metrics, and log-trace correlation. However, ~68 metrics that exist inside rippled's `get_counts`, `server_info`, TxQ, PerfLog, and `CountedObject` systems have **no time-series export path**. These are the metrics that exchanges, payment processors, analytics providers, validators, and researchers need most — NodeStore I/O performance, cache hit rates, per-RPC-method counters, transaction queue depth, fee escalation levels, and live object instance counts.
 
 ### Architecture
 
@@ -747,6 +747,7 @@ flowchart TB
 | 9.5  | PerfLog per-job metrics                   |
 | 9.6  | Counted object instance metrics           |
 | 9.7  | Fee escalation & load factor metrics      |
+| 9.7a | push_metrics.py parity gauges             |
 | 9.8  | New Grafana dashboards (2 new, 2 updated) |
 | 9.9  | Update documentation                      |
 | 9.10 | Integration tests                         |
@@ -755,7 +756,7 @@ See [Phase9_taskList.md](./Phase9_taskList.md) for detailed per-task breakdown.
 
 ### Exit Criteria
 
-- [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline
+- [ ] All ~68 new metrics visible in Prometheus via OTLP pipeline
 - [ ] `MetricsRegistry` class registers/deregisters cleanly with OTel SDK
 - [ ] 2 new Grafana dashboards operational (Fee Market, Job Queue)
 - [ ] No performance regression (< 0.5% CPU overhead from new callbacks)
@@ -1130,7 +1131,6 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.1 Phase 1: Core Infrastructure
 
-
 | Criterion       | Measurement                                                | Target                       |
 | --------------- | ---------------------------------------------------------- | ---------------------------- |
 | SDK Integration | `cmake --build` succeeds with `-DXRPL_ENABLE_TELEMETRY=ON` | ✅ Compiles                  |
@@ -1143,7 +1143,6 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.2 Phase 2: RPC Tracing
 
-
 | Criterion          | Measurement                        | Target                     |
 | ------------------ | ---------------------------------- | -------------------------- |
 | Coverage           | All RPC commands instrumented      | 100% of commands           |
@@ -1154,9 +1153,7 @@ Clear, measurable criteria for each phase.
 
 **Definition of Done**: RPC traces visible in Tempo for all commands, dashboard shows latency distribution.
 
-
 ### 6.12.3 Phase 3: Transaction Tracing
-
 
 | Criterion        | Measurement                     | Target                             |
 | ---------------- | ------------------------------- | ---------------------------------- |
@@ -1170,7 +1167,6 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.4 Phase 4: Consensus Tracing
 
-
 | Criterion            | Measurement                   | Target                    |
 | -------------------- | ----------------------------- | ------------------------- |
 | Round Tracing        | startRound creates root span  | Unit test passes          |
@@ -1182,7 +1178,6 @@ Clear, measurable criteria for each phase.
 **Definition of Done**: Consensus rounds fully traceable, no impact on consensus timing.
 
 ### 6.12.5 Phase 5: Production Deployment
-
 
 | Criterion    | Measurement                  | Target                     |
 | ------------ | ---------------------------- | -------------------------- |
@@ -1207,7 +1202,7 @@ Clear, measurable criteria for each phase.
 | Phase 6  | StatsD metrics in Prometheus     | 3 dashboards operational    | End of Week 10 | Active             |
 | Phase 7  | All metrics via OTLP             | No StatsD dependency        | End of Week 12 | Active             |
 | Phase 8  | trace_id in logs + Loki          | Tempo↔Loki correlation      | End of Week 13 | Active             |
-| Phase 9  | 50+ new internal metrics in Prom | 2 new dashboards            | End of Week 15 | Future Enhancement |
+| Phase 9  | 68+ new internal metrics in Prom | 2 new dashboards            | End of Week 15 | Future Enhancement |
 | Phase 10 | Full telemetry stack validated   | < 3% CPU overhead proven    | End of Week 17 | Future Enhancement |
 | Phase 11 | Third-party metrics via receiver | 4 new dashboards + alerting | End of Week 20 | Future Enhancement |
 

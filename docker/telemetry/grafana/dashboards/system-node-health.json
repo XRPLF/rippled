@@ -720,6 +720,425 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "--- OTel: Server Info ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Server State",
+      "description": "Current operating mode: 0=DISCONNECTED, 1=CONNECTED, 2=SYNCING, 3=TRACKING, 4=FULL. Sourced from MetricsRegistry server_info observable gauge.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 60
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"server_state\"}",
+          "legendFormat": "State [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": { "0": { "text": "DISCONNECTED", "color": "red" } }
+            },
+            {
+              "type": "value",
+              "options": { "1": { "text": "CONNECTED", "color": "orange" } }
+            },
+            {
+              "type": "value",
+              "options": { "2": { "text": "SYNCING", "color": "yellow" } }
+            },
+            {
+              "type": "value",
+              "options": { "3": { "text": "TRACKING", "color": "blue" } }
+            },
+            {
+              "type": "value",
+              "options": { "4": { "text": "FULL", "color": "green" } }
+            }
+          ],
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Uptime",
+      "description": "Time since server started, in seconds. Sourced from MetricsRegistry server_info observable gauge via UptimeClock.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 60
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"uptime\"}",
+          "legendFormat": "Uptime [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Count",
+      "description": "Total connected peers (inbound + outbound). Sourced from MetricsRegistry server_info observable gauge via overlay().size().",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 60
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"peers\"}",
+          "legendFormat": "Peers [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Validated Ledger Seq",
+      "description": "Sequence number of the most recently validated ledger. Returns 0 before first validation. Sourced from MetricsRegistry server_info observable gauge.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 60
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"validated_ledger_seq\"}",
+          "legendFormat": "Seq [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Last Close Info",
+      "description": "Proposers and convergence time from the last closed consensus round. Sourced from MetricsRegistry server_info observable gauge via getConsensusInfo().",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 68
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"last_close_proposers\"}",
+          "legendFormat": "Proposers [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"last_close_converge_time_ms\"}",
+          "legendFormat": "Converge Time ms [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Build Version",
+      "description": "Build version info metric. Value is always 1; version string is in the 'version' label. Sourced from MetricsRegistry build_info observable gauge.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 68
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "textMode": "name"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_build_info{exported_instance=~\"$node\"}",
+          "legendFormat": "v{{version}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "--- OTel: Complete Ledgers & DB ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 76
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Complete Ledger Ranges",
+      "description": "Start and end of each contiguous complete ledger range. Parsed from getLedgerMaster().getCompleteLedgers() string. Sourced from MetricsRegistry complete_ledgers observable gauge.",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 77
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_complete_ledgers{exported_instance=~\"$node\"}",
+          "legendFormat": "{{bound}} [range {{index}}] [{{exported_instance}}]",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Database Sizes",
+      "description": "SQLite database sizes in KB (total, ledger, transaction). Sourced from MetricsRegistry db_metrics observable gauge via getRelationalDatabase().getKBUsed*().",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 77
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_total\"}",
+          "legendFormat": "Total KB [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_ledger\"}",
+          "legendFormat": "Ledger KB [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"db_kb_transaction\"}",
+          "legendFormat": "Transaction KB [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "deckbytes",
+          "custom": {
+            "axisLabel": "Size (KB)",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Historical Fetch Rate",
+      "description": "Historical ledger fetches per minute. Sourced from MetricsRegistry db_metrics observable gauge via getInboundLedgers().fetchRate().",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 85
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_db_metrics{exported_instance=~\"$node\", metric=\"historical_perminute\"}",
+          "legendFormat": "Fetches/min [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Disconnects (Resources)",
+      "description": "Cumulative count of peer disconnections due to resource limits. Sourced from MetricsRegistry server_info observable gauge via overlay().getPeerDisconnectCharges().",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 85
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_server_info{exported_instance=~\"$node\", metric=\"peer_disconnects_resources\"}",
+          "legendFormat": "Resource Disconnects [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,

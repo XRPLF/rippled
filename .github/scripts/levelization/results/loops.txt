@@ -17,8 +17,11 @@ Loop: xrpld.app xrpld.shamap
   xrpld.shamap ~= xrpld.app
 
 Loop: xrpld.app xrpld.telemetry
-  xrpld.telemetry ~= xrpld.app
+  xrpld.telemetry == xrpld.app
 
 Loop: xrpld.overlay xrpld.rpc
   xrpld.rpc ~= xrpld.overlay
+
+Loop: xrpld.overlay xrpld.telemetry
+  xrpld.telemetry == xrpld.overlay
 

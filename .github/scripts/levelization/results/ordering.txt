@@ -257,7 +257,6 @@ xrpld.overlay > xrpl.basics
 xrpld.overlay > xrpl.core
 xrpld.overlay > xrpld.core
 xrpld.overlay > xrpld.peerfinder
-xrpld.overlay > xrpld.telemetry
 xrpld.overlay > xrpl.json
 xrpld.overlay > xrpl.protocol
 xrpld.overlay > xrpl.rdb
@@ -290,5 +289,7 @@ xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
 xrpld.telemetry > xrpl.core
 xrpld.telemetry > xrpl.nodestore
+xrpld.telemetry > xrpl.protocol
+xrpld.telemetry > xrpl.rdb
 xrpld.telemetry > xrpl.server
 xrpld.telemetry > xrpl.telemetry

@@ -209,6 +209,32 @@ When using StatsD, uncomment the `statsd` receiver in `otel-collector-config.yam
 | `rippled_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
 | `rippled_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
+#### OTel MetricsRegistry Gauges (Phase 9)
+
+These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
+
+| Prometheus Metric                                           | Source              | Description                                  |
+| ----------------------------------------------------------- | ------------------- | -------------------------------------------- |
+| `rippled_server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)    |
+| `rippled_server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                   |
+| `rippled_server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                        |
+| `rippled_server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number             |
+| `rippled_server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                 |
+| `rippled_server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects |
+| `rippled_server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round               |
+| `rippled_server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)             |
+| `rippled_build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                 |
+| `rippled_complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs        |
+| `rippled_db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                     |
+| `rippled_db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                    |
+| `rippled_db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)               |
+| `rippled_db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute         |
+| `rippled_cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                    |
+| `rippled_nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)          |
+| `rippled_nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                    |
+| `rippled_nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                          |
+| `rippled_nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                |
+
 #### Counters
 
 | Prometheus Metric                 | Source                | Description                    |
@@ -300,16 +326,24 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health — System Metrics (`rippled-system-node-health`)
 
-| Panel                      | Type       | PromQL                                                 | Labels Used |
-| -------------------------- | ---------- | ------------------------------------------------------ | ----------- |
-| Validated Ledger Age       | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`            | —           |
-| Published Ledger Age       | stat       | `rippled_LedgerMaster_Published_Ledger_Age`            | —           |
-| Operating Mode Duration    | timeseries | `rippled_State_Accounting_*_duration`                  | —           |
-| Operating Mode Transitions | timeseries | `rippled_State_Accounting_*_transitions`               | —           |
-| I/O Latency                | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)` | —           |
-| Job Queue Depth            | timeseries | `rippled_job_count`                                    | —           |
-| Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —           |
-| Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —           |
+| Panel                      | Type       | PromQL                                                 | Labels Used      |
+| -------------------------- | ---------- | ------------------------------------------------------ | ---------------- |
+| Validated Ledger Age       | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`            | —                |
+| Published Ledger Age       | stat       | `rippled_LedgerMaster_Published_Ledger_Age`            | —                |
+| Operating Mode Duration    | timeseries | `rippled_State_Accounting_*_duration`                  | —                |
+| Operating Mode Transitions | timeseries | `rippled_State_Accounting_*_transitions`               | —                |
+| I/O Latency                | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)` | —                |
+| Job Queue Depth            | timeseries | `rippled_job_count`                                    | —                |
+| Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —                |
+| Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —                |
+| Server State               | stat       | `rippled_server_info{metric="server_state"}`           | `metric`         |
+| Uptime                     | stat       | `rippled_server_info{metric="uptime"}`                 | `metric`         |
+| Peer Count                 | stat       | `rippled_server_info{metric="peers"}`                  | `metric`         |
+| Validated Ledger Seq       | stat       | `rippled_server_info{metric="validated_ledger_seq"}`   | `metric`         |
+| Build Version              | stat       | `rippled_build_info`                                   | `version`        |
+| Complete Ledger Ranges     | table      | `rippled_complete_ledgers`                             | `bound`, `index` |
+| Database Sizes             | timeseries | `rippled_db_metrics{metric=~"db_kb_.*"}`               | `metric`         |
+| Historical Fetch Rate      | stat       | `rippled_db_metrics{metric="historical_perminute"}`    | `metric`         |
 
 ### Network Traffic — System Metrics (`rippled-system-network`)
 
@@ -419,6 +453,17 @@ count_over_time({job="rippled"} |= "trace_id=" [5m])
 3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
 4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
 5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=rippled_job_count'`
+
+### Server info gauge shows server_state=0
+
+This is normal during startup. The server starts in DISCONNECTED mode (0) and
+progresses through CONNECTED (1), SYNCING (2), TRACKING (3), to FULL (4).
+Wait for the node to sync with the network.
+
+### Database metrics showing zero
+
+The `getKBUsed*()` methods require SQLite databases to exist. If running with
+`--standalone` or before the first ledger is stored, these will be zero.
 
 ### High memory usage
 
