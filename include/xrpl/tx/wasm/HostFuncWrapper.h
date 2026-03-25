@@ -268,7 +268,7 @@ using floatFromSTNumber_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32
 wasm_trap_t*
 floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatToInt_proto = int64_t(uint8_t const*, int32_t, int32_t);
+using floatToInt_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 

@@ -258,14 +258,6 @@ hfResult(wasm_val_vec_t* results, int32_t value)
 }
 
 static std::nullptr_t
-hfResult(wasm_val_vec_t* results, int64_t value)
-{
-    results->data[0] = WASM_I64_VAL(value);
-    // results->size = 1;
-    return nullptr;
-}
-
-static std::nullptr_t
 hfResult(wasm_val_vec_t* results, HostFunctionError value)
 {
     results->data[0] = WASM_I32_VAL(HfErrorToInt(value));
@@ -337,7 +329,18 @@ returnResult(
     }
     else if constexpr (std::is_same_v<t, int64_t>)
     {
-        return hfResult(results, res.value());
+        if (index < 0 || index + 1 >= params->size)
+            return hfResult(results, HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+
+        auto const resultValue = adjustWasmEndianess(res.value());
+        return hfResult(
+            results,
+            setData(
+                runtime,
+                params->data[index].of.i32,
+                params->data[index + 1].of.i32,
+                reinterpret_cast<uint8_t const*>(&resultValue),
+                static_cast<int32_t>(sizeof(resultValue))));
     }
     else if constexpr (std::is_same_v<t, FloatPair>)
     {
@@ -1700,11 +1703,12 @@ floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     if (!x)
         return hfResult(results, x.error());
 
-    i = 2;
+    i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
+    i = 2;
     return returnResult(runtime, params, results, hf->floatToInt(*x, *rounding), i);
 }
 

@@ -42,7 +42,13 @@ unsafe extern "C" {
     ) -> i32;
 
     #[link_name = "float_to_int"]
-    fn float_to_int(float_ptr: *const u8, float_len: i32, rounding: i32) -> i64;
+    fn float_to_int(
+        float_ptr: *const u8,
+        float_len: i32,
+        out_ptr: *mut u8,
+        out_len: i32,
+        rounding: i32,
+    ) -> i32;
 
     #[link_name = "float_to_mantissa_and_exponent"]
     fn float_to_mantissa_and_exponent(
@@ -550,24 +556,55 @@ fn test_float_invert() -> bool {
 fn test_float_to_int() -> bool {
     let _ = trace("\n$$$ test_float_to_int $$$");
     let mut all_pass = true;
+    let mut result: [u8; 8] = [0u8; 8];
 
     // Test converting FLOAT_ONE (value 1) to int
-    let result = unsafe { float_to_int(FLOAT_ONE.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    if result == 1 {
-        let _ = trace("  float_to_int(1): good");
+    let ret = unsafe {
+        float_to_int(
+            FLOAT_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            8,
+            FLOAT_ROUNDING_MODES_TO_NEAREST
+        )
+    };
+    if ret == 8 {
+        let number = i64::from_le_bytes(result);
+        if number == 1 {
+            let _ = trace("  float_to_int(1): good");
+        } else {
+            let _ = trace("  float_to_int(1): failed");
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(1): failed");
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
     // Test converting FLOAT_NEGATIVE_ONE (value -1) to int
-    let result = unsafe { float_to_int(FLOAT_NEGATIVE_ONE.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    if result == -1 {
-        let _ = trace("  float_to_int(-1): good");
+    let ret = unsafe {
+        float_to_int(
+            FLOAT_NEGATIVE_ONE.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            8,
+            FLOAT_ROUNDING_MODES_TO_NEAREST
+        )
+    };
+    if ret == 8 {
+        let number = i64::from_le_bytes(result);
+        if number == -1 {
+            let _ = trace("  float_to_int(-1): good");
+        } else {
+            let _ = trace("  float_to_int(-1): failed");
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(-1): failed");
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(-1): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
@@ -575,47 +612,107 @@ fn test_float_to_int() -> bool {
     let test_val: i64 = i64::MAX;
     let mut f_max: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
     unsafe { float_from_int(test_val, f_max.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    let result = unsafe { float_to_int(f_max.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    if result == test_val {
-        let _ = trace("  float_to_int(i64::MAX): good");
+    let ret = unsafe {
+        float_to_int(
+            f_max.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            8,
+            FLOAT_ROUNDING_MODES_TO_NEAREST
+        )
+    };
+    if ret == 8 {
+        let number = i64::from_le_bytes(result);
+        if number == test_val {
+            let _ = trace("  float_to_int(i64::MAX): good");
+        } else {
+            let _ = trace("  float_to_int(i64::MAX): failed");
+            let _ = trace_num("    expected:", test_val);
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(i64::MAX): failed");
-        let _ = trace_num("    expected:", test_val);
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(i64::MAX): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
     // Test converting zero
     let mut f0: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
     unsafe { float_from_int(0, f0.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    let result = unsafe { float_to_int(f0.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    if result == 0 {
-        let _ = trace("  float_to_int(0): good");
+    let ret = unsafe {
+        float_to_int(
+            f0.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            8,
+            FLOAT_ROUNDING_MODES_TO_NEAREST
+        )
+    };
+    if ret == 8 {
+        let number = i64::from_le_bytes(result);
+        if number == 0 {
+            let _ = trace("  float_to_int(0): good");
+        } else {
+            let _ = trace("  float_to_int(0): failed");
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(0): failed");
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(0): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
     // Test rounding with fractional value (0.1)
     let mut f01: [u8; FLOAT_SIZE] = [0u8; FLOAT_SIZE];
     unsafe { float_set(-1, 1, f01.as_mut_ptr(), FLOAT_SIZE, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    let result = unsafe { float_to_int(f01.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-    if result == 0 {
-        let _ = trace("  float_to_int(0.1, to_nearest): good");
+    let ret = unsafe {
+        float_to_int(
+            f01.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+            FLOAT_ROUNDING_MODES_TO_NEAREST
+        )
+    };
+    if ret == 8 as i32 {
+        let number = i64::from_le_bytes(result);
+        if number == 0 {
+            let _ = trace("  float_to_int(0.1, to_nearest): good");
+        } else {
+            let _ = trace("  float_to_int(0.1, to_nearest): failed");
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(0.1, to_nearest): failed");
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(0.1, to_nearest): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
     // Test rounding mode 1 (towards_zero)
-    let result = unsafe { float_to_int(f01.as_ptr(), FLOAT_SIZE as i32, 1) };
-    if result == 0 {
-        let _ = trace("  float_to_int(0.1, towards_zero): good");
+    let ret = unsafe {
+        float_to_int(
+            f01.as_ptr(),
+            FLOAT_SIZE as i32,
+            result.as_mut_ptr(),
+            FLOAT_SIZE as i32,
+            1
+        )
+    };
+    if ret == 8 as i32 {
+        let number = i64::from_le_bytes(result);
+        if number == 0 {
+            let _ = trace("  float_to_int(0.1, towards_zero): good");
+        } else {
+            let _ = trace("  float_to_int(0.1, towards_zero): failed");
+            let _ = trace_num("    got:", number);
+            all_pass = false;
+        }
     } else {
-        let _ = trace("  float_to_int(0.1, towards_zero): failed");
-        let _ = trace_num("    got:", result);
+        let _ = trace("  float_to_int(0.1, towards_zero): failed with error");
+        let _ = trace_num("    error code:", ret as i64);
         all_pass = false;
     }
 
@@ -973,12 +1070,28 @@ fn test_float_from_stamount() -> bool {
         let _ = trace_float("  float from XRP amount (100 XRP):", &f_result);
 
         // Convert back to int to verify
-        let int_val = unsafe { float_to_int(f_result.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-        if int_val == 100000000 {
-            let _ = trace("  XRP amount conversion: good");
+        let mut int_bytes: [u8; 8] = [0u8; 8];
+        let ret = unsafe {
+            float_to_int(
+                f_result.as_ptr(),
+                FLOAT_SIZE as i32,
+                int_bytes.as_mut_ptr(),
+                8,
+                FLOAT_ROUNDING_MODES_TO_NEAREST
+            )
+        };
+        if ret == 8 {
+            let int_val = i64::from_le_bytes(int_bytes);
+            if int_val == 100000000 {
+                let _ = trace("  XRP amount conversion: good");
+            } else {
+                let _ = trace("  XRP amount conversion: failed");
+                let _ = trace_num("    expected 100000000, got:", int_val);
+                all_pass = false;
+            }
         } else {
-            let _ = trace("  XRP amount conversion: failed");
-            let _ = trace_num("    expected 100000000, got:", int_val);
+            let _ = trace("  XRP amount conversion: failed - float_to_int error");
+            let _ = trace_num("    error code:", ret as i64);
             all_pass = false;
         }
     } else {
@@ -1022,12 +1135,28 @@ fn test_float_from_stnumber() -> bool {
         let _ = trace_float("  float from STNumber (123):", &f_result);
 
         // Convert back to int to verify
-        let int_val = unsafe { float_to_int(f_result.as_ptr(), FLOAT_SIZE as i32, FLOAT_ROUNDING_MODES_TO_NEAREST) };
-        if int_val == 123 {
-            let _ = trace("  STNumber conversion: good");
+        let mut int_bytes: [u8; 8] = [0u8; 8];
+        let ret = unsafe {
+            float_to_int(
+                f_result.as_ptr(),
+                FLOAT_SIZE as i32,
+                int_bytes.as_mut_ptr(),
+                8,
+                FLOAT_ROUNDING_MODES_TO_NEAREST
+            )
+        };
+        if ret == 8 {
+            let int_val = i64::from_le_bytes(int_bytes);
+            if int_val == 123 {
+                let _ = trace("  STNumber conversion: good");
+            } else {
+                let _ = trace("  STNumber conversion: failed");
+                let _ = trace_num("    expected 123, got:", int_val);
+                all_pass = false;
+            }
         } else {
-            let _ = trace("  STNumber conversion: failed");
-            let _ = trace_num("    expected 123, got:", int_val);
+            let _ = trace("  STNumber conversion: failed - float_to_int error");
+            let _ = trace_num("    error code:", ret as i64);
             all_pass = false;
         }
     } else {
