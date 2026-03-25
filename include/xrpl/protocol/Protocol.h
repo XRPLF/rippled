@@ -344,9 +344,9 @@ std::size_t constexpr ecSingleBulletproofLength = 688;
 std::size_t constexpr ecDoubleBulletproofLength = 754;
 
 /** Compressed EC point prefix for even y-coordinate */
-static constexpr std::uint8_t ecCompressedPrefixEvenY = 0x02;
+std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
 
 /** Compressed EC point prefix for odd y-coordinate */
-static constexpr std::uint8_t ecCompressedPrefixOddY = 0x03;
+std::uint8_t constexpr ecCompressedPrefixOddY = 0x03;
 
 }  // namespace xrpl
