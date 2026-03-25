@@ -2875,6 +2875,7 @@ protected:
             // Create vaults and loan brokers
             std::array const assets{mptAsset, iouAsset};
             std::vector<BrokerInfo> brokers;
+            brokers.reserve(assets.size());
             for (auto const& asset : assets)
             {
                 brokers.emplace_back(createVaultAndBroker(env, asset, lender));
@@ -3408,6 +3409,7 @@ protected:
 
         // Create vaults and loan brokers
         std::vector<BrokerInfo> brokers;
+        brokers.reserve(assets.size());
         for (auto const& asset : assets)
         {
             brokers.emplace_back(createVaultAndBroker(

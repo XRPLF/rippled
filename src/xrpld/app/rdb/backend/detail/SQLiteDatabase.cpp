@@ -400,8 +400,7 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
     auto onTransaction =
         [&ret, &app = registry_.app()](
             std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(
-                ret, ledger_index, status, std::move(rawTxn), std::move(rawMeta), app);
+            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
         };
 
     if (existsTransaction())
@@ -429,8 +428,7 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
     auto onTransaction =
         [&ret, &app = registry_.app()](
             std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(
-                ret, ledger_index, status, std::move(rawTxn), std::move(rawMeta), app);
+            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
         };
 
     if (existsTransaction())

@@ -231,7 +231,7 @@ ValidatorSite::makeRequest(
         [this, siteIdx, timeoutCancel](
             error_code const& err, endpoint_type const& endpoint, detail::response_type&& resp) {
             timeoutCancel();
-            onSiteFetch(err, endpoint, std::move(resp), siteIdx);
+            onSiteFetch(err, endpoint, resp, siteIdx);
         };
 
     auto onFetchFile = [this, siteIdx, timeoutCancel](

@@ -137,7 +137,7 @@ ValidatorList::load(
     JLOG(j_.debug()) << "Loading configured trusted validator list publisher keys";
 
     std::size_t count = 0;
-    for (auto key : publisherKeys)
+    for (auto const& key : publisherKeys)
     {
         JLOG(j_.trace()) << "Processing '" << key << "'";
 

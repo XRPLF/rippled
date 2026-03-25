@@ -410,7 +410,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     bool validated = ledger->header().validated;
     // Returns true if we already had the ledger
-    return mLedgerHistory.insert(std::move(ledger), validated);
+    return mLedgerHistory.insert(ledger, validated);
 }
 
 /** Apply held transactions to the open ledger

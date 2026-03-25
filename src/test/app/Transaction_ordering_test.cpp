@@ -97,6 +97,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         std::vector<JTx> tx;
+        tx.reserve(5);
         for (auto i = 0; i < 5; ++i)
         {
             tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
