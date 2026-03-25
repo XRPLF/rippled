@@ -5,11 +5,10 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>

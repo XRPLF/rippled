@@ -45,7 +45,7 @@ class NetworkIDService;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PeerReservationTable;
 class PendingSaves;
 class RelationalDatabase;
@@ -195,8 +195,8 @@ public:
     virtual TxQ&
     getTxQ() = 0;
 
-    virtual PathRequests&
-    getPathRequests() = 0;
+    virtual PathRequestManager&
+    getPathRequestManager() = 0;
 
     // Server services
     virtual ServerHandler&

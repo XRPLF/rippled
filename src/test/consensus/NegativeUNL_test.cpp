@@ -1,7 +1,6 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/ValidatorList.h>
 
@@ -211,7 +210,11 @@ class NegativeUNL_test : public beast::unit_test::suite
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
@@ -543,7 +546,8 @@ struct NetworkHistory
         static uint256 fake_amendment;  // So we have different genesis ledgers
         auto l = std::make_shared<Ledger>(
             create_genesis,
-            env.app().config(),
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
             std::vector<uint256>{fake_amendment++},
             env.app().getNodeFamily());
         history.push_back(l);
@@ -1670,7 +1674,11 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
         testcase("Filter Validations");
         jtx::Env env(*this);
         auto l = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(
