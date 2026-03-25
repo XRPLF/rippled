@@ -5229,6 +5229,79 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    // Reproduction: canWithdraw IOU limit check bypassed when
+    // withdrawal amount is specified in shares (MPT) rather than in assets.
+    void
+    testBug6_LimitBypassWithShares()
+    {
+        using namespace test::jtx;
+        testcase("Bug6 - limit bypass with share-denominated withdrawal");
+
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
+        Account const owner{"owner"};
+        Account const issuer{"issuer"};
+        Account const depositor{"depositor"};
+        Account const charlie{"charlie"};
+        Vault vault{env};
+
+        env.fund(XRP(1000), issuer, owner, depositor, charlie);
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env.trust(asset(1000), depositor);
+        env(pay(issuer, owner, asset(200)));
+        env(pay(issuer, depositor, asset(200)));
+        env.close();
+
+        // Charlie gets a LOW trustline limit of 5
+        env.trust(asset(5), charlie);
+        env.close();
+
+        auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const depositTx =
+            vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
+        env(depositTx);
+        env.close();
+
+        // Get the share MPT info
+        auto const vaultSle = env.le(keylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        auto const mptIssuanceID = vaultSle->at(sfShareMPTID);
+        MPTIssue const shares(mptIssuanceID);
+        PrettyAsset const share(shares);
+
+        // CONTROL: Withdraw 10 IOU (asset-denominated) to charlie.
+        // Charlie's limit is 5, so this should be rejected with tecNO_LINE.
+        {
+            auto withdrawTx =
+                vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
+            withdrawTx[sfDestination] = charlie.human();
+            env(withdrawTx, ter{tecNO_LINE});
+            env.close();
+        }
+        auto const charlieBalanceBefore = env.balance(charlie, asset.raw().get<Issue>());
+
+        // Withdraw the equivalent amount in shares to charlie. This should also be rejected.<
+        {
+            auto withdrawTx = vault.withdraw(
+                {.depositor = depositor, .id = keylet.key, .amount = STAmount(share, 10'000'000)});
+            withdrawTx[sfDestination] = charlie.human();
+            env(withdrawTx, ter{tecNO_LINE});
+            env.close();
+
+            // Verify that charlie received IOU beyond their trustline limit
+            // (their limit is 5, but they now hold 10).
+            auto const charlieBalanceAfter = env.balance(charlie, asset.raw().get<Issue>());
+            BEAST_EXPECT(charlieBalanceAfter == charlieBalanceBefore);
+        }
+    }
+
 public:
     void
     run() override
@@ -5249,6 +5322,7 @@ public:
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
         testAssetsMaximum();
+        testBug6_LimitBypassWithShares();
     }
 };
 

@@ -41,10 +41,20 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const assets = ctx.tx[sfAmount];
+    auto const mptIssuanceID = vault->at(sfShareMPTID);
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
-    if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
+    if (amount.asset() != vaultAsset && amount.asset() != vaultShare)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -65,8 +75,28 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
-        return ret;
+    if (ctx.view.rules().enabled(fixAssortedFixes) && amount.asset() == vaultShare)
+    {
+        // Post-fixAssortedFixes: if the user specified shares, convert
+        // to the equivalent asset amount before checking withdrawal
+        // limits. Pre-amendment the limit check was skipped for
+        // share-denominated withdrawals.
+        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
+        if (!maybeAssets)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const from = ctx.tx[sfAccount];
+        auto const to = ctx.tx[~sfDestination].value_or(from);
+
+        if (auto const ret = canWithdraw(
+                ctx.view, from, to, *maybeAssets, ctx.tx.isFieldPresent(sfDestinationTag)))
+            return ret;
+    }
+    else
+    {
+        if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+            return ret;
+    }
 
     // If sending to Account (i.e. not a transfer), we will also create (only
     // if authorized) a trust line or MPToken as needed, in doApply().
