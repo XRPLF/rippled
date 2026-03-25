@@ -89,8 +89,8 @@ verifySendProofs(
     auto const balanceLinkageProof = reader.read(ecPedersenProofLength);
     auto const rangeProof = reader.read(ecDoubleBulletproofLength);
 
-    if (!equalityProof || !amountLinkageProof || !balanceLinkageProof ||
-        !rangeProof || !reader.done())
+    if (!equalityProof || !amountLinkageProof || !balanceLinkageProof || !rangeProof ||
+        !reader.done())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Prepare recipient list

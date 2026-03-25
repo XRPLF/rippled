@@ -1156,7 +1156,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
-                .err = tecINSUFFICIENT_FUNDS,
+                .err = tecLOCKED,
             });
 
             mptAlice.set({
@@ -1211,7 +1211,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
-                .err = tecINSUFFICIENT_FUNDS,
+                .err = tecNO_AUTH,
             });
 
             // auth bob
@@ -1224,6 +1224,89 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
+            });
+        }
+
+        // frozen account cannot bypass freeze check with amount=0
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // lock bob
+            mptAlice.set({
+                .account = alice,
+                .holder = bob,
+                .flags = tfMPTLock,
+            });
+
+            mptAlice.generateKeyPair(bob);
+
+            // amount=0 should still be rejected when locked
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .err = tecLOCKED,
+            });
+        }
+
+        // unauthorized account cannot bypass auth check with amount=0
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
+            });
+
+            mptAlice.authorize({
+                .account = bob,
+            });
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+            });
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.generateKeyPair(bob);
+
+            // Unauthorize bob
+            mptAlice.authorize({
+                .account = alice,
+                .holder = bob,
+                .flags = tfMPTUnauthorize,
+            });
+
+            // amount=0 should still be rejected when unauthorized
+            mptAlice.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .err = tecNO_AUTH,
             });
         }
 

@@ -129,7 +129,8 @@ verifyProofs(
             // The bulletproof verifies that the remaining balance is non-negative
             std::vector<Slice> commitments{Slice(pcRem->data(), pcRem->size())};
 
-            if (auto const ter = verifyAggregatedBulletproof(*bulletproof, commitments, contextHash);
+            if (auto const ter =
+                    verifyAggregatedBulletproof(*bulletproof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;

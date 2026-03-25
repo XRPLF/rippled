@@ -86,6 +86,21 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const mptIssue = MPTIssue{issuanceID};
+
+    // Explicit freeze and auth checks are required because accountHolds
+    // with fhZERO_IF_FROZEN/ahZERO_IF_UNAUTHORIZED only implicitly rejects
+    // non-zero amounts. A zero-amount convert would bypass those implicit
+    // checks, allowing frozen or unauthorized accounts to register ElGamal
+    // keys and initialize confidential balance fields.
+
+    // Check lock
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue); !isTesSuccess(ter))
+        return ter;
+
+    // Check auth
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
+        return ter;
+
     STAmount const mptAmount =
         STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
@@ -119,9 +134,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
             getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
         // when register new pk, verify through schnorr proof
-        if (!isTesSuccess(verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash)))
+        if (auto const ter = verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash);
+            !isTesSuccess(ter))
         {
-            return tecBAD_PROOF;
+            return ter;
         }
     }
     else
