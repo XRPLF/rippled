@@ -141,6 +141,9 @@ public:
     virtual ManifestCache&
     getValidatorManifests() = 0;
 
+    virtual ManifestCache&
+    getPublisherManifests() = 0;
+
     // Network services
     virtual Overlay&
     getOverlay() = 0;

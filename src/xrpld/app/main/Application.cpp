@@ -721,6 +721,12 @@ public:
         return *validatorManifests_;
     }
 
+    ManifestCache&
+    getPublisherManifests() override
+    {
+        return *publisherManifests_;
+    }
+
     Cluster&
     getCluster() override
     {
