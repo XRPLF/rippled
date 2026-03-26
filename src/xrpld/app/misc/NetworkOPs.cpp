@@ -4248,6 +4248,29 @@ NetworkOPsImp::getBookPage(
     uint256 const uBookBase = getBookBase(book);
     uint256 const uBookEnd = getQualityNext(uBookBase);
     uint256 uTipIndex = uBookBase;
+    unsigned int uBookEntry = 0;
+
+    // Parse marker if provided: "directory_key,entry_index"
+    if (jvMarker.isString())
+    {
+        std::stringstream marker(jvMarker.asString());
+        std::string value;
+        if (std::getline(marker, value, ','))
+        {
+            uint256 markerDir;
+            if (markerDir.parseHex(value))
+            {
+                // Validate that the marker directory is within our book range
+                if (markerDir >= uBookBase && markerDir < uBookEnd)
+                {
+                    uTipIndex = markerDir;
+                }
+                // If marker is invalid or out of range, start from beginning
+            }
+        }
+        // For now, ignore the entry index and start from beginning of directory
+        uBookEntry = 0;
+    }
 
     if (auto stream = m_journal.trace())
     {
@@ -4255,6 +4278,7 @@ NetworkOPsImp::getBookPage(
         stream << "getBookPage: uBookBase=" << uBookBase;
         stream << "getBookPage: uBookEnd=" << uBookEnd;
         stream << "getBookPage: uTipIndex=" << uTipIndex;
+        stream << "getBookPage: uBookEntry=" << uBookEntry;
     }
 
     ReadView const& view = *lpLedger;
@@ -4267,13 +4291,17 @@ NetworkOPsImp::getBookPage(
 
     std::shared_ptr<SLE const> sleOfferDir;
     uint256 offerIndex;
-    unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.account);
     auto viewJ = registry_.journal("View");
 
-    while (!bDone && iLimit-- > 0)
+    // Fetch limit + 1 offers to determine if there are more
+    unsigned int const fetchLimit = iLimit + 1;
+    unsigned int offersReturned = 0;
+    bool hasMore = false;
+
+    while (!bDone && offersReturned < fetchLimit)
     {
         if (bDirectAdvance)
         {
@@ -4404,12 +4432,20 @@ NetworkOPsImp::getBookPage(
 
                 umBalance[uOfferOwnerID] = saOwnerFunds - saOwnerPays;
 
-                // Include all offers funded and unfunded
-                Json::Value& jvOf = jvOffers.append(jvOffer);
-                jvOf[jss::quality] = saDirRate.getText();
+                // Include offers up to the limit
+                if (offersReturned < iLimit)
+                {
+                    Json::Value& jvOf = jvOffers.append(jvOffer);
+                    jvOf[jss::quality] = saDirRate.getText();
 
-                if (firstOwnerOffer)
-                    jvOf[jss::owner_funds] = saOwnerFunds.getText();
+                    if (firstOwnerOffer)
+                        jvOf[jss::owner_funds] = saOwnerFunds.getText();
+                }
+                ++offersReturned;
+
+                // If we've fetched limit + 1, there are more offers
+                if (offersReturned == fetchLimit)
+                    hasMore = true;
             }
             else
             {
@@ -4427,7 +4463,13 @@ NetworkOPsImp::getBookPage(
         }
     }
 
-    //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
+    // Set marker if there are more offers available
+    if (hasMore)
+    {
+        jvResult[jss::limit] = iLimit;
+        jvResult[jss::marker] = to_string(uTipIndex) + "," + std::to_string(uBookEntry);
+    }
+
     //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
 }
 
