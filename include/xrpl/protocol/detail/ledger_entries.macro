@@ -514,6 +514,7 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     {sfDebtMaximum,          soeDEFAULT},
     {sfCoverAvailable,       soeDEFAULT},
     {sfCoverRateMinimum,     soeDEFAULT},
+    // Deprecated by featureLendingProtocolV1_1
     {sfCoverRateLiquidation, soeDEFAULT},
 }))
 

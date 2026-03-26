@@ -1185,6 +1185,199 @@ class LendingHelpers_test : public beast::unit_test::suite
                 to_string(actualPaymentParts.valueChange - actualPaymentParts.interestPaid));
     }
 
+    void
+    testComputeDefaultCovered()
+    {
+        testcase("computeDefaultCovered");
+
+        using namespace jtx;
+
+        // ---- Common parameters ----
+        Asset const asset{xrpIssue()};
+        std::int32_t const loanScale = 1;
+        // coverRateLiquidation value used by old-formula tests (100%).
+        std::uint32_t const covRateLiq = 100'000;
+
+        // ---- Test 1: New formula basic ----
+        // DefaultCovered = min(DefaultAmount × CoverRateMinimum,
+        //                      CoverAvailable)
+        // 100,000 × 20% = 20,000; min(20,000, 50,000) = 20,000
+        {
+            auto result = computeDefaultCovered(
+                true,            // useProportionalFormula
+                0,               // coverRateLiquidation (unused)
+                Number{50'000},  // coverAvailable
+                asset,
+                Number{100'000},      // totalDefaultAmount
+                Number{200'000},      // brokerDebtTotal (unused)
+                TenthBips32{20'000},  // 20%
+                loanScale);
+            BEAST_EXPECT(result == Number{20'000});
+        }
+
+        // ---- Test 2: New formula capped by CoverAvailable ----
+        // 100,000 × 50% = 50,000; min(50,000, 10,000) = 10,000
+        {
+            auto result = computeDefaultCovered(
+                true,
+                0,
+                Number{10'000},
+                asset,
+                Number{100'000},
+                Number{200'000},
+                TenthBips32{50'000},  // 50%
+                loanScale);
+            BEAST_EXPECT(result == Number{10'000});
+        }
+
+        // ---- Test 3: Old formula basic ----
+        // min(CovRateLiq × (CovRateMin × BrokerDebtTotal), DefaultAmount)
+        // minimumCover = 200,000 × 20% = 40,000
+        // covered = min(100% × 40,000, 50,000) = 40,000
+        // min(40,000, 100,000) = 40,000
+        {
+            auto result = computeDefaultCovered(
+                false,       // old formula
+                covRateLiq,  // 100%
+                Number{100'000},
+                asset,
+                Number{50'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{40'000});
+        }
+
+        // ---- Test 4: Old formula capped by DefaultAmount ----
+        // minimumCover = 200,000 × 50% = 100,000
+        // covered = min(100% × 100,000, 30,000) = 30,000
+        // min(30,000, 500,000) = 30,000
+        {
+            auto result = computeDefaultCovered(
+                false,
+                covRateLiq,
+                Number{500'000},
+                asset,
+                Number{30'000},
+                Number{200'000},
+                TenthBips32{50'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{30'000});
+        }
+
+        // ---- Test 5: Old formula capped by CoverAvailable ----
+        // minimumCover = 200,000 × 20% = 40,000
+        // covered = min(100% × 40,000, 100,000) = 40,000
+        // min(40,000, 5,000) = 5,000
+        {
+            auto result = computeDefaultCovered(
+                false,
+                covRateLiq,
+                Number{5'000},  // small CoverAvailable
+                asset,
+                Number{100'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{5'000});
+        }
+
+        // ---- Test 6: Backwards compatibility ----
+        // useProportionalFormula = false even though the amendment is
+        // enabled, because the broker was created before the amendment
+        // and still carries sfCoverRateLiquidation.  The caller passes
+        // false in this case; we verify the old formula is used.
+        // minimumCover = 200,000 × 20% = 40,000
+        // covered = min(100% × 40,000, 50,000) = 40,000
+        // min(40,000, 100,000) = 40,000
+        {
+            auto result = computeDefaultCovered(
+                false,  // old formula (backwards compat)
+                covRateLiq,
+                Number{100'000},
+                asset,
+                Number{50'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{40'000});
+        }
+
+        // ---- Test 7: New vs old produce different results ----
+        // Same inputs, different formula selection → different outputs.
+        {
+            auto resultNew = computeDefaultCovered(
+                true,
+                0,
+                Number{100'000},
+                asset,
+                Number{50'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+
+            auto resultOld = computeDefaultCovered(
+                false,
+                covRateLiq,
+                Number{100'000},
+                asset,
+                Number{50'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+
+            // New: 50,000 × 20% = 10,000
+            BEAST_EXPECT(resultNew == Number{10'000});
+            // Old: min(100% × (20% × 200,000), 50,000)
+            //    = min(40,000, 50,000) = 40,000
+            BEAST_EXPECT(resultOld == Number{40'000});
+            BEAST_EXPECT(resultNew != resultOld);
+        }
+
+        // ---- Test 8: Zero CoverAvailable ----
+        {
+            auto result = computeDefaultCovered(
+                true,
+                0,
+                Number{0},
+                asset,
+                Number{100'000},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{0});
+        }
+
+        // ---- Test 9: Zero DefaultAmount ----
+        {
+            auto result = computeDefaultCovered(
+                true,
+                0,
+                Number{50'000},
+                asset,
+                Number{0},
+                Number{200'000},
+                TenthBips32{20'000},
+                loanScale);
+            BEAST_EXPECT(result == Number{0});
+        }
+
+        // ---- Test 10: Zero CoverRateMinimum (new formula) ----
+        // 100,000 × 0% = 0
+        {
+            auto result = computeDefaultCovered(
+                true,
+                0,
+                Number{50'000},
+                asset,
+                Number{100'000},
+                Number{200'000},
+                TenthBips32{0},
+                loanScale);
+            BEAST_EXPECT(result == Number{0});
+        }
+    }
+
 public:
     void
     run() override
@@ -1205,6 +1398,7 @@ public:
         testComputePaymentFactor();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
+        testComputeDefaultCovered();
     }
 };
 

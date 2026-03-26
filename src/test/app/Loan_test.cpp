@@ -1945,31 +1945,15 @@ protected:
                                broker.vaultScale(env), state.principalOutstanding.exponent())));
                 NumberRoundModeGuard mg(Number::upward);
                 auto const totalDefaultAmount = state.totalValue - state.managementFeeOutstanding;
-                auto const defaultAmount = [&] {
-                    if (env.enabled(featureLendingProtocolV1_1))
-                    {
-                        // DefaultCovered = min(DefaultAmount × CoverRateMinimum, CoverAvailable)
-                        return roundToAsset(
-                            broker.asset,
-                            tenthBipsOfValue(totalDefaultAmount, broker.params.coverRateMin),
-                            state.loanScale);
-                    }
-                    else
-                    {
-                        // From XLS-66 spec, section 3.2.3.2:
-                        // DefaultCovered = min(DebtTotal × CoverRateMinimum × CoverRateLiquidation,
-                        // DefaultAmount, CoverAvailable)
-                        return roundToAsset(
-                            broker.asset,
-                            std::min(
-                                tenthBipsOfValue(
-                                    tenthBipsOfValue(
-                                        brokerSle->at(sfDebtTotal), broker.params.coverRateMin),
-                                    broker.params.coverRateLiquidation),
-                                state.totalValue - state.managementFeeOutstanding),
-                            state.loanScale);
-                    }
-                }();
+                auto const defaultAmount = computeDefaultCovered(
+                    useProportionalDefaultCover(env.current()->rules(), brokerSle),
+                    brokerSle->at(~sfCoverRateLiquidation).value_or(0),
+                    brokerSle->at(sfCoverAvailable),
+                    broker.asset,
+                    totalDefaultAmount,
+                    brokerSle->at(sfDebtTotal),
+                    broker.params.coverRateMin,
+                    state.loanScale);
                 return std::make_pair(defaultAmount, brokerSle->at(sfOwner));
             }
             return std::make_pair(Number{}, AccountID{});
@@ -6916,11 +6900,13 @@ protected:
             });
         auto const brokerKeylet = brokerInfo.brokerKeylet();
 
-        // Create two identical loans: each 50,000 XRP principal (scaled down to
-        // avoid funding issues) Total DebtTotal will be ~100,000 XRP (principal
-        // + interest) Formula will calculate cover as: 100% × (20% × 100,000) =
-        // 20,000 XRP So we need FLC = 20,000 XRP to be fully consumed by first
-        // default
+        // Create two identical loans: each 50,000 XRP principal.
+        // Total BrokerDebtTotal will be ~104,201 (principal + interest + fees).
+        // Old formula: seizure = min(100% × (20% × BrokerDebtTotal),
+        //   DefaultAmount) ≈ 20,054 — nearly depleting 21,000 FLC on the
+        //   first default.
+        // New formula: seizure = DefaultAmount × 20% ≈ 10,027 — splitting
+        //   FLC equitably across both defaults.
         auto const principalAmount = Number(50'000);
         auto const loanPaymentInterval = 2592000;  // 30 days
         auto const loanGracePeriod = 604800;       // 7 days
@@ -6979,13 +6965,16 @@ protected:
         auto const afterFirstDebtTotal = brokerSle->at(sfDebtTotal);
         auto const afterFirstCoverAvailable = brokerSle->at(sfCoverAvailable);
 
-        if (env.enabled(featureLendingProtocolV1_1))
+        if (useProportionalDefaultCover(env.current()->rules(), brokerSle))
         {
-            // Proportional default cover
-            // Loan 1 Defaults: 20% of Loan A (50,134) = 10,027 seizure
+            // Proportional default cover (new formula):
+            //   DefaultCovered = min(DefaultAmount × CoverRateMinimum,
+            //                        CoverAvailable)
+            // Loan A's DefaultAmount (~52,067) × 20% = 10,027 seizure
             // Result: CoverAvailable = 21,000 - 10,027 = 10,973
 
-            // DebtTotal should have decreased by Loan A's debt (~52,067)
+            // DebtTotal should have decreased by Loan A's debt (~52,067),
+            // leaving only Loan B's debt (~50,134).
             BEAST_EXPECT(afterFirstDebtTotal == 50'134);
 
             // CoverAvailable should have decreased proportionally
@@ -6993,10 +6982,16 @@ protected:
         }
         else
         {
-            // Loan 1 Defaults: 100% × (20% × 104,201) = 20,840 seizure
-            // Result: CoverAvailable = 21,000 - 20,840 = 160
+            // Global default cover (old formula):
+            //   DefaultCovered = min(CoverRateLiquidation ×
+            //       (CoverRateMinimum × BrokerDebtTotal), DefaultAmount)
+            // Pre-default BrokerDebtTotal (~104,201) × 20% = 20,840
+            //   then 100% × 20,840 = 20,840
+            //   but capped at DefaultAmount (~52,067), seizure = 20,054
+            // Result: CoverAvailable = 21,000 - 20,054 = 946
 
-            // DebtTotal should have decreased by Loan A's debt
+            // DebtTotal should have decreased by Loan A's debt (~52,067),
+            // leaving only Loan B's debt (~50,134).
             BEAST_EXPECT(afterFirstDebtTotal == 50'134);
 
             // CoverAvailable should have decreased significantly
@@ -7016,22 +7011,20 @@ protected:
         // Both scenarios: DebtTotal should be 0 after both loans default
         BEAST_EXPECT(afterSecondDebtTotal == 0);
 
-        if (env.enabled(featureLendingProtocolV1_1))
+        if (useProportionalDefaultCover(env.current()->rules(), brokerSle))
         {
-            // Proportional default cover
-            // Loan 2 Defaults: 20% of Loan B (50,134) = 10,027 seizure
-            // Result: CoverAvailable = 10,973 - 10,027 = 946 (safety buffer remains)
-
-            // Both loans are covered equitably with a safety buffer remaining
+            // Proportional default cover (new formula):
+            // Loan B's DefaultAmount (~50,134) × 20% = 10,027 seizure
+            // Result: CoverAvailable = 10,973 - 10,027 = 946
+            //
+            // Both loans are covered equitably with a safety buffer remaining.
             BEAST_EXPECT(afterSecondCoverAvailable == 946);
         }
         else
         {
-            // Scenario A: Global Logic (Old Formula)
-            // Loan 2 Defaults: Only 160 remains to cover a 52,067 loss
+            // Global default cover (old formula):
+            // Only 946 remains to cover Loan B's DefaultAmount (~50,134)
             // Result: CoverAvailable = 0 (fully depleted)
-
-            // CoverAvailable should be fully depleted
             BEAST_EXPECT(afterSecondCoverAvailable == 0);
         }
     }
@@ -7166,6 +7159,210 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    void
+    testCoverRateLiquidationAmendmentGating()
+    {
+        testcase("CoverRateLiquidation amendment gating");
+
+        using namespace jtx;
+        using namespace loanBroker;
+
+        auto const coverRateLiqValue = percentageToTenthBips(25);
+
+        // When featureLendingProtocolV1_1 is NOT enabled,
+        // sfCoverRateLiquidation should be recorded on the broker.
+        {
+            Env env(*this, all - featureLendingProtocolV1_1);
+
+            Account const lender{"lender"};
+            env.fund(XRP(10'000'000), lender);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+            BrokerParameters brokerParams{.coverRateLiquidation = coverRateLiqValue};
+            BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (BEAST_EXPECT(brokerSle))
+            {
+                BEAST_EXPECT(brokerSle->isFieldPresent(sfCoverRateLiquidation));
+                BEAST_EXPECT(brokerSle->at(sfCoverRateLiquidation) == coverRateLiqValue.value());
+            }
+        }
+
+        // When featureLendingProtocolV1_1 IS enabled,
+        // sfCoverRateLiquidation should NOT be recorded on the broker.
+        {
+            Env env(*this, all);
+
+            Account const lender{"lender"};
+            env.fund(XRP(10'000'000), lender);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+            BrokerParameters brokerParams{.coverRateLiquidation = coverRateLiqValue};
+            BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+            auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            if (BEAST_EXPECT(brokerSle))
+            {
+                BEAST_EXPECT(!brokerSle->isFieldPresent(sfCoverRateLiquidation));
+            }
+        }
+    }
+
+    void
+    testCoverRateLiquidationBackwardsCompat()
+    {
+        testcase("CoverRateLiquidation backwards compatibility on default");
+
+        // Verify that the default cover formula honours whether
+        // sfCoverRateLiquidation is present on the broker SLE,
+        // regardless of the amendment state:
+        //
+        //   * A broker created BEFORE the amendment has the field →
+        //     old formula (global) is used even after the amendment
+        //     is enabled.
+        //
+        //   * A broker created AFTER the amendment lacks the field →
+        //     new formula (proportional) is used.
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        // ---- helpers shared by both sub-tests ----
+        auto const coverRateMin = TenthBips32(20'000);        // 20 %
+        auto const coverRateLiq = percentageToTenthBips(25);  // 25 % (default)
+        auto const principalAmount = Number(50'000);
+        auto const loanPaymentInterval = 2'592'000;  // 30 days
+        auto const loanGracePeriod = 604'800;        //  7 days
+
+        // Lambda that creates one loan, advances past the grace period,
+        // defaults it, and returns the CoverAvailable after default.
+        auto defaultOneLoan = [&](Env& env,
+                                  BrokerInfo const& brokerInfo,
+                                  Account const& lender,
+                                  Account const& borrower) -> Number {
+            auto const brokerKeylet = brokerInfo.brokerKeylet();
+
+            auto loanTx = env.jt(
+                set(borrower, brokerKeylet.key, principalAmount),
+                sig(sfCounterpartySignature, lender),
+                interestRate(TenthBips32(500)),  // 5 %
+                paymentTotal(12),
+                loan::paymentInterval(loanPaymentInterval),
+                loan::gracePeriod(loanGracePeriod),
+                fee(XRP(10)));
+            env(loanTx);
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                return Number{-1};
+
+            auto const nextDue = loanSle->at(sfNextPaymentDueDate);
+            auto const grace = loanSle->at(sfGracePeriod);
+            env.close(std::chrono::seconds{nextDue + grace + 60});
+
+            env(manage(lender, loanKeylet.key, tfLoanDefault), ter(tesSUCCESS));
+            env.close();
+
+            auto brokerSle = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(brokerSle))
+                return Number{-1};
+            return brokerSle->at(sfCoverAvailable);
+        };
+
+        // ---- Sub-test A: pre-amendment broker (old formula) ----
+        Number coverAfterOld;
+        {
+            // Start WITHOUT the amendment so the broker stores the field.
+            Env env(*this, all - featureLendingProtocolV1_1);
+
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+            env.fund(XRP(1'000'000), lender, borrower);
+            env.close();
+
+            PrettyAsset const asset = xrpIssue();
+            auto const brokerInfo = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                {
+                    .vaultDeposit = Number(200'000),
+                    .debtMax = 0,
+                    .coverRateMin = coverRateMin,
+                    .coverDeposit = 21'000,
+                    .managementFeeRate = TenthBips16(100),
+                    .coverRateLiquidation = coverRateLiq,
+                });
+
+            // Confirm the field was stored.
+            {
+                auto sle = env.le(brokerInfo.brokerKeylet());
+                BEAST_EXPECT(sle && sle->isFieldPresent(sfCoverRateLiquidation));
+            }
+
+            // Now enable the amendment – the broker keeps its field.
+            env.enableFeature(featureLendingProtocolV1_1);
+            env.close();
+
+            BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+
+            coverAfterOld = defaultOneLoan(env, brokerInfo, lender, borrower);
+        }
+
+        // ---- Sub-test B: post-amendment broker (new formula) ----
+        Number coverAfterNew;
+        {
+            Env env(*this, all);  // amendment already enabled
+
+            Account const lender{"lender"};
+            Account const borrower{"borrower"};
+            env.fund(XRP(1'000'000), lender, borrower);
+            env.close();
+
+            PrettyAsset const asset = xrpIssue();
+            // Pass coverRateLiquidation in BrokerParameters, but the
+            // amendment-gated code will NOT store it on the SLE.
+            auto const brokerInfo = createVaultAndBroker(
+                env,
+                asset,
+                lender,
+                {
+                    .vaultDeposit = Number(200'000),
+                    .debtMax = 0,
+                    .coverRateMin = coverRateMin,
+                    .coverDeposit = 21'000,
+                    .managementFeeRate = TenthBips16(100),
+                    .coverRateLiquidation = coverRateLiq,
+                });
+
+            // Confirm the field was NOT stored.
+            {
+                auto sle = env.le(brokerInfo.brokerKeylet());
+                BEAST_EXPECT(sle && !sle->isFieldPresent(sfCoverRateLiquidation));
+            }
+
+            coverAfterNew = defaultOneLoan(env, brokerInfo, lender, borrower);
+        }
+
+        // Old (global) formula with 25% CoverRateLiquidation:
+        //   min(25% × (20% × 50,134), 50,134) = min(2,507, 50,134)
+        //   = 2,507 seized → CoverAvailable = 21,000 - 2,507 = 18,493
+        BEAST_EXPECT(coverAfterOld == Number{18'493});
+
+        // New (proportional) formula:
+        //   min(20% × 50,134, 21,000) = min(10,027, 21,000)
+        //   = 10,027 seized → CoverAvailable = 21,000 - 10,027 = 10,973
+        BEAST_EXPECT(coverAfterNew == Number{10'973});
+    }
+
 public:
     void
     run() override
@@ -7221,6 +7418,8 @@ public:
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
         testSequentialFLCDepletion(all - featureLendingProtocolV1_1);
         testSequentialFLCDepletion(all);
+        testCoverRateLiquidationAmendmentGating();
+        testCoverRateLiquidationBackwardsCompat();
     }
 };
 

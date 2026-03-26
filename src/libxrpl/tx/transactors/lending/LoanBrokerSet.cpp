@@ -49,6 +49,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             return temINVALID;
     }
 
+    // sfCoverRateLiquidation is deprecated by featureLendingProtocolV1_1;
+    // only enforce consistency when the amendment is not enabled.
+    if (!ctx.rules.enabled(featureLendingProtocolV1_1))
     {
         auto const minimumZero = tx[~sfCoverRateMinimum].value_or(0) == 0;
         auto const liquidationZero = tx[~sfCoverRateLiquidation].value_or(0) == 0;
@@ -249,7 +252,8 @@ LoanBrokerSet::doApply()
             broker->at(sfDebtMaximum) = *debtMax;
         if (auto const coverMin = tx[~sfCoverRateMinimum])
             broker->at(sfCoverRateMinimum) = *coverMin;
-        if (auto const coverLiq = tx[~sfCoverRateLiquidation])
+        if (auto const coverLiq = tx[~sfCoverRateLiquidation];
+            coverLiq && !view.rules().enabled(featureLendingProtocolV1_1))
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
         view.insert(broker);

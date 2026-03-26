@@ -960,6 +960,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     {sfManagementFeeRate, soeOPTIONAL},
     {sfDebtMaximum, soeOPTIONAL},
     {sfCoverRateMinimum, soeOPTIONAL},
+    // Deprecated by featureLendingProtocolV1_1
     {sfCoverRateLiquidation, soeOPTIONAL},
 }))
 

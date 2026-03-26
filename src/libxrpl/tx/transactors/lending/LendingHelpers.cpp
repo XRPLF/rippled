@@ -64,6 +64,50 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
         roundToAsset(asset, value, scale, Number::upward);
 }
 
+Number
+computeDefaultCovered(
+    bool useProportionalFormula,
+    std::uint32_t coverRateLiquidation,
+    Number const& coverAvailable,
+    Asset const& vaultAsset,
+    Number const& totalDefaultAmount,
+    Number const& brokerDebtTotal,
+    TenthBips32 coverRateMinimum,
+    std::int32_t loanScale)
+{
+    // Always round the minimum required up.
+    NumberRoundModeGuard mg(Number::upward);
+    Number covered;
+
+    if (useProportionalFormula)
+    {
+        // New formula: DefaultCovered = min(DefaultAmount × CoverRateMinimum,
+        //                                   CoverAvailable)
+        covered = roundToAsset(
+            vaultAsset, tenthBipsOfValue(totalDefaultAmount, coverRateMinimum), loanScale);
+    }
+    else
+    {
+        // Old formula (deprecated by featureLendingProtocolV1_1):
+        // Kept for backwards compatibility with brokers that still carry
+        // sfCoverRateLiquidation.
+        auto const minimumCover = tenthBipsOfValue(brokerDebtTotal, coverRateMinimum);
+        covered = roundToAsset(
+            vaultAsset,
+            /*
+             * This formula is from the XLS-66 spec, section 3.2.3.2 (State
+             * Changes), specifically "if the `tfLoanDefault` flag is set" /
+             * "Apply the First-Loss Capital to the Default Amount"
+             */
+            std::min(
+                tenthBipsOfValue(minimumCover, TenthBips32{coverRateLiquidation}),
+                totalDefaultAmount),
+            loanScale);
+    }
+
+    return std::min(covered, coverAvailable);
+}
+
 namespace detail {
 
 void

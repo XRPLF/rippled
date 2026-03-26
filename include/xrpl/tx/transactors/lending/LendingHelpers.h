@@ -219,6 +219,49 @@ computeFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
 
+/** Whether to use the proportional (new) default cover formula.
+ *
+ * Returns true when featureLendingProtocolV1_1 is enabled AND the broker
+ * does not carry the deprecated sfCoverRateLiquidation field.
+ */
+inline bool
+useProportionalDefaultCover(Rules const& rules, std::shared_ptr<SLE const> brokerSle)
+{
+    return rules.enabled(featureLendingProtocolV1_1) &&
+        !brokerSle->isFieldPresent(sfCoverRateLiquidation);
+}
+
+/** Compute the amount of First-Loss Capital seized to cover a defaulted loan.
+ *
+ * Selects between the old (global) and new (proportional) formula based on
+ * whether featureLendingProtocolV1_1 is enabled and whether the broker still
+ * carries the deprecated sfCoverRateLiquidation value.
+ *
+ * @param useProportionalFormula  true when featureLendingProtocolV1_1 is
+ *                                enabled AND the broker has no
+ *                                sfCoverRateLiquidation.
+ * @param coverRateLiquidation    The broker's CoverRateLiquidation in 1/10
+ *                                bips.  Only used by the old formula; ignored
+ *                                when \p useProportionalFormula is true.
+ * @param coverAvailable          The broker's current CoverAvailable.
+ * @param vaultAsset              The Vault's asset type (for rounding).
+ * @param totalDefaultAmount      The loan's default amount (owed to the vault).
+ * @param brokerDebtTotal         The broker's total debt before this default.
+ * @param coverRateMinimum        The broker's CoverRateMinimum in 1/10 bips.
+ * @param loanScale               The loan's rounding scale.
+ * @return The amount of cover seized, capped at \p coverAvailable.
+ */
+Number
+computeDefaultCovered(
+    bool useProportionalFormula,
+    std::uint32_t coverRateLiquidation,
+    Number const& coverAvailable,
+    Asset const& vaultAsset,
+    Number const& totalDefaultAmount,
+    Number const& brokerDebtTotal,
+    TenthBips32 coverRateMinimum,
+    std::int32_t loanScale);
+
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
 // functions and unit tests

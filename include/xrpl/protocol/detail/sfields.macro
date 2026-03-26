@@ -108,6 +108,7 @@ TYPED_SFIELD(sfPaymentRemaining,         UINT32,    59)
 TYPED_SFIELD(sfPaymentTotal,             UINT32,    60)
 TYPED_SFIELD(sfLoanSequence,             UINT32,    61)
 TYPED_SFIELD(sfCoverRateMinimum,         UINT32,    62) // 1/10 basis points (bips)
+// Deprecated by featureLendingProtocolV1_1
 TYPED_SFIELD(sfCoverRateLiquidation,     UINT32,    63) // 1/10 basis points (bips)
 TYPED_SFIELD(sfOverpaymentFee,           UINT32,    64) // 1/10 basis points (bips)
 TYPED_SFIELD(sfInterestRate,             UINT32,    65) // 1/10 basis points (bips)
