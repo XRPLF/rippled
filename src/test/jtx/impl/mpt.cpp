@@ -1374,8 +1374,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // Skip proof generation if encrypted balance is missing (e.g.,
         // feature disabled), when the sender and destination are the same
         // (malformed case causing pcm to be zero), or when spending balance
-        // is 0 (getPedersenCommitment returns a fake commitment for 0 that
-        // causes getBalanceLinkageProof to throw).
+        // is 0
         if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
@@ -1575,9 +1574,8 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
         balanceCommitment = *arg.balanceCommitment;
     else if (*prevSenderSpending == 0)
     {
-        // getPedersenCommitment(0,...) returns a fake off-curve point that
-        // fails isValidCompressedECPoint in preflight.  For spending=0,
-        // PC = 0*H + r*G = r*G — compute it directly.
+        // getPedersenCommitment with amount 0 returns a fake off-curve point that would
+        // fail check in preflight. Therefore, we compute directly to make the point valid
         secp256k1_pubkey pt;
         auto const sCtx = secp256k1Context();
         if (secp256k1_ec_pubkey_create(sCtx, &pt, balanceBlindingFactor.data()) != 1)
