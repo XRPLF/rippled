@@ -2593,8 +2593,8 @@ ValidLoan::finalize(
             after->at(sfPrincipalOutstanding) == beast::zero &&
             after->at(sfManagementFeeOutstanding) == beast::zero)
         {
-            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
-                               "remaining has not been paid off";
+            JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still "
+                               "has payments remaining";
             return false;
         }
         if (before &&
