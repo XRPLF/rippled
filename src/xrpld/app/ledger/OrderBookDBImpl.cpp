@@ -58,7 +58,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         else
         {
             registry_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() {
+                jtUPDATE_PF, "OBUpd" + std::to_string(ledger->seq()), [this, ledger]() {
                     update(ledger);
                 });
         }
