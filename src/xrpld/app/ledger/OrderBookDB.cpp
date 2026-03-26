@@ -66,10 +66,12 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
         if (app_.config().standalone())
             update(ledger);
         else
+        {
             app_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd", [this, ledger]() {
-                    update(ledger);
-                });
+                jtUPDATE_PF,
+                "OBUpd" + std::to_string(ledger->seq()),
+                [this, ledger]() { update(ledger); });
+        }
     }
 }
 
