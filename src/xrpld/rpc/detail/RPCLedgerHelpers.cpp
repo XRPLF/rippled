@@ -375,7 +375,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
 
-    if ((hasHash + hasIndex) != 1)
+    if ((static_cast<int>(hasHash) + static_cast<int>(hasIndex)) != 1)
     {
         return Unexpected(
             RPC::make_param_error(

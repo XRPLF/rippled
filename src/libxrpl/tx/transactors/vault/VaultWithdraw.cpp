@@ -1,5 +1,7 @@
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -65,9 +67,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixAssortedFixes) && amount.asset() == vaultShare)
+    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
     {
-        // Post-fixAssortedFixes: if the user specified shares, convert
+        // Post-fixSecurity3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.

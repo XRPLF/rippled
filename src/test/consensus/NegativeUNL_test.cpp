@@ -1,12 +1,11 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/tx/apply.h>
 
 namespace xrpl {
@@ -211,7 +210,11 @@ class NegativeUNL_test : public beast::unit_test::suite
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         // Record the public keys and ledger sequences of expected negative UNL
         // validators when we build the ledger history
@@ -543,7 +546,8 @@ struct NetworkHistory
         static uint256 fake_amendment;  // So we have different genesis ledgers
         auto l = std::make_shared<Ledger>(
             create_genesis,
-            env.app().config(),
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
             std::vector<uint256>{fake_amendment++},
             env.app().getNodeFamily());
         history.push_back(l);
@@ -782,7 +786,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                 history.walkHistoryAndAddValidations(
                     [&](std::shared_ptr<Ledger const> const& l, std::size_t idx) -> bool {
                         // skip half my validations.
-                        return !(history.UNLNodeIDs[idx] == myId && l->seq() % 2 == 0);
+                        return history.UNLNodeIDs[idx] != myId || l->seq() % 2 != 0;
                     });
                 NegativeUNLVote vote(myId, history.env.journal);
                 BEAST_EXPECT(!vote.buildScoreTable(
@@ -890,7 +894,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
      * @param numReEnable number of ReEnable candidates expected
      * @return true if the number of candidates meets expectation
      */
-    bool
+    static bool
     checkCandidateSizes(
         NegativeUNLVote& vote,
         hash_set<NodeID> const& unl,
@@ -1670,7 +1674,11 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
         testcase("Filter Validations");
         jtx::Env env(*this);
         auto l = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(

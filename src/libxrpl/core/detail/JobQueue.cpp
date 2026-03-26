@@ -84,8 +84,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 
         JobType const type(job.getType());
         XRPL_ASSERT(type != jtINVALID, "xrpl::JobQueue::addRefCountedJob : has valid job type");
-        XRPL_ASSERT(
-            m_jobSet.find(job) != m_jobSet.end(), "xrpl::JobQueue::addRefCountedJob : job found");
+        XRPL_ASSERT(m_jobSet.contains(job), "xrpl::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));

@@ -1907,13 +1907,13 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     // Helper function that returns the index of the next check on account
-    uint256
+    static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
         return keylet::check(account, uSequence).key;
     }
 
-    uint256
+    static uint256
     createNFTSellOffer(
         test::jtx::Env& env,
         test::jtx::Account const& account,

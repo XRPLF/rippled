@@ -6,7 +6,7 @@ namespace xrpl {
 
 class NFTokenAuth_test : public beast::unit_test::suite
 {
-    auto
+    static auto
     mintAndOfferNFT(
         test::jtx::Env& env,
         test::jtx::Account const& account,

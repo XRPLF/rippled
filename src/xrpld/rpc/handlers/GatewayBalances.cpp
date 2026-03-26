@@ -1,9 +1,10 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>

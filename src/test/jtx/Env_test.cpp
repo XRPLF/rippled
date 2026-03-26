@@ -28,7 +28,7 @@ public:
     }
 
     // Declarations in Account.h
-    void
+    static void
     testAccount()
     {
         using namespace jtx;

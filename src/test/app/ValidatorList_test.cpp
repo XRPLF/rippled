@@ -98,7 +98,7 @@ private:
                 masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
-    std::string
+    static std::string
     makeList(
         std::vector<Validator> const& validators,
         std::size_t sequence,
@@ -122,7 +122,7 @@ private:
         return base64_encode(data);
     }
 
-    std::string
+    static std::string
     signList(std::string const& blob, std::pair<PublicKey, SecretKey> const& keys)
     {
         auto const data = base64_decode(blob);
@@ -379,7 +379,7 @@ private:
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
             for (auto const& key : keys)
                 BEAST_EXPECT(trustedKeys->trustedPublisher(key));
-            BEAST_EXPECT(trustedKeys->getListThreshold() == keys.size() / 2 + 1);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == (keys.size() / 2) + 1);
         }
         {
             ManifestCache manifests;
@@ -561,10 +561,10 @@ private:
         auto const manifest1 = base64_encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
-        std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
+        std::vector<std::string> cfgPublisherKeys({strHex(publisherPublic)});
         std::vector<std::string> emptyCfgKeys;
 
-        BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
+        BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::map<std::size_t, std::vector<Validator>> const lists = []() {
             auto constexpr listSize = 20;
@@ -907,10 +907,10 @@ private:
         auto const manifest = base64_encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
-        std::vector<std::string> cfgKeys1({strHex(publisherPublic)});
+        std::vector<std::string> cfgPublisherKeys({strHex(publisherPublic)});
         std::vector<std::string> emptyCfgKeys;
 
-        BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys1));
+        BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::vector<Validator> const list = []() {
             auto constexpr listSize = 20;
@@ -1324,9 +1324,9 @@ private:
                 pubSigningKeys.second,
                 1));
 
-            std::vector<std::string> cfgKeys({strHex(publisherKeys.first)});
+            std::vector<std::string> cfgPublisherKeys({strHex(publisherKeys.first)});
 
-            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys));
+            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
             std::vector<Validator> list({randomValidator(), randomValidator()});
             hash_set<NodeID> activeValidators(
