@@ -9,8 +9,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1897,7 +1898,7 @@ class Vault_test : public beast::unit_test::suite
                     env.close();
                 }
             },
-            {.requireAuth = false, .initialXRP = acctReserve + incReserve * 4 + 1});
+            {.requireAuth = false, .initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([this](
                      Env& env,
@@ -2744,7 +2745,7 @@ class Vault_test : public beast::unit_test::suite
                 env(vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
-                     .amount = asset(Number(1000 + 37 * 5, -1))}));
+                     .amount = asset(Number(1000 + (37 * 5), -1))}));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
@@ -2807,7 +2808,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase(
             [&, this](
@@ -2842,7 +2843,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([&, this](
                      Env& env,
@@ -4784,6 +4785,7 @@ class Vault_test : public beast::unit_test::suite
         using namespace loanBroker;
         using namespace loan;
         Env env(*this);
+        env.enableFeature(fixSecurity3_1_3);
 
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
@@ -5106,14 +5108,14 @@ class Vault_test : public beast::unit_test::suite
         env.close();
         testCase(MPT, "MPT", owner, depositor, issuer);
 
-        // Test pre-fixAssortedFixes legacy path: zero-amount clawback
+        // Test pre-fixSecurity3_1_3 legacy path: zero-amount clawback
         // returns early without clamping to assetsAvailable.
         {
             testcase(
-                "VaultClawback (asset) - IOU pre-fixAssortedFixes"
+                "VaultClawback (asset) - IOU pre-fixSecurity3_1_3"
                 " zero-amount clawback unclamped with outstanding loan");
 
-            env.disableFeature(fixAssortedFixes);
+            env.disableFeature(fixSecurity3_1_3);
 
             auto [vault, vaultKeylet] = setupVault(IOU, owner, depositor, issuer);
 
@@ -5171,7 +5173,7 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(sharesAfter == sharesBefore);
             }
 
-            env.enableFeature(fixAssortedFixes);
+            env.enableFeature(fixSecurity3_1_3);
         }
     }
 

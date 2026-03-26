@@ -1,5 +1,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -225,11 +227,11 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixAssortedFixes: zero-amount clawback returned early without
+    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixAssortedFixes) && clawbackAmount == beast::zero)
+    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) && clawbackAmount == beast::zero)
     {
         auto const sharesDestroyed = accountHolds(
             view(),

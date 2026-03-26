@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 
@@ -9,6 +9,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
@@ -674,13 +675,13 @@ transactionsSQL(
     std::string maxClause;
     std::string minClause;
 
-    if (options.maxLedger)
+    if (options.maxLedger != 0u)
     {
         maxClause = boost::str(
             boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
     }
 
-    if (options.minLedger)
+    if (options.minLedger != 0u)
     {
         minClause = boost::str(
             boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);

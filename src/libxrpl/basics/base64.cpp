@@ -107,7 +107,7 @@ encode(void* dest, void const* src, std::size_t len)
     char const* in = static_cast<char const*>(src);
     auto const tab = base64::get_alphabet();
 
-    for (auto n = len / 3; n--;)
+    for (auto n = len / 3; n != 0u; --n)
     {
         *out++ = tab[(in[0] & 0xfc) >> 2];
         *out++ = tab[((in[0] & 0x03) << 4) + ((in[1] & 0xf0) >> 4)];
@@ -162,7 +162,7 @@ decode(void* dest, char const* src, std::size_t len)
 
     auto const inverse = base64::get_inverse();
 
-    while (len-- && *in != '=')
+    while (((len--) != 0u) && *in != '=')
     {
         auto const v = inverse[*in];
         if (v == -1)
@@ -181,7 +181,7 @@ decode(void* dest, char const* src, std::size_t len)
         }
     }
 
-    if (i)
+    if (i != 0)
     {
         c3[0] = (c4[0] << 2) + ((c4[1] & 0x30) >> 4);
         c3[1] = ((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);
