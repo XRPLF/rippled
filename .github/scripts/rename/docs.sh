@@ -61,7 +61,6 @@ ${SED_COMMAND} -i 's/sanitizer-configuration-for-rippled/sanitizer-configuration
 ${SED_COMMAND} -i 's/rippled/xrpld/' .github/scripts/levelization/README.md
 ${SED_COMMAND} -i 's/rippled/xrpld/' .github/scripts/strategy-matrix/generate.py
 ${SED_COMMAND} -i 's@/rippled@/xrpld@' docs/build/install.md
-${SED_COMMAND} -i 's/rippled/xrpld/' docs/DOXYFILE
 ${SED_COMMAND} -i 's/ripple_basics/basics/' include/xrpl/basics/CountedObject.h
 ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h
 ${SED_COMMAND} -i 's/Ripple:/the XRPL:/g' include/xrpl/protocol/SecretKey.h
