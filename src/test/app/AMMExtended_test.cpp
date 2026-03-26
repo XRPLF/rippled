@@ -5,11 +5,10 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
@@ -1971,8 +1970,10 @@ private:
                     return false;
                 Sandbox sb(&view, tapNONE);
                 for (auto const& o : flowResult.removableOffers)
+                {
                     if (auto ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
+                }
                 sb.apply(view);
                 return true;
             });
@@ -2633,9 +2634,13 @@ private:
         // offer, removes 999 more as unfunded, then hits the step limit.
         env(offer(alice, USD(1'000), XRP(1'000)));
         if (!features[fixAMMv1_1])
+        {
             env.require(balance(alice, STAmount{USD, UINT64_C(2'050126257867561), -15}));
+        }
         else
+        {
             env.require(balance(alice, STAmount{USD, UINT64_C(2'050125257867587), -15}));
+        }
         env.require(owners(alice, 2));
         env.require(balance(bob, USD(0)));
         env.require(owners(bob, 1'001));

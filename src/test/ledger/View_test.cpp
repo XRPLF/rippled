@@ -1,12 +1,14 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 
 #include <type_traits>
@@ -88,7 +90,7 @@ class View_test : public beast::unit_test::suite
         auto const next = v.succ(k(id).key);
         if (answer)
         {
-            if (BEAST_EXPECT(next))
+            if (BEAST_EXPECT(next); next.has_value())
                 BEAST_EXPECT(*next == k(*answer).key);
         }
         else
@@ -114,7 +116,11 @@ class View_test : public beast::unit_test::suite
         Env env(*this);
         Config config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
@@ -377,7 +383,11 @@ class View_test : public beast::unit_test::suite
         Env env(*this);
         Config config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
@@ -581,7 +591,11 @@ class View_test : public beast::unit_test::suite
         Env env(*this);
         Config config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
@@ -927,7 +941,11 @@ class View_test : public beast::unit_test::suite
             Env env(*this);
             Config config;
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             auto const ledger =
                 std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
             wipe(*ledger);

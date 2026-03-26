@@ -56,7 +56,7 @@ bool
 STCurrency::isEquivalent(STBase const& t) const
 {
     STCurrency const* v = dynamic_cast<STCurrency const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

@@ -1,10 +1,10 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 
 namespace xrpl {
 namespace test {
@@ -57,9 +57,13 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         history.push_back(prev);
-        for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
+        for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
         {
             auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
             next->updateSkipList();
@@ -112,9 +116,13 @@ class RCLValidations_test : public beast::unit_test::suite
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
+                {
                     BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
+                }
                 else
+                {
                     BEAST_EXPECT(a[s] == ID{0});
+                }
             }
         }
 
@@ -215,7 +223,11 @@ class RCLValidations_test : public beast::unit_test::suite
         auto& j = env.journal;
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {

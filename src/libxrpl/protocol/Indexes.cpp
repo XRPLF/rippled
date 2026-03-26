@@ -137,7 +137,7 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+    return indexHash(LedgerNameSpace::TICKET, account, ticketSeq);
 }
 
 uint256
@@ -219,7 +219,7 @@ book_t::operator()(Book const& b) const
 Keylet
 line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
 {
-    // There is code in SetTrust that calls us with id0 == id1, to allow users
+    // There is code in TrustSet that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
     // XRPL_ASSERT(id0 != id1, "xrpl::keylet::line : accounts must be

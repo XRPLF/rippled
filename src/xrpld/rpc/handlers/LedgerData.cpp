@@ -140,14 +140,14 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     {
         startKey = *key;
     }
-    else if (request.marker().size() != 0)
+    else if (!request.marker().empty())
     {
         grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
         return {response, errorStatus};
     }
 
     auto e = ledger->sles.end();
-    if (request.end_marker().size() != 0)
+    if (!request.end_marker().empty())
     {
         auto const key = uint256::fromVoidChecked(request.end_marker());
 

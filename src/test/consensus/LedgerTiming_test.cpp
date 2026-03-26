@@ -1,6 +1,5 @@
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 namespace xrpl {
 namespace test {
@@ -29,11 +28,17 @@ class LedgerTiming_test : public beast::unit_test::suite
                     nextCloseResolution =
                         getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
+                    {
                         ++res.decrease;
+                    }
                     else if (nextCloseResolution > closeResolution)
+                    {
                         ++res.increase;
+                    }
                     else
+                    {
                         ++res.equal;
+                    }
                     std::swap(nextCloseResolution, closeResolution);
                 } while (round < rounds);
                 return res;

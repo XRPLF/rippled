@@ -157,9 +157,13 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
         "balance sign.");
     auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
+    {
         changes.senders.emplace_back(std::move(change));
+    }
     else
+    {
         changes.receivers.emplace_back(std::move(change));
+    }
 }
 
 void
@@ -267,12 +271,7 @@ TransfersNotFrozen::validateFrozenState(
         "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
-    if (enforce)
-    {
-        return false;
-    }
-
-    return true;
+    return !enforce;
 }
 
 }  // namespace xrpl

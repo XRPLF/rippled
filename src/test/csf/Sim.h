@@ -129,8 +129,8 @@ public:
         Nodes in the group are synchronized if they share the same last
         fully validated and last generated ledger.
     */
-    bool
-    synchronized(PeerGroup const& g) const;
+    static bool
+    synchronized(PeerGroup const& g);
 
     /** Check whether all peers in the network are synchronized
      */
