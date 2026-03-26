@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - "develop"
-      - "release*"
     paths:
       - ".github/workflows/publish-docs.yml"
       - "*.md"
