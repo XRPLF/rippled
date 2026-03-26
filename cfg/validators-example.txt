@@ -28,7 +28,7 @@
 #    https://vl.ripple.com
 #    https://unl.xrplf.org
 #    http://127.0.0.1:8000
-#    file:///etc/opt/ripple/vl.txt
+#    file:///etc/opt/xrpld/vl.txt
 #
 # [validator_list_keys]
 #
@@ -43,11 +43,11 @@
 #    ED307A760EE34F2D0CAA103377B1969117C38B8AA0AA1E2A24DAC1F32FC97087ED
 #
 
-# The default validator list publishers that the rippled instance
+# The default validator list publishers that the xrpld instance
 # trusts.
 #
-# WARNING: Changing these values can cause your rippled instance to see a
-#          validated ledger that contradicts other rippled instances'
+# WARNING: Changing these values can cause your xrpld instance to see a
+#          validated ledger that contradicts other xrpld instances'
 #          validated ledgers (aka a ledger fork) if your validator list(s)
 #          do not sufficiently overlap with the list(s) used by others.
 #          See: https://arxiv.org/pdf/1802.07242.pdf

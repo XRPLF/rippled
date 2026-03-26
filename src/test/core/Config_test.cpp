@@ -107,7 +107,7 @@ backend=sqlite
 }
 
 /**
-   Write a xrpld config file and remove when done.
+   Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {

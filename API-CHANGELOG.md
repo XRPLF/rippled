@@ -4,23 +4,23 @@ This changelog is intended to list all updates to the [public API methods](https
 
 For info about how [API versioning](https://xrpl.org/request-formatting.html#api-versioning) works, including examples, please view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155). API versioning ensures existing integrations and users continue to receive existing behavior, while those that request a higher API version will experience new behavior.
 
-The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `rippled` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
+The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `xrpld` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
 
 The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/request-formatting/#commandline-format) always uses the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
-For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
+For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`xrpld`) release.
 
 ## API Version 3 (Beta)
 
-API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the rippled configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
+API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the xrpld configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
 
 ## API Version 2
 
-API version 2 is available in `rippled` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of changes in API version 2.
+API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of changes in API version 2.
 
 ## API Version 1
 
-This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
+This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
 ## Unreleased
 

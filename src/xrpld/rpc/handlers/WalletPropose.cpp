@@ -71,17 +71,17 @@ walletPropose(Json::Value const& params)
             return rpcError(rpcINVALID_PARAMS);
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
     {
         if (params.isMember(jss::passphrase))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+            seed = RPC::parseXrplLibSeed(params[jss::passphrase]);
         }
         else if (params.isMember(jss::seed))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::seed]);
+            seed = RPC::parseXrplLibSeed(params[jss::seed]);
         }
 
         if (seed)

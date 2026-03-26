@@ -96,7 +96,7 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 //
 
 // clang-format off
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
+// Current formatter for xrpld is based on clang-10, which does not handle `requires` clauses
 template <class T>
 requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences

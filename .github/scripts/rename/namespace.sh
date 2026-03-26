@@ -37,10 +37,11 @@ DIRECTORIES=("include" "src" "tests")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
   echo "Processing directory: ${DIRECTORY}"
 
-  find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" \) | while read -r FILE; do
+  find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.macro" \) | while read -r FILE; do
       echo "Processing file: ${FILE}"
       ${SED_COMMAND} -i 's/namespace ripple/namespace xrpl/g' "${FILE}"
       ${SED_COMMAND} -i 's/ripple::/xrpl::/g' "${FILE}"
+      ${SED_COMMAND} -i 's/"ripple:/"xrpl::/g' "${FILE}"
       ${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' "${FILE}"
   done
 done

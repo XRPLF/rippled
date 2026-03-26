@@ -1402,7 +1402,7 @@ struct RPCCallImp
             {
                 Throw<std::runtime_error>(
                     "no response from server. Please "
-                    "ensure that the rippled server is running in another "
+                    "ensure that the xrpld server is running in another "
                     "process.");
             }
 

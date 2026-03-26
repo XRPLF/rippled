@@ -63,7 +63,7 @@ that the validator sends its proposals and validations to the network.
 
 ## Ledger Priorities
 
-There are two ledgers that are the most important for a rippled server to have:
+There are two ledgers that are the most important for an xrpld server to have:
 
 - The consensus ledger and
 - The last validated ledger.

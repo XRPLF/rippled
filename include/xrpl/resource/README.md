@@ -72,6 +72,6 @@ drop connections to those IP addresses that occur commonly in the gossip.
 
 ## Access
 
-In rippled, the Application holds a unique instance of Resource::Manager,
+In xrpld, the Application holds a unique instance of Resource::Manager,
 which may be retrieved by calling the method
 `Application::getResourceManager()`.

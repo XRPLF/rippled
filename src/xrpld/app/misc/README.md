@@ -54,7 +54,7 @@ be converged in the consensus process, the following algorithm is used:
 
 ## Configuration
 
-A validating instance of rippled uses information in the configuration file
+A validating instance of xrpld uses information in the configuration file
 to determine how it wants to vote on the fee schedule. It is the responsibility
 of the administrator to set these values.
 
@@ -64,7 +64,7 @@ of the administrator to set these values.
 
 An Amendment is a new or proposed change to a ledger rule. Ledger rules affect
 transaction processing and consensus; peers must use the same set of rules for
-consensus to succeed, otherwise different instances of rippled will get
+consensus to succeed, otherwise different instances of xrpld will get
 different results. Amendments can be almost anything but they must be accepted
 by a network majority through a consensus process before they are utilized. An
 Amendment must receive at least an 80% approval rate from validating nodes for
@@ -77,7 +77,7 @@ process of an Amendment from its conception to approval and usage.
 
 - Some members contribute their time and work to develop the Amendment.
 
-- A pull request is created and the new code is folded into a rippled build
+- A pull request is created and the new code is folded into an xrpld build
   and made available for use.
 
 - The consensus process begins with the validating nodes.

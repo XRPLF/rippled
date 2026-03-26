@@ -5,7 +5,7 @@
 Consensus is the task of reaching agreement within a distributed system in the
 presence of faulty or even malicious participants. This document outlines the
 [XRP Ledger Consensus Algorithm](https://arxiv.org/abs/1802.07242)
-as implemented in [rippled](https://github.com/ripple/rippled), but
+as implemented in [xrpld](https://github.com/XRPLF/rippled), but
 focuses on its utility as a generic consensus algorithm independent of the
 detailed mechanics of the Ripple Consensus Ledger. Most notably, the algorithm
 does not require fully synchronous communication between all nodes in the
@@ -54,9 +54,9 @@ and was abandoned.
 
 The remainder of this section describes the Consensus and Validation algorithms
 in more detail and is meant as a companion guide to understanding the generic
-implementation in `rippled`. The document **does not** discuss correctness,
+implementation in `xrpld`. The document **does not** discuss correctness,
 fault-tolerance or liveness properties of the algorithms or the full details of
-how they integrate within `rippled` to support the Ripple Consensus Ledger.
+how they integrate within `xrpld` to support the Ripple Consensus Ledger.
 
 ## Consensus Overview
 

@@ -52,7 +52,7 @@ rpcCmdToJson(
     beast::Journal j);
 
 /** Internal invocation of RPC client.
- *  Used by both rippled command line as well as rippled unit tests
+ *  Used by both xrpld command line as well as xrpld unit tests
  */
 std::pair<int, Json::Value>
 rpcClient(

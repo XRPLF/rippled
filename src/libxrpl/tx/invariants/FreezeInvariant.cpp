@@ -68,7 +68,7 @@ TransfersNotFrozen::finalize(
     {
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
-        // just in case so rippled doesn't crash in release.
+        // just in case so xrpld doesn't crash in release.
         if (!issuerSle)
         {
             // The comment above starting with "assert(enforce)" explains this

@@ -771,7 +771,7 @@ flow(
         {
             // Rounding in the payment engine is causing this assert to
             // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of rippled. While this issue still needs to
+            // running debug builds of xrpld. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
             // UNREACHABLE("xrpl::flow : rounding error");

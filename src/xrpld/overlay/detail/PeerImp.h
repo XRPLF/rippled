@@ -408,7 +408,7 @@ public:
         return publicKey_;
     }
 
-    /** Return the version of rippled that the peer is running, if reported. */
+    /** Return the version of xrpld that the peer is running, if reported. */
     std::string
     getVersion() const;
 
