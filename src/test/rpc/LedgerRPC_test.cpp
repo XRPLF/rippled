@@ -40,7 +40,7 @@ class LedgerRPC_test : public beast::unit_test::suite
 
     // Corrupt a valid address by replacing the 10th character with '!'.
     // '!' is not part of the ripple alphabet.
-    std::string
+    static std::string
     makeBadAddress(std::string good)
     {
         std::string ret = std::move(good);

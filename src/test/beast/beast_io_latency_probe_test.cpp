@@ -50,7 +50,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             bool done = false;
             boost::system::error_code wait_err;
 
-            while (--num_samples)
+            while (--num_samples > 0u)
             {
                 auto const start{MeasureClock::now()};
                 done = false;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <xrpl/protocol/UintTypes.h>
 

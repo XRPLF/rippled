@@ -22,10 +22,7 @@ namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -216,7 +213,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!sleDst)
         return tecNO_DST;
 
-    if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if ((((*sleDst)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -228,7 +225,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (sleDst->getFlags() & lsfDepositAuth)
+        if ((sleDst->getFlags() & lsfDepositAuth) != 0u)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -313,7 +310,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
         LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
-        if (!nonObligationDeleter(nodeType))
+        if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too

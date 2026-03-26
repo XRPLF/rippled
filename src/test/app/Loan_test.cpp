@@ -388,7 +388,7 @@ protected:
                     if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                         env.test.BEAST_EXPECT(vaultSle))
                     {
-                        if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
+                        if (((flags & lsfLoanImpaired) != 0u) && ((flags & lsfLoanDefault) == 0u))
                         {
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
@@ -746,7 +746,7 @@ protected:
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
 
-    void
+    static void
     topUpBorrower(
         jtx::Env& env,
         BrokerInfo const& broker,
@@ -1439,7 +1439,7 @@ protected:
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
         static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
+        auto const deleter = ((++deleteCounter % 2) != 0u) ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 
@@ -1468,7 +1468,7 @@ protected:
         }
     }
 
-    std::string
+    static std::string
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())
@@ -2149,7 +2149,7 @@ protected:
             state.totalValue = 0;
             state.managementFeeOutstanding = 0;
             state.previousPaymentDate =
-                state.nextPaymentDate + state.paymentInterval * (numPayments - 1);
+                state.nextPaymentDate + (state.paymentInterval * (numPayments - 1));
             state.nextPaymentDate = 0;
             verifyLoanStatus(state);
 
@@ -2983,7 +2983,7 @@ protected:
                 BEAST_EXPECT(sleMPT1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower), fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -3007,7 +3007,7 @@ protected:
                 BEAST_EXPECT(sleMPT2 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3029,7 +3029,7 @@ protected:
                 BEAST_EXPECT(sleLine1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower), fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -3052,7 +3052,7 @@ protected:
                 auto const sleLine2 = env.le(trustline);
                 BEAST_EXPECT(sleLine2 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
@@ -3102,7 +3102,7 @@ protected:
                 BEAST_EXPECT(sleMPT3 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3152,7 +3152,7 @@ protected:
                 auto const sleLine3 = env.le(trustline);
                 BEAST_EXPECT(sleLine3 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {

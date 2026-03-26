@@ -15,7 +15,7 @@ namespace test {
 
 class Book_test : public beast::unit_test::suite
 {
-    std::string
+    static std::string
     getBookDir(
         jtx::Env& env,
         Issue const& in,
@@ -1524,7 +1524,7 @@ public:
         auto USD = gw["USD"];
 
         for (auto i = 0; i <= RPC::Tuning::bookOffers.rmax; i++)
-            env(offer(gw, XRP(50 + 1 * i), USD(1.0 + 0.1 * i)));
+            env(offer(gw, XRP(50 + (1 * i)), USD(1.0 + (0.1 * i))));
 
         if (asAdmin)
             env.close();

@@ -370,7 +370,7 @@ MPTTester::set(MPTSet const& arg)
          .metadata = arg.metadata,
          .delegate = arg.delegate,
          .domainID = arg.domainID});
-    if (submit(arg, jv) == tesSUCCESS && (arg.flags.value_or(0) || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS && ((arg.flags.value_or(0) != 0u) || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);

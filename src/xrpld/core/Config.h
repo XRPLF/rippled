@@ -5,6 +5,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/StartUpType.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 #include <xrpl/rdb/DatabaseCon.h>
 
@@ -57,6 +58,13 @@ struct FeeSetup
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
+
+    /** Convert to a Fees object for use with Ledger construction. */
+    Fees
+    toFees() const
+    {
+        return Fees{reference_fee, account_reserve, owner_reserve};
+    }
 };
 
 //  This entire derived class is deprecated.
@@ -136,10 +144,6 @@ public:
 
     // Network parameters
     uint32_t NETWORK_ID = 0;
-
-    // DEPRECATED - Fee units for a reference transaction.
-    // Only provided for backwards compatibility in a couple of places
-    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present

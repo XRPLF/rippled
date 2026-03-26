@@ -675,7 +675,7 @@ AmendmentTableImpl::unVeto(uint256 const& amendment)
     std::lock_guard lock(mutex_);
     AmendmentState* const s = get(amendment, lock);
 
-    if (!s || s->vote != AmendmentVote::down)
+    if ((s == nullptr) || s->vote != AmendmentVote::down)
         return false;
     s->vote = AmendmentVote::up;
     persistVote(amendment, s->name, s->vote);
@@ -707,7 +707,7 @@ AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 {
     std::lock_guard lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
-    return s && s->enabled;
+    return (s != nullptr) && s->enabled;
 }
 
 bool
@@ -715,7 +715,7 @@ AmendmentTableImpl::isSupported(uint256 const& amendment) const
 {
     std::lock_guard lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
-    return s && s->supported;
+    return (s != nullptr) && s->supported;
 }
 
 bool
@@ -946,7 +946,7 @@ AmendmentTableImpl::injectJson(
         v[jss::count] = votesFor;
         v[jss::validations] = votesTotal;
 
-        if (votesNeeded)
+        if (votesNeeded != 0)
             v[jss::threshold] = votesNeeded;
     }
 }
@@ -974,7 +974,7 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
     {
         std::lock_guard lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
-        if (a)
+        if (a != nullptr)
         {
             Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::objectValue);
             injectJson(jAmendment, amendmentID, *a, isAdmin, lock);

@@ -1,5 +1,5 @@
-#include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 namespace xrpl {
 
@@ -84,7 +84,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
     }
 
     XRPL_ASSERT(
-        !it->second || (it->second->size() > 0),
+        !it->second || (!it->second->empty()),
         "xrpl::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "
