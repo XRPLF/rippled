@@ -108,7 +108,7 @@ TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFla
 
     if (accountFlags != 0)
     {
-        EXPECT_EQ(
+        ASSERT_EQ(
             submit(transactions::AccountSetBuilder{account}.setSetFlag(accountFlags), account).ter,
             tesSUCCESS);
         close();
