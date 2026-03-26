@@ -1199,18 +1199,26 @@ Transactor::operator()()
 
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
+        {
             removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().journal("View"));
+        }
 
         if (result == tecEXPIRED)
+        {
             removeExpiredNFTokenOffers(
                 view(), expiredNFTokenOffers, ctx_.registry.get().journal("View"));
+        }
 
         if (result == tecINCOMPLETE)
+        {
             removeDeletedTrustLines(view(), removedTrustLines, ctx_.registry.get().journal("View"));
+        }
 
         if (result == tecEXPIRED)
+        {
             removeExpiredCredentials(
                 view(), expiredCredentials, ctx_.registry.get().journal("View"));
+        }
 
         applied = isTecClaim(result);
     }
