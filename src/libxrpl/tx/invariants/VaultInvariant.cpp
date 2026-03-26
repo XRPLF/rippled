@@ -14,6 +14,8 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <limits>
+
 namespace xrpl {
 
 ValidVault::Vault
@@ -67,7 +69,7 @@ ValidVault::visitEntry(
     // validation. It is used to validate that the change in account
     // balances matches the change in vault balances, stored to deltas_ at the
     // end of this function.
-    DeltaInfo balanceDelta{numZero, std::nullopt};
+    DeltaInfo balanceDelta{numZero, std::numeric_limits<int>::min()};
 
     std::int8_t sign = 0;
     if (before)
@@ -148,9 +150,9 @@ ValidVault::visitEntry(
                 auto const amount = after->getFieldAmount(sfBalance);
                 balanceDelta.delta -= Number(amount);
                 // Trust Line balances are STAmounts, so we can use the exponent
-                // directly to get the scale.
-                if (amount.exponent() > balanceDelta.scale)
-                    balanceDelta.scale = amount.exponent();
+                // directly to get the scale. Take the coarser (larger) of the
+                // before and after scales.
+                balanceDelta.scale = std::max(balanceDelta.scale, amount.exponent());
                 sign = -1;
                 break;
             }
@@ -166,7 +168,10 @@ ValidVault::visitEntry(
     // against zero, to avoid missing such updates.
     if (sign != 0)
     {
-        XRPL_ASSERT_PARTS(balanceDelta.scale, "xrpl::ValidVault::visitEntry", "scale initialized");
+        XRPL_ASSERT_PARTS(
+            balanceDelta.scale != std::numeric_limits<int>::min(),
+            "xrpl::ValidVault::visitEntry",
+            "scale initialized");
         balanceDelta.delta *= sign;
         deltas_[key] = balanceDelta;
     }
@@ -1058,16 +1063,14 @@ ValidVault::finalize(
 [[nodiscard]] std::int32_t
 ValidVault::computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& numbers)
 {
-    if (numbers.size() == 0)
+    if (numbers.empty())
         return 0;
 
     auto const max =
         std::max_element(numbers.begin(), numbers.end(), [](auto const& a, auto const& b) -> bool {
             return a.scale < b.scale;
         });
-    XRPL_ASSERT_PARTS(
-        max->scale, "xrpl::ValidVault::computeMinScale", "scale set for destinationDelta");
-    return max->scale.value_or(STAmount::cMaxOffset);
+    return max->scale;
 }
 
 }  // namespace xrpl

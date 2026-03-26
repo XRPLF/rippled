@@ -8,7 +8,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
-#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -65,7 +64,7 @@ public:
     struct DeltaInfo final
     {
         Number delta = numZero;
-        std::optional<int> scale;
+        int scale = 0;
     };
 
 private:
