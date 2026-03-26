@@ -42,7 +42,7 @@ struct TxResult
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
     std::optional<uint256> ledgerHash;
-    TxSearched searchedAll = TxSearched::unknown;
+    TxSearched searchedAll = TxSearched::Unknown;
 };
 
 struct TxArgs
