@@ -490,4 +490,59 @@ computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitme
  */
 std::optional<Buffer>
 computeConvertBackRemainder(Slice const& commitment, uint64_t amount);
+
+/**
+ * @brief Sequential reader for extracting proof components from a ZKProof blob.
+ *
+ * Encapsulates the offset-based arithmetic for slicing a concatenated proof
+ * blob into its individual components (equality proofs, Pedersen linkage
+ * proofs, bulletproofs, etc.).  Performs bounds checking on every read and
+ * tracks whether the entire blob has been consumed.
+ *
+ * Usage:
+ * @code
+ *   ProofReader reader(tx[sfZKProof]);
+ *   auto equalityProof = reader.read(sizeEquality);
+ *   auto pedersenProof = reader.read(ecPedersenProofLength);
+ *   if (!equalityProof || !pedersenProof || !reader.done())
+ *       return tecINTERNAL;
+ * @endcode
+ */
+class ProofReader
+{
+    Slice data_;
+    std::size_t offset_ = 0;
+
+public:
+    explicit ProofReader(Slice data) : data_(data)
+    {
+    }
+
+    /**
+     * @brief Read the next @p length bytes from the proof blob.
+     *
+     * @param length Number of bytes to read.
+     * @return A Slice of the requested bytes, or std::nullopt if there are
+     *         not enough remaining bytes.
+     */
+    [[nodiscard]] std::optional<Slice>
+    read(std::size_t length)
+    {
+        if (offset_ + length > data_.size())
+            return std::nullopt;
+        auto result = data_.substr(offset_, length);
+        offset_ += length;
+        return result;
+    }
+
+    /**
+     * @brief Returns true when every byte has been consumed.
+     */
+    [[nodiscard]] bool
+    done() const
+    {
+        return offset_ == data_.size();
+    }
+};
+
 }  // namespace xrpl
