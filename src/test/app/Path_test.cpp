@@ -4,8 +4,8 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/permissioned_dex.h>
 
-#include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
