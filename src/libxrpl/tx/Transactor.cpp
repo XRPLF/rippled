@@ -677,8 +677,7 @@ Transactor::checkSign(
     }
 
     // Look up the account.
-    auto const idSigner =
-        pkSigner.empty() ? idAccount : calcAccountID(PublicKey(makeSlice(pkSigner)));
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;

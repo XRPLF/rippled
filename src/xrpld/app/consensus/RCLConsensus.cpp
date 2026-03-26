@@ -3,7 +3,6 @@
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -11,7 +10,6 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 
@@ -20,6 +18,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>

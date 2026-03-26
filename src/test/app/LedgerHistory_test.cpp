@@ -38,7 +38,8 @@ public:
             assert(!stx);
             return std::make_shared<Ledger>(
                 create_genesis,
-                env.app().config(),
+                Rules{env.app().config().features},
+                env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
         }
