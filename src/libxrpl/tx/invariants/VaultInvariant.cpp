@@ -626,13 +626,11 @@ ValidVault::finalize(
                     std::max(
                         scale(afterVault.assetsAvailable, vaultAsset),
                         scale(beforeVault.assetsAvailable, vaultAsset))};
-                auto const minScale = computeMinScale(
-                    vaultAsset,
-                    {
-                        *maybeVaultDeltaAssets,
-                        totalDelta,
-                        availableDelta,
-                    });
+                auto const minScale = computeCoarsestScale({
+                    *maybeVaultDeltaAssets,
+                    totalDelta,
+                    availableDelta,
+                });
 
                 auto const vaultDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
@@ -672,7 +670,7 @@ ValidVault::finalize(
                         return false;
                     }
                     auto const localMinScale =
-                        std::max(minScale, computeMinScale(vaultAsset, {*maybeAccDeltaAssets}));
+                        std::max(minScale, computeCoarsestScale({*maybeAccDeltaAssets}));
 
                     auto const accountDeltaAssets =
                         roundToAsset(vaultAsset, maybeAccDeltaAssets->delta, localMinScale);
@@ -790,8 +788,8 @@ ValidVault::finalize(
                     std::max(
                         scale(afterVault.assetsAvailable, vaultAsset),
                         scale(beforeVault.assetsAvailable, vaultAsset))};
-                auto const minScale = computeMinScale(
-                    vaultAsset, {*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                auto const minScale =
+                    computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
 
                 auto const vaultPseudoDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
@@ -836,7 +834,7 @@ ValidVault::finalize(
                     // the scale of destinationDelta can be coarser than
                     // minScale, so we take that into account when rounding
                     auto const localMinScale =
-                        std::max(minScale, computeMinScale(vaultAsset, {destinationDelta}));
+                        std::max(minScale, computeCoarsestScale({destinationDelta}));
 
                     auto const roundedDestinationDelta =
                         roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
@@ -952,8 +950,8 @@ ValidVault::finalize(
                         std::max(
                             scale(afterVault.assetsAvailable, vaultAsset),
                             scale(beforeVault.assetsAvailable, vaultAsset))};
-                    auto const minScale = computeMinScale(
-                        vaultAsset, {*maybeVaultDeltaAssets, totalDelta, availableDelta});
+                    auto const minScale =
+                        computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
                     auto const vaultDeltaAssets =
                         roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
                     if (vaultDeltaAssets >= zero)
@@ -1056,9 +1054,9 @@ ValidVault::finalize(
 }
 
 [[nodiscard]] std::int32_t
-ValidVault::computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& numbers)
+ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
 {
-    if (numbers.size() == 0)
+    if (numbers.empty())
         return 0;
 
     auto const max =
@@ -1066,7 +1064,7 @@ ValidVault::computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& nu
             return a.scale < b.scale;
         });
     XRPL_ASSERT_PARTS(
-        max->scale, "xrpl::ValidVault::computeMinScale", "scale set for destinationDelta");
+        max->scale, "xrpl::ValidVault::computeCoarsestScale", "scale set for destinationDelta");
     return max->scale.value_or(STAmount::cMaxOffset);
 }
 

@@ -84,7 +84,7 @@ public:
 
     // Compute the coarsest scale required to represent all numbers
     [[nodiscard]] static std::int32_t
-    computeMinScale(Asset const& asset, std::vector<DeltaInfo> const& numbers);
+    computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
 };
 
 }  // namespace xrpl

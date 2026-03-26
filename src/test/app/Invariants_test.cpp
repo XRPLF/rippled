@@ -3811,7 +3811,7 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testVaultComputeMinScale()
+    testVaultComputeCoarsestScale()
     {
         using namespace jtx;
 
@@ -3867,9 +3867,9 @@ class Invariants_test : public beast::unit_test::suite
 
         for (auto const& tc : testCases)
         {
-            testcase("vault computeMinScale: " + tc.name);
+            testcase("vault computeCoarsestScale: " + tc.name);
 
-            auto const actualScale = ValidVault::computeMinScale(vaultAsset, tc.values);
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
 
             BEAST_EXPECTS(
                 actualScale == tc.expectedMinScale,
@@ -3905,9 +3905,9 @@ class Invariants_test : public beast::unit_test::suite
         // look equivalent if using the wrong scale.
         for (auto const& tc : testCases2)
         {
-            testcase("vault computeMinScale: " + tc.name);
+            testcase("vault computeCoarsestScale: " + tc.name);
 
-            auto const actualScale = ValidVault::computeMinScale(vaultAsset, tc.values);
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
 
             BEAST_EXPECTS(
                 actualScale == tc.expectedMinScale,
@@ -3957,7 +3957,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
-        testVaultComputeMinScale();
+        testVaultComputeCoarsestScale();
     }
 };
 
