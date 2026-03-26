@@ -60,8 +60,8 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
-    static ValueAllocator* valueAllocator =
-        new DefaultValueAllocator;  // NOLINT(misc-const-correctness)
+    // NOLINTNEXTLINE(misc-const-correctness)
+    static ValueAllocator* valueAllocator = new DefaultValueAllocator;
     return valueAllocator;
 }
 

@@ -297,7 +297,7 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        char const const const* configFiles[] = {Config::configFileName, Config::configLegacyName};
+        char const* configFiles[] = {Config::configFileName, Config::configLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)

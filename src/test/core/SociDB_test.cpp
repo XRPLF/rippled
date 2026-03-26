@@ -287,7 +287,7 @@ public:
         {
             soci::session s;
             sc.open(s);
-            char const const const* dbInit[] = {
+            char const* dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \

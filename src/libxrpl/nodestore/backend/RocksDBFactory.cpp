@@ -38,7 +38,7 @@ public:
     thread_entry(void* ptr)
     {
         ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
-        void (*const const f)(void*) = p->f;
+        void (*const f)(void*) = p->f;
         void* a(p->a);
         delete p;
 
