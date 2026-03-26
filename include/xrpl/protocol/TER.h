@@ -344,9 +344,10 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
-    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
-    // backward compatibility with historical data on non-prod networks, can be
-    // reclaimed after those networks reset.
+    // DEPRECATED: tecNO_DELEGATE_PERMISSION is reserved for backward
+    // compatibility with historical data on non-prod networks only.
+    // TODO(deprecation): Remove this entry and reclaim value 198 once all
+    // non-prod networks that recorded this code have been reset.
     tecNO_DELEGATE_PERMISSION = 198,
 };
 
