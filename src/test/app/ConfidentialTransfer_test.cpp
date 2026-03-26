@@ -2785,20 +2785,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     /* TODO: uncomment when MPT crypto supports proof generation with value 0
      * Tests verifier behavior when the send amount is 0.
      *
-     * Background: the equality proof library and range proof library do not
+     * The equality proof library and range proof library do not
      * support generating proofs for amt=0 (they require a positive witness).
      * To test the VERIFIER without crashing the helper, we bypass normal proof
      * generation by supplying explicit ciphertexts, commitments, and a dummy
      * (all-zero) proof.  The preflight has no temBAD_AMOUNT guard for
      * ConfidentialMPTSend, so all validation occurs in verifySendProofs.
-     *
-     * Case 1 — equality proof component: all ciphertexts encrypt 0; the
-     *   multi-ciphertext equality proof in ZKProof is a dummy zero buffer.
-     *   verifyMultiCiphertextEqualityProof must reject this.
-     *
-     * Case 2 — range proof component: same construction, focusing on the
-     *   bulletproof range-check portion of ZKProof.  The range check for
-     *   amount=0 must also reject the dummy proof. */
+     */
     /*void
     testSendZeroAmount(FeatureBitset features)
     {
@@ -2834,7 +2827,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         Buffer const bf = generateBlindingFactor();
 
-        // Case 1: equality proof verification for amt=0.
+        // equality proof verification for amt=0.
         // Encrypt 0 under each participant's key.  The amount commitment is
         // getTrivialCommitment() — a valid EC point that passes preflight's
         // isValidCompressedECPoint check but is not the true PC for amt=0.
@@ -2853,7 +2846,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .err = tecBAD_PROOF,
         });
 
-        // Case 2: range proof verification for amt=0.
+        // range proof verification for amt=0.
         // Identical construction; focuses on the bulletproof range check
         // embedded in ZKProof.  The range proof for amount=0 with a dummy
         // (all-zero) proof must also be rejected.
