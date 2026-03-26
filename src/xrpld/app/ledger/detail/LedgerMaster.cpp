@@ -1479,7 +1479,7 @@ LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>
             app_.getJobQueue().getUpdatePathsJobLimit()));
 
     if (!app_.isStopping() && mPathFindThread < maxPathFindThreads &&
-        app_.getPathRequests().requestsPending())
+        app_.getPathRequestManager().requestsPending())
     {
         JLOG(m_journal.debug()) << "newPFWork: Creating job. path find threads: "
                                 << mPathFindThread;
