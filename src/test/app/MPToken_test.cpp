@@ -3348,13 +3348,16 @@ class MPToken_test : public beast::unit_test::suite
         // Pre-amendment: the stale per-iteration check allows each
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
-        env.disableFeature(fixSecurity3_1_3);
-        env.close();
-        runTest(
-            R{{alice.id(), 100}, {bob.id(), 100}},
-            tesSUCCESS,
-            200,
-            "pre-amendment allows over-send");
+        {
+            // KNOWN BUG (pre-fixSecurity3_1_3): preserved for ledger replay only
+            env.disableFeature(fixSecurity3_1_3);
+            env.close();
+            runTest(
+                R{{alice.id(), 100}, {bob.id(), 100}},
+                tesSUCCESS,
+                200,
+                "pre-amendment allows over-send");
+        }
     }
 
 public:

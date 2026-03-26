@@ -1198,12 +1198,20 @@ rippleSendMultiMPT(
 
                 if (view.rules().enabled(fixSecurity3_1_3))
                 {
-                    // Post-fixSecurity3_1_3: aggregate MaximumAmount check
-                    // using a running total.
-                    totalSendAmount += sendAmount;
-                    if (sendAmount > maximumAmount ||
-                        outstandingAmount + totalSendAmount > maximumAmount)
+                    // Post-fixSecurity3_1_3: aggregate MaximumAmount
+                    // check. Each condition guards the subtraction
+                    // in the next to prevent underflow.
+                    auto const exceedsMaximumAmount =
+                        // This send alone exceeds the max cap
+                        sendAmount > maximumAmount ||
+                        // The aggregate of all sends exceeds the max cap
+                        totalSendAmount > maximumAmount - sendAmount ||
+                        // Outstanding + aggregate exceeds the max cap
+                        outstandingAmount > maximumAmount - sendAmount - totalSendAmount;
+
+                    if (exceedsMaximumAmount)
                         return tecPATH_DRY;
+                    totalSendAmount += sendAmount;
                 }
                 else
                 {
@@ -1212,7 +1220,7 @@ rippleSendMultiMPT(
                     // view.read() snapshot — incorrect for multi-destination
                     // sends but retained for ledger replay compatibility.
                     if (sendAmount > maximumAmount ||
-                        outstandingAmount + sendAmount > maximumAmount)
+                        outstandingAmount > maximumAmount - sendAmount)
                         return tecPATH_DRY;
                 }
             }
