@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -34,7 +34,7 @@ doPathFind(RPC::JsonContext& context)
     {
         context.loadType = Resource::feeHeavyBurdenRPC;
         context.infoSub->clearRequest();
-        return context.app.getPathRequests().makePathRequest(
+        return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
     }
 

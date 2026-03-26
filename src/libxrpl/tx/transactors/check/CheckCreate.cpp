@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -169,7 +168,7 @@ CheckCreate::doApply()
 
     view().insert(sleCheck);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != account_)

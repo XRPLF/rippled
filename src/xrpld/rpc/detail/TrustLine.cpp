@@ -1,4 +1,4 @@
-#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/STAmount.h>
