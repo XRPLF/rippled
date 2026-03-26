@@ -150,7 +150,8 @@ OverlayImpl::onHandoff(
     endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
-    beast::WrappedSink sink(app_.getJournal("Peer").sink(), makePrefix(id));
+    auto peerJournal = app_.getJournal("Peer");
+    beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
     beast::Journal journal(sink);
 
     Handoff handoff;
