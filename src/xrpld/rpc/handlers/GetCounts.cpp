@@ -71,7 +71,7 @@ getCountsJson(Application& app, int minObjectCount)
             ret[jss::dbKBTransaction] = dbKB;
 
         {
-            std::size_t c = app.getOPs().getLocalTxCount();
+            std::size_t const c = app.getOPs().getLocalTxCount();
             if (c > 0)
                 ret[jss::local_txs] = static_cast<Json::UInt>(c);
         }

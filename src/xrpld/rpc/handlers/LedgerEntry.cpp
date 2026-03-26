@@ -370,7 +370,7 @@ parseDirectoryNode(
             "malformedRequest", "Must have exactly one of `owner` and `dir_root` fields.");
     }
 
-    std::uint64_t uSubIndex = params.get(jss::sub_index, 0).asUInt();
+    std::uint64_t const uSubIndex = params.get(jss::sub_index, 0).asUInt();
 
     if (params.isMember(jss::dir_root))
     {
@@ -956,9 +956,9 @@ doLedgerEntry(RPC::JsonContext& context)
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
 doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
 {
-    org::xrpl::rpc::v1::GetLedgerEntryRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -978,14 +978,14 @@ doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     auto const key = uint256::fromVoidChecked(request.key());
     if (!key)
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
+        grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
         return {response, errorStatus};
     }
 
     auto const sleNode = ledger->read(keylet::unchecked(*key));
     if (!sleNode)
     {
-        grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "object not found"};
+        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "object not found"};
         return {response, errorStatus};
     }
 

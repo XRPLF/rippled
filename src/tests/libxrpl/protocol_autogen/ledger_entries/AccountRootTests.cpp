@@ -320,7 +320,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    AccountRoot entryFromSle{sle};
+    AccountRoot const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

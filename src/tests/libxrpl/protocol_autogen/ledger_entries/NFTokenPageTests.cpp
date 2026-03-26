@@ -110,7 +110,7 @@ TEST(NFTokenPageTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    NFTokenPage entryFromSle{sle};
+    NFTokenPage const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

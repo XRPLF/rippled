@@ -580,7 +580,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -849,7 +849,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // List of tokens to delete is too long.
         {
-            std::vector<uint256> offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
+            std::vector<uint256> const offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
 
             env(token::cancelOffer(buyer, offers), ter(temMALFORMED));
             env.close();
@@ -936,7 +936,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
@@ -1515,7 +1515,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // An nft without flagCreateTrustLines but with a non-zero transfer
             // fee will not allow creating offers that use IOUs for payment.
-            for (std::uint32_t xferFee : {0, 1})
+            for (std::uint32_t const xferFee : {0, 1})
             {
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
@@ -1552,7 +1552,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // An nft with flagCreateTrustLines but with a non-zero transfer
             // fee allows transfers using IOUs for payment.
             {
-                std::uint16_t transferFee = 10000;  // 10%
+                std::uint16_t const transferFee = 10000;  // 10%
 
                 uint256 const nftAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
@@ -1606,7 +1606,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Now that alice has trust lines preestablished, an nft without
             // flagCreateTrustLines will work for preestablished trust lines.
             {
-                std::uint16_t transferFee = 5000;  // 5%
+                std::uint16_t const transferFee = 5000;  // 5%
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
                 env(token::mint(alice, 0u), token::xferFee(transferFee), txflags(tfTransferable));
@@ -2261,7 +2261,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Here is the smallest expressible gwXAU amount.
-            STAmount tinyXAU(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset);
+            STAmount const tinyXAU(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset);
 
             // minter buys the nft for tinyXAU.  Since the transfer involves
             // alice there should be no transfer fee.
@@ -3702,7 +3702,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     int line) {
                     for (Account const& acct : accounts)
                     {
-                        if (std::uint32_t ownerCount = test::jtx::ownerCount(env, acct);
+                        if (std::uint32_t const ownerCount = test::jtx::ownerCount(env, acct);
                             ownerCount != 1)
                         {
                             std::stringstream ss;
@@ -6596,7 +6596,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // issuer creates two NFTs: one with and one without AutoTrustLine.
-            std::uint16_t xferFee = 5000;  // 5%
+            std::uint16_t const xferFee = 5000;  // 5%
             uint256 const nftAutoTrustID{
                 token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
             env(token::mint(issuer, 0u),
@@ -6752,7 +6752,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
 
         // issuer creates two NFTs: one with and one without AutoTrustLine.
-        std::uint16_t xferFee = 5000;  // 5%
+        std::uint16_t const xferFee = 5000;  // 5%
         uint256 const nftAutoTrustID{
             token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
         env(token::mint(issuer, 0u),

@@ -390,10 +390,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
 
-    Section ledgerTxTablesSection = section("ledger_tx_tables");
+    Section const ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
 
-    Section& nodeDbSection{section(ConfigSection::nodeDatabase())};
+    Section const& nodeDbSection{section(ConfigSection::nodeDatabase())};
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
@@ -471,7 +471,7 @@ Config::loadFromString(std::string const& fileContents)
                 if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
-                std::string result = std::regex_replace(line, e, " $1");
+                std::string const result = std::regex_replace(line, e, " $1");
                 // sanity check the result of the replace, should be same length
                 // as input
                 if (result.size() == line.size())
@@ -487,7 +487,7 @@ Config::loadFromString(std::string const& fileContents)
         std::string dbPath;
         if (getSingleSection(secConfig, "database_path", dbPath, j_))
         {
-            boost::filesystem::path p(dbPath);
+            boost::filesystem::path const p(dbPath);
             legacy("database_path", boost::filesystem::absolute(p).string());
         }
     }
@@ -890,7 +890,7 @@ Config::loadFromString(std::string const& fileContents)
                                       ", must be: [0-9]+ [minutes|hours|days|weeks]");
         }
 
-        std::uint32_t duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
+        std::uint32_t const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
 
         if (boost::iequals(match[2], "minutes"))
         {
@@ -1226,7 +1226,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"journal_mode\"");
             }
-            bool higherRisk =
+            bool const higherRisk =
                 boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(journal_mode, "delete") ||
@@ -1250,7 +1250,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"synchronous\"");
             }
-            bool higherRisk = boost::iequals(synchronous, "off");
+            bool const higherRisk = boost::iequals(synchronous, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
@@ -1271,7 +1271,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"temp_store\"");
             }
-            bool higherRisk = boost::iequals(temp_store, "memory");
+            bool const higherRisk = boost::iequals(temp_store, "memory");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(temp_store, "default") ||
                 boost::iequals(temp_store, "file"))

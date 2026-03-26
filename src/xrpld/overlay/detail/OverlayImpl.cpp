@@ -151,7 +151,7 @@ OverlayImpl::onHandoff(
 {
     auto const id = next_id_++;
     beast::WrappedSink sink(app_.logs()["Peer"], makePrefix(id));
-    beast::Journal journal(sink);
+    beast::Journal const journal(sink);
 
     Handoff handoff;
     if (processRequest(request, handoff))
@@ -269,7 +269,7 @@ OverlayImpl::onHandoff(
             // As we are not on the strand, run() must be called
             // while holding the lock, otherwise new I/O can be
             // queued after a call to stop().
-            std::lock_guard<decltype(mutex_)> lock(mutex_);
+            std::lock_guard<decltype(mutex_)> const lock(mutex_);
             {
                 auto const result = m_peers.emplace(peer->slot(), peer);
                 XRPL_ASSERT(result.second, "xrpl::OverlayImpl::onHandoff : peer is inserted");
@@ -392,7 +392,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
         app_.journal("Peer"),
         *this);
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.emplace(p.get(), p);
     p->run();
 }
@@ -404,9 +404,9 @@ void
 OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 {
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
@@ -434,7 +434,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const iter = m_peers.find(slot);
     XRPL_ASSERT(iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
@@ -443,7 +443,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config config = PeerFinder::Config::makeConfig(
+    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
@@ -521,7 +521,7 @@ OverlayImpl::start()
             });
     }
     auto const timer = std::make_shared<Timer>(*this);
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->async_wait();
@@ -570,11 +570,11 @@ void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
     // Now track this peer
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         auto const result(ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer)));
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
@@ -590,7 +590,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     ids_.erase(id);
 }
 
@@ -668,7 +668,7 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
 std::size_t
 OverlayImpl::size() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return ids_.size();
 }
 
@@ -915,8 +915,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     bool amendment_blocked = false;
     if (info.isMember(jss::amendment_blocked))
         amendment_blocked = true;
-    int number_peers = info[jss::peers].asInt();
-    std::string server_state = info[jss::server_state].asString();
+    int const number_peers = info[jss::peers].asInt();
+    std::string const server_state = info[jss::server_state].asString();
     auto load_factor = info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
 
     enum class HealthState { healthy, warning, critical };
@@ -1027,7 +1027,7 @@ OverlayImpl::getActivePeers(
     std::size_t& enabledInSkip) const
 {
     Overlay::PeerSequence ret;
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     active = ids_.size();
     disabled = enabledInSkip = 0;
@@ -1067,7 +1067,7 @@ OverlayImpl::checkTracking(std::uint32_t index)
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const iter = ids_.find(id);
     if (iter != ids_.end())
         return iter->second.lock();
@@ -1079,7 +1079,7 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     // NOTE The purpose of peer is to delay the destruction of PeerImp
     std::shared_ptr<PeerImp> peer;
     for (auto const& e : ids_)
@@ -1140,7 +1140,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
 std::shared_ptr<Message>
 OverlayImpl::getManifestsMessage()
 {
-    std::lock_guard g(manifestLock_);
+    std::lock_guard const g(manifestLock_);
 
     if (auto seq = app_.validatorManifests().sequence(); seq != manifestListSeq_)
     {
@@ -1259,7 +1259,7 @@ OverlayImpl::relay(
 void
 OverlayImpl::remove(Child& child)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
         cond_.notify_all();
@@ -1278,7 +1278,7 @@ OverlayImpl::stopChildren()
     // won't be called until vector<> children leaves scope.
     std::vector<std::shared_ptr<Child>> children;
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (!work_)
             return;
         work_ = std::nullopt;
@@ -1313,7 +1313,7 @@ OverlayImpl::sendEndpoints()
     {
         std::shared_ptr<PeerImp> peer;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             auto const iter = m_peers.find(e.first);
             if (iter != m_peers.end())
                 peer = iter->second.lock();

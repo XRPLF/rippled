@@ -23,7 +23,7 @@ getFeatureValue(boost::beast::http::fields const& headers, std::string const& fe
     if (header == headers.end())
         return {};
     boost::smatch match;
-    boost::regex rx(feature + "=([^;\\s]+)");
+    boost::regex const rx(feature + "=([^;\\s]+)");
     std::string const allFeatures(header->value());
     if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
@@ -107,12 +107,12 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     constexpr std::size_t sslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
-    size_t len = get(ssl, buf, sizeof(buf));
+    size_t const len = get(ssl, buf, sizeof(buf));
 
     if (len < sslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher h;
+    sha512_hasher const h;
 
     base_uint<512> cookie;
     SHA512(buf, len, cookie.data());

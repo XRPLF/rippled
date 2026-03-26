@@ -559,7 +559,7 @@ struct ExistingElementPool
         result.reserve(resultSize);
         while (outer.next())
         {
-            StateGuard og{*this};
+            StateGuard const og{*this};
             outerResult = prefix;
             outer.emplace_into(
                 outerResult, accF, issF, currencyF, existingAcc, existingCur, existingIss);
@@ -567,7 +567,7 @@ struct ExistingElementPool
             ElementComboIter inner(prevInner);
             while (inner.next())
             {
-                StateGuard ig{*this};
+                StateGuard const ig{*this};
                 result = outerResult;
                 inner.emplace_into(
                     result, accF, issF, currencyF, existingAcc, existingCur, existingIss);
@@ -1006,7 +1006,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 return result;
             }();
 
-            PathSet paths(p);
+            PathSet const paths(p);
 
             env(pay(alice, alice, EUR(1)),
                 json(paths.json()),
@@ -1125,12 +1125,12 @@ struct PayStrand_test : public beast::unit_test::suite
         Env env(*this, features);
         env.fund(XRP(10000), alice, bob, gw);
 
-        STAmount sendMax{USD.issue(), 100, 1};
-        STAmount noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
-        STAmount deliver;
+        STAmount const sendMax{USD.issue(), 100, 1};
+        STAmount const noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
+        STAmount const deliver;
         AccountID const srcAcc = alice.id();
-        AccountID dstAcc = bob.id();
-        STPathSet pathSet;
+        AccountID const dstAcc = bob.id();
+        STPathSet const pathSet;
         ::xrpl::path::RippleCalc::Input inputs;
         inputs.defaultPathsAllowed = true;
         try

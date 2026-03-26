@@ -126,7 +126,7 @@ TEST(XChainOwnedCreateAccountClaimIDTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    XChainOwnedCreateAccountClaimID entryFromSle{sle};
+    XChainOwnedCreateAccountClaimID const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

@@ -93,7 +93,7 @@ public:
         // Offers for the good quality path
         env(offer(carol, BTC(1), USD(100)));
 
-        PathSet paths(Path(XRP, USD), Path(USD));
+        PathSet const paths(Path(XRP, USD), Path(USD));
 
         env(pay(alice, bob, USD(100)),
             json(paths.json()),
@@ -419,7 +419,7 @@ public:
         auto const EUR = gw["EUR"];
 
         auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
-            STAmount amt(
+            STAmount const amt(
                 iou.issue(),
                 /*mantissa*/ 1,
                 /*exponent*/ -81);

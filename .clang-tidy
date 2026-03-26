@@ -85,6 +85,7 @@ Checks: "-*,
   cppcoreguidelines-use-default-member-init,
   cppcoreguidelines-virtual-class-destructor,
   hicpp-ignored-remove-result,
+  misc-const-correctness,
   misc-definitions-in-headers,
   misc-header-include-cycle,
   misc-misplaced-const,
@@ -128,7 +129,6 @@ Checks: "-*,
 # ---
 # checks that have some issues that need to be resolved:
 #
-# misc-const-correctness,
 # misc-include-cleaner,
 # misc-redundant-expression,
 #

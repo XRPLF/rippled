@@ -151,7 +151,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 std::shared_ptr<SkipListAcquire::SkipListData const>
 SkipListAcquire::getData() const
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     return data_;
 }
 

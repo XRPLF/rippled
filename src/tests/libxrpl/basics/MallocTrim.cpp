@@ -119,9 +119,9 @@ TEST(parseStatmRSSkB, standard_format)
 
 TEST(mallocTrim, without_debug_logging)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
+    beast::Journal const journal{beast::Journal::getNullSink()};
 
-    MallocTrimReport report = mallocTrim("without_debug", journal);
+    MallocTrimReport const report = mallocTrim("without_debug", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -142,8 +142,8 @@ TEST(mallocTrim, without_debug_logging)
 
 TEST(mallocTrim, empty_tag)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
-    MallocTrimReport report = mallocTrim("", journal);
+    beast::Journal const journal{beast::Journal::getNullSink()};
+    MallocTrimReport const report = mallocTrim("", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -171,9 +171,9 @@ TEST(mallocTrim, with_debug_logging)
     };
 
     DebugSink sink;
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
-    MallocTrimReport report = mallocTrim("debug_test", journal);
+    MallocTrimReport const report = mallocTrim("debug_test", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -192,12 +192,12 @@ TEST(mallocTrim, with_debug_logging)
 
 TEST(mallocTrim, repeated_calls)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
+    beast::Journal const journal{beast::Journal::getNullSink()};
 
     // Call malloc_trim multiple times to ensure it's safe
     for (int i = 0; i < 5; ++i)
     {
-        MallocTrimReport report = mallocTrim("iteration_" + std::to_string(i), journal);
+        MallocTrimReport const report = mallocTrim("iteration_" + std::to_string(i), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         EXPECT_EQ(report.supported, true);

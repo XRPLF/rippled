@@ -79,8 +79,8 @@ OfferCreate::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = tx[sfTakerPays];
-    STAmount saTakerGets = tx[sfTakerGets];
+    STAmount const saTakerPays = tx[sfTakerPays];
+    STAmount const saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet(saTakerPays) || !isLegalNet(saTakerGets))
         return temBAD_AMOUNT;
@@ -737,7 +737,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount const reserve =
+            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (preFeeBalance_ < reserve)
         {

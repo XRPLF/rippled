@@ -39,7 +39,7 @@ void
 NodeFamily::reset()
 {
     {
-        std::lock_guard lock(maxSeqMutex_);
+        std::lock_guard const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 

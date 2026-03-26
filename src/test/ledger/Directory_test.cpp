@@ -282,7 +282,7 @@ struct Directory_test : public beast::unit_test::suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox sb(env.closed().get(), tapNONE);
+            Sandbox const sb(env.closed().get(), tapNONE);
             uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));

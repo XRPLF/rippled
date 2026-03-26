@@ -512,7 +512,7 @@ Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success success([&]() {
+    scope_success const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -561,7 +561,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().getNetworkIDService().getNetworkID();
+        uint32_t const networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }

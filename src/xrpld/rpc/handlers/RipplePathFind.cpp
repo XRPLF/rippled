@@ -113,7 +113,7 @@ doRipplePathFind(RPC::JsonContext& context)
                 // captured reference could evaporate when we return from
                 // coroCopy->resume().  This is not strictly necessary, but
                 // will make maintenance easier.
-                std::shared_ptr<JobQueue::Coro> coroCopy{context.coro};
+                std::shared_ptr<JobQueue::Coro> const coroCopy{context.coro};
                 if (!coroCopy->post())
                 {
                     // The post() failed, so we won't get a thread to let
@@ -140,7 +140,7 @@ doRipplePathFind(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind lpf(isUnlimited(context.role), context.app);
+    RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
         return rpcError(rpcTOO_BUSY);
 

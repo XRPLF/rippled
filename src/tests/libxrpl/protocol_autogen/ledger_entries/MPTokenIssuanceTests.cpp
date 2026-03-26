@@ -200,7 +200,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    MPTokenIssuance entryFromSle{sle};
+    MPTokenIssuance const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

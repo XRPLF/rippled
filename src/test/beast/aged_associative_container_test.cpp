@@ -915,7 +915,7 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    typename Traits::ManualClock clock;
+    typename Traits::ManualClock const clock;
 
     // testcase (Traits::name() + " init-list");
     testcase("init-list");
@@ -931,7 +931,7 @@ typename std::enable_if<IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    typename Traits::ManualClock clock;
+    typename Traits::ManualClock const clock;
 
     // testcase (Traits::name() + " init-list");
     testcase("init-list");
@@ -1033,8 +1033,8 @@ aged_associative_container_test_base::testIterator()
     using const_iterator = decltype(c.cbegin());
 
     // Should be able to construct or assign an iterator from an iterator.
-    iterator nnIt_0{c.begin()};
-    iterator nnIt_1{nnIt_0};
+    iterator const nnIt_0{c.begin()};
+    iterator const nnIt_1{nnIt_0};
     BEAST_EXPECT(nnIt_0 == nnIt_1);
     iterator nnIt_2;
     nnIt_2 = nnIt_1;
@@ -1042,8 +1042,8 @@ aged_associative_container_test_base::testIterator()
 
     // Should be able to construct or assign a const_iterator from a
     // const_iterator.
-    const_iterator ccIt_0{c.cbegin()};
-    const_iterator ccIt_1{ccIt_0};
+    const_iterator const ccIt_0{c.cbegin()};
+    const_iterator const ccIt_1{ccIt_0};
     BEAST_EXPECT(ccIt_0 == ccIt_1);
     const_iterator ccIt_2;
     ccIt_2 = ccIt_1;
@@ -1054,8 +1054,8 @@ aged_associative_container_test_base::testIterator()
     BEAST_EXPECT(ccIt_1 == nnIt_1);
 
     // Should be able to construct a const_iterator from an iterator.
-    const_iterator ncIt_3{c.begin()};
-    const_iterator ncIt_4{nnIt_0};
+    const_iterator const ncIt_3{c.begin()};
+    const_iterator const ncIt_4{nnIt_0};
     BEAST_EXPECT(ncIt_3 == ncIt_4);
     const_iterator ncIt_5;
     ncIt_5 = nnIt_2;
@@ -1098,8 +1098,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a reverse_iterator from a
     // reverse_iterator.
-    reverse_iterator rNrNit_0{c.rbegin()};
-    reverse_iterator rNrNit_1{rNrNit_0};
+    reverse_iterator const rNrNit_0{c.rbegin()};
+    reverse_iterator const rNrNit_1{rNrNit_0};
     BEAST_EXPECT(rNrNit_0 == rNrNit_1);
     reverse_iterator xXrNit_2;
     xXrNit_2 = rNrNit_1;
@@ -1107,8 +1107,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // const_reverse_iterator
-    const_reverse_iterator rCrCit_0{c.crbegin()};
-    const_reverse_iterator rCrCit_1{rCrCit_0};
+    const_reverse_iterator const rCrCit_0{c.crbegin()};
+    const_reverse_iterator const rCrCit_1{rCrCit_0};
     BEAST_EXPECT(rCrCit_0 == rCrCit_1);
     const_reverse_iterator xXrCit_2;
     xXrCit_2 = rCrCit_1;
@@ -1120,8 +1120,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // reverse_iterator
-    const_reverse_iterator rNrCit_0{c.rbegin()};
-    const_reverse_iterator rNrCit_1{rNrNit_0};
+    const_reverse_iterator const rNrCit_0{c.rbegin()};
+    const_reverse_iterator const rNrCit_1{rNrNit_0};
     BEAST_EXPECT(rNrCit_0 == rNrCit_1);
     xXrCit_2 = rNrNit_1;
     BEAST_EXPECT(rNrCit_1 == xXrCit_2);
@@ -1132,10 +1132,10 @@ aged_associative_container_test_base::testReverseIterator()
     //  const_iterator.
     // Should be able to construct or assign reverse_iterators from
     // non-reverse iterators.
-    reverse_iterator fNrNit_0{c.begin()};
-    const_reverse_iterator fNrCit_0{c.begin()};
+    reverse_iterator const fNrNit_0{c.begin()};
+    const_reverse_iterator const fNrCit_0{c.begin()};
     BEAST_EXPECT(fNrNit_0 == fNrCit_0);
-    const_reverse_iterator fCrCit_0{c.cbegin()};
+    const_reverse_iterator const fCrCit_0{c.cbegin()};
     BEAST_EXPECT(fNrCit_0 == fCrCit_0);
 
     // None of these should compile because they construct a non-reverse
@@ -1146,7 +1146,7 @@ aged_associative_container_test_base::testReverseIterator()
 
     // You should not be able to assign an iterator to a reverse_iterator or
     // vise-versa.  So the following lines should not compile.
-    iterator xXfNit_0;
+    iterator const xXfNit_0;
     //  xXfNit_0 = xXrNit_2;
     //  xXrNit_2 = xXfNit_0;
 }
@@ -1297,7 +1297,7 @@ aged_associative_container_test_base::testChronological()
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
     {
         using iterator = typename decltype(c)::iterator;
-        iterator found(c.find(Traits::extract(*iter)));
+        iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
@@ -1317,7 +1317,7 @@ aged_associative_container_test_base::testChronological()
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
     {
         using const_iterator = typename decltype(c)::const_iterator;
-        const_iterator found(c.find(Traits::extract(*iter)));
+        const_iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
@@ -1642,7 +1642,7 @@ aged_associative_container_test_base::testCompare()
     // testcase (Traits::name() + " array create");
     testcase("array create");
 
-    typename Traits::template Cont<> c1(v.begin(), v.end(), clock);
+    typename Traits::template Cont<> const c1(v.begin(), v.end(), clock);
 
     typename Traits::template Cont<> c2(v.begin(), v.end(), clock);
     c2.erase(c2.cbegin());
@@ -1672,7 +1672,7 @@ aged_associative_container_test_base::testObservers()
     // testcase (Traits::name() + " observers");
     testcase("observers");
 
-    typename Traits::template Cont<> c(clock);
+    typename Traits::template Cont<> const c(clock);
     c.key_comp();
     c.value_comp();
 
@@ -1690,7 +1690,7 @@ aged_associative_container_test_base::testObservers()
     // testcase (Traits::name() + " observers");
     testcase("observers");
 
-    typename Traits::template Cont<> c(clock);
+    typename Traits::template Cont<> const c(clock);
     c.hash_function();
     c.key_eq();
 

@@ -164,7 +164,7 @@ doGatewayBalances(RPC::JsonContext& context)
             if (!rs)
                 return;
 
-            int balSign = rs->getBalance().signum();
+            int const balSign = rs->getBalance().signum();
             if (balSign == 0)
                 return;
 

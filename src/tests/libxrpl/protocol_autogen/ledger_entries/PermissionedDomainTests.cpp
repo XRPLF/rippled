@@ -116,7 +116,7 @@ TEST(PermissionedDomainTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    PermissionedDomain entryFromSle{sle};
+    PermissionedDomain const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

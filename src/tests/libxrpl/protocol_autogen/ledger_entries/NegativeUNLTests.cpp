@@ -116,7 +116,7 @@ TEST(NegativeUNLTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    NegativeUNL entryFromSle{sle};
+    NegativeUNL const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

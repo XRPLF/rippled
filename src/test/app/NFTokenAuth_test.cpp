@@ -33,9 +33,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -88,7 +88,7 @@ public:
         Env env(*this, features);
         Account G1{"G1"};
         Account A1{"A1"};
-        Account A2{"A2"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -134,7 +134,7 @@ public:
         Env env(*this, features);
         Account G1{"G1"};
         Account A1{"A1"};
-        Account A2{"A2"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -190,9 +190,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -267,7 +267,7 @@ public:
         Env env(*this, features);
         Account G1{"G1"};
         Account A1{"A1"};
-        Account A2{"A2"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -307,10 +307,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -375,8 +375,8 @@ public:
         Env env(*this, features);
         Account G1{"G1"};
         Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -433,10 +433,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -507,10 +507,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account minter{"minter"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const minter{"minter"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, minter, A1, A2);

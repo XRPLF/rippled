@@ -125,7 +125,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
         return {result, rpcSUCCESS};
     }
 
-    std::shared_ptr<Ledger const> ledger = context.ledgerMaster.getLedgerBySeq(txn->getLedger());
+    std::shared_ptr<Ledger const> const ledger =
+        context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
         result.ledgerHash = ledger->header().hash;
@@ -148,9 +149,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
-            uint32_t lgrSeq = ledger->header().seq;
-            uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
-            uint32_t netID = context.app.getNetworkIDService().getNetworkID();
+            uint32_t const lgrSeq = ledger->header().seq;
+            uint32_t const txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
+            uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
                 result.ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID);
@@ -310,7 +311,7 @@ doTxJson(RPC::JsonContext& context)
         }
     }
 
-    std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
+    std::pair<TxResult, RPC::Status> const res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
 }
 

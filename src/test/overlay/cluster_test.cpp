@@ -113,7 +113,7 @@ public:
 
         auto const node = randomNode();
         auto const name = toBase58(TokenType::NodePublic, node);
-        std::uint32_t load = 0;
+        std::uint32_t const load = 0;
         NetClock::time_point tick = {};
 
         // Initial update

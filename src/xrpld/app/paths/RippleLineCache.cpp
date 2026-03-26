@@ -26,7 +26,7 @@ RippleLineCache::getRippleLines(AccountID const& accountID, LineDirection direct
         direction == LineDirection::outgoing ? LineDirection::incoming : LineDirection::outgoing,
         hash);
 
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     auto [it, inserted] =
         [&]() {

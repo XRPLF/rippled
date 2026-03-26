@@ -150,7 +150,7 @@ TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    NFTokenOffer entryFromSle{sle};
+    NFTokenOffer const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

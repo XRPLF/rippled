@@ -103,7 +103,7 @@ std::size_t constexpr decoded_size(std::size_t n)
 std::size_t
 encode(void* dest, void const* src, std::size_t len)
 {
-    char* out = static_cast<char*>(dest);
+    char* out = static_cast<char*>(dest);  // NOLINT(misc-const-correctness)
     char const* in = static_cast<char const*>(src);
     auto const tab = base64::get_alphabet();
 
@@ -154,7 +154,7 @@ encode(void* dest, void const* src, std::size_t len)
 std::pair<std::size_t, std::size_t>
 decode(void* dest, char const* src, std::size_t len)
 {
-    char* out = static_cast<char*>(dest);
+    char* out = static_cast<char*>(dest);  // NOLINT(misc-const-correctness)
     auto in = reinterpret_cast<unsigned char const*>(src);
     unsigned char c3[3]{}, c4[4]{};
     int i = 0;

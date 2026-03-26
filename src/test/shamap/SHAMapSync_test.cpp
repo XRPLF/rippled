@@ -30,7 +30,7 @@ public:
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
-        SHAMapHash beforeHash = map.getHash();
+        SHAMapHash const beforeHash = map.getHash();
 
         std::list<uint256> items;
 
@@ -74,7 +74,7 @@ public:
         SHAMap source(SHAMapType::FREE, f);
         SHAMap destination(SHAMapType::FREE, f2);
 
-        int items = 10000;
+        int const items = 10000;
         for (int i = 0; i < items; ++i)
         {
             source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
@@ -97,8 +97,8 @@ public:
         BEAST_EXPECT(missingNodes.empty());
 
         std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::vector<Blob> gotNodes;
-        std::vector<uint256> hashes;
+        std::vector<Blob> const gotNodes;
+        std::vector<uint256> const hashes;
 
         destination.setSynching();
 

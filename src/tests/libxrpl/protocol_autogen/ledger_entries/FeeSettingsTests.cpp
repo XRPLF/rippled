@@ -164,7 +164,7 @@ TEST(FeeSettingsTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    FeeSettings entryFromSle{sle};
+    FeeSettings const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

@@ -195,7 +195,7 @@ public:
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
         {
-            std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
+            std::string const domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
             BEAST_EXPECT(domain2.length() == len);
 
@@ -373,7 +373,7 @@ public:
         //
         // Two out-of-bound values are currently in the ledger (March 2020)
         // They are 4.0 and 4.294967295.  So those are the values we test.
-        for (double transferRate : {4.0, 4.294967295})
+        for (double const transferRate : {4.0, 4.294967295})
         {
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);

@@ -177,7 +177,7 @@ partsFromString(std::string const& number)
     //   6 = exponent sign
     //   7 = exponent number
 
-    bool negative = (match[1].matched && (match[1] == "-"));
+    bool const negative = (match[1].matched && (match[1] == "-"));
 
     std::uint64_t mantissa = 0;
     int exponent = 0;

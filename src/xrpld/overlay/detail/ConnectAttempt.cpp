@@ -143,7 +143,7 @@ ConnectAttempt::onShutdown(error_code ec)
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
         // - application data after close notify: benign SSL shutdown condition
-        bool shouldLog =
+        bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
              ec.message().find("application data after close notify") == std::string::npos);
 
@@ -287,8 +287,8 @@ ConnectAttempt::onTimer(error_code ec)
 
     // Determine which timer expired by checking their expiry times
     auto const now = std::chrono::steady_clock::now();
-    bool globalExpired = (timer_.expiry() <= now);
-    bool stepExpired = (stepTimer_.expiry() <= now);
+    bool const globalExpired = (timer_.expiry() <= now);
+    bool const stepExpired = (stepTimer_.expiry() <= now);
 
     if (globalExpired)
     {

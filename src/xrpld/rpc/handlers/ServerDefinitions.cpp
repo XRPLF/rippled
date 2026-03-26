@@ -123,7 +123,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
     for (auto const& [rawName, typeValue] : sTypeMap)
     {
-        std::string typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
+        std::string const typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }

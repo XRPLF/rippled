@@ -242,7 +242,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    LoanBroker entryFromSle{sle};
+    LoanBroker const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 

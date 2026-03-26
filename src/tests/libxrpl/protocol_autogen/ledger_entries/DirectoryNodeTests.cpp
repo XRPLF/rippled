@@ -220,7 +220,7 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    DirectoryNode entryFromSle{sle};
+    DirectoryNode const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
