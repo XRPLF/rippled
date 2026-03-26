@@ -830,6 +830,7 @@ private:
                 {
                     // TODO: this was std::move'd before but it does not work in practice.
                     // We would need a Value(std::string&&) for it to work.
+                    // See https://github.com/XRPLF/rippled/issues/6677
                     jvRequest[accFields[i]] = strParam;
                 }
                 else
