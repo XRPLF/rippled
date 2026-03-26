@@ -125,8 +125,8 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(app.timeKeeper().now().time_since_epoch().count());
-            app.overlay().relay(txId, msg, *toSkip);
+            msg.set_receivetimestamp(app.getTimeKeeper().now().time_since_epoch().count());
+            app.getOverlay().relay(txId, msg, *toSkip);
         }
     }
 

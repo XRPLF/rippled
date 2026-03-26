@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -14,7 +13,7 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
     , pathSearchMax_(config.pathSearchMax)
     , standalone_(config.standalone)
     , seq_(0)
-    , j_(registry.journal("OrderBookDB"))
+    , j_(registry.getJournal("OrderBookDB"))
 {
 }
 

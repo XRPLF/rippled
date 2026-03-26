@@ -1926,7 +1926,7 @@ private:
             BEAST_EXPECT(isOffer(env, carol, BTC(1'000), EUR(1)));
             BEAST_EXPECT(isOffer(env, bob, EUR(50), USD(50)));
 
-            auto flowJournal = env.app().logs().journal("Flow");
+            auto flowJournal = env.app().getJournal("Flow");
             auto const flowResult = [&] {
                 STAmount deliver(USD(51));
                 STAmount smax(BTC(61));
@@ -1965,7 +1965,7 @@ private:
             }();
 
             BEAST_EXPECT(flowResult.removableOffers.size() == 1);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
                 Sandbox sb(&view, tapNONE);

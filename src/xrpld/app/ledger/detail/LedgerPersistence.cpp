@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/LedgerPersistence.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
@@ -18,9 +17,9 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = registry.journal("Ledger");
+    auto j = registry.getJournal("Ledger");
     auto seq = ledger->header().seq;
-    if (!registry.pendingSaves().startWork(seq))
+    if (!registry.getPendingSaves().startWork(seq))
     {
         // The save was completed synchronously
         JLOG(j.debug()) << "Save aborted";
@@ -33,7 +32,7 @@ saveValidatedLedger(
 
     // Clients can now trust the database for
     // information about this ledger sequence.
-    registry.pendingSaves().finishWork(seq);
+    registry.getPendingSaves().finishWork(seq);
     return res;
 }
 
@@ -47,10 +46,10 @@ pendSaveValidated(
     if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
-        auto stream = registry.journal("Ledger").debug();
+        auto stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
-        if (!isSynchronous || !registry.pendingSaves().pending(ledger->header().seq))
+        if (!isSynchronous || !registry.getPendingSaves().pending(ledger->header().seq))
         {
             // Either we don't need it to be finished
             // or it is finished
@@ -60,9 +59,9 @@ pendSaveValidated(
 
     XRPL_ASSERT(ledger->isImmutable(), "xrpl::pendSaveValidated : immutable ledger");
 
-    if (!registry.pendingSaves().shouldWork(ledger->header().seq, isSynchronous))
+    if (!registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
-        auto stream = registry.journal("Ledger").debug();
+        auto stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
 
         return true;
@@ -92,7 +91,13 @@ loadLedgerHelper(
 {
     bool loaded = false;
     auto ledger = std::make_shared<Ledger>(
-        info, loaded, acquire, rules, fees, registry.getNodeFamily(), registry.journal("Ledger"));
+        info,
+        loaded,
+        acquire,
+        rules,
+        fees,
+        registry.getNodeFamily(),
+        registry.getJournal("Ledger"));
 
     if (!loaded)
         ledger.reset();
@@ -137,7 +142,7 @@ loadByIndex(
             registry.getRelationalDatabase().getLedgerInfoByIndex(ledgerIndex))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, rules, fees, registry, acquire);
-        finishLoadByIndexOrHash(ledger, registry.journal("Ledger"));
+        finishLoadByIndexOrHash(ledger, registry.getJournal("Ledger"));
         return ledger;
     }
     return {};
@@ -155,7 +160,7 @@ loadByHash(
             registry.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, rules, fees, registry, acquire);
-        finishLoadByIndexOrHash(ledger, registry.journal("Ledger"));
+        finishLoadByIndexOrHash(ledger, registry.getJournal("Ledger"));
         XRPL_ASSERT(
             !ledger || ledger->header().hash == ledgerHash,
             "xrpl::loadByHash : ledger hash match if loaded");

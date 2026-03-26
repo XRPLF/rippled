@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -367,7 +366,7 @@ TrustSet::doApply()
     bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
 
     SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 
