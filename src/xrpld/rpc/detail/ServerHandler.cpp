@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
@@ -98,9 +97,9 @@ ServerHandler::ServerHandler(
     CollectorManager& cm)
     : app_(app)
     , m_resourceManager(resourceManager)
-    , m_journal(app_.journal("Server"))
+    , m_journal(app_.getJournal("Server"))
     , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_context, app_.journal("Server")))
+    , m_server(make_Server(*this, io_context, app_.getJournal("Server")))
     , m_jobQueue(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -218,7 +217,7 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remote_address);
+        return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remote_address);
 
     if (is_ws && isStatusRequest(request))
         return statusResponse(request);
@@ -270,7 +269,7 @@ ServerHandler::onRequest(Session& session)
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
@@ -278,7 +277,7 @@ ServerHandler::onRequest(Session& session)
     // Check user/password authorization
     if (!authorized(session.port(), build_map(session.request())))
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
@@ -291,7 +290,7 @@ ServerHandler::onRequest(Session& session)
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
+        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.getJournal("RPC"));
         detachedSession->close(true);
         return;
     }
@@ -440,7 +439,7 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.journal("RPCHandler"),
+                {app_.getJournal("RPCHandler"),
                  app_,
                  loadType,
                  app_.getOPs(),
@@ -574,7 +573,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto rpcJ = app_.journal("RPC");
+    auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
     {

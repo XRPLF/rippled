@@ -21,9 +21,9 @@ doLogLevel(RPC::JsonContext& context)
         Json::Value ret(Json::objectValue);
         Json::Value lev(Json::objectValue);
 
-        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
+        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.getLogs().threshold()));
         std::vector<std::pair<std::string, std::string>> logTable(
-            context.app.logs().partition_severities());
+            context.app.getLogs().partition_severities());
         for (auto const& [k, v] : logTable)
             lev[k] = v;
 
@@ -41,7 +41,7 @@ doLogLevel(RPC::JsonContext& context)
     if (!context.params.isMember(jss::partition))
     {
         // set base log threshold
-        context.app.logs().threshold(severity);
+        context.app.getLogs().threshold(severity);
         return Json::objectValue;
     }
 
@@ -53,11 +53,11 @@ doLogLevel(RPC::JsonContext& context)
 
         if (boost::iequals(partition, "base"))
         {
-            context.app.logs().threshold(severity);
+            context.app.getLogs().threshold(severity);
         }
         else
         {
-            context.app.logs().get(partition).threshold(severity);
+            context.app.getLogs().get(partition).threshold(severity);
         }
 
         return Json::objectValue;
