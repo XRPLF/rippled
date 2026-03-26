@@ -95,7 +95,7 @@ public:
     struct CheckpointerSetup
     {
         JobQueue* jobQueue;
-        ServiceRegistry* registry;
+        std::reference_wrapper<ServiceRegistry> registry;
     };
 
     template <std::size_t N, std::size_t M>
@@ -130,7 +130,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.registry);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     template <std::size_t N, std::size_t M>
@@ -155,7 +155,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.registry);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     ~DatabaseCon();

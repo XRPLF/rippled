@@ -609,7 +609,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , j_(registry.getJournal("SQLiteDatabase"))
 {
     DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, &registry_}))
+    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, registry_}))
     {
         std::string_view constexpr error = "Failed to create ledger databases";
 
