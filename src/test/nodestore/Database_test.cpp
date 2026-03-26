@@ -682,6 +682,7 @@ public:
         testConfig();
 
         testNodeStore("memory", false, seedValue);
+        testNodeStore("rwdb", false, seedValue);
 
         // Persistent backend tests
         {

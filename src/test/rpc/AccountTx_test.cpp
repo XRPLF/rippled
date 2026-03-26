@@ -1,6 +1,8 @@
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -15,6 +17,16 @@ namespace test {
 
 class AccountTx_test : public beast::unit_test::suite
 {
+    static std::unique_ptr<Config>
+    enableRWDB(std::unique_ptr<Config> cfg)
+    {
+        auto& nodeDb = cfg->section(ConfigSection::nodeDatabase());
+        nodeDb.set("type", "rwdb");
+        nodeDb.set("online_delete", "256");
+        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        return cfg;
+    }
+
     // A data structure used to describe the basic structure of a
     // transactions array node as returned by the account_tx RPC command.
     struct NodeSanity
@@ -851,11 +863,134 @@ class AccountTx_test : public beast::unit_test::suite
         checkAliceAcctTx(9, jss::Payment);
     }
 
+    void
+    testRWDBAccountTxSmoke(unsigned int apiVersion)
+    {
+        testcase("RWDB account_tx smoke APIv" + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
+
+        Account A1{"A1"};
+        env.fund(XRP(10000), A1);
+        env.close();
+        env(noop(A1));
+        env.close();
+
+        auto getTxHash = [](Json::Value const& txEntry) -> std::string {
+            if (txEntry.isMember(jss::hash) && txEntry[jss::hash].isString())
+                return txEntry[jss::hash].asString();
+            if (txEntry.isMember(jss::tx) && txEntry[jss::tx].isMember(jss::hash) &&
+                txEntry[jss::tx][jss::hash].isString())
+                return txEntry[jss::tx][jss::hash].asString();
+            if (txEntry.isMember(jss::tx_json) &&
+                txEntry[jss::tx_json].isMember(jss::hash) &&
+                txEntry[jss::tx_json][jss::hash].isString())
+                return txEntry[jss::tx_json][jss::hash].asString();
+            return {};
+        };
+
+        Json::Value params;
+        params[jss::api_version] = apiVersion;
+        params[jss::account] = A1.human();
+        params[jss::limit] = 1;
+
+        auto first = env.rpc(apiVersion, "json", "account_tx", to_string(params));
+        BEAST_EXPECT(first.isMember(jss::result));
+        BEAST_EXPECT(first[jss::result][jss::status] == "success");
+        BEAST_EXPECT(first[jss::result].isMember(jss::transactions));
+        BEAST_EXPECT(first[jss::result][jss::transactions].size() >= 1);
+
+        Json::Value forwardParams = params;
+        forwardParams[jss::forward] = true;
+        auto forwardRes = env.rpc(apiVersion, "json", "account_tx", to_string(forwardParams));
+        BEAST_EXPECT(forwardRes.isMember(jss::result));
+        BEAST_EXPECT(forwardRes[jss::result][jss::status] == "success");
+
+        if (forwardRes[jss::result].isMember(jss::marker))
+        {
+            Json::Value nextParams = forwardParams;
+            nextParams[jss::marker] = forwardRes[jss::result][jss::marker];
+            auto next = env.rpc(apiVersion, "json", "account_tx", to_string(nextParams));
+            BEAST_EXPECT(next.isMember(jss::result));
+            BEAST_EXPECT(next[jss::result][jss::status] == "success");
+
+            // Marker identifies the last tx of the previous page; next page
+            // must resume *after* it and not duplicate it.
+            if (forwardRes[jss::result][jss::transactions].size() > 0 &&
+                next[jss::result][jss::transactions].size() > 0)
+            {
+                auto const firstHash =
+                    getTxHash(forwardRes[jss::result][jss::transactions][0u]);
+                auto const nextHash =
+                    getTxHash(next[jss::result][jss::transactions][0u]);
+                BEAST_EXPECT(!firstHash.empty());
+                BEAST_EXPECT(!nextHash.empty());
+                BEAST_EXPECT(firstHash != nextHash);
+            }
+        }
+    }
+
+    void
+    testRWDBAccountTxBinary(unsigned int apiVersion)
+    {
+        testcase("RWDB account_tx binary APIv" + std::to_string(apiVersion));
+
+        using namespace test::jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg = enableRWDB(std::move(cfg));
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
+
+        Account A1{"A1"};
+        env.fund(XRP(10000), A1);
+        env.close();
+        env(noop(A1));
+        env.close();
+
+        Json::Value params;
+        params[jss::api_version] = apiVersion;
+        params[jss::account] = A1.human();
+        params[jss::binary] = true;
+        params[jss::limit] = 10;
+
+        auto const res = env.rpc(apiVersion, "json", "account_tx", to_string(params));
+        BEAST_EXPECT(res.isMember(jss::result));
+        BEAST_EXPECT(res[jss::result][jss::status] == "success");
+        BEAST_EXPECT(res[jss::result].isMember(jss::transactions));
+        BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
+
+        auto const& tx0 = res[jss::result][jss::transactions][0u];
+        BEAST_EXPECT(tx0.isMember(jss::tx_blob));
+        BEAST_EXPECT(tx0[jss::tx_blob].isString());
+
+        if (apiVersion > 1)
+        {
+            BEAST_EXPECT(tx0.isMember(jss::meta_blob));
+            BEAST_EXPECT(tx0[jss::meta_blob].isString());
+            BEAST_EXPECT(!tx0.isMember(jss::meta));
+        }
+        else
+        {
+            BEAST_EXPECT(tx0.isMember(jss::meta));
+            BEAST_EXPECT(tx0[jss::meta].isString());
+        }
+    }
+
 public:
     void
     run() override
     {
         forAllApiVersions(std::bind_front(&AccountTx_test::testParameters, this));
+        forAllApiVersions(std::bind_front(&AccountTx_test::testRWDBAccountTxSmoke, this));
+        forAllApiVersions(std::bind_front(&AccountTx_test::testRWDBAccountTxBinary, this));
         testContents();
         testAccountDelete();
         testMPT();

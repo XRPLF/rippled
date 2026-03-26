@@ -3,6 +3,7 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/CTID.h>
 
 #include <xrpl/core/NetworkIDService.h>
@@ -29,10 +30,18 @@ class Transaction_test : public beast::unit_test::suite
         });
     }
 
-    void
-    testRangeRequest(FeatureBitset features)
+    static std::unique_ptr<Config>
+    enableRWDB(std::unique_ptr<Config> cfg)
     {
-        testcase("Test Range Request");
+        cfg->section(ConfigSection::nodeDatabase()).set("type", "rwdb");
+        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        return cfg;
+    }
+
+    void
+    testRangeRequest(FeatureBitset features, bool rwdb = false)
+    {
+        testcase(rwdb ? "Test Range Request (rwdb)" : "Test Range Request");
 
         using namespace test::jtx;
         using std::to_string;
@@ -43,7 +52,21 @@ class Transaction_test : public beast::unit_test::suite
         char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
         char const* EXCESSIVE = RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
-        Env env{*this, features};
+        std::unique_ptr<Env> envHolder;
+        if (rwdb)
+        {
+            envHolder = std::make_unique<Env>(
+                *this,
+                test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
+                    return enableRWDB(std::move(cfg));
+                }));
+        }
+        else
+        {
+            envHolder = std::make_unique<Env>(*this, features);
+        }
+        auto& env = *envHolder;
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
@@ -269,9 +292,9 @@ class Transaction_test : public beast::unit_test::suite
     }
 
     void
-    testRangeCTIDRequest(FeatureBitset features)
+    testRangeCTIDRequest(FeatureBitset features, bool rwdb = false)
     {
-        testcase("CTID Range Request");
+        testcase(rwdb ? "CTID Range Request (rwdb)" : "CTID Range Request");
 
         using namespace test::jtx;
         using std::to_string;
@@ -282,7 +305,10 @@ class Transaction_test : public beast::unit_test::suite
         char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
         char const* EXCESSIVE = RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
-        Env env{*this, makeNetworkConfig(11111)};
+        auto cfg = makeNetworkConfig(11111);
+        if (rwdb)
+            cfg = enableRWDB(std::move(cfg));
+        Env env{*this, std::move(cfg)};
         uint32_t netID = env.app().getNetworkIDService().getNetworkID();
 
         auto const alice = Account("alice");
@@ -872,7 +898,9 @@ public:
     testWithFeats(FeatureBitset features)
     {
         testRangeRequest(features);
+        testRangeRequest(features, true);
         testRangeCTIDRequest(features);
+        testRangeCTIDRequest(features, true);
         testCTIDValidation(features);
         testRPCsForCTID(features);
         forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));

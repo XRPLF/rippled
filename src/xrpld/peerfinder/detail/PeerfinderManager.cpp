@@ -189,6 +189,7 @@ public:
     start() override
     {
         m_store.open(m_config);
+
         m_logic.load();
     }
 
@@ -246,7 +247,8 @@ make_Manager(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
+    return std::make_unique<ManagerImp>(
+        io_context, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder

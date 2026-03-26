@@ -63,6 +63,7 @@ public:
             }
         }
 
+        if (type != "rwdb")
         {
             // Re-open the backend
             std::unique_ptr<Backend> backend =
@@ -87,6 +88,7 @@ public:
         std::uint64_t const seedValue = 50;
 
         testBackend("nudb", seedValue);
+        testBackend("rwdb", seedValue);
 
 #if XRPL_ROCKSDB_AVAILABLE
         testBackend("rocksdb", seedValue);

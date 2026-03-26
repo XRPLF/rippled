@@ -1,12 +1,16 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
+#include <xrpld/app/rdb/backend/RWDBDatabase.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
+#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
+
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace xrpl {
 
@@ -616,10 +620,21 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     }
 }
 
-SQLiteDatabase
+std::unique_ptr<RelationalDatabase>
 setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    return {registry, config, jobQueue};
+    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
+    if (!rdbSection.empty())
+    {
+        auto const backend = get(rdbSection, "backend");
+        if (boost::iequals(backend, "sqlite"))
+            return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
+        if (boost::iequals(backend, "rwdb"))
+            return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
+        Throw<std::runtime_error>("Invalid relational_db backend value: " + backend);
+    }
+
+    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
 }
 
 }  // namespace xrpl

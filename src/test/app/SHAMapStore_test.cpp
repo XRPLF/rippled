@@ -34,6 +34,14 @@ class SHAMapStore_test : public beast::unit_test::suite
         return cfg;
     }
 
+    static auto
+    rwdb(std::unique_ptr<Config> cfg)
+    {
+        cfg->section(ConfigSection::nodeDatabase()).set("type", "rwdb");
+        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        return cfg;
+    }
+
     static bool
     goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
@@ -564,12 +572,100 @@ public:
     }
 
     void
+    testAutomaticRWDB()
+    {
+        testcase("automatic online_delete with rwdb backend");
+        using namespace jtx;
+
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                return rwdb(onlineDelete(std::move(cfg)));
+            }));
+
+        auto& store = env.app().getSHAMapStore();
+
+        auto ledgerSeq = waitForReady(env);
+        auto const initialRotated = store.getLastRotated();
+        BEAST_EXPECT(initialRotated > 0);
+
+        for (; ledgerSeq < initialRotated + deleteInterval + 1; ++ledgerSeq)
+            env.close();
+
+        store.rendezvous();
+
+        auto const rotated = store.getLastRotated();
+        BEAST_EXPECT(rotated > initialRotated);
+
+        auto& rdb = env.app().getRelationalDatabase();
+        auto const minLedger = rdb.getMinLedgerSeq();
+        BEAST_EXPECT(minLedger.has_value());
+        if (minLedger)
+            BEAST_EXPECT(*minLedger >= initialRotated);
+
+        auto const txMin = rdb.getTransactionsMinLedgerSeq();
+        if (txMin)
+            BEAST_EXPECT(*txMin >= initialRotated);
+
+        auto const acctTxMin = rdb.getAccountTransactionsMinLedgerSeq();
+        if (acctTxMin)
+            BEAST_EXPECT(*acctTxMin >= initialRotated);
+    }
+
+    void
+    testCanDeleteRWDB()
+    {
+        testcase("rwdb advisory_delete can_delete controls");
+        using namespace jtx;
+
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                return rwdb(advisoryDelete(std::move(cfg)));
+            }));
+
+        auto& store = env.app().getSHAMapStore();
+
+        auto ledgerSeq = waitForReady(env);
+        auto const initialRotated = store.getLastRotated();
+        BEAST_EXPECT(initialRotated > 0);
+
+        auto canDelete = env.rpc("can_delete");
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
+
+        canDelete = env.rpc("can_delete", "never");
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
+
+        auto const requested = ledgerSeq + deleteInterval / 2;
+        canDelete = env.rpc("can_delete", std::to_string(requested));
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == requested);
+
+        canDelete = env.rpc("can_delete", "always");
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(
+            canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
+
+        env.close();
+        store.rendezvous();
+
+        canDelete = env.rpc("can_delete", "now");
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete].asUInt() > 0);
+        BEAST_EXPECT(store.getLastRotated() >= initialRotated);
+    }
+
+    void
     run() override
     {
         testClear();
         testAutomatic();
         testCanDelete();
         testRotate();
+        testAutomaticRWDB();
+        testCanDeleteRWDB();
     }
 };
 
