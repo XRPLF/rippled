@@ -33,7 +33,7 @@ or may not hold a value. For things not guaranteed to exist,
 you use `x[~sfFoo]` because you want such a container. It
 avoids having to look something up twice, once just to see if
 it exists and a second time to get/set its value.
-([Real example](https://github.com/XRPLF/rippled/blob/35f4698aed5dce02f771b34cfbb690495cb5efcc/src/rippled/app/tx/impl/PayChan.cpp#L229-L236))
+([Real example](https://github.com/XRPLF/rippled/blob/35f4698aed5dce02f771b34cfbb690495cb5efcc/src/ripple/app/tx/impl/PayChan.cpp#L229-L236))
 
 The source of this "type magic" is in
 [SField.h](./SField.h#L296-L302).
