@@ -169,7 +169,7 @@ public:
         XRPL_ASSERT(m_stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
         XRPL_ASSERT(m_stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
-        if (m_stopped.exchange(false) == true)
+        if (m_stopped.exchange(false))
         {
             {
                 std::lock_guard lk{m_mut};
@@ -182,7 +182,7 @@ public:
     void
     stop_async() override
     {
-        if (m_stop_called.exchange(true) == false)
+        if (!m_stop_called.exchange(true))
         {
             boost::asio::dispatch(
                 m_io_context,
@@ -229,7 +229,7 @@ public:
     {
         XRPL_ASSERT(m_stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
-        if (m_stopped.exchange(true) == false)
+        if (!m_stopped.exchange(true))
         {
             m_work.clear();
             m_resolver.cancel();
@@ -271,7 +271,7 @@ public:
                 m_strand, std::bind(&ResolverAsioImpl::do_work, this, CompletionCounter(this))));
     }
 
-    HostAndPort
+    static HostAndPort
     parseName(std::string const& str)
     {
         // first attempt to parse as an endpoint (IP addr + port).
@@ -319,7 +319,7 @@ public:
     void
     do_work(CompletionCounter)
     {
-        if (m_stop_called == true)
+        if (m_stop_called)
             return;
 
         // We don't have any work to do at this time
@@ -367,7 +367,7 @@ public:
     {
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
-        if (m_stop_called == false)
+        if (!m_stop_called)
         {
             m_work.emplace_back(names, handler);
 

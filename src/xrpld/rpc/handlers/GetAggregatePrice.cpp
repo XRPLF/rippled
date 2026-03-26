@@ -56,7 +56,7 @@ iteratePriceData(
         if (prevChain == chain)
             return;
 
-        if (!oracle || f(*oracle) || isNew)
+        if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
         if (++history > maxHistory)

@@ -3856,7 +3856,7 @@ private:
                         auto& c = counters[bridge];
                         auto& create_claims = claims.create_claims[c.claim_count];
                         auto num_attns = create_claims.size();
-                        if (num_attns)
+                        if (num_attns != 0u)
                         {
                             c.num_create_attn_sent +=
                                 sendCreateAttestations(i, bridge, create_claims);

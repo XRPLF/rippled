@@ -43,11 +43,15 @@
 #include <xrpl/git/Git.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -1685,12 +1689,12 @@ NetworkOPsImp::getOwnerInfo(std::shared_ptr<ReadView const> lpLedger, AccountID 
 
             uNodeDir = sleNode->getFieldU64(sfIndexNext);
 
-            if (uNodeDir)
+            if (uNodeDir != 0u)
             {
                 sleNode = lpLedger->read(keylet::page(root, uNodeDir));
                 XRPL_ASSERT(sleNode, "xrpl::NetworkOPsImp::getOwnerInfo : read next page");
             }
-        } while (uNodeDir);
+        } while (uNodeDir != 0u);
     }
 
     return jvObjects;
@@ -2528,7 +2532,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (warnings.size())
+        if (warnings.size() != 0u)
             info[jss::warnings] = std::move(warnings);
     }
 
@@ -2981,7 +2985,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
-                jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
+                jvObj[jss::fee_ref] = FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
             jvObj[jss::reserve_base] = lpAccepted->fees().reserve.jsonClipped();
             jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
@@ -4005,7 +4009,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::ledger_time] =
             Json::Value::UInt(lpClosed->header().closeTime.time_since_epoch().count());
         if (!lpClosed->rules().enabled(featureXRPFees))
-            jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
+            jvResult[jss::fee_ref] = FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
@@ -4034,7 +4038,7 @@ bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sLedger].erase(uSeq);
+    return mStreamMaps[sLedger].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4042,7 +4046,7 @@ bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sBookChanges].erase(uSeq);
+    return mStreamMaps[sBookChanges].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4058,7 +4062,7 @@ bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sManifests].erase(uSeq);
+    return mStreamMaps[sManifests].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4091,7 +4095,7 @@ bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sServer].erase(uSeq);
+    return mStreamMaps[sServer].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4107,7 +4111,7 @@ bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sTransactions].erase(uSeq);
+    return mStreamMaps[sTransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4123,7 +4127,7 @@ bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sRTTransactions].erase(uSeq);
+    return mStreamMaps[sRTTransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4145,7 +4149,7 @@ bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sValidations].erase(uSeq);
+    return mStreamMaps[sValidations].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4161,7 +4165,7 @@ bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sPeerStatus].erase(uSeq);
+    return mStreamMaps[sPeerStatus].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4177,7 +4181,7 @@ bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
-    return mStreamMaps[sConsensusPhase].erase(uSeq);
+    return mStreamMaps[sConsensusPhase].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer
@@ -4628,7 +4632,7 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }
     obj[jss::server_state_duration_us] = std::to_string(current.count());
-    if (initialSync)
+    if (initialSync != 0u)
         obj[jss::initial_sync_duration_us] = std::to_string(initialSync);
 }
 

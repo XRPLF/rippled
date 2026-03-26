@@ -24,7 +24,7 @@ sqlBlobLiteral(Blob const& blob)
 {
     std::string j;
 
-    j.reserve(blob.size() * 2 + 3);
+    j.reserve((blob.size() * 2) + 3);
     j.push_back('X');
     j.push_back('\'');
     boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));

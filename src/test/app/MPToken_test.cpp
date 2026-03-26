@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -3276,7 +3277,7 @@ class MPToken_test : public beast::unit_test::suite
     testMultiSendMaximumAmount(FeatureBitset features)
     {
         // Verify that rippleSendMultiMPT correctly enforces MaximumAmount
-        // when the issuer sends to multiple receivers. Pre-fixAssortedFixes,
+        // when the issuer sends to multiple receivers. Pre-fixSecurity3_1_3,
         // a stale view.read() snapshot caused per-iteration checks to miss
         // aggregate overflows. Post-fix, a running total is used instead.
         testcase("Multi-send MaximumAmount enforcement");
@@ -3347,7 +3348,7 @@ class MPToken_test : public beast::unit_test::suite
         // Pre-amendment: the stale per-iteration check allows each
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
-        env.disableFeature(fixAssortedFixes);
+        env.disableFeature(fixSecurity3_1_3);
         env.close();
         runTest(
             R{{alice.id(), 100}, {bob.id(), 100}},
