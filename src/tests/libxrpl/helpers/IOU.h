@@ -40,6 +40,7 @@ public:
     IOU(std::string_view currencyCode, Account const& issuer)
         : currency_(to_currency(std::string(currencyCode))), issuer_(issuer.id())
     {
+        XRPL_ASSERT(!isXRP(currency_), "IOU: currency code must not resolve to XRP");
     }
 
     /**

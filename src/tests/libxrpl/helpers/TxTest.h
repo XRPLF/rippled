@@ -113,7 +113,7 @@ asfToLsf(std::uint32_t asf)
         case asfAllowTrustLineLocking:
             return lsfAllowTrustLineLocking;
         default:
-            return 0;
+            throw std::runtime_error("Unknown asf flag");
     }
 }
 

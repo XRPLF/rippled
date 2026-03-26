@@ -100,17 +100,24 @@ TxTest::submit(std::shared_ptr<STTx const> stx)
 void
 TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags)
 {
-    ASSERT_EQ(
-        submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter,
-        tesSUCCESS);
+    auto const paymentTer =
+        submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter;
+
+    if (paymentTer != tesSUCCESS)
+    {
+        throw std::runtime_error("TxTest::createAccount: failed to create account");
+    }
 
     close();
 
     if (accountFlags != 0)
     {
-        ASSERT_EQ(
-            submit(transactions::AccountSetBuilder{account}.setSetFlag(accountFlags), account).ter,
-            tesSUCCESS);
+        auto const accountSetTer =
+            submit(transactions::AccountSetBuilder{account}.setSetFlag(accountFlags), account).ter;
+        if (accountSetTer != tesSUCCESS)
+        {
+            throw std::runtime_error("TxTest::createAccount: failed to set account flags");
+        }
         close();
     }
 }
@@ -174,7 +181,10 @@ TxTest::close()
         for (auto const& [key, tx] : txSet)
         {
             auto result = apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
-            ASSERT_TRUE(result.applied) << "TxTest::close: failed to apply transaction";
+            if (!result.applied)
+            {
+                throw std::runtime_error("TxTest::close: failed to apply transaction");
+            }
         }
         accum.apply(*newLedger);
     }
