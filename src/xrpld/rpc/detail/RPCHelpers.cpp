@@ -1,8 +1,8 @@
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>

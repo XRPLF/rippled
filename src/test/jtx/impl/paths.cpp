@@ -1,6 +1,6 @@
 #include <test/jtx/paths.h>
 
-#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/protocol/jss.h>
 
