@@ -513,7 +513,7 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // - Create trust line if needed.
 // --> bCheckIssuer : normally require issuer to be involved.
 static TER
-rippleCreditIOU(
+directSendIOU(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -527,20 +527,20 @@ rippleCreditIOU(
     // Make sure issuer is involved.
     XRPL_ASSERT(
         !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer,
-        "xrpl::rippleCreditIOU : matching issuer or don't care");
+        "xrpl::directSendIOU : matching issuer or don't care");
     (void)issuer;
 
     // Disallow sending to self.
-    XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::rippleCreditIOU : sender is not receiver");
+    XRPL_ASSERT(uSenderID != uReceiverID, "xrpl::directSendIOU : sender is not receiver");
 
     bool const bSenderHigh = uSenderID > uReceiverID;
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
     XRPL_ASSERT(
-        !isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::rippleCreditIOU : sender is not XRP");
+        !isXRP(uSenderID) && uSenderID != noAccount(), "xrpl::directSendIOU : sender is not XRP");
     XRPL_ASSERT(
         !isXRP(uReceiverID) && uReceiverID != noAccount(),
-        "xrpl::rippleCreditIOU : receiver is not XRP");
+        "xrpl::directSendIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -556,7 +556,7 @@ rippleCreditIOU(
 
         saBalance -= saAmount;
 
-        JLOG(j.trace()) << "rippleCreditIOU: " << to_string(uSenderID) << " -> "
+        JLOG(j.trace()) << "directSendIOU: " << to_string(uSenderID) << " -> "
                         << to_string(uReceiverID) << " : before=" << saBefore.getFullText()
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
@@ -623,7 +623,7 @@ rippleCreditIOU(
 
     saBalance.setIssuer(noAccount());
 
-    JLOG(j.debug()) << "rippleCreditIOU: "
+    JLOG(j.debug()) << "directSendIOU: "
                        "create line: "
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
@@ -675,7 +675,7 @@ rippleSendIOU(
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter = rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
+        auto const ter = directSendIOU(view, uSenderID, uReceiverID, saAmount, false, j);
         if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
@@ -693,10 +693,10 @@ rippleSendIOU(
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult = rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, j);
+    TER terResult = directSendIOU(view, issuer, uReceiverID, saAmount, true, j);
 
     if (tesSUCCESS == terResult)
-        terResult = rippleCreditIOU(view, uSenderID, issuer, saActual, true, j);
+        terResult = directSendIOU(view, uSenderID, issuer, saActual, true, j);
 
     return terResult;
 }
@@ -739,10 +739,10 @@ rippleSendMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = rippleCreditIOU(view, senderID, receiverID, amount, false, j))
+            if (auto const ter = directSendIOU(view, senderID, receiverID, amount, false, j))
                 return ter;
             actual += amount;
-            // Do not add amount to takeFromSender, because rippleCreditIOU took
+            // Do not add amount to takeFromSender, because directSendIOU took
             // it.
 
             continue;
@@ -762,13 +762,13 @@ rippleSendMultiIOU(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actual.getFullText();
 
-        if (TER const terResult = rippleCreditIOU(view, issuer, receiverID, amount, true, j))
+        if (TER const terResult = directSendIOU(view, issuer, receiverID, amount, true, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult = rippleCreditIOU(view, senderID, issuer, takeFromSender, true, j))
+        if (TER const terResult = directSendIOU(view, senderID, issuer, takeFromSender, true, j))
             return terResult;
     }
 
@@ -1022,7 +1022,7 @@ accountSendMultiIOU(
 }
 
 static TER
-rippleCreditMPT(
+directSendMPT(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -1122,7 +1122,7 @@ rippleSendMPT(
         }
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
-        auto const ter = rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
+        auto const ter = directSendMPT(view, uSenderID, uReceiverID, saAmount, j);
         if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
@@ -1138,11 +1138,11 @@ rippleSendMPT(
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    if (auto const terResult = rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
+    if (auto const terResult = directSendMPT(view, issuer, uReceiverID, saAmount, j);
         !isTesSuccess(terResult))
         return terResult;
 
-    return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
+    return directSendMPT(view, uSenderID, issuer, saActual, j);
 }
 
 static TER
@@ -1201,10 +1201,10 @@ rippleSendMultiMPT(
             }
 
             // Direct send: redeeming MPTs and/or sending own MPTs.
-            if (auto const ter = rippleCreditMPT(view, senderID, receiverID, amount, j))
+            if (auto const ter = directSendMPT(view, senderID, receiverID, amount, j))
                 return ter;
             actual += amount;
-            // Do not add amount to takeFromSender, because rippleCreditMPT took
+            // Do not add amount to takeFromSender, because directSendMPT took
             // it
 
             continue;
@@ -1221,12 +1221,12 @@ rippleSendMultiMPT(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actualSend.getFullText();
 
-        if (auto const terResult = rippleCreditMPT(view, issuer, receiverID, amount, j))
+        if (auto const terResult = directSendMPT(view, issuer, receiverID, amount, j))
             return terResult;
     }
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult = rippleCreditMPT(view, senderID, issuer, takeFromSender, j))
+        if (TER const terResult = directSendMPT(view, senderID, issuer, takeFromSender, j))
             return terResult;
     }
 
@@ -1278,7 +1278,7 @@ accountSendMultiMPT(
 //------------------------------------------------------------------------------
 
 TER
-rippleCredit(
+directSend(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
@@ -1290,12 +1290,12 @@ rippleCredit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                return rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
+                return directSendIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
             }
             else
             {
-                XRPL_ASSERT(!bCheckIssuer, "xrpl::rippleCredit : not checking issuer");
-                return rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
+                XRPL_ASSERT(!bCheckIssuer, "xrpl::directSend : not checking issuer");
+                return directSendMPT(view, uSenderID, uReceiverID, saAmount, j);
             }
         },
         saAmount.asset().value());

@@ -51,6 +51,9 @@ find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o 
     ${SED_COMMAND} -i 's@src/ripple/@src/xrpld/@g' "${FILE}"
     ${SED_COMMAND} -i 's@ripple/app/@xrpld/app/@g' "${FILE}"
     ${SED_COMMAND} -i 's@https://github.com/ripple/rippled@https://github.com/XRPLF/rippled@g' "${FILE}"
+    ${SED_COMMAND} -i 's/rippleLockEscrowMPT/lockEscrowMPT/g' "${FILE}"
+    ${SED_COMMAND} -i 's/rippleUnlockEscrowMPT/unlockEscrowMPT/g' "${FILE}"
+    ${SED_COMMAND} -i 's/rippleCredit/directSend/g' "${FILE}"
 done
 ${SED_COMMAND} -i 's/ripple_libs/xrpl_libs/' BUILD.md
 ${SED_COMMAND} -i 's/Ripple integrators/XRPL developers/' README.md

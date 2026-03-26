@@ -235,11 +235,11 @@ canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, Acc
 // --> bCheckIssuer : normally require issuer to be involved.
 // [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
 
-/** Calls static rippleCreditIOU if saAmount represents Issue.
- * Calls static rippleCreditMPT if saAmount represents MPTIssue.
+/** Calls static directSendIOU if saAmount represents Issue.
+ * Calls static directSendMPT if saAmount represents MPTIssue.
  */
 TER
-rippleCredit(
+directSend(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,

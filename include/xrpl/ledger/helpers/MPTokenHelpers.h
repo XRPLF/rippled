@@ -142,14 +142,14 @@ removeEmptyHolding(
 //------------------------------------------------------------------------------
 
 TER
-rippleLockEscrowMPT(
+lockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     STAmount const& saAmount,
     beast::Journal j);
 
 TER
-rippleUnlockEscrowMPT(
+unlockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     AccountID const& uGranteeID,
