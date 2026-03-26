@@ -1,18 +1,17 @@
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
@@ -22,7 +21,9 @@
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
@@ -1389,7 +1390,7 @@ LedgerMaster::updatePaths()
 
         try
         {
-            auto& pathRequests = app_.getPathRequests();
+            auto& pathRequests = app_.getPathRequestManager();
             {
                 std::lock_guard ml(m_mutex);
                 if (!pathRequests.requestsPending())
@@ -1471,7 +1472,7 @@ LedgerMaster::newOrderBookDB()
 bool
 LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&)
 {
-    if (!app_.isStopping() && mPathFindThread < 2 && app_.getPathRequests().requestsPending())
+    if (!app_.isStopping() && mPathFindThread < 2 && app_.getPathRequestManager().requestsPending())
     {
         JLOG(m_journal.debug()) << "newPFWork: Creating job. path find threads: "
                                 << mPathFindThread;

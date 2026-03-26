@@ -1,5 +1,5 @@
-#include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 namespace xrpl {
 

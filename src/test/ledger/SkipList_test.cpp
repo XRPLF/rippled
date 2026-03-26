@@ -1,8 +1,7 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/ledger/Ledger.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
 
 namespace xrpl {
@@ -18,7 +17,11 @@ class SkipList_test : public beast::unit_test::suite
         {
             Config config;
             auto prev = std::make_shared<Ledger>(
-                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {
