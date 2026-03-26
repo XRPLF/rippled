@@ -4,6 +4,7 @@
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 namespace test {
@@ -1857,6 +1858,21 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testDelegateUtilsNullptrCheck()
+    {
+        testcase("DelegateUtils nullptr check");
+
+        // checkTxPermission nullptr check
+        STTx const tx{ttPAYMENT, [](STObject&) {}};
+        BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
+
+        // loadGranularPermission nullptr check
+        std::unordered_set<GranularPermissionType> granularPermissions;
+        loadGranularPermission(nullptr, ttPAYMENT, granularPermissions);
+        BEAST_EXPECT(granularPermissions.empty());
+    }
+
+    void
     run() override
     {
         FeatureBitset const all = jtx::testable_amendments();
@@ -1881,6 +1897,7 @@ class Delegate_test : public beast::unit_test::suite
         testPermissionValue(all);
         testTxRequireFeatures(all);
         testTxDelegableCount();
+        testDelegateUtilsNullptrCheck();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
