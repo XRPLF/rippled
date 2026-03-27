@@ -739,24 +739,27 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    auto const effectiveWorkers = [&]() {
-        if (standalone() && !FORCE_MULTI_THREAD)
-            return 1;
+    auto const effectiveWorkers = Config::computeEffectiveWorkers(
+        standalone(), FORCE_MULTI_THREAD, WORKERS, NODE_SIZE);
+int Config::computeEffectiveWorkers(bool standalone, bool forceMultiThread, int workers, std::size_t nodeSize)
+{
+    if (standalone && !forceMultiThread)
+        return 1;
 
-        if (WORKERS)
-            return WORKERS;
+    if (workers)
+        return workers;
 
-        auto count = static_cast<int>(std::thread::hardware_concurrency());
+    auto count = static_cast<int>(std::thread::hardware_concurrency());
 
-        if (NODE_SIZE >= 4 && count >= 16)
-            count = 6 + std::min(count, 8);
-        else if (NODE_SIZE >= 3 && count >= 8)
-            count = 4 + std::min(count, 6);
-        else
-            count = 2 + std::min(count, 4);
+    if (nodeSize >= 4 && count >= 16)
+        count = 6 + std::min(count, 8);
+    else if (nodeSize >= 3 && count >= 8)
+        count = 4 + std::min(count, 6);
+    else
+        count = 2 + std::min(count, 4);
 
-        return count;
-    }();
+    return count;
+}
 
     auto const maxUpdatePfLimit = std::max(2, (effectiveWorkers * 3) / 4);
     if (PATH_WORKERS > maxUpdatePfLimit)
