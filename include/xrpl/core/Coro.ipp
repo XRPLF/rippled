@@ -83,16 +83,10 @@ JobQueue::Coro::resume()
     // resume() acquires the lock the coroutine may have already run to
     // completion. Calling operator() on a completed boost::coroutine2 is
     // undefined behavior, so we must check and return early.
-    if (!coro_)
+    if (coro_)
     {
-        detail::getLocalValues().release();
-        detail::getLocalValues().reset(saved);
-        std::lock_guard lk(mutex_run_);
-        running_ = false;
-        cv_.notify_all();
-        return;
+        coro_();
     }
-    coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
     std::lock_guard lk(mutex_run_);
