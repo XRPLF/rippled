@@ -787,7 +787,7 @@ public:
         env.close();
 
         auto cache =
-            std::make_shared<RippleLineCache>(env.current(), env.app().journal("RippleLineCache"));
+            std::make_shared<RippleLineCache>(env.current(), env.app().getJournal("RippleLineCache"));
         Pathfinder pf(
             cache,
             A1.id(),
