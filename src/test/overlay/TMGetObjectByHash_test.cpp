@@ -95,7 +95,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     std::shared_ptr<PeerTest>
     createPeer(jtx::Env& env)
     {
-        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
+        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
         auto stream_ptr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);

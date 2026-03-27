@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
@@ -35,12 +34,12 @@ RippleCalc::rippleCalculate(
     STPathSet const& spsPaths,
 
     std::optional<uint256> const& domainID,
-    Logs& l,
+    ServiceRegistry& registry,
     Input const* const pInputs)
 {
     Output flowOut;
     PaymentSandbox flowSB(&view);
-    auto j = l.journal("Flow");
+    auto j = registry.getJournal("Flow");
 
     {
         bool const defaultPaths = (pInputs == nullptr) ? true : pInputs->defaultPathsAllowed;

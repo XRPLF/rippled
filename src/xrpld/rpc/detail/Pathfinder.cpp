@@ -3,7 +3,6 @@
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
@@ -167,7 +166,7 @@ Pathfinder::Pathfinder(
     , mLedger(cache->getLedger())
     , mRLCache(cache)
     , app_(app)
-    , j_(app.journal("Pathfinder"))
+    , j_(app.getJournal("Pathfinder"))
 {
     XRPL_ASSERT(
         !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
@@ -345,7 +344,7 @@ Pathfinder::getPathLiquidity(
             mSrcAccount,
             pathSet,
             mDomain,
-            app_.logs(),
+            app_,
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
         if (!isTesSuccess(rc.result()))
@@ -366,7 +365,7 @@ Pathfinder::getPathLiquidity(
                 mSrcAccount,
                 pathSet,
                 mDomain,
-                app_.logs(),
+                app_,
                 &rcInput);
 
             // If we found further liquidity, add it into the result.
@@ -404,7 +403,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
             mSrcAccount,
             STPathSet(),
             mDomain,
-            app_.logs(),
+            app_,
             &rcInput);
 
         if (rc.result() == tesSUCCESS)
