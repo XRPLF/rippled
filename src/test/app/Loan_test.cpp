@@ -2071,7 +2071,19 @@ protected:
                         STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
                         tfLoanOverpayment),
                     fee(XRPAmount{baseFee * (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
-                    ter(temINVALID_FLAG));
+                    ter(tecNO_PERMISSION));
+
+                {
+                    env.disableFeature(fixSecurity3_1_3);
+                    env(pay(borrower,
+                            loanKeylet.key,
+                            STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
+                            tfLoanOverpayment),
+                        fee(XRPAmount{
+                            baseFee * (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
+                        ter(temINVALID_FLAG));
+                    env.enableFeature(fixSecurity3_1_3);
+                }
             }
             // Try to send a payment marked as multiple mutually exclusive
             // payment types. Do not include `txFlags`, so we don't duplicate

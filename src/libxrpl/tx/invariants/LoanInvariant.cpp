@@ -187,6 +187,25 @@ ValidLoanBroker::finalize(
                                "is less than pseudo-account asset balance";
             return false;
         }
+
+        if (view.rules().enabled(fixSecurity3_1_3))
+        {
+            // Don't check the balance when LoanBroker is deleted, sfCoverAvailable is not zeroed
+            if (tx.getTxnType() != ttLOAN_BROKER_DELETE &&
+                after->at(sfCoverAvailable) > accountHolds(
+                                                  view,
+                                                  after->at(sfAccount),
+                                                  vaultAsset,
+                                                  FreezeHandling::fhIGNORE_FREEZE,
+                                                  AuthHandling::ahIGNORE_AUTH,
+                                                  j))
+            {
+                JLOG(j.fatal()) <<  //
+                    "Invariant failed: Loan Broker cover available is greater than pseudo-account "
+                    "asset balance";
+                return false;
+            }
+        }
     }
     return true;
 }

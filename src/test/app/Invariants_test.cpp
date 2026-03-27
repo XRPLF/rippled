@@ -2249,6 +2249,81 @@ class Invariants_test : public beast::unit_test::suite
                 STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 createLoanBroker);
+
+            // Test: cover available less than pseudo-account asset balance
+            {
+                Keylet brokerKeylet = keylet::amendments();
+                Preclose createBrokerWithCover =
+                    [&, this](Account const& alice, Account const& issuer, Env& env) {
+                        PrettyAsset const asset = [&]() {
+                            switch (assetType)
+                            {
+                                case Asset::IOU: {
+                                    PrettyAsset const iouAsset = issuer["IOU"];
+                                    env(trust(alice, iouAsset(1000)));
+                                    env(pay(issuer, alice, iouAsset(1000)));
+                                    env.close();
+                                    return iouAsset;
+                                }
+                                case Asset::MPT: {
+                                    MPTTester mptt{env, issuer, mptInitNoFund};
+                                    mptt.create(
+                                        {.flags =
+                                             tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+                                    PrettyAsset const mptAsset = mptt.issuanceID();
+                                    mptt.authorize({.account = alice});
+                                    env(pay(issuer, alice, mptAsset(1000)));
+                                    env.close();
+                                    return mptAsset;
+                                }
+                                case Asset::XRP:
+                                default:
+                                    return PrettyAsset{xrpIssue(), 1'000'000};
+                            }
+                        }();
+                        brokerKeylet = this->createLoanBroker(alice, env, asset);
+                        if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                            return false;
+                        env(loanBroker::coverDeposit(alice, brokerKeylet.key, asset(10)));
+                        env.close();
+                        return BEAST_EXPECT(env.le(brokerKeylet));
+                    };
+
+                doInvariantCheck(
+                    {{"Loan Broker cover available is less than pseudo-account asset balance"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(brokerKeylet);
+                        if (!BEAST_EXPECT(sle))
+                            return false;
+                        // Pseudo-account holds 10 units, set cover to 5
+                        sle->at(sfCoverAvailable) = Number(5);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createBrokerWithCover);
+            }
+
+            // Test: cover available greater than pseudo-account asset balance
+            // (requires fixSecurity3_1_3)
+            doInvariantCheck(
+                {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+                    // Pseudo-account has no cover deposited; set cover
+                    // higher than any incidental balance
+                    sle->at(sfCoverAvailable) = Number(1'000'000);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
         }
     }
 
