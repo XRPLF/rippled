@@ -253,7 +253,7 @@ initAuthenticated(
         // VFALCO Replace fopen() with RAII
         FILE* f = fopen(chain_file.c_str(), "r");
 
-        if (!f)
+        if (f == nullptr)
         {
             LogicError(
                 "Problem opening SSL chain file" +

@@ -149,13 +149,13 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 }
 
 XRPAmount
-AMMTest::reserve(jtx::Env& env, std::uint32_t count) const
+AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count);
 }
 
 XRPAmount
-AMMTest::ammCrtFee(jtx::Env& env) const
+AMMTest::ammCrtFee(jtx::Env& env)
 {
     return env.current()->fees().increment;
 }

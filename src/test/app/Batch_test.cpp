@@ -35,7 +35,7 @@ class Batch_test : public beast::unit_test::suite
         std::string txHash;
     };
 
-    Json::Value
+    static Json::Value
     getTxByIndex(Json::Value const& jrr, int const index)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
@@ -46,7 +46,7 @@ class Batch_test : public beast::unit_test::suite
         return {};
     }
 
-    Json::Value
+    static Json::Value
     getLastLedger(jtx::Env& env)
     {
         Json::Value params;
@@ -125,7 +125,7 @@ class Batch_test : public beast::unit_test::suite
         return p;
     }
 
-    auto
+    static auto
     openLedgerFee(jtx::Env& env, XRPAmount const& batchFee)
     {
         using namespace jtx;
@@ -1379,7 +1379,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -1422,7 +1422,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
                 batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -3627,7 +3627,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(isPseudoTx(stx));
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;

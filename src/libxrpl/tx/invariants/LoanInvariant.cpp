@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STNumber.h>
@@ -45,11 +46,11 @@ bool
 ValidLoanBroker::goodZeroDirectory(
     ReadView const& view,
     SLE::const_ref dir,
-    beast::Journal const& j) const
+    beast::Journal const& j)
 {
     auto const next = dir->at(~sfIndexNext);
     auto const prev = dir->at(~sfIndexPrevious);
-    if ((prev && *prev) || (next && *next))
+    if ((prev && (*prev != 0u)) || (next && (*next != 0u)))
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
                            "OwnerCount has multiple directory pages";
@@ -235,8 +236,7 @@ ValidLoan::finalize(
             after->at(sfPrincipalOutstanding) == beast::zero &&
             after->at(sfManagementFeeOutstanding) == beast::zero)
         {
-            JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
-                               "remaining has not been paid off";
+            JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;
         }
         if (before && (before->isFlag(lsfLoanOverpayment) != after->isFlag(lsfLoanOverpayment)))

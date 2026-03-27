@@ -31,7 +31,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO DbState VALUES (1, '', '', 0);";
     }
@@ -45,7 +45,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO CanDelete VALUES (1, 0);";
     }

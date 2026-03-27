@@ -140,6 +140,28 @@ function(setup_protocol_autogen)
                 )
             endif()
 
+            # Check pip index URL configuration
+            execute_process(
+                COMMAND ${VENV_PIP} config get global.index-url
+                OUTPUT_VARIABLE PIP_INDEX_URL
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+
+            # Default PyPI URL
+            set(DEFAULT_PIP_INDEX "https://pypi.org/simple")
+
+            # Show warning if using non-default index
+            if(PIP_INDEX_URL AND NOT PIP_INDEX_URL STREQUAL "")
+                if(NOT PIP_INDEX_URL STREQUAL DEFAULT_PIP_INDEX)
+                    message(
+                        WARNING
+                        "Private pip index URL detected: ${PIP_INDEX_URL}\n"
+                        "You may need to connect to VPN to access this URL."
+                    )
+                endif()
+            endif()
+
             message(STATUS "Installing Python dependencies...")
             execute_process(
                 COMMAND ${VENV_PIP} install --upgrade pip
