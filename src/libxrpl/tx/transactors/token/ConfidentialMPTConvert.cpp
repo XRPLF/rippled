@@ -125,6 +125,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (hasHolderKeyOnLedger && hasHolderKeyInTx)
         return tecDUPLICATE;
 
+    // Run all verifications before returning any error to prevent timing attacks
+    // that could reveal which proof failed.
+    bool valid = true;
+
     Slice holderPubKey;
     if (hasHolderKeyInTx)
     {
@@ -133,11 +137,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         auto const contextHash =
             getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
-        // when register new pk, verify through schnorr proof
         if (auto const ter = verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash);
             !isTesSuccess(ter))
         {
-            return ter;
+            valid = false;
         }
     }
     else
@@ -154,12 +157,21 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     }
 
     auto const blindingFactor = ctx.tx[sfBlindingFactor];
-    return verifyRevealedAmount(
-        amount,
-        Slice(blindingFactor.data(), blindingFactor.size()),
-        {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
-        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
-        auditor);
+    if (auto const ter = verifyRevealedAmount(
+            amount,
+            Slice(blindingFactor.data(), blindingFactor.size()),
+            {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
+            {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+            auditor);
+        !isTesSuccess(ter))
+    {
+        valid = false;
+    }
+
+    if (!valid)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
 }
 
 TER
