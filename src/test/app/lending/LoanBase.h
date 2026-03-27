@@ -416,7 +416,8 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [vaultCreateTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        auto [vaultCreateTx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = asset, .sequence = sequence});
 
         auto vaultDepositTx =
             vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit});
