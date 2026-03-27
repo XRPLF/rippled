@@ -61,6 +61,14 @@ repos:
 
   - repo: local
     hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: tidy=1)"
+        entry: ./scripts/clang_tidy_check.py
+        language: system
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen
+        pass_filenames: true
+
       - id: nix-fmt
         name: Format Nix files
         entry: |
