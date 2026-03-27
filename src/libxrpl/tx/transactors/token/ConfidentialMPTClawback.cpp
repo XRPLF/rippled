@@ -70,7 +70,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if issuance allows confidential transfer
     if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
-        return tecNO_PERMISSION;
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Check holder's MPToken
     auto const sleHolderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
