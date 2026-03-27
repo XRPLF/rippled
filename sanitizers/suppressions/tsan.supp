@@ -46,7 +46,7 @@ race:xrpl/server/detail/ServerImpl.h
 race:xrpl/nodestore/detail/DatabaseNodeImp.h
 race:src/libxrpl/beast/utility/beast_Journal.cpp
 race:src/test/beast/LexicalCast_test.cpp
-race:xrpl::ServerHandler
+race:ServerHandler
 
 # More suppressions in external library code.
 race:crtstuff.c
@@ -65,7 +65,7 @@ deadlock:src/xrpld/app/misc/detail/ValidatorSite.cpp
 signal:src/libxrpl/beast/utility/beast_Journal.cpp
 signal:src/xrpld/core/detail/Workers.cpp
 signal:src/xrpld/core/JobQueue.cpp
-signal:xrpl::Workers::Worker
+signal:Workers::Worker
 
 # Aggressive suppressing of deadlock tsan errors
 deadlock:pthread_create

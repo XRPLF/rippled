@@ -66,10 +66,6 @@ ${SED_COMMAND} -i 's/ripple_basics/basics/' include/xrpl/basics/CountedObject.h
 ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h
 ${SED_COMMAND} -i 's/Ripple:/the XRPL:/g' include/xrpl/protocol/SecretKey.h
 ${SED_COMMAND} -i 's/Ripple:/the XRPL:/g' include/xrpl/protocol/Seed.h
-${SED_COMMAND} -i 's/rippled/xrpld/' sanitizers/suppressions/tsan.supp
-${SED_COMMAND} -i 's/ripple::/xrpl::/' sanitizers/suppressions/tsan.supp
-${SED_COMMAND} -i 's/rippled/xrpld/' sanitizers/suppressions/ubsan.supp
-${SED_COMMAND} -i 's/ripple::/xrpl::/' sanitizers/suppressions/ubsan.supp
 ${SED_COMMAND} -i 's/ripple/xrpl/' src/test/README.md
 ${SED_COMMAND} -i 's/www.ripple.com/www.xrpl.org/g' src/test/protocol/Seed_test.cpp
 
