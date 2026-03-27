@@ -405,18 +405,23 @@ verifyAggregatedBulletproof(
 /**
  * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTSend transaction.
  *
- * Delegates to mpt_verify_send_proof, which verifies the full proof bundle:
+ * This function calls mpt_verify_send_proof API in the mpt-crypto utility lib, which verifies the
  * equality proof, amount linkage, balance linkage, and range proof.
+ * Equality proof: Proves the same value is encrypted for the sender, receiver, issuer, and auditor.
+ * Amount linkage: Proves the send amount matches the amount Pedersen commitment.
+ * Balance linkage: Proves the sender's balance matches the balance Pedersen
+ * commitment.
+ * Range proof: Proves the amount and the remaining balance are within range [0, 2^64-1].
  *
  * @param proof             The full proof blob.
  * @param sender            The sender's public key and encrypted amount.
  * @param destination       The destination's public key and encrypted amount.
  * @param issuer            The issuer's public key and encrypted amount.
- * @param auditor           Optional auditor's public key and encrypted amount.
- * @param spendingBalance   The sender's current spending balance ciphertext (66 bytes).
- * @param amountCommitment  The Pedersen commitment to the transfer amount (33 bytes).
- * @param balanceCommitment The Pedersen commitment to the sender's balance (33 bytes).
- * @param contextHash       The 256-bit context hash binding the proof.
+ * @param auditor           The auditor's public key and encrypted amount if present.
+ * @param spendingBalance   The sender's current spending balance ciphertext.
+ * @param amountCommitment  The Pedersen commitment to the send amount.
+ * @param balanceCommitment The Pedersen commitment to the sender's balance.
+ * @param contextHash       The context hash binding the proof.
  * @return tesSUCCESS if all proofs are valid, or an error code otherwise.
  */
 TER
