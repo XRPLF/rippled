@@ -386,21 +386,27 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    // Valid flag combinations are checked in preflight. No flags is valid -
-    // just a noop.
-    if (tx.isFlag(tfLoanDefault))
-        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
-    if (tx.isFlag(tfLoanImpair))
-        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    if (tx.isFlag(tfLoanUnimpair))
-        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    // Noop, as described above.
+    auto const result = [&]() -> TER {
+        // Valid flag combinations are checked in preflight. No flags is valid -
+        // just a noop.
+        if (tx.isFlag(tfLoanDefault))
+            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+        if (tx.isFlag(tfLoanImpair))
+            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+        if (tx.isFlag(tfLoanUnimpair))
+            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+        // Noop, as described above.
+        return tesSUCCESS;
+    }();
 
-    associateAsset(*loanSle, vaultAsset);
-    associateAsset(*brokerSle, vaultAsset);
-    associateAsset(*vaultSle, vaultAsset);
+    if (view.rules().enabled(fixSecurity3_1_3))
+    {
+        associateAsset(*loanSle, vaultAsset);
+        associateAsset(*brokerSle, vaultAsset);
+        associateAsset(*vaultSle, vaultAsset);
+    }
 
-    return tesSUCCESS;
+    return result;
 }
 
 //------------------------------------------------------------------------------
