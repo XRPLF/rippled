@@ -37,8 +37,10 @@ public:
     static void
     thread_entry(void* ptr)
     {
+        using FuncType = void (*)(void*);
         ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
-        void (*const f)(void*) = p->f;
+        FuncType const f = p->f;
+
         void* a(p->a);
         delete p;
 
@@ -48,7 +50,7 @@ public:
         ss << "rocksdb #" << id;
         beast::setCurrentThreadName(ss.str());
 
-        (*f)(a);
+        f(a);
     }
 
     void

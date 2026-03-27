@@ -7,6 +7,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <string_view>
+
 namespace xrpl {
 class SociDB_test final : public TestSuite
 {
@@ -287,7 +289,8 @@ public:
         {
             soci::session s;
             sc.open(s);
-            char const* dbInit[] = {
+
+            std::string_view const dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
