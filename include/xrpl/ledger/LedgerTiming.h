@@ -34,7 +34,7 @@ auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
 /** Calculates the close time resolution for the specified ledger.
 
-    The Ripple protocol uses binning to represent time intervals using only one
+    The XRPL protocol uses binning to represent time intervals using only one
     timestamp. This allows servers to derive a common time for the next ledger,
     without the need for perfectly synchronized clocks.
     The time resolution (i.e. the size of the intervals) is adjusted dynamically

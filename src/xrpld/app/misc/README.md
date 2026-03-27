@@ -1,6 +1,6 @@
 # Fee Voting
 
-The Ripple payment protocol enforces a fee schedule expressed in units of the
+The XRPL payment protocol enforces a fee schedule expressed in units of the
 native currency, XRP. Fees for transactions are paid directly from the account
 owner. There are also reserve requirements for each item that occupies storage
 in the ledger. The reserve fee schedule contains both a per-account reserve,

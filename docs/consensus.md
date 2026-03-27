@@ -15,7 +15,7 @@ collectively trusted subnetworks.
 ## Distributed Agreement
 
 A challenge for distributed systems is reaching agreement on changes in shared
-state. For the Ripple network, the shared state is the current ledger--account
+state. For the XRPL network, the shared state is the current ledger--account
 information, account balances, order books and other financial data. We will
 refer to shared distributed state as a /ledger/ throughout the remainder of this
 document.
@@ -23,7 +23,7 @@ document.
 ![Ledger Chain](images/consensus/ledger_chain.png "Ledger Chain")
 
 As shown above, new ledgers are made by applying a set of transactions to the
-prior ledger. For the Ripple network, transactions include payments,
+prior ledger. For the XRPL network, transactions include payments,
 modification of account settings, updates to offers and more.
 
 In a centralized system, generating the next ledger is trivial since there is a
@@ -33,7 +33,7 @@ the set of transactions to include, the order to apply those transactions, and
 even the resulting ledger after applying the transactions. This is even more
 difficult when some participants are faulty or malicious.
 
-The Ripple network is a decentralized and **trust-full** network. Anyone is free
+The XRPL network is a decentralized and **trust-full** network. Anyone is free
 to join and participants are free to choose a subset of peers that are
 collectively trusted to not collude in an attempt to defraud the participant.
 Leveraging this network of trust, the Ripple algorithm has two main components.

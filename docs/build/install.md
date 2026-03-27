@@ -50,7 +50,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
     In particular, make sure that the fingerprint matches. (In the above example, the fingerprint is on the third line, starting with `C001`.)
 
-5.  Add the appropriate Ripple repository for your operating system version:
+5.  Add the appropriate XRPL repository for your operating system version:
 
         echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/xrpld-deb focal stable" | \
             sudo tee -a /etc/apt/sources.list.d/ripple.list
@@ -62,12 +62,12 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
     - `buster` for **Debian 10 Buster**
 
     If you want access to development or pre-release versions of `xrpld`, use one of the following instead of `stable`:
-    - `unstable` - Pre-release builds ([`release` branch](https://github.com/XRPLF/xrpld/tree/release))
-    - `nightly` - Experimental/development builds ([`develop` branch](https://github.com/XRPLF/xrpld/tree/develop))
+    - `unstable` - Pre-release builds ([`release` branch](https://github.com/XRPLF/rippled/tree/release))
+    - `nightly` - Experimental/development builds ([`develop` branch](https://github.com/XRPLF/rippled/tree/develop))
 
     **Warning:** Unstable and nightly builds may be broken at any time. Do not use these builds for production servers.
 
-6.  Fetch the Ripple repository.
+6.  Fetch the XRPL repository.
 
         sudo apt -y update
 
@@ -87,7 +87,7 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
     This allows you to serve incoming API requests on port 80 or 443. (If you want to do so, you must also update the config file's port settings.)
 
-        sudo setcap 'cap_net_bind_service=+ep' /etc/opt/xrpld/bin/xrpld
+        sudo setcap 'cap_net_bind_service=+ep' /opt/xrpld/bin/xrpld
 
 ## With the YUM package manager
 

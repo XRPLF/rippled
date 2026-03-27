@@ -49,6 +49,7 @@ ${SED_COMMAND} -i -E 's@ripple/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@xrpld \(`xrpld`\)@xrpld@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' CONTRIBUTING.md
+${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' docs/build/install.md
 
 popd
 echo "Processing complete."
