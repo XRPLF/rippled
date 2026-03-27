@@ -481,6 +481,33 @@ verifySendProof(
     return tesSUCCESS;
 }
 
+TER
+verifyConvertBackProof(
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& spendingBalance,
+    Slice const& balanceCommitment,
+    uint64_t amount,
+    uint256 const& contextHash)
+{
+    if (proof.size() != ecPedersenProofLength + ecSingleBulletproofLength ||
+        pubKeySlice.size() != ecPubKeyLength ||
+        spendingBalance.size() != ecGamalEncryptedTotalLength ||
+        balanceCommitment.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (mpt_verify_convert_back_proof(
+            proof.data(),
+            pubKeySlice.data(),
+            spendingBalance.data(),
+            balanceCommitment.data(),
+            amount,
+            contextHash.data()) != 0)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
+}
+
 std::optional<Buffer>
 computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
 {

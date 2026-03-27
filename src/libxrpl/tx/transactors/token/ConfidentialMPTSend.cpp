@@ -93,23 +93,16 @@ verifySendProofs(
         ctx.tx[sfDestination],
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
-    if (auto const ter = verifySendProof(
-            ctx.tx[sfZKProof],
-            {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]},
-            {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]},
-            {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
-            auditor,
-            (*sleSenderMPToken)[sfConfidentialBalanceSpending],
-            ctx.tx[sfAmountCommitment],
-            ctx.tx[sfBalanceCommitment],
-            contextHash);
-        !isTesSuccess(ter))
-    {
-        JLOG(ctx.j.trace()) << "ConfidentialMPTSend: One or more cryptographic proofs failed.";
-        return ter;
-    }
-
-    return tesSUCCESS;
+    return verifySendProof(
+        ctx.tx[sfZKProof],
+        {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]},
+        {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]},
+        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+        auditor,
+        (*sleSenderMPToken)[sfConfidentialBalanceSpending],
+        ctx.tx[sfAmountCommitment],
+        ctx.tx[sfBalanceCommitment],
+        contextHash);
 }
 
 TER

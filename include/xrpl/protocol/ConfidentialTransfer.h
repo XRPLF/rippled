@@ -437,6 +437,31 @@ verifySendProof(
     uint256 const& contextHash);
 
 /**
+ * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTConvertBack transaction.
+ *
+ * This function calls mpt_verify_convert_back_proof API in the mpt-crypto utility lib, which
+ * verifies the balance linkage proof and range proof. Balance linkage proof: proves the balance
+ * commitment matches the spending ciphertext. Range proof: proves the remaining balance after
+ * convert back is within range [0, 2^64-1].
+ *
+ * @param proof             The full proof blob.
+ * @param pubKeySlice       The holder's public key.
+ * @param spendingBalance   The holder's spending balance ciphertext.
+ * @param balanceCommitment The Pedersen commitment to the balance.
+ * @param amount            The amount being converted back to public.
+ * @param contextHash       The context hash binding the proof.
+ * @return tesSUCCESS if all proofs are valid, or an error code otherwise.
+ */
+TER
+verifyConvertBackProof(
+    Slice const& proof,
+    Slice const& pubKeySlice,
+    Slice const& spendingBalance,
+    Slice const& balanceCommitment,
+    uint64_t amount,
+    uint256 const& contextHash);
+
+/**
  * @brief Computes the remainder commitment for ConvertBack.
  *
  * Given a Pedersen commitment PC = m*G + rho*H, this function computes
