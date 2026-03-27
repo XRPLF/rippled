@@ -8,6 +8,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
+#include <utility/mpt_utility.h>
+
 namespace xrpl {
 
 NotTEC
@@ -81,35 +83,26 @@ verifySendProofs(
     auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
 
-    // Extract proof components
-    ProofReader reader(ctx.tx[sfZKProof]);
+    // Build participants array: sender, destination, issuer, [auditor]
+    std::vector<mpt_confidential_participant> participants(recipientCount);
 
-    auto const equalityProof = reader.read(getEqualityProofSize(recipientCount));
-    auto const amountLinkageProof = reader.read(ecPedersenProofLength);
-    auto const balanceLinkageProof = reader.read(ecPedersenProofLength);
-    auto const rangeProof = reader.read(ecDoubleBulletproofLength);
+    auto makeParticipant = [](Slice const& pubkey, Slice const& ciphertext) {
+        mpt_confidential_participant p;
+        std::memcpy(p.pubkey, pubkey.data(), kMPT_PUBKEY_SIZE);
+        std::memcpy(p.ciphertext, ciphertext.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+        return p;
+    };
 
-    if (!equalityProof || !amountLinkageProof || !balanceLinkageProof || !rangeProof ||
-        !reader.done())
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // Prepare recipient list
-    std::vector<ConfidentialRecipient> recipients;
-    recipients.reserve(recipientCount);
-
-    recipients.push_back(
-        {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]});
-    recipients.push_back(
-        {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]});
-    recipients.push_back({(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]});
-
+    participants[0] = makeParticipant(
+        (*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]);
+    participants[1] = makeParticipant(
+        (*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]);
+    participants[2] =
+        makeParticipant((*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]);
     if (hasAuditor)
-    {
-        recipients.push_back(
-            {(*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
-    }
+        participants[3] = makeParticipant(
+            (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]);
 
-    // Prepare the context hash
     auto const contextHash = getSendContextHash(
         ctx.tx[sfAccount],
         ctx.tx[sfMPTokenIssuanceID],
@@ -117,69 +110,18 @@ verifySendProofs(
         ctx.tx[sfDestination],
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
-    // Use a boolean flag to track validity instead of returning early on failure to prevent leaking
-    // information about which proof failed through timing differences
-    bool valid = true;
+    Slice const proof = ctx.tx[sfZKProof];
+    Slice const spendingBalance = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
 
-    // Verify the multi-ciphertext equality proof
-    if (auto const ter = verifyMultiCiphertextEqualityProof(
-            *equalityProof, recipients, recipientCount, contextHash);
-        !isTesSuccess(ter))
-    {
-        valid = false;
-    }
-
-    // Verify amount linkage
-    if (auto const ter = verifyPcmLinkage(
-            PcmLinkageType::amount,
-            *amountLinkageProof,
-            ctx.tx[sfSenderEncryptedAmount],
-            (*sleSenderMPToken)[sfHolderEncryptionKey],
-            ctx.tx[sfAmountCommitment],
-            contextHash);
-        !isTesSuccess(ter))
-    {
-        valid = false;
-    }
-
-    // Verify balance linkage
-    if (auto const ter = verifyPcmLinkage(
-            PcmLinkageType::balance,
-            *balanceLinkageProof,
-            (*sleSenderMPToken)[sfConfidentialBalanceSpending],
-            (*sleSenderMPToken)[sfHolderEncryptionKey],
-            ctx.tx[sfBalanceCommitment],
-            contextHash);
-        !isTesSuccess(ter))
-    {
-        valid = false;
-    }
-
-    // Verify Range Proof
-    {
-        // Derive PC_rem = PC_balance - PC_amount
-        if (auto pcRem =
-                computeSendRemainder(ctx.tx[sfBalanceCommitment], ctx.tx[sfAmountCommitment]))
-        {
-            // Aggregated commitments: [PC_amount, PC_rem]
-            // Prove that both the transfer amount and the remaining balance are in range
-            std::vector<Slice> commitments;
-            commitments.push_back(ctx.tx[sfAmountCommitment]);
-            commitments.push_back(Slice{pcRem->data(), pcRem->size()});
-
-            if (auto const ter = verifyAggregatedBulletproof(*rangeProof, commitments, contextHash);
-                !isTesSuccess(ter))
-            {
-                valid = false;
-            }
-        }
-        else
-        {
-            valid = false;
-        }
-    }
-
-    if (!valid)
+    if (mpt_verify_send_proof(
+            proof.data(),
+            proof.size(),
+            participants.data(),
+            static_cast<uint8_t>(recipientCount),
+            spendingBalance.data(),
+            ctx.tx[sfAmountCommitment].data(),
+            ctx.tx[sfBalanceCommitment].data(),
+            contextHash.data()) != 0)
     {
         JLOG(ctx.j.trace()) << "ConfidentialMPTSend: One or more cryptographic proofs failed.";
         return tecBAD_PROOF;

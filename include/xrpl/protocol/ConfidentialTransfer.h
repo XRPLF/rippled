@@ -312,25 +312,6 @@ getEqualityProofSize(std::size_t nRecipients)
 }
 
 /**
- * @brief Verifies a multi-ciphertext equality proof.
- *
- * Proves that all ciphertexts in the recipients vector encrypt the same
- * plaintext amount, without revealing the amount itself.
- *
- * @param proof       The zero-knowledge proof bytes.
- * @param recipients  Vector of recipients with their public keys and ciphertexts.
- * @param nRecipients The number of recipients (must match recipients.size()).
- * @param contextHash The 256-bit context hash binding the proof.
- * @return tesSUCCESS if the proof is valid, or an error code otherwise.
- */
-TER
-verifyMultiCiphertextEqualityProof(
-    Slice const& proof,
-    std::vector<ConfidentialRecipient> const& recipients,
-    std::size_t const nRecipients,
-    uint256 const& contextHash);
-
-/**
  * @brief Verifies a clawback equality proof.
  *
  * Proves that the issuer knows the exact amount encrypted in the holder's
@@ -420,23 +401,6 @@ verifyAggregatedBulletproof(
     Slice const& proof,
     std::vector<Slice> const& compressedCommitments,
     uint256 const& contextHash);
-
-/**
- * @brief Computes the remainder commitment for ConfidentialMPTSend.
- *
- * Given a balance commitment PC_bal = m_bal*G + rho_bal*H and an amount
- * commitment PC_amt = m_amt*G + rho_amt*H, this function computes:
- * PC_rem = PC_bal - PC_amt = (m_bal - m_amt)*G + (rho_bal - rho_amt)*H
- *
- * This derived commitment is used in an aggregated range proof to ensure
- * the sender maintains a non-negative balance (m_bal - m_amt >= 0).
- *
- * @param balanceCommitment The compressed Pedersen commitment to the balance (33 bytes).
- * @param amountCommitment  The compressed Pedersen commitment to the amount (33 bytes).
- * @return The remainder commitment (33 bytes), or std::nullopt on failure.
- */
-std::optional<Buffer>
-computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment);
 
 /**
  * @brief Computes the remainder commitment for ConvertBack.
