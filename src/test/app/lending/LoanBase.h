@@ -25,7 +25,6 @@ protected:
         featureLendingProtocol};
 
     std::string const iouCurrency{"IOU"};
-
     struct BrokerParameters
     {
         Number vaultDeposit = 1'000'000;
@@ -52,6 +51,9 @@ protected:
             static BrokerParameters const result{};
             return result;
         }
+
+        // TODO: create an operator() which returns a transaction similar to
+        // LoanParameters
     };
 
     struct BrokerInfo
@@ -241,42 +243,39 @@ protected:
             std::uint32_t ownerCount) const
         {
             using namespace jtx;
-            std::shared_ptr<SLE const> brokerSle;
-            if (brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-                !env.test.expect(brokerSle))
+            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                env.test.BEAST_EXPECT(brokerSle))
             {
-                return;
-            }
+                TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+                auto const brokerDebt = brokerSle->at(sfDebtTotal);
+                auto const expectedDebt = principalOutstanding + interestOwed;
+                env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
+                env.test.BEAST_EXPECT(
+                    env.balance(pseudoAccount, broker.asset).number() ==
+                    brokerSle->at(sfCoverAvailable));
+                env.test.BEAST_EXPECT(brokerSle->at(sfOwnerCount) == ownerCount);
 
-            TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-            auto const brokerDebt = brokerSle->at(sfDebtTotal);
-            auto const expectedDebt = principalOutstanding + interestOwed;
-            env.test.expect(brokerDebt == expectedDebt);
-            env.test.expect(
-                env.balance(pseudoAccount, broker.asset).number() ==
-                brokerSle->at(sfCoverAvailable));
-            env.test.expect(brokerSle->at(sfOwnerCount) == ownerCount);
-
-            if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
-                env.test.expect(vaultSle))
-            {
-                Account const vaultPseudo{"vaultPseudoAccount", vaultSle->at(sfAccount)};
-                env.test.expect(
-                    vaultSle->at(sfAssetsAvailable) ==
-                    env.balance(vaultPseudo, broker.asset).number());
-                if (ownerCount == 0)
+                if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                    env.test.BEAST_EXPECT(vaultSle))
                 {
-                    // Allow some slop for rounding IOUs
+                    Account const vaultPseudo{"vaultPseudoAccount", vaultSle->at(sfAccount)};
+                    env.test.BEAST_EXPECT(
+                        vaultSle->at(sfAssetsAvailable) ==
+                        env.balance(vaultPseudo, broker.asset).number());
+                    if (ownerCount == 0)
+                    {
+                        // Allow some slop for rounding IOUs
 
-                    // TODO: This needs to be an exact match once all the
-                    // other rounding issues are worked out.
-                    auto const total = vaultSle->at(sfAssetsTotal);
-                    auto const available = vaultSle->at(sfAssetsAvailable);
-                    env.test.expect(
-                        total == available ||
-                        (!broker.asset.integral() && available != 0 &&
-                         ((total - available) / available < Number(1, -6))));
-                    env.test.expect(vaultSle->at(sfLossUnrealized) == 0);
+                        // TODO: This needs to be an exact match once all the
+                        // other rounding issues are worked out.
+                        auto const total = vaultSle->at(sfAssetsTotal);
+                        auto const available = vaultSle->at(sfAssetsAvailable);
+                        env.test.BEAST_EXPECT(
+                            total == available ||
+                            (!broker.asset.integral() && available != 0 &&
+                             ((total - available) / available < Number(1, -6))));
+                        env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
+                    }
                 }
             }
         }
@@ -322,48 +321,47 @@ protected:
             std::uint32_t flags) const
         {
             using namespace jtx;
-            std::shared_ptr<SLE const> loan;
-            if (loan = env.le(loanKeylet); !env.test.expect(loan))
+            if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
             {
-                return;
-            }
-            env.test.expect(loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
-            env.test.expect(loan->at(sfPaymentRemaining) == paymentRemaining);
-            env.test.expect(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
-            env.test.expect(loan->at(sfLoanScale) == loanScale);
-            env.test.expect(loan->at(sfTotalValueOutstanding) == totalValue);
-            env.test.expect(loan->at(sfPrincipalOutstanding) == principalOutstanding);
-            env.test.expect(loan->at(sfManagementFeeOutstanding) == managementFeeOutstanding);
-            env.test.expect(loan->at(sfPeriodicPayment) == periodicPayment);
-            env.test.expect(loan->at(sfFlags) == flags);
+                env.test.BEAST_EXPECT(loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
+                env.test.BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentRemaining);
+                env.test.BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
+                env.test.BEAST_EXPECT(loan->at(sfLoanScale) == loanScale);
+                env.test.BEAST_EXPECT(loan->at(sfTotalValueOutstanding) == totalValue);
+                env.test.BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalOutstanding);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfManagementFeeOutstanding) == managementFeeOutstanding);
+                env.test.BEAST_EXPECT(loan->at(sfPeriodicPayment) == periodicPayment);
+                env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-            auto const ls = constructRoundedLoanState(loan);
+                auto const ls = constructRoundedLoanState(loan);
 
-            auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
-            auto const paymentInterval = loan->at(sfPaymentInterval);
-            checkBroker(
-                principalOutstanding,
-                ls.interestDue,
-                interestRate,
-                paymentInterval,
-                paymentRemaining,
-                1);
+                auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
+                auto const paymentInterval = loan->at(sfPaymentInterval);
+                checkBroker(
+                    principalOutstanding,
+                    ls.interestDue,
+                    interestRate,
+                    paymentInterval,
+                    paymentRemaining,
+                    1);
 
-            if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
-                env.test.expect(brokerSle))
-            {
-                if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
-                    env.test.expect(vaultSle))
+                if (auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+                    env.test.BEAST_EXPECT(brokerSle))
                 {
-                    if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
+                    if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                        env.test.BEAST_EXPECT(vaultSle))
                     {
-                        env.test.expect(
-                            vaultSle->at(sfLossUnrealized) ==
-                            totalValue - managementFeeOutstanding);
-                    }
-                    else
-                    {
-                        env.test.expect(vaultSle->at(sfLossUnrealized) == 0);
+                        if (((flags & lsfLoanImpaired) != 0u) && ((flags & lsfLoanDefault) == 0u))
+                        {
+                            env.test.BEAST_EXPECT(
+                                vaultSle->at(sfLossUnrealized) ==
+                                totalValue - managementFeeOutstanding);
+                        }
+                        else
+                        {
+                            env.test.BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
+                        }
                     }
                 }
             }
@@ -777,7 +775,7 @@ protected:
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
 
-    void
+    static void
     topUpBorrower(
         jtx::Env& env,
         BrokerInfo const& broker,
@@ -1194,7 +1192,7 @@ protected:
             PaymentParameters{.showStepBalances = true});
     }
 
-    std::string
+    static std::string
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())

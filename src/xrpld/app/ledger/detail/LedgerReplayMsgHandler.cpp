@@ -10,7 +10,7 @@
 
 namespace xrpl {
 LedgerReplayMsgHandler::LedgerReplayMsgHandler(Application& app, LedgerReplayer& replayer)
-    : app_(app), replayer_(replayer), journal_(app.journal("LedgerReplayMsgHandler"))
+    : app_(app), replayer_(replayer), journal_(app.getJournal("LedgerReplayMsgHandler"))
 {
 }
 

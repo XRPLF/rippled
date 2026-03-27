@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/DecayingSample.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/core/JobQueue.h>
@@ -38,7 +37,7 @@ public:
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
-        , j_(app.journal("InboundLedger"))
+        , j_(app.getJournal("InboundLedger"))
         , m_clock(clock)
         , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))

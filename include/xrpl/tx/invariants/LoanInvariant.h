@@ -41,8 +41,8 @@ class ValidLoanBroker
     // for LoanBroker pseudo-accounts.
     std::vector<SLE::const_pointer> mpts_;
 
-    bool
-    goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j) const;
+    static bool
+    goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
 
 public:
     void

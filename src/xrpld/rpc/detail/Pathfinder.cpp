@@ -1,9 +1,8 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/app/paths/detail/PathfinderUtils.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/PathfinderUtils.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
@@ -167,7 +166,7 @@ Pathfinder::Pathfinder(
     , mLedger(cache->getLedger())
     , mRLCache(cache)
     , app_(app)
-    , j_(app.journal("Pathfinder"))
+    , j_(app.getJournal("Pathfinder"))
 {
     XRPL_ASSERT(
         !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
@@ -345,7 +344,7 @@ Pathfinder::getPathLiquidity(
             mSrcAccount,
             pathSet,
             mDomain,
-            app_.logs(),
+            app_,
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
         if (!isTesSuccess(rc.result()))
@@ -366,7 +365,7 @@ Pathfinder::getPathLiquidity(
                 mSrcAccount,
                 pathSet,
                 mDomain,
-                app_.logs(),
+                app_,
                 &rcInput);
 
             // If we found further liquidity, add it into the result.
@@ -404,7 +403,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
             mSrcAccount,
             STPathSet(),
             mDomain,
-            app_.logs(),
+            app_,
             &rcInput);
 
         if (rc.result() == tesSUCCESS)
@@ -615,7 +614,7 @@ Pathfinder::getBestPaths(
             ++pathsIterator;
 
         auto iPathsLeft = maxPaths - bestPaths.size();
-        if (!(iPathsLeft > 0 || fullLiquidityPath.empty()))
+        if (iPathsLeft <= 0 && !fullLiquidityPath.empty())
             break;
 
         if (path.empty())
@@ -850,7 +849,7 @@ Pathfinder::isNoRipple(
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
-    return sleRipple && (sleRipple->getFieldU32(sfFlags) & flag);
+    return sleRipple && ((sleRipple->getFieldU32(sfFlags) & flag) != 0u);
 }
 
 // Does this path end on an account-to-account link whose last account has
@@ -864,7 +863,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 
     // Last link must be an account.
     STPathElement const& endElement = currentPath.back();
-    if (!(endElement.getNodeType() & STPathElement::typeAccount))
+    if ((endElement.getNodeType() & STPathElement::typeAccount) == 0u)
         return false;
 
     // If there's only one item in the path, return true if that item specifies
@@ -911,7 +910,7 @@ Pathfinder::addLink(
                      << " completePaths size=" << mCompletePaths.size();
     JLOG(j_.trace()) << currentPath.getJson(JsonOptions::none);
 
-    if (addFlags & afADD_ACCOUNTS)
+    if ((addFlags & afADD_ACCOUNTS) != 0u)
     {
         // add accounts
         if (bOnXRP)
@@ -930,10 +929,10 @@ Pathfinder::addLink(
 
             if (sleEnd)
             {
-                bool const bRequireAuth(sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
                 bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
-                bool const bDestOnly(addFlags & afAC_LAST);
+                bool const bDestOnly((addFlags & afAC_LAST) != 0u);
 
                 if (auto const lines = mRLCache->getRippleLines(
                         uEndAccount,
@@ -1012,7 +1011,7 @@ Pathfinder::addLink(
                                     bIsEndCurrency,
                                     mEffectiveDst,
                                     continueCallback);
-                                if (out)
+                                if (out != 0)
                                     candidates.push_back({out, acct});
                             }
                         }
@@ -1060,10 +1059,10 @@ Pathfinder::addLink(
             }
         }
     }
-    if (addFlags & afADD_BOOKS)
+    if ((addFlags & afADD_BOOKS) != 0u)
     {
         // add order books
-        if (addFlags & afOB_XRP)
+        if ((addFlags & afOB_XRP) != 0u)
         {
             // to XRP only
             if (!bOnXRP && app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}, mDomain))
