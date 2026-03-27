@@ -50,7 +50,7 @@ find . -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp"
     ${SED_COMMAND} -i 's/ripple-lib/XrplLib/g' "${FILE}"
     ${SED_COMMAND} -i 's@src/ripple/@src/xrpld/@g' "${FILE}"
     ${SED_COMMAND} -i 's@ripple/app/@xrpld/app/@g' "${FILE}"
-    ${SED_COMMAND} -i 's@https://github.com/ripple/rippled@https://github.com/XRPLF/rippled@g' "${FILE}"
+    ${SED_COMMAND} -i 's@github.com/ripple/rippled@github.com/XRPLF/rippled@g' "${FILE}"
     ${SED_COMMAND} -i 's/rippleLockEscrowMPT/lockEscrowMPT/g' "${FILE}"
     ${SED_COMMAND} -i 's/rippleUnlockEscrowMPT/unlockEscrowMPT/g' "${FILE}"
     ${SED_COMMAND} -i 's/rippleCredit/directSend/g' "${FILE}"
@@ -61,6 +61,7 @@ ${SED_COMMAND} -i 's/sanitizer-configuration-for-rippled/sanitizer-configuration
 ${SED_COMMAND} -i 's/rippled/xrpld/' .github/scripts/levelization/README.md
 ${SED_COMMAND} -i 's/rippled/xrpld/' .github/scripts/strategy-matrix/generate.py
 ${SED_COMMAND} -i 's@/rippled@/xrpld@' docs/build/install.md
+${SED_COMMAND} -i 's@github.com/XRPLF/xrpld@github.com/XRPLF/rippled@g' docs/build/install.md
 ${SED_COMMAND} -i 's/rippled/xrpld/' docs/Doxyfile
 ${SED_COMMAND} -i 's/ripple_basics/basics/' include/xrpl/basics/CountedObject.h
 ${SED_COMMAND} -i 's/<ripple/<xrpl/' include/xrpl/protocol/AccountID.h
