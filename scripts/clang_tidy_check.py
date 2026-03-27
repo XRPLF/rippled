@@ -48,7 +48,7 @@ def main():
     if not files:
         return 0
 
-    cmd = [run_clang_tidy, "-p", str(build_dir), "-fix"] + files
+    cmd = [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix"] + files
     result = subprocess.run(cmd)
     return result.returncode
 
