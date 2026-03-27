@@ -29,10 +29,11 @@ def main():
         return 0
 
     files = sys.argv[1:]
+    if not files:
+        return 0
 
     run_clang_tidy = find_run_clang_tidy()
     if not run_clang_tidy:
-        print("clang-tidy check skipped: run-clang-tidy not found", file=sys.stderr)
         return 0
 
     build_dir = find_build_dir()
@@ -43,9 +44,6 @@ def main():
             file=sys.stderr,
         )
         return 1
-
-    if not files:
-        return 0
 
     cmd = [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix"] + files
     result = subprocess.run(cmd)
