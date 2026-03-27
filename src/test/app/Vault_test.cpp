@@ -1899,7 +1899,7 @@ class Vault_test : public beast::unit_test::suite
                     env.close();
                 }
             },
-            {.requireAuth = false, .initialXRP = acctReserve + incReserve * 4 + 1});
+            {.requireAuth = false, .initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([this](
                      Env& env,
@@ -2746,7 +2746,7 @@ class Vault_test : public beast::unit_test::suite
                 env(vault.withdraw(
                     {.depositor = owner,
                      .id = keylet.key,
-                     .amount = asset(Number(1000 + 37 * 5, -1))}));
+                     .amount = asset(Number(1000 + (37 * 5), -1))}));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
@@ -2809,7 +2809,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase(
             [&, this](
@@ -2844,7 +2844,7 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             },
-            CaseArgs{.initialXRP = acctReserve + incReserve * 4 + 1});
+            CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
         testCase([&, this](
                      Env& env,
@@ -3367,23 +3367,24 @@ class Vault_test : public beast::unit_test::suite
             env.memoize(vaultAccount);
 
             auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
-                return env.app().openLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
-                    Sandbox sb(&view, tapNONE);
-                    auto vault = sb.peek(keylet::vault(keylet.key));
-                    if (!BEAST_EXPECT(vault != nullptr))
+                return env.app().getOpenLedger().modify(
+                    [&](OpenView& view, beast::Journal j) -> bool {
+                        Sandbox sb(&view, tapNONE);
+                        auto vault = sb.peek(keylet::vault(keylet.key));
+                        if (!BEAST_EXPECT(vault != nullptr))
+                            return false;
+                        auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                        if (!BEAST_EXPECT(shares != nullptr))
+                            return false;
+                        if (fn(*vault, *shares))
+                        {
+                            sb.update(vault);
+                            sb.update(shares);
+                            sb.apply(view);
+                            return true;
+                        }
                         return false;
-                    auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
-                    if (!BEAST_EXPECT(shares != nullptr))
-                        return false;
-                    if (fn(*vault, *shares))
-                    {
-                        sb.update(vault);
-                        sb.update(shares);
-                        sb.apply(view);
-                        return true;
-                    }
-                    return false;
-                });
+                    });
             };
 
             test(

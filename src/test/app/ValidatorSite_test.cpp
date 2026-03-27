@@ -139,7 +139,7 @@ private:
             p->legacy("database_path", good.subdir().string());
             return p;
         }());
-        auto& trustedKeys = env.app().validators();
+        auto& trustedKeys = env.app().getValidators();
         env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;
@@ -240,7 +240,7 @@ private:
                     sink.messages().str());
             }
 
-            if (u.cfg.expectedRefreshMin)
+            if (u.cfg.expectedRefreshMin != 0)
             {
                 BEAST_EXPECTS(
                     myStatus[jss::refresh_interval_min].asInt() == u.cfg.expectedRefreshMin,

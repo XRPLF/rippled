@@ -68,7 +68,7 @@ bool
 STVector256::isEquivalent(STBase const& t) const
 {
     STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
-    return v && (mValue == v->mValue);
+    return (v != nullptr) && (mValue == v->mValue);
 }
 
 Json::Value

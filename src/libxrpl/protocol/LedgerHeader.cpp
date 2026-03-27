@@ -1,7 +1,9 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 
 namespace xrpl {
 
@@ -49,6 +51,23 @@ LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash)
 {
     return deserializeHeader(data + 4, hasHash);
+}
+
+uint256
+calculateLedgerHash(LedgerHeader const& info)
+{
+    // VFALCO This has to match addRaw in View.h.
+    return sha512Half(
+        HashPrefix::ledgerMaster,
+        std::uint32_t(info.seq),
+        std::uint64_t(info.drops.drops()),
+        info.parentHash,
+        info.txHash,
+        info.accountHash,
+        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info.closeTime.time_since_epoch().count()),
+        std::uint8_t(info.closeTimeResolution.count()),
+        std::uint8_t(info.closeFlags));
 }
 
 }  // namespace xrpl

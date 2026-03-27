@@ -96,11 +96,11 @@ protected:
 class AMMTest : public jtx::AMMTestBase
 {
 protected:
-    XRPAmount
-    reserve(jtx::Env& env, std::uint32_t count) const;
+    static XRPAmount
+    reserve(jtx::Env& env, std::uint32_t count);
 
-    XRPAmount
-    ammCrtFee(jtx::Env& env) const;
+    static XRPAmount
+    ammCrtFee(jtx::Env& env);
 
     /* Path_test */
     /************************************************/

@@ -89,7 +89,7 @@ ValueIteratorBase::key() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (czString.c_str())
+    if (czString.c_str() != nullptr)
     {
         if (czString.isStaticString())
             return Value(StaticString(czString.c_str()));
@@ -105,7 +105,7 @@ ValueIteratorBase::index() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (!czString.c_str())
+    if (czString.c_str() == nullptr)
         return czString.index();
 
     return Value::UInt(-1);
@@ -115,7 +115,7 @@ char const*
 ValueIteratorBase::memberName() const
 {
     char const* name = (*current_).first.c_str();
-    return name ? name : "";
+    return (name != nullptr) ? name : "";
 }
 
 // //////////////////////////////////////////////////////////////////

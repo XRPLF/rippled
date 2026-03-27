@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -30,7 +29,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     Operation op = unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
-    if (quorum && hasSignerEntries)
+    if ((quorum != 0u) && hasSignerEntries)
     {
         auto signers = SignerEntries::deserialize(tx, j, "transaction");
 
@@ -197,7 +196,7 @@ removeSignersFromLedger(
     }
 
     adjustOwnerCount(
-        view, view.peek(accountKeylet), removeFromOwnerCount, registry.journal("View"));
+        view, view.peek(accountKeylet), removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 
@@ -315,7 +314,7 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
@@ -363,7 +362,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
-    if (flags)  // Only set flags if they are non-default (default is zero).
+    if (flags != 0u)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
     // Create the SignerListArray one SignerEntry at a time.

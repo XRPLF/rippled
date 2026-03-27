@@ -241,7 +241,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require(balance(bob, USDA(10)));
             env(pay(bob, carol, USDA(5)), sendmax(USDA(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(balance(bob, USDA(10.0 - 5.0 / effectiveQ)));
+            env.require(balance(bob, USDA(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.
@@ -435,7 +435,7 @@ struct Flow_test : public beast::unit_test::suite
             BEAST_EXPECT(isOffer(env, bob, BTC(60), EUR(50)));
             BEAST_EXPECT(isOffer(env, carol, BTC(1000), EUR(1)));
 
-            auto flowJournal = env.app().logs().journal("Flow");
+            auto flowJournal = env.app().getJournal("Flow");
             auto const flowResult = [&] {
                 STAmount deliver(USD(51));
                 STAmount smax(BTC(61));
@@ -474,7 +474,7 @@ struct Flow_test : public beast::unit_test::suite
             }();
 
             BEAST_EXPECT(flowResult.removableOffers.size() == 1);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
                 Sandbox sb(&view, tapNONE);

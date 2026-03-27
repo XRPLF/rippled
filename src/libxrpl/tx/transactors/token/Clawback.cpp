@@ -90,7 +90,8 @@ preclaimHelper<Issue>(
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -138,7 +139,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!((*sleIssuance)[sfFlags] & lsfMPTCanClawback))
+    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)

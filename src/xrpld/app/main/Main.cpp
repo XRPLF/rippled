@@ -295,7 +295,7 @@ runUnitTests(
             try
             {
                 c.wait();
-                if (c.exit_code())
+                if (c.exit_code() != 0)
                     ++bad_child_exits;
             }
             catch (...)
@@ -309,7 +309,7 @@ runUnitTests(
         parent_runner.add_failures(terminated_child_exits);
         anyMissing(parent_runner, multi_selector(pattern));
 
-        if (parent_runner.any_failed() || bad_child_exits)
+        if (parent_runner.any_failed() || (bad_child_exits != 0))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
@@ -752,8 +752,6 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        // TODO: this comment can be removed in a future release -
-        // say 1.7 or higher
         if (config->had_trailing_comments())
         {
             JLOG(logs->journal("Application").warn())
@@ -781,7 +779,7 @@ run(int argc, char** argv)
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(app->fdRequired(), app->logs().journal("Application")))
+        if (!adjustDescriptorLimit(app->fdRequired(), app->getJournal("Application")))
             return -1;
 
         // Start the server
