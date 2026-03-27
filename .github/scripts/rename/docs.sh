@@ -28,7 +28,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 find . -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" -o -name "*.proto" \) -not -path "./.github/scripts/*" | while read -r FILE; do
     echo "Processing file: ${FILE}"
@@ -46,7 +46,6 @@ find . -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (a|A)lgorithm/XRPL algorithm/g' "${FILE}"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (c|C)lient/XRPL client/g' "${FILE}"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (c|C)luster/XRPL cluster/g' "${FILE}"
-    ${SED_COMMAND} -i -E 's/(r|R)ipple (c|C)onnect/XRPL connect/g' "${FILE}"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (c|C)onsensus/XRPL consensus/g' "${FILE}"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (d|D)efault/XRPL default/g' "${FILE}"
     ${SED_COMMAND} -i -E 's/(r|R)ipple (e|E)poch/XRPL epoch/g' "${FILE}"

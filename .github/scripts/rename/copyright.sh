@@ -31,7 +31,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 # Prevent sed and echo from removing newlines and tabs in string literals by
 # temporarily replacing them with placeholders. This only affects one file.

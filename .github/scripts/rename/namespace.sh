@@ -31,7 +31,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 DIRECTORIES=("include" "src" "tests")
 for DIRECTORY in "${DIRECTORIES[@]}"; do

@@ -28,7 +28,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 # Add the xrpld.cfg to the .gitignore.
 if ! grep -q 'xrpld.cfg' .gitignore; then
