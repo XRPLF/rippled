@@ -225,7 +225,7 @@ computeFullPaymentInterest(
  * does not carry the deprecated sfCoverRateLiquidation field.
  */
 inline bool
-useProportionalDefaultCover(Rules const& rules, std::shared_ptr<SLE const> brokerSle)
+useProportionalDefaultCover(Rules const& rules, std::shared_ptr<SLE const> const& brokerSle)
 {
     return rules.enabled(featureLendingProtocolV1_1) &&
         !brokerSle->isFieldPresent(sfCoverRateLiquidation);
