@@ -421,6 +421,66 @@ verifyAggregatedBulletproof(
     return tesSUCCESS;
 }
 
+TER
+verifySendProof(
+    Slice const& proof,
+    ConfidentialRecipient const& sender,
+    ConfidentialRecipient const& destination,
+    ConfidentialRecipient const& issuer,
+    std::optional<ConfidentialRecipient> const& auditor,
+    Slice const& spendingBalance,
+    Slice const& amountCommitment,
+    Slice const& balanceCommitment,
+    uint256 const& contextHash)
+{
+    auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
+    auto const expectedProofSize = getEqualityProofSize(recipientCount) +
+        2 * ecPedersenProofLength + ecDoubleBulletproofLength;
+
+    if (proof.size() != expectedProofSize || sender.publicKey.size() != ecPubKeyLength ||
+        sender.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
+        destination.publicKey.size() != ecPubKeyLength ||
+        destination.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
+        issuer.publicKey.size() != ecPubKeyLength ||
+        issuer.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
+        spendingBalance.size() != ecGamalEncryptedTotalLength ||
+        amountCommitment.size() != ecPedersenCommitmentLength ||
+        balanceCommitment.size() != ecPedersenCommitmentLength)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto makeParticipant = [](ConfidentialRecipient const& r) {
+        mpt_confidential_participant p;
+        std::memcpy(p.pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
+        std::memcpy(p.ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+        return p;
+    };
+
+    std::vector<mpt_confidential_participant> participants(recipientCount);
+    participants[0] = makeParticipant(sender);
+    participants[1] = makeParticipant(destination);
+    participants[2] = makeParticipant(issuer);
+    if (auditor)
+    {
+        if (auditor->publicKey.size() != ecPubKeyLength ||
+            auditor->encryptedAmount.size() != ecGamalEncryptedTotalLength)
+            return tecINTERNAL;
+        participants[3] = makeParticipant(*auditor);
+    }
+
+    if (mpt_verify_send_proof(
+            proof.data(),
+            proof.size(),
+            participants.data(),
+            static_cast<uint8_t>(recipientCount),
+            spendingBalance.data(),
+            amountCommitment.data(),
+            balanceCommitment.data(),
+            contextHash.data()) != 0)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
+}
+
 std::optional<Buffer>
 computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
 {

@@ -403,6 +403,35 @@ verifyAggregatedBulletproof(
     uint256 const& contextHash);
 
 /**
+ * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTSend transaction.
+ *
+ * Delegates to mpt_verify_send_proof, which verifies the full proof bundle:
+ * equality proof, amount linkage, balance linkage, and range proof.
+ *
+ * @param proof             The full proof blob.
+ * @param sender            The sender's public key and encrypted amount.
+ * @param destination       The destination's public key and encrypted amount.
+ * @param issuer            The issuer's public key and encrypted amount.
+ * @param auditor           Optional auditor's public key and encrypted amount.
+ * @param spendingBalance   The sender's current spending balance ciphertext (66 bytes).
+ * @param amountCommitment  The Pedersen commitment to the transfer amount (33 bytes).
+ * @param balanceCommitment The Pedersen commitment to the sender's balance (33 bytes).
+ * @param contextHash       The 256-bit context hash binding the proof.
+ * @return tesSUCCESS if all proofs are valid, or an error code otherwise.
+ */
+TER
+verifySendProof(
+    Slice const& proof,
+    ConfidentialRecipient const& sender,
+    ConfidentialRecipient const& destination,
+    ConfidentialRecipient const& issuer,
+    std::optional<ConfidentialRecipient> const& auditor,
+    Slice const& spendingBalance,
+    Slice const& amountCommitment,
+    Slice const& balanceCommitment,
+    uint256 const& contextHash);
+
+/**
  * @brief Computes the remainder commitment for ConvertBack.
  *
  * Given a Pedersen commitment PC = m*G + rho*H, this function computes

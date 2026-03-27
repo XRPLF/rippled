@@ -8,8 +8,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
-#include <utility/mpt_utility.h>
-
 namespace xrpl {
 
 NotTEC
@@ -81,27 +79,12 @@ verifySendProofs(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
 
-    // Build participants array: sender, destination, issuer, [auditor]
-    std::vector<mpt_confidential_participant> participants(recipientCount);
-
-    auto makeParticipant = [](Slice const& pubkey, Slice const& ciphertext) {
-        mpt_confidential_participant p;
-        std::memcpy(p.pubkey, pubkey.data(), kMPT_PUBKEY_SIZE);
-        std::memcpy(p.ciphertext, ciphertext.data(), kMPT_ELGAMAL_TOTAL_SIZE);
-        return p;
-    };
-
-    participants[0] = makeParticipant(
-        (*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]);
-    participants[1] = makeParticipant(
-        (*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]);
-    participants[2] =
-        makeParticipant((*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]);
+    std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
-        participants[3] = makeParticipant(
-            (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]);
+        auditor.emplace(
+            ConfidentialRecipient{
+                (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
 
     auto const contextHash = getSendContextHash(
         ctx.tx[sfAccount],
@@ -110,21 +93,20 @@ verifySendProofs(
         ctx.tx[sfDestination],
         (*sleSenderMPToken)[~sfConfidentialBalanceVersion].value_or(0));
 
-    Slice const proof = ctx.tx[sfZKProof];
-    Slice const spendingBalance = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
-
-    if (mpt_verify_send_proof(
-            proof.data(),
-            proof.size(),
-            participants.data(),
-            static_cast<uint8_t>(recipientCount),
-            spendingBalance.data(),
-            ctx.tx[sfAmountCommitment].data(),
-            ctx.tx[sfBalanceCommitment].data(),
-            contextHash.data()) != 0)
+    if (auto const ter = verifySendProof(
+            ctx.tx[sfZKProof],
+            {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]},
+            {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]},
+            {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+            auditor,
+            (*sleSenderMPToken)[sfConfidentialBalanceSpending],
+            ctx.tx[sfAmountCommitment],
+            ctx.tx[sfBalanceCommitment],
+            contextHash);
+        !isTesSuccess(ter))
     {
         JLOG(ctx.j.trace()) << "ConfidentialMPTSend: One or more cryptographic proofs failed.";
-        return tecBAD_PROOF;
+        return ter;
     }
 
     return tesSUCCESS;
