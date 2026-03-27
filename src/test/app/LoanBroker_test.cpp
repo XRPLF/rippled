@@ -485,14 +485,14 @@ class LoanBroker_test : public beast::unit_test::suite
     }
 
     void
-    testLifecycle()
+    testLifecycle(FeatureBitset features)
     {
         testcase("Lifecycle");
         using namespace jtx;
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
         // MPT. That'll require three corresponding SAVs.
-        Env env(*this, all);
+        Env env(*this, features);
 
         Account issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
@@ -635,18 +635,22 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(temINVALID));
             // Cover: zero min, non-zero liquidation - implicit and
             // explicit zero values.
-            env(set(evan, vault.vaultID), coverRateLiquidation(maxCoverRate), ter(temINVALID));
+            env(set(evan, vault.vaultID),
+                coverRateLiquidation(maxCoverRate),
+                env.enabled(featureLendingProtocolV1_1) ? ter(tecNO_PERMISSION) : ter(temINVALID));
             env(set(evan, vault.vaultID),
                 coverRateMinimum(tenthBipsZero),
                 coverRateLiquidation(maxCoverRate),
-                ter(temINVALID));
+                env.enabled(featureLendingProtocolV1_1) ? ter(tecNO_PERMISSION) : ter(temINVALID));
             // Cover: non-zero min, zero liquidation - implicit and
             // explicit zero values.
-            env(set(evan, vault.vaultID), coverRateMinimum(maxCoverRate), ter(temINVALID));
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate),
+                env.enabled(featureLendingProtocolV1_1) ? ter(tecNO_PERMISSION) : ter(temINVALID));
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate),
                 coverRateLiquidation(tenthBipsZero),
-                ter(temINVALID));
+                env.enabled(featureLendingProtocolV1_1) ? ter(tecNO_PERMISSION) : ter(temINVALID));
             // sfDebtMaximum: good value, bad account
             env(set(evan, vault.vaultID), debtMaximum(Number(0)), ter(tecNO_PERMISSION));
             // sfDebtMaximum: overflow
@@ -1793,23 +1797,24 @@ public:
     void
     run() override
     {
-        // testFeatureLendingProtocolV1_1enabled();
-        // testLoanBrokerSetDebtMaximum();
-        // testLoanBrokerCoverDepositNullVault();
-        //
-        // testDisabled();
-        testLifecycle();
-        // testInvalidLoanBrokerCoverClawback();
-        // testInvalidLoanBrokerCoverDeposit();
-        // testInvalidLoanBrokerCoverWithdraw();
-        // testInvalidLoanBrokerDelete();
-        // testInvalidLoanBrokerSet();
-        // testRequireAuth();
-        //
-        // testRIPD4323();
-        // testAMB06_VaultFreezeCheckMissing();
-        //
-        // testRIPD4274();
+        testFeatureLendingProtocolV1_1enabled();
+        testLoanBrokerSetDebtMaximum();
+        testLoanBrokerCoverDepositNullVault();
+
+        testDisabled();
+        testLifecycle(all);
+        testLifecycle(all - featureLendingProtocolV1_1);
+        testInvalidLoanBrokerCoverClawback();
+        testInvalidLoanBrokerCoverDeposit();
+        testInvalidLoanBrokerCoverWithdraw();
+        testInvalidLoanBrokerDelete();
+        testInvalidLoanBrokerSet();
+        testRequireAuth();
+
+        testRIPD4323();
+        testAMB06_VaultFreezeCheckMissing();
+
+        testRIPD4274();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
