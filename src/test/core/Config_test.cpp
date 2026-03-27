@@ -1538,6 +1538,63 @@ r.ripple.com:51235
     }
 
     void
+    testPathWorkers()
+    {
+        testcase("path_workers validation");
+
+        // Helper to build config string
+        auto makeConfig = [](int pathWorkers) {
+            return std::string("[path_workers]\n") + std::to_string(pathWorkers) + "\n";
+        };
+
+        // Compute the max allowed value for path_workers
+        int effectiveWorkers = xrpl::Config::computeEffectiveWorkers(false, false, 0, 2); // NODE_SIZE=2 (medium)
+        int maxAllowed = std::max(2, (effectiveWorkers * 3) / 4);
+
+        // Accept valid value (min)
+        {
+            Config c;
+            c.loadFromString(makeConfig(2));
+            BEAST_EXPECT(c.PATH_WORKERS == 2);
+        }
+        // Accept valid value (max)
+        {
+            Config c;
+            c.loadFromString(makeConfig(maxAllowed));
+            BEAST_EXPECT(c.PATH_WORKERS == maxAllowed);
+        }
+        // Accept valid value (mid)
+        if (maxAllowed > 2) {
+            int mid = (2 + maxAllowed) / 2;
+            Config c;
+            c.loadFromString(makeConfig(mid));
+            BEAST_EXPECT(c.PATH_WORKERS == mid);
+        }
+        // Reject value < 2
+        {
+            Config c;
+            bool threw = false;
+            try {
+                c.loadFromString(makeConfig(1));
+            } catch (std::runtime_error& e) {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
+        }
+        // Reject value > max
+        {
+            Config c;
+            bool threw = false;
+            try {
+                c.loadFromString(makeConfig(maxAllowed + 1));
+            } catch (std::runtime_error& e) {
+                threw = true;
+            }
+            BEAST_EXPECT(threw);
+        }
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1556,6 +1613,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testPathWorkers();
     }
 };
 
