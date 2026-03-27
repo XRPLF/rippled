@@ -6,22 +6,37 @@
 
 namespace xrpl {
 
-static constexpr std::uint32_t defaultVersion = 0;
+namespace {
 
-void
-addCommonZKPFields(
-    Serializer& s,
-    std::uint16_t txType,
-    AccountID const& account,
-    uint192 const& issuanceID,
-    std::uint32_t sequence)
+/**
+ * @brief Converts an XRPL AccountID to mpt-crypto lib C struct.
+ *
+ * @param account The AccountID.
+ * @return The equivalent mpt-crypto lib account_id struct.
+ */
+account_id
+toAccountId(AccountID const& account)
 {
-    // TxCommonHash = hash(TxType || Account || IssuanceID || SequenceOrTicket)
-    s.add16(txType);
-    s.addBitString(account);
-    s.addBitString(issuanceID);
-    s.add32(sequence);
+    account_id res;
+    std::memcpy(res.bytes, account.data(), kMPT_ACCOUNT_ID_SIZE);
+    return res;
 }
+
+/**
+ * @brief Converts an XRPL uint192 to mpt-crypto lib C struct.
+ *
+ * @param i The XRPL MPTokenIssuance ID.
+ * @return The equivalent mpt-crypto lib mpt_issuance_id struct.
+ */
+mpt_issuance_id
+toIssuanceId(uint192 const& issuance)
+{
+    mpt_issuance_id res;
+    std::memcpy(res.bytes, issuance.data(), kMPT_ISSUANCE_ID_SIZE);
+    return res;
+}
+
+}  // namespace
 
 uint256
 getSendContextHash(
@@ -31,14 +46,15 @@ getSendContextHash(
     AccountID const& destination,
     std::uint32_t version)
 {
-    Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_SEND, account, issuanceID, sequence);
-
-    // TxSpecific = identity || freshness
-    s.addBitString(destination);
-    s.addInteger(version);
-
-    return s.getSHA512Half();
+    uint256 result;
+    mpt_get_send_context_hash(
+        toAccountId(account),
+        toIssuanceId(issuanceID),
+        sequence,
+        toAccountId(destination),
+        version,
+        result.data());
+    return result;
 }
 
 uint256
@@ -48,27 +64,23 @@ getClawbackContextHash(
     std::uint32_t sequence,
     AccountID const& holder)
 {
-    Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CLAWBACK, account, issuanceID, sequence);
-
-    // TxSpecific = identity || freshness
-    s.addBitString(holder);
-    s.addInteger(defaultVersion);
-
-    return s.getSHA512Half();
+    uint256 result;
+    mpt_get_clawback_context_hash(
+        toAccountId(account),
+        toIssuanceId(issuanceID),
+        sequence,
+        toAccountId(holder),
+        result.data());
+    return result;
 }
 
 uint256
 getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence)
 {
-    Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT, account, issuanceID, sequence);
-
-    // TxSpecific = identity || freshness
-    s.addBitString(account);
-    s.addInteger(defaultVersion);
-
-    return s.getSHA512Half();
+    uint256 result;
+    mpt_get_convert_context_hash(
+        toAccountId(account), toIssuanceId(issuanceID), sequence, result.data());
+    return result;
 }
 
 uint256
@@ -78,14 +90,10 @@ getConvertBackContextHash(
     std::uint32_t sequence,
     std::uint32_t version)
 {
-    Serializer s;
-    addCommonZKPFields(s, ttCONFIDENTIAL_MPT_CONVERT_BACK, account, issuanceID, sequence);
-
-    // TxSpecific = identity || freshness
-    s.addBitString(account);
-    s.addInteger(version);
-
-    return s.getSHA512Half();
+    uint256 result;
+    mpt_get_convert_back_context_hash(
+        toAccountId(account), toIssuanceId(issuanceID), sequence, version, result.data());
+    return result;
 }
 
 std::optional<EcPair>

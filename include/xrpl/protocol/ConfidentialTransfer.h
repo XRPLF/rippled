@@ -57,27 +57,6 @@ incrementConfidentialVersion(STObject& mptoken)
 }
 
 /**
- * @brief Adds common fields to a serializer for ZKP context hash generation.
- *
- * Serializes the transaction type, account, issuance ID and sequence/ticket number
- * into the provided serializer. These fields form the base of all context
- * hashes used in zero-knowledge proofs.
- *
- * @param s          The serializer to append fields to.
- * @param txType     The transaction type identifier.
- * @param account    The account ID of the transaction sender.
- * @param issuanceID The MPToken Issuance ID.
- * @param sequence   The transaction sequence number or ticket number.
- */
-void
-addCommonZKPFields(
-    Serializer& s,
-    std::uint16_t txType,
-    AccountID const& account,
-    uint192 const& issuanceID,
-    std::uint32_t sequence);
-
-/**
  * @brief Generates the context hash for ConfidentialMPTSend transactions.
  *
  * Creates a unique 256-bit hash that binds the zero-knowledge proofs to
