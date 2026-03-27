@@ -172,7 +172,7 @@ protected:
             using namespace jtx;
             using namespace jtx::loan;
 
-            auto tx = getTransaction(env, broker, std::forward<FN>(fN)...);
+            auto tx = getTransaction(env, broker);
             auto jt = env.jt(tx, std::forward<FN>(fN)...);
             sig(sfCounterpartySignature, counter)(env, jt);
             return jt;
