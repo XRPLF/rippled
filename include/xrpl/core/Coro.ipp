@@ -69,6 +69,10 @@ JobQueue::Coro::resume()
         std::lock_guard lk(mutex_run_);
         running_ = true;
     }
+    {
+        std::lock_guard lk(jq_.m_mutex);
+        --jq_.nSuspend_;
+    }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
@@ -82,10 +86,6 @@ JobQueue::Coro::resume()
     // body if it has already completed.
     if (coro_)
     {
-        {
-            std::lock_guard lk(jq_.m_mutex);
-            --jq_.nSuspend_;
-        }
         coro_();
     }
     detail::getLocalValues().release();
