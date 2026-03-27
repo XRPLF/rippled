@@ -11,7 +11,7 @@ LedgerReplayer::LedgerReplayer(
     : app_(app)
     , inboundLedgers_(inboundLedgers)
     , peerSetBuilder_(std::move(peerSetBuilder))
-    , j_(app.journal("LedgerReplayer"))
+    , j_(app.getJournal("LedgerReplayer"))
 {
 }
 

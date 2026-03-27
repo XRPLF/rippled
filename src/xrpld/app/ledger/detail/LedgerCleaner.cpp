@@ -280,7 +280,7 @@ private:
             doTxns = true;
         }
 
-        if (doNodes && !nodeLedger->walkLedger(app_.journal("Ledger")))
+        if (doNodes && !nodeLedger->walkLedger(app_.getJournal("Ledger")))
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger(ledgerIndex);

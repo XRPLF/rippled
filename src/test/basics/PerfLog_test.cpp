@@ -29,7 +29,7 @@ class PerfLog_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j_{env_.app().journal("PerfLog_test")};
+    beast::Journal j_{env_.app().getJournal("PerfLog_test")};
 
     struct Fixture
     {

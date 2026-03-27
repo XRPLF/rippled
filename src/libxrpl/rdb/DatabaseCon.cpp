@@ -1,5 +1,5 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
@@ -40,11 +40,14 @@ public:
     }
 
     std::shared_ptr<Checkpointer>
-    create(std::shared_ptr<soci::session> const& session, JobQueue& jobQueue, Logs& logs)
+    create(
+        std::shared_ptr<soci::session> const& session,
+        JobQueue& jobQueue,
+        ServiceRegistry& registry)
     {
         std::lock_guard lock{mutex_};
         auto const id = nextId_++;
-        auto const r = makeCheckpointer(id, session, jobQueue, logs);
+        auto const r = makeCheckpointer(id, session, jobQueue, registry);
         checkpointers_[id] = r;
         return r;
     }
@@ -82,11 +85,11 @@ DatabaseCon::~DatabaseCon()
 std::unique_ptr<std::vector<std::string> const> DatabaseCon::Setup::globalPragma;
 
 void
-DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
+DatabaseCon::setupCheckpointing(JobQueue* q, ServiceRegistry& registry)
 {
     if (q == nullptr)
         Throw<std::logic_error>("No JobQueue");
-    checkpointer_ = checkpointers.create(session_, *q, l);
+    checkpointer_ = checkpointers.create(session_, *q, registry);
 }
 
 }  // namespace xrpl
