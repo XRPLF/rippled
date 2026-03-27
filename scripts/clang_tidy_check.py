@@ -8,15 +8,14 @@ import sys
 from pathlib import Path
 
 
-def find_run_clang_tidy():
+def find_run_clang_tidy() -> str | None:
     for candidate in ("run-clang-tidy-21", "run-clang-tidy"):
-        path = shutil.which(candidate)
-        if path:
+        if path := shutil.which(candidate):
             return path
     return None
 
 
-def find_build_dir():
+def find_build_dir() -> Path | None:
     repo_root = Path(__file__).parent.parent
     for name in (".build", "build"):
         candidate = repo_root / name
@@ -26,7 +25,7 @@ def find_build_dir():
 
 
 def main():
-    if not os.environ.get("tidy"):
+    if not os.environ.get("TIDY"):
         return 0
 
     files = sys.argv[1:]
