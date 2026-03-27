@@ -69,10 +69,6 @@ JobQueue::Coro::resume()
         std::lock_guard lk(mutex_run_);
         running_ = true;
     }
-    {
-        std::lock_guard lock(jq_.m_mutex);
-        --jq_.nSuspend_;
-    }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
@@ -82,9 +78,14 @@ JobQueue::Coro::resume()
     // coroutine yields — the mutex serializes access, but by the time this
     // resume() acquires the lock the coroutine may have already run to
     // completion. Calling operator() on a completed boost::coroutine2 is
-    // undefined behavior, so we must check and return early.
+    // undefined behavior, so we must check and skip invoking the coroutine
+    // body if it has already completed.
     if (coro_)
     {
+        {
+            std::lock_guard lk(jq_.m_mutex);
+            --jq_.nSuspend_;
+        }
         coro_();
     }
     detail::getLocalValues().release();

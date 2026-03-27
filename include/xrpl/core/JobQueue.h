@@ -358,8 +358,9 @@ private:
     would occur. The lock ensures that coro_ is not called again until we exit
     the coroutine. At which point a scheduled resume() job waiting on the lock
     would gain entry. resume() checks if the coroutine has already completed
-    (coro_ converts to false) and returns early if so, since calling operator()
-    on a completed boost::coroutine2 pull_type is undefined behavior.
+    (coro_ converts to false) and, if so, skips invoking operator() since
+    calling operator() on a completed boost::coroutine2 pull_type is undefined
+    behavior.
 
     The race condition occurs as follows:
 
