@@ -112,11 +112,12 @@ sizedItems
     {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
     {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
+// clang-format on
 
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr->bool {
+    []() constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : sizedItems)
@@ -130,7 +131,6 @@ static_assert(
         return true;
     }(),
     "Mismatch between sized item enum & array indices");
-// clang-format on
 
 //
 // TODO: Check permissions on config file before using it.

@@ -261,9 +261,7 @@ public:
         env(noop(alice), fee(baseFee * 2.0), queued);
 
         // Queue is full now.
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, daria) + 1);
-        // clang-format on
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
         env(noop(charlie), ter(telCAN_NOT_QUEUE_FULL));
@@ -274,18 +272,22 @@ public:
         env(noop(charlie), fee(baseFee * 10), queued);
 
         // Queue is still full, of course, but the min fee has gone up
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, elmo) + 1);
-        // clang-format on
 
         // Close out the ledger, the transactions are accepted, the
         // queue is cleared, then the localTxs are retried. At this
         // point, daria's transaction that was dropped from the queue
         // is put back in. Neat.
         env.close();
-        // clang-format off
-        checkMetrics(*this, env, 2, 8, 5, 4, baseFeeLevel.fee(), calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            2,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee(),
+            calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
 
         env.close();
         checkMetrics(*this, env, 0, 10, 2, 5);
@@ -750,15 +752,13 @@ public:
 
         env.close();
         // alice's transaction is still hanging around
-        // clang-format off
-        checkMetrics(*this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
 
         constexpr auto anotherLargeFeeMultiplier = 800;
         auto const anotherLargeFee = baseFee * anotherLargeFeeMultiplier;
         // Keep alice's transaction waiting.
-        // clang-format off
         env(noop(bob), fee(anotherLargeFee), queued);
         env(noop(charlie), fee(anotherLargeFee), queued);
         env(noop(daria), fee(anotherLargeFee), queued);
@@ -766,24 +766,36 @@ public:
         env(noop(edgar), fee(anotherLargeFee), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), seq(env.seq(felicia) + 1), queued);
-        checkMetrics(*this, env, 8, 8, 5, 4, baseFeeLevel.fee() + 1, baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            8,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee() + 1,
+            baseFeeLevel.fee() * largeFeeMultiplier);
 
         env.close();
         // alice's transaction expired without getting
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
-        // clang-format off
-        checkMetrics(*this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 7);
 
         env.close();
         // And now the queue is empty
-        // clang-format off
-        checkMetrics(*this, env, 0, 12, 1, 6, baseFeeLevel.fee(), baseFeeLevel.fee() * anotherLargeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            0,
+            12,
+            1,
+            6,
+            baseFeeLevel.fee(),
+            baseFeeLevel.fee() * anotherLargeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 8);
     }
@@ -857,9 +869,7 @@ public:
             feeCarol = (feeCarol + 1) * 125 / 100;
             ++seqCarol;
         }
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, (baseFeeLevel.fee() * aliceFeeMultiplier) + 1);
-        // clang-format on
 
         // Carol submits high enough to beat Bob's average fee which kicks
         // out Bob's queued transaction.  However Bob's transaction stays
@@ -1505,9 +1515,7 @@ public:
 
             env.close();
             // If not for the maximum, the per ledger would be 11.
-            // clang-format off
             checkMetrics(*this, env, 0, 10, 0, 5, baseFeeLevel.fee(), calcMedFeeLevel(medFeeLevel));
-            // clang-format on
         }
 
         try

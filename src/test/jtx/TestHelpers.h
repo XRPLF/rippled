@@ -559,7 +559,6 @@ allPathElements(AccountID const& a, Issue const& iss);
 namespace check {
 
 /** Create a check. */
-// clang-format off
 template <typename A>
     requires std::is_same_v<A, AccountID>
 Json::Value
@@ -572,7 +571,6 @@ create(A const& account, A const& dest, STAmount const& sendMax)
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
 }
-// clang-format on
 
 inline Json::Value
 create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
