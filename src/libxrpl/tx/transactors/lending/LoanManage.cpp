@@ -399,7 +399,7 @@ LoanManage::doApply()
         return tesSUCCESS;
     }();
 
-    if (view.rules().enabled(fixSecurity3_1_3))
+    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);
