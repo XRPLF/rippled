@@ -80,44 +80,17 @@ verifySendProofs(
 
     auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    auto const proof = ctx.tx[sfZKProof];
-    size_t remainingLength = proof.size();
-    size_t currentOffset = 0;
 
-    // Extract equality proof
-    auto const sizeEquality = getEqualityProofSize(recipientCount);
-    if (remainingLength < sizeEquality)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    // Extract proof components
+    ProofReader reader(ctx.tx[sfZKProof]);
 
-    auto const equalityProof = proof.substr(currentOffset, sizeEquality);
-    currentOffset += sizeEquality;
-    remainingLength -= sizeEquality;
+    auto const equalityProof = reader.read(getEqualityProofSize(recipientCount));
+    auto const amountLinkageProof = reader.read(ecPedersenProofLength);
+    auto const balanceLinkageProof = reader.read(ecPedersenProofLength);
+    auto const rangeProof = reader.read(ecDoubleBulletproofLength);
 
-    // Extract Pedersen linkage proof for amount commitment
-    if (remainingLength < ecPedersenProofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const amountLinkageProof = proof.substr(currentOffset, ecPedersenProofLength);
-    currentOffset += ecPedersenProofLength;
-    remainingLength -= ecPedersenProofLength;
-
-    // Extract Pedersen linkage proof for balance commitment
-    if (remainingLength < ecPedersenProofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const balanceLinkageProof = proof.substr(currentOffset, ecPedersenProofLength);
-    currentOffset += ecPedersenProofLength;
-    remainingLength -= ecPedersenProofLength;
-
-    // Extract range proof
-    if (remainingLength < ecDoubleBulletproofLength)
-        return tecINTERNAL;
-
-    auto const rangeProof = proof.substr(currentOffset, ecDoubleBulletproofLength);
-    currentOffset += ecDoubleBulletproofLength;
-    remainingLength -= ecDoubleBulletproofLength;
-
-    if (remainingLength != 0)
+    if (!equalityProof || !amountLinkageProof || !balanceLinkageProof || !rangeProof ||
+        !reader.done())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Prepare recipient list
@@ -150,7 +123,7 @@ verifySendProofs(
 
     // Verify the multi-ciphertext equality proof
     if (auto const ter = verifyMultiCiphertextEqualityProof(
-            equalityProof, recipients, recipientCount, contextHash);
+            *equalityProof, recipients, recipientCount, contextHash);
         !isTesSuccess(ter))
     {
         valid = false;
@@ -159,7 +132,7 @@ verifySendProofs(
     // Verify amount linkage
     if (auto const ter = verifyPcmLinkage(
             PcmLinkageType::amount,
-            amountLinkageProof,
+            *amountLinkageProof,
             ctx.tx[sfSenderEncryptedAmount],
             (*sleSenderMPToken)[sfHolderEncryptionKey],
             ctx.tx[sfAmountCommitment],
@@ -172,7 +145,7 @@ verifySendProofs(
     // Verify balance linkage
     if (auto const ter = verifyPcmLinkage(
             PcmLinkageType::balance,
-            balanceLinkageProof,
+            *balanceLinkageProof,
             (*sleSenderMPToken)[sfConfidentialBalanceSpending],
             (*sleSenderMPToken)[sfHolderEncryptionKey],
             ctx.tx[sfBalanceCommitment],
@@ -194,7 +167,7 @@ verifySendProofs(
             commitments.push_back(ctx.tx[sfAmountCommitment]);
             commitments.push_back(Slice{pcRem->data(), pcRem->size()});
 
-            if (auto const ter = verifyAggregatedBulletproof(rangeProof, commitments, contextHash);
+            if (auto const ter = verifyAggregatedBulletproof(*rangeProof, commitments, contextHash);
                 !isTesSuccess(ter))
             {
                 valid = false;

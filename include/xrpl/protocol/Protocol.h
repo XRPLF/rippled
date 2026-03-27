@@ -307,7 +307,7 @@ std::size_t constexpr permissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 std::size_t constexpr maxBatchTxCount = 8;
 
-/** EC ElGamal ciphertext length 33-byte */
+/** Length of one component of EC ElGamal ciphertext */
 std::size_t constexpr ecGamalEncryptedLength = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
@@ -331,9 +331,6 @@ std::size_t constexpr ecBlindingFactorLength = 32;
 /** Length of Schnorr ZKProof for public key registration in bytes */
 std::size_t constexpr ecSchnorrProofLength = 65;
 
-/** Length of ElGamal ciphertext equality proof in bytes */
-std::size_t constexpr ecCiphertextEqualityProofLength = 261;
-
 /** Length of ElGamal Pedersen linkage proof in bytes */
 std::size_t constexpr ecPedersenProofLength = 195;
 
@@ -347,9 +344,9 @@ std::size_t constexpr ecSingleBulletproofLength = 688;
 std::size_t constexpr ecDoubleBulletproofLength = 754;
 
 /** Compressed EC point prefix for even y-coordinate */
-static constexpr std::uint8_t ecCompressedPrefixEvenY = 0x02;
+std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
 
 /** Compressed EC point prefix for odd y-coordinate */
-static constexpr std::uint8_t ecCompressedPrefixOddY = 0x03;
+std::uint8_t constexpr ecCompressedPrefixOddY = 0x03;
 
 }  // namespace xrpl
