@@ -1309,20 +1309,6 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const balanceBlindingFactor = generateBlindingFactor();
     if (arg.balanceCommitment)
         balanceCommitment = *arg.balanceCommitment;
-    else if (*prevSenderSpending == 0)
-    {
-        // getPedersenCommitment(0, r) returns a fake off-curve point that
-        // fails isValidCompressedECPoint in preflight. For spending=0,
-        // PC = 0*H + r*G = r*G — compute it directly.
-        secp256k1_pubkey pt;
-        auto const sCtx = secp256k1Context();
-        if (secp256k1_ec_pubkey_create(sCtx, &pt, balanceBlindingFactor.data()) != 1)
-            Throw<std::runtime_error>("Failed to create balance commitment for zero balance");
-        balanceCommitment = Buffer(ecPedersenCommitmentLength);
-        size_t len = ecPedersenCommitmentLength;
-        secp256k1_ec_pubkey_serialize(
-            sCtx, balanceCommitment.data(), &len, &pt, SECP256K1_EC_COMPRESSED);
-    }
     else
         balanceCommitment = getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
 

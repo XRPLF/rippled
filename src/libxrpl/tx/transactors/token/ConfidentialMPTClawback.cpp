@@ -79,11 +79,11 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if holder has confidential balances to claw back
     if (!sleHolderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
-        return tecNO_PERMISSION;
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Check if Holder has ElGamal public Key
     if (!sleHolderMPToken->isFieldPresent(sfHolderEncryptionKey))
-        return tecNO_PERMISSION;
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
     auto const amount = ctx.tx[sfMPTAmount];

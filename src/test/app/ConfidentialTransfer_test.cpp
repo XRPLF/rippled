@@ -6443,9 +6443,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
      * A sender correctly encrypts the hidden transfer amount for themselves
      * and the receiver. However, they intentionally encrypt the issuer's
      * copy of the data using the wrong public key (for example, using the
-     * receiver's key instead of the official issuer's key).
-     */
-
+     * receiver's key instead of the official issuer's key). */
     void
     testSendWrongIssuerPublicKey(FeatureBitset features)
     {
