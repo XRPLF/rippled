@@ -5,7 +5,7 @@
 namespace xrpl {
 namespace test {
 
-/* Abstract Ripple Client interface.
+/* Abstract XRPL Client interface.
 
    This abstracts the transport layer, allowing
    commands to be submitted to an xrpld server.

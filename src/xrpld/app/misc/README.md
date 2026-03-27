@@ -20,7 +20,7 @@ subsequent ledgers a new fee schedule is enacted.
 
 ## Consensus
 
-The Ripple consensus algorithm allows distributed participants to arrive at
+The XRPL consensus algorithm allows distributed participants to arrive at
 the same answer for yes/no questions. The canonical case for consensus is
 whether or not a particular transaction is included in the ledger. Fees
 present a more difficult challenge, since the decision on the new fee is not

@@ -354,9 +354,9 @@ transferred between A and B and will not be able to intelligently tamper with th
 message stream between Alice and Bob, although she may be still be able to inject
 delays or terminate the link.
 
-# Ripple Clustering
+# XRPL clustering
 
-A cluster consists of more than one Ripple server under common
+A cluster consists of more than one XRPL server under common
 administration that share load information, distribute cryptography
 operations, and provide greater response consistency.
 

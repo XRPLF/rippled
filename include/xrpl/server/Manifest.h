@@ -15,7 +15,7 @@ namespace xrpl {
     Validator key manifests
     -----------------------
 
-    Suppose the secret keys installed on a Ripple validator are compromised. Not
+    Suppose the secret keys installed on an XRPL validator are compromised. Not
     only do you have to generate and install new key pairs on each validator,
     EVERY xrpld needs to have its config updated with the new public keys, and
     is vulnerable to forged validation signatures until this is done.  The

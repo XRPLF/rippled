@@ -353,7 +353,8 @@ escrowLockApplyHelper<Issue>(
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ter = directSend(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
+    auto const ter =
+        directSendNoFee(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;

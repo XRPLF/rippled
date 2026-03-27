@@ -118,7 +118,7 @@ private:
 
             if (!strIssuer.empty())
             {
-                // Could confirm issuer is a valid Ripple address.
+                // Could confirm issuer is a valid XRPL address.
                 jvResult[jss::issuer] = strIssuer;
             }
 

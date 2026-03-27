@@ -20,7 +20,7 @@ namespace xrpl {
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
 
-/** Processes Ripple RPC calls. */
+/** Processes XRPL RPC calls. */
 namespace RPCCall {
 
 int

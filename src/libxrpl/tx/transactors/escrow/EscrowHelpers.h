@@ -151,7 +151,7 @@ escrowUnlockApplyHelper<Issue>(
     // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
-        auto const ter = directSend(view, issuer, receiver, finalAmt, true, journal);
+        auto const ter = directSendNoFee(view, issuer, receiver, finalAmt, true, journal);
         if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }

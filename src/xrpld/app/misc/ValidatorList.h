@@ -121,9 +121,9 @@ struct ValidatorBlobInfo
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
-        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        contains the XRPL timestamp (seconds since January 1st, 2000 (00:00
         UTC)) for when the list becomes valid. @c "validUntil" contains the
-        Ripple timestamp for when the list expires. @c "validators" contains
+        XRPL timestamp for when the list expires. @c "validators" contains
         an array of objects with a @c "validation_public_key" and optional
         @c "manifest" field. @c "validation_public_key" should be the
         hex-encoded master public key. @c "manifest" should be the

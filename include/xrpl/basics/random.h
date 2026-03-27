@@ -16,12 +16,12 @@ namespace xrpl {
 static_assert(
     std::is_integral<beast::xor_shift_engine::result_type>::value &&
         std::is_unsigned<beast::xor_shift_engine::result_type>::value,
-    "The Ripple default PRNG engine must return an unsigned integral type.");
+    "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
     std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
         std::numeric_limits<std::uint64_t>::max(),
-    "The Ripple default PRNG engine return must be at least 64 bits wide.");
+    "The XRPL default PRNG engine return must be at least 64 bits wide.");
 #endif
 
 namespace detail {
