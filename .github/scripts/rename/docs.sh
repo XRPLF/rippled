@@ -28,8 +28,9 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
+pushd ${DIRECTORY}
 
-find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" -o -name "*.proto" \) -not -path "./.github/scripts/*" | while read -r FILE; do
+find . -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" -o -name "*.proto" \) -not -path "./.github/scripts/*" | while read -r FILE; do
     echo "Processing file: ${FILE}"
     ${SED_COMMAND} -i -E 's@([^+-/])rippled@\1xrpld@g' "${FILE}"
     ${SED_COMMAND} -i -E 's@([^+-/])Rippled@\1Xrpld@g' "${FILE}"
@@ -74,4 +75,5 @@ ${SED_COMMAND} -i 's@b5efcc/src/xrpld@b5efcc/src/ripple@' include/xrpl/protocol/
 ${SED_COMMAND} -i 's/dbPrefix_ = "xrpldb"/dbPrefix_ = "rippledb"/' src/xrpld/app/misc/SHAMapStoreImp.h # cspell: disable-line
 ${SED_COMMAND} -i 's/configLegacyName = "xrpld.cfg"/configLegacyName = "rippled.cfg"/' src/xrpld/core/detail/Config.cpp
 
+popd
 echo "Renaming complete."
