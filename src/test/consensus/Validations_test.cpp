@@ -411,8 +411,9 @@ class Validations_test : public beast::unit_test::suite
         Ledger const ledgerAD = h["ad"];
 
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(), c = harness.makeNode(),
-             d = harness.makeNode();
+        Node a = harness.makeNode(), b = harness.makeNode(),
+             c = harness.makeNode(),  // NOLINT(misc-const-correctness)
+            d = harness.makeNode();
         c.untrust();
 
         // first round a,b,c agree, d has is partial
@@ -454,7 +455,7 @@ class Validations_test : public beast::unit_test::suite
         Ledger const ledgerAC = h["ac"];
 
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode();
+        Node a = harness.makeNode(), b = harness.makeNode();  // NOLINT(misc-const-correctness)
         b.untrust();
 
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
@@ -688,7 +689,8 @@ class Validations_test : public beast::unit_test::suite
 
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(), c = harness.makeNode();
+        Node a = harness.makeNode(), b = harness.makeNode(),
+             c = harness.makeNode();  // NOLINT(misc-const-correctness)
         c.untrust();
 
         Ledger const ledgerA = h["a"];
@@ -718,8 +720,9 @@ class Validations_test : public beast::unit_test::suite
 
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(), c = harness.makeNode(),
-             d = harness.makeNode();
+        Node a = harness.makeNode(), b = harness.makeNode(),
+             c = harness.makeNode(),  // NOLINT(misc-const-correctness)
+            d = harness.makeNode();
         c.untrust();
 
         Ledger const ledgerA = h["a"];

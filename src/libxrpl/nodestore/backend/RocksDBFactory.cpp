@@ -37,18 +37,15 @@ public:
     static void
     thread_entry(void* ptr)
     {
-        using FuncType = void (*)(void*);
         ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
-        FuncType const f = p->f;
+        auto const f = p->f;
 
         void* a(p->a);
         delete p;
 
         static std::atomic<std::size_t> n;
         std::size_t const id(++n);
-        std::stringstream ss;
-        ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        beast::setCurrentThreadName("rocksdb #" + std::to_string(id));
 
         f(a);
     }

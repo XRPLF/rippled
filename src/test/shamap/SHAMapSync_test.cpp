@@ -96,10 +96,6 @@ public:
         source.walkMap(missingNodes, 2048);
         BEAST_EXPECT(missingNodes.empty());
 
-        std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::vector<Blob> const gotNodes;
-        std::vector<uint256> const hashes;
-
         destination.setSynching();
 
         {

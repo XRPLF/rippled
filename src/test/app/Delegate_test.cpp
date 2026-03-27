@@ -1410,7 +1410,11 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1444,7 +1448,11 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 

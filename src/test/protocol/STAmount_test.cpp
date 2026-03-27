@@ -197,7 +197,11 @@ public:
     testNativeCurrency()
     {
         testcase("native currency");
-        STAmount zeroSt, one(1), hundred(100);
+
+        STAmount const zeroSt;
+        STAmount const one(1);
+        STAmount const hundred(100);
+
         // VFALCO NOTE Why repeat "STAmount fail" so many times??
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
@@ -280,7 +284,11 @@ public:
     testCustomCurrency()
     {
         testcase("custom currency");
-        STAmount zeroSt(noIssue()), one(noIssue(), 1), hundred(noIssue(), 100);
+
+        STAmount const zeroSt(noIssue());
+        STAmount const one(noIssue(), 1);
+        STAmount const hundred(noIssue(), 100);
+
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
@@ -383,7 +391,8 @@ public:
             divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), xrpIssue()).getText() != "20",
             "STAmount divide fail");
 
-        STAmount a1(noIssue(), 60), a2(noIssue(), 10, -1);
+        STAmount const a1(noIssue(), 60);
+        STAmount const a2(noIssue(), 10, -1);
 
         unexpected(
             divide(a2, a1, noIssue()) != amountFromQuality(getRate(a1, a2)),
