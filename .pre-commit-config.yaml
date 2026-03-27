@@ -21,6 +21,11 @@ repos:
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
+  - repo: https://github.com/pocc/pre-commit-hooks
+    rev: master
+    hooks:
+      - id: clang-tidy
+
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
     hooks:
