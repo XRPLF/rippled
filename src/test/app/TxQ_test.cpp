@@ -3379,8 +3379,8 @@ public:
             BEAST_EXPECT(jv[jss::status] == "success");
         }
 
-        Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"},
-            i{"i"};  // NOLINT(misc-const-correctness)
+        // NOLINTNEXTLINE(misc-const-correctness)
+        Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"}, i{"i"};
 
         // Fund the first few accounts at non escalated fee
         env.fund(XRP(50000), noripple(a, b, c, d));

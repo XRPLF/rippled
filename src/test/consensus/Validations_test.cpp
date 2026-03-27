@@ -373,7 +373,7 @@ class Validations_test : public beast::unit_test::suite
             [&](TestValidations& vals) { vals.getCurrentNodeIDs(); },
             [&](TestValidations& vals) { vals.getPreferred(genesisLedger); },
             [&](TestValidations& vals) { vals.getNodesAfter(ledgerA, ledgerA.id()); }};
-        for (Trigger const trigger : triggers)
+        for (Trigger const& trigger : triggers)
         {
             TestHarness harness(h.oracle);
             Node const n = harness.makeNode();
@@ -411,34 +411,35 @@ class Validations_test : public beast::unit_test::suite
         Ledger const ledgerAD = h["ad"];
 
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(),
-             c = harness.makeNode(),  // NOLINT(misc-const-correctness)
-            d = harness.makeNode();
-        c.untrust();
+        Node const trustedNode1 = harness.makeNode();
+        Node const trustedNode2 = harness.makeNode();
+        Node const trustedNode3 = harness.makeNode();
+
+        Node notTrustedNode = harness.makeNode();
+        notTrustedNode.untrust();
 
         // first round a,b,c agree, d has is partial
-        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
-        BEAST_EXPECT(ValStatus::current == harness.add(b.validate(ledgerA)));
-        BEAST_EXPECT(ValStatus::current == harness.add(c.validate(ledgerA)));
-        BEAST_EXPECT(ValStatus::current == harness.add(d.partial(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode1.validate(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode2.validate(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(notTrustedNode.validate(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode3.partial(ledgerA)));
 
         for (Ledger const& ledger : {ledgerA, ledgerAB, ledgerABC, ledgerAD})
             BEAST_EXPECT(harness.vals().getNodesAfter(ledger, ledger.id()) == 0);
 
         harness.clock().advance(5s);
 
-        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerAB)));
-        BEAST_EXPECT(ValStatus::current == harness.add(b.validate(ledgerABC)));
-        BEAST_EXPECT(ValStatus::current == harness.add(c.validate(ledgerAB)));
-        BEAST_EXPECT(ValStatus::current == harness.add(d.partial(ledgerABC)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode1.validate(ledgerAB)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode2.validate(ledgerABC)));
+        BEAST_EXPECT(ValStatus::current == harness.add(notTrustedNode.validate(ledgerAB)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode3.partial(ledgerABC)));
 
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 3);
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerAB, ledgerAB.id()) == 2);
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerABC, ledgerABC.id()) == 0);
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerAD, ledgerAD.id()) == 0);
 
-        // If given a ledger inconsistent with the id, is still able to check
-        // using slower method
+        // If given a ledger inconsistent with the id, is still able to check using slower method
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerAD, ledgerA.id()) == 1);
         BEAST_EXPECT(harness.vals().getNodesAfter(ledgerAD, ledgerAB.id()) == 2);
     }
@@ -455,7 +456,8 @@ class Validations_test : public beast::unit_test::suite
         Ledger const ledgerAC = h["ac"];
 
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode();  // NOLINT(misc-const-correctness)
+        Node const a = harness.makeNode();
+        Node b = harness.makeNode();
         b.untrust();
 
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
@@ -689,15 +691,16 @@ class Validations_test : public beast::unit_test::suite
 
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(),
-             c = harness.makeNode();  // NOLINT(misc-const-correctness)
-        c.untrust();
+        Node const trustedNode1 = harness.makeNode();
+        Node const trustedNode2 = harness.makeNode();
+        Node notTrustedNode = harness.makeNode();
+        notTrustedNode.untrust();
 
         Ledger const ledgerA = h["a"];
         Ledger const ledgerAB = h["ab"];
 
         hash_map<PeerID, Validation> expected;
-        for (auto const& node : {a, b, c})
+        for (auto const& node : {trustedNode1, trustedNode2, notTrustedNode})
         {
             auto const val = node.validate(ledgerA);
             BEAST_EXPECT(ValStatus::current == harness.add(val));
@@ -707,9 +710,9 @@ class Validations_test : public beast::unit_test::suite
         // Send in a new validation for a, saving the new one into the expected
         // map after setting the proper prior ledger ID it replaced
         harness.clock().advance(1s);
-        auto newVal = a.validate(ledgerAB);
+        auto newVal = trustedNode1.validate(ledgerAB);
         BEAST_EXPECT(ValStatus::current == harness.add(newVal));
-        expected.find(a.nodeID())->second = newVal;
+        expected.find(trustedNode1.nodeID())->second = newVal;
     }
 
     void
@@ -720,10 +723,12 @@ class Validations_test : public beast::unit_test::suite
 
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
-        Node a = harness.makeNode(), b = harness.makeNode(),
-             c = harness.makeNode(),  // NOLINT(misc-const-correctness)
-            d = harness.makeNode();
-        c.untrust();
+        Node const trustedNode1 = harness.makeNode();
+        Node const trustedNode2 = harness.makeNode();
+        Node const trustedNode3 = harness.makeNode();
+
+        Node notTrustedNode = harness.makeNode();
+        notTrustedNode.untrust();
 
         Ledger const ledgerA = h["a"];
         Ledger const ledgerB = h["b"];
@@ -738,7 +743,7 @@ class Validations_test : public beast::unit_test::suite
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == std::nullopt);
 
         // Single ledger
-        BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerB)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode1.validate(ledgerB)));
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == pref(ledgerB));
         BEAST_EXPECT(harness.vals().getPreferred(ledgerB) == pref(ledgerB));
 
@@ -747,21 +752,21 @@ class Validations_test : public beast::unit_test::suite
 
         // Untrusted doesn't impact preferred ledger
         // (ledgerB has tie-break over ledgerA)
-        BEAST_EXPECT(ValStatus::current == harness.add(b.validate(ledgerA)));
-        BEAST_EXPECT(ValStatus::current == harness.add(c.validate(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode2.validate(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(notTrustedNode.validate(ledgerA)));
         BEAST_EXPECT(ledgerB.id() > ledgerA.id());
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == pref(ledgerB));
         BEAST_EXPECT(harness.vals().getPreferred(ledgerB) == pref(ledgerB));
 
         // Partial does break ties
-        BEAST_EXPECT(ValStatus::current == harness.add(d.partial(ledgerA)));
+        BEAST_EXPECT(ValStatus::current == harness.add(trustedNode3.partial(ledgerA)));
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == pref(ledgerA));
         BEAST_EXPECT(harness.vals().getPreferred(ledgerB) == pref(ledgerA));
 
         harness.clock().advance(5s);
 
         // Parent of preferred-> stick with ledger
-        for (auto const& node : {a, b, c, d})
+        for (auto const& node : {trustedNode1, trustedNode2, notTrustedNode, trustedNode3})
             BEAST_EXPECT(ValStatus::current == harness.add(node.validate(ledgerAC)));
         // Parent of preferred stays put
         BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == pref(ledgerA));
@@ -772,7 +777,7 @@ class Validations_test : public beast::unit_test::suite
 
         // Any later grandchild or different chain is preferred
         harness.clock().advance(5s);
-        for (auto const& node : {a, b, c, d})
+        for (auto const& node : {trustedNode1, trustedNode2, notTrustedNode, trustedNode3})
             BEAST_EXPECT(ValStatus::current == harness.add(node.validate(ledgerACD)));
         for (auto const& ledger : {ledgerA, ledgerB, ledgerACD})
             BEAST_EXPECT(harness.vals().getPreferred(ledger) == pref(ledgerACD));
