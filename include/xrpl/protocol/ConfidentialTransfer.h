@@ -266,25 +266,6 @@ TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
 
 /**
- * @brief Verifies that a ciphertext correctly encrypts a revealed amount.
- *
- * Given the plaintext amount and blinding factor, verifies that the
- * ciphertext was correctly constructed using ElGamal encryption.
- *
- * @param amount         The revealed plaintext amount.
- * @param blindingFactor The blinding factor used in encryption (size=xrpl::ecBlindingFactorLength).
- * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
- * @param ciphertext     The ciphertext to verify (size=xrpl::ecGamalEncryptedTotalLength).
- * @return tesSUCCESS if the encryption is valid, or an error code otherwise.
- */
-TER
-verifyElGamalEncryption(
-    uint64_t const amount,
-    Slice const& blindingFactor,
-    Slice const& pubKeySlice,
-    Slice const& ciphertext);
-
-/**
  * @brief Validates the format of encrypted amount fields in a transaction.
  *
  * Checks that all ciphertext fields in the transaction object have the
