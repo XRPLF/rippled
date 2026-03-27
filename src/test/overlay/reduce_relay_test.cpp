@@ -507,7 +507,7 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 public:
     using id_t = Peer::id_t;
     using clock_type = ManualClock;
-    OverlaySim(Application& app) : slots_(app.logs(), *this, app.config()), logs_(app.logs())
+    OverlaySim(Application& app) : slots_(app, *this, app.config()), registry_(app)
     {
     }
 
@@ -561,7 +561,7 @@ public:
         Peer::id_t id = 0;
         if (peersCache_.empty() || !useCache)
         {
-            peer = std::make_shared<PeerSim>(*this, logs_.journal("Squelch"));
+            peer = std::make_shared<PeerSim>(*this, registry_.getJournal("Squelch"));
             id = peer->id();
         }
         else
@@ -673,7 +673,7 @@ private:
     Peers peers_;
     Peers peersCache_;
     reduce_relay::Slots<ManualClock> slots_;
-    Logs& logs_;
+    ServiceRegistry& registry_;
 };
 
 class Network
@@ -1406,7 +1406,7 @@ vp_base_squelch_max_selected_peers=2
             auto createSlots = [&](bool baseSquelchEnabled) -> reduce_relay::Slots<ManualClock> {
                 env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = baseSquelchEnabled;
                 return reduce_relay::Slots<ManualClock>(
-                    env_.app().logs(), network_.overlay(), env_.app().config());
+                    env_.app(), network_.overlay(), env_.app().config());
             };
             // base squelching must not be ready if squelching is disabled
             BEAST_EXPECT(!createSlots(false).baseSquelchReady());
@@ -1487,8 +1487,7 @@ vp_base_squelch_max_selected_peers=2
 
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
-                reduce_relay::Slots<ManualClock> slots(
-                    env_.app().logs(), handler, env_.app().config());
+                reduce_relay::Slots<ManualClock> slots(env_.app(), handler, env_.app().config());
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
