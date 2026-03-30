@@ -285,24 +285,25 @@ prefix=rippled
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                   | Source File           | Description                              | Typical Range                   |
-| --------------------------------------------------- | --------------------- | ---------------------------------------- | ------------------------------- |
-| `rippled_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger      | 0–10 (healthy), >30 (stale)     |
-| `rippled_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger      | 0–10 (healthy)                  |
-| `rippled_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state | Monotonic                       |
-| `rippled_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state    | Monotonic                       |
-| `rippled_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state      | Monotonic                       |
-| `rippled_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state     | Monotonic                       |
-| `rippled_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state         | Monotonic (should dominate)     |
-| `rippled_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected     | Low                             |
-| `rippled_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected        | Low                             |
-| `rippled_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing          | Low                             |
-| `rippled_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking         | Low                             |
-| `rippled_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full             | Low (should be 1 after startup) |
-| `rippled_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections          | 0–85                            |
-| `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
-| `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
-| `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                  | 0–100 (healthy)                 |
+| Prometheus Metric                                   | Source File           | Description                               | Typical Range                   |
+| --------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
+| `rippled_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
+| `rippled_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
+| `rippled_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
+| `rippled_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
+| `rippled_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
+| `rippled_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
+| `rippled_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
+| `rippled_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
+| `rippled_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
+| `rippled_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
+| `rippled_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
+| `rippled_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
+| `rippled_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
+| `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
+| `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
+| `rippled_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
+| `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health (StatsD)_ (`rippled-statsd-node-health`)
 
