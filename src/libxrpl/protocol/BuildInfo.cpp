@@ -23,7 +23,7 @@ namespace {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "3.2.0-b1"
+char const* const versionString = "3.2.0-b2"
     // clang-format on
     ;
 
