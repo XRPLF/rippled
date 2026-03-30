@@ -356,72 +356,6 @@ verifyClawbackEqualityProof(
 }
 
 TER
-verifyPcmLinkage(
-    PcmLinkageType type,
-    Slice const& proof,
-    Slice const& encAmt,
-    Slice const& pubKeySlice,
-    Slice const& pcmSlice,
-    uint256 const& contextHash)
-{
-    if (proof.length() != ecPedersenProofLength || pubKeySlice.size() != ecPubKeyLength ||
-        pcmSlice.size() != ecPedersenCommitmentLength ||
-        encAmt.size() != ecGamalEncryptedTotalLength)
-        return tecINTERNAL;
-
-    int res;
-    if (type == PcmLinkageType::amount)
-    {
-        res = mpt_verify_amount_linkage(
-            secp256k1Context(),
-            proof.data(),
-            encAmt.data(),
-            pubKeySlice.data(),
-            pcmSlice.data(),
-            contextHash.data());
-    }
-    else
-    {
-        res = mpt_verify_balance_linkage(
-            proof.data(), encAmt.data(), pubKeySlice.data(), pcmSlice.data(), contextHash.data());
-    }
-
-    if (res != 0)
-        return tecBAD_PROOF;
-    return tesSUCCESS;
-}
-
-TER
-verifyAggregatedBulletproof(
-    Slice const& proof,
-    std::vector<Slice> const& compressedCommitments,
-    uint256 const& contextHash)
-{
-    std::size_t const m = compressedCommitments.size();
-    if (m != 1 && m != 2)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    std::size_t const expectedProofLen =
-        (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
-    if (proof.size() != expectedProofLen)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    std::vector<uint8_t const*> commitmentPtrs(m);
-    for (size_t i = 0; i < m; ++i)
-    {
-        if (compressedCommitments[i].size() != ecPedersenCommitmentLength)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        commitmentPtrs[i] = compressedCommitments[i].data();
-    }
-
-    if (mpt_verify_aggregated_bulletproof(
-            proof.data(), proof.size(), commitmentPtrs.data(), m, contextHash.data()) != 0)
-        return tecBAD_PROOF;
-
-    return tesSUCCESS;
-}
-
-TER
 verifySendProof(
     Slice const& proof,
     ConfidentialRecipient const& sender,
@@ -506,20 +440,6 @@ verifyConvertBackProof(
         return tecBAD_PROOF;
 
     return tesSUCCESS;
-}
-
-std::optional<Buffer>
-computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
-{
-    if (commitment.size() != ecPedersenCommitmentLength || amount == 0)
-        return std::nullopt;  // LCOV_EXCL_LINE
-
-    Buffer out;
-    out.alloc(ecPedersenCommitmentLength);
-    if (mpt_compute_convert_back_remainder(commitment.data(), amount, out.data()) != 0)
-        return std::nullopt;  // LCOV_EXCL_LINE
-
-    return out;
 }
 
 }  // namespace xrpl
