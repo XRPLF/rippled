@@ -201,6 +201,52 @@ std::optional<Buffer>
 homomorphicSubtract(Slice const& a, Slice const& b);
 
 /**
+ * @brief Virtual sender state produced by a confidential send that has not
+ *        yet been committed to the ledger.
+ *
+ * When building multiple confidential sends from the same account inside a
+ * single batch transaction, pass this state to the transaction builder for
+ * each subsequent send so that its proof references the post-previous-send
+ * encrypted balance rather than the stale pre-send ledger state.
+ *
+ * The fields mirror what the ledger will contain after the preceding send's
+ * doApply() completes:
+ *   encSpending = homomorphicSubtract(prevEncSpending, senderEncAmt)
+ *   version     = prevVersion + 1
+ */
+struct ConfidentialSendChainState
+{
+    std::uint64_t spending;  ///< Decrypted spending balance after the previous send.
+    Buffer encSpending;      ///< Encrypted spending balance after the previous send.
+    std::uint32_t version;   ///< sfConfidentialBalanceVersion after the previous send.
+};
+
+/**
+ * @brief Computes the virtual sender state that will exist after a confidential
+ *        send is applied to the ledger.
+ *
+ * Use this when building a second (or later) confidential send from the same
+ * account in the same batch.  Feed the returned state to the chain-aware
+ * transaction builder so that the next proof is constructed against the
+ * correct post-send encrypted balance and version.
+ *
+ * @param currentSpending     Decrypted spending balance before the send.
+ * @param currentEncSpending  sfConfidentialBalanceSpending before the send.
+ * @param currentVersion      sfConfidentialBalanceVersion before the send.
+ * @param sendAmt             Plaintext amount being sent.
+ * @param senderEncAmt        sfSenderEncryptedAmount from the send transaction.
+ * @return The predicted chain state, or std::nullopt if homomorphic subtraction
+ *         fails (e.g. malformed ciphertext).
+ */
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt);
+
+/**
  * @brief Encrypts an amount using ElGamal encryption.
  *
  * Produces a ciphertext C = (C1, C2) where C1 = r*G and C2 = m*G + r*Pk,
