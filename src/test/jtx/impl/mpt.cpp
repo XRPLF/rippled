@@ -1359,9 +1359,9 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
         // Skip proof generation if encrypted balance is missing (e.g.,
         // feature disabled), or when the sender and destination are the
-        // same (malformed case causing pcm to be zero). This prevents a
-        // crash and allows certain error cases to be tested.
-        if (arg.account != arg.dest && prevEncryptedSenderSpending)
+        // same (malformed case causing pcm to be zero), or when spending
+        // balance is 0 (getBalanceLinkageProof throws for zero balance).
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
                 *arg.account,
@@ -1384,7 +1384,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
         {
-            size_t const sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
+            size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
             size_t const dummySize =
                 sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
 
