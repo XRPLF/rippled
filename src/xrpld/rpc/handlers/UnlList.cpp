@@ -12,7 +12,7 @@ doUnlList(RPC::JsonContext& context)
 {
     Json::Value obj(Json::objectValue);
 
-    context.app.validators().for_each_listed(
+    context.app.getValidators().for_each_listed(
         [&unl = obj[jss::unl]](PublicKey const& publicKey, bool trusted) {
             Json::Value node(Json::objectValue);
 

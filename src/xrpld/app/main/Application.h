@@ -66,7 +66,7 @@ class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PendingSaves;
 class PublicKey;
 class ServerHandler;
