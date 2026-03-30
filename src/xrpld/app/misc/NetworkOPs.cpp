@@ -1454,8 +1454,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             e.transaction->setResult(e.result);
 
             if (isTemMalformed(e.result))
+            {
                 registry_.get().getHashRouter().setFlags(
                     e.transaction->getID(), HashRouterFlags::BAD);
+            }
 
 #ifdef DEBUG
             if (!isTesSuccess(e.result))
