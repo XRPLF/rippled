@@ -1398,7 +1398,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
         {
-            size_t const sizeEquality = secp256k1_mpt_prove_same_plaintext_multi_size(nRecipients);
+            size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
             size_t const dummySize =
                 sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
 

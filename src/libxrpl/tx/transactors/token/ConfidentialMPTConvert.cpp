@@ -86,6 +86,21 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto const mptIssue = MPTIssue{issuanceID};
+
+    // Explicit freeze and auth checks are required because accountHolds
+    // with fhZERO_IF_FROZEN/ahZERO_IF_UNAUTHORIZED only implicitly rejects
+    // non-zero amounts. A zero-amount convert would bypass those implicit
+    // checks, allowing frozen or unauthorized accounts to register ElGamal
+    // keys and initialize confidential balance fields.
+
+    // Check lock
+    if (auto const ter = checkFrozen(ctx.view, account, mptIssue); !isTesSuccess(ter))
+        return ter;
+
+    // Check auth
+    if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
+        return ter;
+
     STAmount const mptAmount =
         STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
@@ -110,6 +125,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (hasHolderKeyOnLedger && hasHolderKeyInTx)
         return tecDUPLICATE;
 
+    // Run all verifications before returning any error to prevent timing attacks
+    // that could reveal which proof failed.
+    bool valid = true;
+
     Slice holderPubKey;
     if (hasHolderKeyInTx)
     {
@@ -118,10 +137,10 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         auto const contextHash =
             getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
-        // when register new pk, verify through schnorr proof
-        if (!isTesSuccess(verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash)))
+        if (auto const ter = verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash);
+            !isTesSuccess(ter))
         {
-            return tecBAD_PROOF;
+            valid = false;
         }
     }
     else
@@ -138,12 +157,21 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     }
 
     auto const blindingFactor = ctx.tx[sfBlindingFactor];
-    return verifyRevealedAmount(
-        amount,
-        Slice(blindingFactor.data(), blindingFactor.size()),
-        {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
-        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
-        auditor);
+    if (auto const ter = verifyRevealedAmount(
+            amount,
+            Slice(blindingFactor.data(), blindingFactor.size()),
+            {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
+            {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+            auditor);
+        !isTesSuccess(ter))
+    {
+        valid = false;
+    }
+
+    if (!valid)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -167,9 +195,12 @@ ConfidentialMPTConvert::doApply()
 
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
+    auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+    if (amtToConvert > maxMPTokenAmount - currentCOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
-    (*sleIssuance)[sfConfidentialOutstandingAmount] =
-        (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) + amtToConvert;
+    (*sleIssuance)[sfConfidentialOutstandingAmount] = currentCOA + amtToConvert;
 
     Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
     Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];

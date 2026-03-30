@@ -87,7 +87,6 @@ verifyProofs(
     // that could reveal which proof failed.
     bool valid = true;
 
-    // verify revealed amount
     if (auto const ter = verifyRevealedAmount(
             amount,
             Slice(blindingFactor.data(), blindingFactor.size()),
@@ -99,60 +98,16 @@ verifyProofs(
         valid = false;
     }
 
-    // Parse proof components using offset
-    auto const proof = tx[sfZKProof];
-    size_t remainingLength = proof.size();
-    size_t currentOffset = 0;
-
-    // Extract Pedersen linkage proof
-    if (remainingLength < ecPedersenProofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const pedersenProof = proof.substr(currentOffset, ecPedersenProofLength);
-    currentOffset += ecPedersenProofLength;
-    remainingLength -= ecPedersenProofLength;
-
-    // Extract bulletproof
-    if (remainingLength < ecSingleBulletproofLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const bulletproof = proof.substr(currentOffset, ecSingleBulletproofLength);
-    currentOffset += ecSingleBulletproofLength;
-    remainingLength -= ecSingleBulletproofLength;
-
-    if (remainingLength != 0)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // verify el gamal pedersen linkage
-    if (auto const ter = verifyBalancePcmLinkage(
-            pedersenProof,
-            (*mptoken)[sfConfidentialBalanceSpending],
+    if (auto const ter = verifyConvertBackProof(
+            tx[sfZKProof],
             holderPubKey,
+            (*mptoken)[sfConfidentialBalanceSpending],
             tx[sfBalanceCommitment],
+            amount,
             contextHash);
         !isTesSuccess(ter))
     {
         valid = false;
-    }
-
-    // verify bullet proof
-    {
-        // Compute PC_rem = PC_balance - mG (the commitment to the remaining balance)
-        if (auto pcRem = computeConvertBackRemainder(tx[sfBalanceCommitment], amount))
-        {
-            // The bulletproof verifies that the remaining balance is non-negative
-            std::vector<Slice> commitments{Slice(pcRem->data(), pcRem->size())};
-
-            if (auto const ter = verifyAggregatedBulletproof(bulletproof, commitments, contextHash);
-                !isTesSuccess(ter))
-            {
-                valid = false;
-            }
-        }
-        else
-        {
-            valid = false;
-        }
     }
 
     if (!valid)
