@@ -32,7 +32,8 @@ LedgerReplayer::replay(
             totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
         "xrpl::LedgerReplayer::replay : valid inputs");
 
-    LedgerReplayTask::TaskParameter const parameter(r, finishLedgerHash, totalNumLedgers);
+    // NOLINTNEXTLINE(misc-const-correctness)
+    LedgerReplayTask::TaskParameter parameter(r, finishLedgerHash, totalNumLedgers);
 
     std::shared_ptr<LedgerReplayTask> task;
     std::shared_ptr<SkipListAcquire> skipList;

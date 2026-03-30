@@ -52,8 +52,8 @@ TEST(parseStatmRSSkB, standard_format)
     // Test standard format: size resident shared text lib data dt
     // Assuming 4KB page size: resident=1000 pages = 4000 KB
     {
-        std::string statm = "25365 1000 2377 0 0 5623 0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 1000 2377 0 0 5623 0";
+        long const result = parseStatmRSSkB(statm);
         // Note: actual result depends on system page size
         // On most systems it's 4KB, so 1000 pages = 4000 KB
         EXPECT_GT(result, 0);
@@ -61,57 +61,57 @@ TEST(parseStatmRSSkB, standard_format)
 
     // Test with newline
     {
-        std::string statm = "12345 2000 1234 0 0 3456 0\n";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "12345 2000 1234 0 0 3456 0\n";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test with tabs
     {
-        std::string statm = "12345\t2000\t1234\t0\t0\t3456\t0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "12345\t2000\t1234\t0\t0\t3456\t0";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test zero resident pages
     {
-        std::string statm = "25365 0 2377 0 0 5623 0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 0 2377 0 0 5623 0";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, 0);
     }
 
     // Test with extra whitespace
     {
-        std::string statm = "  25365   1000   2377  ";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "  25365   1000   2377  ";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test empty string
     {
-        std::string statm;
-        long result = parseStatmRSSkB(statm);
+        std::string const statm;
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (only one field)
     {
-        std::string statm = "25365";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (non-numeric)
     {
-        std::string statm = "abc def ghi";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "abc def ghi";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (second field non-numeric)
     {
-        std::string statm = "25365 abc 2377";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 abc 2377";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 }

@@ -239,6 +239,7 @@ public:
             // naively, and check that it gives the correct answer
             BEAST_EXPECT(mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
             BEAST_EXPECT(mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
+            // NOLINTNEXTLINE(clang-diagnostic-integer-overflow)
             BEAST_EXPECT((big.value() * 3) / 4 != (big.value() / 4) * 3);
         }
 

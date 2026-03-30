@@ -91,6 +91,7 @@ Checks: "-*,
   misc-definitions-in-headers,
   misc-header-include-cycle,
   misc-misplaced-const,
+  misc-redundant-expression,
   misc-static-assert,
   misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
@@ -137,7 +138,6 @@ Checks: "-*,
 # other checks that have issues that need to be resolved:
 #
 # misc-include-cleaner,
-# misc-redundant-expression,
 #
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
