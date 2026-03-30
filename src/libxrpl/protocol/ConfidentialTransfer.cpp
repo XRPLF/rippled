@@ -522,4 +522,23 @@ computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
     return out;
 }
 
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt)
+{
+    auto newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
+    if (!newEncSpending)
+        return std::nullopt;
+
+    return ConfidentialSendChainState{
+        .spending = currentSpending - sendAmt,
+        .encSpending = std::move(*newEncSpending),
+        .version = currentVersion + 1,
+    };
+}
+
 }  // namespace xrpl

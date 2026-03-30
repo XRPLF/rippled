@@ -1384,14 +1384,11 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 blindingFactor,
                 nRecipients,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {amountCommitment, *arg.amt, senderAmt, amountBlindingFactor},
+                {balanceCommitment,
+                 *prevSenderSpending,
+                 *prevEncryptedSenderSpending,
+                 balanceBlindingFactor});
         }
 
         if (proof)
@@ -1498,7 +1495,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
 }
 
 Json::Value
-MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
+MPTTester::sendJV(
+    MPTConfidentialSend const& arg,
+    std::uint32_t seq,
+    std::optional<ConfidentialSendChainState> chain)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::ConfidentialMPTSend;
@@ -1556,9 +1556,24 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
             arr.append(hash);
     }
 
-    auto const prevSenderSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-    if (!prevSenderSpending)
-        Throw<std::runtime_error>("Failed to get sender spending balance");
+    std::uint64_t prevSenderSpending;
+    std::optional<Buffer> prevEncryptedSenderSpending;
+    std::uint32_t version;
+    if (chain)
+    {
+        prevSenderSpending = chain->spending;
+        prevEncryptedSenderSpending = chain->encSpending;
+        version = chain->version;
+    }
+    else
+    {
+        auto const ledgerSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        if (!ledgerSpending)
+            Throw<std::runtime_error>("Failed to get sender spending balance");
+        prevSenderSpending = *ledgerSpending;
+        prevEncryptedSenderSpending = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        version = getMPTokenVersion(*arg.account);
+    }
 
     Buffer amountCommitment, balanceCommitment;
     auto const amountBlindingFactor = generateBlindingFactor();
@@ -1572,7 +1587,7 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
     auto const balanceBlindingFactor = generateBlindingFactor();
     if (arg.balanceCommitment)
         balanceCommitment = *arg.balanceCommitment;
-    else if (*prevSenderSpending == 0)
+    else if (prevSenderSpending == 0)
     {
         // getPedersenCommitment with amount 0 returns a fake off-curve point that would
         // fail check in preflight. Therefore, we compute directly to make the point valid
@@ -1586,7 +1601,7 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
             sCtx, balanceCommitment.data(), &len, &pt, SECP256K1_EC_COMPRESSED);
     }
     else
-        balanceCommitment = getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
+        balanceCommitment = getPedersenCommitment(prevSenderSpending, balanceBlindingFactor);
 
     jv[sfBalanceCommitment] = strHex(balanceCommitment);
 
@@ -1594,7 +1609,6 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
         jv[sfZKProof.jsonName] = *arg.proof;
     else
     {
-        auto const version = getMPTokenVersion(*arg.account);
         auto const ctxHash =
             getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
@@ -1622,14 +1636,11 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
                 recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
         }
 
-        auto const prevEncryptedSenderSpending =
-            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-
         std::optional<Buffer> proof;
         // Skip proof generation when spending balance is 0: getPedersenCommitment
         // returns a fake commitment for 0 that causes getBalanceLinkageProof to throw.
         // The dummy zero proof will cause ledger rejection as expected.
-        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
                 *arg.account,
@@ -1638,14 +1649,11 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
                 blindingFactor,
                 nRecipients,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {amountCommitment, *arg.amt, senderAmt, amountBlindingFactor},
+                {balanceCommitment,
+                 prevSenderSpending,
+                 *prevEncryptedSenderSpending,
+                 balanceBlindingFactor});
         }
 
         if (proof)
@@ -1660,6 +1668,34 @@ MPTTester::sendJV(MPTConfidentialSend const& arg, std::uint32_t seq)
     }
 
     return jv;
+}
+
+static Buffer
+parseSenderEncAmt(Json::Value const& jv)
+{
+    auto const hexStr = jv[sfSenderEncryptedAmount.jsonName].asString();
+    auto const bytes = strUnHex(hexStr);
+    if (!bytes)
+        Throw<std::runtime_error>("chainAfterSend: invalid hex in sfSenderEncryptedAmount");
+    return Buffer(bytes->data(), bytes->size());
+}
+
+ConfidentialSendChainState
+MPTTester::chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const
+{
+    auto const prevSpending = getDecryptedBalance(sender, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevEncSpending = getEncryptedBalance(sender, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevVersion = getMPTokenVersion(sender);
+
+    if (!prevSpending || !prevEncSpending)
+        Throw<std::runtime_error>("chainAfterSend: failed to read sender state from ledger");
+
+    Buffer const senderEncAmt = parseSenderEncAmt(jv);
+    auto chain = computeNextSendChainState(
+        *prevSpending, Slice(*prevEncSpending), prevVersion, sendAmt, Slice(senderEncAmt));
+    if (!chain)
+        Throw<std::runtime_error>("chainAfterSend: computeNextSendChainState failed");
+    return std::move(*chain);
 }
 
 void

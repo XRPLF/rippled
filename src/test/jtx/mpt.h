@@ -356,8 +356,29 @@ public:
     void
     send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
 
+    // Build a confidential send JV.  When 'chain' is provided the sender's
+    // proof parameters are taken from it instead of the ledger, enabling
+    // correct proof generation for a second (or later) send from the same
+    // account inside a single batch.
     Json::Value
-    sendJV(MPTConfidentialSend const& arg, std::uint32_t seq);
+    sendJV(
+        MPTConfidentialSend const& arg,
+        std::uint32_t seq,
+        std::optional<ConfidentialSendChainState> chain = std::nullopt);
+
+    // Compute the projected sender state after a confidential send in a batch.
+    //
+    // Each confidential send requires a ZK proof that the sender's spending
+    // balance covers the transfer. In a batch, if there are more than one
+    // Confidential Send, it the 2nd onwards send requires a proof that includes the
+    // updated spending balance.
+    //
+    // Example: Bob has 200, batches send 100 to Carol then 50 to Dave:
+    //   jv1   = sendJV({bob->carol, 100}, seq1)
+    //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
+    //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
+    ConfidentialSendChainState
+    chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const;
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
