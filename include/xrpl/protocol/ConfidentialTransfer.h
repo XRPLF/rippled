@@ -201,12 +201,9 @@ std::optional<Buffer>
 homomorphicSubtract(Slice const& a, Slice const& b);
 
 /**
- * @brief Virtual sender state produced by a confidential send that has not
- *        yet been committed to the ledger.
- *
- * When building multiple confidential sends from the same account inside a
+ * @brief When building multiple confidential sends from the same account inside a
  * single batch transaction, pass this state to the transaction builder for
- * each subsequent send so that its proof references the post-previous-send
+ * each subsequent send so that its proof references the post previous-send
  * encrypted balance rather than the stale pre-send ledger state.
  *
  * The fields mirror what the ledger will contain after the preceding send's
@@ -216,17 +213,14 @@ homomorphicSubtract(Slice const& a, Slice const& b);
  */
 struct ConfidentialSendChainState
 {
-    std::uint64_t spending;  ///< Decrypted spending balance after the previous send.
-    Buffer encSpending;      ///< Encrypted spending balance after the previous send.
-    std::uint32_t version;   ///< sfConfidentialBalanceVersion after the previous send.
+    std::uint64_t spending;  // Decrypted spending balance after the previous send.
+    Buffer encSpending;      // Encrypted spending balance after the previous send.
+    std::uint32_t version;   // sfConfidentialBalanceVersion after the previous send.
 };
 
 /**
- * @brief Computes the virtual sender state that will exist after a confidential
- *        send is applied to the ledger.
- *
- * Use this when building a second (or later) confidential send from the same
- * account in the same batch.  Feed the returned state to the chain-aware
+ * @brief Use this when building a second (or later) confidential send from the same
+ * account in the same batch. Pass the state to the chain aware
  * transaction builder so that the next proof is constructed against the
  * correct post-send encrypted balance and version.
  *
@@ -235,8 +229,7 @@ struct ConfidentialSendChainState
  * @param currentVersion      sfConfidentialBalanceVersion before the send.
  * @param sendAmt             Plaintext amount being sent.
  * @param senderEncAmt        sfSenderEncryptedAmount from the send transaction.
- * @return The predicted chain state, or std::nullopt if homomorphic subtraction
- *         fails (e.g. malformed ciphertext).
+ * @return The predicted chain state, or std::nullopt if homomorphic subtraction fails
  */
 std::optional<ConfidentialSendChainState>
 computeNextSendChainState(

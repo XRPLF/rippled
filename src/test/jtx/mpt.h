@@ -370,7 +370,7 @@ public:
     //
     // Each confidential send requires a ZK proof that the sender's spending
     // balance covers the transfer. In a batch, if there are more than one
-    // Confidential Send, it the 2nd onwards send requires a proof that includes the
+    // Confidential Send, the 2nd onwards send requires a proof that includes the
     // updated spending balance.
     //
     // Example: Bob has 200, batches send 100 to Carol then 50 to Dave:
