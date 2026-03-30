@@ -134,7 +134,7 @@ public:
     // Entries from [ips_fixed] config stanza
     std::vector<std::string> IPS_FIXED;
 
-    StartUpType START_UP = StartUpType::NORMAL;
+    StartUpType START_UP = StartUpType::Normal;
 
     bool START_VALID = false;
 

@@ -45,7 +45,7 @@ getFileContents(
         return {};
     }
 
-    std::string const result{
+    std::string result{
         std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 
     if (fileStream.bad())

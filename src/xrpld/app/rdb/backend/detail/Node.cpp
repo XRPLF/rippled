@@ -70,8 +70,8 @@ makeLedgerDBs(
             boost::format("PRAGMA cache_size=-%d;") %
             kilobytes(config.getValueFor(SizedItem::txnDBCache)));
 
-        if (!setup.standAlone || setup.startUp == StartUpType::LOAD ||
-            setup.startUp == StartUpType::LOAD_FILE || setup.startUp == StartUpType::REPLAY)
+        if (!setup.standAlone || setup.startUp == StartUpType::Load ||
+            setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
@@ -675,16 +675,16 @@ transactionsSQL(
     std::string maxClause;
     std::string minClause;
 
-    if (options.maxLedger != 0u)
+    if (options.ledgerRange.max != 0u)
     {
         maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
+            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.ledgerRange.max);
     }
 
-    if (options.minLedger != 0u)
+    if (options.ledgerRange.min != 0u)
     {
         minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);
+            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.ledgerRange.min);
     }
 
     std::string sql;
@@ -1021,14 +1021,14 @@ accountTxPage(
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %
-            toBase58(options.account) % options.minLedger % options.maxLedger % order % order %
-            queryLimit);
+            toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
+            order % queryLimit);
     }
     else
     {
         char const* const compare = forward ? ">=" : "<=";
-        std::uint32_t const minLedger = forward ? findLedger + 1 : options.minLedger;
-        std::uint32_t const maxLedger = forward ? options.maxLedger : findLedger - 1;
+        std::uint32_t const minLedger = forward ? findLedger + 1 : options.ledgerRange.min;
+        std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
         sql = boost::str(
@@ -1192,7 +1192,7 @@ getTransaction(
         auto const got_data = session.got_data();
 
         if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return TxSearched::unknown;
+            return TxSearched::Unknown;
 
         if (!got_data)
         {
@@ -1205,10 +1205,10 @@ getTransaction(
                 soci::into(count, rti);
 
             if (!session.got_data() || rti != soci::i_ok)
-                return TxSearched::some;
+                return TxSearched::Some;
 
-            return count == (range->last() - range->first() + 1) ? TxSearched::all
-                                                                 : TxSearched::some;
+            return count == (range->last() - range->first() + 1) ? TxSearched::All
+                                                                 : TxSearched::Some;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -1236,7 +1236,7 @@ getTransaction(
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return TxSearched::unknown;
+    return TxSearched::Unknown;
 }
 
 bool

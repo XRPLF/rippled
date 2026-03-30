@@ -113,7 +113,7 @@ encodeSoftwareVersion(std::string_view versionStr)
         {
             std::uint8_t x = 0;
 
-            for (auto id : v.preReleaseIdentifiers)
+            for (auto const& id : v.preReleaseIdentifiers)
             {
                 auto parsePreRelease = [](std::string_view identifier,
                                           std::string_view prefix,

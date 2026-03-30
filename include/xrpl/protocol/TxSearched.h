@@ -2,6 +2,6 @@
 
 namespace xrpl {
 
-enum class TxSearched { all, some, unknown };
+enum class TxSearched { All, Some, Unknown };
 
 }

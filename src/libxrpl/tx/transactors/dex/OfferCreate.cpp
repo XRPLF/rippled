@@ -144,7 +144,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
-    auto viewJ = ctx.registry.getJournal("View");
+    auto viewJ = ctx.registry.get().getJournal("View");
 
     if (isGlobalFrozen(ctx.view, uPaysIssuerID) || isGlobalFrozen(ctx.view, uGetsIssuerID))
     {
@@ -502,7 +502,7 @@ OfferCreate::applyHybrid(
     bookArr.push_back(std::move(bookInfo));
 
     if (!bookExists)
-        ctx_.registry.getOrderBookDB().addOrderBook(book);
+        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
 
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
@@ -536,7 +536,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // end up on the books.
     auto uRate = getRate(saTakerGets, saTakerPays);
 
-    auto viewJ = ctx_.registry.getJournal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
 
     TER result = tesSUCCESS;
 
@@ -846,7 +846,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     sb.insert(sleOffer);
 
     if (!bookExisted)
-        ctx_.registry.getOrderBookDB().addOrderBook(book);
+        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
 
     JLOG(j_.debug()) << "final result: success";
 
