@@ -173,6 +173,48 @@
 
 ---
 
+## Task 2.8: RPC Span Attribute Enrichment — Node Health Context
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds node-level health context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Downstream**: Phase 7 (MetricsRegistry uses these attributes for alerting context), Phase 10 (validation checks for these attributes).
+
+**Objective**: Add node-level health state to every `rpc.command.*` span so operators can correlate RPC behavior with node state in Jaeger/Tempo.
+
+**What to do**:
+
+- Edit `src/xrpld/rpc/detail/RPCHandler.cpp`:
+  - In the `rpc.command.*` span creation block (after existing `setAttribute` calls for `xrpl.rpc.command`, `xrpl.rpc.version`, etc.):
+    - Add `xrpl.node.amendment_blocked` (bool) — from `context.app.getOPs().isAmendmentBlocked()`
+    - Add `xrpl.node.server_state` (string) — from `context.app.getOPs().strOperatingMode()`
+
+**New span attributes**:
+
+| Attribute                     | Type   | Source                                      | Example  |
+| ----------------------------- | ------ | ------------------------------------------- | -------- |
+| `xrpl.node.amendment_blocked` | bool   | `context.app.getOPs().isAmendmentBlocked()` | `true`   |
+| `xrpl.node.server_state`      | string | `context.app.getOPs().strOperatingMode()`   | `"full"` |
+
+**Rationale**: When a node is amendment-blocked or in a degraded state, every RPC response is suspect. Tagging spans with this state enables Jaeger queries like:
+
+```
+{name=~"rpc.command.*"} | xrpl.node.amendment_blocked = true
+```
+
+This surfaces all RPCs served during a blocked period — critical for post-incident analysis.
+
+**Key modified files**:
+
+- `src/xrpld/rpc/detail/RPCHandler.cpp`
+
+**Exit Criteria**:
+
+- [ ] `rpc.command.server_info` spans carry `xrpl.node.amendment_blocked` and `xrpl.node.server_state` attributes
+- [ ] No measurable latency impact (attribute values are cached atomics, not computed per-call)
+- [ ] Attributes appear in Jaeger span detail view
+
+---
+
 ## Summary
 
 | Task | Description                                 | New Files | Modified Files | Depends On |
@@ -183,5 +225,6 @@
 | 2.4  | Unit tests for core telemetry               | 2         | 1              | POC        |
 | 2.5  | Enhanced RPC span attributes                | 0         | 2              | POC        |
 | 2.6  | Build verification and performance baseline | 0         | 0              | 2.1-2.5    |
+| 2.8  | RPC span attribute enrichment (node health) | 0         | 1              | 2.5        |
 
-**Parallel work**: Tasks 2.1, 2.2, 2.3 can run in parallel. Task 2.4 depends on 2.3. Task 2.5 can run in parallel with 2.4. Task 2.6 depends on all others.
+**Parallel work**: Tasks 2.1, 2.2, 2.3 can run in parallel. Task 2.4 depends on 2.3. Task 2.5 can run in parallel with 2.4. Task 2.6 depends on all others. Task 2.8 depends on 2.5 (existing span creation must be in place).
