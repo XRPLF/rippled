@@ -232,7 +232,7 @@ CheckCash::doApply()
     //
     // If it is not a check to self (as should be the case), then there's
     // work to do...
-    auto viewJ = ctx_.registry.getJournal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
     if (srcId != account_)

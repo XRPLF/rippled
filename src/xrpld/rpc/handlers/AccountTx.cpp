@@ -211,12 +211,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     result.marker = args.marker;
 
     RelationalDatabase::AccountTxPageOptions options = {
-        args.account,
-        result.ledgerRange.min,
-        result.ledgerRange.max,
-        result.marker,
-        args.limit,
-        isUnlimited(context.role)};
+        args.account, result.ledgerRange, result.marker, args.limit, isUnlimited(context.role)};
 
     auto& db = context.app.getRelationalDatabase();
 
