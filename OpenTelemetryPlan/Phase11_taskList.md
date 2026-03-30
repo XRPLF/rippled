@@ -439,6 +439,95 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 
 ---
 
+## Task 11.12: Alert Rules for External Dashboard Parity Metrics
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — 18 alert rules ported from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 7 Tasks 7.9-7.16 (metrics), Phase 9 Tasks 9.11-9.13 (dashboards).
+> **Downstream**: None — terminal task in the parity chain.
+
+**Objective**: Add Grafana alerting rules for the Phase 7+ parity metrics (validation agreement, validator health, peer quality, state tracking, ledger economy). These complement Task 11.8's `xrpl_*` alerts by covering the `rippled_*` internal metrics.
+
+**Critical Group** (8 rules, eval interval 10s):
+
+| Rule                | Condition                                                       | For |
+| ------------------- | --------------------------------------------------------------- | --- |
+| Agreement Below 90% | `rippled_validation_agreement{metric="agreement_pct_24h"} < 90` | 30s |
+| Not Proposing       | `rippled_state_tracking{metric="state_value"} < 6`              | 10s |
+| Unhealthy State     | `rippled_state_tracking{metric="state_value"} < 4`              | 10s |
+| Amendment Blocked   | `rippled_validator_health{metric="amendment_blocked"} == 1`     | 1m  |
+| UNL Expiring        | `rippled_validator_health{metric="unl_expiry_days"} < 14`       | 1h  |
+| High IO Latency     | `histogram_quantile(0.95, rippled_ios_latency_bucket) > 50`     | 1m  |
+| High Load Factor    | `rippled_load_factor_metrics{metric="load_factor"} > 1000`      | 1m  |
+| Peer Count Critical | `rippled_server_info{metric="peers"} < 5`                       | 1m  |
+
+**Network Group** (3 rules, eval interval 10s):
+
+| Rule                      | Condition                                                           | For |
+| ------------------------- | ------------------------------------------------------------------- | --- |
+| Peer Drop >10%            | `delta(rippled_server_info{metric="peers"}[30s]) / ... * 100 < -10` | 30s |
+| Peer Drop >30%            | Same formula, threshold -30                                         | 30s |
+| P90 Latency + Disconnects | `peer_latency_p90_ms > 500 AND rate(disconnects) > 0`               | 2m  |
+
+**Performance Group** (7 rules, eval interval 10s):
+
+| Rule                | Condition                                                      | For |
+| ------------------- | -------------------------------------------------------------- | --- |
+| CPU High            | Per-core CPU > 80% (requires node_exporter)                    | 2m  |
+| Memory Critical     | Memory usage > 90% (requires node_exporter)                    | 1m  |
+| Disk Warning        | Disk usage > 85% (requires node_exporter)                      | 2m  |
+| Job Queue Overflow  | `rate(rippled_jq_trans_overflow_total[5m]) > 0`                | 1m  |
+| Upgrade Recommended | `rippled_peer_quality{metric="peers_higher_version_pct"} > 60` | 1m  |
+| TX Rate Drop        | Transaction rate dropped > 50% in 5m window                    | 5m  |
+| Stale Ledger        | `rippled_ledger_economy{metric="ledger_age_seconds"} > 30`     | 1m  |
+
+**Notification channel templates**: Email/SMTP, Discord, Slack, PagerDuty.
+
+**Key files**:
+
+- New/extend: `docker/telemetry/grafana/alerting/alert-rules-parity.yaml`
+- New: `docker/telemetry/grafana/alerting/contact-points.yaml` (template configs)
+- New: `docker/telemetry/grafana/alerting/notification-policies.yaml`
+
+**Exit Criteria**:
+
+- [ ] All 18 rules evaluate without errors in Grafana alerting UI
+- [ ] Critical rules fire within expected timeframe when conditions are met
+- [ ] Notification channel templates are documented (not hard-coded to any service)
+
+---
+
+## Task 11.13: Dual-Datasource Architecture Documentation
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Document the external dashboard's "fast path" pattern as a future optimization for real-time panels.
+
+**Pattern**: A lightweight Prometheus scrape endpoint (separate from OTLP pipeline) that polls critical metrics every 2-5s, bypassing the 10s OTLP metric reader interval and Prometheus scrape interval.
+
+**Use case**: Real-time state panels (server state, ledger age, peer count) where 10-15s latency is too slow for operational dashboards.
+
+**Decision**: Document as a future option, not implement now. The current 10s interval is acceptable for v1. The external dashboard achieves 2-5s freshness by polling RPC directly, which is what the Phase 11 receiver already does. Adding a separate scrape endpoint to rippled would only be needed if sub-second metric freshness is required from the internal metrics pipeline.
+
+**What to document**:
+
+- Architecture comparison: OTLP pipeline (10-15s) vs. direct scrape (2-5s) vs. push gateway
+- When to consider: operator feedback indicating 10s is insufficient for alerting SLOs
+- How to implement if needed: add `/metrics` HTTP endpoint to rippled with Prometheus client library
+- Trade-offs: additional port, additional dependency, duplication with OTLP metrics
+
+**Key files**:
+
+- Update: `OpenTelemetryPlan/09-data-collection-reference.md` (add "Future: Dual-Datasource Architecture" section)
+- Update: `docs/telemetry-runbook.md` (add brief note in performance tuning section)
+
+**Exit Criteria**:
+
+- [ ] Architecture comparison documented with clear trade-offs
+- [ ] Decision rationale recorded (why deferred, when to revisit)
+
+---
+
 ## Exit Criteria
 
 - [ ] Custom OTel Collector receiver builds and starts without errors
@@ -451,3 +540,5 @@ This phase addresses the cross-cutting gap identified during research: **rippled
 - [ ] Receiver handles rippled restart/unavailability gracefully (no crash, logs warning, retries)
 - [ ] Documentation complete: receiver README, metric reference, alerting playbook
 - [ ] Go receiver has unit tests with >80% coverage
+- [ ] 18 Grafana alert rules for Phase 7+ parity metrics evaluate correctly (Task 11.12)
+- [ ] Dual-datasource architecture documented with trade-offs (Task 11.13)
