@@ -282,6 +282,7 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
+        children.reserve(num_jobs);
         for (std::size_t i = 0; i < num_jobs; ++i)
         {
             children.emplace_back(

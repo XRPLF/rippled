@@ -93,7 +93,7 @@ ServerDefinitions::translate(std::string const& inp)
     // convert snake_case to CamelCase
     for (;;)
     {
-        pos = inpToProcess.find("_");
+        pos = inpToProcess.find('_');
         if (pos == std::string::npos)
             pos = inpToProcess.size();
         std::string token = inpToProcess.substr(0, pos);

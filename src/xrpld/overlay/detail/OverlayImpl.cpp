@@ -1015,7 +1015,7 @@ OverlayImpl::getActivePeers() const
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
-    for_each([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
+    for_each([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(sp); });
 
     return ret;
 }
@@ -1302,7 +1302,7 @@ void
 OverlayImpl::autoConnect()
 {
     auto const result = m_peerFinder->autoconnect();
-    for (auto addr : result)
+    for (auto const& addr : result)
         connect(addr);
 }
 

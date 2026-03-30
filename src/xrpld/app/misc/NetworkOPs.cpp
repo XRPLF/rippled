@@ -189,7 +189,7 @@ class NetworkOPsImp final : public NetworkOPs
 
         ServerFeeSummary(
             XRPAmount fee,
-            TxQ::Metrics&& escalationMetrics,
+            TxQ::Metrics escalationMetrics,  // trivially copyable
             LoadFeeTrack const& loadFeeTrack);
         bool
         operator!=(ServerFeeSummary const& b) const;
@@ -2142,12 +2142,12 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
 NetworkOPsImp::ServerFeeSummary::ServerFeeSummary(
     XRPAmount fee,
-    TxQ::Metrics&& escalationMetrics,
+    TxQ::Metrics escalationMetrics,  // trivially copyable
     LoadFeeTrack const& loadFeeTrack)
     : loadFactorServer{loadFeeTrack.getLoadFactor()}
     , loadBaseServer{loadFeeTrack.getLoadBase()}
     , baseFee{fee}
-    , em{std::move(escalationMetrics)}
+    , em{escalationMetrics}
 {
 }
 

@@ -572,6 +572,7 @@ class Validations_test : public beast::unit_test::suite
 
                 std::uint32_t const baseFee = 0;
                 std::vector<uint32_t> expectedFees;
+                expectedFees.reserve(expectedValidations.size());
                 for (auto const& val : expectedValidations)
                 {
                     expectedFees.push_back(val.loadFee().value_or(baseFee));

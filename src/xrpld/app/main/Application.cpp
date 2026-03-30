@@ -1411,7 +1411,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto cmd : config_->section(SECTION_RPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(SECTION_RPC_STARTUP).lines())
     {
         Json::Reader jrReader;
         Json::Value jvCommand;

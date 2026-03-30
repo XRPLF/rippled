@@ -317,7 +317,7 @@ template <typename... IOU>
 Json::Value
 getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 {
-    auto const jrr = getAccountLines(env, acctId);
+    auto jrr = getAccountLines(env, acctId);
     Json::Value res;
     for (auto const& line : jrr[jss::lines])
     {

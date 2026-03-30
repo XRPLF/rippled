@@ -344,7 +344,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
     if (!page)
         return tecNO_ENTRY;
 
-    return removeToken(view, owner, nftokenID, std::move(page));
+    return removeToken(view, owner, nftokenID, page);
 }
 
 /** Remove the token from the owner's token directory. */

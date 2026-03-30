@@ -1021,10 +1021,7 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t)
                         // save our place and work on this node
 
                         stack.emplace(std::move(node), branch);
-                        // The semantics of this changes when we move to c++-20
-                        // Right now no move will occur; With c++-20 child will
-                        // be moved from.
-                        node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(std::move(child));
+                        node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(child);
                         pos = 0;
                     }
                     else

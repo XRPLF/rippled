@@ -132,7 +132,7 @@ class RCLValidations_test : public beast::unit_test::suite
         {
             RCLValidatedLedger const a{RCLValidatedLedger::MakeGenesis{}};
 
-            for (auto ledger : {history.back(), history[maxAncestors - 1]})
+            for (auto const& ledger : {history.back(), history[maxAncestors - 1]})
             {
                 RCLValidatedLedger const b{ledger, env.journal};
                 BEAST_EXPECT(mismatch(a, b) == 1);

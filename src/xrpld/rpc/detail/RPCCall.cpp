@@ -395,7 +395,7 @@ private:
         // handle case where there is one argument of the form ip:port
         if (std::count(ip.begin(), ip.end(), ':') == 1)
         {
-            std::size_t const colon = ip.find_last_of(":");
+            std::size_t const colon = ip.find_last_of(':');
             jvRequest[jss::ip] = std::string{ip, 0, colon};
             jvRequest[jss::port] = Json::Value{std::string{ip, colon + 1}}.asUInt();
             return jvRequest;
@@ -817,6 +817,7 @@ private:
         Json::Value jvRequest(Json::objectValue);
         for (auto i = 0; i < nParams; ++i)
         {
+            // This was non-const. see comment below
             std::string const strParam = jvParams[i].asString();
 
             if (i == 1 && strParam.empty())
@@ -827,7 +828,10 @@ private:
             {
                 if (parseBase58<AccountID>(strParam))
                 {
-                    jvRequest[accFields[i]] = std::move(strParam);
+                    // TODO: this was std::move'd before but it does not work in practice.
+                    // We would need a Value(std::string&&) for it to work.
+                    // See https://github.com/XRPLF/rippled/issues/6677
+                    jvRequest[accFields[i]] = strParam;
                 }
                 else
                 {

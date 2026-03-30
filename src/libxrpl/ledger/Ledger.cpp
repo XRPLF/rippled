@@ -80,8 +80,7 @@ public:
 
     txs_iter_impl(txs_iter_impl const&) = default;
 
-    txs_iter_impl(bool metadata, SHAMap::const_iterator iter)
-        : metadata_(metadata), iter_(std::move(iter))
+    txs_iter_impl(bool metadata, SHAMap::const_iterator iter) : metadata_(metadata), iter_(iter)
     {
     }
 
@@ -694,7 +693,7 @@ Ledger::updateNegativeUNL()
     if (sle->isFieldPresent(sfDisabledValidators))
     {
         auto const& oldNUnl = sle->getFieldArray(sfDisabledValidators);
-        for (auto v : oldNUnl)
+        for (auto const& v : oldNUnl)
         {
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
                 v.getFieldVL(sfPublicKey) == sle->getFieldVL(sfValidatorToReEnable))
