@@ -613,7 +613,7 @@ run(int argc, char** argv)
 
     if (vm.contains("start"))
     {
-        config->START_UP = StartUpType::FRESH;
+        config->START_UP = StartUpType::Fresh;
     }
 
     if (vm.contains("import"))
@@ -624,7 +624,7 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.contains("replay"))
         {
-            config->START_UP = StartUpType::REPLAY;
+            config->START_UP = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
@@ -644,17 +644,17 @@ run(int argc, char** argv)
         }
         else
         {
-            config->START_UP = StartUpType::LOAD;
+            config->START_UP = StartUpType::Load;
         }
     }
     else if (vm.contains("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LOAD_FILE;
+        config->START_UP = StartUpType::LoadFile;
     }
     else if (vm.contains("load") || config->FAST_LOAD)
     {
-        config->START_UP = StartUpType::LOAD;
+        config->START_UP = StartUpType::Load;
     }
 
     if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
@@ -665,13 +665,13 @@ run(int argc, char** argv)
 
     if (vm.contains("net") && !config->FAST_LOAD)
     {
-        if ((config->START_UP == StartUpType::LOAD) || (config->START_UP == StartUpType::REPLAY))
+        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = StartUpType::NETWORK;
+        config->START_UP = StartUpType::Network;
     }
 
     if (vm.contains("valid"))

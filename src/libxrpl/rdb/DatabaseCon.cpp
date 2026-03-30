@@ -29,7 +29,7 @@ public:
         auto it = checkpointers_.find(id);
         if (it != checkpointers_.end())
             return it->second;
-        return {};
+        return nullptr;
     }
 
     void
