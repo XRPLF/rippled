@@ -905,19 +905,112 @@ rippled_txq_metrics{metric="txq_count"} / rippled_txq_metrics{metric="txq_max_si
 rippled_load_factor_metrics{metric="load_factor"} > 5
 ```
 
+### Phase 7+: External Dashboard Parity Metrics
+
+> **Source**: [External Dashboard Parity Spec](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Task breakdown**: Phase 7 Tasks 7.9-7.16 (implementation), Phase 9 Tasks 9.11-9.13 (dashboards)
+
+These metrics fill gaps identified by comparing rippled's internal observability with the community external dashboard's 86-metric coverage. All are exported via the OTel Metrics SDK (same `PeriodicMetricReader` as Phase 9 metrics).
+
+#### Validation Agreement (Observable Gauge — `validation_agreement`)
+
+| Prometheus Metric                                          | Type   | Labels   | Description                             |
+| ---------------------------------------------------------- | ------ | -------- | --------------------------------------- |
+| `rippled_validation_agreement{metric="agreement_pct_1h"}`  | Double | `metric` | Rolling 1h agreement percentage (0-100) |
+| `rippled_validation_agreement{metric="agreement_pct_24h"}` | Double | `metric` | Rolling 24h agreement percentage        |
+| `rippled_validation_agreement{metric="agreements_1h"}`     | Int64  | `metric` | Agreed validations in 1h window         |
+| `rippled_validation_agreement{metric="missed_1h"}`         | Int64  | `metric` | Missed validations in 1h window         |
+| `rippled_validation_agreement{metric="agreements_24h"}`    | Int64  | `metric` | Agreed validations in 24h window        |
+| `rippled_validation_agreement{metric="missed_24h"}`        | Int64  | `metric` | Missed validations in 24h window        |
+
+Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
+
+#### Validator Health (Observable Gauge — `validator_health`)
+
+| Prometheus Metric                                      | Type   | Labels   | Description                    |
+| ------------------------------------------------------ | ------ | -------- | ------------------------------ |
+| `rippled_validator_health{metric="amendment_blocked"}` | Int64  | `metric` | 1 if amendment-blocked, else 0 |
+| `rippled_validator_health{metric="unl_blocked"}`       | Int64  | `metric` | 1 if UNL-blocked, else 0       |
+| `rippled_validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
+| `rippled_validator_health{metric="validation_quorum"}` | Int64  | `metric` | Validation quorum threshold    |
+
+#### Peer Quality (Observable Gauge — `peer_quality`)
+
+| Prometheus Metric                                         | Type   | Labels   | Description                          |
+| --------------------------------------------------------- | ------ | -------- | ------------------------------------ |
+| `rippled_peer_quality{metric="peer_latency_p90_ms"}`      | Double | `metric` | P90 peer latency in milliseconds     |
+| `rippled_peer_quality{metric="peers_insane_count"}`       | Int64  | `metric` | Peers with diverged tracking status  |
+| `rippled_peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer rippled version  |
+| `rippled_peer_quality{metric="upgrade_recommended"}`      | Int64  | `metric` | 1 if >60% of peers are newer version |
+
+#### Ledger Economy (Observable Gauge — `ledger_economy`)
+
+| Prometheus Metric                                     | Type   | Labels   | Description                        |
+| ----------------------------------------------------- | ------ | -------- | ---------------------------------- |
+| `rippled_ledger_economy{metric="base_fee_xrp"}`       | Double | `metric` | Base transaction fee in drops      |
+| `rippled_ledger_economy{metric="reserve_base_xrp"}`   | Double | `metric` | Account reserve in drops           |
+| `rippled_ledger_economy{metric="reserve_inc_xrp"}`    | Double | `metric` | Owner reserve increment in drops   |
+| `rippled_ledger_economy{metric="ledger_age_seconds"}` | Double | `metric` | Seconds since last validated close |
+| `rippled_ledger_economy{metric="transaction_rate"}`   | Double | `metric` | Smoothed transaction rate (tx/s)   |
+
+#### State Tracking (Observable Gauge — `state_tracking`)
+
+| Prometheus Metric                                                | Type   | Labels   | Description                            |
+| ---------------------------------------------------------------- | ------ | -------- | -------------------------------------- |
+| `rippled_state_tracking{metric="state_value"}`                   | Int64  | `metric` | Numeric state 0-6 (see encoding below) |
+| `rippled_state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
+
+State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing).
+
+#### Storage Detail (Observable Gauge — `storage_detail`)
+
+| Prometheus Metric                             | Type  | Labels   | Description            |
+| --------------------------------------------- | ----- | -------- | ---------------------- |
+| `rippled_storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | NuDB backend file size |
+
+#### Synchronous Counters (Phase 7+)
+
+| Prometheus Metric                     | Type    | Description                      | Increment Site        |
+| ------------------------------------- | ------- | -------------------------------- | --------------------- |
+| `rippled_ledgers_closed_total`        | Counter | Ledgers closed by consensus      | RCLConsensus.cpp      |
+| `rippled_validations_sent_total`      | Counter | Validations sent                 | RCLConsensus.cpp      |
+| `rippled_validations_checked_total`   | Counter | Network validations observed     | LedgerMaster.cpp      |
+| `rippled_validation_agreements_total` | Counter | Cumulative validation agreements | ValidationTracker.cpp |
+| `rippled_validation_missed_total`     | Counter | Cumulative validation misses     | ValidationTracker.cpp |
+| `rippled_state_changes_total`         | Counter | Operating mode transitions       | NetworkOPs.cpp        |
+| `rippled_jq_trans_overflow_total`     | Counter | Job queue transaction overflows  | JobQueue.cpp          |
+
+#### Span Attribute Enrichments (Phases 2-4)
+
+| Span Name                   | New Attribute                        | Type   | Source                   |
+| --------------------------- | ------------------------------------ | ------ | ------------------------ |
+| `rpc.command.*`             | `xrpl.node.amendment_blocked`        | bool   | Phase 2 — RPCHandler.cpp |
+| `rpc.command.*`             | `xrpl.node.server_state`             | string | Phase 2 — RPCHandler.cpp |
+| `tx.receive`                | `xrpl.peer.version`                  | string | Phase 3 — PeerImp.cpp    |
+| `consensus.validation.send` | `xrpl.validation.ledger_hash`        | string | Phase 4 — RCLConsensus   |
+| `consensus.validation.send` | `xrpl.validation.full`               | bool   | Phase 4 — RCLConsensus   |
+| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash`   | string | Phase 4 — PeerImp.cpp    |
+| `peer.validation.receive`   | `xrpl.peer.validation.full`          | bool   | Phase 4 — PeerImp.cpp    |
+| `consensus.accept`          | `xrpl.consensus.validation_quorum`   | int64  | Phase 4 — RCLConsensus   |
+| `consensus.accept`          | `xrpl.consensus.proposers_validated` | int64  | Phase 4 — RCLConsensus   |
+
 ### New Grafana Dashboards (Phase 9)
 
-| Dashboard              | UID                  | Data Source | Key Panels                                                |
-| ---------------------- | -------------------- | ----------- | --------------------------------------------------------- |
-| Fee Market & TxQ       | `rippled-fee-market` | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown     |
-| Job Queue Analysis     | `rippled-job-queue`  | Prometheus  | Per-job rates, queue wait times, execution times          |
-| RPC Performance (OTel) | `rippled-rpc-perf`   | Prometheus  | Per-method call rates, error rates, latency distributions |
+| Dashboard              | UID                        | Data Source | Key Panels                                                |
+| ---------------------- | -------------------------- | ----------- | --------------------------------------------------------- |
+| Fee Market & TxQ       | `rippled-fee-market`       | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown     |
+| Job Queue Analysis     | `rippled-job-queue`        | Prometheus  | Per-job rates, queue wait times, execution times          |
+| RPC Performance (OTel) | `rippled-rpc-perf`         | Prometheus  | Per-method call rates, error rates, latency distributions |
+| Validator Health       | `rippled-validator-health` | Prometheus  | Agreement %, validation rate, amendment/UNL, state        |
+| Peer Quality           | `rippled-peer-quality`     | Prometheus  | P90 latency, insane peers, version awareness, disconnects |
 
 ### Updated Grafana Dashboards (Phase 9)
 
-| Dashboard            | UID                          | New Panels Added                                       |
-| -------------------- | ---------------------------- | ------------------------------------------------------ |
-| Node Health (StatsD) | `rippled-statsd-node-health` | NodeStore I/O, cache hit rates, object instance counts |
+| Dashboard            | UID                          | New Panels Added                                                     |
+| -------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| Node Health (StatsD) | `rippled-statsd-node-health` | NodeStore I/O, cache hit rates, object instance counts               |
+| System Node Health   | `rippled-system-node-health` | Ledger economy row: base fee, reserves, ledger age, transaction rate |
 
 ### New Grafana Dashboards (Phase 11)
 

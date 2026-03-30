@@ -342,6 +342,96 @@ These metrics serve multiple external consumer categories identified during rese
 
 ---
 
+## Task 9.11: Validator Health Dashboard (External Dashboard Parity)
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — dashboards for Phase 7 metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 7 Tasks 7.9-7.16 (metrics must be emitting).
+> **Downstream**: Phase 10 (dashboard load checks), Phase 11 (alert rules reference these panels).
+
+**Objective**: Create a Grafana dashboard for validation agreement, amendment/UNL health, and state tracking.
+
+**Dashboard**: `rippled-validator-health.json`
+
+| Panel                      | Type       | PromQL                                                           |
+| -------------------------- | ---------- | ---------------------------------------------------------------- |
+| Agreement % (1h)           | stat       | `rippled_validation_agreement{metric="agreement_pct_1h"}`        |
+| Agreement % (24h)          | stat       | `rippled_validation_agreement{metric="agreement_pct_24h"}`       |
+| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side                     |
+| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side                   |
+| Validation Rate            | stat       | `rate(rippled_validations_sent_total[5m]) * 60`                  |
+| Validations Checked Rate   | stat       | `rate(rippled_validations_checked_total[5m]) * 60`               |
+| Amendment Blocked          | stat       | `rippled_validator_health{metric="amendment_blocked"}`           |
+| UNL Expiry (days)          | stat       | `rippled_validator_health{metric="unl_expiry_days"}`             |
+| Validation Quorum          | stat       | `rippled_validator_health{metric="validation_quorum"}`           |
+| State Value Timeline       | timeseries | `rippled_state_tracking{metric="state_value"}`                   |
+| Time in Current State      | stat       | `rippled_state_tracking{metric="time_in_current_state_seconds"}` |
+| State Changes Rate         | stat       | `rate(rippled_state_changes_total[1h])`                          |
+| Ledgers Closed Rate        | stat       | `rate(rippled_ledgers_closed_total[5m]) * 60`                    |
+
+**Dashboard conventions**: `$node` template variable for `exported_instance` filtering, dark theme, matching existing panel sizes and color schemes.
+
+**Key new files**: `docker/telemetry/grafana/dashboards/rippled-validator-health.json`
+
+**Exit Criteria**:
+
+- [ ] All 13 panels render with non-zero data during normal operation
+- [ ] `$node` filter works correctly for multi-node deployments
+- [ ] Amendment blocked and UNL expiry panels use color thresholds (red=blocked/expiring)
+
+---
+
+## Task 9.12: Peer Quality Dashboard (External Dashboard Parity)
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Create a Grafana dashboard for peer health aggregates.
+
+**Dashboard**: `rippled-peer-quality.json`
+
+| Panel                  | Type       | PromQL                                                           |
+| ---------------------- | ---------- | ---------------------------------------------------------------- |
+| P90 Peer Latency       | timeseries | `rippled_peer_quality{metric="peer_latency_p90_ms"}`             |
+| Insane/Diverged Peers  | stat       | `rippled_peer_quality{metric="peers_insane_count"}`              |
+| Higher Version Peers % | stat       | `rippled_peer_quality{metric="peers_higher_version_pct"}`        |
+| Upgrade Recommended    | stat       | `rippled_peer_quality{metric="upgrade_recommended"}`             |
+| Resource Disconnects   | timeseries | `rippled_Overlay_Peer_Disconnects_Charges`                       |
+| Inbound vs Outbound    | bargauge   | `rippled_Peer_Finder_Active_Inbound_Peers`, `..._Outbound_Peers` |
+
+**Key new files**: `docker/telemetry/grafana/dashboards/rippled-peer-quality.json`
+
+**Exit Criteria**:
+
+- [ ] All 6 panels render correctly
+- [ ] P90 latency panel shows trend over time
+- [ ] Upgrade recommended panel uses color threshold (red=1, green=0)
+
+---
+
+## Task 9.13: Ledger Economy Dashboard Panels (External Dashboard Parity)
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Add "Ledger Economy" row to the existing `system-node-health.json` dashboard.
+
+| Panel                | Type       | PromQL                                                |
+| -------------------- | ---------- | ----------------------------------------------------- |
+| Base Fee (drops)     | stat       | `rippled_ledger_economy{metric="base_fee_xrp"}`       |
+| Reserve Base (drops) | stat       | `rippled_ledger_economy{metric="reserve_base_xrp"}`   |
+| Reserve Inc (drops)  | stat       | `rippled_ledger_economy{metric="reserve_inc_xrp"}`    |
+| Ledger Age           | stat       | `rippled_ledger_economy{metric="ledger_age_seconds"}` |
+| Transaction Rate     | timeseries | `rippled_ledger_economy{metric="transaction_rate"}`   |
+
+**Key modified files**: `docker/telemetry/grafana/dashboards/system-node-health.json`
+
+**Exit Criteria**:
+
+- [ ] 5 new panels render correctly in existing dashboard
+- [ ] Fee values match `server_info` RPC output
+- [ ] Transaction rate shows smooth trend (not spiky)
+
+---
+
 ## Exit Criteria
 
 - [ ] All ~50 new metrics visible in Prometheus via OTLP pipeline
@@ -352,3 +442,6 @@ These metrics serve multiple external consumer categories identified during rese
 - [ ] Integration test validates all new metric families are non-zero
 - [ ] No performance regression (< 0.5% CPU overhead from new callbacks)
 - [ ] Documentation updated with full new metric inventory
+- [ ] Validator Health dashboard renders all 13 panels
+- [ ] Peer Quality dashboard renders all 6 panels
+- [ ] Ledger Economy panels added to system-node-health dashboard
