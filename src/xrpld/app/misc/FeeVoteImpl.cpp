@@ -1,7 +1,8 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/FeeVote.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
@@ -272,7 +273,7 @@ FeeVoteImpl::doVoting(
                     baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
                     incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = Config::FEE_UNITS_DEPRECATED;
+                obj[sfReferenceFeeUnits] = FEE_UNITS_DEPRECATED;
             }
         });
 

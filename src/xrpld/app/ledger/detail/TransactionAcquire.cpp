@@ -30,7 +30,7 @@ TransactionAcquire::TransactionAcquire(
           hash,
           TX_ACQUIRE_TIMEOUT,
           {jtTXN_DATA, "TxAcq", {}},
-          app.journal("TransactionAcquire"))
+          app.getJournal("TransactionAcquire"))
     , mHaveRoot(false)
     , mPeerSet(std::move(peerSet))
 {

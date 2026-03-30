@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -12,7 +11,7 @@
 namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.journal("TransactionAcquire"))
+    : app_(app), m_nodeCache(nodeCache), j_(app.getJournal("TransactionAcquire"))
 {
 }
 

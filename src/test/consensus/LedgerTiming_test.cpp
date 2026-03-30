@@ -1,6 +1,5 @@
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 namespace xrpl {
 namespace test {

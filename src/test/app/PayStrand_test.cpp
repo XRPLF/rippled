@@ -623,7 +623,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
+                env.app().getJournal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
                 BEAST_EXPECT(equal(strand, std::forward<decltype(expSteps)>(expSteps)...));
@@ -650,7 +650,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
                 BEAST_EXPECT(isTesSuccess(ter));
             }
@@ -668,7 +668,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
                 BEAST_EXPECT(isTesSuccess(ter));
             }
@@ -765,7 +765,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             {
                 // The root account can't be the src or dst
-                auto flowJournal = env.app().logs().journal("Flow");
+                auto flowJournal = env.app().getJournal("Flow");
                 {
                     // The root account can't be the dst
                     auto r = toStrand(
@@ -936,7 +936,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
+                env.app().getJournal("Flow"));
             BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
@@ -964,7 +964,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
+                env.app().getJournal("Flow"));
             BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(
                 strand, D{alice, gw, usdC}, B{USD.issue(), xrpIssue(), std::nullopt}, XRPS{bob}));
@@ -1145,7 +1145,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     noAccount(),
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1158,7 +1158,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1171,7 +1171,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1184,7 +1184,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }

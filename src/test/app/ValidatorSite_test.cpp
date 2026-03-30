@@ -139,7 +139,7 @@ private:
             p->legacy("database_path", good.subdir().string());
             return p;
         }());
-        auto& trustedKeys = env.app().validators();
+        auto& trustedKeys = env.app().getValidators();
         env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;

@@ -1770,7 +1770,7 @@ TxQ::getTxs() const
 Json::Value
 TxQ::doRPC(Application& app) const
 {
-    auto const view = app.openLedger().current();
+    auto const view = app.getOpenLedger().current();
     if (!view)
     {
         BOOST_ASSERT(false);

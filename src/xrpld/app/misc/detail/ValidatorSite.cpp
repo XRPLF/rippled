@@ -72,7 +72,7 @@ ValidatorSite::ValidatorSite(
     std::optional<beast::Journal> j,
     std::chrono::seconds timeout)
     : app_{app}
-    , j_{j ? *j : app_.logs().journal("ValidatorSite")}
+    , j_{j ? *j : app_.getJournal("ValidatorSite")}
     , timer_{app_.getIOContext()}
     , fetching_{false}
     , pending_{false}
@@ -101,7 +101,7 @@ ValidatorSite::~ValidatorSite()
 bool
 ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
 {
-    auto const sites = app_.validators().loadLists();
+    auto const sites = app_.getValidators().loadLists();
     return sites.empty() || load(sites, lock_sites);
 }
 
@@ -394,8 +394,15 @@ ValidatorSite::parseJsonResponse(
         "xrpl::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
-    auto const applyResult = app_.validators().applyListsAndBroadcast(
-        manifest, version, blobs, uri, hash, app_.overlay(), app_.getHashRouter(), app_.getOPs());
+    auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        manifest,
+        version,
+        blobs,
+        uri,
+        hash,
+        app_.getOverlay(),
+        app_.getHashRouter(),
+        app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});

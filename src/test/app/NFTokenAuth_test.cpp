@@ -110,7 +110,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -173,7 +173,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that offer can't be accepted even with balance
@@ -293,7 +293,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             env(token::acceptSellOffer(A1, sellIdx), ter(tecNO_AUTH));
@@ -412,7 +412,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {

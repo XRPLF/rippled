@@ -166,7 +166,7 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert("Network-Time", std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+    h.insert("Network-Time", std::to_string(app.getTimeKeeper().now().time_since_epoch().count()));
 
     h.insert("Public-Key", toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
@@ -235,7 +235,7 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = app.getTimeKeeper().now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point

@@ -3366,23 +3366,24 @@ class Vault_test : public beast::unit_test::suite
             env.memoize(vaultAccount);
 
             auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
-                return env.app().openLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
-                    Sandbox sb(&view, tapNONE);
-                    auto vault = sb.peek(keylet::vault(keylet.key));
-                    if (!BEAST_EXPECT(vault != nullptr))
+                return env.app().getOpenLedger().modify(
+                    [&](OpenView& view, beast::Journal j) -> bool {
+                        Sandbox sb(&view, tapNONE);
+                        auto vault = sb.peek(keylet::vault(keylet.key));
+                        if (!BEAST_EXPECT(vault != nullptr))
+                            return false;
+                        auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                        if (!BEAST_EXPECT(shares != nullptr))
+                            return false;
+                        if (fn(*vault, *shares))
+                        {
+                            sb.update(vault);
+                            sb.update(shares);
+                            sb.apply(view);
+                            return true;
+                        }
                         return false;
-                    auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
-                    if (!BEAST_EXPECT(shares != nullptr))
-                        return false;
-                    if (fn(*vault, *shares))
-                    {
-                        sb.update(vault);
-                        sb.update(shares);
-                        sb.apply(view);
-                        return true;
-                    }
-                    return false;
-                });
+                    });
             };
 
             test(
