@@ -199,19 +199,78 @@
 
 ---
 
+## Task 4.8: Consensus Validation Span Enrichment — External Dashboard Parity
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds validation agreement context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 4 tasks 4.1-4.4 (span creation must exist).
+> **Downstream**: Phase 7 (ValidationTracker reads these attributes), Phase 10 (validation checks).
+
+**Objective**: Add ledger hash, validation type, and quorum data to consensus validation spans on both send and receive paths. This enables trace-level validation agreement analysis — filter by ledger hash to see which validators agreed for a given ledger.
+
+**What to do**:
+
+- Edit `src/xrpld/app/consensus/RCLConsensus.cpp`:
+  - On the `consensus.validation.send` span (in `validate()` / `doAccept()`):
+    - Add `xrpl.validation.ledger_hash` (string) — the ledger hash being validated
+    - Add `xrpl.validation.full` (bool) — whether this is a full validation (not partial)
+  - On the `consensus.accept` span (in `onAccept()`):
+    - Add `xrpl.consensus.validation_quorum` (int64) — from `app_.validators().quorum()`
+    - Add `xrpl.consensus.proposers_validated` (int64) — from `result.proposers`
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
+  - On the `peer.validation.receive` span:
+    - Add `xrpl.peer.validation.ledger_hash` (string) — from deserialized `STValidation` object
+    - Add `xrpl.peer.validation.full` (bool) — from `STValidation` flags
+
+**New span attributes**:
+
+| Span                        | Attribute                            | Type   | Source                            |
+| --------------------------- | ------------------------------------ | ------ | --------------------------------- |
+| `consensus.validation.send` | `xrpl.validation.ledger_hash`        | string | Ledger hash from validate() args  |
+| `consensus.validation.send` | `xrpl.validation.full`               | bool   | Full vs partial validation        |
+| `peer.validation.receive`   | `xrpl.peer.validation.ledger_hash`   | string | From STValidation deserialization |
+| `peer.validation.receive`   | `xrpl.peer.validation.full`          | bool   | From STValidation flags           |
+| `consensus.accept`          | `xrpl.consensus.validation_quorum`   | int64  | `app_.validators().quorum()`      |
+| `consensus.accept`          | `xrpl.consensus.proposers_validated` | int64  | `result.proposers`                |
+
+**Rationale**: The external dashboard's most valuable feature is validation agreement tracking. By recording the ledger hash on both outgoing and incoming validation spans, we create the raw data for agreement analysis at the trace level. Example Tempo query:
+
+```
+{name="consensus.validation.send"} | xrpl.validation.ledger_hash = "A1B2C3..."
+```
+
+Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement %) on top of this data.
+
+**Key modified files**:
+
+- `src/xrpld/app/consensus/RCLConsensus.cpp`
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+
+**Exit Criteria**:
+
+- [ ] `consensus.validation.send` spans carry `xrpl.validation.ledger_hash` and `xrpl.validation.full`
+- [ ] `peer.validation.receive` spans carry `xrpl.peer.validation.ledger_hash` and `xrpl.peer.validation.full`
+- [ ] `consensus.accept` spans carry `xrpl.consensus.validation_quorum` and `xrpl.consensus.proposers_validated`
+- [ ] Ledger hash attributes match between send and receive for the same ledger
+- [ ] No impact on consensus performance
+
+---
+
 ## Summary
 
-| Task | Description                           | New Files | Modified Files | Depends On    |
-| ---- | ------------------------------------- | --------- | -------------- | ------------- |
-| 4.1  | Consensus round start instrumentation | 0         | 2              | Phase 3       |
-| 4.2  | Phase transition instrumentation      | 0         | 1-2            | 4.1           |
-| 4.3  | Proposal handling instrumentation     | 0         | 1              | 4.1           |
-| 4.4  | Validation handling instrumentation   | 0         | 1-2            | 4.1           |
-| 4.5  | Consensus-specific attributes         | 0         | 1              | 4.2, 4.3, 4.4 |
-| 4.6  | Transaction-consensus correlation     | 0         | 2              | 4.2, Phase 3  |
-| 4.7  | Build verification and testing        | 0         | 0              | 4.1-4.6       |
+| Task | Description                                 | New Files | Modified Files | Depends On    |
+| ---- | ------------------------------------------- | --------- | -------------- | ------------- |
+| 4.1  | Consensus round start instrumentation       | 0         | 2              | Phase 3       |
+| 4.2  | Phase transition instrumentation            | 0         | 1-2            | 4.1           |
+| 4.3  | Proposal handling instrumentation           | 0         | 1              | 4.1           |
+| 4.4  | Validation handling instrumentation         | 0         | 1-2            | 4.1           |
+| 4.5  | Consensus-specific attributes               | 0         | 1              | 4.2, 4.3, 4.4 |
+| 4.6  | Transaction-consensus correlation           | 0         | 2              | 4.2, Phase 3  |
+| 4.7  | Build verification and testing              | 0         | 0              | 4.1-4.6       |
+| 4.8  | Validation span enrichment (ext. dashboard) | 0         | 2              | 4.4           |
 
-**Parallel work**: Tasks 4.2, 4.3, and 4.4 can run in parallel after 4.1 is complete. Task 4.5 depends on all three. Task 4.6 depends on 4.2 and Phase 3.
+**Parallel work**: Tasks 4.2, 4.3, and 4.4 can run in parallel after 4.1 is complete. Task 4.5 depends on all three. Task 4.6 depends on 4.2 and Phase 3. Task 4.8 depends on 4.4 (validation spans must exist).
 
 ### Implemented Spans
 
