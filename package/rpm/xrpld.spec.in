@@ -79,6 +79,7 @@ install -Dm0644 %{SOURCE8} %{buildroot}%{_opt_prefix}/bin/update-xrpld-cron
 %sysusers_create_compat %{SOURCE4}
 
 %post
+systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_post xrpld.service
 
 %preun
