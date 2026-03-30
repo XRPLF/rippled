@@ -16,8 +16,8 @@ getEndpoint(std::string const& peer)
 {
     try
     {
-        std::size_t first = peer.find_first_of(":");
-        std::size_t last = peer.find_last_of(":");
+        std::size_t first = peer.find_first_of(':');
+        std::size_t last = peer.find_last_of(':');
         std::string peerClean(peer);
         if (first != last)
         {
@@ -56,7 +56,7 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     , bindListener_(std::move(bindListener))
     , handler_(std::move(handler))
     , forward_(std::move(forward))
-    , requiredCondition_(std::move(requiredCondition))
+    , requiredCondition_(requiredCondition)
     , loadType_(std::move(loadType))
     , secureGatewayIPs_(secureGatewayIPs)
 {

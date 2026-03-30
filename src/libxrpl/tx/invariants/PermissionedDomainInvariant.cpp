@@ -38,7 +38,7 @@ ValidPermissionedDomain::visitEntry(
                     break;
             }
         }
-        sleStatus.emplace_back(std::move(ss));
+        sleStatus.emplace_back(ss);
     };
 
     if (after)

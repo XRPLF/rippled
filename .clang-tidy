@@ -97,8 +97,13 @@ Checks: "-*,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
+  performance-faster-string-find,
+  performance-for-range-copy,
   performance-implicit-conversion-in-loop,
+  performance-inefficient-vector-operation,
+  performance-move-const-arg,
   performance-move-constructor-init,
+  performance-no-automatic-move,
   performance-trivially-destructible,
   # readability-avoid-nested-conditional-operator, # has issues
   # readability-avoid-return-with-void-value, # has issues
@@ -150,13 +155,6 @@ Checks: "-*,
 # modernize-use-starts-ends-with,
 # modernize-use-std-numbers,
 # modernize-use-using,
-#
-# the following are in https://github.com/XRPLF/rippled/pull/6648 :
-# performance-faster-string-find,
-# performance-for-range-copy,
-# performance-inefficient-vector-operation,
-# performance-move-const-arg,
-# performance-no-automatic-move,
 # ---
 #
 CheckOptions:

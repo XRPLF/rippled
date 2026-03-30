@@ -79,7 +79,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
     std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(":");
+    std::string::size_type nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
     std::string strUser = strUserPass.substr(0, nColon);
