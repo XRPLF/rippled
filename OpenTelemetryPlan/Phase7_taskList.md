@@ -228,6 +228,278 @@
 
 ---
 
+## Task 7.9: ValidationTracker — Validation Agreement Computation
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — the most valuable metric from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 4 Task 4.8 (validation span attributes provide ledger hash context).
+> **Downstream**: Phase 9 (Validator Health dashboard), Phase 10 (validation checks), Phase 11 (agreement alert rules).
+
+**Objective**: Implement a stateful class that tracks whether our validator's validations agree with network consensus, maintaining rolling 1h and 24h windows with an 8-second grace period and 5-minute late repair window.
+
+**Architecture**:
+
+```
+consensus.validation.send ────> ValidationTracker ────> MetricsRegistry
+(records our validation         (reconciles after       (exports agreement
+ for ledger X)                   8s grace period)        gauges every 10s)
+
+ledger.validate ──────────────> ValidationTracker
+(records which ledger           (marks ledger X as
+ network validated)              agreed or missed)
+```
+
+**What to do**:
+
+- Create `src/xrpld/telemetry/ValidationTracker.h`:
+  - `recordOurValidation(ledgerHash, ledgerSeq)` — called when we send a validation
+  - `recordNetworkValidation(ledgerHash, seq)` — called when a ledger is fully validated
+  - `reconcile()` — called periodically; reconciles pending ledger events after 8s grace period
+  - Getters: `agreementPct1h()`, `agreementPct24h()`, `agreements1h()`, `missed1h()`, `agreements24h()`, `missed24h()`, `totalAgreements()`, `totalMissed()`, `totalValidationsSent()`, `totalValidationsChecked()`
+  - Thread-safety: atomics for counters, mutex for window deques
+
+- Create `src/xrpld/telemetry/detail/ValidationTracker.cpp`:
+  - Reconciliation logic: after 8s grace period, check if `weValidated && networkValidated && sameHash` → agreement; else missed
+  - Late repair: if a late validation arrives within 5 minutes, correct a false-positive miss
+  - Sliding window: `std::deque<WindowEvent>` evicts entries older than 1h/24h on each reconciliation pass
+  - Ring buffer of 1000 `LedgerEvent` structs for pending reconciliation
+
+- Add recording hooks (modifying Phase 4 code from Phase 7 branch):
+  - `RCLConsensus.cpp` `validate()`: call `tracker.recordOurValidation()`
+  - `LedgerMaster.cpp` fully-validated path: call `tracker.recordNetworkValidation()`
+
+**Key data structures**:
+
+```cpp
+struct LedgerEvent {
+    uint256 ledgerHash;
+    LedgerIndex seq;
+    TimePoint closeTime;
+    bool weValidated = false;
+    bool networkValidated = false;
+    bool reconciled = false;
+    bool agreed = false;
+};
+
+struct WindowEvent {
+    TimePoint time;
+    bool agreed;
+};
+```
+
+**Key new files**:
+
+- `src/xrpld/telemetry/ValidationTracker.h`
+- `src/xrpld/telemetry/detail/ValidationTracker.cpp`
+
+**Key modified files**:
+
+- `src/xrpld/telemetry/MetricsRegistry.h` (add ValidationTracker member)
+- `src/xrpld/telemetry/MetricsRegistry.cpp` (add gauge callback reading from tracker)
+- `src/xrpld/app/consensus/RCLConsensus.cpp` (add recording hooks)
+- `src/xrpld/app/ledger/detail/LedgerMaster.cpp` (add recording hook)
+
+**Exit Criteria**:
+
+- [ ] ValidationTracker correctly tracks agreement with 8s grace period
+- [ ] 5-minute late repair corrects false-positive misses
+- [ ] Thread-safe (atomics + mutex for window deques)
+- [ ] Rolling windows correctly evict stale entries
+- [ ] Unit tests: normal agreement, missed validation, late repair, window eviction
+
+---
+
+## Task 7.10: Validator Health Observable Gauges
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export amendment blocked, UNL health, and quorum data as a native OTel observable gauge.
+
+**What to do**:
+
+- In `MetricsRegistry.cpp` `registerAsyncGauges()`, add:
+
+```cpp
+validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
+    "rippled_validator_health", "Validator health indicators");
+```
+
+**Gauge label values**:
+
+| Label `metric=`     | Type   | Source                                            |
+| ------------------- | ------ | ------------------------------------------------- |
+| `amendment_blocked` | int64  | `app_.getOPs().isAmendmentBlocked()` → 0/1        |
+| `unl_blocked`       | int64  | `app_.getOPs().isUNLBlocked()` → 0/1              |
+| `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
+| `validation_quorum` | int64  | `app_.validators().quorum()`                      |
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] All 4 label values emitted every 10s
+- [ ] `unl_expiry_days` is negative when expired, positive when active
+- [ ] Values visible in Prometheus
+
+---
+
+## Task 7.11: Peer Quality Observable Gauges
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export peer health aggregates (latency P90, insane peers, version awareness) as a native OTel observable gauge.
+
+**What to do**:
+
+- In `MetricsRegistry.cpp` `registerAsyncGauges()`, add a callback that iterates `app_.overlay().foreach(...)` to:
+  - Collect per-peer latency values, sort, compute P90
+  - Count peers with `tracking_ == diverged` (insane)
+  - Compare peer `getVersion()` to own version for upgrade awareness
+
+**Gauge label values**:
+
+| Label `metric=`            | Type   | Source                                |
+| -------------------------- | ------ | ------------------------------------- |
+| `peer_latency_p90_ms`      | double | P90 from sorted peer latencies        |
+| `peers_insane_count`       | int64  | Peers with diverged tracking status   |
+| `peers_higher_version_pct` | double | % of peers on newer rippled version   |
+| `upgrade_recommended`      | int64  | 1 if `peers_higher_version_pct > 60%` |
+
+**Implementation note**: The callback runs every 10s on the metrics reader thread. Iterating ~50-200 peers is acceptable overhead.
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] P90 latency computed correctly
+- [ ] Insane count matches `peers` RPC output
+- [ ] Version comparison handles format variations (e.g., "rippled-2.4.0-rc1")
+
+---
+
+## Task 7.12: Ledger Economy Observable Gauges
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export fee, reserve, ledger age, and transaction rate as a native OTel observable gauge.
+
+**Gauge label values**:
+
+| Label `metric=`      | Type   | Source                                              |
+| -------------------- | ------ | --------------------------------------------------- |
+| `base_fee_xrp`       | double | Base fee from validated ledger fee settings (drops) |
+| `reserve_base_xrp`   | double | Account reserve from validated ledger (drops)       |
+| `reserve_inc_xrp`    | double | Owner reserve increment (drops)                     |
+| `ledger_age_seconds` | double | `now - lastValidatedCloseTime`                      |
+| `transaction_rate`   | double | Derived: tx count delta / time delta (smoothed)     |
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] Fee values match `server_info` RPC output
+- [ ] `ledger_age_seconds` increases monotonically between ledger closes
+- [ ] `transaction_rate` is smoothed (rolling average)
+
+---
+
+## Task 7.13: State Tracking Observable Gauges
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export extended state value (0-6 encoding combining OperatingMode + ConsensusMode) and time-in-current-state.
+
+**Gauge label values**:
+
+| Label `metric=`                 | Type   | Source                                          |
+| ------------------------------- | ------ | ----------------------------------------------- |
+| `state_value`                   | int64  | 0-6 encoding (see spec for mapping)             |
+| `time_in_current_state_seconds` | double | `now - lastModeChangeTime` from StateAccounting |
+
+**State value encoding**: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (full + validating), 6=proposing (full + proposing).
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] `state_value` correctly combines OperatingMode and ConsensusMode
+- [ ] `time_in_current_state_seconds` resets on mode change
+
+---
+
+## Task 7.14: Storage Detail and Sync Info Gauges
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export NuDB-specific storage size and initial sync duration.
+
+**Gauge label values**:
+
+| Gauge Name               | Label `metric=`                 | Type   | Source                        |
+| ------------------------ | ------------------------------- | ------ | ----------------------------- |
+| `rippled_storage_detail` | `nudb_bytes`                    | int64  | NuDB backend file size        |
+| `rippled_sync_info`      | `initial_sync_duration_seconds` | double | Time from start to first FULL |
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] NuDB file size reported in bytes (0 if NuDB not configured)
+- [ ] Sync duration captured once and remains stable after reaching FULL
+
+---
+
+## Task 7.15: New Synchronous Counters
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Add 7 new event counters incremented at their respective instrumentation sites.
+
+| Counter Name                          | Increment Site                   | Source File           |
+| ------------------------------------- | -------------------------------- | --------------------- |
+| `rippled_ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
+| `rippled_validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
+| `rippled_validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
+| `rippled_validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `rippled_validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `rippled_state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
+| `rippled_jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (declarations), plus recording sites in RCLConsensus.cpp, LedgerMaster.cpp, NetworkOPs.cpp, JobQueue.cpp
+
+**Exit Criteria**:
+
+- [ ] All 7 counters monotonically increase during normal operation
+- [ ] Counter values match expected rates (e.g., ledgers_closed ≈ 1 per 3-5s)
+
+---
+
+## Task 7.16: Validation Agreement Observable Gauge
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+
+**Objective**: Export rolling window agreement stats from `ValidationTracker` (Task 7.9).
+
+**Gauge label values**:
+
+| Gauge Name                     | Label `metric=`     | Type   | Source                      |
+| ------------------------------ | ------------------- | ------ | --------------------------- |
+| `rippled_validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
+|                                | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
+|                                | `missed_1h`         | int64  | `tracker.missed1h()`        |
+|                                | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
+|                                | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
+|                                | `missed_24h`        | int64  | `tracker.missed24h()`       |
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.cpp`
+
+**Exit Criteria**:
+
+- [ ] Agreement percentages in range [0.0, 100.0]
+- [ ] Window stats stabilize after 1h/24h of operation
+
+---
+
 ## Summary Table
 
 | Task | Description                            | New Files | Modified Files | Depends On |
@@ -240,8 +512,16 @@
 | 7.6  | Update Grafana dashboards (if needed)  | 0         | 3              | 7.5        |
 | 7.7  | Update integration tests               | 0         | 1              | 7.4        |
 | 7.8  | Update documentation                   | 0         | 4              | 7.6        |
+| 7.9  | ValidationTracker (agreement tracking) | 2         | 4              | 7.2, P4.8  |
+| 7.10 | Validator health observable gauges     | 0         | 2              | 7.2        |
+| 7.11 | Peer quality observable gauges         | 0         | 2              | 7.2        |
+| 7.12 | Ledger economy observable gauges       | 0         | 2              | 7.2        |
+| 7.13 | State tracking observable gauges       | 0         | 2              | 7.2        |
+| 7.14 | Storage detail and sync info gauges    | 0         | 2              | 7.2        |
+| 7.15 | New synchronous counters               | 0         | 6              | 7.2        |
+| 7.16 | Validation agreement observable gauge  | 0         | 1              | 7.9        |
 
-**Parallel work**: Tasks 7.4 and 7.5 can run in parallel after 7.2/7.3 complete. Task 7.6 depends on 7.5's findings. Tasks 7.7 and 7.8 can run in parallel after 7.6.
+**Parallel work**: Tasks 7.4 and 7.5 can run in parallel after 7.2/7.3 complete. Task 7.6 depends on 7.5's findings. Tasks 7.7 and 7.8 can run in parallel after 7.6. Tasks 7.10-7.14 can all run in parallel after 7.2. Task 7.15 depends on 7.2. Task 7.16 depends on 7.9. Task 7.9 depends on 7.2 and Phase 4 Task 4.8.
 
 **Exit Criteria** (from [06-implementation-phases.md §6.8](./06-implementation-phases.md)):
 
@@ -252,3 +532,5 @@
 - [ ] Integration test passes with OTLP-only metrics pipeline
 - [ ] No performance regression vs StatsD baseline (< 1% CPU overhead)
 - [ ] Deferred Task 6.1 (`|m` wire format) no longer relevant — Meter mapped to OTel Counter
+- [ ] ValidationTracker agreement % stabilizes after 1h under normal consensus
+- [ ] All new gauges and counters visible in Prometheus with non-zero values
