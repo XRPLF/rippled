@@ -161,7 +161,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto sle = view.read(keylet::line(account, issuer, currency));
 
     if (!sle)
     {

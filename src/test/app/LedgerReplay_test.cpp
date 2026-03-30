@@ -968,6 +968,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
+            sList.reserve(count);
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);
             return sList;
