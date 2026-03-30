@@ -3671,7 +3671,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 switch (dbType)
                 {
                     case Sqlite: {
-                        auto db = registry_.get().getRelationalDatabase();
+                        auto& db = registry_.get().getRelationalDatabase();
                         RelationalDatabase::AccountTxPageOptions const options{
                             accountId, {minLedger, maxLedger}, marker, 0, true};
                         return db.newestAccountTxPage(options);

@@ -374,7 +374,7 @@ Slot<clock_type>::update(
                 if (journal_.trace())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                std::chrono::seconds duration =
+                std::chrono::seconds const duration =
                     getSquelchDuration(peers_.size() - maxSelectedPeers_);
                 v.expire = now + duration;
                 handler_.squelch(validator, k, duration.count());

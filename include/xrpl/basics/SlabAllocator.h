@@ -94,7 +94,7 @@ class SlabAllocator
             std::uint8_t* ret;
 
             {
-                std::lock_guard l(m_);
+                std::lock_guard const l(m_);
 
                 ret = l_;
 
@@ -123,7 +123,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard l(m_);
+            std::lock_guard const l(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
@@ -210,7 +210,7 @@ public:
 
         // No slab can satisfy our request, so we attempt to allocate a new
         // one here:
-        std::size_t size = slabSize_;
+        std::size_t const size = slabSize_;
 
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:

@@ -16,7 +16,7 @@ namespace xrpl {
 
 namespace LedgerEntryHelpers {
 
-Unexpected<Json::Value>
+inline Unexpected<Json::Value>
 missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
@@ -27,7 +27,7 @@ missingFieldError(Json::StaticString const field, std::optional<std::string> err
     return Unexpected(json);
 }
 
-Unexpected<Json::Value>
+inline Unexpected<Json::Value>
 invalidFieldError(std::string const& err, Json::StaticString const field, std::string const& type)
 {
     Json::Value json = Json::objectValue;
@@ -38,7 +38,7 @@ invalidFieldError(std::string const& err, Json::StaticString const field, std::s
     return Unexpected(json);
 }
 
-Unexpected<Json::Value>
+inline Unexpected<Json::Value>
 malformedError(std::string const& err, std::string const& message)
 {
     Json::Value json = Json::objectValue;
@@ -48,7 +48,7 @@ malformedError(std::string const& err, std::string const& message)
     return Unexpected(json);
 }
 
-Expected<bool, Json::Value>
+inline Expected<bool, Json::Value>
 hasRequired(
     Json::Value const& params,
     std::initializer_list<Json::StaticString> fields,
@@ -88,7 +88,7 @@ required(
 }
 
 template <>
-std::optional<AccountID>
+inline std::optional<AccountID>
 parse(Json::Value const& param)
 {
     if (!param.isString())
@@ -103,7 +103,7 @@ parse(Json::Value const& param)
     return account;
 }
 
-Expected<AccountID, Json::Value>
+inline Expected<AccountID, Json::Value>
 requiredAccountID(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -112,7 +112,7 @@ requiredAccountID(
     return required<AccountID>(params, fieldName, err, "AccountID");
 }
 
-std::optional<Blob>
+inline std::optional<Blob>
 parseHexBlob(Json::Value const& param, std::size_t maxLength)
 {
     if (!param.isString())
@@ -125,7 +125,7 @@ parseHexBlob(Json::Value const& param, std::size_t maxLength)
     return blob;
 }
 
-Expected<Blob, Json::Value>
+inline Expected<Blob, Json::Value>
 requiredHexBlob(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -144,7 +144,7 @@ requiredHexBlob(
 }
 
 template <>
-std::optional<std::uint32_t>
+inline std::optional<std::uint32_t>
 parse(Json::Value const& param)
 {
     if (param.isUInt() || (param.isInt() && param.asInt() >= 0))
@@ -160,7 +160,7 @@ parse(Json::Value const& param)
     return std::nullopt;
 }
 
-Expected<std::uint32_t, Json::Value>
+inline Expected<std::uint32_t, Json::Value>
 requiredUInt32(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -170,7 +170,7 @@ requiredUInt32(
 }
 
 template <>
-std::optional<uint256>
+inline std::optional<uint256>
 parse(Json::Value const& param)
 {
     uint256 uNodeIndex;
@@ -182,7 +182,7 @@ parse(Json::Value const& param)
     return uNodeIndex;
 }
 
-Expected<uint256, Json::Value>
+inline Expected<uint256, Json::Value>
 requiredUInt256(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -192,7 +192,7 @@ requiredUInt256(
 }
 
 template <>
-std::optional<uint192>
+inline std::optional<uint192>
 parse(Json::Value const& param)
 {
     uint192 field;
@@ -204,7 +204,7 @@ parse(Json::Value const& param)
     return field;
 }
 
-Expected<uint192, Json::Value>
+inline Expected<uint192, Json::Value>
 requiredUInt192(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -214,7 +214,7 @@ requiredUInt192(
 }
 
 template <>
-std::optional<Issue>
+inline std::optional<Issue>
 parse(Json::Value const& param)
 {
     try
@@ -227,13 +227,13 @@ parse(Json::Value const& param)
     }
 }
 
-Expected<Issue, Json::Value>
+inline Expected<Issue, Json::Value>
 requiredIssue(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
 {
     return required<Issue>(params, fieldName, err, "Issue");
 }
 
-Expected<STXChainBridge, Json::Value>
+inline Expected<STXChainBridge, Json::Value>
 parseBridgeFields(Json::Value const& params)
 {
     if (auto const value = hasRequired(

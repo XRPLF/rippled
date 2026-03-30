@@ -58,7 +58,7 @@ default_prng()
     thread_local beast::xor_shift_engine engine = [] {
         std::uint64_t seed;
         {
-            std::lock_guard lk(m);
+            std::lock_guard const lk(m);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
             seed = distribution(seeder);
         }
