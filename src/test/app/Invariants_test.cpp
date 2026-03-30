@@ -1026,8 +1026,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
                 sleNew->setFieldH256(sfAMMID, uint256(1));
-                sleNew->setFieldU32(
-                    sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDefaultRipple);
+                sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
             },

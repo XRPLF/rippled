@@ -94,9 +94,11 @@ public:
         BEAST_EXPECT(z >= z);
         BEAST_EXPECT(z <= z);
         BEAST_EXPECT(z == -z);
+        // NOLINTBEGIN(misc-redundant-expression)
         unexpected(z > z);
         unexpected(z < z);
         unexpected(z != z);
+        // NOLINTEND(misc-redundant-expression)
         unexpected(z != -z);
 
         BEAST_EXPECT(n < z);

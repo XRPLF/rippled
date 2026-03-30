@@ -211,60 +211,60 @@ public:
         unexpected(zeroSt != beast::zero, "STAmount fail");
         unexpected(one == beast::zero, "STAmount fail");
         unexpected(hundred == beast::zero, "STAmount fail");
-        unexpected((zeroSt < zeroSt), "STAmount fail");
+        unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
         unexpected((one < zeroSt), "STAmount fail");
-        unexpected((one < one), "STAmount fail");
+        unexpected((one < one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one < hundred), "STAmount fail");
         unexpected((hundred < zeroSt), "STAmount fail");
         unexpected((hundred < one), "STAmount fail");
-        unexpected((hundred < hundred), "STAmount fail");
-        unexpected((zeroSt > zeroSt), "STAmount fail");
+        unexpected((hundred < hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt > zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt > one), "STAmount fail");
         unexpected((zeroSt > hundred), "STAmount fail");
         unexpected(!(one > zeroSt), "STAmount fail");
-        unexpected((one > one), "STAmount fail");
+        unexpected((one > one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one > hundred), "STAmount fail");
         unexpected(!(hundred > zeroSt), "STAmount fail");
         unexpected(!(hundred > one), "STAmount fail");
-        unexpected((hundred > hundred), "STAmount fail");
-        unexpected(!(zeroSt <= zeroSt), "STAmount fail");
+        unexpected((hundred > hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt <= zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt <= one), "STAmount fail");
         unexpected(!(zeroSt <= hundred), "STAmount fail");
         unexpected((one <= zeroSt), "STAmount fail");
-        unexpected(!(one <= one), "STAmount fail");
+        unexpected(!(one <= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one <= hundred), "STAmount fail");
         unexpected((hundred <= zeroSt), "STAmount fail");
         unexpected((hundred <= one), "STAmount fail");
-        unexpected(!(hundred <= hundred), "STAmount fail");
-        unexpected(!(zeroSt >= zeroSt), "STAmount fail");
+        unexpected(!(hundred <= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt >= zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt >= one), "STAmount fail");
         unexpected((zeroSt >= hundred), "STAmount fail");
         unexpected(!(one >= zeroSt), "STAmount fail");
-        unexpected(!(one >= one), "STAmount fail");
+        unexpected(!(one >= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one >= hundred), "STAmount fail");
         unexpected(!(hundred >= zeroSt), "STAmount fail");
         unexpected(!(hundred >= one), "STAmount fail");
-        unexpected(!(hundred >= hundred), "STAmount fail");
-        unexpected(!(zeroSt == zeroSt), "STAmount fail");
+        unexpected(!(hundred >= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt == zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt == one), "STAmount fail");
         unexpected((zeroSt == hundred), "STAmount fail");
         unexpected((one == zeroSt), "STAmount fail");
-        unexpected(!(one == one), "STAmount fail");
+        unexpected(!(one == one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one == hundred), "STAmount fail");
         unexpected((hundred == zeroSt), "STAmount fail");
         unexpected((hundred == one), "STAmount fail");
-        unexpected(!(hundred == hundred), "STAmount fail");
-        unexpected((zeroSt != zeroSt), "STAmount fail");
+        unexpected(!(hundred == hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt != zeroSt), "STAmount fail");     // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt != one), "STAmount fail");
         unexpected(!(zeroSt != hundred), "STAmount fail");
         unexpected(!(one != zeroSt), "STAmount fail");
-        unexpected((one != one), "STAmount fail");
+        unexpected((one != one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one != hundred), "STAmount fail");
         unexpected(!(hundred != zeroSt), "STAmount fail");
         unexpected(!(hundred != one), "STAmount fail");
-        unexpected((hundred != hundred), "STAmount fail");
+        unexpected((hundred != hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(STAmount().getText() != "0", "STAmount fail");
         unexpected(STAmount(31).getText() != "31", "STAmount fail");
         unexpected(STAmount(310).getText() != "310", "STAmount fail");
@@ -297,60 +297,60 @@ public:
         unexpected(zeroSt != beast::zero, "STAmount fail");
         unexpected(one == beast::zero, "STAmount fail");
         unexpected(hundred == beast::zero, "STAmount fail");
-        unexpected((zeroSt < zeroSt), "STAmount fail");
+        unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
         unexpected((one < zeroSt), "STAmount fail");
-        unexpected((one < one), "STAmount fail");
+        unexpected((one < one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one < hundred), "STAmount fail");
         unexpected((hundred < zeroSt), "STAmount fail");
         unexpected((hundred < one), "STAmount fail");
-        unexpected((hundred < hundred), "STAmount fail");
-        unexpected((zeroSt > zeroSt), "STAmount fail");
+        unexpected((hundred < hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt > zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt > one), "STAmount fail");
         unexpected((zeroSt > hundred), "STAmount fail");
         unexpected(!(one > zeroSt), "STAmount fail");
-        unexpected((one > one), "STAmount fail");
+        unexpected((one > one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one > hundred), "STAmount fail");
         unexpected(!(hundred > zeroSt), "STAmount fail");
         unexpected(!(hundred > one), "STAmount fail");
-        unexpected((hundred > hundred), "STAmount fail");
-        unexpected(!(zeroSt <= zeroSt), "STAmount fail");
+        unexpected((hundred > hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt <= zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt <= one), "STAmount fail");
         unexpected(!(zeroSt <= hundred), "STAmount fail");
         unexpected((one <= zeroSt), "STAmount fail");
-        unexpected(!(one <= one), "STAmount fail");
+        unexpected(!(one <= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one <= hundred), "STAmount fail");
         unexpected((hundred <= zeroSt), "STAmount fail");
         unexpected((hundred <= one), "STAmount fail");
-        unexpected(!(hundred <= hundred), "STAmount fail");
-        unexpected(!(zeroSt >= zeroSt), "STAmount fail");
+        unexpected(!(hundred <= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt >= zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt >= one), "STAmount fail");
         unexpected((zeroSt >= hundred), "STAmount fail");
         unexpected(!(one >= zeroSt), "STAmount fail");
-        unexpected(!(one >= one), "STAmount fail");
+        unexpected(!(one >= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one >= hundred), "STAmount fail");
         unexpected(!(hundred >= zeroSt), "STAmount fail");
         unexpected(!(hundred >= one), "STAmount fail");
-        unexpected(!(hundred >= hundred), "STAmount fail");
-        unexpected(!(zeroSt == zeroSt), "STAmount fail");
+        unexpected(!(hundred >= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt == zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt == one), "STAmount fail");
         unexpected((zeroSt == hundred), "STAmount fail");
         unexpected((one == zeroSt), "STAmount fail");
-        unexpected(!(one == one), "STAmount fail");
+        unexpected(!(one == one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one == hundred), "STAmount fail");
         unexpected((hundred == zeroSt), "STAmount fail");
         unexpected((hundred == one), "STAmount fail");
-        unexpected(!(hundred == hundred), "STAmount fail");
-        unexpected((zeroSt != zeroSt), "STAmount fail");
+        unexpected(!(hundred == hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt != zeroSt), "STAmount fail");     // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt != one), "STAmount fail");
         unexpected(!(zeroSt != hundred), "STAmount fail");
         unexpected(!(one != zeroSt), "STAmount fail");
-        unexpected((one != one), "STAmount fail");
+        unexpected((one != one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one != hundred), "STAmount fail");
         unexpected(!(hundred != zeroSt), "STAmount fail");
         unexpected(!(hundred != one), "STAmount fail");
-        unexpected((hundred != hundred), "STAmount fail");
+        unexpected((hundred != hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(STAmount(noIssue()).getText() != "0", "STAmount fail");
         unexpected(STAmount(noIssue(), 31).getText() != "31", "STAmount fail");
         unexpected(STAmount(noIssue(), 31, 1).getText() != "310", "STAmount fail");

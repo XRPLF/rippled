@@ -241,6 +241,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(
+            // NOLINTNEXTLINE(misc-redundant-expression)
             std::numeric_limits<std::uint64_t>::max() >=
             std::numeric_limits<decltype(parts.mantissa)>::max());
     }
