@@ -266,9 +266,7 @@ SponsorshipSet::doApply()
             keylet::ownerDir(sponseeAccountID), sponsorKeylet, describeOwnerDir(sponseeAccountID));
         (*newSle)[sfSponseeNode] = *sponseePage;
 
-        auto viewJ = ctx_.registry.journal("View");
-
-        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
+        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
         addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);
