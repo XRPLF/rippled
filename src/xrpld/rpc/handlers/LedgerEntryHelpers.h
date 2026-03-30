@@ -116,7 +116,7 @@ parseHexBlob(Json::Value const& param, std::size_t maxLength)
     if (!param.isString())
         return std::nullopt;
 
-    auto const blob = strUnHex(param.asString());
+    auto blob = strUnHex(param.asString());
     if (!blob || blob->empty() || blob->size() > maxLength)
         return std::nullopt;
 

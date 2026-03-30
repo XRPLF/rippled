@@ -452,7 +452,7 @@ public:
     std::vector<beast::IP::Endpoint>
     autoconnect()
     {
-        std::vector<beast::IP::Endpoint> const none;
+        std::vector<beast::IP::Endpoint> none;
 
         std::lock_guard _(lock_);
 
