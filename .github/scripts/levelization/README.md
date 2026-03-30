@@ -8,7 +8,7 @@ xrpld code is organized into directories under `src/xrpld`, `src/libxrpl` (and
 organized into "tiers" or "levels" such that a module from one level can
 only include code from lower levels. Additionally, a module
 in one level should never include code in an `impl` or `detail` folder of any level
-other than it's own.
+other than its own.
 
 The codebase is split into two main areas:
 
