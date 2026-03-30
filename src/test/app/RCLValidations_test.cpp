@@ -65,7 +65,7 @@ class RCLValidations_test : public beast::unit_test::suite
         history.push_back(prev);
         for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -82,7 +82,7 @@ class RCLValidations_test : public beast::unit_test::suite
         bool forceHash = true;
         while (altHistory.size() < history.size())
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
             BEAST_EXPECT(next->read(keylet::fees()));
@@ -231,7 +231,7 @@ class RCLValidations_test : public beast::unit_test::suite
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;

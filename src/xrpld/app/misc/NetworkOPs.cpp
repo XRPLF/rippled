@@ -227,16 +227,16 @@ public:
         , clusterTimer_(ioCtx)
         , accountHistoryTxTimer_(ioCtx)
         , mConsensus(
-              registry_.get().app(),
+              registry_.get().getApp(),
               make_FeeVote(
-                  setup_FeeVote(registry_.get().app().config().section("voting")),
-                  registry_.get().logs().journal("FeeVote")),
+                  setup_FeeVote(registry_.get().getApp().config().section("voting")),
+                  registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *m_localTX,
               registry.getInboundTransactions(),
               beast::get_abstract_clock<std::chrono::steady_clock>(),
               validatorKeys,
-              registry_.get().logs().journal("LedgerConsensus"))
+              registry_.get().getJournal("LedgerConsensus"))
         , validatorPK_(
               validatorKeys.keys ? validatorKeys.keys->publicKey : decltype(validatorPK_){})
         , validatorMasterPK_(
@@ -877,7 +877,7 @@ NetworkOPsImp::getHostId(bool forAdmin)
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
     static std::string const shroudedHostId = [this]() {
-        auto const& id = registry_.get().app().nodeIdentity();
+        auto const& id = registry_.get().getApp().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
     }();
@@ -891,7 +891,7 @@ NetworkOPsImp::setStateTimer()
     setHeartbeatTimer();
 
     // Only do this work if a cluster is configured
-    if (registry_.get().cluster().size() != 0)
+    if (registry_.get().getCluster().size() != 0)
         setClusterTimer();
 }
 
@@ -969,13 +969,13 @@ NetworkOPsImp::processHeartbeatTimer()
 {
     RclConsensusLogger clog("Heartbeat Timer", mConsensus.validating(), m_journal);
     {
-        std::unique_lock lock{registry_.get().app().getMasterMutex()};
+        std::unique_lock lock{registry_.get().getApp().getMasterMutex()};
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr(registry_.get().getLoadManager());
         mgr.heartbeat();
 
-        std::size_t const numPeers = registry_.get().overlay().size();
+        std::size_t const numPeers = registry_.get().getOverlay().size();
 
         // do we have sufficient peers? If not, we are disconnected.
         if (numPeers < minPeerCount_)
@@ -1031,7 +1031,7 @@ NetworkOPsImp::processHeartbeatTimer()
         CLOG(clog.ss()) << ". ";
     }
 
-    mConsensus.timerEntry(registry_.get().timeKeeper().closeTime(), clog.ss());
+    mConsensus.timerEntry(registry_.get().getTimeKeeper().closeTime(), clog.ss());
 
     CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
     ConsensusPhase const currPhase = mConsensus.phase();
@@ -1049,18 +1049,18 @@ NetworkOPsImp::processHeartbeatTimer()
 void
 NetworkOPsImp::processClusterTimer()
 {
-    if (registry_.get().cluster().size() == 0)
+    if (registry_.get().getCluster().size() == 0)
         return;
 
     using namespace std::chrono_literals;
 
-    bool const update = registry_.get().cluster().update(
-        registry_.get().app().nodeIdentity().first,
+    bool const update = registry_.get().getCluster().update(
+        registry_.get().getApp().nodeIdentity().first,
         "",
         (m_ledgerMaster.getValidatedLedgerAge() <= 4min)
             ? registry_.get().getFeeTrack().getLocalFee()
             : 0,
-        registry_.get().timeKeeper().now());
+        registry_.get().getTimeKeeper().now());
 
     if (!update)
     {
@@ -1070,7 +1070,7 @@ NetworkOPsImp::processClusterTimer()
     }
 
     protocol::TMCluster cluster;
-    registry_.get().cluster().for_each([&cluster](ClusterNode const& node) {
+    registry_.get().getCluster().for_each([&cluster](ClusterNode const& node) {
         protocol::TMClusterNode& n = *cluster.add_clusternodes();
         n.set_publickey(toBase58(TokenType::NodePublic, node.identity()));
         n.set_reporttime(node.getReportTime().time_since_epoch().count());
@@ -1086,7 +1086,7 @@ NetworkOPsImp::processClusterTimer()
         node.set_name(to_string(item.address));
         node.set_cost(item.balance);
     }
-    registry_.get().overlay().foreach(
+    registry_.get().getOverlay().foreach(
         send_if(std::make_shared<Message>(cluster, protocol::mtCLUSTER), peer_in_cluster()));
     setClusterTimer();
 }
@@ -1160,7 +1160,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     std::string reason;
 
-    auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().app());
+    auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
     m_job_queue.addJob(jtTRANSACTION, "SubmitTxn", [this, tx]() {
         auto t = tx;
@@ -1322,7 +1322,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
     for (auto const& [_, tx] : set)
     {
         std::string reason;
-        auto transaction = std::make_shared<Transaction>(tx, reason, registry_.get().app());
+        auto transaction = std::make_shared<Transaction>(tx, reason, registry_.get().getApp());
 
         if (transaction->getStatus() == INVALID)
         {
@@ -1408,13 +1408,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        std::unique_lock masterLock{registry_.get().app().getMasterMutex(), std::defer_lock};
+        std::unique_lock masterLock{registry_.get().getApp().getMasterMutex(), std::defer_lock};
         bool changed = false;
         {
             std::unique_lock ledgerLock{m_ledgerMaster.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
-
-            registry_.get().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            registry_.get().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 for (TransactionStatus& e : transactions)
                 {
                     // we check before adding to the batch
@@ -1426,7 +1425,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         flags |= tapFAIL_HARD;
 
                     auto const result = registry_.get().getTxQ().apply(
-                        registry_.get().app(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;
@@ -1441,7 +1440,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (auto const l = m_ledgerMaster.getValidatedLedger())
             validatedLedgerIndex = l->header().seq;
 
-        auto newOL = registry_.get().openLedger().current();
+        auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus& e : transactions)
         {
             e.transaction->clearSubmitResult();
@@ -1491,7 +1490,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         batchLock.lock();
                     std::string reason;
                     auto const trans = sterilize(*txNext);
-                    auto t = std::make_shared<Transaction>(trans, reason, registry_.get().app());
+                    auto t = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
                     if (t->getApplying())
                         break;
                     submit_held.emplace_back(t, false, false, FailHard::no);
@@ -1598,10 +1597,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
-                        registry_.get().timeKeeper().now().time_since_epoch().count());
+                        registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    registry_.get().overlay().relay(e.transaction->getID(), tx, *toSkip);
+                    registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
                 }
             }
@@ -1879,7 +1878,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     clearNeedNetworkLedger();
 
     // Update fee computations.
-    registry_.get().getTxQ().processClosedLedger(registry_.get().app(), *newLCL, true);
+    registry_.get().getTxQ().processClosedLedger(registry_.get().getApp(), *newLCL, true);
 
     // Caller must own master lock
     {
@@ -1891,14 +1890,14 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
         std::optional<Rules> rules;
         if (lastVal)
         {
-            rules = makeRulesGivenLedger(*lastVal, registry_.get().app().config().features);
+            rules = makeRulesGivenLedger(*lastVal, registry_.get().getApp().config().features);
         }
         else
         {
-            rules.emplace(registry_.get().app().config().features);
+            rules.emplace(registry_.get().getApp().config().features);
         }
-        registry_.get().openLedger().accept(
-            registry_.get().app(),
+        registry_.get().getOpenLedger().accept(
+            registry_.get().getApp(),
             *rules,
             newLCL,
             OrderedTxs({}),
@@ -1908,7 +1907,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
             "jump",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.
-                return registry_.get().getTxQ().accept(registry_.get().app(), view);
+                return registry_.get().getTxQ().accept(registry_.get().getApp(), view);
             });
     }
 
@@ -1917,12 +1916,11 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     protocol::TMStatusChange s;
     s.set_newevent(protocol::neSWITCHED_LEDGER);
     s.set_ledgerseq(newLCL->header().seq);
-    s.set_networktime(registry_.get().timeKeeper().now().time_since_epoch().count());
+    s.set_networktime(registry_.get().getTimeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(
         newLCL->header().parentHash.begin(), newLCL->header().parentHash.size());
     s.set_ledgerhash(newLCL->header().hash.begin(), newLCL->header().hash.size());
-
-    registry_.get().overlay().foreach(
+    registry_.get().getOverlay().foreach(
         send_always(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
 }
 
@@ -1963,12 +1961,12 @@ NetworkOPsImp::beginConsensus(
         "xrpl::NetworkOPsImp::beginConsensus : closedLedger parent matches "
         "hash");
 
-    registry_.get().validators().setNegativeUNL(prevLedger->negativeUNL());
-    TrustChanges const changes = registry_.get().validators().updateTrusted(
+    registry_.get().getValidators().setNegativeUNL(prevLedger->negativeUNL());
+    TrustChanges const changes = registry_.get().getValidators().updateTrusted(
         registry_.get().getValidations().getCurrentNodeIDs(),
         closingInfo.parentCloseTime,
         *this,
-        registry_.get().overlay(),
+        registry_.get().getOverlay(),
         registry_.get().getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
@@ -1976,11 +1974,11 @@ NetworkOPsImp::beginConsensus(
         registry_.get().getValidations().trustChanged(changes.added, changes.removed);
         // Update the AmendmentTable so it tracks the current validators.
         registry_.get().getAmendmentTable().trustChanged(
-            registry_.get().validators().getQuorumKeys().second);
+            registry_.get().getValidators().getQuorumKeys().second);
     }
 
     mConsensus.startRound(
-        registry_.get().timeKeeper().closeTime(),
+        registry_.get().getTimeKeeper().closeTime(),
         networkClosed,
         prevLedger,
         changes.removed,
@@ -2020,34 +2018,30 @@ NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
         return false;
     }
 
-    return mConsensus.peerProposal(registry_.get().timeKeeper().closeTime(), peerPos);
+    return mConsensus.peerProposal(registry_.get().getTimeKeeper().closeTime(), peerPos);
 }
 
 void
 NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 {
     // We now have an additional transaction set
-    // either created locally during the consensus process
-    // or acquired from a peer
-
     // Inform peers we have this set
     protocol::TMHaveTransactionSet msg;
     msg.set_hash(map->getHash().as_uint256().begin(), 256 / 8);
     msg.set_status(protocol::tsHAVE);
-    registry_.get().overlay().foreach(
+    registry_.get().getOverlay().foreach(
         send_always(std::make_shared<Message>(msg, protocol::mtHAVE_SET)));
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
-        mConsensus.gotTxSet(registry_.get().timeKeeper().closeTime(), RCLTxSet{map});
+        mConsensus.gotTxSet(registry_.get().getTimeKeeper().closeTime(), RCLTxSet{map});
 }
 
 void
 NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger()->header().parentHash;
-
-    for (auto const& it : registry_.get().overlay().getActivePeers())
+    for (auto const& it : registry_.get().getOverlay().getActivePeers())
     {
         if (it && (it->getClosedLedgerHash() == deadLedger))
         {
@@ -2058,7 +2052,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 
     uint256 networkClosed;
     bool ledgerChange =
-        checkLastClosedLedger(registry_.get().overlay().getActivePeers(), networkClosed);
+        checkLastClosedLedger(registry_.get().getOverlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
     {
@@ -2088,7 +2082,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         // Note: Do not go to FULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to CONNECTED -- TODO
         auto current = m_ledgerMaster.getCurrentLedger();
-        if (registry_.get().timeKeeper().now() <
+        if (registry_.get().getTimeKeeper().now() <
             (current->header().parentCloseTime + 2 * current->header().closeTimeResolution))
         {
             setMode(OperatingMode::FULL);
@@ -2196,8 +2190,8 @@ NetworkOPsImp::pubServer()
         Json::Value jvObj(Json::objectValue);
 
         ServerFeeSummary f{
-            registry_.get().openLedger().current()->fees().base,
-            registry_.get().getTxQ().getMetrics(*registry_.get().openLedger().current()),
+            registry_.get().getOpenLedger().current()->fees().base,
+            registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
             registry_.get().getFeeTrack()};
 
         jvObj[jss::type] = "serverStatus";
@@ -2303,7 +2297,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
-        auto const masterKey = registry_.get().validatorManifests().getMasterKey(signerPublic);
+        auto const masterKey = registry_.get().getValidatorManifests().getMasterKey(signerPublic);
 
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
@@ -2453,7 +2447,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
             pendingValidations_.insert(val->getLedgerHash());
         }
         scope_unlock unlock(lock);
-        handleNewValidation(registry_.get().app(), val, source, bypassAccept, m_journal);
+        handleNewValidation(registry_.get().getApp(), val, source, bypassAccept, m_journal);
     }
     catch (std::exception const& e)
     {
@@ -2476,7 +2470,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
     JLOG(m_journal.debug()) << [this, &val]() -> auto {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
-        auto master = registry_.get().validators().getTrustedKey(val->getSignerPublic());
+        auto master = registry_.get().getValidators().getTrustedKey(val->getSignerPublic());
         if (master)
         {
             ss << toBase58(TokenType::NodePublic, *master);
@@ -2490,7 +2484,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
-    return registry_.get().app().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
+    return registry_.get().getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
 }
 
 Json::Value
@@ -2550,8 +2544,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::hostid] = getHostId(admin);
 
     // domain: if configured with a domain, report it:
-    if (!registry_.get().app().config().SERVER_DOMAIN.empty())
-        info[jss::server_domain] = registry_.get().app().config().SERVER_DOMAIN;
+    if (!registry_.get().getApp().config().SERVER_DOMAIN.empty())
+        info[jss::server_domain] = registry_.get().getApp().config().SERVER_DOMAIN;
 
     info[jss::build_version] = BuildInfo::getVersionString();
 
@@ -2563,14 +2557,15 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
 
-    info[jss::validation_quorum] = static_cast<Json::UInt>(registry_.get().validators().quorum());
+    info[jss::validation_quorum] =
+        static_cast<Json::UInt>(registry_.get().getValidators().quorum());
 
     if (admin)
     {
         // Note: By default the node size is "tiny". When parsing it's an error if the final
         // NODE_SIZE is over 4 so below code should be safe.
         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-        switch (registry_.get().app().config().NODE_SIZE)
+        switch (registry_.get().getApp().config().NODE_SIZE)
         {
             case 0:
                 info[jss::node_size] = "tiny";
@@ -2589,7 +2584,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 break;
         }
 
-        auto when = registry_.get().validators().expires();
+        auto when = registry_.get().getValidators().expires();
 
         if (!human)
         {
@@ -2607,7 +2602,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         {
             auto& x = (info[jss::validator_list] = Json::objectValue);
 
-            x[jss::count] = static_cast<Json::UInt>(registry_.get().validators().count());
+            x[jss::count] = static_cast<Json::UInt>(registry_.get().getValidators().count());
 
             if (when)
             {
@@ -2620,7 +2615,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     x[jss::expiration] = to_string(*when);
 
-                    if (*when > registry_.get().timeKeeper().now())
+                    if (*when > registry_.get().getTimeKeeper().now())
                     {
                         x[jss::status] = "active";
                     }
@@ -2647,12 +2642,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         }
     }
     info[jss::io_latency_ms] =
-        static_cast<Json::UInt>(registry_.get().app().getIOLatency().count());
+        static_cast<Json::UInt>(registry_.get().getApp().getIOLatency().count());
 
     if (admin)
     {
-        if (auto const localPubKey = registry_.get().validators().localPublicKey();
-            localPubKey && registry_.get().app().getValidationPublicKey())
+        if (auto const localPubKey = registry_.get().getValidators().localPublicKey();
+            localPubKey && registry_.get().getApp().getValidationPublicKey())
         {
             info[jss::pubkey_validator] = toBase58(TokenType::NodePublic, localPubKey.value());
         }
@@ -2673,7 +2668,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     }
 
     info[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, registry_.get().app().nodeIdentity().first);
+        toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
     info[jss::complete_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
 
@@ -2685,7 +2680,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (fp != 0)
         info[jss::fetch_pack] = Json::UInt(fp);
 
-    info[jss::peers] = Json::UInt(registry_.get().overlay().size());
+    info[jss::peers] = Json::UInt(registry_.get().getOverlay().size());
 
     Json::Value lastClose = Json::objectValue;
     lastClose[jss::proposers] = Json::UInt(mConsensus.prevProposers());
@@ -2707,11 +2702,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (admin)
         info[jss::load] = m_job_queue.getJson();
 
-    if (auto const netid = registry_.get().overlay().networkID())
+    if (auto const netid = registry_.get().getOverlay().networkID())
         info[jss::network_id] = static_cast<Json::UInt>(*netid);
 
     auto const escalationMetrics =
-        registry_.get().getTxQ().getMetrics(*registry_.get().openLedger().current());
+        registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current());
 
     auto const loadFactorServer = registry_.get().getFeeTrack().getLoadFactor();
     auto const loadBaseServer = registry_.get().getFeeTrack().getLoadBase();
@@ -2809,7 +2804,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
 
-            if (auto const closeOffset = registry_.get().timeKeeper().closeOffset();
+            if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = static_cast<std::uint32_t>(closeOffset.count());
 
@@ -2822,7 +2817,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             else
             {
                 auto lCloseTime = lpClosed->header().closeTime;
-                auto closeTime = registry_.get().timeKeeper().closeTime();
+                auto closeTime = registry_.get().getTimeKeeper().closeTime();
                 if (lCloseTime <= closeTime)
                 {
                     using namespace std::chrono_literals;
@@ -2854,10 +2849,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     accounting_.json(info);
     info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
-    info[jss::jq_trans_overflow] = std::to_string(registry_.get().overlay().getJqTransOverflow());
-    info[jss::peer_disconnects] = std::to_string(registry_.get().overlay().getPeerDisconnect());
+    info[jss::jq_trans_overflow] =
+        std::to_string(registry_.get().getOverlay().getJqTransOverflow());
+    info[jss::peer_disconnects] = std::to_string(registry_.get().getOverlay().getPeerDisconnect());
     info[jss::peer_disconnects_resources] =
-        std::to_string(registry_.get().overlay().getPeerDisconnectCharges());
+        std::to_string(registry_.get().getOverlay().getPeerDisconnectCharges());
 
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> protocols{
@@ -2889,9 +2885,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().app().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
         {
-            auto const& grpcSection = registry_.get().app().config().section(SECTION_PORT_GRPC);
+            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
             auto const optPort = grpcSection.get("port");
             if (optPort && grpcSection.get("ip"))
             {
@@ -3079,8 +3075,8 @@ void
 NetworkOPsImp::reportFeeChange()
 {
     ServerFeeSummary f{
-        registry_.get().openLedger().current()->fees().base,
-        registry_.get().getTxQ().getMetrics(*registry_.get().openLedger().current()),
+        registry_.get().getOpenLedger().current()->fees().base,
+        registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
         registry_.get().getFeeTrack()};
 
     // only schedule the job if something has changed
@@ -3182,7 +3178,7 @@ NetworkOPsImp::transJson(
         if (account != amount.issue().account)
         {
             auto const ownerFunds = accountFunds(
-                *ledger, account, amount, fhIGNORE_FREEZE, registry_.get().journal("View"));
+                *ledger, account, amount, fhIGNORE_FREEZE, registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }
@@ -4007,7 +4003,7 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
     beginConsensus(m_ledgerMaster.getClosedLedger()->header().hash, {});
-    mConsensus.simulate(registry_.get().timeKeeper().closeTime(), consensusDelay);
+    mConsensus.simulate(registry_.get().getTimeKeeper().closeTime(), consensusDelay);
     return m_ledgerMaster.getCurrentLedger()->header().seq;
 }
 
@@ -4097,7 +4093,7 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, Json::Value& jvResult, bool a
     jvResult[jss::load_factor] = feeTrack.getLoadFactor();
     jvResult[jss::hostid] = getHostId(admin);
     jvResult[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, registry_.get().app().nodeIdentity().first);
+        toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sServer].emplace(isrListener->getSeq(), isrListener).second;
@@ -4284,7 +4280,7 @@ NetworkOPsImp::getBookPage(
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.account);
-    auto viewJ = registry_.get().journal("View");
+    auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
     {

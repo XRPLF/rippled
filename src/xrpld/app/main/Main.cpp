@@ -752,8 +752,6 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        // TODO: this comment can be removed in a future release -
-        // say 1.7 or higher
         if (config->had_trailing_comments())
         {
             JLOG(logs->journal("Application").warn())
@@ -781,7 +779,7 @@ run(int argc, char** argv)
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(app->fdRequired(), app->logs().journal("Application")))
+        if (!adjustDescriptorLimit(app->fdRequired(), app->getJournal("Application")))
             return -1;
 
         // Start the server

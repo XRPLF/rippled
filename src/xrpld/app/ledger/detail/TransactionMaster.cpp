@@ -15,7 +15,7 @@ TransactionMaster::TransactionMaster(Application& app)
           65536,
           std::chrono::minutes{30},
           stopwatch(),
-          mApp.journal("TaggedCache"))
+          mApp.getJournal("TaggedCache"))
 {
 }
 

@@ -489,7 +489,7 @@ public:
     }
 
     Logs&
-    logs() override
+    getLogs() override
     {
         return *logs_;
     }
@@ -513,7 +513,7 @@ public:
     }
 
     TimeKeeper&
-    timeKeeper() override
+    getTimeKeeper() override
     {
         return *timeKeeper_;
     }
@@ -668,7 +668,7 @@ public:
     }
 
     CachedSLEs&
-    cachedSLEs() override
+    getCachedSLEs() override
     {
         return cachedSLEs_;
     }
@@ -704,37 +704,37 @@ public:
     }
 
     ValidatorList&
-    validators() override
+    getValidators() override
     {
         return *validators_;
     }
 
     ValidatorSite&
-    validatorSites() override
+    getValidatorSites() override
     {
         return *validatorSites_;
     }
 
     ManifestCache&
-    validatorManifests() override
+    getValidatorManifests() override
     {
         return *validatorManifests_;
     }
 
     ManifestCache&
-    publisherManifests() override
+    getPublisherManifests() override
     {
         return *publisherManifests_;
     }
 
     Cluster&
-    cluster() override
+    getCluster() override
     {
         return *cluster_;
     }
 
     PeerReservationTable&
-    peerReservations() override
+    getPeerReservations() override
     {
         return *peerReservations_;
     }
@@ -746,25 +746,25 @@ public:
     }
 
     PendingSaves&
-    pendingSaves() override
+    getPendingSaves() override
     {
         return pendingSaves_;
     }
 
     OpenLedger&
-    openLedger() override
+    getOpenLedger() override
     {
         return *openLedger_;
     }
 
     OpenLedger const&
-    openLedger() const override
+    getOpenLedger() const override
     {
         return *openLedger_;
     }
 
     Overlay&
-    overlay() override
+    getOverlay() override
     {
         XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
         return *overlay_;
@@ -797,7 +797,7 @@ public:
     serverOkay(std::string& reason) override;
 
     beast::Journal
-    journal(std::string const& name) override;
+    getJournal(std::string const& name) override;
 
     //--------------------------------------------------------------------------
 
@@ -1073,7 +1073,7 @@ public:
     }
 
     virtual std::optional<uint256> const&
-    trapTxID() const override
+    getTrapTxID() const override
     {
         return trapTxID_;
     }
@@ -1109,7 +1109,7 @@ private:
     setMaxDisallowedLedger();
 
     Application&
-    app() override
+    getApp() override
     {
         return *this;
     }
@@ -1430,7 +1430,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::JsonContext context{
-            {journal("RPCHandler"),
+            {getJournal("RPCHandler"),
              *this,
              loadType,
              getOPs(),
@@ -1546,11 +1546,11 @@ ApplicationImp::run()
 
     // TODO Store manifests in manifests.sqlite instead of wallet.db
     validatorManifests_->save(getWalletDB(), "ValidatorManifests", [this](PublicKey const& pubKey) {
-        return validators().listed(pubKey);
+        return getValidators().listed(pubKey);
     });
 
     publisherManifests_->save(getWalletDB(), "PublisherManifests", [this](PublicKey const& pubKey) {
-        return validators().trustedPublisher(pubKey);
+        return getValidators().trustedPublisher(pubKey);
     });
 
     // The order of these stop calls is delicate.
@@ -1647,7 +1647,7 @@ ApplicationImp::startGenesisLedger()
         nodeFamily_);
     m_ledgerMaster->storeLedger(genesis);
 
-    auto const next = std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
+    auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
         next->header().seq < XRP_LEDGER_EARLIEST_FEES || next->read(keylet::fees()),
@@ -1661,7 +1661,7 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
-    auto j = journal("Ledger");
+    auto j = getJournal("Ledger");
 
     try
     {
@@ -1734,7 +1734,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             ledger = ledger.get()["ledger"];
 
         std::uint32_t seq = 1;
-        auto closeTime = timeKeeper().closeTime();
+        auto closeTime = getTimeKeeper().closeTime();
         using namespace std::chrono_literals;
         auto closeTimeResolution = 30s;
         bool closeTimeEstimated = false;
@@ -1966,7 +1966,7 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_STOP
         }
 
-        if (!loadLedger->walkLedger(journal("Ledger"), true))
+        if (!loadLedger->walkLedger(getJournal("Ledger"), true))
         {
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
@@ -2098,7 +2098,7 @@ ApplicationImp::serverOkay(std::string& reason)
 }
 
 beast::Journal
-ApplicationImp::journal(std::string const& name)
+ApplicationImp::getJournal(std::string const& name)
 {
     return logs_->journal(name);
 }
