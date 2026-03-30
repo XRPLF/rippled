@@ -16,7 +16,7 @@ Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
     std::string& reason,
     Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
+    : mTransaction(stx), mApp(app), j_(app.getJournal("Ledger"))
 {
     try
     {

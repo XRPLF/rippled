@@ -7,6 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
+#include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
 #include <xrpl/tx/invariants/MPTInvariant.h>
 #include <xrpl/tx/invariants/NFTInvariant.h>

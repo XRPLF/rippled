@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -69,7 +68,7 @@ TicketCreate::doApply()
         !isTesSuccess(ret))
         return ret;
 
-    beast::Journal viewJ{ctx_.registry.journal("View")};
+    beast::Journal viewJ{ctx_.registry.getJournal("View")};
 
     // The starting ticket sequence is the same as the current account
     // root sequence.  Before we got here to doApply(), the transaction

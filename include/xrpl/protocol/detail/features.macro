@@ -17,9 +17,10 @@
 // Keep it sorted in reverse chronological order.
 
 XRPL_FEATURE(Sponsor,                    Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX   (Security3_1_3,               Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX   (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (BatchInnerSigs,             Supported::no, VoteBehavior::DefaultNo)
+XRPL_FIX    (BatchInnerSigs,             Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegationV1_1,   Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)

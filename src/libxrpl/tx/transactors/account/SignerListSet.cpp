@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -198,7 +197,7 @@ removeSignersFromLedger(
 
     auto const sponsor = getLedgerEntryReserveSponsor(view, signers);
     adjustOwnerCount(
-        view, view.peek(accountKeylet), sponsor, removeFromOwnerCount, registry.journal("View"));
+        view, view.peek(accountKeylet), sponsor, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 
@@ -314,7 +313,7 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));

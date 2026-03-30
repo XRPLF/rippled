@@ -187,8 +187,11 @@ public:
         std::uintptr_t id,
         std::weak_ptr<soci::session> session,
         JobQueue& q,
-        Logs& logs)
-        : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
+        ServiceRegistry& registry)
+        : id_(id)
+        , session_(std::move(session))
+        , jobQueue_(q)
+        , j_(registry.getJournal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
@@ -307,9 +310,9 @@ makeCheckpointer(
     std::uintptr_t id,
     std::weak_ptr<soci::session> session,
     JobQueue& queue,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
-    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
+    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, registry);
 }
 
 }  // namespace xrpl

@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>

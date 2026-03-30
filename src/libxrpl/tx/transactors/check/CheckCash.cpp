@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -235,7 +234,7 @@ CheckCash::doApply()
     //
     // If it is not a check to self (as should be the case), then there's
     // work to do...
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
     if (srcId != account_)

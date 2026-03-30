@@ -298,6 +298,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

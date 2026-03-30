@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -58,7 +57,7 @@ CheckCancel::doApply()
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.getJournal("View");
 
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.

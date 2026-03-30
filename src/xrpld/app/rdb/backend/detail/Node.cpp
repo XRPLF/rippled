@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 
@@ -9,6 +9,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
@@ -168,7 +169,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = app.journal("Ledger");
+    auto j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
@@ -221,7 +222,7 @@ saveValidatedLedger(
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        app.pendingSaves().finishWork(seq);
+        app.getPendingSaves().finishWork(seq);
         return false;
     }
 
@@ -1229,7 +1230,7 @@ getTransaction(
     }
     catch (std::exception& e)
     {
-        JLOG(app.journal("Ledger").warn())
+        JLOG(app.getJournal("Ledger").warn())
             << "Unable to deserialize transaction from raw SQL value. Error: " << e.what();
 
         ec = rpcDB_DESERIALIZATION;
