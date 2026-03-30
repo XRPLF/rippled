@@ -6935,12 +6935,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mpt.convert({.account = dave, .amt = 0, .holderPubKey = mpt.getPubKey(dave)});
     }
 
-    // A sends B 100, B merges inbox, B sends C 50, all in a single batch.
-    // Inner 3 (B sends C) fails because B's proof is built with spending=0
+    // Bob sends 100 MPT to Carol. Carol Merge Inbox. Carol sends 50 MPT to Dave.
+    // Inner 3rd txn (Carol sends to Dave) fails because the proof is built with
+    // when Carols's spending balance is 0. (before she received funds from Bob)
     //
     // Also tests Bob sending to two recipients (Carol and Dave) in a single
-    // batch.  Even though Bob has enough balance for both, the second send's
-    // balance-linkage proof becomes stale once inner 1 updates Bob's encrypted
+    // batch. Even though Bob has enough balance for both, the second send's
+    // balance-linkage proof becomes incorrect once inner 1 updates Bob's encrypted
     // spending, so fails
     void
     testBatchConfidentialSend(FeatureBitset features)
@@ -6971,9 +6972,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // 3 signers, Bob, Carol, Dave
             auto const batchFee = batch::calcBatchFee(env, 1, 3);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
-            auto jv2 = mpt.mergeInboxJV({.account = carol});
-            auto jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 50}, carolSeq + 1);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
+            auto const jv2 = mpt.mergeInboxJV({.account = carol});
+            auto const jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 50}, carolSeq + 1);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::inner(jv1, bobSeq + 1),
@@ -6993,9 +6994,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Bob has 150, enough for both sends individually.  However, batch txn 1
         // changes Bob's encrypted spending on the ledger; batch txn 2 was built
         // against the old enc(150) so its balance-linkage proof is stale.
-        //
-        // (tfAllOrNothing): inner 2 stale → entire batch rejected.
-        // (tfIndependent):  inner 1 applies, inner 2 fails (stale).
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -7006,13 +7004,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
             setupBatchEnv(mpt, alice, bob, carol, dave, 150, 0);
 
-            // tfAllOrNothing — stale inner 2 rejects the whole batch.
+            // tfAllOrNothing — rejects the whole batch as 2nd txn proof is incorrect
             {
                 auto const bobSeq = env.seq(bob);
                 auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-                auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
-                auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
+                auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+                auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                     batch::inner(jv1, bobSeq + 1),
@@ -7028,13 +7026,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
             }
 
-            // If we change batch mode to be tfIndependent — inner 1 applies, inner 2 fails (stale).
+            // If we change batch mode to be tfIndependent — txn 1 applies, inner 2 fails.
             {
                 auto const bobSeq = env.seq(bob);
                 auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
-                auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
-                auto jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
+                auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 50}, bobSeq + 1);
+                auto const jv2 = mpt.sendJV({.account = bob, .dest = dave, .amt = 60}, bobSeq + 2);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
                     batch::inner(jv1, bobSeq + 1),
@@ -7042,12 +7040,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
                 env.close();
 
-                // inner 1 applied: bob 150→100, carol inbox 0→50
+                // bob 150→100, carol inbox 0→50
                 BEAST_EXPECT(
                     mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
                 BEAST_EXPECT(
                     mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 50);
-                // inner 2 stale proof: dave gets nothing
+                // dave gets nothing
                 BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
             }
         }
@@ -7071,13 +7069,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
                 // jv1 is built against the current ledger state (spending=200).
-                auto jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
+                auto const jv1 =
+                    mpt.sendJV({.account = bob, .dest = carol, .amt = 100}, bobSeq + 1);
 
                 // Compute post-jv1 state without touching the ledger.
                 auto const chain1 = mpt.chainAfterSend(bob, 100, jv1);
 
                 // jv2 proof is built against predicted spending=100, version=N+1.
-                auto jv2 =
+                auto const jv2 =
                     mpt.sendJV({.account = bob, .dest = dave, .amt = 100}, bobSeq + 2, chain1);
 
                 env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
@@ -7110,10 +7109,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 auto const bobSeq = env2.seq(bob2);
                 auto const batchFee = batch::calcBatchFee(env2, 0, 2);
 
-                auto jv1 = mpt2.sendJV({.account = bob2, .dest = carol2, .amt = 100}, bobSeq + 1);
+                auto const jv1 =
+                    mpt2.sendJV({.account = bob2, .dest = carol2, .amt = 100}, bobSeq + 1);
                 auto const chain1 = mpt2.chainAfterSend(bob2, 100, jv1);
 
-                auto jv2 =
+                auto const jv2 =
                     mpt2.sendJV({.account = bob2, .dest = dave2, .amt = 100}, bobSeq + 2, chain1);
 
                 env2(
@@ -7150,14 +7150,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // bob=100 spending, carol=60 spending, dave=0
         setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
 
-        // bob sends dave 10, carol sends dave 5 — independent, both valid.
+        // bob sends dave 10, carol sends dave 5, independent, both valid.
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
                 batch::inner(jv1, bobSeq + 1),
@@ -7197,8 +7197,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             // Both proofs fail range check (amount > balance)
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
                 batch::inner(jv1, bobSeq + 1),
@@ -7255,14 +7255,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
 
         // first fails → none applied
-        // bob sends dave 200 (invalid — stops immediately)
+        // Bob sends Dave 200 (invalid — stops immediately)
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
                 batch::inner(jv1, bobSeq + 1),
@@ -7276,14 +7276,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 60);
         }
 
-        // bob sends dave 10, carol sends dave 5 — both valid and independent
+        // Bob sends dave 10, Carol sends dave 5 — both valid and independent
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfUntilFailure),
                 batch::inner(jv1, bobSeq + 1),
@@ -7316,20 +7316,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // bob=100 spending, carol=60 spending, dave=0
         setupBatchEnv(mpt, alice, bob, carol, dave, 100, 60);
 
-        // bob sends dave 10 (valid), carol sends dave 300
-        // (invalid), carol sends dave 5 (valid). Carol's
-        // state is still 60 because the preceding send failed).
+        // Bob sends dave 10 (valid), Carol sends dave 300
+        // (invalid), Carol sends Dave 5 (valid). Carol's
+        // balance is still 60 because the preceding send failed).
         {
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
             auto const batchFee = batch::calcBatchFee(env, 1, 3);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
-            // Range proof fails (300 > 60); dummy proof → tecBAD_PROOF
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
-            // Built from carol's actual state (spending=60); valid proof.
-            // carol's version is unchanged after jv2 fails, so context hash matches.
-            auto jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq + 1);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 10}, bobSeq + 1);
+
+            // Carol trying to send dave 300 but own balance only 60
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 300}, carolSeq);
+            auto const jv3 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq + 1);
 
             env(batch::outer(bob, bobSeq, batchFee, tfIndependent),
                 batch::inner(jv1, bobSeq + 1),

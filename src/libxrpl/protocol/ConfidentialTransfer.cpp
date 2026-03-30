@@ -530,7 +530,7 @@ computeNextSendChainState(
     std::uint64_t sendAmt,
     Slice const& senderEncAmt)
 {
-    auto newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
+    auto const newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
     if (!newEncSpending)
         return std::nullopt;
 
