@@ -4,6 +4,7 @@
 # Usage: smoketest.sh local
 #   Expects packages in build/{dpkg,rpm}/packages/ or build/debbuild/ / build/rpmbuild/RPMS/
 
+set -o pipefail
 set -x
 trap 'test $? -ne 0 && touch /tmp/test_failed' EXIT
 
@@ -32,21 +33,21 @@ fi
 if [ "${pkgtype}" = "dpkg" ] ; then
     apt-get -y update
     # Find .deb files — check both possible output locations
-    debs=$(find build/debbuild/ build/dpkg/packages/ -name '*.deb' ! -name '*dbgsym*' 2>/dev/null | head -5)
-    if [ -z "$debs" ]; then
+    mapfile -t debs < <(find build/debbuild/ build/dpkg/packages/ -name '*.deb' ! -name '*dbgsym*' 2>/dev/null)
+    if [ ${#debs[@]} -eq 0 ]; then
         echo "No .deb files found"
         exit 1
     fi
-    dpkg --no-debsig -i $debs || apt-get -y install -f
+    dpkg --no-debsig -i "${debs[@]}" || apt-get -y install -f
 elif [ "${pkgtype}" = "rpm" ] ; then
     # Find .rpm files — check both possible output locations
-    rpms=$(find build/rpmbuild/RPMS/ build/rpm/packages/ -name '*.rpm' \
-        ! -name '*debug*' ! -name '*devel*' ! -name '*.src.rpm' 2>/dev/null | head -5)
-    if [ -z "$rpms" ]; then
+    mapfile -t rpms < <(find build/rpmbuild/RPMS/ build/rpm/packages/ -name '*.rpm' \
+        ! -name '*debug*' ! -name '*devel*' ! -name '*.src.rpm' 2>/dev/null)
+    if [ ${#rpms[@]} -eq 0 ]; then
         echo "No .rpm files found"
         exit 1
     fi
-    rpm -i $rpms
+    rpm -i "${rpms[@]}"
 fi
 
 # Verify installed version
@@ -61,12 +62,22 @@ else
     unittest_jobs=16
 fi
 
-cd /tmp
-/opt/xrpld/bin/xrpld --unittest --unittest-jobs ${unittest_jobs} > /tmp/unittest_results || true
-cd -
+(
+    cd /tmp
+    /opt/xrpld/bin/xrpld --unittest --unittest-jobs "${unittest_jobs}" > /tmp/unittest_results || true
+)
+
+if [ ! -s /tmp/unittest_results ]; then
+    echo "Unit test results file is empty — xrpld may have crashed"
+    exit 1
+fi
 
 num_failures=$(tail /tmp/unittest_results -n1 | grep -oP '\d+(?= failures)')
-if [ "${num_failures:-0}" -ne 0 ]; then
+if [ -z "$num_failures" ]; then
+    echo "Could not parse unit test results — expected summary line not found"
+    exit 1
+fi
+if [ "${num_failures}" -ne 0 ]; then
     echo "$num_failures unit test(s) failed:"
     grep 'failed:' /tmp/unittest_results
     exit 1

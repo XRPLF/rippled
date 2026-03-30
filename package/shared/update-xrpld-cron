@@ -3,7 +3,7 @@
 
 # bash required for use of RANDOM below.
 SHELL=/bin/bash
-PATH=/sbin;/bin;/usr/sbin;/usr/bin
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 # invoke check/update script with random delay up to 59 mins
 0 * * * * root sleep $((RANDOM*3540/32768)) && /opt/xrpld/bin/update-xrpld.sh

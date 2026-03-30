@@ -23,6 +23,8 @@ Source5:  xrpld.tmpfiles
 Source6:  xrpld.logrotate
 Source7:  update-xrpld.sh
 Source8:  update-xrpld-cron
+Source9:  LICENSE.md
+Source10: README.md
 
 BuildArch:     x86_64
 BuildRequires: systemd-rpm-macros
@@ -86,6 +88,8 @@ install -Dm0644 %{SOURCE8} %{buildroot}%{_opt_prefix}/bin/update-xrpld-cron
 %systemd_postun_with_restart xrpld.service
 
 %files
+%license %{SOURCE9}
+%doc %{SOURCE10}
 %dir %{_opt_prefix}
 %dir %{_opt_prefix}/bin
 %{_opt_prefix}/bin/xrpld

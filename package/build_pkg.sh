@@ -39,6 +39,8 @@ build_rpm() {
     cp "${SHARED}/xrpld.service"  "${topdir}/SOURCES/xrpld.service"
     cp "${SHARED}/xrpld.sysusers" "${topdir}/SOURCES/xrpld.sysusers"
     cp "${SHARED}/xrpld.tmpfiles" "${topdir}/SOURCES/xrpld.tmpfiles"
+    cp "${SRC_DIR}/LICENSE.md"    "${topdir}/SOURCES/LICENSE.md"
+    cp "${SRC_DIR}/README.md"     "${topdir}/SOURCES/README.md"
 
     set -x
     rpmbuild -bb \
@@ -77,8 +79,7 @@ EOF
     chmod +x "${staging}/debian/rules"
 
     set -x
-    cd "${staging}"
-    dpkg-buildpackage -b --no-sign -d
+    ( cd "${staging}" && dpkg-buildpackage -b --no-sign -d )
 }
 
 case "${PKG_TYPE}" in

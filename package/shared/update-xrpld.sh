@@ -13,12 +13,12 @@ UPDATELOG=/var/log/xrpld/update.log
 
 function cleanup {
   # If this directory isn't removed, future updates will fail.
-  rmdir $LOCKDIR
+  rmdir "$LOCKDIR"
 }
 
 # Use mkdir to check if process is already running. mkdir is atomic, as against file create.
-if ! mkdir $LOCKDIR 2>/dev/null; then
-  echo $(date -u) "lockdir exists - won't proceed." >> $UPDATELOG
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  echo "$(date -u) lockdir exists - won't proceed." >> "$UPDATELOG"
   exit 1
 fi
 trap cleanup EXIT
@@ -35,16 +35,24 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]] ; then
   test "$XRPLD" == "xrpld" && can_update=true
 
   function apply_update {
-    apt-get install xrpld -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrpld
   }
 elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" || "$ID" == "scientific" ]] ; then
   RIPPLE_REPO=${RIPPLE_REPO-stable}
-  yum --disablerepo=* --enablerepo=ripple-$RIPPLE_REPO clean expire-cache
+  yum --disablerepo=* --enablerepo="ripple-${RIPPLE_REPO}" clean expire-cache
 
-  yum check-update -q --enablerepo=ripple-$RIPPLE_REPO xrpld || can_update=true
+  # yum check-update exits 100 when updates are available, 0 for none, 1 for errors.
+  yum check-update -q --enablerepo="ripple-${RIPPLE_REPO}" xrpld
+  rc=$?
+  if [ $rc -eq 100 ]; then
+    can_update=true
+  elif [ $rc -ne 0 ]; then
+    echo "yum check-update failed with exit code $rc"
+    exit 1
+  fi
 
   function apply_update {
-    yum update -y --enablerepo=ripple-$RIPPLE_REPO xrpld
+    yum update -y --enablerepo="ripple-${RIPPLE_REPO}" xrpld
   }
 else
   echo "unrecognized distro!"
@@ -53,12 +61,12 @@ fi
 
 # Do the actual update and restart the service after reloading systemctl daemon.
 if [ "$can_update" = true ] ; then
-  exec 3>&1 1>>${UPDATELOG} 2>&1
+  exec 3>&1 1>>"${UPDATELOG}" 2>&1
   set -e
   apply_update
   systemctl daemon-reload
   systemctl restart xrpld.service
-  echo $(date -u) "xrpld daemon updated."
+  echo "$(date -u) xrpld daemon updated."
 else
-  echo $(date -u) "no updates available" >> $UPDATELOG
+  echo "$(date -u) no updates available" >> "$UPDATELOG"
 fi

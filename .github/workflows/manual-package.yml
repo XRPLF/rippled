@@ -11,10 +11,6 @@ on:
           - deb
           - rpm
           - both
-      artifact_run_id:
-        description: "Run ID to download binary artifact from (leave empty for latest on this branch)"
-        required: false
-        type: string
       version:
         description: "Version override (leave empty to auto-detect)"
         required: false
