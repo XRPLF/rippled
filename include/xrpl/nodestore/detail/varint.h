@@ -53,8 +53,9 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
         return 1;
     }
     auto const used = n;
-    for (n = n - 1; n >= 0; --n)
+    while (n > 0)
     {
+        --n;
         auto const d = p[n];
         auto const t0 = t;
         t *= 127;
