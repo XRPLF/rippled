@@ -9,6 +9,9 @@
 namespace xrpl {
 namespace PeerFinder {
 
+/** Direction of a slot count adjustment. */
+enum class CountAdjustment : int { Decrement = -1, Increment = 1 };
+
 /** Manages the count of available connections for the various slots. */
 class Counts
 {
@@ -35,14 +38,14 @@ public:
     void
     add(Slot const& s)
     {
-        adjust(s, 1);
+        adjust(s, CountAdjustment::Increment);
     }
 
     /** Removes the slot state and properties from the slot counts. */
     void
     remove(Slot const& s)
     {
-        adjust(s, -1);
+        adjust(s, CountAdjustment::Decrement);
     }
 
     /** Returns `true` if the slot can become active. */
@@ -229,31 +232,40 @@ public:
 
     //--------------------------------------------------------------------------
 private:
-    // Adjusts counts based on the specified slot, in the direction indicated.
-    // n must be 1 (add) or -1 (remove). Using ++/-- instead of += n avoids
-    // UBSan unsigned-integer-overflow from implicit conversion of -1 to
-    // SIZE_MAX. A decrement on a zero counter is a real bug that UBSan
-    // should catch.
-    void
-    adjust(Slot const& s, int const n)
+    /** Increments or decrements a counter based on the adjustment direction. */
+    template <typename T>
+    static void
+    adjustCounter(T& counter, CountAdjustment dir)
     {
-        XRPL_ASSERT(n == 1 || n == -1, "xrpl::PeerFinder::Counts::adjust : n must be 1 or -1");
-
-        if (s.fixed())
+        switch (dir)
         {
-            n > 0 ? ++m_fixed : --m_fixed;
+            case CountAdjustment::Increment:
+                ++counter;
+                break;
+            case CountAdjustment::Decrement:
+                --counter;
+                break;
         }
+    }
+
+    // Adjusts counts based on the specified slot, in the direction indicated.
+    // Using ++/-- instead of += on std::size_t counters avoids UBSan
+    // unsigned-integer-overflow from implicit conversion of -1 to SIZE_MAX.
+    // A decrement on a zero counter is a real bug that UBSan should catch.
+    void
+    adjust(Slot const& s, CountAdjustment const dir)
+    {
+        if (s.fixed())
+            adjustCounter(m_fixed, dir);
 
         if (s.reserved())
-        {
-            n > 0 ? ++m_reserved : --m_reserved;
-        }
+            adjustCounter(m_reserved, dir);
 
         switch (s.state())
         {
             case Slot::accept:
                 XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
-                m_acceptCount += n;
+                adjustCounter(m_acceptCount, dir);
                 break;
 
             case Slot::connect:
@@ -262,30 +274,28 @@ private:
                     !s.inbound(),
                     "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
-                m_attempts += n;
+                adjustCounter(m_attempts, dir);
                 break;
 
             case Slot::active:
                 if (s.fixed())
-                {
-                    n > 0 ? ++m_fixed_active : --m_fixed_active;
-                }
+                    adjustCounter(m_fixed_active, dir);
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
                     {
-                        n > 0 ? ++m_in_active : --m_in_active;
+                        adjustCounter(m_in_active, dir);
                     }
                     else
                     {
-                        n > 0 ? ++m_out_active : --m_out_active;
+                        adjustCounter(m_out_active, dir);
                     }
                 }
-                n > 0 ? ++m_active : --m_active;
+                adjustCounter(m_active, dir);
                 break;
 
             case Slot::closing:
-                m_closingCount += n;
+                adjustCounter(m_closingCount, dir);
                 break;
 
             // LCOV_EXCL_START
