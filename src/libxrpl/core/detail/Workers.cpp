@@ -1,5 +1,4 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
 
@@ -96,11 +95,13 @@ Workers::stop()
 {
     setNumberOfThreads(0);
 
+    // Wait until all workers have paused AND no tasks are actively running.
+    // Both conditions are needed because m_allPaused (mutex-protected) and
+    // m_runningTaskCount (atomic) are not synchronized under the same lock,
+    // so m_allPaused can momentarily be true while a task is still finishing.
     std::unique_lock<std::mutex> lk{m_mut};
-    m_cv.wait(lk, [this] { return m_allPaused; });
+    m_cv.wait(lk, [this] { return m_allPaused && numberOfCurrentlyRunningTasks() == 0; });
     lk.unlock();
-
-    XRPL_ASSERT(numberOfCurrentlyRunningTasks() == 0, "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -215,7 +216,18 @@ Workers::Worker::run()
             //
             ++m_workers.m_runningTaskCount;
             m_workers.m_callback.processTask(instance_);
-            --m_workers.m_runningTaskCount;
+
+            // When the running task count drops to zero, wake stop() which
+            // may be waiting for both m_allPaused and zero running tasks.
+            // Locking m_mut before notify_all() prevents a lost wakeup:
+            // it serializes against the predicate check inside stop()'s
+            // cv.wait(), ensuring the notification is not missed between
+            // the predicate evaluation and the actual sleep.
+            if (--m_workers.m_runningTaskCount == 0)
+            {
+                std::lock_guard lk{m_workers.m_mut};
+                m_workers.m_cv.notify_all();
+            }
         }
 
         // Any worker that goes into the paused list must
