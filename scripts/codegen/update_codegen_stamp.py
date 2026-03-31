@@ -29,7 +29,7 @@ def compute_combined_hash(input_files: list[str]) -> str:
     for filepath in input_files:
         if not Path(filepath).exists():
             print(f"Error: input file not found: {filepath}", file=sys.stderr)
-            sys.exit(1)
+            raise FileNotFoundError(f"Input file not found: {filepath}")
         file_hash = hashlib.sha256(Path(filepath).read_bytes()).hexdigest()
         parts.append(file_hash)
 
