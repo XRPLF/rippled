@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/protocol/RPCErr.h>
@@ -105,7 +105,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // JobQueue before letting the thread continue.
         //
         // May 2017
-        jvResult = context.app.getPathRequests().makeLegacyPathRequest(
+        jvResult = context.app.getPathRequestManager().makeLegacyPathRequest(
             request,
             [&context]() {
                 // Copying the shared_ptr keeps the coroutine alive up
@@ -144,7 +144,7 @@ doRipplePathFind(RPC::JsonContext& context)
     if (!lpf.isOk())
         return rpcError(rpcTOO_BUSY);
 
-    auto result = context.app.getPathRequests().doLegacyPathRequest(
+    auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
 
     for (auto& fieldName : jvResult.getMemberNames())

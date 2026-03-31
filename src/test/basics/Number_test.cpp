@@ -212,9 +212,13 @@ public:
             }
         };
         if (scale == MantissaRange::small)
+        {
             test(cSmall);
+        }
         else
+        {
             test(cLarge);
+        }
         {
             bool caught = false;
             try
@@ -290,7 +294,7 @@ public:
                  Number{Number::largestMantissa - 1}},
                 {Number{false, Number::largestMantissa + 1, 0, Number::normalized{}},
                  Number{1, 0},
-                 Number{Number::largestMantissa / 10 + 1, 1}},
+                 Number{(Number::largestMantissa / 10) + 1, 1}},
                 {Number{false, Number::largestMantissa + 1, 0, Number::normalized{}},
                  Number{3, 0},
                  Number{Number::largestMantissa}},
@@ -306,9 +310,13 @@ public:
             }
         };
         if (scale == MantissaRange::small)
+        {
             test(cSmall);
+        }
         else
+        {
             test(cLarge);
+        }
     }
 
     static std::uint64_t
@@ -339,9 +347,13 @@ public:
         };
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::small)
+            {
                 test(cSmall);
+            }
             else
+            {
                 test(cLarge);
+            }
         };
         auto const maxMantissa = Number::maxMantissa();
         auto const maxInternalMantissa = getMaxInternalMantissa();
@@ -745,9 +757,13 @@ public:
         auto const maxMantissa = Number::maxMantissa();
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             if (scale == MantissaRange::small)
+            {
                 test(cSmall);
+            }
             else
+            {
                 test(cLarge);
+            }
         };
         saveNumberRoundMode save{Number::setround(Number::to_nearest)};
         {
@@ -1352,10 +1368,10 @@ public:
                     auto const maxMantissa = Number::maxMantissa();
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
                     test(
-                        Number{false, maxMantissa * 1000 + 999, -3, Number::normalized()},
+                        Number{false, (maxMantissa * 1000) + 999, -3, Number::normalized()},
                         "9999999999999999");
                     test(
-                        Number{true, maxMantissa * 1000 + 999, -3, Number::normalized()},
+                        Number{true, (maxMantissa * 1000) + 999, -3, Number::normalized()},
                         "-9999999999999999");
 
                     test(Number{std::numeric_limits<std::int64_t>::max(), -3}, "9223372036854775");

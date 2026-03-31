@@ -24,7 +24,7 @@ sqlBlobLiteral(Blob const& blob)
 {
     std::string j;
 
-    j.reserve(blob.size() * 2 + 3);
+    j.reserve((blob.size() * 2) + 3);
     j.push_back('X');
     j.push_back('\'');
     boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));
@@ -103,7 +103,7 @@ trim_whitespace(std::string str)
 std::optional<std::uint64_t>
 to_uint64(std::string const& s)
 {
-    std::uint64_t result;
+    std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))
         return result;
     return std::nullopt;

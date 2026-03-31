@@ -60,10 +60,8 @@ getFieldType(Json::StaticString fieldName)
     {
         return it->second;
     }
-    else
-    {
-        Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
-    }
+
+    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.c_str()));
 }
 
 std::string
@@ -110,10 +108,12 @@ class LedgerEntry_test : public beast::unit_test::suite
         if (BEAST_EXPECT(jv.isMember(jss::status)))
             BEAST_EXPECTS(jv[jss::status] == "error", std::to_string(location.line()));
         if (BEAST_EXPECT(jv.isMember(jss::error)))
+        {
             BEAST_EXPECTS(
                 jv[jss::error] == err,
                 "Expected error " + err + ", received " + jv[jss::error].asString() + ", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
+        }
         if (msg.empty())
         {
             BEAST_EXPECTS(
@@ -122,14 +122,16 @@ class LedgerEntry_test : public beast::unit_test::suite
                     "\", at line " + std::to_string(location.line()) + ", " + jv.toStyledString());
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
             BEAST_EXPECTS(
                 jv[jss::error_message] == msg,
                 "Expected error message \"" + msg + "\", received \"" +
                     jv[jss::error_message].asString() + "\", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
+        }
     }
 
-    std::vector<Json::Value>
+    static std::vector<Json::Value>
     getBadValues(FieldType fieldType)
     {
         static Json::Value const injectObject = []() {
@@ -175,7 +177,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             values.reserve(allBadValues.size() - indexSet.size());
             for (std::size_t i = 0; i < allBadValues.size(); ++i)
             {
-                if (indexSet.find(i) == indexSet.end())
+                if (!indexSet.contains(i))
                 {
                     values.push_back(allBadValues[i]);
                 }
@@ -223,7 +225,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         }
     }
 
-    Json::Value
+    static Json::Value
     getCorrectValue(Json::StaticString fieldName)
     {
         static Json::Value const twoAccountArray = []() {
@@ -286,10 +288,14 @@ class LedgerEntry_test : public beast::unit_test::suite
                 Json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 if (apiVersion < 2u)
+                {
                     checkErrorValue(jrr, "unknownOption", "", location);
+                }
                 else
+                {
                     checkErrorValue(
                         jrr, "invalidParams", "No ledger_entry params provided.", location);
+                }
             }
             auto tryField = [&](Json::Value fieldValue) -> void {
                 correctRequest[fieldName] = fieldValue;
@@ -491,9 +497,13 @@ class LedgerEntry_test : public beast::unit_test::suite
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
+                {
                     checkErrorValue(jrr, "unknownOption", "");
+                }
                 else
+                {
                     checkErrorValue(jrr, "invalidParams", "No ledger_entry params provided.");
+                }
             }
         });
     }
@@ -663,7 +673,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                     view.rawInsert(sle);
                     return true;
                 };
-                env.app().openLedger().modify(amendments);
+                env.app().getOpenLedger().modify(amendments);
             }
 
             Json::Value jvParams;
@@ -1551,7 +1561,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                     view.rawInsert(sle);
                     return true;
                 };
-                env.app().openLedger().modify(nUNL);
+                env.app().getOpenLedger().modify(nUNL);
             }
 
             Json::Value jvParams;
@@ -2179,7 +2189,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::FRESH;
+                    cfg->START_UP = StartUpType::Fresh;
                     return cfg;
                 })};
 
@@ -2372,7 +2382,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::FRESH;
+                    cfg->START_UP = StartUpType::Fresh;
                     return cfg;
                 })};
 
@@ -2640,7 +2650,9 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(jv[jss::error_message] == Json::nullValue || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
+        {
             BEAST_EXPECT(jv[jss::error_message] == msg);
+        }
     }
 
     void

@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -41,13 +42,13 @@ DIDSet::preflight(PreflightContext const& ctx)
     };
 
     if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfData, maxDIDAttestationLength))
+        isTooLong(sfData, maxDIDDataLength))
         return temMALFORMED;
 
     return tesSUCCESS;
 }
 
-TER
+static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));

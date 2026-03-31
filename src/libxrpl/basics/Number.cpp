@@ -60,14 +60,12 @@ Number::setMantissaScale(MantissaRange::mantissa_scale scale)
 
 class Number::Guard
 {
-    std::uint64_t digits_;   // 16 decimal guard digits
-    std::uint8_t xbit_ : 1;  // has a non-zero digit been shifted off the end
-    std::uint8_t sbit_ : 1;  // the sign of the guard digits
+    std::uint64_t digits_{0};    // 16 decimal guard digits
+    std::uint8_t xbit_ : 1 {0};  // has a non-zero digit been shifted off the end
+    std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    explicit Guard() : digits_{0}, xbit_{0}, sbit_{0}
-    {
-    }
+    explicit Guard() = default;
 
     // set & test the sign bit
     void
@@ -90,7 +88,7 @@ public:
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
     int
-    round() noexcept;
+    round() const noexcept;
 
     // Modify the result to the correctly rounded value
     template <detail::UnsignedMantissa T>
@@ -110,7 +108,7 @@ public:
 
     // Modify the result to the correctly rounded value
     void
-    doRound(internalrep& drops, std::string_view location);
+    doRound(internalrep& drops, std::string_view location) const;
 
 private:
     void
@@ -167,7 +165,7 @@ Number::Guard::pop() noexcept
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
 int
-Number::Guard::round() noexcept
+Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
@@ -250,7 +248,7 @@ Number::Guard::doRoundUp(
     }
     bringIntoRange(negative, mantissa, exponent, minMantissa);
     if (exponent > maxExponent)
-        throw std::overflow_error(std::string{location});
+        Throw<std::overflow_error>(std::string(location));
 }
 
 template <detail::UnsignedMantissa T>
@@ -276,7 +274,7 @@ Number::Guard::doRoundDown(
 
 // Modify the result to the correctly rounded value
 void
-Number::Guard::doRound(internalrep& drops, std::string_view location)
+Number::Guard::doRound(internalrep& drops, std::string_view location) const
 {
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
@@ -291,7 +289,7 @@ Number::Guard::doRound(internalrep& drops, std::string_view location)
             // or "largestMantissa / 10 + 1", neither of which will round up when
             // converting to rep, though the latter might overflow _before_
             // rounding.
-            throw std::overflow_error(std::string{location});  // LCOV_EXCL_LINE
+            Throw<std::overflow_error>(std::string(location));  // LCOV_EXCL_LINE
         }
         ++drops;
     }
@@ -1017,9 +1015,13 @@ to_string(Number const& amount)
 
     // Assemble the output:
     if (pre_from == pre_to)
+    {
         ret.append(1, '0');
+    }
     else
+    {
         ret.append(pre_from, pre_to);
+    }
 
     if (post_to != post_from)
     {
@@ -1078,7 +1080,7 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
         auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
         {
             int k = (e >= 0 ? e : e - (di - 1)) / di;
-            int k2 = e - k * di;
+            int k2 = e - (k * di);
             if (k2 == 0)
                 return 0;
             return di - k2;
@@ -1098,7 +1100,7 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = ((6 * di + 11) * di + 6) * di + 1;
+    auto const D = (((6 * di + 11) * di + 6) * di) + 1;
     auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
     auto const a1 = 24 * di * (2 * di - 1);
     auto const a2 = -30 * (di - 1) * di;

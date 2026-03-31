@@ -452,7 +452,7 @@ public:
     std::vector<beast::IP::Endpoint>
     autoconnect()
     {
-        std::vector<beast::IP::Endpoint> const none;
+        std::vector<beast::IP::Endpoint> none;
 
         std::lock_guard _(lock_);
 
@@ -1011,7 +1011,7 @@ public:
     {
         int count(0);
         std::lock_guard _(lock_);
-        for (auto addr : list)
+        for (auto const& addr : list)
         {
             if (bootcache_.insertStatic(addr))
                 ++count;

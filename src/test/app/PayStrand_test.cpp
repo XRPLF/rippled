@@ -176,15 +176,17 @@ class ElementComboIter
     bool
     has(SB s) const
     {
-        return state_ & (1 << safe_cast<int>(s));
+        return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
     bool
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
+        {
             if (has(s))
                 return true;
+        }
         return false;
     }
 
@@ -194,8 +196,10 @@ class ElementComboIter
         size_t result = 0;
 
         for (auto const s : sb)
+        {
             if (has(s))
                 result++;
+        }
         return result;
     }
 
@@ -208,7 +212,7 @@ public:
     valid() const
     {
         return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
-            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || prev_) &&
+            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || (prev_ != nullptr)) &&
             (!hasAny({SB::rootAcc, SB::sameAccIss, SB::existingAcc, SB::prevAcc}) ||
              has(SB::acc)) &&
             (!hasAny({SB::rootIss, SB::sameAccIss, SB::existingIss, SB::prevIss}) ||
@@ -275,13 +279,17 @@ public:
             return currencyF();
         }();
         if (!has(SB::boundary))
+        {
             col.emplace_back(acc, cur, iss);
+        }
         else
+        {
             col.emplace_back(
                 STPathElement::Type::typeBoundary,
                 acc.value_or(AccountID{}),
                 cur.value_or(Currency{}),
                 iss.value_or(AccountID{}));
+        }
     }
 };
 
@@ -368,11 +376,17 @@ struct ExistingElementPool
         for (size_t id = 0; id < numCur; ++id)
         {
             if (id < 10)
+            {
                 snprintf(buf, bufSize, "CC%zu", id);
+            }
             else if (id < 100)
+            {
                 snprintf(buf, bufSize, "C%zu", id);
+            }
             else
+            {
                 snprintf(buf, bufSize, "%zu", id);
+            }
             currencies.emplace_back(to_currency(buf));
             currencyNames.emplace_back(buf);
         }
@@ -407,8 +421,10 @@ struct ExistingElementPool
         std::vector<IOU> ious;
         ious.reserve(numAct * numCur);
         for (auto const& a : accounts)
+        {
             for (auto const& cn : currencyNames)
                 ious.emplace_back(a[cn]);
+        }
 
         // create offers from every currency to every other currency
         for (auto takerPays = ious.begin(), ie = ious.end(); takerPays != ie; ++takerPays)
@@ -607,7 +623,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
+                env.app().getJournal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
                 BEAST_EXPECT(equal(strand, std::forward<decltype(expSteps)>(expSteps)...));
@@ -634,9 +650,9 @@ struct PayStrand_test : public beast::unit_test::suite
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
             {
                 STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
@@ -652,9 +668,9 @@ struct PayStrand_test : public beast::unit_test::suite
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
         }
 
@@ -749,7 +765,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             {
                 // The root account can't be the src or dst
-                auto flowJournal = env.app().logs().journal("Flow");
+                auto flowJournal = env.app().getJournal("Flow");
                 {
                     // The root account can't be the dst
                     auto r = toStrand(
@@ -920,8 +936,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
+                env.app().getJournal("Flow"));
+            BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
 
@@ -948,8 +964,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
+                env.app().getJournal("Flow"));
+            BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(
                 strand, D{alice, gw, usdC}, B{USD.issue(), xrpIssue(), std::nullopt}, XRPS{bob}));
         }
@@ -1129,7 +1145,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     noAccount(),
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1142,7 +1158,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1155,7 +1171,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1168,7 +1184,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }

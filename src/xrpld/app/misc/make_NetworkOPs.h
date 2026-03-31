@@ -21,11 +21,11 @@ make_NetworkOPs(
     NetworkOPs::clock_type& clock,
     bool standalone,
     std::size_t minPeerCount,
-    bool start_valid,
-    JobQueue& job_queue,
+    bool startValid,
+    JobQueue& jobQueue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& io_svc,
+    boost::asio::io_context& ioCtx,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 
