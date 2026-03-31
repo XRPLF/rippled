@@ -4732,6 +4732,7 @@ class Vault_test : public beast::unit_test::suite
                         .issuer = owner,
                         .id = vaultKeylet.key,
                         .holder = owner,
+                        .amount = share(vaultShareBalance(vaultKeylet)).value(),
                     }),
                     ter(tecNO_PERMISSION));
                 env.close();
