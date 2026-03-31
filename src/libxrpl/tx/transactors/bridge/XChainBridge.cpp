@@ -418,7 +418,7 @@ transferHelper(
             auto const reserve = psb.fees().accountReserve(ownerCount);
 
             auto const availableBalance = [&]() -> STAmount {
-                STAmount const curBal = (*sleSrc)[sfBalance];
+                STAmount curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
                 // changes
