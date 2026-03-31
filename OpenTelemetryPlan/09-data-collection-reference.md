@@ -24,9 +24,8 @@ graph LR
         BP --> SM
     end
 
-    subgraph backends["Trace Backends  (choose one or both)"]
-        D["Jaeger  :16686<br/>Trace search &<br/>visualization"]
-        T["Grafana Tempo<br/>(preferred for production)<br/>S3/GCS long-term storage"]
+    subgraph backends["Trace Backend"]
+        D["Grafana Tempo  :3200<br/>TraceQL search &<br/>S3/GCS long-term storage"]
     end
 
     subgraph metrics["Metrics Stack"]
@@ -41,14 +40,12 @@ graph LR
     B -->|"UDP :8125<br/>(gauges, counters, timers)"| R2
 
     BP -->|"OTLP/gRPC :4317"| D
-    BP -->|"OTLP/gRPC"| T
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
     R2 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* summaries"| E
 
     E -->|"Prometheus<br/>data source"| F
-    D -->|"Jaeger<br/>data source"| F
-    T -->|"Tempo<br/>data source"| F
+    D -->|"Tempo<br/>data source"| F
 
     style A fill:#4a90d9,color:#fff,stroke:#2a6db5
     style B fill:#d9534f,color:#fff,stroke:#b52d2d
@@ -57,7 +54,6 @@ graph LR
     style BP fill:#449d44,color:#fff,stroke:#2d6e2d
     style SM fill:#449d44,color:#fff,stroke:#2d6e2d
     style D fill:#f0ad4e,color:#000,stroke:#c78c2e
-    style T fill:#e8953a,color:#000,stroke:#b5732a
     style E fill:#f0ad4e,color:#000,stroke:#c78c2e
     style F fill:#5bc0de,color:#000,stroke:#3aa8c1
     style rippledNode fill:#1a2633,color:#ccc,stroke:#4a90d9
@@ -72,10 +68,9 @@ There are two independent telemetry pipelines entering a single **OTel Collector
 1. **OpenTelemetry Traces** — Distributed spans with attributes, exported via OTLP/HTTP (:4318) to the collector's **OTLP Receiver**. The **Batch Processor** groups spans (1s timeout, batch size 100) before forwarding to trace backends. The **SpanMetrics Connector** derives RED metrics (rate, errors, duration) from every span and feeds them into the metrics pipeline.
 2. **beast::insight StatsD** — System-level gauges, counters, and timers emitted as StatsD UDP packets to port :8125, ingested by the collector's **StatsD Receiver**, and exported alongside span-derived metrics to Prometheus.
 
-**Trace backends** — The collector exports traces via OTLP/gRPC to one or both:
+**Trace backend** — The collector exports traces via OTLP/gRPC to:
 
-- **Jaeger** (development) — Provides trace search UI at `:16686`. Easy single-binary setup.
-- **Grafana Tempo** (production) — Preferred for production. Supports S3/GCS object storage for cost-effective long-term trace retention and integrates natively with Grafana.
+- **Grafana Tempo** — Preferred trace backend. Supports TraceQL queries at `:3200`, S3/GCS object storage for cost-effective long-term trace retention, and integrates natively with Grafana.
 
 > **Further reading**: [00-tracing-fundamentals.md](./00-tracing-fundamentals.md) for core OpenTelemetry concepts (traces, spans, context propagation, sampling). [07-observability-backends.md](./07-observability-backends.md) for production backend selection, collector placement, and sampling strategies.
 
@@ -98,7 +93,7 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 | `rpc.ws_message`     | —             | ServerHandler.cpp | WebSocket message handling                                               |
 | `rpc.command.<name>` | `rpc.process` | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
 
-**Where to find**: Jaeger → Service: `rippled` → Operation: `rpc.request` or `rpc.command.*`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"rpc.request|rpc.command.*"}`
 
 **Grafana dashboard**: _RPC Performance_ (`rippled-rpc-perf`)
 
@@ -112,7 +107,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `tx.receive` | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
 | `tx.apply`   | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
 
-**Where to find**: Jaeger → Operation: `tx.process` or `tx.receive`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"tx.process|tx.receive"}`
 
 **Grafana dashboard**: _Transaction Overview_ (`rippled-transactions`)
 
@@ -128,7 +123,7 @@ Controlled by `trace_consensus=1` in `[telemetry]` config.
 | `consensus.validation.send` | —      | RCLConsensus.cpp | Validation message sent after ledger accepted |
 | `consensus.accept.apply`    | —      | RCLConsensus.cpp | Ledger application with close time details    |
 
-**Where to find**: Jaeger → Operation: `consensus.*`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"consensus.*"}`
 
 **Grafana dashboard**: _Consensus Health_ (`rippled-consensus`)
 
@@ -142,7 +137,7 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 | `ledger.validate` | —      | LedgerMaster.cpp | Ledger promoted to validated status            |
 | `ledger.store`    | —      | LedgerMaster.cpp | Ledger stored to database/history              |
 
-**Where to find**: Jaeger → Operation: `ledger.*`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"ledger.*"}`
 
 **Grafana dashboard**: _Ledger Operations_ (`rippled-ledger-ops`)
 
@@ -155,7 +150,7 @@ Controlled by `trace_peer=1` in `[telemetry]` config. **Disabled by default** (h
 | `peer.proposal.receive`   | —      | PeerImp.cpp | Consensus proposal received from peer |
 | `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
 
-**Where to find**: Jaeger → Operation: `peer.*`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"peer.*"}`
 
 **Grafana dashboard**: _Peer Network_ (`rippled-peer-net`)
 
@@ -178,7 +173,7 @@ Every span can carry key-value attributes that provide context for filtering and
 | `xrpl.rpc.duration_ms`   | int64  | `rpc.command.*` | Command execution time in milliseconds           |
 | `xrpl.rpc.error_message` | string | `rpc.command.*` | Error details (only set on failure)              |
 
-**Jaeger query**: Tag `xrpl.rpc.command=server_info` to find all `server_info` calls.
+**Tempo query**: `{span.xrpl.rpc.command="server_info"}` to find all `server_info` calls.
 
 **Prometheus label**: `xrpl_rpc_command` (dots converted to underscores by SpanMetrics).
 
@@ -192,7 +187,7 @@ Every span can carry key-value attributes that provide context for filtering and
 | `xrpl.tx.suppressed` | boolean | `tx.receive`               | `true` if transaction was suppressed (duplicate)     |
 | `xrpl.tx.status`     | string  | `tx.receive`               | Transaction status (e.g., `"known_bad"`)             |
 
-**Jaeger query**: Tag `xrpl.tx.hash=<hash>` to trace a specific transaction across nodes.
+**Tempo query**: `{span.xrpl.tx.hash="<hash>"}` to trace a specific transaction across nodes.
 
 **Prometheus label**: `xrpl_tx_local` (used as SpanMetrics dimension).
 
@@ -211,7 +206,7 @@ Every span can carry key-value attributes that provide context for filtering and
 | `xrpl.consensus.state`               | string  | `consensus.accept.apply`                                                                            | Consensus outcome: `"finished"` or `"moved_on"`               |
 | `xrpl.consensus.round_time_ms`       | int64   | `consensus.accept.apply`                                                                            | Total consensus round duration in milliseconds                |
 
-**Jaeger query**: Tag `xrpl.consensus.mode=proposing` to find rounds where node was proposing.
+**Tempo query**: `{span.xrpl.consensus.mode="proposing"}` to find rounds where node was proposing.
 
 **Prometheus label**: `xrpl_consensus_mode` (used as SpanMetrics dimension).
 
@@ -224,7 +219,7 @@ Every span can carry key-value attributes that provide context for filtering and
 | `xrpl.ledger.tx_count`    | int64 | `ledger.build`, `tx.apply`                                    | Transactions in the ledger                     |
 | `xrpl.ledger.tx_failed`   | int64 | `ledger.build`, `tx.apply`                                    | Failed transactions in the ledger              |
 
-**Jaeger query**: Tag `xrpl.ledger.seq=12345` to find all spans for a specific ledger.
+**Tempo query**: `{span.xrpl.ledger.seq=12345}` to find all spans for a specific ledger.
 
 #### Peer Attributes
 
@@ -367,7 +362,7 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ## 3. Grafana Dashboard Reference
 
-> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8 for Grafana data source provisioning (Tempo, Jaeger, Prometheus) and TraceQL query examples.
+> **See also**: [05-configuration-reference.md](./05-configuration-reference.md) §5.8 for Grafana data source provisioning (Tempo, Prometheus) and TraceQL query examples.
 
 ### 3.1 Span-Derived Dashboards (5)
 
@@ -397,24 +392,24 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ---
 
-## 4. Jaeger Trace Search Guide
+## 4. Tempo Trace Search Guide
 
-> **See also**: [08-appendix.md](./08-appendix.md) §8.2 for span hierarchy visualizations. [05-configuration-reference.md](./05-configuration-reference.md) §5.8.5 for TraceQL examples when using Grafana Tempo instead of Jaeger.
+> **See also**: [08-appendix.md](./08-appendix.md) §8.2 for span hierarchy visualizations. [05-configuration-reference.md](./05-configuration-reference.md) §5.8.5 for TraceQL query examples.
 
 ### Finding Traces by Type
 
-| What to Find             | Jaeger Search Parameters                                   |
-| ------------------------ | ---------------------------------------------------------- |
-| All RPC calls            | Service: `rippled`, Operation: `rpc.request`               |
-| Specific RPC command     | Operation: `rpc.command.server_info` (or any command name) |
-| Slow RPC calls           | Operation: `rpc.command.*`, Min Duration: `100ms`          |
-| Failed RPC calls         | Tag: `xrpl.rpc.status=error`                               |
-| Specific transaction     | Tag: `xrpl.tx.hash=<hex_hash>`                             |
-| Local transactions only  | Tag: `xrpl.tx.local=true`                                  |
-| Consensus rounds         | Operation: `consensus.accept`                              |
-| Rounds by mode           | Tag: `xrpl.consensus.mode=proposing`                       |
-| Specific ledger          | Tag: `xrpl.ledger.seq=12345`                               |
-| Peer proposals (trusted) | Tag: `xrpl.peer.proposal.trusted=true`                     |
+| What to Find             | Tempo TraceQL Query                                                              |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| All RPC calls            | `{resource.service.name="rippled" && name="rpc.request"}`                        |
+| Specific RPC command     | `{resource.service.name="rippled" && name="rpc.command.server_info"}`            |
+| Slow RPC calls           | `{resource.service.name="rippled" && name=~"rpc.command.*"} \| duration > 100ms` |
+| Failed RPC calls         | `{span.xrpl.rpc.status="error"}`                                                 |
+| Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                               |
+| Local transactions only  | `{span.xrpl.tx.local=true}`                                                      |
+| Consensus rounds         | `{resource.service.name="rippled" && name="consensus.accept"}`                   |
+| Rounds by mode           | `{span.xrpl.consensus.mode="proposing"}`                                         |
+| Specific ledger          | `{span.xrpl.ledger.seq=12345}`                                                   |
+| Peer proposals (trusted) | `{span.xrpl.peer.proposal.trusted=true}`                                         |
 
 ### Trace Structure
 
