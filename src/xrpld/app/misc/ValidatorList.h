@@ -646,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock read_lock{mutex_};
+        shared_lock const read_lock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 

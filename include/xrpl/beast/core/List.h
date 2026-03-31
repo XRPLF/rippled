@@ -449,7 +449,7 @@ public:
     iterator
     erase(iterator pos) noexcept
     {
-        Node* node = &*pos;
+        Node const* node = &*pos;
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;

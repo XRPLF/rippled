@@ -45,19 +45,19 @@ struct STNumber_test : public beast::unit_test::suite
             0,
             1,
             std::numeric_limits<std::int64_t>::max()};
-        for (std::int64_t mantissa : mantissas)
+        for (std::int64_t const mantissa : mantissas)
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
             Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
-        for (std::int32_t exponent : exponents)
+        for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
         {
             STAmount const strikePrice{noIssue(), 100};
             STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
-            IOUAmount totalValue{iouValue * factor};
+            IOUAmount const totalValue{iouValue * factor};
             STAmount const totalAmount{totalValue, strikePrice.issue()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
@@ -95,7 +95,7 @@ struct STNumber_test : public beast::unit_test::suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
-                NumberRoundModeGuard mg(Number::towards_zero);
+                NumberRoundModeGuard const mg(Number::towards_zero);
                 // maxint64 9,223,372,036,854,775,807
                 auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
                 // minint64 -9,223,372,036,854,775,808
@@ -276,7 +276,7 @@ struct STNumber_test : public beast::unit_test::suite
 
         for (auto const scale : {MantissaRange::small, MantissaRange::large})
         {
-            NumberMantissaScaleGuard sg(scale);
+            NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());
             doRun();
         }

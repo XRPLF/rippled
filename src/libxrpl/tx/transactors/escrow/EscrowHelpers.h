@@ -69,28 +69,26 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(amount.issue());
         initialBalance.setIssuer(noAccount());
 
-        // clang-format off
         if (TER const ter = trustCreate(
-                view,                           // payment sandbox
-                recvLow,                        // is dest low?
-                issuer,                         // source
-                receiver,                       // destination
-                trustLineKey.key,               // ledger index
-                sleDest,                        // Account to add to
-                false,                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,
-                false,                          // freeze trust line
-                false,                          // deep freeze trust line
-                initialBalance,                 // zero initial balance
-                Issue(currency, receiver),      // limit of zero
-                0,                              // quality in
-                0,                              // quality out
-                journal);                       // journal
+                view,                                           // payment sandbox
+                recvLow,                                        // is dest low?
+                issuer,                                         // source
+                receiver,                                       // destination
+                trustLineKey.key,                               // ledger index
+                sleDest,                                        // Account to add to
+                false,                                          // authorize account
+                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
+                false,                                          // freeze trust line
+                false,                                          // deep freeze trust line
+                initialBalance,                                 // zero initial balance
+                Issue(currency, receiver),                      // limit of zero
+                0,                                              // quality in
+                0,                                              // quality out
+                journal);                                       // journal
             !isTesSuccess(ter))
         {
-            return ter; // LCOV_EXCL_LINE
+            return ter;  // LCOV_EXCL_LINE
         }
-        // clang-format on
 
         view.update(sleDest);
     }

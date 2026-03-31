@@ -22,7 +22,7 @@ doLedgerAccept(RPC::JsonContext& context)
     }
     else
     {
-        std::unique_lock lock{context.app.getMasterMutex()};
+        std::unique_lock const lock{context.app.getMasterMutex()};
         context.netOps.acceptLedger();
         jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
     }

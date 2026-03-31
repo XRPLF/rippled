@@ -13,7 +13,7 @@ namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 /**
  * `Workers` is effectively a thread pool. The constructor takes a "callback"

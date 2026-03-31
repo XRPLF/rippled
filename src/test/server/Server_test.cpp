@@ -282,7 +282,7 @@ public:
         TestSink sink{*this};
         TestThread thread;
         sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        beast::Journal const journal{sink};
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
@@ -377,7 +377,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -388,7 +388,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -400,7 +400,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -414,7 +414,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -426,7 +426,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -442,7 +442,7 @@ public:
         except([&]  // this creates a standard test config without the server
                     // section
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
@@ -471,7 +471,7 @@ public:
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();

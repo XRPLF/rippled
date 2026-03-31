@@ -130,11 +130,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 R(sliceToHex(*r));
+    uint264 const R(sliceToHex(*r));
     if (R >= G)
         return std::nullopt;
 
-    uint264 S(sliceToHex(*s));
+    uint264 const S(sliceToHex(*s));
     if (S >= G)
         return std::nullopt;
 

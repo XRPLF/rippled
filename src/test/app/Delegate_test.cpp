@@ -16,9 +16,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(1000000), gw, alice, bob);
         env.close();
 
@@ -39,8 +39,8 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account gw{"gateway"};
-        Account alice{"alice"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
         env.fund(XRP(100000), gw, alice);
         env.close();
 
@@ -112,9 +112,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(100000), gw, alice, bob);
         env.close();
 
@@ -203,8 +203,8 @@ class Delegate_test : public beast::unit_test::suite
         // reserve requirement not met
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             auto const txFee = env.current()->fees().base;
             env.fund(env.current()->fees().accountReserve(0) + txFee, alice);
@@ -218,9 +218,9 @@ class Delegate_test : public beast::unit_test::suite
         // reserve recovered after deleting delegation object
         {
             Env env(*this);
-            Account bob{"bob"};
-            Account alice{"alice"};
-            Account carol{"carol"};
+            Account const bob{"bob"};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
 
             auto const txFee = env.current()->fees().base;
 
@@ -247,8 +247,8 @@ class Delegate_test : public beast::unit_test::suite
         // test reserve when sending transaction on behalf of other account
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(drops(env.current()->fees().accountReserve(1)), alice);
             env.fund(drops(env.current()->fees().accountReserve(2)), bob);
@@ -275,9 +275,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(10000), alice, carol);
         env.fund(XRP(1000), bob);
         env.close();
@@ -357,9 +357,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(10000), alice, bob, carol);
         env.close();
 
@@ -410,8 +410,8 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(100000), alice, bob);
         env.close();
 
@@ -444,9 +444,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
 
         XRPAmount const baseFee{env.current()->fees().base};
 
@@ -510,10 +510,10 @@ class Delegate_test : public beast::unit_test::suite
         // test PaymentMint and PaymentBurn
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
             auto const USD = gw["USD"];
             auto const EUR = gw2["EUR"];
 
@@ -615,9 +615,9 @@ class Delegate_test : public beast::unit_test::suite
         // test PaymentMint won't affect Payment transaction level delegation.
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account gw{"gateway"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), alice);
@@ -805,9 +805,9 @@ class Delegate_test : public beast::unit_test::suite
         // test TrustlineUnfreeze, TrustlineFreeze and TrustlineAuthorize
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -917,9 +917,9 @@ class Delegate_test : public beast::unit_test::suite
         // test mix of transaction level delegation and granular delegation
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -962,9 +962,9 @@ class Delegate_test : public beast::unit_test::suite
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -1210,8 +1210,8 @@ class Delegate_test : public beast::unit_test::suite
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
             env.close();
 
@@ -1356,9 +1356,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(100000), alice, bob, carol);
         env.close();
 
@@ -1384,9 +1384,9 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1410,7 +1410,11 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1444,7 +1448,11 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1481,9 +1489,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         Account daria{"daria"};
         Account edward{"edward"};
         env.fund(XRP(100000), alice, bob, carol, daria, edward);
@@ -1517,9 +1525,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         Account daria = Account{"daria"};
         Account edward = Account{"edward"};
         Account fred = Account{"fred"};

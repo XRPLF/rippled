@@ -215,7 +215,7 @@ public:
 
 namespace test {
 extern std::atomic<bool> envUseIPv4;
-}
+}  // namespace test
 
 template <class Runner>
 static bool
@@ -257,11 +257,11 @@ runUnitTests(
 
     if (!child && num_jobs == 1)
     {
-        multi_runner_parent parent_runner;
+        multi_runner_parent const parent_runner;
 
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
-        multi_selector pred(pattern);
+        multi_selector const pred(pattern);
         auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
         if (any_failed)

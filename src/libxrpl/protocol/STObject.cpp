@@ -156,7 +156,7 @@ STObject::applyTemplate(SOTemplate const& type)
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
-        std::string text{ss.str()};
+        std::string const text{ss.str()};
         JLOG(debugLog().error()) << "STObject::applyTemplate failed: " << text;
         Throw<FieldErr>(text);
     };
@@ -400,7 +400,7 @@ STObject::getFieldIndex(SField const& field) const
 STBase const&
 STObject::peekAtField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -411,7 +411,7 @@ STObject::peekAtField(SField const& field) const
 STBase&
 STObject::getField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -428,7 +428,7 @@ STObject::getFieldSType(int index) const
 STBase const*
 STObject::peekAtPField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return nullptr;
@@ -439,7 +439,7 @@ STObject::peekAtPField(SField const& field) const
 STBase*
 STObject::getPField(SField const& field, bool createOkay)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -455,7 +455,7 @@ STObject::getPField(SField const& field, bool createOkay)
 bool
 STObject::isFieldPresent(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -519,7 +519,7 @@ STObject::getFlags(void) const
 STBase*
 STObject::makeFieldPresent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -529,7 +529,7 @@ STObject::makeFieldPresent(SField const& field)
         return getPIndex(emplace_back(detail::nonPresentObject, field));
     }
 
-    STBase* f = getPIndex(index);
+    STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
@@ -541,7 +541,7 @@ STObject::makeFieldPresent(SField const& field)
 void
 STObject::makeFieldAbsent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -556,7 +556,7 @@ STObject::makeFieldAbsent(SField const& field)
 bool
 STObject::delField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -640,7 +640,7 @@ STObject::getAccountID(SField const& field) const
 Blob
 STObject::getFieldVL(SField const& field) const
 {
-    STBlob empty;
+    STBlob const empty;
     STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }

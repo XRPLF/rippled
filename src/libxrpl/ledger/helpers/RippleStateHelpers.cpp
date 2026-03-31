@@ -275,8 +275,8 @@ trustDelete(
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
+    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
@@ -374,7 +374,7 @@ issueIOU(
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = issue.account > account;
+    bool const bSenderHigh = issue.account > account;
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
@@ -428,7 +428,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -468,7 +468,7 @@ redeemIOU(
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = account > issue.account;
+    bool const bSenderHigh = account > issue.account;
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {

@@ -268,7 +268,7 @@ public:
 
         Config c;
 
-        std::string toLoad(R"xrpldConfig(
+        std::string const toLoad(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -297,15 +297,15 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        char const* configFiles[] = {Config::configFileName, Config::configLegacyName};
+        std::string_view const configFiles[] = {Config::configFileName, Config::configLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
-            path const f = td.file(configFile);
+            path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -325,13 +325,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -344,7 +344,7 @@ port_wss_admin
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
                 create_directory(p);
-                p = tc.file(systemName() + "/" + configFile);
+                p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -365,7 +365,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -380,7 +380,7 @@ port_wss_admin
                 s += "/" + systemName();
                 p = tc.file(s);
                 create_directory(p);
-                p = tc.file(s + "/" + configFile);
+                p = tc.file(s + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -626,7 +626,7 @@ main
         {
             // load validators from config into single section
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
 n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
@@ -644,7 +644,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -674,7 +674,7 @@ trust-these-validators.gov
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -705,7 +705,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_threshold] is greater than
             // the number of [validator_list_keys]
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -734,7 +734,7 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is malformed
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -763,7 +763,7 @@ value = 2
         {
             // load should throw if [validator_list_threshold] is negative
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -790,7 +790,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_sites] is configured but
             // [validator_list_keys] is not
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -958,7 +958,7 @@ trust-these-validators.gov
             // load should throw if [validators], [validator_keys] and
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
-            Config c;
+            Config const c;
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
@@ -968,7 +968,7 @@ trust-these-validators.gov
                 "[validators], [validator_keys] or [validator_list_keys] "
                 "section: " +
                 vtg.validatorsFile();
-            std::ofstream o(vtg.validatorsFile());
+            std::ofstream const o(vtg.validatorsFile());
             try
             {
                 Config c2;
@@ -1141,7 +1141,7 @@ trust-these-validators.gov
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1182,7 +1182,7 @@ r.ripple.com 51235
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1261,7 +1261,7 @@ r.ripple.com:51235
             bool had_comment;
         };
 
-        std::array<TestCommentData, 13> tests = {
+        std::array<TestCommentData, 13> const tests = {
             {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
              {"password = aaaa#bbbb", "password", "aaaa", true},
              {"password = aaaa #bbbb", "password", "aaaa", true},
@@ -1419,7 +1419,7 @@ r.ripple.com:51235
             bool shouldPass;
         };
 
-        std::vector<ConfigUnit> units = {
+        std::vector<ConfigUnit> const units = {
             {"seconds", 1, 15 * 60, false},
             {"minutes", 60, 14, false},
             {"minutes", 60, 15, true},

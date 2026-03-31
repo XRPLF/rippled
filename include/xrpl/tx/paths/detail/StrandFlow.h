@@ -571,7 +571,7 @@ flow(
 
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
-    std::uint32_t maxOffersToConsider = 1500;
+    std::uint32_t const maxOffersToConsider = 1500;
     std::uint32_t offersConsidered = 0;
 
     // There is a bug in gcc that incorrectly warns about using uninitialized

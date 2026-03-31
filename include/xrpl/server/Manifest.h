@@ -401,7 +401,7 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::shared_lock lock{mutex_};
+        std::shared_lock const lock{mutex_};
         for (auto const& [_, manifest] : map_)
         {
             (void)_;
@@ -429,7 +429,7 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::shared_lock lock{mutex_};
+        std::shared_lock const lock{mutex_};
         pf(map_.size());
         for (auto const& [_, manifest] : map_)
         {

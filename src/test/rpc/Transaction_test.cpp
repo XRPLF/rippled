@@ -283,7 +283,7 @@ class Transaction_test : public beast::unit_test::suite
         char const* EXCESSIVE = RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, makeNetworkConfig(11111)};
-        uint32_t netID = env.app().getNetworkIDService().getNetworkID();
+        uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
 
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
@@ -306,7 +306,7 @@ class Transaction_test : public beast::unit_test::suite
         {
             auto const& tx = txns[i];
             auto const& meta = metas[i];
-            uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -347,7 +347,7 @@ class Transaction_test : public beast::unit_test::suite
         {
             // auto const& tx = txns[i];
             auto const& meta = metas[i];
-            uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -407,7 +407,7 @@ class Transaction_test : public beast::unit_test::suite
         // field. (Tests parameter parsing)
         {
             auto const& meta = metas[0];
-            uint32_t txnIdx = meta->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIdx = meta->getFieldU32(sfTransactionIndex);
             auto const result = env.rpc(
                 COMMAND,
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -500,7 +500,7 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        Env env{*this, makeNetworkConfig(11111)};
+        Env const env{*this, makeNetworkConfig(11111)};
 
         // Test case 1: Valid input values
         auto const expected11 = std::optional<std::string>("CFFFFFFFFFFFFFFF");
@@ -583,7 +583,7 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         // Use a Concise Transaction Identifier to request a transaction.
-        for (uint32_t netID : {11111, 65535, 65536})
+        for (uint32_t const netID : {11111, 65535, 65536})
         {
             Env env{*this, makeNetworkConfig(netID)};
             BEAST_EXPECT(netID == env.app().getNetworkIDService().getNetworkID());
@@ -655,7 +655,7 @@ class Transaction_test : public beast::unit_test::suite
         // test that if the network is 65535 the ctid is not in the response
         // Using a hash to request the transaction, test the network ID
         // boundary where the CTID is (not) in the response.
-        for (uint32_t netID : {2, 1024, 65535, 65536})
+        for (uint32_t const netID : {2, 1024, 65535, 65536})
         {
             Env env{*this, makeNetworkConfig(netID)};
             BEAST_EXPECT(netID == env.app().getNetworkIDService().getNetworkID());
@@ -691,7 +691,7 @@ class Transaction_test : public beast::unit_test::suite
         // test the wrong network ID was submitted
         {
             Env env{*this, makeNetworkConfig(21337)};
-            uint32_t netID = env.app().getNetworkIDService().getNetworkID();
+            uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
 
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -743,9 +743,9 @@ class Transaction_test : public beast::unit_test::suite
         // Payment
         env(pay(alice, gw, XRP(100)));
 
-        std::shared_ptr<STTx const> txn = env.tx();
+        std::shared_ptr<STTx const> const txn = env.tx();
         env.close();
-        std::shared_ptr<STObject const> meta =
+        std::shared_ptr<STObject const> const meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
         Json::Value expected = txn->getJson(JsonOptions::none);
@@ -817,7 +817,8 @@ class Transaction_test : public beast::unit_test::suite
             to_string(txn->getTransactionID()) ==
             "3F8BDE5A5F82C4F4708E5E9255B713E303E6E1A371FD5C7A704AFD1387C23981");
         env.close();
-        std::shared_ptr<STObject const> meta = env.closed()->txRead(txn->getTransactionID()).second;
+        std::shared_ptr<STObject const> const meta =
+            env.closed()->txRead(txn->getTransactionID()).second;
 
         std::string const expected_tx_blob = serializeHex(*txn);
         std::string const expected_meta_blob = serializeHex(*meta);

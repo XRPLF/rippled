@@ -52,8 +52,8 @@ TEST(parseStatmRSSkB, standard_format)
     // Test standard format: size resident shared text lib data dt
     // Assuming 4KB page size: resident=1000 pages = 4000 KB
     {
-        std::string statm = "25365 1000 2377 0 0 5623 0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 1000 2377 0 0 5623 0";
+        long const result = parseStatmRSSkB(statm);
         // Note: actual result depends on system page size
         // On most systems it's 4KB, so 1000 pages = 4000 KB
         EXPECT_GT(result, 0);
@@ -61,57 +61,57 @@ TEST(parseStatmRSSkB, standard_format)
 
     // Test with newline
     {
-        std::string statm = "12345 2000 1234 0 0 3456 0\n";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "12345 2000 1234 0 0 3456 0\n";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test with tabs
     {
-        std::string statm = "12345\t2000\t1234\t0\t0\t3456\t0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "12345\t2000\t1234\t0\t0\t3456\t0";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test zero resident pages
     {
-        std::string statm = "25365 0 2377 0 0 5623 0";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 0 2377 0 0 5623 0";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, 0);
     }
 
     // Test with extra whitespace
     {
-        std::string statm = "  25365   1000   2377  ";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "  25365   1000   2377  ";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_GT(result, 0);
     }
 
     // Test empty string
     {
-        std::string statm;
-        long result = parseStatmRSSkB(statm);
+        std::string const statm;
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (only one field)
     {
-        std::string statm = "25365";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (non-numeric)
     {
-        std::string statm = "abc def ghi";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "abc def ghi";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 
     // Test malformed data (second field non-numeric)
     {
-        std::string statm = "25365 abc 2377";
-        long result = parseStatmRSSkB(statm);
+        std::string const statm = "25365 abc 2377";
+        long const result = parseStatmRSSkB(statm);
         EXPECT_EQ(result, -1);
     }
 }
@@ -119,9 +119,9 @@ TEST(parseStatmRSSkB, standard_format)
 
 TEST(mallocTrim, without_debug_logging)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
+    beast::Journal const journal{beast::Journal::getNullSink()};
 
-    MallocTrimReport report = mallocTrim("without_debug", journal);
+    MallocTrimReport const report = mallocTrim("without_debug", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -142,8 +142,8 @@ TEST(mallocTrim, without_debug_logging)
 
 TEST(mallocTrim, empty_tag)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
-    MallocTrimReport report = mallocTrim("", journal);
+    beast::Journal const journal{beast::Journal::getNullSink()};
+    MallocTrimReport const report = mallocTrim("", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -171,9 +171,9 @@ TEST(mallocTrim, with_debug_logging)
     };
 
     DebugSink sink;
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
-    MallocTrimReport report = mallocTrim("debug_test", journal);
+    MallocTrimReport const report = mallocTrim("debug_test", journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
     EXPECT_EQ(report.supported, true);
@@ -192,12 +192,12 @@ TEST(mallocTrim, with_debug_logging)
 
 TEST(mallocTrim, repeated_calls)
 {
-    beast::Journal journal{beast::Journal::getNullSink()};
+    beast::Journal const journal{beast::Journal::getNullSink()};
 
     // Call malloc_trim multiple times to ensure it's safe
     for (int i = 0; i < 5; ++i)
     {
-        MallocTrimReport report = mallocTrim("iteration_" + std::to_string(i), journal);
+        MallocTrimReport const report = mallocTrim("iteration_" + std::to_string(i), journal);
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
         EXPECT_EQ(report.supported, true);

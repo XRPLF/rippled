@@ -159,7 +159,7 @@ insertNFTokenID(
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
         for (auto const& nftID : result)

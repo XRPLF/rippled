@@ -1149,7 +1149,7 @@ public:
 
             // Construct an SOTemplate to get the ball rolling on building
             // an STObject that can contain an STArray.
-            SOTemplate recurse{
+            SOTemplate const recurse{
                 {sfTransactionMetaData, soeOPTIONAL},
                 {sfTransactionHash, soeOPTIONAL},
                 {sfTemplate, soeOPTIONAL},
@@ -1211,7 +1211,7 @@ public:
             // Make an otherwise legit STTx with a duplicate field.  Should
             // generate an exception when we deserialize.
             auto const keypair = randomKeyPair(KeyType::secp256k1);
-            STTx acctSet(ttACCOUNT_SET, [&keypair](auto& obj) {
+            STTx const acctSet(ttACCOUNT_SET, [&keypair](auto& obj) {
                 obj.setAccountID(sfAccount, calcAccountID(keypair.first));
                 obj.setFieldU32(sfSequence, 7);
                 obj.setFieldAmount(sfFee, STAmount(2557891634ull));
@@ -1329,7 +1329,7 @@ public:
         Serializer rawTxn;
         j.add(rawTxn);
         SerialIter sit(rawTxn.slice());
-        STTx copy(sit);
+        STTx const copy(sit);
 
         if (copy != j)
         {
@@ -1466,7 +1466,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer s = buildMultiSigningData(txn, id2);
+        Serializer const s = buildMultiSigningData(txn, id2);
 
         auto const saMultiSignature = sign(kp2.first, kp2.second, s.slice());
 
@@ -1497,7 +1497,7 @@ public:
             bool serialized = false;
             try
             {
-                STTx copy(sit);
+                STTx const copy(sit);
                 serialized = true;
             }
             catch (std::exception const&)
