@@ -163,25 +163,20 @@ public:
                  {spook, 1}}),
             ter(temBAD_QUORUM));
 
-        // clang-format off
         // Make a signer list that's too big.  Should fail.
         Account const spare("spare", KeyType::secp256k1);
         env(signers(
                 alice,
                 1,
-                std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1},
-                                          {acc10, 1}, {acc11, 1}, {acc12, 1},
-                                          {acc13, 1}, {acc14, 1}, {acc15, 1},
-                                          {acc16, 1}, {acc17, 1}, {acc18, 1},
-                                          {acc19, 1}, {acc20, 1}, {acc21, 1},
-                                          {acc22, 1}, {acc23, 1}, {acc24, 1},
-                                          {acc25, 1}, {acc26, 1}, {acc27, 1},
-                                          {acc28, 1}, {acc29, 1}, {acc30, 1},
-                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}),
+                std::vector<signer>{
+                    {bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1},
+                    {shade, 1}, {spook, 1}, {spare, 1}, {acc10, 1}, {acc11, 1}, {acc12, 1},
+                    {acc13, 1}, {acc14, 1}, {acc15, 1}, {acc16, 1}, {acc17, 1}, {acc18, 1},
+                    {acc19, 1}, {acc20, 1}, {acc21, 1}, {acc22, 1}, {acc23, 1}, {acc24, 1},
+                    {acc25, 1}, {acc26, 1}, {acc27, 1}, {acc28, 1}, {acc29, 1}, {acc30, 1},
+                    {acc31, 1}, {acc32, 1}, {acc33, 1},
+                }),
             ter(temMALFORMED));
-        // clang-format on
         env.close();
         env.require(owners(alice, 0));
     }

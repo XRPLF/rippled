@@ -80,7 +80,7 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
     ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
+    ret[jss::SLE_hit_rate] = app.getCachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();

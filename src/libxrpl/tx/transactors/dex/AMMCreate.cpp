@@ -1,6 +1,7 @@
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
@@ -280,7 +281,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         Book const book{issueIn, issueOut, std::nullopt};
         auto const dir = keylet::quality(keylet::book(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx_.registry.getOrderBookDB().addOrderBook(book);
+            ctx_.registry.get().getOrderBookDB().addOrderBook(book);
     };
     addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
     addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));

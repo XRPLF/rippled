@@ -199,7 +199,7 @@ Serializer::addVL(void const* ptr, int len)
 {
     int ret = addEncoded(len);
 
-    if (len)
+    if (len != 0)
         addRaw(ptr, len);
 
     return ret;
@@ -298,7 +298,7 @@ Serializer::decodeVLLength(int b1, int b2)
     if (b1 > 240)
         Throw<std::overflow_error>("b1>240");
 
-    return 193 + (b1 - 193) * 256 + b2;
+    return 193 + ((b1 - 193) * 256) + b2;
 }
 
 int
@@ -310,7 +310,7 @@ Serializer::decodeVLLength(int b1, int b2, int b3)
     if (b1 > 254)
         Throw<std::overflow_error>("b1>254");
 
-    return 12481 + (b1 - 241) * 65536 + b2 * 256 + b3;
+    return 12481 + ((b1 - 241) * 65536) + (b2 * 256) + b3;
 }
 
 //------------------------------------------------------------------------------

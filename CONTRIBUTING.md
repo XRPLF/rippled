@@ -259,6 +259,10 @@ There is a Continuous Integration job that runs clang-tidy on pull requests. The
 
 This ensures that configuration changes don't introduce new warnings across the codebase.
 
+### Installing clang-tidy
+
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for platform-specific installation instructions.
+
 ### Running clang-tidy locally
 
 Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
@@ -266,10 +270,15 @@ Before running clang-tidy, you must build the project to generate required files
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build src tests
+run-clang-tidy -p build src include tests
 ```
 
-This will check all source files in the `src` and `tests` directories using the compile commands from your `build` directory.
+This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
+
+```
+run-clang-tidy -p build -fix src include tests
+```
 
 ## Contracts and instrumentation
 

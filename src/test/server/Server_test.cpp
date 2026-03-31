@@ -91,13 +91,13 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
             std::unique_ptr<stream_type> const& bundle,
@@ -107,7 +107,7 @@ public:
             return Handoff{};
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
             http_request_type const& request,
@@ -116,7 +116,7 @@ public:
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
@@ -303,13 +303,13 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
                 std::unique_ptr<stream_type> const& bundle,
@@ -319,7 +319,7 @@ public:
                 return Handoff{};
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
                 http_request_type const& request,

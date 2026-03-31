@@ -333,7 +333,7 @@ public:
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
             rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
-            if (!status.ok() || !pdb)
+            if (!status.ok() || (pdb == nullptr))
                 Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
         }
@@ -458,7 +458,7 @@ public:
             // Create empty buckets
             for (std::size_t i = 0; i < bn; ++i)
             {
-                bucket b(kh.block_size, buf.get() + i * kh.block_size, empty);
+                bucket b(kh.block_size, buf.get() + (i * kh.block_size), empty);
             }
             // Insert all keys into buckets
             // Iterate Data File
@@ -484,10 +484,10 @@ public:
                     std::uint8_t const* const key = is.data(dh.key_size);
                     auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
-                    p(log, npass * df_size + r.offset());
+                    p(log, (npass * df_size) + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
-                    bucket b(kh.block_size, buf.get() + (n - b0) * kh.block_size);
+                    bucket b(kh.block_size, buf.get() + ((n - b0) * kh.block_size));
                     maybe_spill(b, dw, ec);
                     if (ec)
                         Throw<nudb::system_error>(ec);

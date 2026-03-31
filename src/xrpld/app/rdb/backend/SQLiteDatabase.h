@@ -327,10 +327,10 @@ public:
      * @param id Hash of the transaction.
      * @param range Range of ledgers to check, if present.
      * @param ec Default error code value.
-     * @return Transaction and its metadata if found, otherwise TxSearched::all
+     * @return Transaction and its metadata if found, otherwise TxSearched::All
      *         if a range is provided and all ledgers from the range are present
-     *         in the database, TxSearched::some if a range is provided and not
-     *         all ledgers are present, TxSearched::unknown if the range is not
+     *         in the database, TxSearched::Some if a range is provided and not
+     *         all ledgers are present, TxSearched::Unknown if the range is not
      *         provided or a deserializing error occurred. In the last case the
      *         error code is returned via the ec parameter, in other cases the
      *         default error code is not changed.
@@ -405,7 +405,7 @@ public:
     transactionDbHasSpace(Config const& config);
 
 private:
-    ServiceRegistry& registry_;
+    std::reference_wrapper<ServiceRegistry> registry_;
     bool useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;

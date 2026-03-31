@@ -3,9 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
@@ -65,28 +69,26 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(amount.issue());
         initialBalance.setIssuer(noAccount());
 
-        // clang-format off
         if (TER const ter = trustCreate(
-                view,                           // payment sandbox
-                recvLow,                        // is dest low?
-                issuer,                         // source
-                receiver,                       // destination
-                trustLineKey.key,               // ledger index
-                sleDest,                        // Account to add to
-                false,                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,
-                false,                          // freeze trust line
-                false,                          // deep freeze trust line
-                initialBalance,                 // zero initial balance
-                Issue(currency, receiver),      // limit of zero
-                0,                              // quality in
-                0,                              // quality out
-                journal);                       // journal
+                view,                                           // payment sandbox
+                recvLow,                                        // is dest low?
+                issuer,                                         // source
+                receiver,                                       // destination
+                trustLineKey.key,                               // ledger index
+                sleDest,                                        // Account to add to
+                false,                                          // authorize account
+                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
+                false,                                          // freeze trust line
+                false,                                          // deep freeze trust line
+                initialBalance,                                 // zero initial balance
+                Issue(currency, receiver),                      // limit of zero
+                0,                                              // quality in
+                0,                                              // quality out
+                journal);                                       // journal
             !isTesSuccess(ter))
         {
-            return ter; // LCOV_EXCL_LINE
+            return ter;  // LCOV_EXCL_LINE
         }
-        // clang-format on
 
         view.update(sleDest);
     }

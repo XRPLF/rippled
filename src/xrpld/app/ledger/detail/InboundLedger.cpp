@@ -7,7 +7,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Overlay.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
@@ -67,7 +66,7 @@ InboundLedger::InboundLedger(
           hash,
           ledgerAcquireTimeout,
           {jtLEDGER_DATA, "InboundLedger", 5},
-          app.journal("InboundLedger"))
+          app.getJournal("InboundLedger"))
     , m_clock(clock)
     , mHaveHeader(false)
     , mHaveState(false)
@@ -122,7 +121,7 @@ InboundLedger::getPeerCount() const
 {
     auto const& peerIds = mPeerSet->getPeerIds();
     return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.overlay().findPeerByShortID(id) != nullptr);
+        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
     });
 }
 
@@ -225,8 +224,9 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
+            Rules const rules{app_.config().features};
             mLedger = std::make_shared<Ledger>(
-                deserializePrefixedHeader(makeSlice(data)), app_.config(), app_.getNodeFamily());
+                deserializePrefixedHeader(makeSlice(data)), rules, app_.getNodeFamily());
             if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
             {
                 // We know for a fact the ledger can never be acquired
@@ -530,7 +530,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = mPeerSet->getPeerIds();
                 std::for_each(peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
-                    if (auto p = app_.overlay().findPeerByShortID(id))
+                    if (auto p = app_.getOverlay().findPeerByShortID(id))
                     {
                         mByHash = false;
                         p->send(packet);
@@ -778,7 +778,8 @@ InboundLedger::takeHeader(std::string_view data)
         return true;
 
     auto* f = &app_.getNodeFamily();
-    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), app_.config(), *f);
+    Rules const rules{app_.config().features};
+    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), rules, *f);
     if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
     {
         JLOG(journal_.warn()) << "Acquire hash mismatch: " << mLedger->header().hash

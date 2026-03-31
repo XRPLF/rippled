@@ -295,8 +295,6 @@ public:
     {
         testcase("Direct Step");
 
-        // clang-format off
-
         // Set up a payment through four accounts: alice -> bob -> carol -> dan
         // For each relevant trust line on the path, there are three things that can vary:
         //  1) input quality
@@ -304,8 +302,6 @@ public:
         //  3) debt direction
         // For each account, there is one thing that can vary:
         //  1) transfer rate
-
-        // clang-format on
 
         using namespace jtx;
 
@@ -385,14 +381,12 @@ public:
         testcase("Book Step");
         using namespace jtx;
 
-        // clang-format off
+        // Setup a payment through an offer:
+        //   alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
+        // For each relevant trust line, vary input quality, output quality, debt direction. For
+        // each account, vary transfer rate.
 
-        // Setup a payment through an offer: alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
-        // For each relevant trust line, vary input quality, output quality, debt direction.
-        // For each account, vary transfer rate.
-        // The USD/bob|EUR/carol offer owner is "Oscar"
-
-        // clang-format on
+        // The USD/bob|EUR/carol offer owner is "Oscar".
 
         int const numTestIterations = reqNumIterations.value_or(100);
 
