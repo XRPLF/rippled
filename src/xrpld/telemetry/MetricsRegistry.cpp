@@ -28,6 +28,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/CountedObject.h>
@@ -51,6 +53,7 @@
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/resource/semantic_conventions.h>
 
+#include <algorithm>
 #include <sstream>
 
 namespace metric_sdk = opentelemetry::sdk::metrics;
@@ -133,6 +136,18 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         "rippled_job_queued_duration_us", "Time jobs spent waiting in the queue (microseconds)");
     jobRunningDurationHistogram_ = meter_->CreateDoubleHistogram(
         "rippled_job_running_duration_us", "Job execution time in microseconds");
+
+    // --- External dashboard parity counters (Task 7.14) ---
+    ledgersClosedCounter_ = meter_->CreateUInt64Counter(
+        "rippled_ledgers_closed_total", "Total ledgers closed by consensus");
+    validationsSentCounter_ = meter_->CreateUInt64Counter(
+        "rippled_validations_sent_total", "Total validations sent by this node");
+    validationsCheckedCounter_ = meter_->CreateUInt64Counter(
+        "rippled_validations_checked_total", "Total network validations received and checked");
+    stateChangesCounter_ =
+        meter_->CreateUInt64Counter("rippled_state_changes_total", "Total operating mode changes");
+    jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
+        "rippled_jq_trans_overflow_total", "Total job queue transaction overflows");
 
     // Register all observable (async) gauges.
     registerAsyncGauges();
@@ -710,9 +725,295 @@ MetricsRegistry::registerAsyncGauges()
             }
         },
         this);
+
+    // --- Task 7.9: Validator health gauges ---
+    validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
+        "rippled_validator_health", "Validator health indicators");
+    validatorHealthGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, double value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<double>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                observe("amendment_blocked", app.getOPs().isAmendmentBlocked() ? 1.0 : 0.0);
+                observe("unl_blocked", app.getOPs().isUNLBlocked() ? 1.0 : 0.0);
+                observe("validation_quorum", static_cast<double>(app.getValidators().quorum()));
+
+                // Days until UNL list expiry (-1 if no expiry known).
+                auto const expiry = app.getValidators().expires();
+                if (expiry)
+                {
+                    auto const now = app.getTimeKeeper().closeTime();
+                    auto const diffHours =
+                        std::chrono::duration_cast<std::chrono::hours>(*expiry - now).count();
+                    observe("unl_expiry_days", static_cast<double>(diffHours) / 24.0);
+                }
+                else
+                {
+                    observe("unl_expiry_days", -1.0);
+                }
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+
+    // --- Task 7.10: Peer quality gauges ---
+    // Uses Peer::json() to read latency and version since those accessors
+    // are not on the abstract Peer interface (they live on PeerImp).
+    peerQualityGauge_ =
+        meter_->CreateDoubleObservableGauge("rippled_peer_quality", "Peer network quality metrics");
+    peerQualityGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, double value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<double>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Collect latencies and version info from each peer's JSON.
+                std::vector<int> latencies;
+                int higherVersionCount = 0;
+                int totalPeers = 0;
+                auto const ownVersion = std::string(BuildInfo::getVersionString());
+
+                app.overlay().foreach([&](std::shared_ptr<Peer> const& peer) {
+                    ++totalPeers;
+                    auto const pj = peer->json();
+                    if (pj.isMember(jss::latency))
+                    {
+                        latencies.push_back(pj[jss::latency].asInt());
+                    }
+                    if (pj.isMember(jss::version))
+                    {
+                        auto const pv = pj[jss::version].asString();
+                        if (!pv.empty() && pv > ownVersion)
+                            ++higherVersionCount;
+                    }
+                });
+
+                // P90 latency across connected peers.
+                if (!latencies.empty())
+                {
+                    std::sort(latencies.begin(), latencies.end());
+                    auto p90idx = static_cast<std::size_t>(latencies.size() * 0.9);
+                    if (p90idx >= latencies.size())
+                        p90idx = latencies.size() - 1;
+                    observe("peer_latency_p90_ms", static_cast<double>(latencies[p90idx]));
+                }
+                else
+                {
+                    observe("peer_latency_p90_ms", 0.0);
+                }
+
+                // Percentage of peers running a higher version.
+                double const higherPct = totalPeers > 0
+                    ? (static_cast<double>(higherVersionCount) / totalPeers * 100.0)
+                    : 0.0;
+                observe("peers_higher_version_pct", higherPct);
+
+                // Binary flag: recommend upgrade if >60% run a newer version.
+                observe("upgrade_recommended", higherPct > 60.0 ? 1.0 : 0.0);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+
+    // --- Task 7.11: Ledger economy gauges ---
+    ledgerEconomyGauge_ = meter_->CreateDoubleObservableGauge(
+        "rippled_ledger_economy", "Ledger fee and economy metrics");
+    ledgerEconomyGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, double value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<double>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Local fee (drops).
+                observe("base_fee_drops", static_cast<double>(app.getFeeTrack().getLocalFee()));
+
+                // Reserve values from the validated ledger.
+                auto const ledger = app.getLedgerMaster().getValidatedLedger();
+                if (ledger)
+                {
+                    auto const& fees = ledger->fees();
+                    observe(
+                        "reserve_base_drops", static_cast<double>(fees.accountReserve(0).drops()));
+                    observe("reserve_inc_drops", static_cast<double>(fees.increment.drops()));
+                }
+
+                // Seconds since the last validated ledger closed.
+                auto const age = app.getLedgerMaster().getValidatedLedgerAge();
+                observe("ledger_age_seconds", static_cast<double>(age.count()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+
+    // --- Task 7.12: State tracking gauges ---
+    stateTrackingGauge_ = meter_->CreateDoubleObservableGauge(
+        "rippled_state_tracking", "Node state and mode tracking");
+    stateTrackingGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, double value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<double>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
+                auto const mode = app.getOPs().getOperatingMode();
+                double stateValue = static_cast<double>(mode);
+
+                // If FULL, refine using consensus info for validating/proposing.
+                if (mode == OperatingMode::FULL)
+                {
+                    auto const info = app.getOPs().getConsensusInfo();
+                    if (info.isMember("proposing") && info["proposing"].asBool())
+                        stateValue = 6.0;
+                    else if (info.isMember("validating") && info["validating"].asBool())
+                        stateValue = 5.0;
+                }
+                observe("state_value", stateValue);
+
+                // TODO: Wire time_in_current_state_seconds to StateAccounting
+                // once a public accessor is available on NetworkOPs.
+                observe("time_in_current_state_seconds", 0.0);
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+
+    // --- Task 7.13: Storage detail gauges ---
+    // Reports NuDB on-disk size via the NodeStore JSON counters interface.
+    storageDetailGauge_ =
+        meter_->CreateInt64ObservableGauge("rippled_storage_detail", "Storage detail metrics");
+    storageDetailGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            auto& app = self->app_;
+
+            try
+            {
+                // Use getCountsJson which includes backend-reported sizes.
+                Json::Value obj(Json::objectValue);
+                app.getNodeStore().getCountsJson(obj);
+
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // node_store_size from the JSON counters (if available).
+                if (obj.isMember(jss::node_writes))
+                {
+                    observe(
+                        "node_store_writes", static_cast<int64_t>(obj[jss::node_writes].asUInt()));
+                }
+
+                // Cumulative written bytes (already exposed by nodeStoreGauge_
+                // as node_written_bytes, but also useful in storage context).
+                observe(
+                    "node_written_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
+
+    // TODO(Task 7.15): Wire validation agreement gauge to ValidationTracker
+    // after rebase brings ValidationTracker from Phase 7 into this branch.
+    // Will observe: agreement_pct_1h, agreement_pct_24h, agreements_1h,
+    // missed_1h, agreements_24h, missed_24h from validationTracker_.
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY
+
+// -----------------------------------------------------------------
+// External dashboard parity counter increments (Task 7.14)
+// -----------------------------------------------------------------
+
+void
+MetricsRegistry::incrementLedgersClosed()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && ledgersClosedCounter_)
+        ledgersClosedCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementValidationsSent()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && validationsSentCounter_)
+        validationsSentCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementValidationsChecked()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && validationsCheckedCounter_)
+        validationsCheckedCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementStateChanges()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && stateChangesCounter_)
+        stateChangesCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementJqTransOverflow()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && jqTransOverflowCounter_)
+        jqTransOverflowCounter_->Add(1);
+#endif
+}
 
 }  // namespace telemetry
 }  // namespace xrpl

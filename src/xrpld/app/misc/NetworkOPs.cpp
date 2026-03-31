@@ -29,6 +29,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/UptimeClock.h>
@@ -2432,6 +2433,10 @@ NetworkOPsImp::setMode(OperatingMode om)
     mMode = om;
 
     accounting_.mode(om);
+
+    // Record state change for OTel dashboard parity counter.
+    if (auto* mr = registry_.getMetricsRegistry())
+        mr->incrementStateChanges();
 
     JLOG(m_journal.info()) << "STATE->" << strOperatingMode();
     pubServer();

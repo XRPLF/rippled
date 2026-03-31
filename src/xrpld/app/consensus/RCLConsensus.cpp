@@ -12,6 +12,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/random.h>
@@ -661,6 +662,10 @@ RCLConsensus::Adaptor::doAccept(
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger_, result.txns.id(), std::move(consensusJson));
 
+    // Record ledger close for OTel dashboard parity counter.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->incrementLedgersClosed();
+
     //-------------------------------------------------------------------------
     {
         // Apply disputed transactions that didn't get in
@@ -974,6 +979,10 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
     // Publish to all our subscribers:
     app_.getOPs().pubValidation(v);
+
+    // Record validation sent for OTel dashboard parity counter.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->incrementValidationsSent();
 }
 
 void

@@ -32,6 +32,11 @@
                     |       +-- rippled_job_finished_total
                     |       +-- rippled_job_queued_duration_us (Histogram)
                     |       +-- rippled_job_running_duration_us (Histogram)
+                    |       +-- rippled_ledgers_closed_total
+                    |       +-- rippled_validations_sent_total
+                    |       +-- rippled_validations_checked_total
+                    |       +-- rippled_state_changes_total
+                    |       +-- rippled_jq_trans_overflow_total
                     |
                     +-- Observable Gauges  (async callbacks, polled by reader)
                             +-- Cache hit rates  (SLE, ledger, AL)
@@ -44,6 +49,11 @@
                             +-- Build info (version label)
                             +-- Complete ledger ranges (start/end pairs)
                             +-- DB metrics (storage KB, fetch rate)
+                            +-- Validator health (amend blocked, UNL, quorum)
+                            +-- Peer quality (P90 latency, version spread)
+                            +-- Ledger economy (fees, reserves, age)
+                            +-- State tracking (mode value, time in state)
+                            +-- Storage detail (NuDB sizes)
 
     Control-flow for async gauges:
 
@@ -219,6 +229,45 @@ public:
     void
     recordJobFinished(std::string_view jobType, std::int64_t runningDurUs);
 
+    // -----------------------------------------------------------------
+    // External dashboard parity counters (Tasks 7.9-7.14)
+    // -----------------------------------------------------------------
+
+    /** Increment the ledgers_closed_total counter.
+        Called from RCLConsensus::Adaptor::doAccept() after a ledger is
+        accepted by consensus.
+    */
+    void
+    incrementLedgersClosed();
+
+    /** Increment the validations_sent_total counter.
+        Called from RCLConsensus::Adaptor::validate() when a validation
+        is produced and broadcast.
+    */
+    void
+    incrementValidationsSent();
+
+    /** Increment the validations_checked_total counter.
+        Called from NetworkOPs::recvValidation() when a network validation
+        is received and checked.
+    */
+    void
+    incrementValidationsChecked();
+
+    /** Increment the state_changes_total counter.
+        Called from NetworkOPsImp::setMode() when the server operating mode
+        changes (e.g. CONNECTED -> SYNCING -> TRACKING -> FULL).
+    */
+    void
+    incrementStateChanges();
+
+    /** Increment the jq_trans_overflow_total counter.
+        Called when the job queue transaction limit overflows (mirrors
+        Overlay::incJqTransOverflow()).
+    */
+    void
+    incrementJqTransOverflow();
+
 private:
     /// Master enable flag; when false all methods are no-ops.
     bool const enabled_;
@@ -284,6 +333,45 @@ private:
         completeLedgersGauge_;
     /// Observable gauge for database sizes and historical fetch rate.
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> dbMetricsGauge_;
+
+    // --- External dashboard parity gauges (Tasks 7.9-7.13) ---
+    /// Observable gauge for validator health indicators (amendment blocked,
+    /// UNL blocked, quorum, UNL expiry).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        validatorHealthGauge_;
+    /// Observable gauge for peer network quality metrics (P90 latency,
+    /// insane peer count, version spread, upgrade recommendation).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        peerQualityGauge_;
+    /// Observable gauge for ledger economy metrics (base fee, reserve,
+    /// reserve increment, ledger age).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        ledgerEconomyGauge_;
+    /// Observable gauge for node state tracking (operating mode value,
+    /// time in current state).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        stateTrackingGauge_;
+    /// Observable gauge for storage detail metrics (NuDB on-disk size).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        storageDetailGauge_;
+
+    // --- External dashboard parity counters (Task 7.14) ---
+    /// Counter: rippled_ledgers_closed_total — incremented each consensus round.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        ledgersClosedCounter_;
+    /// Counter: rippled_validations_sent_total — incremented when this node sends a validation.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        validationsSentCounter_;
+    /// Counter: rippled_validations_checked_total — incremented for each network validation
+    /// received.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        validationsCheckedCounter_;
+    /// Counter: rippled_state_changes_total — incremented on operating mode transitions.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        stateChangesCounter_;
+    /// Counter: rippled_jq_trans_overflow_total — incremented on job queue transaction overflows.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        jqTransOverflowCounter_;
 
     /** Register all observable gauge callbacks with the OTel SDK.
         Called once during start().
