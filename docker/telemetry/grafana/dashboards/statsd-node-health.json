@@ -410,6 +410,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled Node Health (StatsD)",
+  "title": "Node Health (StatsD)",
   "uid": "rippled-statsd-node-health"
 }

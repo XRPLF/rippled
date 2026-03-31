@@ -465,6 +465,6 @@
   "tags": ["rippled", "statsd", "network", "telemetry"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "title": "rippled Network Traffic (StatsD)",
+  "title": "Network Traffic (StatsD)",
   "uid": "rippled-statsd-network"
 }

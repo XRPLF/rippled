@@ -175,6 +175,8 @@ test.shamap > xrpl.basics
 test.shamap > xrpl.nodestore
 test.shamap > xrpl.protocol
 test.shamap > xrpl.shamap
+test.telemetry > xrpl.core
+test.telemetry > xrpld.telemetry
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
@@ -230,7 +232,6 @@ xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
 xrpld.app > xrpld.consensus
 xrpld.app > xrpld.core
-xrpld.app > xrpld.telemetry
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
@@ -289,6 +290,7 @@ xrpld.rpc > xrpl.tx
 xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
 xrpld.telemetry > xrpl.core
+xrpld.telemetry > xrpld.core
 xrpld.telemetry > xrpl.nodestore
 xrpld.telemetry > xrpl.protocol
 xrpld.telemetry > xrpl.rdb
