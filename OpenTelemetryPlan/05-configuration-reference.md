@@ -420,7 +420,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, jaeger, otlp/tempo]
+      exporters: [logging, otlp/tempo]
 ```
 
 ### 5.5.2 Production Configuration
@@ -586,7 +586,6 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - jaeger
       - tempo
 
   # Prometheus for metrics (optional, for correlation)

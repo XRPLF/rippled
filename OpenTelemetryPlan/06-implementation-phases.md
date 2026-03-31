@@ -464,7 +464,7 @@ graph LR
     end
 
     subgraph backends["Trace Backends"]
-        D["Jaeger / Tempo"]
+        D["Tempo"]
     end
 
     subgraph metrics["Metrics Stack"]
@@ -561,11 +561,11 @@ See [Phase7_taskList.md](./Phase7_taskList.md) for detailed per-task breakdown.
 
 ### Motivation
 
-rippled's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+rippled's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
 
 #### Gains
 
-1. **One-click trace-to-log navigation** — Click a trace in Tempo/Jaeger and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
+1. **One-click trace-to-log navigation** — Click a trace in Tempo and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
 4. **Zero new dependencies in rippled** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
@@ -774,7 +774,7 @@ Before the telemetry stack (Phases 1-9) can be considered production-ready, we n
 
 ### Architecture
 
-The validation uses a **2-node** validator cluster running as local processes alongside a Docker Compose telemetry stack (Collector, Jaeger, Prometheus, Grafana). Two nodes are sufficient for consensus rounds and peer-to-peer span validation while minimizing CI resource usage.
+The validation uses a **2-node** validator cluster running as local processes alongside a Docker Compose telemetry stack (Collector, Tempo, Prometheus, Grafana). Two nodes are sufficient for consensus rounds and peer-to-peer span validation while minimizing CI resource usage.
 
 ```mermaid
 flowchart LR
@@ -786,7 +786,7 @@ flowchart LR
     subgraph telemetry["Docker Compose Telemetry Stack"]
         direction TB
         COL["OTel Collector<br/>(OTLP + StatsD)"]
-        JAE["Jaeger<br/>(trace search)"]
+        JAE["Tempo<br/>(trace search)"]
         PROM["Prometheus<br/>(metrics)"]
         GRAF["Grafana<br/>(dashboards)"]
     end
@@ -797,7 +797,7 @@ flowchart LR
     end
 
     subgraph validation["Validation Suite"]
-        SV["Span Validator<br/>(Jaeger API)"]
+        SV["Span Validator<br/>(Tempo API)"]
         MV["Metric Validator<br/>(Prometheus API,<br/>all 26 metrics required)"]
         DV["Dashboard Validator<br/>(Grafana API)"]
         BM["Benchmark Suite<br/>(CPU, memory, latency<br/>ON vs OFF comparison)"]
@@ -852,7 +852,7 @@ See [Phase10_taskList.md](./Phase10_taskList.md) for detailed per-task breakdown
 
 The validation suite (`validate_telemetry.py`) runs exactly 71 checks, broken down as:
 
-- **1 service registration** — `rippled` exists in Jaeger
+- **1 service registration** — `rippled` exists in Tempo
 - **17 span existence** — `rpc.request`, `rpc.process`, `rpc.ws_message`, `rpc.command.*`, `tx.process`, `tx.receive`, `tx.apply`, `consensus.proposal.send`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply`, `ledger.build`, `ledger.validate`, `ledger.store`, `peer.proposal.receive`, `peer.validation.receive`
 - **14 span attribute** — required attributes on the 14 spans that define them (22 unique attributes total)
 - **2 span hierarchies** — `rpc.process` -> `rpc.command.*`, `ledger.build` -> `tx.apply` (1 skipped: `rpc.request` -> `rpc.process`, cross-thread)

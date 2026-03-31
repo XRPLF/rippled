@@ -67,7 +67,7 @@ check_span() {
 # Phase 8: Verify trace_id injection in rippled log output.
 # Greps all node debug.log files for the "trace_id=<hex> span_id=<hex>"
 # pattern that Logs::format() injects when an active OTel span exists.
-# Also cross-checks that a trace_id found in logs matches a trace in Jaeger.
+# Also cross-checks that a trace_id found in logs matches a trace in Tempo.
 check_log_correlation() {
     log "Checking log-trace correlation..."
 
@@ -82,7 +82,7 @@ check_log_correlation() {
         local matches
         matches=$(grep -c 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' "$logfile" 2>/dev/null || echo 0)
         total_matches=$((total_matches + matches))
-        # Capture the first trace_id we find for cross-referencing with Jaeger
+        # Capture the first trace_id we find for cross-referencing with Tempo
         if [ -z "$sample_trace_id" ] && [ "$matches" -gt 0 ]; then
             sample_trace_id=$(grep -o 'trace_id=[a-f0-9]\{32\}' "$logfile" | head -1 | cut -d= -f2)
         fi
@@ -94,15 +94,15 @@ check_log_correlation() {
         fail "Log correlation: no trace_id found in any node debug.log"
     fi
 
-    # Cross-check: verify the sample trace_id exists in Jaeger
+    # Cross-check: verify the sample trace_id exists in Tempo
     if [ -n "$sample_trace_id" ]; then
         local trace_found
-        trace_found=$(curl -sf "$JAEGER/api/traces/$sample_trace_id" \
-            | jq '.data | length' 2>/dev/null || echo 0)
+        trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" \
+            | jq '.batches | length' 2>/dev/null || echo 0)
         if [ "$trace_found" -gt 0 ]; then
-            ok "Log-Jaeger cross-check: trace_id=$sample_trace_id found in Jaeger"
+            ok "Log-Tempo cross-check: trace_id=$sample_trace_id found in Tempo"
         else
-            fail "Log-Jaeger cross-check: trace_id=$sample_trace_id NOT found in Jaeger"
+            fail "Log-Tempo cross-check: trace_id=$sample_trace_id NOT found in Tempo"
         fi
     fi
 }

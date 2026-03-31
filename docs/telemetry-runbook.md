@@ -526,12 +526,12 @@ cat /tmp/xrpld-validation/reports/validation-report.json | jq '.summary'
 
 ### What Gets Validated
 
-| Category   | Checks         | Description                                              |
-| ---------- | -------------- | -------------------------------------------------------- |
-| Spans      | 16+ span types | All span names appear in Jaeger with required attributes |
-| Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics     |
-| Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works  |
-| Dashboards | 10 dashboards  | All Grafana dashboards load without errors               |
+| Category   | Checks         | Description                                             |
+| ---------- | -------------- | ------------------------------------------------------- |
+| Spans      | 16+ span types | All span names appear in Tempo with required attributes |
+| Metrics    | 30+ metrics    | SpanMetrics, StatsD gauges/counters, Phase 9 metrics    |
+| Logs       | 2 checks       | trace_id/span_id present in Loki, cross-reference works |
+| Dashboards | 10 dashboards  | All Grafana dashboards load without errors              |
 
 ### Running Individual Tools
 

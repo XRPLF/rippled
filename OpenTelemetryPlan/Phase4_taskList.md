@@ -334,7 +334,7 @@ Two strategies for cross-node trace correlation, switchable via config:
 Derive `trace_id = SHA256(previousLedger.id())[0:16]` so all nodes in the same
 consensus round share the same trace_id without P2P context propagation.
 
-- **Pros**: All nodes appear in the same trace in Tempo/Jaeger automatically.
+- **Pros**: All nodes appear in the same trace in Tempo automatically.
   No collector-side post-processing needed.
 - **Cons**: Overrides OTel's random trace_id generation; requires custom
   `IdGenerator` or manual span context construction.
@@ -876,7 +876,7 @@ Received messages use **span links** (follows-from), NOT parent-child:
 
 - The receiver's processing span links to the sender's context
 - This preserves each node's independent trace tree
-- Cross-node correlation visible via linked traces in Tempo/Jaeger
+- Cross-node correlation visible via linked traces in Tempo
 
 ## Interaction with Deterministic Trace ID (Strategy A)
 

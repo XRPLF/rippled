@@ -80,13 +80,13 @@ Likely causes (investigate in order):
 2. **Code path not triggered:** `tx.process` fires in `NetworkOPs::processTransaction()`.
    The tx_submitter submits via RPC `submit` command which calls this path. But if the
    transactions fail validation before reaching `processTransaction()`, no span is emitted.
-3. **Span naming mismatch:** The validation queries Jaeger for exact operation name
-   `tx.process`. Verify Jaeger stores the span with this exact name.
+3. **Span naming mismatch:** The validation queries Tempo for exact operation name
+   `tx.process`. Verify Tempo stores the span with this exact name.
 
 **Investigation:**
 
 - Check the tx_submitter output in CI logs — are transactions actually succeeding?
-- Query Jaeger API locally for all span names to see what's actually emitted.
+- Query Tempo API locally for all span names to see what's actually emitted.
 
 **Files to modify:**
 
@@ -103,7 +103,7 @@ Likely causes (investigate in order):
 [FAIL] span.hierarchy.rpc.request->rpc.process: rpc.process not found in rpc.request traces
 ```
 
-**Root Cause:** The validator fetches traces containing `rpc.request` from Jaeger and
+**Root Cause:** The validator fetches traces containing `rpc.request` from Tempo and
 checks if any child span is named `rpc.process`. Both spans are emitted (they pass
 individual checks), but the parent-child relationship isn't established.
 

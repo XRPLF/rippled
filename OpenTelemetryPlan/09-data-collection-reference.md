@@ -511,7 +511,7 @@ Example:
 2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
-- **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo/Jaeger.
+- **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo.
 - **`span_id=<hex16>`** — 16-character lowercase hex span identifier. Identifies the specific span within the trace.
 - **Only present** when the log is emitted within an active OTel span. Log lines outside of traced code paths have no trace context fields.
 
@@ -734,7 +734,7 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 
 | Category           | Expected Count | Validation Method                | Config File             |
 | ------------------ | -------------- | -------------------------------- | ----------------------- |
-| Trace spans        | 17             | Jaeger/Tempo API query           | `expected_spans.json`   |
+| Trace spans        | 17             | Tempo API query                  | `expected_spans.json`   |
 | Span attributes    | 22             | Per-span attribute assertion     | `expected_spans.json`   |
 | StatsD metrics     | 255+           | Prometheus query                 | `expected_metrics.json` |
 | Phase 9 metrics    | 68+            | Prometheus query                 | `expected_metrics.json` |

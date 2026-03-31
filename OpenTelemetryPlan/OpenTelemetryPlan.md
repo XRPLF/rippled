@@ -228,7 +228,7 @@ The appendix contains a glossary of OpenTelemetry and rippled-specific terms, re
 
 ## 9. Data Collection Reference
 
-A single-source-of-truth reference documenting every piece of telemetry data collected by rippled. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 8 Grafana dashboards. Includes Jaeger search guides and Prometheus query examples.
+A single-source-of-truth reference documenting every piece of telemetry data collected by rippled. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 8 Grafana dashboards. Includes Tempo search guides and Prometheus query examples.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
 
