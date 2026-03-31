@@ -39,7 +39,7 @@ public:
         @param j Journal for debugging
     */
     DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
+        : ourVote_(ourVote), tx_(tx), j_(j)
     {
         votes_.reserve(numPeers);
     }
@@ -173,8 +173,8 @@ public:
     getJson() const;
 
 private:
-    int yays_;      //< Number of yes votes
-    int nays_;      //< Number of no votes
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote

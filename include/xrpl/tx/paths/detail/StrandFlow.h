@@ -61,7 +61,7 @@ struct StrandResult
     }
 
     StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+        : ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
     {
     }
 };

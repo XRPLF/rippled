@@ -116,7 +116,7 @@ protected:
     AccountID const account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
-    virtual ~Transactor() = default;
+    ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;

@@ -12,7 +12,7 @@ namespace test {
 namespace jtx {
 namespace oracle {
 
-Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env), documentID_{}
+Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 {
     // LastUpdateTime is checked to be in range
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.

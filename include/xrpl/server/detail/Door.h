@@ -88,7 +88,9 @@ private:
     boost::asio::io_context& ioc_;
     acceptor_type acceptor_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    bool ssl_;
+    bool ssl_{
+        port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
+        port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
     bool plain_;
     static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
     static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
@@ -274,9 +276,6 @@ Door<Handler>::Door(
     , ioc_(io_context)
     , acceptor_(io_context)
     , strand_(boost::asio::make_strand(io_context))
-    , ssl_(
-          port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
-          port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0)
     , plain_(
           port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
           port_.protocol.count("ws2"))

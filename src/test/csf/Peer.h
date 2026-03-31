@@ -523,7 +523,7 @@ struct Peer
         Json::Value&& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
             bool const proposing = mode == ConsensusMode::proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 

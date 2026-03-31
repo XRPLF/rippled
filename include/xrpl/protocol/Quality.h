@@ -56,8 +56,8 @@ struct TAmounts
         return *this;
     }
 
-    In in;
-    Out out;
+    In in{};
+    Out out{};
 };
 
 using Amounts = TAmounts<STAmount, STAmount>;

@@ -223,7 +223,7 @@ class ValidatorList
     hash_set<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
-    std::size_t listThreshold_;
+    std::size_t listThreshold_{1};
 
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
