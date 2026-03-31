@@ -48,7 +48,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
 
         // Invalid: missing all fields.
         {
-            protocol::TMLedgerNode node;
+            protocol::TMLedgerNode const node;
             BEAST_EXPECT(!validateLedgerNode(node));
         }
 
@@ -192,7 +192,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
             // Truncate the data to trigger an exception in SHAMapTreeNode::makeAccountState when
             // the data is used to deserialize the node.
-            uint256 tag;
+            uint256 const tag;
             auto const leafData = serializeNode(leafNode).substr(0, tag.bytes - 1);
             auto const result = getTreeNode(leafData);
             BEAST_EXPECT(!result.has_value());
