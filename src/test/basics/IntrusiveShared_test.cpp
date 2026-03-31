@@ -144,7 +144,7 @@ public:
     }
 
     void
-    partialDestructor()
+    partialDestructor() const
     {
         using enum TrackedState;
 
@@ -245,7 +245,7 @@ public:
             while (!weak.empty())
             {
                 weak.resize(weak.size() - 1);
-                if (weak.size())
+                if (!weak.empty())
                     BEAST_EXPECT(TIBase::getState(id) == partiallyDeleted);
             }
             BEAST_EXPECT(TIBase::getState(id) == deleted);
@@ -592,6 +592,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -737,6 +738,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -845,6 +847,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(lockAndDestroy, i);

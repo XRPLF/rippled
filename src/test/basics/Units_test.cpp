@@ -31,7 +31,7 @@ private:
             auto drops = mulDiv(baseFee, x, f);
 
             BEAST_EXPECT(drops);
-            BEAST_EXPECT(drops.value() == 1000);
+            BEAST_EXPECT(drops.value() == 1000);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
                           unit::dropTag>));
@@ -52,7 +52,7 @@ private:
             auto drops = mulDiv(baseFee, x, f);
 
             BEAST_EXPECT(drops);
-            BEAST_EXPECT(drops.value() == 1000);
+            BEAST_EXPECT(drops.value() == 1000);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
                           unit::dropTag>));
@@ -73,7 +73,7 @@ private:
             auto drops = mulDiv(x, basefee, referencefee);
 
             BEAST_EXPECT(drops);
-            BEAST_EXPECT(drops.value() == 40);
+            BEAST_EXPECT(drops.value() == 40);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
                           unit::dropTag>));

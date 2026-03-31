@@ -5,6 +5,7 @@
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -66,7 +67,7 @@ doAccountChannels(RPC::JsonContext& context)
     {
         return rpcError(rpcACT_MALFORMED);
     }
-    AccountID const accountID{std::move(id.value())};
+    AccountID const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -81,7 +82,7 @@ doAccountChannels(RPC::JsonContext& context)
     if (!strDst.empty() && !raDstAccount)
         return rpcError(rpcACT_MALFORMED);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountChannels, context))
         return *err;
 

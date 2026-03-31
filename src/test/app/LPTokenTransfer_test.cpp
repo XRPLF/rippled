@@ -299,9 +299,13 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // with fixFrozenLPTokenTransfer enabled, bob fails to cash the check
         if (features[fixFrozenLPTokenTransfer])
+        {
             env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}), ter(tecPATH_PARTIAL));
+        }
         else
+        {
             env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}));
+        }
 
         env.close();
 

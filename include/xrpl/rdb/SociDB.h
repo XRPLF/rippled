@@ -13,8 +13,8 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
 
 #define SOCI_USE_BOOST
 #include <soci/soci.h>
@@ -111,7 +111,7 @@ public:
     and so must outlive them both.
  */
 std::shared_ptr<Checkpointer>
-makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, Logs&);
+makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, ServiceRegistry&);
 
 }  // namespace xrpl
 

@@ -166,7 +166,7 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert("Network-Time", std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+    h.insert("Network-Time", std::to_string(app.getTimeKeeper().now().time_since_epoch().count()));
 
     h.insert("Public-Key", toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
@@ -211,7 +211,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-ID"); iter != headers.end())
     {
-        std::uint32_t nid;
+        std::uint32_t nid = 0;
 
         if (!beast::lexicalCastChecked(nid, iter->value()))
             throw std::runtime_error("Invalid peer network identifier");
@@ -223,7 +223,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
         auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
-            TimeKeeper::duration::rep val;
+            TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))
                 return TimeKeeper::time_point{TimeKeeper::duration{val}};
@@ -235,7 +235,7 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = app.getTimeKeeper().now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point
@@ -300,9 +300,11 @@ verifyHandshake(
             throw std::runtime_error("Invalid Local-IP");
 
         if (beast::IP::is_public(remote) && remote != local_ip)
+        {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " +
                 local_ip.to_string());
+        }
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
@@ -318,9 +320,11 @@ verifyHandshake(
             // We know our public IP and peer reports our connection came
             // from some other IP.
             if (remote_ip != public_ip)
+            {
                 throw std::runtime_error(
                     "Incorrect Remote-IP: " + public_ip.to_string() + " instead of " +
                     remote_ip.to_string());
+            }
         }
     }
 

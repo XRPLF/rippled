@@ -1,5 +1,5 @@
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
@@ -15,10 +15,14 @@ static auto
 finishFlow(PaymentSandbox& sb, Issue const& srcIssue, Issue const& dstIssue, FlowResult&& f)
 {
     path::RippleCalc::Output result;
-    if (f.ter == tesSUCCESS)
+    if (isTesSuccess(f.ter))
+    {
         f.sandbox->apply(sb);
+    }
     else
+    {
         result.removableOffers = std::move(f.removableOffers);
+    }
 
     result.setResult(f.ter);
     result.actualAmountIn = toSTAmount(f.in, srcIssue);
@@ -78,7 +82,7 @@ flow(
         domainID,
         j);
 
-    if (toStrandsTer != tesSUCCESS)
+    if (!isTesSuccess(toStrandsTer))
     {
         path::RippleCalc::Output result;
         result.setResult(toStrandsTer);

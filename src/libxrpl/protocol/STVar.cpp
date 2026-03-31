@@ -60,10 +60,14 @@ STVar::operator=(STVar const& rhs)
     if (&rhs != this)
     {
         destroy();
-        if (rhs.p_)
+        if (rhs.p_ != nullptr)
+        {
             p_ = rhs.p_->copy(max_size, &d_);
+        }
         else
+        {
             p_ = nullptr;
+        }
     }
 
     return *this;
@@ -116,9 +120,13 @@ void
 STVar::destroy()
 {
     if (on_heap())
+    {
         delete p_;
+    }
     else
+    {
         p_->~STBase();
+    }
 
     p_ = nullptr;
 }

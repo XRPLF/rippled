@@ -45,21 +45,25 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
 
-        auto next = std::make_shared<Ledger>(*closed, env.app().timeKeeper().closeTime());
+        auto next = std::make_shared<Ledger>(*closed, env.app().getTimeKeeper().closeTime());
         {
             // Fund alice
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
             OpenView accum(&*next);
 
             auto const result = xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
@@ -269,8 +273,8 @@ struct Regression_test : public beast::unit_test::suite
 
             if (BEAST_EXPECT(bob_index.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
-                auto& cache = env.app().cachedSLEs();
-                cache.del(*digest, false);
+                auto& cache = env.app().getCachedSLEs();
+                cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
                 env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))), ter(tecNO_ENTRY));
