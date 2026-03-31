@@ -442,20 +442,6 @@ verifyConvertBackProof(
     return tesSUCCESS;
 }
 
-std::optional<Buffer>
-computeConvertBackRemainder(Slice const& commitment, uint64_t amount)
-{
-    if (commitment.size() != ecPedersenCommitmentLength || amount == 0)
-        return std::nullopt;  // LCOV_EXCL_LINE
-
-    Buffer out;
-    out.alloc(ecPedersenCommitmentLength);
-    if (mpt_compute_convert_back_remainder(commitment.data(), amount, out.data()) != 0)
-        return std::nullopt;  // LCOV_EXCL_LINE
-
-    return out;
-}
-
 std::optional<ConfidentialSendChainState>
 computeNextSendChainState(
     std::uint64_t currentSpending,

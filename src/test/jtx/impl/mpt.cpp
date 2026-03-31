@@ -1610,9 +1610,8 @@ MPTTester::sendJV(
         }
 
         std::optional<Buffer> proof;
-        // Skip proof generation when spending balance is 0: getPedersenCommitment
-        // returns a fake commitment for 0 that causes getBalanceLinkageProof to throw.
-        // The dummy zero proof will cause ledger rejection as expected.
+
+        // Skip proof generation when spending balance is 0
         if (arg.account != arg.dest && prevEncryptedSenderSpending && prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(

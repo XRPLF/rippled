@@ -7050,8 +7050,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             }
         }
 
-        // Test batch again in the case of bob sending Confidential MPT to 2 accounts in
-        // one batch. However this time, the second txn proof is calculated using the
+        // Now, Bob sends Confidential MPT to 2 accounts in one batch.
+        // However this time, the second txn proof is calculated using the
         // correct encrypted(spending) proof, so it should pass.
         {
             // bob has exactly enough for both sends.
@@ -7094,8 +7094,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                     mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 100);
             }
 
-            // bob=150. After first send of 100, remaining is 50.
-            // Second send of 100 would leave -50 → range proof fails.
+            // Now Bob has 150, but triees to send two 100 in one batch.
+            // This fails because Bob doesn't have enough MPT balance.
             {
                 Env env2{*this, features};
                 Account const alice2("alice");
@@ -7166,7 +7166,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            // Both applied: bob 100→90, carol 60→55, dave inbox 0→15
+            // Both txn applied: bob's balance 100→90, carol 60→55, dave inbox 0→15
             BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 90);
             BEAST_EXPECT(
                 mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 55);
