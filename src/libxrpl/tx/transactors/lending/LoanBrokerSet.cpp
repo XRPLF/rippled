@@ -46,7 +46,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     }
 
     // Amendment-specific field presence rules
-    if (ctx.rules.enabled(fixLendingProtocolV1_1))
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
     {
         if (isLoanBrokerUpdate)
         {
@@ -125,7 +125,7 @@ static Expected<std::shared_ptr<SLE const>, TER>
 preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 const& brokerID)
 {
     auto const& tx = ctx.tx;
-    bool const fixEnabled = ctx.view.rules().enabled(fixLendingProtocolV1_1);
+    bool const fixEnabled = ctx.view.rules().enabled(featureLendingProtocolV1_1);
 
     std::shared_ptr<SLE const> sleBroker;
     std::shared_ptr<SLE const> sleVault;
