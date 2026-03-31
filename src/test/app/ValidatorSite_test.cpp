@@ -298,6 +298,7 @@ private:
         auto sites = std::make_unique<ValidatorSite>(env.app(), journal);
 
         std::vector<std::string> uris;
+        uris.reserve(servers.size());
         for (auto const& u : servers)
             uris.push_back(u.uri);
         sites->load(uris);

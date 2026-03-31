@@ -592,6 +592,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -737,6 +738,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -845,6 +847,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(numThreads);
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(lockAndDestroy, i);
