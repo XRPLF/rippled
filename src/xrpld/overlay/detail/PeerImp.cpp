@@ -1357,6 +1357,8 @@ PeerImp::handleTransaction(
 {
     XRPL_TRACE_TX(app_.getTelemetry(), "tx.receive");
     XRPL_TRACE_SET_ATTR("xrpl.peer.id", static_cast<int64_t>(id_));
+    if (auto const version = getVersion(); !version.empty())        // LCOV_EXCL_LINE
+        XRPL_TRACE_SET_ATTR("xrpl.peer.version", version.c_str());  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
