@@ -1,5 +1,4 @@
-#ifndef XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
-#define XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -10,7 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace compression_algorithms {
 
@@ -116,9 +115,7 @@ lz4Decompress(
             compressed.resize(inSize);
         }
 
-        chunkSize = chunkSize < (inSize - copiedInSize)
-            ? chunkSize
-            : (inSize - copiedInSize);
+        chunkSize = chunkSize < (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);
 
         std::copy(chunk, chunk + chunkSize, compressed.data() + copiedInSize);
 
@@ -135,8 +132,7 @@ lz4Decompress(
     if (in.ByteCount() > (currentBytes + copiedInSize))
         in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
 
-    if ((copiedInSize == 0 && chunkSize < inSize) ||
-        (copiedInSize > 0 && copiedInSize != inSize))
+    if ((copiedInSize == 0 && chunkSize < inSize) || (copiedInSize > 0 && copiedInSize != inSize))
         Throw<std::runtime_error>("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
@@ -144,6 +140,4 @@ lz4Decompress(
 
 }  // namespace compression_algorithms
 
-}  // namespace ripple
-
-#endif  // XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+}  // namespace xrpl

@@ -4,16 +4,18 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/ResourceManager.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doBlackList(RPC::JsonContext& context)
 {
     auto& rm = context.app.getResourceManager();
     if (context.params.isMember(jss::threshold))
+    {
         return rm.getJson(context.params[jss::threshold].asInt());
-    else
-        return rm.getJson();
+    }
+
+    return rm.getJson();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

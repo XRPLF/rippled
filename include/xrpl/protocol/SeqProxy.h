@@ -1,10 +1,9 @@
-#ifndef XRPL_PROTOCOL_SEQ_PROXY_H_INCLUDED
-#define XRPL_PROTOCOL_SEQ_PROXY_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A type that represents either a sequence value or a ticket value.
 
@@ -146,6 +145,4 @@ public:
         return os;
     }
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

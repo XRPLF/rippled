@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_OPENVIEW_H_INCLUDED
-#define XRPL_LEDGER_OPENVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -13,7 +12,7 @@
 #include <functional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /** Open ledger construction tag.
 
@@ -73,16 +72,14 @@ private:
         key_type,
         txData,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<
-            std::pair<key_type const, txData>>>;
+        boost::container::pmr::polymorphic_allocator<std::pair<key_type const, txData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
-        monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
     txs_map txs_;
     Rules rules_;
-    LedgerInfo info_;
+    LedgerHeader header_;
     ReadView const* base_;
     detail::RawStateTable items_;
     std::shared_ptr<void const> hold_;
@@ -141,10 +138,7 @@ public:
         Rules const& rules,
         std::shared_ptr<void const> hold = nullptr);
 
-    OpenView(
-        open_ledger_t,
-        Rules const& rules,
-        std::shared_ptr<ReadView const> const& base)
+    OpenView(open_ledger_t, Rules const& rules, std::shared_ptr<ReadView const> const& base)
         : OpenView(open_ledger, &*base, rules, base)
     {
     }
@@ -158,7 +152,7 @@ public:
 
         Effects:
 
-            The LedgerInfo is copied from the base.
+            The LedgerHeader is copied from the base.
 
             The rules are inherited from the base.
 
@@ -188,8 +182,8 @@ public:
 
     // ReadView
 
-    LedgerInfo const&
-    info() const override;
+    LedgerHeader const&
+    header() const override;
 
     Fees const&
     fees() const override;
@@ -201,9 +195,7 @@ public:
     exists(Keylet const& k) const override;
 
     std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const override;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
@@ -252,6 +244,4 @@ public:
         std::shared_ptr<Serializer const> const& metaData) override;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

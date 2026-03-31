@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
-#define XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
@@ -7,7 +6,7 @@
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
-namespace ripple {
+namespace xrpl {
 
 /** The types of node objects. */
 enum NodeObjectType : std::uint32_t {
@@ -43,11 +42,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
     /** Create an object from fields.
 
@@ -81,6 +76,4 @@ private:
     Blob const mData;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

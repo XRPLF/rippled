@@ -1,18 +1,19 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 fillTransaction(
@@ -27,9 +28,7 @@ fillTransaction(
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
     // scaled to represent the current fee load.
-    txArray["Fee"] =
-        scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false)
-            .jsonClipped();
+    txArray["Fee"] = scaleFeeLoad(fees.base, context.app.getFeeTrack(), fees, false).jsonClipped();
 }
 
 // {
@@ -38,7 +37,7 @@ fillTransaction(
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
 //   role: gateway|user             // account role to assume
-//   transactions: true             // optional, reccommend transactions
+//   transactions: true             // optional, recommend transactions
 // }
 Json::Value
 doNoRippleCheck(RPC::JsonContext& context)
@@ -57,12 +56,16 @@ doNoRippleCheck(RPC::JsonContext& context)
     {
         std::string const role = params["role"].asString();
         if (role == "gateway")
+        {
             roleGateway = true;
+        }
         else if (role != "user")
+        {
             return RPC::invalid_field_error("role");
+        }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::noRippleCheck, context))
         return *err;
 
@@ -85,7 +88,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    Json::Value dummy;
+    Json::Value dummy;  // NOLINT(misc-const-correctness)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
@@ -95,7 +98,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);
@@ -104,16 +107,16 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
-    if (bDefaultRipple & !roleGateway)
+    if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {
         problems.append(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
-    else if (roleGateway & !bDefaultRipple)
+    else if ((static_cast<int>(roleGateway) & static_cast<int>(!bDefaultRipple)) != 0)
     {
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
@@ -126,19 +129,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     }
 
     forEachItemAfter(
-        *ledger,
-        accountID,
-        uint256(),
-        0,
-        limit,
-        [&](std::shared_ptr<SLE const> const& ownedItem) {
+        *ledger, accountID, uint256(), 0, limit, [&](std::shared_ptr<SLE const> const& ownedItem) {
             if (ownedItem->getType() == ltRIPPLE_STATE)
             {
-                bool const bLow = accountID ==
-                    ownedItem->getFieldAmount(sfLowLimit).getIssuer();
+                bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
-                bool const bNoRipple = ownedItem->getFieldU32(sfFlags) &
-                    (bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                bool const bNoRipple =
+                    ownedItem->getFieldU32(sfFlags) & (bLow ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;
@@ -149,25 +146,22 @@ doNoRippleCheck(RPC::JsonContext& context)
                 }
                 else if (!roleGateway & !bNoRipple)
                 {
-                    problem =
-                        "You should probably set the no ripple flag on your ";
+                    problem = "You should probably set the no ripple flag on your ";
                     needFix = true;
                 }
                 if (needFix)
                 {
-                    AccountID peer =
-                        ownedItem
-                            ->getFieldAmount(bLow ? sfHighLimit : sfLowLimit)
-                            .getIssuer();
-                    STAmount peerLimit = ownedItem->getFieldAmount(
-                        bLow ? sfHighLimit : sfLowLimit);
+                    AccountID const peer =
+                        ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit).getIssuer();
+                    STAmount const peerLimit =
+                        ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());
                     problems.append(problem);
 
-                    STAmount limitAmount(ownedItem->getFieldAmount(
-                        bLow ? sfLowLimit : sfHighLimit));
+                    STAmount limitAmount(
+                        ownedItem->getFieldAmount(bLow ? sfLowLimit : sfHighLimit));
                     limitAmount.setIssuer(peer);
 
                     Json::Value& tx = jvTransactions.append(Json::objectValue);
@@ -185,4 +179,4 @@ doNoRippleCheck(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

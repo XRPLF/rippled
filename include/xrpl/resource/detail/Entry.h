@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_ENTRY_H_INCLUDED
-#define XRPL_RESOURCE_ENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -8,7 +7,7 @@
 #include <xrpl/resource/detail/Key.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
@@ -23,11 +22,7 @@ struct Entry : public beast::List<Entry>::Node
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0)
-        , local_balance(now)
-        , remote_balance(0)
-        , lastWarningTime()
-        , whenExpires()
+        : refcount(0), local_balance(now), remote_balance(0), lastWarningTime(), whenExpires()
     {
     }
 
@@ -93,6 +88,4 @@ operator<<(std::ostream& os, Entry const& v)
 }
 
 }  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

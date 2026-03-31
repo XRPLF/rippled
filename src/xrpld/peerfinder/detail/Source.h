@@ -1,11 +1,10 @@
-#ifndef XRPL_PEERFINDER_SOURCE_H_INCLUDED
-#define XRPL_PEERFINDER_SOURCE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
 #include <boost/system/error_code.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** A static or dynamic source of peer addresses.
@@ -45,6 +44,4 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

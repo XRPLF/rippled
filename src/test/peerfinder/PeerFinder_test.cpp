@@ -9,7 +9,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 class PeerFinder_test : public beast::unit_test::suite
@@ -65,8 +65,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer(
-            "test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -81,8 +80,8 @@ public:
             {
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
-                BEAST_EXPECT(logic.onConnected(
-                    slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
+                BEAST_EXPECT(
+                    logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
                 logic.on_closed(slot);
                 ++n;
             }
@@ -103,8 +102,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer(
-            "test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -122,13 +120,10 @@ public:
             {
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
-                if (!BEAST_EXPECT(logic.onConnected(
-                        slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
-                    return;
-                std::string s = ".";
                 if (!BEAST_EXPECT(
-                        logic.activate(slot, pk, false) ==
-                        PeerFinder::Result::success))
+                        logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
+                    return;
+                if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
                     return;
                 logic.on_closed(slot);
                 ++n;
@@ -224,18 +219,18 @@ public:
         }
 
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
-        auto const [slot, r] = logic.new_inbound_slot(
-            local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, r] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(r == Result::success);
 
-        auto const [slot1, r1] = logic.new_inbound_slot(
-            local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot1, r1] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot1 != nullptr);
         BEAST_EXPECT(r1 == Result::success);
 
-        auto const [slot2, r2] = logic.new_inbound_slot(
-            local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
+        auto const [slot2, r2] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
         BEAST_EXPECT(r2 == Result::ipLimitExceeded);
 
         if (!BEAST_EXPECT(slot2 == nullptr))
@@ -264,13 +259,13 @@ public:
 
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
 
-        auto const [slot, rSlot] = logic.new_outbound_slot(
-            beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, rSlot] =
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
-        auto const [slot2, r2Slot] = logic.new_outbound_slot(
-            beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot2, r2Slot] =
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -280,8 +275,7 @@ public:
         BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
 
         // activating a different slot with the same node ID (pk) must fail
-        BEAST_EXPECT(
-            logic.activate(slot2, pk1, false) == Result::duplicatePeer);
+        BEAST_EXPECT(logic.activate(slot2, pk1, false) == Result::duplicatePeer);
 
         logic.on_closed(slot);
 
@@ -309,13 +303,12 @@ public:
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
         auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
 
-        auto const [slot, rSlot] = logic.new_inbound_slot(
-            local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+        auto const [slot, rSlot] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
-        BEAST_EXPECT(
-            logic.activate(slot, pk1, false) == Result::inboundDisabled);
+        BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::inboundDisabled);
 
         {
             Config c;
@@ -329,8 +322,8 @@ public:
         BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
 
         // creating a new inbound slot must succeed as IP Limit is not exceeded
-        auto const [slot2, r2Slot] = logic.new_inbound_slot(
-            local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+        auto const [slot2, r2Slot] =
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -353,8 +346,7 @@ public:
         Logic<TestChecker> logic(clock, store, checker, journal_);
         try
         {
-            logic.addFixedPeer(
-                "test", beast::IP::Endpoint::from_string("65.0.0.2"));
+            logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.2"));
             fail("invalid endpoint successfully added");
         }
         catch (std::runtime_error const& e)
@@ -395,33 +387,31 @@ public:
                        std::uint16_t expectOut,
                        std::uint16_t expectIn,
                        std::uint16_t expectIpLimit) {
-            ripple::Config c;
+            xrpl::Config c;
 
             testcase(test);
 
-            std::string toLoad = "";
+            std::string toLoad;
             int max = 0;
             if (maxPeers)
             {
                 max = maxPeers.value();
-                toLoad += "[peers_max]\n" + std::to_string(max) + "\n" +
-                    "[peers_in_max]\n" + std::to_string(maxIn.value_or(0)) +
-                    "\n" + "[peers_out_max]\n" +
+                toLoad += "[peers_max]\n" + std::to_string(max) + "\n" + "[peers_in_max]\n" +
+                    std::to_string(maxIn.value_or(0)) + "\n" + "[peers_out_max]\n" +
                     std::to_string(maxOut.value_or(0)) + "\n";
             }
             else if (maxIn && maxOut)
             {
-                toLoad += "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" +
-                    "[peers_out_max]\n" + std::to_string(*maxOut) + "\n";
+                toLoad += "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" + "[peers_out_max]\n" +
+                    std::to_string(*maxOut) + "\n";
             }
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(
-                (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 &&
-                 c.PEERS_OUT_MAX == 0) ||
+                (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0);
+            Config const config = Config::makeConfig(c, port, false, 0);
 
             Counts counts;
             counts.onConfig(config);
@@ -468,7 +458,7 @@ public:
         testcase("invalid config");
 
         auto run = [&](std::string const& toLoad) {
-            ripple::Config c;
+            xrpl::Config c;
             try
             {
                 c.loadFromString(toLoad);
@@ -524,7 +514,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, ripple);
+BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, xrpl);
 
 }  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl

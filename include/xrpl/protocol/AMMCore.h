@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_AMMCORE_H_INCLUDED
-#define XRPL_PROTOCOL_AMMCORE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
@@ -7,7 +6,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
 
@@ -37,10 +36,7 @@ ammLPTCurrency(Currency const& cur1, Currency const& cur2);
 /** Calculate LPT Issue from AMM asset pair.
  */
 Issue
-ammLPTIssue(
-    Currency const& cur1,
-    Currency const& cur2,
-    AccountID const& ammAccountID);
+ammLPTIssue(Currency const& cur1, Currency const& cur2, AccountID const& ammAccountID);
 
 /** Validate the amount.
  * If validZero is false and amount is beast::zero then invalid amount.
@@ -102,6 +98,4 @@ feeMultHalf(std::uint16_t tfee)
     return 1 - getFee(tfee) / 2;
 }
 
-}  // namespace ripple
-
-#endif  // XRPL_PROTOCOL_AMMCORE_H_INCLUDED
+}  // namespace xrpl

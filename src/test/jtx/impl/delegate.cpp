@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -45,4 +45,4 @@ entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
 }  // namespace delegate
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

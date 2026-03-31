@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -55,7 +55,7 @@ public:
         packed_spinlock sl(locks_, index % 64);
 
         {
-            std::lock_guard lock(sl);
+            std::lock_guard const lock(sl);
 
             // The check against the first character of the encoding ensures
             // that we don't mishandle the case of the all-zero account:
@@ -63,15 +63,12 @@ public:
                 return cache_[index].encoding;
         }
 
-        auto ret =
-            encodeBase58Token(TokenType::AccountID, id.data(), id.size());
+        auto ret = encodeBase58Token(TokenType::AccountID, id.data(), id.size());
 
-        XRPL_ASSERT(
-            ret.size() <= 38,
-            "ripple::detail::AccountIdCache : maximum result size");
+        XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
-            std::lock_guard lock(sl);
+            std::lock_guard const lock(sl);
             cache_[index].id = id;
             std::strcpy(cache_[index].encoding, ret.c_str());
         }
@@ -181,4 +178,4 @@ to_issuer(AccountID& issuer, std::string const& s)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

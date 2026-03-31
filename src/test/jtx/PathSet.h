@@ -1,12 +1,12 @@
-#ifndef XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
-#define XRPL_LEDGER_TESTS_PATHSET_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** Count offer
@@ -19,13 +19,11 @@ countOffers(
     Issue const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
-                sle->getFieldAmount(sfTakerGets).issue() == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
+            sle->getFieldAmount(sfTakerGets).issue() == takerGets)
+            ++count;
+    });
     return count;
 }
 
@@ -37,13 +35,11 @@ countOffers(
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(
-        *env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == ltOFFER &&
-                sle->getFieldAmount(sfTakerPays) == takerPays &&
-                sle->getFieldAmount(sfTakerGets) == takerGets)
-                ++count;
-        });
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
+            sle->getFieldAmount(sfTakerGets) == takerGets)
+            ++count;
+    });
     return count;
 }
 
@@ -62,11 +58,7 @@ isOffer(
 /** An offer exists
  */
 inline bool
-isOffer(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+isOffer(jtx::Env& env, jtx::Account const& account, Issue const& takerPays, Issue const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
@@ -182,6 +174,4 @@ private:
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

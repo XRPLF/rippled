@@ -1,5 +1,4 @@
-#ifndef BEAST_RANDOM_RNGFILL_H_INCLUDED
-#define BEAST_RANDOM_RNGFILL_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -51,5 +50,3 @@ rngfill(std::array<std::uint8_t, N>& a, Generator& g)
 }
 
 }  // namespace beast
-
-#endif

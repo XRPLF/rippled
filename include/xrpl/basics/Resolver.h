@@ -1,18 +1,16 @@
-#ifndef XRPL_BASICS_RESOLVER_H_INCLUDED
-#define XRPL_BASICS_RESOLVER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Resolver
 {
 public:
-    using HandlerType =
-        std::function<void(std::string, std::vector<beast::IP::Endpoint>)>;
+    using HandlerType = std::function<void(std::string, std::vector<beast::IP::Endpoint>)>;
 
     virtual ~Resolver() = 0;
 
@@ -41,12 +39,8 @@ public:
     }
 
     virtual void
-    resolve(
-        std::vector<std::string> const& names,
-        HandlerType const& handler) = 0;
+    resolve(std::vector<std::string> const& names, HandlerType const& handler) = 0;
     /** @} */
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

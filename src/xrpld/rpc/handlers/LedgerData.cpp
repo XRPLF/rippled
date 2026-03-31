@@ -11,7 +11,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Get state nodes from a ledger
 //   Inputs:
@@ -59,14 +59,14 @@ doLedgerData(RPC::JsonContext& context)
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
-    jvResult[jss::ledger_hash] = to_string(lpLedger->info().hash);
-    jvResult[jss::ledger_index] = lpLedger->info().seq;
+    jvResult[jss::ledger_hash] = to_string(lpLedger->header().hash);
+    jvResult[jss::ledger_index] = lpLedger->header().seq;
 
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] = getJson(LedgerFill(
-            *lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
+        jvResult[jss::ledger] =
+            getJson(LedgerFill(*lpLedger, &context, isBinary ? LedgerFill::Options::binary : 0));
     }
 
     auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
@@ -104,8 +104,7 @@ doLedgerData(RPC::JsonContext& context)
             }
             else
             {
-                Json::Value& entry =
-                    nodes.append(sle->getJson(JsonOptions::none));
+                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::none));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -115,12 +114,11 @@ doLedgerData(RPC::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(
-    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
-    org::xrpl::rpc::v1::GetLedgerDataRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -128,13 +126,11 @@ doLedgerDataGrpc(
         grpc::Status errorStatus;
         if (status.toErrorCode() == rpcINVALID_PARAMS)
         {
-            errorStatus = grpc::Status(
-                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
         else
         {
-            errorStatus =
-                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
         }
         return {response, errorStatus};
     }
@@ -144,28 +140,22 @@ doLedgerDataGrpc(
     {
         startKey = *key;
     }
-    else if (request.marker().size() != 0)
+    else if (!request.marker().empty())
     {
-        grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
+        grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
         return {response, errorStatus};
     }
 
     auto e = ledger->sles.end();
-    if (request.end_marker().size() != 0)
+    if (!request.end_marker().empty())
     {
         auto const key = uint256::fromVoidChecked(request.end_marker());
 
         if (!key)
-            return {
-                response,
-                {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
+            return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
 
         if (*key < startKey)
-            return {
-                response,
-                {grpc::StatusCode::INVALID_ARGUMENT,
-                 "end marker out of range"}};
+            return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker out of range"}};
 
         e = ledger->sles.upper_bound(*key);
     }
@@ -192,4 +182,4 @@ doLedgerDataGrpc(
     return {response, status};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

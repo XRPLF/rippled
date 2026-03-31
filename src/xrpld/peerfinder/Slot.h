@@ -1,12 +1,11 @@
-#ifndef XRPL_PEERFINDER_SLOT_H_INCLUDED
-#define XRPL_PEERFINDER_SLOT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Properties and state associated with a peer to peer overlay connection. */
@@ -60,6 +59,4 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -18,8 +18,8 @@ void
 ManagerImp::missing_backend()
 {
     Throw<std::runtime_error>(
-        "Your rippled.cfg is missing a [node_db] entry, "
-        "please see the rippled-example.cfg file!");
+        "Your xrpld.cfg is missing a [node_db] entry, "
+        "please see the xrpld-example.cfg file!");
 }
 
 // We shouldn't rely on global variables for lifetime management because their
@@ -55,13 +55,12 @@ ManagerImp::make_Backend(
         missing_backend();
 
     auto factory{find(type)};
-    if (!factory)
+    if (factory == nullptr)
     {
         missing_backend();
     }
 
-    return factory->createInstance(
-        NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
+    return factory->createInstance(NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
@@ -81,32 +80,27 @@ ManagerImp::make_Database(
 void
 ManagerImp::insert(Factory& factory)
 {
-    std::lock_guard _(mutex_);
+    std::lock_guard const _(mutex_);
     list_.push_back(&factory);
 }
 
 void
 ManagerImp::erase(Factory& factory)
 {
-    std::lock_guard _(mutex_);
-    auto const iter =
-        std::find_if(list_.begin(), list_.end(), [&factory](Factory* other) {
-            return other == &factory;
-        });
-    XRPL_ASSERT(
-        iter != list_.end(),
-        "ripple::NodeStore::ManagerImp::erase : valid input");
+    std::lock_guard const _(mutex_);
+    auto const iter = std::find_if(
+        list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
+    XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
 Factory*
 ManagerImp::find(std::string const& name)
 {
-    std::lock_guard _(mutex_);
-    auto const iter =
-        std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
-            return boost::iequals(name, other->getName());
-        });
+    std::lock_guard const _(mutex_);
+    auto const iter = std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
+        return boost::iequals(name, other->getName());
+    });
     if (iter == list_.end())
         return nullptr;
     return *iter;
@@ -121,4 +115,4 @@ Manager::instance()
 }
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

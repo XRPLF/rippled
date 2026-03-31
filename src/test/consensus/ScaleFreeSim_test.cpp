@@ -5,7 +5,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class ScaleFreeSim_test : public beast::unit_test::suite
@@ -41,8 +41,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
             sim.rng);
 
         // nodes with a trust line in either direction are network-connected
-        network.connectFromTrust(
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+        network.connectFromTrust(round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;
@@ -56,14 +55,13 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler, seconds(10s));
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
         Rate const rate{100, 1000ms};
 
         // txs, start/stop/step, target
-        auto peerSelector =
-            makeSelector(network.begin(), network.end(), ranks, sim.rng);
+        auto peerSelector = makeSelector(network.begin(), network.end(), ranks, sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now() + quiet,
@@ -82,12 +80,10 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // TODO: Clean up this formatting mess!!
 
         log << "Peers: " << network.size() << std::endl;
-        log << "Simulated Duration: "
-            << duration_cast<milliseconds>(simDuration).count() << " ms"
+        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms"
             << std::endl;
         log << "Branches: " << sim.branches() << std::endl;
-        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N")
-            << std::endl;
+        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
         log << std::endl;
 
         txCollector.report(simDuration, log);
@@ -100,7 +96,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, ripple, 80);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, xrpl, 80);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

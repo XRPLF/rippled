@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -14,11 +14,15 @@ fee::operator()(Env& env, JTx& jt) const
     jt.fill_fee = false;
     assert(!increment_ || !amount_);
     if (increment_)
+    {
         jt[sfFee] = STAmount(env.current()->fees().increment).getJson();
+    }
     else if (amount_)
+    {
         jt[sfFee] = amount_->getJson(JsonOptions::none);
+    }
 }
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

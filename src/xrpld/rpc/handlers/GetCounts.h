@@ -1,15 +1,10 @@
-#ifndef XRPL_RPC_HANDLERS_GETCOUNTS_H_INCLUDED
-#define XRPL_RPC_HANDLERS_GETCOUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/json/Object.h>
-
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 getCountsJson(Application& app, int minObjectCount);
 
-}
-
-#endif
+}  // namespace xrpl

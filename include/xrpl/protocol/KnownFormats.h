@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
@@ -10,7 +9,7 @@
 #include <algorithm>
 #include <forward_list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages a list of known formats.
 
@@ -31,14 +30,15 @@ public:
         Item(
             char const* name,
             KeyType type,
-            std::initializer_list<SOElement> uniqueFields,
-            std::initializer_list<SOElement> commonFields)
-            : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
+            std::vector<SOElement> uniqueFields,
+            std::vector<SOElement> commonFields)
+            : soTemplate_(std::move(uniqueFields), std::move(commonFields))
+            , name_(name)
+            , type_(type)
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value ||
-                    std::is_integral<KeyType>::value,
+                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -144,25 +144,25 @@ protected:
 
         @param name The name of this format.
         @param type The type of this format.
-        @param uniqueFields An std::initializer_list of unique fields
-        @param commonFields An std::initializer_list of common fields
+        @param uniqueFields A std::vector of unique fields
+        @param commonFields A std::vector of common fields
 
         @return The created format.
     */
     Item const&
     add(char const* name,
         KeyType type,
-        std::initializer_list<SOElement> uniqueFields,
-        std::initializer_list<SOElement> commonFields = {})
+        std::vector<SOElement> uniqueFields,
+        std::vector<SOElement> commonFields = {})
     {
         if (auto const item = findByType(type))
         {
             LogicError(
-                std::string("Duplicate key for item '") + name +
-                "': already maps to " + item->getName());
+                std::string("Duplicate key for item '") + name + "': already maps to " +
+                item->getName());
         }
 
-        formats_.emplace_front(name, type, uniqueFields, commonFields);
+        formats_.emplace_front(name, type, std::move(uniqueFields), std::move(commonFields));
         Item const& item{formats_.front()};
 
         names_[name] = &item;
@@ -183,6 +183,4 @@ private:
     boost::container::flat_map<KeyType, Item const*> types_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

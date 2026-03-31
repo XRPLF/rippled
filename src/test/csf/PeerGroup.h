@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
-#define XRPL_TEST_CSF_PEERGROUP_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/random.h>
@@ -7,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -193,7 +192,7 @@ public:
     /** Establish network connections based on trust relations
 
         For each peers in this group, create outbound network connection
-        to the set of peers it trusts. If a coonnection already exists, it is
+        to the set of peers it trusts. If a connection already exists, it is
         not recreated.
 
         @param delay The fixed messaging delay for all established connections
@@ -313,10 +312,9 @@ randomRankedTrust(
     RandomNumberDistribution sizeDist,
     Generator& g)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])
@@ -338,10 +336,9 @@ randomRankedConnect(
     Generator& g,
     SimDuration delay)
 {
-    std::vector<PeerGroup> const groups =
-        randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])
@@ -351,5 +348,4 @@ randomRankedConnect(
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-#endif
+}  // namespace xrpl

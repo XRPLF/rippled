@@ -1,5 +1,4 @@
-#ifndef PROTOCOL_UNITS_H_INCLUDED
-#define PROTOCOL_UNITS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -13,7 +12,7 @@
 #include <limits>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unit {
 
@@ -55,8 +54,8 @@ concept Usable = Valid<T> &&
      std::is_same_v<typename T::unit_type, TenthBipsTag>);
 
 template <class Other, class VU>
-concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> &&
-    std::is_arithmetic_v<typename VU::value_type> &&
+concept Compatible =
+    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
 template <class T>
@@ -221,8 +220,7 @@ public:
     ValueUnit
     operator-() const
     {
-        static_assert(
-            std::is_signed_v<T>, "- operator illegal on unsigned value types");
+        static_assert(std::is_signed_v<T>, "- operator illegal on unsigned value types");
         return ValueUnit{-value_};
     }
 
@@ -297,10 +295,8 @@ public:
     {
         if constexpr (std::is_integral_v<value_type>)
         {
-            using jsontype = std::conditional_t<
-                std::is_signed_v<value_type>,
-                Json::Int,
-                Json::UInt>;
+            using jsontype =
+                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
 
             constexpr auto min = std::numeric_limits<jsontype>::min();
             constexpr auto max = std::numeric_limits<jsontype>::max();
@@ -351,8 +347,8 @@ to_string(ValueUnit<UnitTag, T> const& amount)
 }
 
 template <class Source>
-concept muldivSource = Valid<Source> &&
-    std::is_convertible_v<typename Source::value_type, std::uint64_t>;
+concept muldivSource =
+    Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
@@ -387,12 +383,9 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        XRPL_ASSERT(
-            value.value() >= 0, "ripple::unit::mulDivU : minimum value input");
-        XRPL_ASSERT(
-            mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
-        XRPL_ASSERT(
-            div.value() > 0, "ripple::unit::mulDivU : minimum div input");
+        XRPL_ASSERT(value.value() >= 0, "xrpl::unit::mulDivU : minimum value input");
+        XRPL_ASSERT(mul.value() >= 0, "xrpl::unit::mulDivU : minimum mul input");
+        XRPL_ASSERT(div.value() > 0, "xrpl::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
@@ -450,10 +443,7 @@ mulDiv(Source1 value, Dest mul, Source2 div)
     return unit::mulDivU(value, mul, div);
 }
 
-template <
-    class Source1,
-    class Source2,
-    unit::muldivCommutable<Source1, Source2> Dest>
+template <class Source1, class Source2, unit::muldivCommutable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
@@ -532,6 +522,4 @@ unsafe_cast(Src s) noexcept
     return Dest{unsafe_cast<typename Dest::value_type>(s)};
 }
 
-}  // namespace ripple
-
-#endif  // PROTOCOL_UNITS_H_INCLUDED
+}  // namespace xrpl

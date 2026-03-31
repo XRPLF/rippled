@@ -22,7 +22,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 defaultObject_t defaultObject;
@@ -60,10 +60,14 @@ STVar::operator=(STVar const& rhs)
     if (&rhs != this)
     {
         destroy();
-        if (rhs.p_)
+        if (rhs.p_ != nullptr)
+        {
             p_ = rhs.p_->copy(max_size, &d_);
+        }
         else
+        {
             p_ = nullptr;
+        }
     }
 
     return *this;
@@ -93,8 +97,7 @@ STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar(nonPresentObject_t, SField const& name)
-    : STVar(STI_NOTPRESENT, name)
+STVar::STVar(nonPresentObject_t, SField const& name) : STVar(STI_NOTPRESENT, name)
 {
 }
 
@@ -109,7 +112,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 {
     XRPL_ASSERT(
         (id == STI_NOTPRESENT) || (id == name.fieldType),
-        "ripple::detail::STVar::STVar(SerializedTypeID) : valid type input");
+        "xrpl::detail::STVar::STVar(SerializedTypeID) : valid type input");
     constructST(id, 0, name);
 }
 
@@ -117,9 +120,13 @@ void
 STVar::destroy()
 {
     if (on_heap())
+    {
         delete p_;
+    }
     else
+    {
         p_->~STBase();
+    }
 
     p_ = nullptr;
 }
@@ -130,22 +137,19 @@ void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
     auto constructWithDepth = [&]<typename T>() {
-        if constexpr (std::is_same_v<
-                          std::tuple<std::remove_cvref_t<Args>...>,
-                          std::tuple<SField>>)
+        if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {
             construct<T>(std::forward<Args>(args)...);
         }
-        else if constexpr (std::is_same_v<
-                               std::tuple<std::remove_cvref_t<Args>...>,
-                               std::tuple<SerialIter, SField>>)
+        else if constexpr (
+            std::
+                is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>)
         {
             construct<T>(std::forward<Args>(args)..., depth);
         }
         else
         {
-            constexpr bool alwaysFalse =
-                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            constexpr bool alwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
             static_assert(alwaysFalse, "Invalid STVar constructor arguments");
         }
     };
@@ -154,8 +158,7 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     {
         case STI_NOTPRESENT: {
             // Last argument is always SField
-            SField const& field =
-                std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
+            SField const& field = std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
             construct<STBase>(field);
             return;
         }
@@ -225,4 +228,4 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 }
 
 }  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl

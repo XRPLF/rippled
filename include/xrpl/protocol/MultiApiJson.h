@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_MULTIAPIJSON_H_INCLUDED
-#define XRPL_JSON_MULTIAPIJSON_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -12,7 +11,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 template <typename T>
@@ -84,11 +83,7 @@ struct MultiApiJson
     static constexpr struct visitor_t final
     {
         // integral_constant version, extra arguments
-        template <
-            typename Json,
-            unsigned int Version,
-            typename... Args,
-            typename Fn>
+        template <typename Json, unsigned int Version, typename... Args, typename Fn>
             requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
         operator()(
@@ -102,66 +97,47 @@ struct MultiApiJson
                 std::integral_constant<unsigned int, Version>,
                 Args&&...>
         {
-            static_assert(
-                valid(Version) && index(Version) >= 0 && index(Version) < size);
-            return std::invoke(
-                fn,
-                json.val[index(Version)],
-                version,
-                std::forward<Args>(args)...);
+            static_assert(valid(Version) && index(Version) >= 0 && index(Version) < size);
+            return std::invoke(fn, json.val[index(Version)], version, std::forward<Args>(args)...);
         }
 
         // integral_constant version, Json only
         template <typename Json, unsigned int Version, typename Fn>
             requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
-        operator()(
-            Json& json,
-            std::integral_constant<unsigned int, Version> const,
-            Fn fn) const -> std::invoke_result_t<Fn, decltype(json.val[0])>
+        operator()(Json& json, std::integral_constant<unsigned int, Version> const, Fn fn) const
+            -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
-            static_assert(
-                valid(Version) && index(Version) >= 0 && index(Version) < size);
+            static_assert(valid(Version) && index(Version) >= 0 && index(Version) < size);
             return std::invoke(fn, json.val[index(Version)]);
         }
 
         // unsigned int version, extra arguments
-        template <
-            typename Json,
-            typename Version,
-            typename... Args,
-            typename Fn>
-            requires(!some_integral_constant<Version>) &&
-                        std::convertible_to<Version, unsigned> &&
-                        std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+        template <typename Json, typename Version, typename... Args, typename Fn>
+            requires(!some_integral_constant<Version>) && std::convertible_to<Version, unsigned> &&
+            std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
         operator()(Json& json, Version version, Fn fn, Args&&... args) const
-            -> std::
-                invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
+            -> std::invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < size,
-                "ripple::detail::MultiApiJson::operator<Args...>() : valid "
+                "xrpl::detail::MultiApiJson::operator<Args...>() : valid "
                 "version");
-            return std::invoke(
-                fn,
-                json.val[index(version)],
-                version,
-                std::forward<Args>(args)...);
+            return std::invoke(fn, json.val[index(version)], version, std::forward<Args>(args)...);
         }
 
         // unsigned int version, Json only
         template <typename Json, typename Version, typename Fn>
-            requires(!some_integral_constant<Version>) &&
-                        std::convertible_to<Version, unsigned> &&
-                        std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+            requires(!some_integral_constant<Version>) && std::convertible_to<Version, unsigned> &&
+            std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
         auto
         operator()(Json& json, Version version, Fn fn) const
             -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
             XRPL_ASSERT(
                 valid(version) && index(version) >= 0 && index(version) < size,
-                "ripple::detail::MultiApiJson::operator() : valid version");
+                "xrpl::detail::MultiApiJson::operator() : valid version");
             return std::invoke(fn, json.val[index(version)]);
         }
     } visitor = {};
@@ -171,9 +147,7 @@ struct MultiApiJson
     {
         return [self = this](auto... args)
             requires requires {
-                visitor(
-                    std::declval<MultiApiJson&>(),
-                    std::declval<decltype(args)>()...);
+                visitor(std::declval<MultiApiJson&>(), std::declval<decltype(args)>()...);
             }
         { return visitor(*self, std::forward<decltype(args)>(args)...); };
     }
@@ -183,17 +157,14 @@ struct MultiApiJson
     {
         return [self = this](auto... args)
             requires requires {
-                visitor(
-                    std::declval<MultiApiJson const&>(),
-                    std::declval<decltype(args)>()...);
+                visitor(std::declval<MultiApiJson const&>(), std::declval<decltype(args)>()...);
             }
         { return visitor(*self, std::forward<decltype(args)>(args)...); };
     }
 
     template <typename... Args>
     auto
-    visit(Args... args)
-        -> std::invoke_result_t<visitor_t, MultiApiJson&, Args...>
+    visit(Args... args) -> std::invoke_result_t<visitor_t, MultiApiJson&, Args...>
         requires(sizeof...(args) > 0) &&
         requires { visitor(*this, std::forward<decltype(args)>(args)...); }
     {
@@ -202,8 +173,7 @@ struct MultiApiJson
 
     template <typename... Args>
     auto
-    visit(Args... args) const
-        -> std::invoke_result_t<visitor_t, MultiApiJson const&, Args...>
+    visit(Args... args) const -> std::invoke_result_t<visitor_t, MultiApiJson const&, Args...>
         requires(sizeof...(args) > 0) &&
         requires { visitor(*this, std::forward<decltype(args)>(args)...); }
     {
@@ -214,9 +184,7 @@ struct MultiApiJson
 }  // namespace detail
 
 // Wrapper for Json for all supported API versions.
-using MultiApiJson = detail::
-    MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
+using MultiApiJson =
+    detail::MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

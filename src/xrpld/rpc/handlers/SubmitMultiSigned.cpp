@@ -5,7 +5,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   SigningAccounts <array>,
@@ -28,4 +28,4 @@ doSubmitMultiSigned(RPC::JsonContext& context)
         RPC::getProcessTxnFn(context.netOps));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

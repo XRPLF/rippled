@@ -1,13 +1,13 @@
 #include <xrpl/basics/contract.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <stdexcept>
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 
-TEST_CASE("contract")
+TEST(contract, contract)
 {
     try
     {
@@ -15,7 +15,7 @@ TEST_CASE("contract")
     }
     catch (std::runtime_error const& e1)
     {
-        CHECK(std::string(e1.what()) == "Throw test");
+        EXPECT_STREQ(e1.what(), "Throw test");
 
         try
         {
@@ -23,15 +23,15 @@ TEST_CASE("contract")
         }
         catch (std::runtime_error const& e2)
         {
-            CHECK(std::string(e2.what()) == "Throw test");
+            EXPECT_STREQ(e2.what(), "Throw test");
         }
         catch (...)
         {
-            CHECK(false);
+            FAIL() << "std::runtime_error should have been re-caught";
         }
     }
     catch (...)
     {
-        CHECK(false);
+        FAIL() << "std::runtime_error should have been caught the first time";
     }
 }

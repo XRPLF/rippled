@@ -18,7 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STXChainBridge::STXChainBridge() : STBase{sfXChainBridge}
 {
@@ -50,13 +50,11 @@ STXChainBridge::STXChainBridge(STObject const& o)
 {
 }
 
-STXChainBridge::STXChainBridge(Json::Value const& v)
-    : STXChainBridge{sfXChainBridge, v}
+STXChainBridge::STXChainBridge(Json::Value const& v) : STXChainBridge{sfXChainBridge, v}
 {
 }
 
-STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v)
-    : STBase{name}
+STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBase{name}
 {
     if (!v.isObject())
     {
@@ -65,15 +63,13 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v)
     }
 
     auto checkExtra = [](Json::Value const& v) {
-        static auto const jbridge =
-            ripple::STXChainBridge().getJson(ripple::JsonOptions::none);
+        static auto const bridgeJson = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::none);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();
-            if (!jbridge.isMember(name))
+            if (!bridgeJson.isMember(name))
             {
-                Throw<std::runtime_error>(
-                    "STXChainBridge extra field detected: " + name);
+                Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
             }
         }
         return true;
@@ -87,36 +83,28 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v)
 
     if (!lockingChainDoorStr.isString())
     {
-        Throw<std::runtime_error>(
-            "STXChainBridge LockingChainDoor must be a string Json value");
+        Throw<std::runtime_error>("STXChainBridge LockingChainDoor must be a string Json value");
     }
     if (!issuingChainDoorStr.isString())
     {
-        Throw<std::runtime_error>(
-            "STXChainBridge IssuingChainDoor must be a string Json value");
+        Throw<std::runtime_error>("STXChainBridge IssuingChainDoor must be a string Json value");
     }
 
-    auto const lockingChainDoor =
-        parseBase58<AccountID>(lockingChainDoorStr.asString());
-    auto const issuingChainDoor =
-        parseBase58<AccountID>(issuingChainDoorStr.asString());
+    auto const lockingChainDoor = parseBase58<AccountID>(lockingChainDoorStr.asString());
+    auto const issuingChainDoor = parseBase58<AccountID>(issuingChainDoorStr.asString());
     if (!lockingChainDoor)
     {
-        Throw<std::runtime_error>(
-            "STXChainBridge LockingChainDoor must be a valid account");
+        Throw<std::runtime_error>("STXChainBridge LockingChainDoor must be a valid account");
     }
     if (!issuingChainDoor)
     {
-        Throw<std::runtime_error>(
-            "STXChainBridge IssuingChainDoor must be a valid account");
+        Throw<std::runtime_error>("STXChainBridge IssuingChainDoor must be a valid account");
     }
 
     lockingChainDoor_ = STAccount{sfLockingChainDoor, *lockingChainDoor};
-    lockingChainIssue_ =
-        STIssue{sfLockingChainIssue, issueFromJson(lockingChainIssue)};
+    lockingChainIssue_ = STIssue{sfLockingChainIssue, issueFromJson(lockingChainIssue)};
     issuingChainDoor_ = STAccount{sfIssuingChainDoor, *issuingChainDoor};
-    issuingChainIssue_ =
-        STIssue{sfIssuingChainIssue, issueFromJson(issuingChainIssue)};
+    issuingChainIssue_ = STIssue{sfIssuingChainIssue, issueFromJson(issuingChainIssue)};
 }
 
 STXChainBridge::STXChainBridge(SerialIter& sit, SField const& name)
@@ -152,11 +140,10 @@ std::string
 STXChainBridge::getText() const
 {
     return str(
-        boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") %
-        sfLockingChainDoor.getName() % lockingChainDoor_.getText() %
-        sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
-        sfIssuingChainDoor.getName() % issuingChainDoor_.getText() %
-        sfIssuingChainIssue.getName() % issuingChainIssue_.getText());
+        boost::format("{ %s = %s, %s = %s, %s = %s, %s = %s }") % sfLockingChainDoor.getName() %
+        lockingChainDoor_.getText() % sfLockingChainIssue.getName() % lockingChainIssue_.getText() %
+        sfIssuingChainDoor.getName() % issuingChainDoor_.getText() % sfIssuingChainIssue.getName() %
+        issuingChainIssue_.getText());
 }
 
 STObject
@@ -180,7 +167,7 @@ bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
     STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool
@@ -207,4 +194,4 @@ STXChainBridge::move(std::size_t n, void* buf)
 {
     return emplace(n, buf, std::move(*this));
 }
-}  // namespace ripple
+}  // namespace xrpl

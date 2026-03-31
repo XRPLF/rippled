@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
+namespace xrpl {
 
 class SetRegularKey_test : public beast::unit_test::suite
 {
@@ -28,9 +28,7 @@ public:
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         testcase("Re-enable master key");
-        env(fclear(alice, asfDisableMaster),
-            sig(alice),
-            ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
 
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(bob));
@@ -68,16 +66,14 @@ public:
 
         auto ar = env.le(alice);
         BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) &&
-            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
 
         env(regkey(alice, bob), sig(alice), fee(0));
 
         ar = env.le(alice);
         BEAST_EXPECT(
             ar->isFieldPresent(sfFlags) &&
-            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) ==
-             lsfPasswordSpent));
+            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == lsfPasswordSpent));
 
         // The second SetRegularKey transaction with Fee=0 should fail.
         env(regkey(alice, bob), sig(alice), fee(0), ter(telINSUF_FEE_P));
@@ -86,8 +82,7 @@ public:
         env(pay(bob, alice, bob["USD"](1)));
         ar = env.le(alice);
         BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) &&
-            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
     }
 
     void
@@ -128,9 +123,7 @@ public:
         env.close();
 
         // Disable alice's master key using a ticket.
-        env(fset(alice, asfDisableMaster),
-            sig(alice),
-            ticket::use(--ticketSeq));
+        env(fset(alice, asfDisableMaster), sig(alice), ticket::use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the regular key but not the
@@ -142,9 +135,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Re-enable the master key using a ticket.
-        env(fclear(alice, asfDisableMaster),
-            sig(alie),
-            ticket::use(--ticketSeq));
+        env(fclear(alice, asfDisableMaster), sig(alie), ticket::use(--ticketSeq));
         env.close();
 
         // Disable the regular key using a ticket.
@@ -169,6 +160,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetRegularKey, app, ripple);
+BEAST_DEFINE_TESTSUITE(SetRegularKey, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

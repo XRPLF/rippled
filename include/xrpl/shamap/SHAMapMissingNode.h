@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -9,7 +8,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 enum class SHAMapType {
     TRANSACTION = 1,  // A tree of transactions
@@ -29,8 +28,7 @@ to_string(SHAMapType t)
         case SHAMapType::FREE:
             return "Free Tree";
         default:
-            return std::to_string(
-                safe_cast<std::underlying_type_t<SHAMapType>>(t));
+            return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
     }
 }
 
@@ -38,18 +36,14 @@ class SHAMapMissingNode : public std::runtime_error
 {
 public:
     SHAMapMissingNode(SHAMapType t, SHAMapHash const& hash)
-        : std::runtime_error(
-              "Missing Node: " + to_string(t) + ": hash " + to_string(hash))
+        : std::runtime_error("Missing Node: " + to_string(t) + ": hash " + to_string(hash))
     {
     }
 
     SHAMapMissingNode(SHAMapType t, uint256 const& id)
-        : std::runtime_error(
-              "Missing Node: " + to_string(t) + ": id " + to_string(id))
+        : std::runtime_error("Missing Node: " + to_string(t) + ": id " + to_string(id))
     {
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

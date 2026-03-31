@@ -1,9 +1,8 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a transaction in RCLConsensus.
 
@@ -89,8 +88,7 @@ public:
     */
     RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
     {
-        XRPL_ASSERT(
-            map_, "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
+        XRPL_ASSERT(map_, "xrpl::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
     }
 
     /** Constructor from a previously created MutableTxSet
@@ -158,7 +156,7 @@ public:
         {
             XRPL_ASSERT(
                 (v.first && !v.second) || (v.second && !v.first),
-                "ripple::RCLTxSet::compare : either side is set");
+                "xrpl::RCLTxSet::compare : either side is set");
 
             ret[k] = static_cast<bool>(v.first);
         }
@@ -168,5 +166,4 @@ public:
     //! The SHAMap representing the transactions.
     std::shared_ptr<SHAMap> map_;
 };
-}  // namespace ripple
-#endif
+}  // namespace xrpl

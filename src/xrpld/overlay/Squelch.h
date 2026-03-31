@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_SQUELCH_H_INCLUDED
-#define XRPL_OVERLAY_SQUELCH_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
@@ -10,7 +9,7 @@
 #include <chrono>
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace reduce_relay {
 
@@ -32,9 +31,7 @@ public:
      * @return false if invalid squelch duration
      */
     bool
-    addSquelch(
-        PublicKey const& validator,
-        std::chrono::seconds const& squelchDuration);
+    addSquelch(PublicKey const& validator, std::chrono::seconds const& squelchDuration);
 
     /** Remove the squelch
      * @param validator The validator's public key
@@ -62,15 +59,13 @@ Squelch<clock_type>::addSquelch(
     PublicKey const& validator,
     std::chrono::seconds const& squelchDuration)
 {
-    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE &&
-        squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
+    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE && squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
     {
         squelched_[validator] = clock_type::now() + squelchDuration;
         return true;
     }
 
-    JLOG(journal_.error()) << "squelch: invalid squelch duration "
-                           << squelchDuration.count();
+    JLOG(journal_.error()) << "squelch: invalid squelch duration " << squelchDuration.count();
 
     // unsquelch if invalid duration
     removeSquelch(validator);
@@ -105,6 +100,4 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
 
 }  // namespace reduce_relay
 
-}  // namespace ripple
-
-#endif  // XRPL_SQUELCH_H
+}  // namespace xrpl

@@ -1,10 +1,9 @@
-#ifndef XRPL_BASICS_TOSTRING_H_INCLUDED
-#define XRPL_BASICS_TOSTRING_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 /** to_string() generalizes std::to_string to handle bools, chars, and strings.
 
@@ -43,6 +42,4 @@ to_string(char const* s)
     return s;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

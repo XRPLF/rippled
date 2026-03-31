@@ -1,9 +1,8 @@
-#ifndef XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
-#define XRPL_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** Log manager that searches for a specific message substring
@@ -18,24 +17,20 @@ class CheckMessageLogs : public Logs
         CheckMessageLogs& owner_;
 
     public:
-        CheckMessageSink(
-            beast::severities::Severity threshold,
-            CheckMessageLogs& owner)
+        CheckMessageSink(beast::severities::Severity threshold, CheckMessageLogs& owner)
             : beast::Journal::Sink(threshold, false), owner_(owner)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override
+        write(beast::severities::Severity level, std::string const& text) override
         {
             if (text.find(owner_.msg_) != std::string::npos)
                 *owner_.pFound_ = true;
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override
+        writeAlways(beast::severities::Severity level, std::string const& text) override
         {
             write(level, text);
         }
@@ -54,15 +49,11 @@ public:
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::severities::Severity threshold) override
     {
         return std::make_unique<CheckMessageSink>(threshold, *this);
     }
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

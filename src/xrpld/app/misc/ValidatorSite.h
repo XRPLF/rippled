@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
-#define XRPL_APP_MISC_VALIDATORSITE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -14,7 +13,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     Validator Sites
@@ -178,16 +177,12 @@ public:
 private:
     /// Load configured site URIs.
     bool
-    load(
-        std::vector<std::string> const& siteURIs,
-        std::lock_guard<std::mutex> const&);
+    load(std::vector<std::string> const& siteURIs, std::lock_guard<std::mutex> const&);
 
     /// Queue next site to be fetched
     /// lock over site_mutex_ and state_mutex_ required
     void
-    setTimer(
-        std::lock_guard<std::mutex> const&,
-        std::lock_guard<std::mutex> const&);
+    setTimer(std::lock_guard<std::mutex> const&, std::lock_guard<std::mutex> const&);
 
     /// request took too long
     void
@@ -202,15 +197,12 @@ private:
     onSiteFetch(
         boost::system::error_code const& ec,
         endpoint_type const& endpoint,
-        detail::response_type&& res,
+        detail::response_type const& res,
         std::size_t siteIdx);
 
     /// Store latest list fetched from anywhere
     void
-    onTextFetch(
-        boost::system::error_code const& ec,
-        std::string const& res,
-        std::size_t siteIdx);
+    onTextFetch(boost::system::error_code const& ec, std::string const& res, std::size_t siteIdx);
 
     /// Initiate request to given resource.
     /// lock over sites_mutex_ required
@@ -232,7 +224,7 @@ private:
     /// lock over sites_mutex_ required
     std::shared_ptr<Site::Resource>
     processRedirect(
-        detail::response_type& res,
+        detail::response_type const& res,
         std::size_t siteIdx,
         std::lock_guard<std::mutex> const&);
 
@@ -242,6 +234,4 @@ private:
     missingSite(std::lock_guard<std::mutex> const&);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

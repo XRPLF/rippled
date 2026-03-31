@@ -1,29 +1,28 @@
-#include <xrpld/conditions/Condition.h>
-#include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/conditions/detail/PreimageSha256.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/conditions/Condition.h>
+#include <xrpl/conditions/Fulfillment.h>
+#include <xrpl/conditions/detail/PreimageSha256.h>
 
 #include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace cryptoconditions {
 
 class PreimageSha256_test : public beast::unit_test::suite
 {
-    inline Buffer
+    Buffer
     hexblob(std::string const& s)
     {
         auto blob = strUnHex(s);
         BEAST_EXPECT(blob);
-        return {blob->data(), blob->size()};
+        return {blob->data(), blob->size()};  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -150,7 +149,7 @@ class PreimageSha256_test : public beast::unit_test::suite
              "9CF1D5F810302"
              "0000"}};
 
-        for (auto x : others)
+        for (auto const& x : others)
         {
             std::error_code ec;
 
@@ -167,8 +166,8 @@ class PreimageSha256_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, ripple);
+BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
 }  // namespace cryptoconditions
 
-}  // namespace ripple
+}  // namespace xrpl

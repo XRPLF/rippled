@@ -1,22 +1,21 @@
-#ifndef XRPL_TEST_JTX_DELIVERMIN_H_INCLUDED
-#define XRPL_TEST_JTX_DELIVERMIN_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 /** Sets the DeliverMin on a JTx. */
-class delivermin
+class deliver_min
 {
 private:
     STAmount amount_;
 
 public:
-    delivermin(STAmount const& amount) : amount_(amount)
+    deliver_min(STAmount const& amount) : amount_(amount)
     {
     }
 
@@ -26,6 +25,4 @@ public:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

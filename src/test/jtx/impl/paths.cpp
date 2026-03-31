@@ -1,12 +1,12 @@
 #include <test/jtx/paths.h>
 
-#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -30,8 +30,7 @@ paths::operator()(Env& env, JTx& jt) const
     }
 
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(
-            env.current(), env.app().journal("RippleLineCache")),
+        std::make_shared<RippleLineCache>(env.current(), env.app().getJournal("RippleLineCache")),
         from,
         to,
         in_.currency,
@@ -98,4 +97,4 @@ path::operator()(Env& env, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

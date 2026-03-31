@@ -1,9 +1,8 @@
-#ifndef XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
-#define XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/Family.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -83,6 +82,4 @@ private:
     acquire(uint256 const& hash, std::uint32_t seq);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STBLOB_H_INCLUDED
-#define XRPL_PROTOCOL_STBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
@@ -9,7 +8,7 @@
 
 #include <cstring>
 
-namespace ripple {
+namespace xrpl {
 
 // variable length byte string
 class STBlob : public STBase, public CountedObject<STBlob>
@@ -79,8 +78,7 @@ inline STBlob::STBlob(SField const& f, void const* data, std::size_t size)
 {
 }
 
-inline STBlob::STBlob(SField const& f, Buffer&& b)
-    : STBase(f), value_(std::move(b))
+inline STBlob::STBlob(SField const& f, Buffer&& b) : STBase(f), value_(std::move(b))
 {
 }
 
@@ -126,6 +124,4 @@ STBlob::setValue(Buffer&& b)
     value_ = std::move(b);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

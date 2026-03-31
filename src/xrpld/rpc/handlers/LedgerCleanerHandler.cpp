@@ -5,7 +5,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerCleaner(RPC::JsonContext& context)
@@ -14,4 +14,4 @@ doLedgerCleaner(RPC::JsonContext& context)
     return RPC::makeObjectValue("Cleaner configured");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
@@ -9,7 +8,7 @@
 #include <chrono>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents how a node currently participates in Consensus.
 
@@ -189,18 +188,12 @@ struct ConsensusResult
     using NodeID_t = typename Traits::NodeID_t;
 
     using Tx_t = typename TxSet_t::Tx;
-    using Proposal_t = ConsensusProposal<
-        NodeID_t,
-        typename Ledger_t::ID,
-        typename TxSet_t::ID>;
+    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
-    ConsensusResult(TxSet_t&& s, Proposal_t&& p)
-        : txns{std::move(s)}, position{std::move(p)}
+    ConsensusResult(TxSet_t&& s, Proposal_t&& p) : txns{std::move(s)}, position{std::move(p)}
     {
-        XRPL_ASSERT(
-            txns.id() == position.position(),
-            "ripple::ConsensusResult : valid inputs");
+        XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
 
     //! The set of transactions consensus agrees go in the ledger
@@ -225,6 +218,4 @@ struct ConsensusResult
     // The number of peers proposing during the round
     std::size_t proposers = 0;
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

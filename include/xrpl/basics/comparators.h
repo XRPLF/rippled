@@ -1,9 +1,8 @@
-#ifndef XRPL_BASICS_COMPARATORS_H_INCLUDED
-#define XRPL_BASICS_COMPARATORS_H_INCLUDED
+#pragma once
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 #ifdef _MSC_VER
 
@@ -52,6 +51,4 @@ using equal_to = std::equal_to<T>;
 
 #endif
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

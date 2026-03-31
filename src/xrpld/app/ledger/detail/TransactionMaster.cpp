@@ -6,7 +6,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/STTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 TransactionMaster::TransactionMaster(Application& app)
     : mApp(app)
@@ -15,7 +15,7 @@ TransactionMaster::TransactionMaster(Application& app)
           65536,
           std::chrono::minutes{30},
           stopwatch(),
-          mApp.journal("TaggedCache"))
+          mApp.getJournal("TaggedCache"))
 {
 }
 
@@ -41,13 +41,10 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
     return mCache.fetch(txnID);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
@@ -65,16 +62,13 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
@@ -111,13 +105,12 @@ TransactionMaster::fetch(
         else if (type == SHAMapNodeType::tnTRANSACTION_MD)
         {
             auto blob = SerialIter{item->slice()}.getVL();
-            txn = std::make_shared<STTx const>(
-                SerialIter{blob.data(), blob.size()});
+            txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
         }
     }
     else
     {
-        if (uCommitLedger)
+        if (uCommitLedger != 0u)
             iTx->setStatus(COMMITTED, uCommitLedger);
 
         txn = iTx->getSTransaction();
@@ -151,4 +144,4 @@ TransactionMaster::getCache()
     return mCache;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

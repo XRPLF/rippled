@@ -1,9 +1,8 @@
-#ifndef XRPL_XRPL_RPC_HANDLERS_VERSION_H
-#define XRPL_XRPL_RPC_HANDLERS_VERSION_H
+#pragma once
 
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 class VersionHandler
@@ -20,9 +19,8 @@ public:
         return Status::OK;
     }
 
-    template <class Object>
     void
-    writeResult(Object& obj)
+    writeResult(Json::Value& obj)
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
@@ -43,6 +41,4 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

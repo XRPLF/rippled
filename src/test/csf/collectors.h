@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_COLLECTORS_H_INCLUDED
-#define XRPL_TEST_CSF_COLLECTORS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Histogram.h>
 #include <test/csf/SimTime.h>
@@ -12,7 +11,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -46,12 +45,7 @@ class Collectors
 
     template <std::size_t... Is, class E>
     static void
-    apply(
-        std::tuple<Cs&...>& cs,
-        PeerID who,
-        SimTime when,
-        E e,
-        std::index_sequence<Is...>)
+    apply(std::tuple<Cs&...>& cs, PeerID who, SimTime when, E e, std::index_sequence<Is...>)
     {
         (..., apply(std::get<Is>(cs), who, when, e));
     }
@@ -235,18 +229,16 @@ struct TxCollector
     std::size_t
     orphaned() const
     {
-        return std::count_if(txs.begin(), txs.end(), [](auto const& it) {
-            return !it.second.accepted;
-        });
+        return std::count_if(
+            txs.begin(), txs.end(), [](auto const& it) { return !it.second.accepted; });
     }
 
     // Returns the number of txs which were never validated
     std::size_t
     unvalidated() const
     {
-        return std::count_if(txs.begin(), txs.end(), [](auto const& it) {
-            return !it.second.validated;
-        });
+        return std::count_if(
+            txs.begin(), txs.end(), [](auto const& it) { return !it.second.validated; });
     }
 
     template <class T>
@@ -258,86 +250,66 @@ struct TxCollector
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) {
-            return duration_cast<duration<float>>(dur).count();
-        };
+        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(36) << std::setfill('-') << "-" << std::endl;
+            log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
+                << std::setfill('-') << "-" << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left << std::setw(11) << "TxStats" << "|" << std::setw(7)
-            << "Count" << "|" << std::setw(7) << "Per Sec" << "|"
-            << std::setw(15) << "Latency (sec)" << std::right << std::setw(7)
-            << "10-ile" << std::setw(7) << "50-ile" << std::setw(7) << "90-ile"
+        log << std::left << std::setw(11) << "TxStats" << "|" << std::setw(7) << "Count" << "|"
+            << std::setw(7) << "Per Sec" << "|" << std::setw(15) << "Latency (sec)" << std::right
+            << std::setw(7) << "10-ile" << std::setw(7) << "50-ile" << std::setw(7) << "90-ile"
             << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(36)
+        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7) << std::setfill('-')
+            << "-" << "|" << std::setw(7) << std::setfill('-') << "-" << "|" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-        log << std::left << std::setw(11) << "Submit " << "|" << std::right
-            << std::setw(7) << submitted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(submitted) << "|" << std::setw(36)
-            << "" << std::endl;
+        log << std::left << std::setw(11) << "Submit " << "|" << std::right << std::setw(7)
+            << submitted << "|" << std::setw(7) << std::setprecision(2) << perSec(submitted) << "|"
+            << std::setw(36) << "" << std::endl;
 
-        log << std::left << std::setw(11) << "Accept " << "|" << std::right
-            << std::setw(7) << accepted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(accepted) << "|" << std::setw(15)
-            << std::left << "From Submit" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2)
-            << fmtS(submitToAccept.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f))
-            << std::endl;
+        log << std::left << std::setw(11) << "Accept " << "|" << std::right << std::setw(7)
+            << accepted << "|" << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
+            << std::setw(15) << std::left << "From Submit" << std::right << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Validate " << "|" << std::right
-            << std::setw(7) << validated << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(validated) << "|" << std::setw(15)
-            << std::left << "From Submit" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2)
-            << fmtS(submitToValidate.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f))
-            << std::endl;
+        log << std::left << std::setw(11) << "Validate " << "|" << std::right << std::setw(7)
+            << validated << "|" << std::setw(7) << std::setprecision(2) << perSec(validated) << "|"
+            << std::setw(15) << std::left << "From Submit" << std::right << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Orphan" << "|" << std::right
-            << std::setw(7) << orphaned() << "|" << std::setw(7) << "" << "|"
-            << std::setw(36) << std::endl;
+        log << std::left << std::setw(11) << "Orphan" << "|" << std::right << std::setw(7)
+            << orphaned() << "|" << std::setw(7) << "" << "|" << std::setw(36) << std::endl;
 
-        log << std::left << std::setw(11) << "Unvalidated" << "|" << std::right
-            << std::setw(7) << unvalidated() << "|" << std::setw(7) << "" << "|"
-            << std::setw(43) << std::endl;
+        log << std::left << std::setw(11) << "Unvalidated" << "|" << std::right << std::setw(7)
+            << unvalidated() << "|" << std::setw(7) << "" << "|" << std::setw(43) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(36)
+        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7) << std::setfill('-')
+            << "-" << "-" << std::setw(7) << std::setfill('-') << "-" << "-" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
     template <class T, class Tag>
     void
-    csv(SimDuration simDuration,
-        T& log,
-        Tag const& tag,
-        bool printHeaders = false)
+    csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
     {
         using namespace std::chrono;
         auto perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) {
-            return duration_cast<duration<float>>(dur).count();
-        };
+        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
 
         if (printHeaders)
         {
@@ -395,8 +367,7 @@ struct TxCollector
             << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f))
             << ","
             // txLatencySubmitToValidate90Pctl
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f))
-            << "," << std::endl;
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f)) << "," << std::endl;
     }
 };
 
@@ -476,8 +447,7 @@ struct LedgerCollector
                     auto& parentTracker = parentIt->second;
                     if (parentTracker.fullyValidated)
                     {
-                        fullyValidToFullyValid.insert(
-                            when - *parentTracker.fullyValidated);
+                        fullyValidToFullyValid.insert(when - *parentTracker.fullyValidated);
                     }
                 }
             }
@@ -487,10 +457,9 @@ struct LedgerCollector
     std::size_t
     unvalidated() const
     {
-        return std::count_if(
-            ledgers_.begin(), ledgers_.end(), [](auto const& it) {
-                return !it.second.fullyValidated;
-            });
+        return std::count_if(ledgers_.begin(), ledgers_.end(), [](auto const& it) {
+            return !it.second.fullyValidated;
+        });
     }
 
     template <class T>
@@ -502,74 +471,57 @@ struct LedgerCollector
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) {
-            return duration_cast<duration<float>>(dur).count();
-        };
+        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(36) << std::setfill('-') << "-" << std::endl;
+            log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
+                << std::setfill('-') << "-" << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left << std::setw(11) << "LedgerStats" << "|"
-            << std::setw(7) << "Count" << "|" << std::setw(7) << "Per Sec"
-            << "|" << std::setw(15) << "Latency (sec)" << std::right
-            << std::setw(7) << "10-ile" << std::setw(7) << "50-ile"
-            << std::setw(7) << "90-ile" << std::left << std::endl;
+        log << std::left << std::setw(11) << "LedgerStats" << "|" << std::setw(7) << "Count" << "|"
+            << std::setw(7) << "Per Sec"
+            << "|" << std::setw(15) << "Latency (sec)" << std::right << std::setw(7) << "10-ile"
+            << std::setw(7) << "50-ile" << std::setw(7) << "90-ile" << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(36)
+        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7) << std::setfill('-')
+            << "-" << "|" << std::setw(7) << std::setfill('-') << "-" << "|" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-        log << std::left << std::setw(11) << "Accept " << "|" << std::right
-            << std::setw(7) << accepted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(accepted) << "|" << std::setw(15)
-            << std::left << "From Accept" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2)
-            << fmtS(acceptToAccept.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f))
-            << std::endl;
+        log << std::left << std::setw(11) << "Accept " << "|" << std::right << std::setw(7)
+            << accepted << "|" << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
+            << std::setw(15) << std::left << "From Accept" << std::right << std::setw(7)
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Validate " << "|" << std::right
-            << std::setw(7) << fullyValidated << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(fullyValidated) << "|"
-            << std::setw(15) << std::left << "From Validate " << std::right
-            << std::setw(7) << std::setprecision(2)
-            << fmtS(fullyValidToFullyValid.percentile(0.1f)) << std::setw(7)
-            << std::setprecision(2)
-            << fmtS(fullyValidToFullyValid.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2)
+        log << std::left << std::setw(11) << "Validate " << "|" << std::right << std::setw(7)
+            << fullyValidated << "|" << std::setw(7) << std::setprecision(2)
+            << perSec(fullyValidated) << "|" << std::setw(15) << std::left << "From Validate "
+            << std::right << std::setw(7) << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.1f)) << std::setw(7) << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.5f)) << std::setw(7) << std::setprecision(2)
             << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(36)
+        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7) << std::setfill('-')
+            << "-" << "-" << std::setw(7) << std::setfill('-') << "-" << "-" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
     template <class T, class Tag>
     void
-    csv(SimDuration simDuration,
-        T& log,
-        Tag const& tag,
-        bool printHeaders = false)
+    csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
     {
         using namespace std::chrono;
         auto perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) {
-            return duration_cast<duration<float>>(dur).count();
-        };
+        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
 
         if (printHeaders)
         {
@@ -608,16 +560,13 @@ struct LedgerCollector
             << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f))
             << ","
             // ledgerLatencyFullyValidToFullyValid10Pctl
-            << std::setprecision(2)
-            << fmtS(fullyValidToFullyValid.percentile(0.1f))
+            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.1f))
             << ","
             // ledgerLatencyFullyValidToFullyValid50Pctl
-            << std::setprecision(2)
-            << fmtS(fullyValidToFullyValid.percentile(0.5f))
+            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.5f))
             << ","
             // ledgerLatencyFullyValidToFullyValid90Pctl
-            << std::setprecision(2)
-            << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
+            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
     }
 };
 
@@ -640,17 +589,15 @@ struct StreamCollector
     void
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
-        out << when.time_since_epoch().count() << ": Node " << who
-            << " accepted " << "L" << e.ledger.id() << " " << e.ledger.txs()
-            << "\n";
+        out << when.time_since_epoch().count() << ": Node " << who << " accepted " << "L"
+            << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 
     void
     on(PeerID who, SimTime when, FullyValidateLedger const& e)
     {
-        out << when.time_since_epoch().count() << ": Node " << who
-            << " fully-validated " << "L" << e.ledger.id() << " "
-            << e.ledger.txs() << "\n";
+        out << when.time_since_epoch().count() << ": Node " << who << " fully-validated " << "L"
+            << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 };
 
@@ -692,13 +639,10 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            fullyValidatedJumps.emplace_back(
-                Jump{who, when, e.prior, e.ledger});
+            fullyValidatedJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
     }
 };
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

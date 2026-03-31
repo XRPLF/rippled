@@ -1,10 +1,9 @@
-#ifndef XRPL_PROTOCOL_KEYLET_H_INCLUDED
-#define XRPL_PROTOCOL_KEYLET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STLedgerEntry;
 
@@ -30,6 +29,4 @@ struct Keylet
     check(STLedgerEntry const&) const;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

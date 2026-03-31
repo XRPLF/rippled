@@ -1,5 +1,4 @@
-#ifndef XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
-#define XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -105,9 +104,7 @@ public:
         {
             // must be plain
             mSecure = false;
-            post(
-                mSocket->get_executor(),
-                boost::beast::bind_handler(cbFunc, error_code()));
+            post(mSocket->get_executor(), boost::beast::bind_handler(cbFunc, error_code()));
         }
         else
         {
@@ -141,9 +138,7 @@ public:
             {
                 ec = e.code();
             }
-            post(
-                mSocket->get_executor(),
-                boost::beast::bind_handler(handler, ec));
+            post(mSocket->get_executor(), boost::beast::bind_handler(handler, ec));
         }
     }
 
@@ -162,11 +157,9 @@ public:
     async_read_until(Seq const& buffers, Condition condition, Handler handler)
     {
         if (isSecure())
-            boost::asio::async_read_until(
-                *mSocket, buffers, condition, handler);
+            boost::asio::async_read_until(*mSocket, buffers, condition, handler);
         else
-            boost::asio::async_read_until(
-                PlainSocket(), buffers, condition, handler);
+            boost::asio::async_read_until(PlainSocket(), buffers, condition, handler);
     }
 
     template <typename Allocator, typename Handler>
@@ -179,8 +172,7 @@ public:
         if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, delim, handler);
         else
-            boost::asio::async_read_until(
-                PlainSocket(), buffers, delim, handler);
+            boost::asio::async_read_until(PlainSocket(), buffers, delim, handler);
     }
 
     template <typename Allocator, typename MatchCondition, typename Handler>
@@ -193,8 +185,7 @@ public:
         if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, cond, handler);
         else
-            boost::asio::async_read_until(
-                PlainSocket(), buffers, cond, handler);
+            boost::asio::async_read_until(PlainSocket(), buffers, cond, handler);
     }
 
     template <typename Buf, typename Handler>
@@ -209,9 +200,7 @@ public:
 
     template <typename Allocator, typename Handler>
     void
-    async_write(
-        boost::asio::basic_streambuf<Allocator>& buffers,
-        Handler handler)
+    async_write(boost::asio::basic_streambuf<Allocator>& buffers, Handler handler)
     {
         if (isSecure())
             boost::asio::async_write(*mSocket, buffers, handler);
@@ -231,10 +220,7 @@ public:
 
     template <typename Allocator, typename Condition, typename Handler>
     void
-    async_read(
-        boost::asio::basic_streambuf<Allocator>& buffers,
-        Condition cond,
-        Handler handler)
+    async_read(boost::asio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
             boost::asio::async_read(*mSocket, buffers, cond, handler);
@@ -264,12 +250,9 @@ public:
 
 protected:
     void
-    handle_autodetect(
-        callback cbFunc,
-        error_code const& ec,
-        size_t bytesTransferred)
+    handle_autodetect(callback cbFunc, error_code const& ec, size_t bytesTransferred)
     {
-        using namespace ripple;
+        using namespace xrpl;
 
         if (ec)
         {
@@ -278,12 +261,9 @@ protected:
         }
         else if (
             (mBuffer[0] < 127) && (mBuffer[0] > 31) &&
-            ((bytesTransferred < 2) ||
-             ((mBuffer[1] < 127) && (mBuffer[1] > 31))) &&
-            ((bytesTransferred < 3) ||
-             ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
-            ((bytesTransferred < 4) ||
-             ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
+            ((bytesTransferred < 2) || ((mBuffer[1] < 127) && (mBuffer[1] > 31))) &&
+            ((bytesTransferred < 3) || ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
+            ((bytesTransferred < 4) || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
         {
             // not ssl
             JLOG(j_.trace()) << "non-SSL";
@@ -305,5 +285,3 @@ private:
     std::vector<char> mBuffer;
     beast::Journal j_;
 };
-
-#endif

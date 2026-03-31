@@ -1,10 +1,9 @@
-#ifndef XRPL_BASICS_STRHEX_H_INCLUDED
-#define XRPL_BASICS_STRHEX_H_INCLUDED
+#pragma once
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/endian/conversion.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 template <class FwdIt>
 std::string
@@ -28,6 +27,4 @@ strHex(T const& from)
     return strHex(from.begin(), from.end());
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

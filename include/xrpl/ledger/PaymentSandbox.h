@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_PAYMENTSANDBOX_H_INCLUDED
-#define XRPL_LEDGER_PAYMENTSANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -8,7 +7,7 @@
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -31,10 +30,7 @@ public:
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
     std::optional<Adjustment>
-    adjustments(
-        AccountID const& main,
-        AccountID const& other,
-        Currency const& currency) const;
+    adjustments(AccountID const& main, AccountID const& other, Currency const& currency) const;
 
     void
     credit(
@@ -102,8 +98,7 @@ public:
 
     PaymentSandbox(PaymentSandbox&&) = default;
 
-    PaymentSandbox(ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase(base, flags)
+    PaymentSandbox(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
     {
     }
 
@@ -130,17 +125,14 @@ public:
     {
     }
 
-    explicit PaymentSandbox(PaymentSandbox* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
     /** @} */
 
     STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const override;
+    balanceHook(AccountID const& account, AccountID const& issuer, STAmount const& amount)
+        const override;
 
     void
     creditHook(
@@ -150,14 +142,10 @@ public:
         STAmount const& preCreditBalance) override;
 
     void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next) override;
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
     std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count)
-        const override;
+    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
 
@@ -188,6 +176,4 @@ private:
     PaymentSandbox const* ps_ = nullptr;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

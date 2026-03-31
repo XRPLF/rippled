@@ -1,12 +1,12 @@
-#ifndef XRPL_RPC_TRANSACTIONSIGN_H_INCLUDED
-#define XRPL_RPC_TRANSACTIONSIGN_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-namespace ripple {
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+
+namespace xrpl {
 
 // Forward declarations
 class Application;
@@ -126,6 +126,4 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

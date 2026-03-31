@@ -1,10 +1,9 @@
-#ifndef XRPL_RESOURCE_IMPORT_H_INCLUDED
-#define XRPL_RESOURCE_IMPORT_H_INCLUDED
+#pragma once
 
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** A set of imported consumer data from a gossip origin. */
@@ -31,6 +30,4 @@ struct Import
 };
 
 }  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

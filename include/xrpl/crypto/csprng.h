@@ -1,9 +1,8 @@
-#ifndef XRPL_CRYPTO_RANDOM_H_INCLUDED
-#define XRPL_CRYPTO_RANDOM_H_INCLUDED
+#pragma once
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /** A cryptographically secure random number engine
 
@@ -70,6 +69,4 @@ public:
 csprng_engine&
 crypto_prng();
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

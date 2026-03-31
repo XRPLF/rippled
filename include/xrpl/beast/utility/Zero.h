@@ -1,7 +1,6 @@
 // Copyright (c) 2014, Tom Ritchford <tom@swirly.com>
 
-#ifndef BEAST_UTILITY_ZERO_H_INCLUDED
-#define BEAST_UTILITY_ZERO_H_INCLUDED
+#pragma once
 
 namespace beast {
 
@@ -29,7 +28,7 @@ struct Zero
 
 namespace {
 static constexpr Zero zero{};
-}
+}  // namespace
 
 /** Default implementation of signum calls the method on the class. */
 template <typename T>
@@ -144,5 +143,3 @@ operator<=(Zero, T const& t)
 }
 
 }  // namespace beast
-
-#endif

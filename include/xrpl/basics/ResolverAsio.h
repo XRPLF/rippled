@@ -1,12 +1,11 @@
-#ifndef XRPL_BASICS_RESOLVERASIO_H_INCLUDED
-#define XRPL_BASICS_RESOLVERASIO_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <boost/asio/io_context.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 class ResolverAsio : public Resolver
 {
@@ -17,6 +16,4 @@ public:
     New(boost::asio::io_context&, beast::Journal);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -3,11 +3,11 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 struct JsonContext;
-}
+}  // namespace RPC
 
 Json::Value
 doStop(RPC::JsonContext& context)
@@ -16,4 +16,4 @@ doStop(RPC::JsonContext& context)
     return RPC::makeObjectValue(systemName() + " server stopping");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

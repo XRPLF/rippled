@@ -1,9 +1,8 @@
-#ifndef XRPL_NET_RPCCALL_H_INCLUDED
-#define XRPL_NET_RPCCALL_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio/io_context.hpp>
@@ -13,7 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 // This a trusted interface, the user is expected to provide valid input to
 // perform valid requests. Error catching and reporting is not a requirement of
@@ -25,10 +24,7 @@ namespace ripple {
 namespace RPCCall {
 
 int
-fromCommandLine(
-    Config const& config,
-    std::vector<std::string> const& vCmd,
-    Logs& logs);
+fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
 
 void
 fromNetwork(
@@ -66,6 +62,4 @@ rpcClient(
     unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers = {});
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

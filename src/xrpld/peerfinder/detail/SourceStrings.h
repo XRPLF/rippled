@@ -1,11 +1,10 @@
-#ifndef XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
-#define XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/Source.h>
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Provides addresses from a static set of strings. */
@@ -21,6 +20,4 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

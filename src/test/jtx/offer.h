@@ -1,12 +1,11 @@
-#ifndef XRPL_TEST_JTX_OFFER_H_INCLUDED
-#define XRPL_TEST_JTX_OFFER_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -24,6 +23,4 @@ offer_cancel(Account const& account, std::uint32_t offerSeq);
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

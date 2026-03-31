@@ -6,7 +6,7 @@
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
 
-namespace ripple {
+namespace xrpl {
 
 namespace InnerObjectFormatsUnitTestDetail {
 
@@ -155,7 +155,7 @@ public:
         using namespace InnerObjectFormatsUnitTestDetail;
 
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
 
         for (auto const& test : testArray)
         {
@@ -166,7 +166,7 @@ public:
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
             }
-            STParsedJSONObject parsed("request", req);
+            STParsedJSONObject const parsed("request", req);
             bool const noObj = !parsed.object.has_value();
             if (noObj == test.expectFail)
             {
@@ -182,6 +182,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

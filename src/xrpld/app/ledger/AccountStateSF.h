@@ -1,20 +1,18 @@
-#ifndef XRPL_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 
-namespace ripple {
+namespace xrpl {
 
 // This class is only needed on add functions
 // sync filter for account state nodes during ledger sync
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-    AccountStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
-        : db_(db), fp_(fp)
+    AccountStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
@@ -34,6 +32,4 @@ private:
     AbstractFetchPackContainer& fp_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

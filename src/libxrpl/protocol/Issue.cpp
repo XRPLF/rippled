@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 Issue::getText() const
@@ -25,11 +25,17 @@ Issue::getText() const
         ret += "/";
 
         if (isXRP(account))
+        {
             ret += "0";
+        }
         else if (account == noAccount())
+        {
             ret += "1";
+        }
         else
+        {
             ret += to_string(account);
+        }
     }
 
     return ret;
@@ -47,6 +53,12 @@ bool
 Issue::native() const
 {
     return *this == xrpIssue();
+}
+
+bool
+Issue::integral() const
+{
+    return native();
 }
 
 bool
@@ -83,8 +95,7 @@ issueFromJson(Json::Value const& v)
 
     if (v.isMember(jss::mpt_issuance_id))
     {
-        Throw<std::runtime_error>(
-            "issueFromJson, Issue should not have mpt_issuance_id");
+        Throw<std::runtime_error>("issueFromJson, Issue should not have mpt_issuance_id");
     }
 
     Json::Value const curStr = v[jss::currency];
@@ -92,8 +103,7 @@ issueFromJson(Json::Value const& v)
 
     if (!curStr.isString())
     {
-        Throw<Json::error>(
-            "issueFromJson currency must be a string Json value");
+        Throw<Json::error>("issueFromJson currency must be a string Json value");
     }
 
     auto const currency = to_currency(curStr.asString());
@@ -132,4 +142,4 @@ operator<<(std::ostream& os, Issue const& x)
     return os;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,7 +1,7 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/utility.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -10,7 +10,7 @@ sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    if (!subField_)
+    if (subField_ == nullptr)
         jt.fill_sig = false;
     if (account_)
     {
@@ -22,13 +22,17 @@ sig::operator()(Env&, JTx& jt) const
 
             jtx::sign(jtx.jv, account, sigObject);
         };
-        if (!subField_)
+        if (subField_ == nullptr)
+        {
             jt.mainSigners.emplace_back(callback);
+        }
         else
+        {
             jt.postSigners.emplace_back(callback);
+        }
     }
 }
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

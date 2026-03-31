@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_BASEPEER_H_INCLUDED
-#define XRPL_SERVER_BASEPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -13,7 +12,7 @@
 #include <functional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
@@ -82,12 +81,9 @@ void
 BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
+        return post(strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
     error_code ec;
-    ripple::get_lowest_layer(impl().ws_).socket().close(ec);
+    xrpl::get_lowest_layer(impl().ws_).socket().close(ec);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

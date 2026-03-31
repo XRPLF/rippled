@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_NULLCOLLECTOR_H_INCLUDED
-#define BEAST_INSIGHT_NULLCOLLECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 
@@ -18,5 +17,3 @@ public:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

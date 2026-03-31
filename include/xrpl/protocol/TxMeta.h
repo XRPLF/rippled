@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
-#define XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STArray.h>
@@ -10,7 +9,7 @@
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class TxMeta
 {
@@ -117,6 +116,4 @@ private:
     STArray nodes_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

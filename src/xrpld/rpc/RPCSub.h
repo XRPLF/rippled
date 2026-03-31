@@ -1,12 +1,12 @@
-#ifndef XRPL_NET_RPCSUB_H_INCLUDED
-#define XRPL_NET_RPCSUB_H_INCLUDED
+#pragma once
 
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/rpc/InfoSub.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <boost/asio/io_context.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** Subscription object for JSON RPC. */
 class RPCSub : public InfoSub
@@ -30,8 +30,6 @@ make_RPCSub(
     std::string const& strUrl,
     std::string const& strUsername,
     std::string const& strPassword,
-    Logs& logs);
+    ServiceRegistry& registry);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

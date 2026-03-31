@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
-#define XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
@@ -8,7 +7,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Batch-writing assist logic.
@@ -78,6 +77,4 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

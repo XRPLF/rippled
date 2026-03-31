@@ -1,15 +1,15 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doLedgerAccept(RPC::JsonContext& context)
@@ -22,13 +22,12 @@ doLedgerAccept(RPC::JsonContext& context)
     }
     else
     {
-        std::unique_lock lock{context.app.getMasterMutex()};
+        std::unique_lock const lock{context.app.getMasterMutex()};
         context.netOps.acceptLedger();
-        jvResult[jss::ledger_current_index] =
-            context.ledgerMaster.getCurrentLedgerIndex();
+        jvResult[jss::ledger_current_index] = context.ledgerMaster.getCurrentLedgerIndex();
     }
 
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

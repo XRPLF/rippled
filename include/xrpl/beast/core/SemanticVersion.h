@@ -1,7 +1,7 @@
-#ifndef BEAST_MODULE_CORE_DIAGNOSTIC_SEMANTICVERSION_H_INCLUDED
-#define BEAST_MODULE_CORE_DIAGNOSTIC_SEMANTICVERSION_H_INCLUDED
+#pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace beast {
@@ -27,14 +27,14 @@ public:
 
     SemanticVersion();
 
-    SemanticVersion(std::string const& version);
+    SemanticVersion(std::string_view version);
 
     /** Parse a semantic version string.
         The parsing is as strict as possible.
         @return `true` if the string was parsed.
     */
     bool
-    parse(std::string const& input);
+    parse(std::string_view input);
 
     /** Produce a string from semantic version components. */
     std::string
@@ -95,5 +95,3 @@ operator<(SemanticVersion const& lhs, SemanticVersion const& rhs)
 }
 
 }  // namespace beast
-
-#endif

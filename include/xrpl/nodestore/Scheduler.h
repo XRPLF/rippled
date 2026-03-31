@@ -1,11 +1,10 @@
-#ifndef XRPL_NODESTORE_SCHEDULER_H_INCLUDED
-#define XRPL_NODESTORE_SCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Task.h>
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 enum class FetchType { synchronous, async };
@@ -66,6 +65,4 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

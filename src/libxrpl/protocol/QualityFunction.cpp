@@ -7,11 +7,9 @@
 #include <optional>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
-QualityFunction::QualityFunction(
-    Quality const& quality,
-    QualityFunction::CLOBLikeTag)
+QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag)
     : m_(0), b_(0), quality_(quality)
 {
     if (quality.rate() <= beast::zero)
@@ -33,7 +31,7 @@ QualityFunction::outFromAvgQ(Quality const& quality)
 {
     if (m_ != 0 && quality.rate() != beast::zero)
     {
-        saveNumberRoundMode rm(Number::setround(Number::rounding_mode::upward));
+        saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::upward));
         auto const out = (1 / quality.rate() - b_) / m_;
         if (out <= 0)
             return std::nullopt;
@@ -42,4 +40,4 @@ QualityFunction::outFromAvgQ(Quality const& quality)
     return std::nullopt;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

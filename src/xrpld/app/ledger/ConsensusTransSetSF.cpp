@@ -1,18 +1,17 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/core/JobQueue.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.journal("TransactionAcquire"))
+    : app_(app), m_nodeCache(nodeCache), j_(app.getJournal("TransactionAcquire"))
 {
 }
 
@@ -21,7 +20,7 @@ ConsensusTransSetSF::gotNode(
     bool fromFilter,
     SHAMapHash const& nodeHash,
     std::uint32_t,
-    Blob&& nodeData,
+    Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     SHAMapNodeType type) const
 {
     if (fromFilter)
@@ -32,29 +31,26 @@ ConsensusTransSetSF::gotNode(
     if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
     {
         // this is a transaction, and we didn't have it
-        JLOG(j_.debug())
-            << "Node on our acquiring TX set is TXN we may not have";
+        JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
 
         try
         {
             // skip prefix
-            Serializer s(nodeData.data() + 4, nodeData.size() - 4);
+            Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(
                 stx->getTransactionID() == nodeHash.as_uint256(),
-                "ripple::ConsensusTransSetSF::gotNode : transaction hash "
+                "xrpl::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
-            app_.getJobQueue().addJob(jtTRANSACTION, "TXS->TXN", [pap, stx]() {
-                pap->getOPs().submitTransaction(stx);
-            });
+            app_.getJobQueue().addJob(
+                jtTRANSACTION, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.warn())
-                << "Fetched invalid transaction in proposed set. Exception: "
-                << ex.what();
+            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: "
+                            << ex.what();
         }
     }
 }
@@ -66,8 +62,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     if (m_nodeCache.retrieve(nodeHash, nodeData))
         return nodeData;
 
-    auto txn =
-        app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
+    auto txn = app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
 
     if (txn)
     {
@@ -78,7 +73,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         txn->getSTransaction()->add(s);
         XRPL_ASSERT(
             sha512Half(s.slice()) == nodeHash.as_uint256(),
-            "ripple::ConsensusTransSetSF::getNode : transaction hash match");
+            "xrpl::ConsensusTransSetSF::getNode : transaction hash match");
         nodeData = s.peekData();
         return nodeData;
     }
@@ -86,4 +81,4 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     return std::nullopt;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_TO_STRING_H_INCLUDED
-#define XRPL_JSON_TO_STRING_H_INCLUDED
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -21,5 +20,3 @@ std::ostream&
 operator<<(std::ostream&, Value const& root);
 
 }  // namespace Json
-
-#endif  // JSON_TO_STRING_H_INCLUDED

@@ -1,13 +1,10 @@
-#ifndef XRPL_XRPL_RPC_HANDLERS_WALLETPROPOSE_H
-#define XRPL_XRPL_RPC_HANDLERS_WALLETPROPOSE_H
+#pragma once
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 walletPropose(Json::Value const& params);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

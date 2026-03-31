@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 STCurrency::STCurrency(SField const& name) : STBase{name}
 {
@@ -56,7 +56,7 @@ bool
 STCurrency::isEquivalent(STBase const& t) const
 {
     STCurrency const* v = dynamic_cast<STCurrency const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool
@@ -88,18 +88,16 @@ currencyFromJson(SField const& name, Json::Value const& v)
 {
     if (!v.isString())
     {
-        Throw<std::runtime_error>(
-            "currencyFromJson currency must be a string Json value");
+        Throw<std::runtime_error>("currencyFromJson currency must be a string Json value");
     }
 
     auto const currency = to_currency(v.asString());
     if (currency == badCurrency() || currency == noCurrency())
     {
-        Throw<std::runtime_error>(
-            "currencyFromJson currency must be a valid currency");
+        Throw<std::runtime_error>("currencyFromJson currency must be a valid currency");
     }
 
     return STCurrency{name, currency};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

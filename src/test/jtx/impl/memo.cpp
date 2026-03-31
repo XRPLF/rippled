@@ -1,6 +1,6 @@
 #include <test/jtx/memo.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -17,7 +17,7 @@ memo::operator()(Env&, JTx& jt) const
 }
 
 void
-memodata::operator()(Env&, JTx& jt) const
+memo_data::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -27,7 +27,7 @@ memodata::operator()(Env&, JTx& jt) const
 }
 
 void
-memoformat::operator()(Env&, JTx& jt) const
+memo_format::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -37,7 +37,7 @@ memoformat::operator()(Env&, JTx& jt) const
 }
 
 void
-memotype::operator()(Env&, JTx& jt) const
+memo_type::operator()(Env&, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto& ma = jv["Memos"];
@@ -46,39 +46,6 @@ memotype::operator()(Env&, JTx& jt) const
     m["MemoType"] = strHex(s_);
 }
 
-void
-memondata::operator()(Env&, JTx& jt) const
-{
-    auto& jv = jt.jv;
-    auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
-    m["MemoFormat"] = strHex(format_);
-    m["MemoType"] = strHex(type_);
-}
-
-void
-memonformat::operator()(Env&, JTx& jt) const
-{
-    auto& jv = jt.jv;
-    auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
-    m["MemoData"] = strHex(data_);
-    m["MemoType"] = strHex(type_);
-}
-
-void
-memontype::operator()(Env&, JTx& jt) const
-{
-    auto& jv = jt.jv;
-    auto& ma = jv["Memos"];
-    auto& mi = ma[ma.size()];
-    auto& m = mi["Memo"];
-    m["MemoData"] = strHex(data_);
-    m["MemoFormat"] = strHex(format_);
-}
-
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

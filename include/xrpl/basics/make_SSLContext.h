@@ -1,11 +1,10 @@
-#ifndef XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
-#define XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
+#pragma once
 
 #include <boost/asio/ssl/context.hpp>
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
 std::shared_ptr<boost::asio::ssl::context>
@@ -19,6 +18,4 @@ make_SSLContextAuthed(
     std::string const& chainFile,
     std::string const& cipherList);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,7 +1,7 @@
 ---
 name: Bug Report
-about: Create a report to help us improve rippled
-title: "[Title with short description] (Version: [rippled version])"
+about: Create a report to help us improve xrpld
+title: "[Title with short description] (Version: [xrpld version])"
 labels: ""
 assignees: ""
 ---
@@ -27,7 +27,7 @@ assignees: ""
 ## Environment
 
 <!--Please describe your environment setup (such as Ubuntu 18.04 with Boost 1.70).-->
-<!-- If you are using a formal release, please use the version returned by './rippled --version' as the version number-->
+<!-- If you are using a formal release, please use the version returned by './xrpld --version' as the version number-->
 <!-- If you are working off of develop, please add the git hash via 'git rev-parse HEAD'-->
 
 ## Supporting Files

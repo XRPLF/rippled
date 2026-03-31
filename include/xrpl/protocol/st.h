@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ST_H_INCLUDED
-#define XRPL_PROTOCOL_ST_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -17,5 +16,3 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/STVector256.h>
-
-#endif

@@ -1,9 +1,8 @@
-#ifndef XRPL_RESOURCE_TUNING_H_INCLUDED
-#define XRPL_RESOURCE_TUNING_H_INCLUDED
+#pragma once
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /** Tunable constants. */
@@ -32,6 +31,4 @@ std::chrono::seconds constexpr secondsUntilExpiration{300};
 std::chrono::seconds constexpr gossipExpirationSeconds{30};
 
 }  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

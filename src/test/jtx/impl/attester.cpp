@@ -5,7 +5,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -22,13 +22,7 @@ sign_claim_attestation(
     std::optional<AccountID> const& dst)
 {
     auto const toSign = Attestations::AttestationClaim::message(
-        bridge,
-        sendingAccount,
-        sendingAmount,
-        rewardAccount,
-        wasLockingChainSend,
-        claimID,
-        dst);
+        bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
     return sign(pk, sk, makeSlice(toSign));
 }
 
@@ -59,4 +53,4 @@ sign_create_account_attestation(
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

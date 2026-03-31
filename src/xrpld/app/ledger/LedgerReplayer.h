@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -10,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 class LedgerReplayClient;
@@ -68,10 +67,7 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(
-        InboundLedger::Reason r,
-        uint256 const& finishLedgerHash,
-        std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
     /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
     void
@@ -84,9 +80,7 @@ public:
      * @note  info and data must have been verified against the ledger hash
      */
     void
-    gotSkipList(
-        LedgerInfo const& info,
-        boost::intrusive_ptr<SHAMapItem const> const& data);
+    gotSkipList(LedgerHeader const& info, boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -96,7 +90,7 @@ public:
      */
     void
     gotReplayDelta(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
@@ -109,21 +103,21 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return skipLists_.size();
     }
 
@@ -141,6 +135,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -7,7 +7,7 @@ namespace IP {
 inline Endpoint
 randomEP(bool v4 = true)
 {
-    using namespace ripple;
+    using namespace xrpl;
     auto dv4 = []() -> AddressV4::bytes_type {
         return {
             {static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),

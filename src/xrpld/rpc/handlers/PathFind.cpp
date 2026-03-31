@@ -1,14 +1,14 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doPathFind(RPC::JsonContext& context)
@@ -18,8 +18,7 @@ doPathFind(RPC::JsonContext& context)
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
-    if (!context.params.isMember(jss::subcommand) ||
-        !context.params[jss::subcommand].isString())
+    if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
@@ -35,13 +34,13 @@ doPathFind(RPC::JsonContext& context)
     {
         context.loadType = Resource::feeHeavyBurdenRPC;
         context.infoSub->clearRequest();
-        return context.app.getPathRequests().makePathRequest(
+        return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
     }
 
     if (sSubCommand == "close")
     {
-        InfoSubRequest::pointer request = context.infoSub->getRequest();
+        InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);
@@ -52,7 +51,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "status")
     {
-        InfoSubRequest::pointer request = context.infoSub->getRequest();
+        InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);
@@ -63,4 +62,4 @@ doPathFind(RPC::JsonContext& context)
     return rpcError(rpcINVALID_PARAMS);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

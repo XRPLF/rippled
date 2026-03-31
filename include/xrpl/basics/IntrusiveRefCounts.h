@@ -1,12 +1,11 @@
-#ifndef XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
-#define XRPL_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /** Action to perform when releasing a strong pointer.
 
@@ -34,7 +33,7 @@ enum class ReleaseWeakRefAction { noop, destroy };
 /** Implement the strong count, weak count, and bit flags for an intrusive
     pointer.
 
-    A class can satisfy the requirements of a ripple::IntrusivePointer by
+    A class can satisfy the requirements of a xrpl::IntrusivePointer by
     inheriting from this class.
   */
 struct IntrusiveRefCounts
@@ -160,22 +159,19 @@ private:
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType partialDestroyStartedMask =
-        (one << (FieldTypeBits - 1));
+    static constexpr FieldType partialDestroyStartedMask = (one << (FieldTypeBits - 1));
 
     /**  Flag that is set when the partialDestroy function has finished running
 
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType partialDestroyFinishedMask =
-        (one << (FieldTypeBits - 2));
+    static constexpr FieldType partialDestroyFinishedMask = (one << (FieldTypeBits - 2));
 
     /** Mask that will zero out all the `count` bits and leave the tag bits
         unchanged.
       */
-    static constexpr FieldType tagMask =
-        partialDestroyStartedMask | partialDestroyFinishedMask;
+    static constexpr FieldType tagMask = partialDestroyStartedMask | partialDestroyFinishedMask;
 
     /** Mask that will zero out the `tag` bits and leave the count bits
         unchanged.
@@ -184,8 +180,7 @@ private:
 
     /** Mask that will zero out everything except the strong count.
      */
-    static constexpr FieldType strongMask =
-        ((one << StrongCountNumBits) - 1) & valueMask;
+    static constexpr FieldType strongMask = ((one << StrongCountNumBits) - 1) & valueMask;
 
     /** Mask that will zero out everything except the weak count.
      */
@@ -257,7 +252,7 @@ IntrusiveRefCounts::releaseStrongRef() const
         RefCountPair const prevVal{prevIntVal};
         XRPL_ASSERT(
             (prevVal.strong >= strongDelta),
-            "ripple::IntrusiveRefCounts::releaseStrongRef : previous ref "
+            "xrpl::IntrusiveRefCounts::releaseStrongRef : previous ref "
             "higher than new");
         auto nextIntVal = prevIntVal - strongDelta;
         ReleaseStrongRefAction action = noop;
@@ -274,15 +269,14 @@ IntrusiveRefCounts::releaseStrongRef() const
             }
         }
 
-        if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_acq_rel))
+        if (refCounts.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             // Can't be in partial destroy because only decrementing the strong
             // count to zero can start a partial destroy, and that can't happen
             // twice.
             XRPL_ASSERT(
                 (action == noop) || !(prevIntVal & partialDestroyStartedMask),
-                "ripple::IntrusiveRefCounts::releaseStrongRef : not in partial "
+                "xrpl::IntrusiveRefCounts::releaseStrongRef : not in partial "
                 "destroy");
             return action;
         }
@@ -301,7 +295,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     // change the counts and flags (the count could be atomically changed, but
     // the flags depend on the current value of the counts).
     //
-    // Note: If this becomes a perf bottleneck, the `partialDestoryStartedMask`
+    // Note: If this becomes a perf bottleneck, the `partialDestroyStartedMask`
     // may be able to be set non-atomically. But it is easier to reason about
     // the code if the flag is set atomically.
     while (1)
@@ -314,7 +308,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         // can't happen twice.
         XRPL_ASSERT(
             (!prevVal.partialDestroyStartedBit),
-            "ripple::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
+            "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
             "partial destroy");
 
         auto nextIntVal = prevIntVal + delta;
@@ -331,12 +325,11 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
                 action = partialDestroy;
             }
         }
-        if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_acq_rel))
+        if (refCounts.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             XRPL_ASSERT(
                 (!(prevIntVal & partialDestroyStartedMask)),
-                "ripple::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
+                "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
                 "started partial destroy");
             return action;
         }
@@ -376,8 +369,7 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
     auto curValue = RefCountPair{1, 1}.combinedValue();
     auto desiredValue = RefCountPair{2, 1}.combinedValue();
 
-    while (!refCounts.compare_exchange_weak(
-        curValue, desiredValue, std::memory_order_acq_rel))
+    while (!refCounts.compare_exchange_weak(curValue, desiredValue, std::memory_order_acq_rel))
     {
         RefCountPair const prev{curValue};
         if (!prev.strong)
@@ -407,19 +399,15 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 #ifndef NDEBUG
     auto v = refCounts.load(std::memory_order_acquire);
     XRPL_ASSERT(
-        (!(v & valueMask)),
-        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+        (!(v & valueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
     auto t = v & tagMask;
-    XRPL_ASSERT(
-        (!t || t == tagMask),
-        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
+    XRPL_ASSERT((!t || t == tagMask), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }
 
 //------------------------------------------------------------------------------
 
-inline IntrusiveRefCounts::RefCountPair::RefCountPair(
-    IntrusiveRefCounts::FieldType v) noexcept
+inline IntrusiveRefCounts::RefCountPair::RefCountPair(IntrusiveRefCounts::FieldType v) noexcept
     : strong{static_cast<CountType>(v & strongMask)}
     , weak{static_cast<CountType>((v & weakMask) >> StrongCountNumBits)}
     , partialDestroyStartedBit{v & partialDestroyStartedMask}
@@ -427,7 +415,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
+        "xrpl::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
         "range");
 }
 
@@ -438,7 +426,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
+        "xrpl::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
         "inputs inside range");
 }
 
@@ -447,12 +435,12 @@ IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
 {
     XRPL_ASSERT(
         (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
-        "ripple::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
+        "xrpl::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
         "inside range");
     return (static_cast<IntrusiveRefCounts::FieldType>(weak)
             << IntrusiveRefCounts::StrongCountNumBits) |
-        static_cast<IntrusiveRefCounts::FieldType>(strong) |
-        partialDestroyStartedBit | partialDestroyFinishedBit;
+        static_cast<IntrusiveRefCounts::FieldType>(strong) | partialDestroyStartedBit |
+        partialDestroyFinishedBit;
 }
 
 template <class T>
@@ -460,12 +448,11 @@ inline void
 partialDestructorFinished(T** o)
 {
     T& self = **o;
-    IntrusiveRefCounts::RefCountPair p =
+    IntrusiveRefCounts::RefCountPair const p =
         self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
     XRPL_ASSERT(
-        (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit &&
-         !p.strong),
-        "ripple::partialDestructorFinished : not a weak ref");
+        (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit && !p.strong),
+        "xrpl::partialDestructorFinished : not a weak ref");
     if (!p.weak)
     {
         // There was a weak count before the partial destructor ran (or we would
@@ -479,5 +466,4 @@ partialDestructorFinished(T** o)
 }
 //------------------------------------------------------------------------------
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

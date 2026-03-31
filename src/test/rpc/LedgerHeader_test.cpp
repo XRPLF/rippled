@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 class LedgerHeader_test : public beast::unit_test::suite
 {
@@ -17,8 +17,7 @@ class LedgerHeader_test : public beast::unit_test::suite
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 1;
         params[jss::ledger_index] = "current";
-        auto const result =
-            env.client().invoke("ledger_header", params)[jss::result];
+        auto const result = env.client().invoke("ledger_header", params)[jss::result];
         BEAST_EXPECT(result[jss::status] == "success");
         BEAST_EXPECT(result.isMember("ledger"));
         BEAST_EXPECT(result[jss::ledger][jss::closed] == false);
@@ -35,8 +34,7 @@ class LedgerHeader_test : public beast::unit_test::suite
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 1;
         params[jss::ledger_index] = "validated";
-        auto const result =
-            env.client().invoke("ledger_header", params)[jss::result];
+        auto const result = env.client().invoke("ledger_header", params)[jss::result];
         BEAST_EXPECT(result[jss::status] == "success");
         BEAST_EXPECT(result.isMember("ledger"));
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
@@ -52,8 +50,7 @@ class LedgerHeader_test : public beast::unit_test::suite
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;
-        auto const result =
-            env.client().invoke("ledger_header", params)[jss::result];
+        auto const result = env.client().invoke("ledger_header", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::status] == "error");
     }
@@ -68,6 +65,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerHeader, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerHeader, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

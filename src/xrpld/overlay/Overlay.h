@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_OVERLAY_H_INCLUDED
-#define XRPL_OVERLAY_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -19,11 +18,11 @@ namespace boost {
 namespace asio {
 namespace ssl {
 class context;
-}
+}  // namespace ssl
 }  // namespace asio
 }  // namespace boost
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the set of connected peers. */
 class Overlay : public beast::PropertyStream::Source
@@ -94,7 +93,7 @@ public:
     size() const = 0;
 
     /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
+        @deprecated This is superseded by PropertyStream
     */
     virtual Json::Value
     json() = 0;
@@ -134,10 +133,7 @@ public:
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMProposeSet& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a validation.
      * @param m the serialized validation
@@ -146,10 +142,7 @@ public:
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(
-        protocol::TMValidation& m,
-        uint256 const& uid,
-        PublicKey const& validator) = 0;
+    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash
@@ -215,6 +208,4 @@ public:
     txMetrics() const = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

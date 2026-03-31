@@ -1,12 +1,11 @@
-#ifndef XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
-#define XRPL_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STIssue.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Serializer;
 class STObject;
@@ -212,6 +211,4 @@ STXChainBridge::dstChain(bool wasLockingChainSend)
     return ChainType::locking;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

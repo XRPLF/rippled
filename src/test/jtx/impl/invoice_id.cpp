@@ -1,6 +1,6 @@
 #include <test/jtx/invoice_id.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -13,4 +13,4 @@ invoice_id::operator()(Env&, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

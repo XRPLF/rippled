@@ -3,13 +3,13 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct RPCErr;
 
 // VFALCO NOTE Deprecated function
 Json::Value
-rpcError(int iError)
+rpcError(error_code_i iError)
 {
     Json::Value jvResult(Json::objectValue);
     RPC::inject_error(iError, jvResult);
@@ -23,4 +23,4 @@ isRpcError(Json::Value jvResult)
     return jvResult.isObject() && jvResult.isMember(jss::error);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

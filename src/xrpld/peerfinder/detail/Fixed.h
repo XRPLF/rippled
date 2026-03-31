@@ -1,9 +1,8 @@
-#ifndef XRPL_PEERFINDER_FIXED_H_INCLUDED
-#define XRPL_PEERFINDER_FIXED_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Metadata for a Fixed slot. */
@@ -16,7 +15,7 @@ public:
 
     Fixed(Fixed const&) = default;
 
-    /** Returns the time after which we shoud allow a connection attempt. */
+    /** Returns the time after which we should allow a connection attempt. */
     clock_type::time_point const&
     when() const
     {
@@ -27,10 +26,8 @@ public:
     void
     failure(clock_type::time_point const& now)
     {
-        m_failures =
-            std::min(m_failures + 1, Tuning::connectionBackoff.size() - 1);
-        m_when =
-            now + std::chrono::minutes(Tuning::connectionBackoff[m_failures]);
+        m_failures = std::min(m_failures + 1, Tuning::connectionBackoff.size() - 1);
+        m_when = now + std::chrono::minutes(Tuning::connectionBackoff[m_failures]);
     }
 
     /** Updates metadata to reflect a successful connection. */
@@ -47,6 +44,4 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,12 +1,11 @@
-#ifndef XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
-#define XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class TestOutputSuite : public TestSuite
@@ -34,6 +33,4 @@ protected:
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,12 +1,11 @@
-#ifndef XRPL_BASICS_LOCALVALUE_H_INCLUDED
-#define XRPL_BASICS_LOCALVALUE_H_INCLUDED
+#pragma once
 
 #include <boost/thread/tss.hpp>
 
 #include <memory>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -55,8 +54,7 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> tsp(
-        &detail::LocalValues::cleanup);
+    static boost::thread_specific_ptr<detail::LocalValues> tsp(&detail::LocalValues::cleanup);
     return tsp;
 }
 
@@ -105,10 +103,7 @@ LocalValue<T>::operator*()
     }
 
     return *reinterpret_cast<T*>(
-        lvs->values
-            .emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
+        lvs->values.emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
             .first->second->get());
 }
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

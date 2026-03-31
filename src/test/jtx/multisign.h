@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_MULTISIGN_H_INCLUDED
-#define XRPL_TEST_JTX_MULTISIGN_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/SignerUtils.h>
@@ -11,7 +10,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -22,20 +21,14 @@ struct signer
     Account account;
     std::optional<uint256> tag;
 
-    signer(
-        Account account_,
-        std::uint32_t weight_ = 1,
-        std::optional<uint256> tag_ = std::nullopt)
-        : weight(weight_), account(std::move(account_)), tag(std::move(tag_))
+    signer(Account account_, std::uint32_t weight_ = 1, std::optional<uint256> tag_ = std::nullopt)
+        : weight(weight_), account(std::move(account_)), tag(tag_)
     {
     }
 };
 
 Json::Value
-signers(
-    Account const& account,
-    std::uint32_t quorum,
-    std::vector<signer> const& v);
+signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v);
 
 /** Remove a signer list. */
 Json::Value
@@ -63,8 +56,7 @@ public:
         sortSigners(signers);
     }
 
-    msig(SField const& subField_, std::vector<Reg> signers_)
-        : msig{&subField_, signers_}
+    msig(SField const& subField_, std::vector<Reg> signers_) : msig{&subField_, signers_}
     {
     }
 
@@ -77,9 +69,7 @@ public:
     explicit msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
         : msig{
               subField_,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
@@ -88,22 +78,16 @@ public:
     explicit msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
         : msig{
               &subField_,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
     template <class AccountType, class... Accounts>
-        requires(
-            std::convertible_to<AccountType, Reg> &&
-            !std::is_same_v<AccountType, SField*>)
+        requires(std::convertible_to<AccountType, Reg> && !std::is_same_v<AccountType, SField*>)
     explicit msig(AccountType&& a0, Accounts&&... aN)
         : msig{
               topLevel,
-              std::vector<Reg>{
-                  std::forward<AccountType>(a0),
-                  std::forward<Accounts>(aN)...}}
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
@@ -118,6 +102,4 @@ using siglists = owner_count<ltSIGNER_LIST>;
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

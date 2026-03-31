@@ -1,5 +1,4 @@
-#ifndef BEAST_INTRUSIVE_LIST_H_INCLUDED
-#define BEAST_INTRUSIVE_LIST_H_INCLUDED
+#pragma once
 
 #include <iterator>
 
@@ -44,8 +43,8 @@ private:
     template <typename>
     friend class ListIterator;
 
-    ListNode* m_next;
-    ListNode* m_prev;
+    ListNode* m_next = nullptr;
+    ListNode* m_prev = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -55,8 +54,7 @@ class ListIterator
 {
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type =
-        typename beast::detail::CopyConst<N, typename N::value_type>::type;
+    using value_type = typename beast::detail::CopyConst<N, typename N::value_type>::type;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type&;
@@ -451,7 +449,7 @@ public:
     iterator
     erase(iterator pos) noexcept
     {
-        Node* node = &*pos;
+        Node const* node = &*pos;
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;
@@ -569,11 +567,9 @@ private:
     }
 
 private:
-    size_type m_size;
+    size_type m_size = 0u;
     Node m_head;
     Node m_tail;
 };
 
 }  // namespace beast
-
-#endif

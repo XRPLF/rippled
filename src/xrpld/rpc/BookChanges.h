@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_BOOKCHANGES_H_INCLUDED
-#define XRPL_RPC_BOOKCHANGES_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -12,9 +11,9 @@
 
 namespace Json {
 class Value;
-}
+}  // namespace Json
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -41,12 +40,11 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     for (auto& tx : lpAccepted->txs)
     {
-        if (!tx.first || !tx.second ||
-            !tx.first->isFieldPresent(sfTransactionType))
+        if (!tx.first || !tx.second || !tx.first->isFieldPresent(sfTransactionType))
             continue;
 
         std::optional<uint32_t> offerCancel;
-        uint16_t tt = tx.first->getFieldU16(sfTransactionType);
+        uint16_t const tt = tx.first->getFieldU16(sfTransactionType);
         switch (tt)
         {
             case ttOFFER_CANCEL:
@@ -64,7 +62,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         for (auto const& node : tx.second->getFieldArray(sfAffectedNodes))
         {
             SField const& metaType = node.getFName();
-            uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
+            uint16_t const nodeType = node.getFieldU16(sfLedgerEntryType);
 
             // we only care about ltOFFER objects being modified or
             // deleted
@@ -74,8 +72,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             // if either FF or PF are missing we can't compute
             // but generally these are cancelled rather than crossed
             // so skipping them is consistent
-            if (!node.isFieldPresent(sfFinalFields) ||
-                !node.isFieldPresent(sfPreviousFields))
+            if (!node.isFieldPresent(sfFinalFields) || !node.isFieldPresent(sfPreviousFields))
                 continue;
 
             auto const& ffBase = node.peekAtField(sfFinalFields);
@@ -97,16 +94,15 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             // compute the difference in gets and pays actually
             // affected onto the offer
-            STAmount deltaGets = finalFields.getFieldAmount(sfTakerGets) -
+            STAmount const deltaGets = finalFields.getFieldAmount(sfTakerGets) -
                 previousFields.getFieldAmount(sfTakerGets);
-            STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) -
+            STAmount const deltaPays = finalFields.getFieldAmount(sfTakerPays) -
                 previousFields.getFieldAmount(sfTakerPays);
 
-            std::string g{to_string(deltaGets.issue())};
-            std::string p{to_string(deltaPays.issue())};
+            std::string const g{to_string(deltaGets.issue())};
+            std::string const p{to_string(deltaPays.issue())};
 
-            bool const noswap =
-                isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
+            bool const noswap = isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
 
             STAmount first = noswap ? deltaGets : deltaPays;
             STAmount second = noswap ? deltaPays : deltaGets;
@@ -115,7 +111,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             if (second == beast::zero)
                 continue;
 
-            STAmount rate = divide(first, second, noIssue());
+            STAmount const rate = divide(first, second, noIssue());
 
             if (first < beast::zero)
                 first = -first;
@@ -129,9 +125,9 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             else
                 ss << p << "|" << g;
 
-            std::optional<uint256> domain = finalFields[~sfDomainID];
+            std::optional<uint256> const domain = finalFields[~sfDomainID];
 
-            std::string key{ss.str()};
+            std::string const key{ss.str()};
 
             if (tally.find(key) == tally.end())
                 tally[key] = {
@@ -166,11 +162,11 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     jvObj[jss::type] = "bookChanges";
 
     // retrieve validated information from LedgerHeader class
-    jvObj[jss::validated] = lpAccepted->info().validated;
-    jvObj[jss::ledger_index] = lpAccepted->info().seq;
-    jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
-    jvObj[jss::ledger_time] = Json::Value::UInt(
-        lpAccepted->info().closeTime.time_since_epoch().count());
+    jvObj[jss::validated] = lpAccepted->header().validated;
+    jvObj[jss::ledger_index] = lpAccepted->header().seq;
+    jvObj[jss::ledger_hash] = to_string(lpAccepted->header().hash);
+    jvObj[jss::ledger_time] =
+        Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
     jvObj[jss::changes] = Json::arrayValue;
 
@@ -178,18 +174,14 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     {
         Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
 
-        STAmount volA = std::get<0>(entry.second);
-        STAmount volB = std::get<1>(entry.second);
+        STAmount const volA = std::get<0>(entry.second);
+        STAmount const volB = std::get<1>(entry.second);
 
-        inner[jss::currency_a] =
-            (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
-        inner[jss::currency_b] =
-            (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
+        inner[jss::currency_a] = (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
+        inner[jss::currency_b] = (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
 
-        inner[jss::volume_a] =
-            (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
-        inner[jss::volume_b] =
-            (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
+        inner[jss::volume_a] = (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
+        inner[jss::volume_b] = (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
 
         inner[jss::high] = to_string(std::get<2>(entry.second).iou());
         inner[jss::low] = to_string(std::get<3>(entry.second).iou());
@@ -205,6 +197,4 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 }
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,22 +1,20 @@
-#ifndef XRPL_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/json/Object.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+namespace xrpl {
 
 struct LedgerFill
 {
     LedgerFill(
         ReadView const& l,
-        RPC::Context* ctx,
+        RPC::Context const* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
@@ -38,14 +36,13 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    RPC::Context* context;
+    RPC::Context const* context;
     std::optional<NetClock::time_point> closeTime;
 };
 
-/** Given a Ledger and options, fill a Json::Object or Json::Value with a
+/** Given a Ledger and options, fill a Json::Value with a
     description of the ledger.
  */
-
 void
 addJson(Json::Value&, LedgerFill const&);
 
@@ -53,6 +50,8 @@ addJson(Json::Value&, LedgerFill const&);
 Json::Value
 getJson(LedgerFill const&);
 
-}  // namespace ripple
+/** Copy all the keys and values from one object into another. */
+void
+copyFrom(Json::Value& to, Json::Value const& from);
 
-#endif
+}  // namespace xrpl

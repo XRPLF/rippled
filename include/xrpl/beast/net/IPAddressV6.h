@@ -1,5 +1,4 @@
-#ifndef BEAST_NET_IPADDRESSV6_H_INCLUDED
-#define BEAST_NET_IPADDRESSV6_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -20,5 +19,3 @@ is_public(AddressV6 const& addr);
 
 }  // namespace IP
 }  // namespace beast
-
-#endif

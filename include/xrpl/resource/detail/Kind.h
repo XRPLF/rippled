@@ -1,7 +1,6 @@
-#ifndef XRPL_RESOURCE_KIND_H_INCLUDED
-#define XRPL_RESOURCE_KIND_H_INCLUDED
+#pragma once
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 /**
@@ -15,6 +14,4 @@ namespace Resource {
 enum Kind { kindInbound, kindOutbound, kindUnlimited };
 
 }  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,11 +1,10 @@
-#ifndef XRPL_RPC_SERVERHANDLER_H_INCLUDED
-#define XRPL_RPC_SERVERHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
-#include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
@@ -20,7 +19,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline bool
 operator<(Port const& lhs, Port const& rhs)
@@ -151,11 +150,7 @@ public:
         http_request_type&& request,
         boost::asio::ip::tcp::endpoint const& remote_address)
     {
-        return onHandoff(
-            session,
-            {},
-            std::forward<http_request_type>(request),
-            remote_address);
+        return onHandoff(session, {}, std::forward<http_request_type>(request), remote_address);
     }
 
     void
@@ -180,16 +175,14 @@ private:
         Json::Value const& jv);
 
     void
-    processSession(
-        std::shared_ptr<Session> const&,
-        std::shared_ptr<JobQueue::Coro> coro);
+    processSession(std::shared_ptr<Session> const&, std::shared_ptr<JobQueue::Coro> coro);
 
     void
     processRequest(
         Port const& port,
         std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress,
-        Output&&,
+        Output const&,
         std::shared_ptr<JobQueue::Coro> coro,
         std::string_view forwardedFor,
         std::string_view user);
@@ -199,7 +192,7 @@ private:
 };
 
 ServerHandler::Setup
-setup_ServerHandler(Config const& c, std::ostream&& log);
+setup_ServerHandler(Config const& c, std::ostream& log);
 
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
@@ -210,6 +203,4 @@ make_ServerHandler(
     Resource::Manager&,
     CollectorManager& cm);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

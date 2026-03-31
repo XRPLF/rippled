@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_IOUAMOUNT_H_INCLUDED
-#define XRPL_BASICS_IOUAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
@@ -10,7 +9,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** Floating point representation of amounts with high dynamic range
 
@@ -20,14 +19,15 @@ namespace ripple {
 
     Arithmetic operations can throw std::overflow_error during normalization
     if the amount exceeds the largest representable amount, but underflows
-    will silently trunctate to zero.
+    will silently truncate to zero.
 */
-class IOUAmount : private boost::totally_ordered<IOUAmount>,
-                  private boost::additive<IOUAmount>
+class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::additive<IOUAmount>
 {
 private:
-    std::int64_t mantissa_;
-    int exponent_;
+    using mantissa_type = std::int64_t;
+    using exponent_type = int;
+    mantissa_type mantissa_;
+    exponent_type exponent_;
 
     /** Adjusts the mantissa and exponent to the proper range.
 
@@ -38,11 +38,14 @@ private:
     void
     normalize();
 
+    static IOUAmount
+    fromNumber(Number const& number);
+
 public:
     IOUAmount() = default;
     explicit IOUAmount(Number const& other);
     IOUAmount(beast::Zero);
-    IOUAmount(std::int64_t mantissa, int exponent);
+    IOUAmount(mantissa_type mantissa, exponent_type exponent);
 
     IOUAmount& operator=(beast::Zero);
 
@@ -71,10 +74,10 @@ public:
     int
     signum() const noexcept;
 
-    int
+    exponent_type
     exponent() const noexcept;
 
-    std::int64_t
+    mantissa_type
     mantissa() const noexcept;
 
     static IOUAmount
@@ -92,7 +95,7 @@ inline IOUAmount::IOUAmount(beast::Zero)
     *this = beast::zero;
 }
 
-inline IOUAmount::IOUAmount(std::int64_t mantissa, int exponent)
+inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
     : mantissa_(mantissa), exponent_(exponent)
 {
     normalize();
@@ -108,7 +111,8 @@ IOUAmount::operator=(beast::Zero)
     return *this;
 }
 
-inline IOUAmount::operator Number() const
+inline IOUAmount::
+operator Number() const
 {
     return Number{mantissa_, exponent_};
 }
@@ -138,7 +142,8 @@ IOUAmount::operator<(IOUAmount const& other) const
     return Number{*this} < Number{other};
 }
 
-inline IOUAmount::operator bool() const noexcept
+inline IOUAmount::
+operator bool() const noexcept
 {
     return mantissa_ != 0;
 }
@@ -149,13 +154,13 @@ IOUAmount::signum() const noexcept
     return (mantissa_ < 0) ? -1 : (mantissa_ ? 1 : 0);
 }
 
-inline int
+inline IOUAmount::exponent_type
 IOUAmount::exponent() const noexcept
 {
     return exponent_;
 }
 
-inline std::int64_t
+inline IOUAmount::mantissa_type
 IOUAmount::mantissa() const noexcept
 {
     return mantissa_;
@@ -170,11 +175,7 @@ to_string(IOUAmount const& amount);
    dividing by den.
 */
 IOUAmount
-mulRatio(
-    IOUAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp);
+mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp);
 
 // Since many uses of the number class do not have access to a ledger,
 // getSTNumberSwitchover needs to be globally accessible.
@@ -208,6 +209,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -3,7 +3,7 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 Permission::Permission()
 {
@@ -11,8 +11,7 @@ Permission::Permission()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendment, ...) \
-    {value, amendment},
+#define TRANSACTION(tag, value, name, delegable, amendment, ...) {value, amendment},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -20,11 +19,11 @@ Permission::Permission()
 #pragma pop_macro("TRANSACTION")
     };
 
-    delegatableTx_ = {
+    delegableTx_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, ...) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegable, ...) {value, delegable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -69,10 +68,12 @@ Permission::Permission()
     };
 
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
+    {
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
-            "ripple::Permission::granularPermissionMap_ : granular permission "
+            "xrpl::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
+    }
 }
 
 Permission const&
@@ -87,12 +88,11 @@ Permission::getPermissionName(std::uint32_t const value) const
 {
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     if (auto const granular = getGranularName(permissionValue))
-        return *granular;
+        return granular;
 
     // not a granular permission, check if it maps to a transaction type
     auto const txType = permissionToTxType(value);
-    if (auto const* item = TxFormats::getInstance().findByType(txType);
-        item != nullptr)
+    if (auto const* item = TxFormats::getInstance().findByType(txType); item != nullptr)
         return item->getName();
 
     return std::nullopt;
@@ -128,13 +128,13 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
-std::optional<std::reference_wrapper<uint256 const>> const
+std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
-        "ripple::Permissions::getTxFeature : tx exists in txFeatureMap_");
+        "xrpl::Permissions::getTxFeature : tx exists in txFeatureMap_");
 
     if (txFeaturesIt->second == uint256{})
         return std::nullopt;
@@ -142,50 +142,49 @@ Permission::getTxFeature(TxType txType) const
 }
 
 bool
-Permission::isDelegatable(
-    std::uint32_t const& permissionValue,
-    Rules const& rules) const
+Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const
 {
     auto const granularPermission =
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
     if (granularPermission)
+    {
         // granular permissions are always allowed to be delegated
         return true;
+    }
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const it = delegatableTx_.find(txType);
+    auto const it = delegableTx_.find(txType);
 
-    if (it == delegatableTx_.end())
+    if (it == delegableTx_.end())
         return false;
 
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
-        "ripple::Permissions::isDelegatable : tx exists in txFeatureMap_");
+        "xrpl::Permissions::isDelegable : tx exists in txFeatureMap_");
 
     // Delegation is only allowed if the required amendment for the transaction
     // is enabled. For transactions that do not require an amendment, delegation
     // is always allowed.
-    if (txFeaturesIt->second != uint256{} &&
-        !rules.enabled(txFeaturesIt->second))
+    if (txFeaturesIt->second != uint256{} && !rules.enabled(txFeaturesIt->second))
         return false;
 
-    if (it->second == Delegation::notDelegatable)
+    if (it->second == Delegation::notDelegable)
         return false;
 
     return true;
 }
 
 uint32_t
-Permission::txToPermissionType(TxType const& type) const
+Permission::txToPermissionType(TxType const& type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const& value) const
+Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

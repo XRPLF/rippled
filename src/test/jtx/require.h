@@ -1,12 +1,11 @@
-#ifndef XRPL_TEST_JTX_REQUIRE_H_INCLUDED
-#define XRPL_TEST_JTX_REQUIRE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/requires.h>
 
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -63,6 +62,4 @@ public:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

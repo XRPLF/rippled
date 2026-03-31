@@ -1,9 +1,8 @@
-#ifndef XRPL_NODESTORE_MANAGERIMP_H_INCLUDED
-#define XRPL_NODESTORE_MANAGERIMP_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Manager.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace NodeStore {
 
@@ -50,6 +49,4 @@ public:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

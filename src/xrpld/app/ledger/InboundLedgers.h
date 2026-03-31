@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpl/protocol/RippleLedgerHash.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the lifetime of inbound ledgers.
 
@@ -27,10 +26,7 @@ public:
     // Queue. TODO review whether all callers of acquire() can use this
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) = 0;
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;
@@ -84,6 +80,4 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

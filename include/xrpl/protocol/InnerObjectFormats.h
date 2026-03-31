@@ -1,9 +1,8 @@
-#ifndef XRPL_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_INNER_OBJECT_FORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the list of known inner object formats.
  */
@@ -23,6 +22,4 @@ public:
     findSOTemplateBySField(SField const& sField) const;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

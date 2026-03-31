@@ -1,7 +1,6 @@
 // Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>
 
-#ifndef XRPL_BASICS_SPINLOCK_H_INCLUDED
-#define XRPL_BASICS_SPINLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -13,7 +12,7 @@
 #include <immintrin.h>
 #endif
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 /** Inform the processor that we are in a tight spin-wait loop.
@@ -105,7 +104,7 @@ public:
     {
         XRPL_ASSERT(
             index >= 0 && (mask_ != 0),
-            "ripple::packed_spinlock::packed_spinlock : valid index and mask");
+            "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
     }
 
     [[nodiscard]] bool
@@ -206,6 +205,4 @@ public:
 };
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

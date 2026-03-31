@@ -1,7 +1,6 @@
-#ifndef XRPL_NODESTORE_TASK_H_INCLUDED
-#define XRPL_NODESTORE_TASK_H_INCLUDED
+#pragma once
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Derived classes perform scheduled tasks. */
@@ -17,6 +16,4 @@ struct Task
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

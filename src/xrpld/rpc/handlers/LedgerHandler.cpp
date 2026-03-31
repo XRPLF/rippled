@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -9,8 +8,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
@@ -21,8 +21,8 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool needsLedger = params.isMember(jss::ledger) ||
-        params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index);
+    bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
+        params.isMember(jss::ledger_index);
     if (!needsLedger)
         return Status::OK;
 
@@ -37,12 +37,9 @@ LedgerHandler::check()
     bool const owner_funds = params[jss::owner_funds].asBool();
     bool const queue = params[jss::queue].asBool();
 
-    options_ = (full ? LedgerFill::full : 0) |
-        (expand ? LedgerFill::expand : 0) |
-        (transactions ? LedgerFill::dumpTxrp : 0) |
-        (accounts ? LedgerFill::dumpState : 0) |
-        (binary ? LedgerFill::binary : 0) |
-        (owner_funds ? LedgerFill::ownerFunds : 0) |
+    options_ = (full ? LedgerFill::full : 0) | (expand ? LedgerFill::expand : 0) |
+        (transactions ? LedgerFill::dumpTxrp : 0) | (accounts ? LedgerFill::dumpState : 0) |
+        (binary ? LedgerFill::binary : 0) | (owner_funds ? LedgerFill::ownerFunds : 0) |
         (queue ? LedgerFill::dumpQueue : 0);
 
     if (full || accounts)
@@ -52,13 +49,11 @@ LedgerHandler::check()
         if (!isUnlimited(context_.role))
             return rpcNO_PERMISSION;
 
-        if (context_.app.getFeeTrack().isLoadedLocal() &&
-            !isUnlimited(context_.role))
+        if (context_.app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.role))
         {
             return rpcTOO_BUSY;
         }
-        context_.loadType =
-            binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
+        context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
     if (queue)
     {
@@ -75,15 +70,52 @@ LedgerHandler::check()
     return Status::OK;
 }
 
+void
+LedgerHandler::writeResult(Json::Value& value)
+{
+    if (ledger_)
+    {
+        copyFrom(value, result_);
+        addJson(value, {*ledger_, &context_, options_, queueTxs_});
+    }
+    else
+    {
+        auto& master = context_.app.getLedgerMaster();
+        {
+            auto& closed = value[jss::closed] = Json::objectValue;
+            addJson(closed, {*master.getClosedLedger(), &context_, 0});
+        }
+        {
+            auto& open = value[jss::open] = Json::objectValue;
+            addJson(open, {*master.getCurrentLedger(), &context_, 0});
+        }
+    }
+
+    Json::Value warnings{Json::arrayValue};
+    if (context_.params.isMember(jss::type))
+    {
+        Json::Value& w = warnings.append(Json::objectValue);
+        w[jss::id] = warnRPC_FIELDS_DEPRECATED;
+        w[jss::message] =
+            "Some fields from your request are deprecated. Please check the "
+            "documentation at "
+            "https://xrpl.org/docs/references/http-websocket-apis/ "
+            "and update your request. Field `type` is deprecated.";
+    }
+
+    if (warnings.size() != 0u)
+        value[jss::warnings] = std::move(warnings);
+}
+
 }  // namespace RPC
 
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
     auto begin = std::chrono::system_clock::now();
-    org::xrpl::rpc::v1::GetLedgerRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -91,19 +123,17 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         grpc::Status errorStatus;
         if (status.toErrorCode() == rpcINVALID_PARAMS)
         {
-            errorStatus = grpc::Status(
-                grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
         else
         {
-            errorStatus =
-                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
         }
         return {response, errorStatus};
     }
 
     Serializer s;
-    addRaw(ledger->info(), s, true);
+    addRaw(ledger->header(), s, true);
 
     response.set_ledger_header(s.peekData().data(), s.getLength());
 
@@ -113,69 +143,62 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         {
             for (auto& i : ledger->txs)
             {
-                XRPL_ASSERT(
-                    i.first, "ripple::doLedgerGrpc : non-null transaction");
+                XRPL_ASSERT(i.first, "xrpl::doLedgerGrpc : non-null transaction");
                 if (request.expand())
                 {
-                    auto txn = response.mutable_transactions_list()
-                                   ->add_transactions();
-                    Serializer sTxn = i.first->getSerializer();
+                    auto txn = response.mutable_transactions_list()->add_transactions();
+                    Serializer const sTxn = i.first->getSerializer();
                     txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
                     if (i.second)
                     {
-                        Serializer sMeta = i.second->getSerializer();
+                        Serializer const sMeta = i.second->getSerializer();
                         txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
                     }
                 }
                 else
                 {
                     auto const& hash = i.first->getTransactionID();
-                    response.mutable_hashes_list()->add_hashes(
-                        hash.data(), hash.size());
+                    response.mutable_hashes_list()->add_hashes(hash.data(), hash.size());
                 }
             }
         }
         catch (std::exception const& e)
         {
-            JLOG(context.j.error())
-                << __func__ << " - Error deserializing transaction in ledger "
-                << ledger->info().seq
-                << " . skipping transaction and following transactions. You "
-                   "should look into this further";
+            JLOG(context.j.error()) << __func__ << " - Error deserializing transaction in ledger "
+                                    << ledger->header().seq
+                                    << " . skipping transaction and following transactions. You "
+                                       "should look into this further";
         }
     }
 
     if (request.get_objects())
     {
-        std::shared_ptr<ReadView const> parent =
+        std::shared_ptr<ReadView const> const parent =
             context.app.getLedgerMaster().getLedgerBySeq(ledger->seq() - 1);
 
-        std::shared_ptr<Ledger const> base =
-            std::dynamic_pointer_cast<Ledger const>(parent);
+        std::shared_ptr<Ledger const> const base = std::dynamic_pointer_cast<Ledger const>(parent);
         if (!base)
         {
-            grpc::Status errorStatus{
+            grpc::Status const errorStatus{
                 grpc::StatusCode::NOT_FOUND, "parent ledger not validated"};
             return {response, errorStatus};
         }
 
-        std::shared_ptr<Ledger const> desired =
+        std::shared_ptr<Ledger const> const desired =
             std::dynamic_pointer_cast<Ledger const>(ledger);
         if (!desired)
         {
-            grpc::Status errorStatus{
-                grpc::StatusCode::NOT_FOUND, "ledger not validated"};
+            grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "ledger not validated"};
             return {response, errorStatus};
         }
         SHAMap::Delta differences;
 
-        int maxDifferences = std::numeric_limits<int>::max();
+        int const maxDifferences = std::numeric_limits<int>::max();
 
-        bool res = base->stateMap().compare(
-            desired->stateMap(), differences, maxDifferences);
+        bool const res = base->stateMap().compare(desired->stateMap(), differences, maxDifferences);
         if (!res)
         {
-            grpc::Status errorStatus{
+            grpc::Status const errorStatus{
                 grpc::StatusCode::RESOURCE_EXHAUSTED,
                 "too many differences between specified ledgers"};
             return {response, errorStatus};
@@ -190,21 +213,23 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             obj->set_key(k.data(), k.size());
             if (inDesired)
             {
-                XRPL_ASSERT(
-                    inDesired->size() > 0,
-                    "ripple::doLedgerGrpc : non-empty desired");
+                XRPL_ASSERT(inDesired->size() > 0, "xrpl::doLedgerGrpc : non-empty desired");
                 obj->set_data(inDesired->data(), inDesired->size());
             }
             if (inBase && inDesired)
-                obj->set_mod_type(
-                    org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            {
+                obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::MODIFIED);
+            }
             else if (inBase && !inDesired)
+            {
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::DELETED);
+            }
             else
+            {
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
+            }
             auto const blob = inDesired ? inDesired->slice() : inBase->slice();
-            auto const objectType =
-                static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
+            auto const objectType = static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
 
             if (request.get_object_neighbors())
             {
@@ -213,8 +238,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                     auto lb = desired->stateMap().lower_bound(k);
                     auto ub = desired->stateMap().upper_bound(k);
                     if (lb != desired->stateMap().end())
-                        obj->set_predecessor(
-                            lb->key().data(), lb->key().size());
+                        obj->set_predecessor(lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
                         obj->set_successor(ub->key().data(), ub->key().size());
                     if (objectType == ltDIR_NODE)
@@ -225,48 +249,34 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
                             if (!inBase && inDesired)
                             {
-                                auto firstBook =
-                                    desired->stateMap().upper_bound(
-                                        bookBase.key);
+                                auto firstBook = desired->stateMap().upper_bound(bookBase.key);
                                 if (firstBook != desired->stateMap().end() &&
-                                    firstBook->key() <
-                                        getQualityNext(bookBase.key) &&
+                                    firstBook->key() < getQualityNext(bookBase.key) &&
                                     firstBook->key() == k)
                                 {
                                     auto succ = response.add_book_successors();
-                                    succ->set_book_base(
-                                        bookBase.key.data(),
-                                        bookBase.key.size());
+                                    succ->set_book_base(bookBase.key.data(), bookBase.key.size());
                                     succ->set_first_book(
-                                        firstBook->key().data(),
-                                        firstBook->key().size());
+                                        firstBook->key().data(), firstBook->key().size());
                                 }
                             }
                             if (inBase && !inDesired)
                             {
-                                auto oldFirstBook =
-                                    base->stateMap().upper_bound(bookBase.key);
+                                auto oldFirstBook = base->stateMap().upper_bound(bookBase.key);
                                 if (oldFirstBook != base->stateMap().end() &&
-                                    oldFirstBook->key() <
-                                        getQualityNext(bookBase.key) &&
+                                    oldFirstBook->key() < getQualityNext(bookBase.key) &&
                                     oldFirstBook->key() == k)
                                 {
                                     auto succ = response.add_book_successors();
-                                    succ->set_book_base(
-                                        bookBase.key.data(),
-                                        bookBase.key.size());
+                                    succ->set_book_base(bookBase.key.data(), bookBase.key.size());
                                     auto newFirstBook =
-                                        desired->stateMap().upper_bound(
-                                            bookBase.key);
+                                        desired->stateMap().upper_bound(bookBase.key);
 
-                                    if (newFirstBook !=
-                                            desired->stateMap().end() &&
-                                        newFirstBook->key() <
-                                            getQualityNext(bookBase.key))
+                                    if (newFirstBook != desired->stateMap().end() &&
+                                        newFirstBook->key() < getQualityNext(bookBase.key))
                                     {
                                         succ->set_first_book(
-                                            newFirstBook->key().data(),
-                                            newFirstBook->key().size());
+                                            newFirstBook->key().data(), newFirstBook->key().size());
                                     }
                                 }
                             }
@@ -284,18 +294,15 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     auto end = std::chrono::system_clock::now();
     auto duration =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin)
-            .count() *
-        1.0;
-    JLOG(context.j.warn())
-        << __func__ << " - Extract time = " << duration
-        << " - num objects = " << response.ledger_objects().objects_size()
-        << " - num txns = " << response.transactions_list().transactions_size()
-        << " - ms per obj "
-        << duration / response.ledger_objects().objects_size()
-        << " - ms per txn "
-        << duration / response.transactions_list().transactions_size();
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
+                           << " - num objects = " << response.ledger_objects().objects_size()
+                           << " - num txns = " << response.transactions_list().transactions_size()
+                           << " - ms per obj "
+                           << duration / response.ledger_objects().objects_size()
+                           << " - ms per txn "
+                           << duration / response.transactions_list().transactions_size();
 
     return {response, status};
 }
-}  // namespace ripple
+}  // namespace xrpl

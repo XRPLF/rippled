@@ -1,8 +1,7 @@
-#include <xrpld/app/tx/detail/OfferStream.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/tx/paths/OfferStream.h>
 
-namespace ripple {
+namespace xrpl {
 
 class OfferStream_test : public beast::unit_test::suite
 {
@@ -20,6 +19,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(OfferStream, app, ripple);
+BEAST_DEFINE_TESTSUITE(OfferStream, app, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

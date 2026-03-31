@@ -1,9 +1,8 @@
-#ifndef XRPL_SHAMAP_SHAMAPADDNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPADDNODE_H_INCLUDED
+#pragma once
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // results of adding nodes
 class SHAMapAddNode
@@ -161,6 +160,4 @@ SHAMapAddNode::get() const
     return ret;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 struct ApiVersion_test : beast::unit_test::suite
 {
@@ -19,13 +19,9 @@ struct ApiVersion_test : beast::unit_test::suite
         {
             testcase("API versions invariants");
 
-            static_assert(
-                RPC::apiMinimumSupportedVersion <=
-                RPC::apiMaximumSupportedVersion);
-            static_assert(
-                RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(
-                RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
+            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumSupportedVersion);
+            static_assert(RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
+            static_assert(RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
             static_assert(RPC::apiBetaVersion <= RPC::apiMaximumValidVersion);
 
             BEAST_EXPECT(true);
@@ -49,7 +45,7 @@ struct ApiVersion_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

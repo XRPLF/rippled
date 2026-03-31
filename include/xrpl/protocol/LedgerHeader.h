@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_LEDGERHEADER_H_INCLUDED
-#define XRPL_PROTOCOL_LEDGERHEADER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +7,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Information about the notional ledger backing the view. */
 struct LedgerHeader
@@ -53,12 +52,6 @@ struct LedgerHeader
     NetClock::time_point closeTime = {};
 };
 
-// We call them "headers" in conversation
-// but "info" in code. Unintuitive.
-// This alias lets us give the "correct" name to the class
-// without yet disturbing existing uses.
-using LedgerInfo = LedgerHeader;
-
 // ledger close flags
 static std::uint32_t const sLCF_NoConsensusTime = 0x01;
 
@@ -79,6 +72,8 @@ deserializeHeader(Slice data, bool hasHash = false);
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-}  // namespace ripple
+/** Calculate the hash of a ledger header. */
+uint256
+calculateLedgerHash(LedgerHeader const& info);
 
-#endif
+}  // namespace xrpl

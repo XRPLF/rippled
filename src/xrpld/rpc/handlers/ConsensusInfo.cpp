@@ -1,11 +1,11 @@
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doConsensusInfo(RPC::JsonContext& context)
@@ -17,4 +17,4 @@ doConsensusInfo(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

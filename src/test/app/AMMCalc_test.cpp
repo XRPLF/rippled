@@ -1,12 +1,11 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/AMMHelpers.h>
-
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
 
 #include <boost/regex.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 /** AMM Calculator. Uses AMM formulas to simulate the payment engine
@@ -23,8 +22,8 @@ class AMMCalc_test : public beast::unit_test::suite
 {
     using token_iter = boost::sregex_token_iterator;
     using steps = std::vector<std::pair<Amounts, bool>>;
-    using trates = std::map<std::string, std::uint32_t>;
-    using swapargs = std::tuple<steps, STAmount, trates, std::uint32_t>;
+    using transfer_rates = std::map<std::string, std::uint32_t>;
+    using swapargs = std::tuple<steps, STAmount, transfer_rates, std::uint32_t>;
     jtx::Account const gw{jtx::Account("gw")};
     token_iter const end_;
 
@@ -38,16 +37,20 @@ class AMMCalc_test : public beast::unit_test::suite
         str = boost::regex_replace(str, boost::regex("^(A|O)[(]"), "");
         boost::smatch match;
         // XXX(val))?
-        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
-            if (delimited)
+            if (delimited != nullptr)
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
+            {
                 return XRP(std::stoll(match[2]));
-            // drops
-            else if (match[1] == "XRPA")
+                // drops
+            }
+            if (match[1] == "XRPA")
+            {
                 return XRPAmount{std::stoll(match[2])};
+            }
             return amountFromString(gw[match[1]].asset(), match[2]);
         }
         return std::nullopt;
@@ -62,14 +65,14 @@ class AMMCalc_test : public beast::unit_test::suite
         str = boost::regex_replace(str, boost::regex("^T[(]"), "");
         // XXX(rate))?
         boost::smatch match;
-        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
             std::string const currency = match[1];
             // input is rate * 100, no fraction
-            std::uint32_t rate = 10'000'000 * std::stoi(match[2].str());
+            std::uint32_t const rate = 10'000'000 * std::stoi(match[2].str());
             // true if delimited - )
-            return {{currency, rate, match[3] != "" ? true : false}};
+            return {{currency, rate, match[3] != ""}};
         }
         return std::nullopt;
     }
@@ -91,7 +94,7 @@ class AMMCalc_test : public beast::unit_test::suite
         if (p == end_)
             return std::nullopt;
         std::string const s = *p;
-        bool const amm = s[0] == 'O' ? false : true;
+        bool const amm = s[0] != 'O';
         auto const a1 = getAmt(p++);
         if (!a1 || p == end_)
             return std::nullopt;
@@ -101,10 +104,10 @@ class AMMCalc_test : public beast::unit_test::suite
         return {{{*a1, *a2}, amm}};
     }
 
-    std::optional<trates>
+    std::optional<transfer_rates>
     getTransferRate(token_iter& p)
     {
-        trates rates{};
+        transfer_rates rates{};
         if (p == end_)
             return rates;
         std::string str = *p;
@@ -115,13 +118,15 @@ class AMMCalc_test : public beast::unit_test::suite
         {
             if (auto const rate = getRate(p++))
             {
-                auto const [currency, trate, delimited] = *rate;
-                rates[currency] = trate;
+                auto const [currency, transferRate, delimited] = *rate;
+                rates[currency] = transferRate;
                 if (delimited)
                     break;
             }
             else
+            {
                 return std::nullopt;
+            }
         }
         return rates;
     }
@@ -156,7 +161,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return {{pairs, *swap, *rate, fee}};
     }
 
-    std::string
+    static std::string
     toString(STAmount const& a)
     {
         std::stringstream str;
@@ -164,7 +169,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return str.str();
     }
 
-    STAmount
+    static STAmount
     mulratio(STAmount const& amt, std::uint32_t a, std::uint32_t b, bool round)
     {
         if (a == b)
@@ -174,28 +179,27 @@ class AMMCalc_test : public beast::unit_test::suite
         return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
     }
 
-    void
+    static void
     swapOut(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);
         STAmount sout = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<trates>(args);
+        auto const rates = std::get<transfer_rates>(args);
         STAmount resultOut = sout;
         STAmount resultIn{};
         STAmount sin{};
         int limitingStep = vp.size();
         STAmount limitStepOut{};
-        auto trate = [&](auto const& amt) {
+        auto transferRate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency)
-                                                       : QUALITY_ONE;
+            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
         };
         // swap out reverse
         sin = sout;
         for (auto it = vp.rbegin(); it != vp.rend(); ++it)
         {
-            sout = mulratio(sin, trate(sin), QUALITY_ONE, true);
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, true);
             auto const [amts, amm] = *it;
             // assume no amm limit
             if (amm)
@@ -222,7 +226,7 @@ class AMMCalc_test : public beast::unit_test::suite
         for (int i = limitingStep + 1; i < vp.size(); ++i)
         {
             auto const [amts, amm] = vp[i];
-            sin = mulratio(sin, QUALITY_ONE, trate(sin), false);
+            sin = mulratio(sin, QUALITY_ONE, transferRate(sin), false);
             if (amm)
             {
                 sout = swapAssetIn(amts, sin, fee);
@@ -235,36 +239,31 @@ class AMMCalc_test : public beast::unit_test::suite
             sin = sout;
             resultOut = sout;
         }
-        std::cout << "in: " << toString(resultIn)
-                  << " out: " << toString(resultOut) << std::endl;
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
-    void
+    static void
     swapIn(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);
         STAmount sin = std::get<STAmount>(args);
         auto const fee = std::get<std::uint32_t>(args);
-        auto const rates = std::get<trates>(args);
+        auto const rates = std::get<transfer_rates>(args);
         STAmount resultIn = sin;
         STAmount resultOut{};
         STAmount sout{};
         int limitingStep = 0;
         STAmount limitStepIn{};
-        auto trate = [&](auto const& amt) {
+        auto transferRate = [&](auto const& amt) {
             auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency)
-                                                       : QUALITY_ONE;
+            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
         };
         // Swap in forward
         for (auto it = vp.begin(); it != vp.end(); ++it)
         {
             auto const [amts, amm] = *it;
-            sin = mulratio(
-                sin,
-                QUALITY_ONE,
-                trate(sin),
-                false);  // out of the next step
+            sin = mulratio(sin, QUALITY_ONE, transferRate(sin),
+                           false);  // out of the next step
             // assume no amm limit
             if (amm)
             {
@@ -289,7 +288,7 @@ class AMMCalc_test : public beast::unit_test::suite
         // swap out if limiting step
         for (int i = limitingStep - 1; i >= 0; --i)
         {
-            sout = mulratio(sin, trate(sin), QUALITY_ONE, false);
+            sout = mulratio(sin, transferRate(sin), QUALITY_ONE, false);
             auto const [amts, amm] = vp[i];
             if (amm)
             {
@@ -302,9 +301,8 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             resultIn = sin;
         }
-        resultOut = mulratio(resultOut, QUALITY_ONE, trate(resultOut), true);
-        std::cout << "in: " << toString(resultIn)
-                  << " out: " << toString(resultOut) << std::endl;
+        resultOut = mulratio(resultOut, QUALITY_ONE, transferRate(resultOut), true);
+        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
     void
@@ -312,7 +310,7 @@ class AMMCalc_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const a = arg();
-        boost::regex re(",");
+        boost::regex const re(",");
         token_iter p(a.begin(), a.end(), re, -1);
         // Token is denoted as CUR(xxx), where CUR is the currency code
         //    and xxx is the amount, for instance: XRP(100) or USD(11.5)
@@ -378,11 +376,8 @@ class AMMCalc_test : public beast::unit_test::suite
                 {
                     Account const amm("amm");
                     auto const LPT = amm["LPT"];
-                    std::cout
-                        << to_string(
-                               ammLPTokens(pool->first.in, pool->first.out, LPT)
-                                   .iou())
-                        << std::endl;
+                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, LPT).iou())
+                              << std::endl;
                     return true;
                 }
             }
@@ -396,7 +391,7 @@ class AMMCalc_test : public beast::unit_test::suite
             //     10 is AMM trading fee
             else if (*p == "changespq")
             {
-                Env env(*this);
+                Env const env(*this);
                 if (auto const pool = getAmounts(++p))
                 {
                     if (auto const offer = getAmounts(p))
@@ -409,17 +404,17 @@ class AMMCalc_test : public beast::unit_test::suite
                                 env.current()->rules(),
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
-                            std::cout
-                                << "amm offer: " << toString(ammOffer->in)
-                                << " " << toString(ammOffer->out)
-                                << "\nnew pool: "
-                                << toString(pool->first.in + ammOffer->in)
-                                << " "
-                                << toString(pool->first.out - ammOffer->out)
-                                << std::endl;
-                        else
-                            std::cout << "can't change the pool's SP quality"
+                        {
+                            std::cout << "amm offer: " << toString(ammOffer->in) << " "
+                                      << toString(ammOffer->out)
+                                      << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
+                                      << " " << toString(pool->first.out - ammOffer->out)
                                       << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "can't change the pool's SP quality" << std::endl;
+                        }
                         return true;
                     }
                 }
@@ -439,7 +434,7 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, xrpl);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

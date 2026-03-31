@@ -1,9 +1,8 @@
-#ifndef XRPL_TEST_JTX_TXFLAGS_H_INCLUDED
-#define XRPL_TEST_JTX_TXFLAGS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -24,6 +23,4 @@ public:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

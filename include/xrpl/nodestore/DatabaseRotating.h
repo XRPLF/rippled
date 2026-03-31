@@ -1,9 +1,8 @@
-#ifndef XRPL_NODESTORE_DATABASEROTATING_H_INCLUDED
-#define XRPL_NODESTORE_DATABASEROTATING_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Database.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /* This class has two key-value store Backend objects for persisting SHAMap
@@ -33,12 +32,9 @@ public:
     virtual void
     rotate(
         std::unique_ptr<NodeStore::Backend>&& newBackend,
-        std::function<void(
-            std::string const& writableName,
-            std::string const& archiveName)> const& f) = 0;
+        std::function<void(std::string const& writableName, std::string const& archiveName)> const&
+            f) = 0;
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

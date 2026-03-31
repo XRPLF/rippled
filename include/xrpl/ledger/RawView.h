@@ -1,11 +1,10 @@
-#ifndef XRPL_LEDGER_RAWVIEW_H_INCLUDED
-#define XRPL_LEDGER_RAWVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Interface for ledger entry changes.
 
@@ -87,6 +86,4 @@ public:
         std::shared_ptr<Serializer const> const& metaData) = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

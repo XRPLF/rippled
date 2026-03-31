@@ -17,14 +17,14 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 sqlBlobLiteral(Blob const& blob)
 {
     std::string j;
 
-    j.reserve(blob.size() * 2 + 3);
+    j.reserve((blob.size() * 2) + 3);
     j.push_back('X');
     j.push_back('\'');
     boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));
@@ -37,7 +37,7 @@ bool
 parseUrl(parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl(
+    static boost::regex const reUrl(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -103,7 +103,7 @@ trim_whitespace(std::string str)
 std::optional<std::uint64_t>
 to_uint64(std::string const& s)
 {
-    std::uint64_t result;
+    std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))
         return result;
     return std::nullopt;
@@ -136,4 +136,4 @@ isProperlyFormedTomlDomain(std::string_view domain)
     return boost::regex_match(domain.begin(), domain.end(), re);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

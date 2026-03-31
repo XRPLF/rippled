@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TICKET_H_INCLUDED
-#define XRPL_TEST_JTX_TICKET_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -7,7 +6,7 @@
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -47,6 +46,4 @@ using tickets = owner_count<ltTICKET>;
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

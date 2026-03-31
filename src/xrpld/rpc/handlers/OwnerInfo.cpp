@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 // {
 //   'ident' : <indent>,
@@ -15,13 +15,12 @@ namespace ripple {
 Json::Value
 doOwnerInfo(RPC::JsonContext& context)
 {
-    if (!context.params.isMember(jss::account) &&
-        !context.params.isMember(jss::ident))
+    if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
     {
         return RPC::missing_field_error(jss::account);
     }
 
-    std::string strIdent = context.params.isMember(jss::account)
+    std::string const strIdent = context.params.isMember(jss::account)
         ? context.params[jss::account].asString()
         : context.params[jss::ident].asString();
     Json::Value ret;
@@ -40,4 +39,4 @@ doOwnerInfo(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

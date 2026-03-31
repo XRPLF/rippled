@@ -19,13 +19,21 @@ run from the repository root.
 1. `.github/scripts/rename/definitions.sh`: This script will rename all
    definitions, such as include guards, from `RIPPLE_XXX` and `RIPPLED_XXX` to
    `XRPL_XXX`.
-2. `.github/scripts/rename/copyright.sh`: This script will remove superflous
+2. `.github/scripts/rename/copyright.sh`: This script will remove superfluous
    copyright notices.
 3. `.github/scripts/rename/cmake.sh`: This script will rename all CMake files
    from `RippleXXX.cmake` or `RippledXXX.cmake` to `XrplXXX.cmake`, and any
    references to `ripple` and `rippled` (with or without capital letters) to
    `xrpl` and `xrpld`, respectively. The name of the binary will remain as-is,
    and will only be renamed to `xrpld` by a later script.
+4. `.github/scripts/rename/binary.sh`: This script will rename the binary from
+   `rippled` to `xrpld`, and reverses the symlink so that `rippled` points to
+   the `xrpld` binary.
+5. `.github/scripts/rename/namespace.sh`: This script will rename the C++
+   namespaces from `ripple` to `xrpl`.
+6. `.github/scripts/rename/config.sh`: This script will rename the config from
+   `rippled.cfg` to `xrpld.cfg`, and updating the code accordingly. The old
+   filename will still be accepted.
 
 You can run all these scripts from the repository root as follows:
 
@@ -33,4 +41,7 @@ You can run all these scripts from the repository root as follows:
 ./.github/scripts/rename/definitions.sh .
 ./.github/scripts/rename/copyright.sh .
 ./.github/scripts/rename/cmake.sh .
+./.github/scripts/rename/binary.sh .
+./.github/scripts/rename/namespace.sh .
+./.github/scripts/rename/config.sh .
 ```

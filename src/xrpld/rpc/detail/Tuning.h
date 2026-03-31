@@ -1,7 +1,6 @@
-#ifndef XRPL_RPC_TUNING_H_INCLUDED
-#define XRPL_RPC_TUNING_H_INCLUDED
+#pragma once
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 /** Tuned constants. */
@@ -11,7 +10,7 @@ namespace Tuning {
 /** Represents RPC limit parameter values that have a min, default and max. */
 struct LimitRange
 {
-    unsigned int rmin, rdefault, rmax;
+    unsigned int rmin, rDefault, rmax;
 };
 
 /** Limits for the account_lines command. */
@@ -71,6 +70,4 @@ static int constexpr max_auto_src_cur = 88;
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

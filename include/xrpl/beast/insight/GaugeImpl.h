@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <memory>
@@ -24,5 +23,3 @@ public:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

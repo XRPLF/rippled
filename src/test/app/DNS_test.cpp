@@ -7,15 +7,15 @@
 #include <condition_variable>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class DNS_test : public beast::unit_test::suite
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
-    std::weak_ptr<ripple::detail::Work> work_;
-    endpoint_type lastEndpoint_{};
+    std::weak_ptr<xrpl::detail::Work> work_;
+    endpoint_type lastEndpoint_;
     parsedURL pUrl_;
     std::string port_;
     jtx::Env env_;
@@ -33,14 +33,14 @@ public:
     {
         auto onFetch = [&](error_code const& errorCode,
                            endpoint_type const& endpoint,
-                           ripple::detail::response_type&& resp) {
+                           xrpl::detail::response_type const& resp) {
             BEAST_EXPECT(!errorCode);
             lastEndpoint_ = endpoint;
             resolved_[endpoint.address().to_string()]++;
             cv_.notify_all();
         };
 
-        auto sp = std::make_shared<ripple::detail::WorkSSL>(
+        auto sp = std::make_shared<xrpl::detail::WorkSSL>(
             pUrl_.domain,
             pUrl_.path,
             port_,
@@ -62,7 +62,7 @@ public:
     {
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOContext());
-        std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
         auto results = resolver.resolve(pUrl_.domain, port);
         auto it = results.begin();
         auto end = results.end();
@@ -76,7 +76,7 @@ public:
     parse()
     {
         std::string url = arg();
-        if (url == "")
+        if (url.empty())
             url = "https://vl.ripple.com";
         BEAST_EXPECT(parseUrl(pUrl_, url));
         port_ = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
@@ -92,8 +92,7 @@ public:
         for (int i = 1; i <= 4; ++i)
         {
             makeRequest(lastEndpoint_, true);
-            BEAST_EXPECT(
-                resolved_.size() == 1 && resolved_.begin()->second == i);
+            BEAST_EXPECT(resolved_.size() == 1 && resolved_.begin()->second == i);
         }
         if (!isMultipleEndpoints())
             return;
@@ -110,7 +109,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, ripple, 20);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

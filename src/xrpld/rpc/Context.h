@@ -1,13 +1,12 @@
-#ifndef XRPL_RPC_CONTEXT_H_INCLUDED
-#define XRPL_RPC_CONTEXT_H_INCLUDED
+#pragma once
 
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/server/InfoSub.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class NetworkOPs;
@@ -53,6 +52,4 @@ struct GRPCContext : public Context
 };
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,13 +1,11 @@
-#ifndef XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
-#define XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
-
+#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 // Track transactions issued by local clients
 // Ensure we always apply them to our open ledger
@@ -42,6 +40,4 @@ public:
 std::unique_ptr<LocalTxs>
 make_LocalTxs();
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

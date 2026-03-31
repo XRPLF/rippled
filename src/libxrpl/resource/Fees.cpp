@@ -1,7 +1,7 @@
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 Charge const feeMalformedRequest(200, "malformed request");
@@ -26,4 +26,4 @@ Charge const feeDrop(6000, "dropped");
 // See also Resource::Logic::charge for log level cutoff values
 
 }  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl

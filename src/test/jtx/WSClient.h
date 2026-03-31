@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_WSCLIENT_H_INCLUDED
-#define XRPL_TEST_WSCLIENT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/AbstractClient.h>
 
@@ -9,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class WSClient : public AbstractClient
@@ -17,9 +16,7 @@ class WSClient : public AbstractClient
 public:
     /** Retrieve a message. */
     virtual std::optional<Json::Value>
-    getMsg(
-        std::chrono::milliseconds const& timeout = std::chrono::milliseconds{
-            0}) = 0;
+    getMsg(std::chrono::milliseconds const& timeout = std::chrono::milliseconds{0}) = 0;
 
     /** Retrieve a message that meets the predicate criteria. */
     virtual std::optional<Json::Value>
@@ -37,6 +34,4 @@ makeWSClient(
     std::unordered_map<std::string, std::string> const& headers = {});
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

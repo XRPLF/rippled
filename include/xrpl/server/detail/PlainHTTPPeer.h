@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
-#define XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
@@ -9,12 +8,11 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
-class PlainHTTPPeer
-    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
-      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
+class PlainHTTPPeer : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
+                      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
@@ -86,9 +84,7 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        util::spawn(
-            this->strand_,
-            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
+        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
         return;
     }
 
@@ -97,10 +93,7 @@ PlainHTTPPeer<Handler>::run()
 
     util::spawn(
         this->strand_,
-        std::bind(
-            &PlainHTTPPeer::do_read,
-            this->shared_from_this(),
-            std::placeholders::_1));
+        std::bind(&PlainHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -122,8 +115,8 @@ void
 PlainHTTPPeer<Handler>::do_request()
 {
     ++this->request_count_;
-    auto const what = this->handler_.onHandoff(
-        this->session(), std::move(this->message_), this->remote_address_);
+    auto const what =
+        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
     boost::system::error_code ec;
@@ -154,6 +147,4 @@ PlainHTTPPeer<Handler>::do_close()
     socket_.shutdown(socket_type::shutdown_send, ec);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

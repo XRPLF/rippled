@@ -1,11 +1,10 @@
-#ifndef XRPL_BASICS_TESTSUITE_H_INCLUDED
-#define XRPL_BASICS_TESTSUITE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/unit_test.h>
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class TestSuite : public beast::unit_test::suite
 {
@@ -54,8 +53,7 @@ public:
         std::string const& message = "")
     {
         auto msg = addPrefix(message);
-        bool success = expectEquals(
-            actual.size(), expected.size(), msg + "Sizes are different");
+        bool success = expectEquals(actual.size(), expected.size(), msg + "Sizes are different");
         using std::begin;
         using std::end;
 
@@ -65,11 +63,7 @@ public:
 
         for (; i != end(actual) && j != end(expected); ++i, ++j, ++k)
         {
-            if (!expectEquals(
-                    *i,
-                    *j,
-                    msg + "Elements at " + std::to_string(k) +
-                        " are different."))
+            if (!expectEquals(*i, *j, msg + "Elements at " + std::to_string(k) + " are different."))
                 return false;
         }
 
@@ -119,6 +113,4 @@ private:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

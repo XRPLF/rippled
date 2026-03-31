@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_VALUE_H_INCLUDED
-#define XRPL_JSON_JSON_VALUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
@@ -44,7 +43,7 @@ enum ValueType {
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
@@ -148,11 +147,7 @@ private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -199,7 +194,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
+    Value(xrpl::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -381,6 +376,9 @@ public:
     /// Return true if the object has a member named key.
     bool
     isMember(std::string const& key) const;
+    /// Return true if the object has a member named key.
+    bool
+    isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
     ///
@@ -423,11 +421,11 @@ private:
         ObjectValues* map_{nullptr};
     } value_;
     ValueType type_ : 8;
-    int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
+    int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
 };
 
 inline Value
-to_json(ripple::Number const& number)
+to_json(xrpl::Number const& number)
 {
     return to_string(number);
 }
@@ -643,7 +641,7 @@ public:
     SelfType
     operator++(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         ++*this;
         return temp;
     }
@@ -651,7 +649,7 @@ public:
     SelfType
     operator--(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         --*this;
         return temp;
     }
@@ -678,5 +676,3 @@ public:
 };
 
 }  // namespace Json
-
-#endif  // CPPTL_JSON_H_INCLUDED

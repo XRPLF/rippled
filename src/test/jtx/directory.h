@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_DIRECTORY_H_INCLUDED
-#define XRPL_TEST_JTX_DIRECTORY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -10,7 +9,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace ripple::test::jtx {
+namespace xrpl::test::jtx {
 
 /** Directory operations. */
 namespace directory {
@@ -37,8 +36,7 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust)
-    -> Expected<void, Error>;
+    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>;
 
 /// Implementation of adjust for the most common ledger entry, i.e. one where
 /// page index is stored in sfOwnerNode (and only there). Pass this function
@@ -57,6 +55,4 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 
 }  // namespace directory
 
-}  // namespace ripple::test::jtx
-
-#endif
+}  // namespace xrpl::test::jtx

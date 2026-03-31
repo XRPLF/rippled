@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
-#define XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
@@ -13,7 +12,7 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -103,15 +102,15 @@ operator<<(std::ostream& os, AccountID const& x)
 void
 initAccountIdCache(std::size_t count);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 namespace Json {
 template <>
-inline ripple::AccountID
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::AccountID
+getOrThrow(Json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
 
     std::string const b58 = getOrThrow<std::string>(v, field);
     if (auto const r = parseBase58<AccountID>(b58))
@@ -127,11 +126,9 @@ namespace std {
 // DEPRECATED
 // VFALCO Use beast::uhash or a hardened container
 template <>
-struct hash<ripple::AccountID> : ripple::AccountID::hasher
+struct hash<xrpl::AccountID> : xrpl::AccountID::hasher
 {
     hash() = default;
 };
 
 }  // namespace std
-
-#endif

@@ -1,9 +1,8 @@
-#ifndef XRPL_ALGORITHM_H_INCLUDED
-#define XRPL_ALGORITHM_H_INCLUDED
+#pragma once
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // Requires: [first1, last1) and [first2, last2) are ordered ranges according to
 // comp.
@@ -95,6 +94,4 @@ remove_if_intersect_or_match(
     return first1;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

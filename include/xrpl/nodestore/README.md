@@ -96,7 +96,7 @@ Facebook's RocksDB database, builds on LevelDB.
 
 Use SQLite.
 
-'path' speficies where the backend will store its data files.
+'path' specifies where the backend will store its data files.
 
 Choices for 'compression'
 
@@ -130,7 +130,7 @@ newer versions of RocksDB (TBD).
 ## Discussion
 
 RocksDBQuickFactory is intended to provide a testbed for comparing potential
-rocksdb performance with the existing recommended configuration in rippled.cfg.
+rocksdb performance with the existing recommended configuration in xrpld.cfg.
 Through various executions and profiling some conclusions are presented below.
 
 - If the write ahead log is enabled, insert speed soon clogs up under load. The
@@ -161,7 +161,7 @@ Through various executions and profiling some conclusions are presented below.
 
 - Multiple runs of the benchmarks can yield surprisingly different results. This
   can perhaps be attributed to the asynchronous nature of rocksdb's compaction
-  process. The benchmarks are artifical and create highly unlikely write load to
+  process. The benchmarks are artificial and create highly unlikely write load to
   create the dataset to measure different read access patterns. Therefore multiple
   runs of the benchmarks are required to get a feel for the effectiveness of the
   changes. This contrasts sharply with the keyvadb benchmarking were highly

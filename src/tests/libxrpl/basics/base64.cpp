@@ -1,21 +1,22 @@
 #include <xrpl/basics/base64.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <string>
 
-using namespace ripple;
+using namespace xrpl;
 
 static void
 check(std::string const& in, std::string const& out)
 {
     auto const encoded = base64_encode(in);
-    CHECK(encoded == out);
-    CHECK(base64_decode(encoded) == in);
+    EXPECT_EQ(encoded, out);
+    EXPECT_EQ(base64_decode(encoded), in);
 }
 
-TEST_CASE("base64")
+TEST(base64, base64)
 {
+    // cspell: disable
     check("", "");
     check("f", "Zg==");
     check("fo", "Zm8=");
@@ -23,6 +24,7 @@ TEST_CASE("base64")
     check("foob", "Zm9vYg==");
     check("fooba", "Zm9vYmE=");
     check("foobar", "Zm9vYmFy");
+    // cspell: enable
 
     check(
         "Man is distinguished, not only by his reason, but by this "
@@ -44,5 +46,5 @@ TEST_CASE("base64")
 
     std::string const notBase64 = "not_base64!!";
     std::string const truncated = "not";
-    CHECK(base64_decode(notBase64) == base64_decode(truncated));
+    EXPECT_EQ(base64_decode(notBase64), base64_decode(truncated));
 }

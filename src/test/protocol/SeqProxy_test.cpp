@@ -4,7 +4,7 @@
 #include <limits>
 #include <sstream>
 
-namespace ripple {
+namespace xrpl {
 
 struct SeqProxy_test : public beast::unit_test::suite
 {
@@ -21,28 +21,28 @@ struct SeqProxy_test : public beast::unit_test::suite
     static constexpr bool
     expectLt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) &&
-            (!(lhs >= rhs)) && (!(lhs > rhs));
+        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) && (!(lhs >= rhs)) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs == rhs.
     static constexpr bool
     expectEq(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) &&
-            (!(lhs != rhs)) && (lhs >= rhs) && (!(lhs > rhs));
+        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) && (!(lhs != rhs)) && (lhs >= rhs) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs > rhs.
     static constexpr bool
     expectGt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) &&
-            (lhs != rhs) && (lhs >= rhs) && (lhs > rhs);
+        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) && (lhs != rhs) &&
+            (lhs >= rhs) && (lhs > rhs);
     }
 
     // Verify streaming.
-    bool
+    static bool
     streamTest(SeqProxy seqProx)
     {
         std::string const type{seqProx.isSeq() ? "sequence" : "ticket"};
@@ -62,8 +62,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         // While SeqProxy supports values of zero, they are not
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
-        static constexpr std::uint32_t uintMax{
-            std::numeric_limits<std::uint32_t>::max()};
+        static constexpr std::uint32_t uintMax{std::numeric_limits<std::uint32_t>::max()};
         static constexpr SeqProxy::Type seq{SeqProxy::seq};
         static constexpr SeqProxy::Type ticket{SeqProxy::ticket};
 
@@ -217,6 +216,6 @@ struct SeqProxy_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

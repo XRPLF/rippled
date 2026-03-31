@@ -1,6 +1,6 @@
 #include <test/jtx/last_ledger_sequence.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -12,4 +12,4 @@ last_ledger_seq::operator()(Env&, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

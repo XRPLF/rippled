@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
@@ -12,13 +11,12 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
 // Work over SSL
-class WorkSSL : public WorkBase<WorkSSL>,
-                public std::enable_shared_from_this<WorkSSL>
+class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<WorkSSL>
 {
     friend class WorkBase<WorkSSL>;
 
@@ -57,6 +55,4 @@ private:
 
 }  // namespace detail
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

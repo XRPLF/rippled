@@ -1,10 +1,9 @@
-#ifndef XRPL_CRYPTO_RFC1751_H_INCLUDED
-#define XRPL_CRYPTO_RFC1751_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class RFC1751
 {
@@ -42,6 +41,4 @@ private:
     static char const* s_dictionary[];
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

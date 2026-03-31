@@ -1,5 +1,4 @@
-#ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
-#define TEST_UNIT_TEST_MULTI_RUNNER_H
+#pragma once
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
@@ -20,7 +19,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -135,8 +134,7 @@ class multi_runner_base
     static constexpr char const* shared_mem_name_ = "RippledUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* message_queue_name_ =
-        "RippledUnitTestMessageQueue";
+    static constexpr char const* message_queue_name_ = "RippledUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     inner* inner_;
@@ -335,6 +333,4 @@ multi_runner_child::run_multi(Pred pred)
 }
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

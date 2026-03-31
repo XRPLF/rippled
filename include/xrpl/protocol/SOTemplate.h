@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SOTEMPLATE_H_INCLUDED
-#define XRPL_PROTOCOL_SOTEMPLATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -7,8 +6,9 @@
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
 enum SOEStyle {
@@ -42,14 +42,12 @@ private:
             auto nm = std::to_string(fieldName.getCode());
             if (fieldName.hasName())
                 nm += ": '" + fieldName.getName() + "'";
-            Throw<std::runtime_error>(
-                "SField (" + nm + ") in SOElement must be useful.");
+            Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
     }
 
 public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+    SOElement(SField const& fieldName, SOEStyle style) : sField_(fieldName), style_(style)
     {
         init(fieldName);
     }
@@ -100,8 +98,12 @@ public:
     operator=(SOTemplate&& other) = default;
 
     /** Create a template populated with all fields.
-        After creating the template fields cannot be
-        added, modified, or removed.
+        After creating the template fields cannot be added, modified, or removed.
+    */
+    SOTemplate(std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {});
+
+    /** Create a template populated with all fields.
+        Note: Defers to the vector constructor above.
     */
     SOTemplate(
         std::initializer_list<SOElement> uniqueFields,
@@ -154,6 +156,4 @@ private:
     std::vector<int> indices_;  // field num -> index
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

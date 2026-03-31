@@ -1,12 +1,11 @@
-#ifndef XRPL_SERVER_WRITER_H_INCLUDED
-#define XRPL_SERVER_WRITER_H_INCLUDED
+#pragma once
 
 #include <boost/asio/buffer.hpp>
 
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Writer
 {
@@ -37,6 +36,4 @@ public:
     data() = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

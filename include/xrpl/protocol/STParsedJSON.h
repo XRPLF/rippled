@@ -1,11 +1,10 @@
-#ifndef XRPL_PROTOCOL_STPARSEDJSON_H_INCLUDED
-#define XRPL_PROTOCOL_STPARSEDJSON_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/STArray.h>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Holds the serialized result of parsing an input JSON object.
     This does validation and checking on the provided JSON.
@@ -35,6 +34,4 @@ public:
     Json::Value error;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

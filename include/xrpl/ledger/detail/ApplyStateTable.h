@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYSTATETABLE_H_INCLUDED
-#define XRPL_LEDGER_APPLYSTATETABLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/OpenView.h>
@@ -11,7 +10,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 // Helper class that buffers modifications
@@ -60,10 +59,7 @@ public:
     exists(ReadView const& base, Keylet const& k) const;
 
     std::optional<key_type>
-    succ(
-        ReadView const& base,
-        key_type const& key,
-        std::optional<key_type> const& last) const;
+    succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
     std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
@@ -115,19 +111,10 @@ private:
     threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
 
     std::shared_ptr<SLE>
-    getForMod(
-        ReadView const& base,
-        key_type const& key,
-        Mods& mods,
-        beast::Journal j);
+    getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j);
 
     void
-    threadTx(
-        ReadView const& base,
-        TxMeta& meta,
-        AccountID const& to,
-        Mods& mods,
-        beast::Journal j);
+    threadTx(ReadView const& base, TxMeta& meta, AccountID const& to, Mods& mods, beast::Journal j);
 
     void
     threadOwners(
@@ -139,6 +126,4 @@ private:
 };
 
 }  // namespace detail
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

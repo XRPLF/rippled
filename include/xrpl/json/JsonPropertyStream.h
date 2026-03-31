@@ -1,10 +1,9 @@
-#ifndef XRPL_JSON_JSONPROPERTYSTREAM_H_INCLUDED
-#define XRPL_JSON_JSONPROPERTYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A PropertyStream::Sink which produces a Json::Value of type objectValue. */
 class JsonPropertyStream : public beast::PropertyStream
@@ -66,6 +65,4 @@ protected:
     add(std::string const& v) override;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

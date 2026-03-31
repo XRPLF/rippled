@@ -14,7 +14,7 @@
 #include <cmath>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 
 double
 estimate_entropy(std::string const& input)
@@ -76,9 +76,13 @@ walletPropose(Json::Value const& params)
     // to detect such keys to avoid user confusion.
     {
         if (params.isMember(jss::passphrase))
+        {
             seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+        }
         else if (params.isMember(jss::seed))
+        {
             seed = RPC::parseRippleLibSeed(params[jss::seed]);
+        }
 
         if (seed)
         {
@@ -137,25 +141,28 @@ walletPropose(Json::Value const& params)
     {
         auto const passphrase = params[jss::passphrase].asString();
 
-        if (passphrase != seed1751 && passphrase != seedBase58 &&
-            passphrase != seedHex)
+        if (passphrase != seed1751 && passphrase != seedBase58 && passphrase != seedHex)
         {
             // 80 bits of entropy isn't bad, but it's better to
             // err on the side of caution and be conservative.
             if (estimate_entropy(passphrase) < 80.0)
+            {
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "
                     "passphrase that has low entropy and is vulnerable "
                     "to brute-force attacks.";
+            }
             else
+            {
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "
                     "passphrase. It may be vulnerable to brute-force "
                     "attacks.";
+            }
         }
     }
 
     return obj;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

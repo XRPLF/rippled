@@ -17,7 +17,6 @@
 #include <boost/utility/string_view.hpp>
 
 #include <ed25519.h>
-#include <secp256k1.h>
 
 #include <algorithm>
 #include <array>
@@ -27,7 +26,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 SecretKey::~SecretKey()
 {
@@ -75,10 +74,10 @@ deriveDeterministicRootKey(Seed const& seed)
     // buf  |----------------|----|
     //      |      seed      | seq|
 
-    std::array<std::uint8_t, 20> buf;
+    std::array<std::uint8_t, 20> buf{};
     std::copy(seed.begin(), seed.end(), buf.begin());
 
-    // The odds that this loop executes more than once are neglible
+    // The odds that this loop executes more than once are negligible
     // but *just* in case someone managed to generate a key that required
     // more iterations loop a few times.
     for (std::uint32_t seq = 0; seq != 128; ++seq)
@@ -120,7 +119,7 @@ class Generator
 {
 private:
     uint256 root_;
-    std::array<std::uint8_t, 33> generator_;
+    std::array<std::uint8_t, 33> generator_{};
 
     uint256
     calculateTweak(std::uint32_t seq) const
@@ -134,11 +133,11 @@ private:
         // buf  |---------------------------------|----|----|
         //      |            generator            | seq| cnt|
 
-        std::array<std::uint8_t, 41> buf;
+        std::array<std::uint8_t, 41> buf{};
         std::copy(generator_.begin(), generator_.end(), buf.begin());
         copy_uint32(buf.data() + 33, seq);
 
-        // The odds that this loop executes more than once are neglible
+        // The odds that this loop executes more than once are negligible
         // but we impose a maximum limit just in case.
         for (std::uint32_t subseq = 0; subseq != 128; ++subseq)
         {
@@ -157,22 +156,16 @@ private:
     }
 
 public:
-    explicit Generator(Seed const& seed)
-        : root_(deriveDeterministicRootKey(seed))
+    explicit Generator(Seed const& seed) : root_(deriveDeterministicRootKey(seed))
     {
         secp256k1_pubkey pubkey;
-        if (secp256k1_ec_pubkey_create(
-                secp256k1Context(), &pubkey, root_.data()) != 1)
+        if (secp256k1_ec_pubkey_create(secp256k1Context(), &pubkey, root_.data()) != 1)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
         auto len = generator_.size();
 
         if (secp256k1_ec_pubkey_serialize(
-                secp256k1Context(),
-                generator_.data(),
-                &len,
-                &pubkey,
-                SECP256K1_EC_COMPRESSED) != 1)
+                secp256k1Context(), generator_.data(), &len, &pubkey, SECP256K1_EC_COMPRESSED) != 1)
             LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
     }
 
@@ -190,10 +183,9 @@ public:
         auto gsk = [this, tweak = calculateTweak(ordinal)]() {
             auto rpk = root_;
 
-            if (secp256k1_ec_seckey_tweak_add(
-                    secp256k1Context(), rpk.data(), tweak.data()) == 1)
+            if (secp256k1_ec_seckey_tweak_add(secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
-                SecretKey sk{Slice{rpk.data(), rpk.size()}};
+                SecretKey const sk{Slice{rpk.data(), rpk.size()}};
                 secure_erase(rpk.data(), rpk.size());
                 return sk;
             }
@@ -226,8 +218,7 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 
     unsigned char sig[72];
     size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(
-            secp256k1Context(), sig, &len, &sig_imp) != 1)
+    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) != 1)
         LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
     return Buffer{sig, len};
@@ -243,8 +234,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
     {
         case KeyType::ed25519: {
             Buffer b(64);
-            ed25519_sign(
-                m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
+            ed25519_sign(m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
             return b;
         }
         case KeyType::secp256k1: {
@@ -264,10 +254,9 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             unsigned char sig[72];
             size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(
-                    secp256k1Context(), sig, &len, &sig_imp) != 1)
-                LogicError(
-                    "sign: secp256k1_ecdsa_signature_serialize_der failed");
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sig_imp) !=
+                1)
+                LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
             return Buffer{sig, len};
         }
@@ -281,7 +270,7 @@ randomSecretKey()
 {
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
-    SecretKey sk(Slice{buf, sizeof(buf)});
+    SecretKey const sk(Slice{buf, sizeof(buf)});
     secure_erase(buf, sizeof(buf));
     return sk;
 }
@@ -292,7 +281,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     if (type == KeyType::ed25519)
     {
         auto key = sha512Half_s(Slice(seed.data(), seed.size()));
-        SecretKey sk{Slice{key.data(), key.size()}};
+        SecretKey const sk{Slice{key.data(), key.size()}};
         secure_erase(key.data(), key.size());
         return sk;
     }
@@ -300,7 +289,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     if (type == KeyType::secp256k1)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
-        SecretKey sk{Slice{key.data(), key.size()}};
+        SecretKey const sk{Slice{key.data(), key.size()}};
         secure_erase(key.data(), key.size());
         return sk;
     }
@@ -319,19 +308,13 @@ derivePublicKey(KeyType type, SecretKey const& sk)
                     secp256k1Context(),
                     &pubkey_imp,
                     reinterpret_cast<unsigned char const*>(sk.data())) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_create failed");
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
             if (secp256k1_ec_pubkey_serialize(
-                    secp256k1Context(),
-                    pubkey,
-                    &len,
-                    &pubkey_imp,
-                    SECP256K1_EC_COMPRESSED) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+                    secp256k1Context(), pubkey, &len, &pubkey_imp, SECP256K1_EC_COMPRESSED) != 1)
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
 
             return PublicKey{Slice{pubkey, len}};
         }
@@ -352,7 +335,7 @@ generateKeyPair(KeyType type, Seed const& seed)
     switch (type)
     {
         case KeyType::secp256k1: {
-            detail::Generator g(seed);
+            detail::Generator const g(seed);
             return g(0);
         }
         default:
@@ -382,4 +365,4 @@ parseBase58(TokenType type, std::string const& s)
     return SecretKey(makeSlice(result));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

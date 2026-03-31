@@ -2,7 +2,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 void
@@ -20,4 +20,4 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
 }
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

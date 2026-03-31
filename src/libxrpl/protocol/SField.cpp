@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Storage for static const members.
 SField::IsSigning const SField::notSigning;
@@ -84,10 +84,10 @@ SField::SField(
 {
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCode),
-        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
+        "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
     XRPL_ASSERT(
         !knownNameToField.contains(fieldName),
-        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
+        "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }
@@ -103,11 +103,9 @@ SField::SField(private_access_tag_t, int fc, char const* fn)
     , jsonName(fieldName.c_str())
 {
     XRPL_ASSERT(
-        !knownCodeToField.contains(fieldCode),
-        "ripple::SField::SField(fc,fn) : fieldCode is unique");
+        !knownCodeToField.contains(fieldCode), "xrpl::SField::SField(fc,fn) : fieldCode is unique");
     XRPL_ASSERT(
-        !knownNameToField.contains(fieldName),
-        "ripple::SField::SField(fc,fn) : fieldName is unique");
+        !knownNameToField.contains(fieldName), "xrpl::SField::SField(fc,fn) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
     knownNameToField[fieldName] = this;
 }
@@ -152,4 +150,4 @@ SField::getField(std::string const& fieldName)
     return sfInvalid;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

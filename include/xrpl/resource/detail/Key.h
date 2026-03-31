@@ -1,11 +1,10 @@
-#ifndef XRPL_RESOURCE_KEY_H_INCLUDED
-#define XRPL_RESOURCE_KEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
-namespace ripple {
+namespace xrpl {
 namespace Resource {
 
 // The consumer key
@@ -47,6 +46,4 @@ struct Key
 };
 
 }  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

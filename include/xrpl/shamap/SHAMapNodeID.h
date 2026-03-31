@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +7,7 @@
 #include <string>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 /** Identifies a node inside a SHAMap */
 class SHAMapNodeID : public CountedObject<SHAMapNodeID>
@@ -106,8 +105,7 @@ to_string(SHAMapNodeID const& node)
     if (node.isRoot())
         return "NodeID(root)";
 
-    return "NodeID(" + std::to_string(node.getDepth()) + "," +
-        to_string(node.getNodeID()) + ")";
+    return "NodeID(" + std::to_string(node.getDepth()) + "," + to_string(node.getNodeID()) + ")";
 }
 
 inline std::ostream&
@@ -139,6 +137,4 @@ deserializeSHAMapNodeID(std::string const& s)
 [[nodiscard]] unsigned int
 selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

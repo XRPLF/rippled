@@ -5,7 +5,7 @@
 
 #include <iomanip>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -28,7 +28,8 @@ operator<<(std::ostream&& os,
 }
 #endif
 
-PrettyAmount::operator AnyAmount() const
+PrettyAmount::
+operator AnyAmount() const
 {
     return {amount_};
 }
@@ -61,9 +62,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
         if (n < c)
         {
             if (amount.value().negative())
+            {
                 os << "-" << n << " drops";
+            }
             else
+            {
                 os << n << " drops";
+            }
             return os;
         }
         auto const d = double(n) / dropsPerXRP.drops();
@@ -74,15 +79,13 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     }
     else if (amount.value().holds<Issue>())
     {
-        os << amount.value().getText() << "/"
-           << to_string(amount.value().issue().currency) << "(" << amount.name()
-           << ")";
+        os << amount.value().getText() << "/" << to_string(amount.value().issue().currency) << "("
+           << amount.name() << ")";
     }
     else
     {
         auto const& mptIssue = amount.value().asset().get<MPTIssue>();
-        os << amount.value().getText() << "/" << to_string(mptIssue) << "("
-           << amount.name() << ")";
+        os << amount.value().getText() << "/" << to_string(mptIssue) << "(" << amount.name() << ")";
     }
     return os;
 }
@@ -100,8 +103,7 @@ IOU::operator()(epsilon_t) const
 PrettyAmount
 IOU::operator()(detail::epsilon_multiple m) const
 {
-    return {
-        STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
+    return {STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
 }
 
 std::ostream&
@@ -115,4 +117,4 @@ any_t const any{};
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

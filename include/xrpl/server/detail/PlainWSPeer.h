@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PLAINWSPEER_H_INCLUDED
-#define XRPL_SERVER_PLAINWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/detail/BaseWSPeer.h>
 
@@ -7,7 +6,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
@@ -58,6 +57,4 @@ PlainWSPeer<Handler>::PlainWSPeer(
 {
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

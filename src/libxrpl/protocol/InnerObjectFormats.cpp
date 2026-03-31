@@ -2,7 +2,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 
-namespace ripple {
+namespace xrpl {
 
 InnerObjectFormats::InnerObjectFormats()
 {
@@ -136,9 +136,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, soeREQUIRED},
         });
 
-    add(sfPermission.jsonName.c_str(),
-        sfPermission.getCode(),
-        {{sfPermissionValue, soeREQUIRED}});
+    add(sfPermission.jsonName.c_str(), sfPermission.getCode(), {{sfPermissionValue, soeREQUIRED}});
 
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
@@ -153,12 +151,20 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfCounterpartySignature.jsonName,
+        sfCounterpartySignature.getCode(),
+        {
+            {sfSigningPubKey, soeOPTIONAL},
+            {sfTxnSignature, soeOPTIONAL},
+            {sfSigners, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats instance;
+    static InnerObjectFormats const instance;
     return instance;
 }
 
@@ -166,10 +172,10 @@ SOTemplate const*
 InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
     auto itemPtr = findByType(sField.getCode());
-    if (itemPtr)
+    if (itemPtr != nullptr)
         return &(itemPtr->getSOTemplate());
 
     return nullptr;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

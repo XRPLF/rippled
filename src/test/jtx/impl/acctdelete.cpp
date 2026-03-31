@@ -3,7 +3,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -25,9 +25,7 @@ void
 incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
 {
     using namespace jtx;
-    auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t {
-        return env.current()->seq();
-    };
+    auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t { return env.current()->seq(); };
 
     int const delta = [&]() -> int {
         if (env.seq(acc) + 255 > openLedgerSeq(env))
@@ -42,4 +40,4 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

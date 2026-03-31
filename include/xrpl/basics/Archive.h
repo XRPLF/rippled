@@ -1,9 +1,8 @@
-#ifndef XRPL_BASICS_ARCHIVE_H_INCLUDED
-#define XRPL_BASICS_ARCHIVE_H_INCLUDED
+#pragma once
 
 #include <boost/filesystem.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** Extract a tar archive compressed with lz4
 
@@ -13,10 +12,6 @@ namespace ripple {
     @throws runtime_error
 */
 void
-extractTarLz4(
-    boost::filesystem::path const& src,
-    boost::filesystem::path const& dst);
+extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

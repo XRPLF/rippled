@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_NODEIDENTITY_H_INCLUDED
-#define XRPL_APP_MAIN_NODEIDENTITY_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
@@ -8,7 +7,7 @@
 
 #include <boost/program_options.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /** The cryptographic credentials identifying this server instance.
 
@@ -16,10 +15,6 @@ namespace ripple {
     @param cmdline The command line parameters passed into the application.
  */
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(
-    Application& app,
-    boost::program_options::variables_map const& cmdline);
+getNodeIdentity(Application& app, boost::program_options::variables_map const& cmdline);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

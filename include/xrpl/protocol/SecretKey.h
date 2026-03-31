@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SECRETKEY_H_INCLUDED
-#define XRPL_PROTOCOL_SECRETKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -12,13 +11,16 @@
 #include <cstring>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** A secret key. */
 class SecretKey
 {
+public:
+    static constexpr std::size_t size_ = 32;
+
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[size_]{};
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -28,9 +30,14 @@ public:
     SecretKey&
     operator=(SecretKey const&) = default;
 
+    bool
+    operator==(SecretKey const&) = delete;
+    bool
+    operator!=(SecretKey const&) = delete;
+
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, 32> const& data);
+    SecretKey(std::array<std::uint8_t, size_> const& data);
     SecretKey(Slice const& slice);
 
     std::uint8_t const*
@@ -79,17 +86,10 @@ public:
 };
 
 inline bool
-operator==(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
-}
+operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 inline bool
-operator!=(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return !(lhs == rhs);
-}
+operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------
 
@@ -162,6 +162,4 @@ sign(KeyType type, SecretKey const& sk, Slice const& message)
 }
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

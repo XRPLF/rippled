@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_TX_H_INCLUDED
-#define XRPL_TEST_CSF_TX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -14,7 +13,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -210,6 +209,4 @@ hash_append(Hasher& h, Tx const& tx)
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,11 +1,10 @@
-#ifndef XRPL_TEST_CSF_SIMTIME_H_INCLUDED
-#define XRPL_TEST_CSF_SIMTIME_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/manual_clock.h>
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -19,6 +18,4 @@ using SimTime = typename SimClock::time_point;
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SSLWSPEER_H_INCLUDED
-#define XRPL_SERVER_SSLWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
@@ -13,7 +12,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
@@ -67,6 +66,4 @@ SSLWSPeer<Handler>::SSLWSPeer(
 {
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

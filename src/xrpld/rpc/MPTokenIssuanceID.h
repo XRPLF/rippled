@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
-#define XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -9,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -37,6 +36,4 @@ insertMPTokenIssuanceID(
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

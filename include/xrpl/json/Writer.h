@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_WRITER_H_INCLUDED
-#define XRPL_JSON_WRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/contract.h>
@@ -234,9 +233,7 @@ inline void
 check(bool condition, std::string const& message)
 {
     if (!condition)
-        ripple::Throw<std::logic_error>(message);
+        xrpl::Throw<std::logic_error>(message);
 }
 
 }  // namespace Json
-
-#endif

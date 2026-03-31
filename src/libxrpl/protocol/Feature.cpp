@@ -19,10 +19,10 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 inline std::size_t
-hash_value(ripple::uint256 const& feature)
+hash_value(xrpl::uint256 const& feature)
 {
     std::size_t seed = 0;
     using namespace boost;
@@ -90,22 +90,20 @@ class FeatureCollections
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::*PtrToMember>
+    template <class tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
 
     // Intermediate types to help with readability
     using feature_indexing = boost::multi_index::indexed_by<
-        boost::multi_index::random_access<
-            boost::multi_index::tag<Feature::byIndex>>,
+        boost::multi_index::random_access<boost::multi_index::tag<Feature::byIndex>>,
         feature_hashed_unique<Feature::byFeature, uint256, &Feature::feature>,
         feature_hashed_unique<Feature::byName, std::string, &Feature::name>>;
 
     // This multi_index_container provides access to the features collection by
     // name, index, and uint256 feature identifier
-    boost::multi_index::multi_index_container<Feature, feature_indexing>
-        features;
+    boost::multi_index::multi_index_container<Feature, feature_indexing> features;
     std::map<std::string, AmendmentSupport> all;
     std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
@@ -152,10 +150,7 @@ public:
     getRegisteredFeature(std::string const& name) const;
 
     uint256
-    registerFeature(
-        std::string const& name,
-        Supported support,
-        VoteBehavior vote);
+    registerFeature(std::string const& name, Supported support, VoteBehavior vote);
 
     /** Tell FeatureCollections when registration is complete. */
     bool
@@ -205,17 +200,16 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features.reserve(ripple::detail::numFeatures);
+    features.reserve(xrpl::detail::numFeatures);
 }
 
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
     XRPL_ASSERT(
-        readOnly.load(),
-        "ripple::FeatureCollections::getRegisteredFeature : startup completed");
+        readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
-    if (feature)
+    if (feature != nullptr)
         return feature->feature;
     return std::nullopt;
 }
@@ -228,21 +222,16 @@ check(bool condition, char const* logicErrorMessage)
 }
 
 uint256
-FeatureCollections::registerFeature(
-    std::string const& name,
-    Supported support,
-    VoteBehavior vote)
+FeatureCollections::registerFeature(std::string const& name, Supported support, VoteBehavior vote)
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
         support == Supported::yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
-    if (!i)
+    if (i == nullptr)
     {
-        check(
-            features.size() < detail::numFeatures,
-            "More features defined than allocated.");
+        check(features.size() < detail::numFeatures, "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
@@ -261,24 +250,22 @@ FeatureCollections::registerFeature(
             supported.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
+            {
                 ++upVotes;
+            }
             else
+            {
                 ++downVotes;
+            }
         }
-        check(
-            upVotes + downVotes == supported.size(),
-            "Feature counting logic broke");
-        check(
-            supported.size() <= features.size(),
-            "More supported features than defined features");
-        check(
-            features.size() == all.size(),
-            "The 'all' features list is populated incorrectly");
+        check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
+        check(supported.size() <= features.size(), "More supported features than defined features");
+        check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
-    else
-        // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
+
+    // Each feature should only be registered once
+    LogicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -293,11 +280,10 @@ size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
     XRPL_ASSERT(
-        readOnly.load(),
-        "ripple::FeatureCollections::featureToBitsetIndex : startup completed");
+        readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
-    if (!feature)
+    if (feature == nullptr)
         LogicError("Invalid Feature ID");
 
     return getIndex(*feature);
@@ -307,8 +293,7 @@ uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
     XRPL_ASSERT(
-        readOnly.load(),
-        "ripple::FeatureCollections::bitsetIndexToFeature : startup completed");
+        readOnly.load(), "xrpl::FeatureCollections::bitsetIndexToFeature : startup completed");
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -316,14 +301,12 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 std::string
 FeatureCollections::featureToName(uint256 const& f) const
 {
-    XRPL_ASSERT(
-        readOnly.load(),
-        "ripple::FeatureCollections::featureToName : startup completed");
+    XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
-    return feature ? feature->name : to_string(f);
+    return (feature != nullptr) ? feature->name : to_string(f);
 }
 
-static FeatureCollections featureCollections;
+FeatureCollections featureCollections;
 
 }  // namespace
 
@@ -416,10 +399,20 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+consteval auto
+enforceValidFeatureName(auto fn) -> char const*
+{
+    static_assert(validFeatureName(fn), "Invalid feature name");
+    static_assert(validFeatureNameSize(fn), "Invalid feature name size");
+    return fn();
+}
+
 #define XRPL_FEATURE(name, supported, vote) \
-    uint256 const feature##name = registerFeature(#name, supported, vote);
+    uint256 const feature##name =           \
+        registerFeature(enforceValidFeatureName([] { return #name; }), supported, vote);
 #define XRPL_FIX(name, supported, vote) \
-    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+    uint256 const fix##name =           \
+        registerFeature(enforceValidFeatureName([] { return "fix" #name; }), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \
@@ -449,7 +442,6 @@ featureToName(uint256 const& f)
 //
 // Use initialization of one final static variable to set
 // featureCollections::readOnly.
-[[maybe_unused]] static bool const readOnlySet =
-    featureCollections.registrationIsDone();
+[[maybe_unused]] static bool const readOnlySet = featureCollections.registrationIsDone();
 
-}  // namespace ripple
+}  // namespace xrpl

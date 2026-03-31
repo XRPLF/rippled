@@ -13,7 +13,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 canHaveNFTokenOfferID(
@@ -24,12 +24,12 @@ canHaveNFTokenOfferID(
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (!(tt == ttNFTOKEN_MINT && serializedTx->isFieldPresent(sfAmount)) &&
+    if ((tt != ttNFTOKEN_MINT || !serializedTx->isFieldPresent(sfAmount)) &&
         tt != ttNFTOKEN_CREATE_OFFER)
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
@@ -64,4 +64,4 @@ insertNFTokenOfferID(
         response[jss::offer_id] = to_string(result.value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

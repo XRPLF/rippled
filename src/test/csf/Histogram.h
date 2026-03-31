@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
-#define XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -7,7 +6,7 @@
 #include <cmath>
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -18,15 +17,15 @@ namespace csf {
       - Comparison : T a, b;  bool res = a < b
       - Addition: T a, b; T c = a + b;
       - Multiplication : T a, std::size_t b; T c = a * b;
-      - Divison: T a; std::size_t b;  T c = a/b;
+      - Division: T a; std::size_t b;  T c = a/b;
 
 
 */
 template <class T, class Compare = std::less<T>>
 class Histogram
 {
-    // TODO: Consider logarithimic bins around expected median if this becomes
-    // unscaleable
+    // TODO: Consider logarithmic bins around expected median if this becomes
+    // unscalable
     std::map<T, std::size_t, Compare> counts_;
     std::size_t samples = 0;
 
@@ -93,7 +92,7 @@ public:
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples);
 
         if (counts_.empty())
             return T{};
@@ -111,6 +110,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

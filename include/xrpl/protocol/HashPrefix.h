@@ -1,19 +1,17 @@
-#ifndef XRPL_PROTOCOL_HASHPREFIX_H_INCLUDED
-#define XRPL_PROTOCOL_HASHPREFIX_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
 constexpr std::uint32_t
 make_hash_prefix(char a, char b, char c)
 {
-    return (static_cast<std::uint32_t>(a) << 24) +
-        (static_cast<std::uint32_t>(b) << 16) +
+    return (static_cast<std::uint32_t>(a) << 24) + (static_cast<std::uint32_t>(b) << 16) +
         (static_cast<std::uint32_t>(c) << 8);
 }
 
@@ -67,9 +65,6 @@ enum class HashPrefix : std::uint32_t {
     /** Payment Channel Claim */
     paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
 
-    /** Credentials signature */
-    credential = detail::make_hash_prefix('C', 'R', 'D'),
-
     /** Batch */
     batch = detail::make_hash_prefix('B', 'C', 'H'),
 };
@@ -82,6 +77,4 @@ hash_append(Hasher& h, HashPrefix const& hp) noexcept
     hash_append(h, static_cast<std::uint32_t>(hp));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

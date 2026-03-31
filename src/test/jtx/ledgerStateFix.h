@@ -1,10 +1,9 @@
-#ifndef XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
-#define XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -20,6 +19,4 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

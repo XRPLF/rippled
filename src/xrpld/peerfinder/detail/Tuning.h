@@ -1,9 +1,8 @@
-#ifndef XRPL_PEERFINDER_TUNING_H_INCLUDED
-#define XRPL_PEERFINDER_TUNING_H_INCLUDED
+#pragma once
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Heuristically tuned constants. */
@@ -57,8 +56,7 @@ enum {
 //
 //------------------------------------------------------------------------------
 
-static std::array<int, 10> const connectionBackoff{
-    {1, 1, 2, 3, 5, 8, 13, 21, 34, 55}};
+static std::array<int, 10> const connectionBackoff{{1, 1, 2, 3, 5, 8, 13, 21, 34, 55}};
 
 //------------------------------------------------------------------------------
 //
@@ -116,6 +114,4 @@ std::chrono::seconds constexpr recentAttemptDuration(60);
 /** @} */
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

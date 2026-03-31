@@ -1,12 +1,11 @@
-#ifndef XRPL_BASICS_UPTIMETIMER_H_INCLUDED
-#define XRPL_BASICS_UPTIMETIMER_H_INCLUDED
+#pragma once
 
 #include <atomic>
 #include <chrono>
 #include <ratio>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 /** Tracks program uptime to seconds precision.
 
@@ -45,6 +44,4 @@ private:
     start_clock();
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

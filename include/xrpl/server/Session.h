@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SESSION_H_INCLUDED
-#define XRPL_SERVER_SESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -13,7 +12,7 @@
 #include <ostream>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
@@ -64,8 +63,7 @@ public:
     void
     write(BufferSequence const& buffers)
     {
-        for (typename BufferSequence::const_iterator iter(buffers.begin());
-             iter != buffers.end();
+        for (typename BufferSequence::const_iterator iter(buffers.begin()); iter != buffers.end();
              ++iter)
         {
             typename BufferSequence::value_type const& buffer(*iter);
@@ -111,6 +109,4 @@ public:
     websocketUpgrade() = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

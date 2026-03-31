@@ -1,9 +1,8 @@
-#ifndef XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
-#define XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
+#pragma once
 
 #include <system_error>
 
-namespace ripple {
+namespace xrpl {
 enum class TokenCodecErrc {
     success = 0,
     inputTooLarge,
@@ -16,16 +15,16 @@ enum class TokenCodecErrc {
     overflowAdd,
     unknown,
 };
-}
+}  // namespace xrpl
 
 namespace std {
 template <>
-struct is_error_code_enum<ripple::TokenCodecErrc> : true_type
+struct is_error_code_enum<xrpl::TokenCodecErrc> : true_type
 {
 };
 }  // namespace std
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 class TokenCodecErrcCategory : public std::error_category
 {
@@ -67,17 +66,16 @@ public:
 };
 }  // namespace detail
 
-inline ripple::detail::TokenCodecErrcCategory const&
+inline xrpl::detail::TokenCodecErrcCategory const&
 TokenCodecErrcCategory()
 {
-    static ripple::detail::TokenCodecErrcCategory c;
+    static xrpl::detail::TokenCodecErrcCategory const c;
     return c;
 }
 
 inline std::error_code
-make_error_code(ripple::TokenCodecErrc e)
+make_error_code(xrpl::TokenCodecErrc e)
 {
     return {static_cast<int>(e), TokenCodecErrcCategory()};
 }
-}  // namespace ripple
-#endif  // TOKEN_ERRORS_H_
+}  // namespace xrpl

@@ -6,18 +6,18 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 {
-    STAmount dirRate =
-        amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
+    STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     Json::Value& obj(offers.append(Json::objectValue));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
     offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);
@@ -56,7 +56,7 @@ doAccountOffers(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     // Get info on account.
     result[jss::account] = toBase58(accountID);
@@ -64,7 +64,7 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountOffers, context))
         return *err;
 
@@ -125,7 +125,7 @@ doAccountOffers(RPC::JsonContext& context)
                 if (!sle)
                 {
                     // LCOV_EXCL_START
-                    UNREACHABLE("ripple::doAccountOffers : null SLE");
+                    UNREACHABLE("xrpl::doAccountOffers : null SLE");
                     return false;
                     // LCOV_EXCL_STOP
                 }
@@ -153,8 +153,7 @@ doAccountOffers(RPC::JsonContext& context)
     if (count == limit + 1 && marker)
     {
         result[jss::limit] = limit;
-        result[jss::marker] =
-            to_string(*marker) + "," + std::to_string(nextHint);
+        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
     }
 
     for (auto const& offer : offers)
@@ -164,4 +163,4 @@ doAccountOffers(RPC::JsonContext& context)
     return result;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

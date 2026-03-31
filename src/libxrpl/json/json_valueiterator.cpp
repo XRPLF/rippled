@@ -13,12 +13,11 @@ namespace Json {
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIteratorBase::ValueIteratorBase() : current_(), isNull_(true)
+ValueIteratorBase::ValueIteratorBase() : isNull_(true)
 {
 }
 
-ValueIteratorBase::ValueIteratorBase(
-    Value::ObjectValues::iterator const& current)
+ValueIteratorBase::ValueIteratorBase(Value::ObjectValues::iterator const& current)
     : current_(current), isNull_(false)
 {
 }
@@ -60,8 +59,7 @@ ValueIteratorBase::computeDistance(SelfType const& other) const
     //   return difference_type( std::distance( current_, other.current_ ) );
     difference_type myDistance = 0;
 
-    for (Value::ObjectValues::iterator it = current_; it != other.current_;
-         ++it)
+    for (Value::ObjectValues::iterator it = current_; it != other.current_; ++it)
     {
         ++myDistance;
     }
@@ -89,26 +87,26 @@ ValueIteratorBase::copy(SelfType const& other)
 Value
 ValueIteratorBase::key() const
 {
-    Value::CZString const czstring = (*current_).first;
+    Value::CZString const czString = (*current_).first;
 
-    if (czstring.c_str())
+    if (czString.c_str() != nullptr)
     {
-        if (czstring.isStaticString())
-            return Value(StaticString(czstring.c_str()));
+        if (czString.isStaticString())
+            return Value(StaticString(czString.c_str()));
 
-        return Value(czstring.c_str());
+        return Value(czString.c_str());
     }
 
-    return Value(czstring.index());
+    return Value(czString.index());
 }
 
 UInt
 ValueIteratorBase::index() const
 {
-    Value::CZString const czstring = (*current_).first;
+    Value::CZString const czString = (*current_).first;
 
-    if (!czstring.c_str())
-        return czstring.index();
+    if (czString.c_str() == nullptr)
+        return czString.index();
 
     return Value::UInt(-1);
 }
@@ -117,7 +115,7 @@ char const*
 ValueIteratorBase::memberName() const
 {
     char const* name = (*current_).first.c_str();
-    return name ? name : "";
+    return (name != nullptr) ? name : "";
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -128,8 +126,7 @@ ValueIteratorBase::memberName() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueConstIterator::ValueConstIterator(
-    Value::ObjectValues::iterator const& current)
+ValueConstIterator::ValueConstIterator(Value::ObjectValues::iterator const& current)
     : ValueIteratorBase(current)
 {
 }
@@ -154,13 +151,11 @@ ValueIterator::ValueIterator(Value::ObjectValues::iterator const& current)
 {
 }
 
-ValueIterator::ValueIterator(ValueConstIterator const& other)
-    : ValueIteratorBase(other)
+ValueIterator::ValueIterator(ValueConstIterator const& other) : ValueIteratorBase(other)
 {
 }
 
-ValueIterator::ValueIterator(ValueIterator const& other)
-    : ValueIteratorBase(other)
+ValueIterator::ValueIterator(ValueIterator const& other) : ValueIteratorBase(other)
 {
 }
 

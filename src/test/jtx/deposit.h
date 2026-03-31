@@ -1,10 +1,9 @@
-#ifndef XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
-#define XRPL_TEST_JTX_DEPOSIT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -15,7 +14,7 @@ namespace deposit {
 Json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
+/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
 Json::Value
 unauth(Account const& account, Account const& unauth);
 
@@ -48,20 +47,14 @@ struct AuthorizeCredentials
 };
 
 Json::Value
-authCredentials(
-    jtx::Account const& account,
-    std::vector<AuthorizeCredentials> const& auth);
+authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
 Json::Value
-unauthCredentials(
-    jtx::Account const& account,
-    std::vector<AuthorizeCredentials> const& auth);
+unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth);
 
 }  // namespace deposit
 
 }  // namespace jtx
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

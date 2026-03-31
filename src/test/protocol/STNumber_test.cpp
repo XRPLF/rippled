@@ -10,7 +10,7 @@
 #include <ostream>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
 struct STNumber_test : public beast::unit_test::suite
 {
@@ -29,10 +29,8 @@ struct STNumber_test : public beast::unit_test::suite
     }
 
     void
-    run() override
+    doRun()
     {
-        static_assert(!std::is_convertible_v<STNumber*, Number*>);
-
         {
             STNumber const stnum{sfNumber};
             BEAST_EXPECT(stnum.getSType() == STI_NUMBER);
@@ -47,106 +45,97 @@ struct STNumber_test : public beast::unit_test::suite
             0,
             1,
             std::numeric_limits<std::int64_t>::max()};
-        for (std::int64_t mantissa : mantissas)
+        for (std::int64_t const mantissa : mantissas)
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
             Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
-        for (std::int32_t exponent : exponents)
+        for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
         {
             STAmount const strikePrice{noIssue(), 100};
             STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
-            IOUAmount totalValue{iouValue * factor};
+            IOUAmount const totalValue{iouValue * factor};
             STAmount const totalAmount{totalValue, strikePrice.issue()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
 
         {
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, Json::Value(42)) ==
-                STNumber(sfNumber, 42));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, Json::Value(-42)) ==
-                STNumber(sfNumber, -42));
+            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(42)) == STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, Json::Value(-42)) == STNumber(sfNumber, -42));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, Json::UInt(42)) ==
-                STNumber(sfNumber, 42));
+            BEAST_EXPECT(numberFromJson(sfNumber, Json::UInt(42)) == STNumber(sfNumber, 42));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "123") == STNumber(sfNumber, 123));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
+            BEAST_EXPECT(numberFromJson(sfNumber, "123") == STNumber(sfNumber, 123));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-123") == STNumber(sfNumber, -123));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "3.14") ==
-                STNumber(sfNumber, Number(314, -2)));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-3.14") ==
-                STNumber(sfNumber, -Number(314, -2)));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "3.14e2") == STNumber(sfNumber, 314));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-3.14e2") ==
-                STNumber(sfNumber, -314));
+            BEAST_EXPECT(numberFromJson(sfNumber, "3.14") == STNumber(sfNumber, Number(314, -2)));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-3.14") == STNumber(sfNumber, -Number(314, -2)));
+            BEAST_EXPECT(numberFromJson(sfNumber, "3.14e2") == STNumber(sfNumber, 314));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-3.14e2") == STNumber(sfNumber, -314));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "1000e-2") == STNumber(sfNumber, 10));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-1000e-2") ==
-                STNumber(sfNumber, -10));
+            BEAST_EXPECT(numberFromJson(sfNumber, "1000e-2") == STNumber(sfNumber, 10));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-1000e-2") == STNumber(sfNumber, -10));
 
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0.0") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0.000") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0.0") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0.000") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0e6") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0.0e6") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "0.000e6") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0e6") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.000") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.0") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.000") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "0.000e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.0e6") == STNumber(sfNumber, 0));
+            BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
+
+            {
+                NumberRoundModeGuard const mg(Number::towards_zero);
+                // maxint64 9,223,372,036,854,775,807
+                auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
+                // minint64 -9,223,372,036,854,775,808
+                auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
+                if (Number::getMantissaScale() == MantissaRange::small)
+                {
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, minInt) ==
+                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, maxInt) ==
+                        STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
+                    BEAST_EXPECT(
+                        numberFromJson(sfNumber, minInt) ==
+                        STNumber(
+                            sfNumber,
+                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::normalized{}}));
+                }
+            }
 
             constexpr auto imin = std::numeric_limits<int>::min();
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, imin) ==
-                STNumber(sfNumber, Number(imin, 0)));
+            BEAST_EXPECT(numberFromJson(sfNumber, imin) == STNumber(sfNumber, Number(imin, 0)));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, std::to_string(imin)) ==
                 STNumber(sfNumber, Number(imin, 0)));
 
             constexpr auto imax = std::numeric_limits<int>::max();
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, imax) ==
-                STNumber(sfNumber, Number(imax, 0)));
+            BEAST_EXPECT(numberFromJson(sfNumber, imax) == STNumber(sfNumber, Number(imax, 0)));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, std::to_string(imax)) ==
                 STNumber(sfNumber, Number(imax, 0)));
 
             constexpr auto umax = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(
-                numberFromJson(sfNumber, umax) ==
-                STNumber(sfNumber, Number(umax, 0)));
+            BEAST_EXPECT(numberFromJson(sfNumber, umax) == STNumber(sfNumber, Number(umax, 0)));
             BEAST_EXPECT(
                 numberFromJson(sfNumber, std::to_string(umax)) ==
                 STNumber(sfNumber, Number(umax, 0)));
@@ -279,15 +268,21 @@ struct STNumber_test : public beast::unit_test::suite
             }
         }
     }
+
+    void
+    run() override
+    {
+        static_assert(!std::is_convertible_v<STNumber*, Number*>);
+
+        for (auto const scale : {MantissaRange::small, MantissaRange::large})
+        {
+            NumberMantissaScaleGuard const sg(scale);
+            testcase << to_string(Number::getMantissaScale());
+            doRun();
+        }
+    }
 };
 
-BEAST_DEFINE_TESTSUITE(STNumber, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STNumber, protocol, xrpl);
 
-void
-testCompile(std::ostream& out)
-{
-    STNumber number{sfNumber, 42};
-    out << number;
-}
-
-}  // namespace ripple
+}  // namespace xrpl

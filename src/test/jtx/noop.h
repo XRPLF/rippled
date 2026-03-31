@@ -1,9 +1,8 @@
-#ifndef XRPL_TEST_JTX_NOOP_H_INCLUDED
-#define XRPL_TEST_JTX_NOOP_H_INCLUDED
+#pragma once
 
 #include <test/jtx/flags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -16,6 +15,4 @@ noop(Account const& account)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

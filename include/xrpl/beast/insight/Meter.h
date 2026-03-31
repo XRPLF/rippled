@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_METER_H_INCLUDED
-#define BEAST_INSIGHT_METER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/MeterImpl.h>
 
@@ -79,5 +78,3 @@ private:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

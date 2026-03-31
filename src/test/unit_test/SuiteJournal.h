@@ -1,10 +1,9 @@
-#ifndef TEST_UNIT_TEST_SUITE_JOURNAL_H
-#define TEST_UNIT_TEST_SUITE_JOURNAL_H
+#pragma once
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
@@ -33,14 +32,11 @@ public:
     write(beast::severities::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override;
+    writeAlways(beast::severities::Severity level, std::string const& text) override;
 };
 
 inline void
-SuiteJournalSink::write(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::write(beast::severities::Severity level, std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -48,9 +44,7 @@ SuiteJournalSink::write(
 }
 
 inline void
-SuiteJournalSink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     using namespace beast::severities;
 
@@ -76,7 +70,7 @@ SuiteJournalSink::writeAlways(
     }();
 
     static std::mutex log_mutex;
-    std::lock_guard lock(log_mutex);
+    std::lock_guard const lock(log_mutex);
     suite_.log << s << partition_ << text << std::endl;
 }
 
@@ -93,11 +87,7 @@ public:
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
-    // Clang 10.0.0 and 10.0.1 disagree about formatting operator&
-    // TBD Re-enable formatting when we upgrade to clang 11
-    // clang-format off
-    operator beast::Journal &()
-    // clang-format on
+    operator beast::Journal&()
     {
         return journal_;
     }
@@ -111,8 +101,7 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(
-        beast::severities::Severity threshold = beast::severities::kDebug)
+    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug)
         : Sink(threshold, false)
     {
     }
@@ -126,8 +115,7 @@ public:
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
     }
@@ -140,6 +128,4 @@ public:
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,9 +1,8 @@
-#ifndef XRPL_TEST_JTX_BASIC_PROP_H_INCLUDED
-#define XRPL_TEST_JTX_BASIC_PROP_H_INCLUDED
+#pragma once
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -41,6 +40,4 @@ struct prop_type : basic_prop
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

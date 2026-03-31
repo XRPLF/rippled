@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_TAGGEDPOINTER_H_INCLUDED
-#define XRPL_SHAMAP_TAGGEDPOINTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
@@ -8,7 +7,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** TaggedPointer is a combination of a pointer and a mask stored in the
     lowest two bits.
@@ -92,10 +91,7 @@ public:
         @param toAllocate allocate space for at least this number of children
         (must be <= branchFactor)
     */
-    explicit TaggedPointer(
-        TaggedPointer&& other,
-        std::uint16_t isBranch,
-        std::uint8_t toAllocate);
+    explicit TaggedPointer(TaggedPointer&& other, std::uint16_t isBranch, std::uint8_t toAllocate);
 
     /** Given `other` with the specified children in `srcBranches`, create a
         new TaggedPointer with the allocated number of children and the
@@ -152,9 +148,8 @@ public:
     /** Get the number of elements in each array and a pointer to the start
         of each array.
     */
-    [[nodiscard]] std::
-        tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
-        getHashesAndChildren() const;
+    [[nodiscard]] std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
+    getHashesAndChildren() const;
 
     /** Get the `hashes` array */
     [[nodiscard]] SHAMapHash*
@@ -226,6 +221,4 @@ popcnt16(std::uint16_t a)
 #endif
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

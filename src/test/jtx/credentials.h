@@ -1,11 +1,10 @@
-#ifndef XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
-#define XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -17,8 +16,7 @@ keylet(
     test::jtx::Account const& issuer,
     std::string_view credType)
 {
-    return keylet::credential(
-        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+    return keylet::credential(subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
 }
 
 // Sets the optional URI.
@@ -60,16 +58,10 @@ public:
 };
 
 Json::Value
-create(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
-accept(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
 Json::Value
 deleteCred(
@@ -91,6 +83,4 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx);
 }  // namespace credentials
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

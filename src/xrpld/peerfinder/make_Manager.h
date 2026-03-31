@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_MAKE_MANAGER_H_INCLUDED
-#define XRPL_PEERFINDER_MAKE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
@@ -7,7 +6,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Create a new Manager. */
@@ -20,6 +19,4 @@ make_Manager(
     beast::insight::Collector::ptr const& collector);
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

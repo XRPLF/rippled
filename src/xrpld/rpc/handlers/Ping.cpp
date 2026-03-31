@@ -4,7 +4,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 struct JsonContext;
@@ -22,7 +22,7 @@ doPing(RPC::JsonContext& context)
         case Role::IDENTIFIED:
             ret[jss::role] = "identified";
             ret[jss::username] = std::string{context.headers.user};
-            if (context.headers.forwardedFor.size())
+            if (!context.headers.forwardedFor.empty())
                 ret[jss::ip] = std::string{context.headers.forwardedFor};
             break;
         case Role::PROXY:
@@ -41,4 +41,4 @@ doPing(RPC::JsonContext& context)
     return ret;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

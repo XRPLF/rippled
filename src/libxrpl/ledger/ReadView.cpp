@@ -1,6 +1,6 @@
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 ReadView::sles_type::sles_type(ReadView const& view) : ReadViewFwdRange(view)
 {
@@ -58,7 +58,7 @@ makeRulesGivenLedger(
     std::unordered_set<uint256, beast::uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
-    std::optional digest = ledger.digest(k.key);
+    std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
         auto const sle = ledger.read(k);
@@ -68,4 +68,4 @@ makeRulesGivenLedger(
     return Rules(presets);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_EVENTS_H_INCLUDED
-#define XRPL_TEST_CSF_EVENTS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Proposal.h>
 #include <test/csf/Tx.h>
@@ -8,7 +7,7 @@
 
 #include <chrono>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -129,6 +128,4 @@ struct FullyValidateLedger
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

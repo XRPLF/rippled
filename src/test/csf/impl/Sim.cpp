@@ -1,6 +1,6 @@
 #include <test/csf/Sim.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -33,7 +33,7 @@ Sim::synchronized() const
 }
 
 bool
-Sim::synchronized(PeerGroup const& g) const
+Sim::synchronized(PeerGroup const& g)
 {
     if (g.size() < 1)
         return true;
@@ -63,4 +63,4 @@ Sim::branches(PeerGroup const& g) const
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

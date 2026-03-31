@@ -1,9 +1,8 @@
-#ifndef XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
-#define XRPL_CRYPTO_SECURE_ERASE_H_INCLUDED
+#pragma once
 
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 /** Attempts to clear the given blob of memory.
 
@@ -22,6 +21,4 @@ namespace ripple {
 void
 secure_erase(void* dest, std::size_t bytes);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

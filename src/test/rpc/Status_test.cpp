@@ -3,7 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 class codeString_test : public beast::unit_test::suite
@@ -130,18 +130,17 @@ private:
         auto code = error[jss::code].asInt();
         expect(
             status == code,
-            prefix + "Wrong status " + std::to_string(code) +
-                " != " + std::to_string(status));
+            prefix + "Wrong status " + std::to_string(code) + " != " + std::to_string(status));
 
         auto m = error[jss::message].asString();
         expect(m == message, m + " != " + message);
 
         auto d = error[jss::data];
-        size_t s1 = d.size(), s2 = messages.size();
+        size_t const s1 = d.size();
+        size_t const s2 = messages.size();
         expect(
             s1 == s2,
-            prefix + "Data sizes differ " + std::to_string(s1) +
-                " != " + std::to_string(s2));
+            prefix + "Data sizes differ " + std::to_string(s1) + " != " + std::to_string(s2));
         for (auto i = 0; i < std::min(s1, s2); ++i)
         {
             auto ds = d[i].asString();
@@ -153,11 +152,7 @@ private:
     test_error()
     {
         testcase("error");
-        expectFill(
-            "temBAD_AMOUNT",
-            temBAD_AMOUNT,
-            {},
-            "temBAD_AMOUNT: Malformed: Bad amount.");
+        expectFill("temBAD_AMOUNT", temBAD_AMOUNT, {}, "temBAD_AMOUNT: Malformed: Bad amount.");
 
         expectFill(
             "rpcBAD_SYNTAX",
@@ -202,4 +197,4 @@ public:
 BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
 }  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,6 +1,6 @@
 #include <xrpld/app/main/NodeStoreScheduler.h>
 
-namespace ripple {
+namespace xrpl {
 
 NodeStoreScheduler::NodeStoreScheduler(JobQueue& jobQueue) : jobQueue_(jobQueue)
 {
@@ -12,9 +12,7 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
     if (jobQueue_.isStopped())
         return;
 
-    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task]() {
-            task.performScheduledTask();
-        }))
+    if (!jobQueue_.addJob(jtWRITE, "NObjStore", [&task]() { task.performScheduledTask(); }))
     {
         // Job not added, presumably because we're shutting down.
         // Recover by executing the task synchronously.
@@ -29,8 +27,7 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
         return;
 
     jobQueue_.addLoadEvents(
-        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
-                                                        : jtNS_SYNC_READ,
+        report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
         1,
         report.elapsed);
 }
@@ -44,4 +41,4 @@ NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
     jobQueue_.addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

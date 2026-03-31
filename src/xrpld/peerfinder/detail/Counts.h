@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_COUNTS_H_INCLUDED
-#define XRPL_PEERFINDER_COUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -7,7 +6,7 @@
 
 #include <xrpl/basics/random.h>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 /** Manages the count of available connections for the various slots. */
@@ -53,7 +52,7 @@ public:
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::connected || s.state() == Slot::accept,
-            "ripple::PeerFinder::Counts::can_activate : valid input state");
+            "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
@@ -223,9 +222,8 @@ public:
     state_string() const
     {
         std::stringstream ss;
-        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/"
-           << m_in_max << " in, " << connectCount() << " connecting, "
-           << closingCount() << " closing";
+        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max
+           << " in, " << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
 
@@ -244,9 +242,7 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                XRPL_ASSERT(
-                    s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is inbound");
+                XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
                 break;
 
@@ -254,7 +250,7 @@ private:
             case Slot::connected:
                 XRPL_ASSERT(
                     !s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is not "
+                    "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
                 m_attempts += n;
                 break;
@@ -278,8 +274,7 @@ private:
 
             // LCOV_EXCL_START
             default:
-                UNREACHABLE(
-                    "ripple::PeerFinder::Counts::adjust : invalid input state");
+                UNREACHABLE("xrpl::PeerFinder::Counts::adjust : invalid input state");
                 break;
                 // LCOV_EXCL_STOP
         };
@@ -322,6 +317,4 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

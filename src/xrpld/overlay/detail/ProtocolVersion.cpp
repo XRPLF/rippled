@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 /** The list of protocol versions we speak and we prefer to use.
 
@@ -17,21 +17,18 @@ namespace ripple {
           it may not contain any duplicates!)
 */
 
-// clang-format off
-constexpr ProtocolVersion const supportedProtocolList[]
-{
+constexpr ProtocolVersion const supportedProtocolList[]{
     {2, 1},
-    {2, 2}
+    {2, 2},
 };
-// clang-format on
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
     []() constexpr -> bool {
-        auto const len = std::distance(
-            std::begin(supportedProtocolList), std::end(supportedProtocolList));
+        auto const len =
+            std::distance(std::begin(supportedProtocolList), std::end(supportedProtocolList));
 
         // There should be at least one protocol we're willing to speak.
         if (len == 0)
@@ -61,7 +58,7 @@ to_string(ProtocolVersion const& p)
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
-    static boost::regex re(
+    static boost::regex const re(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
         "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
@@ -81,8 +78,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
         if (boost::regex_match(s, m, re))
         {
-            std::uint16_t major;
-            std::uint16_t minor;
+            std::uint16_t major = 0;
+            std::uint16_t minor = 0;
             if (!beast::lexicalCastChecked(major, std::string(m[1])))
                 continue;
 
@@ -115,7 +112,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion =
+    std::function<void(ProtocolVersion const&)> const pickVersion =
         [&result](ProtocolVersion const& v) { result = v; };
 
     std::set_intersection(
@@ -158,10 +155,7 @@ bool
 isProtocolSupported(ProtocolVersion const& v)
 {
     return std::end(supportedProtocolList) !=
-        std::find(
-               std::begin(supportedProtocolList),
-               std::end(supportedProtocolList),
-               v);
+        std::find(std::begin(supportedProtocolList), std::end(supportedProtocolList), v);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

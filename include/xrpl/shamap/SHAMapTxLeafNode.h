@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTXLEAFNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTXLEAFNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -7,16 +6,13 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A leaf node for a transaction. No metadata is included. */
-class SHAMapTxLeafNode final : public SHAMapLeafNode,
-                               public CountedObject<SHAMapTxLeafNode>
+class SHAMapTxLeafNode final : public SHAMapLeafNode, public CountedObject<SHAMapTxLeafNode>
 {
 public:
-    SHAMapTxLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid)
+    SHAMapTxLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
         : SHAMapLeafNode(std::move(item), cowid)
     {
         updateHash();
@@ -45,8 +41,7 @@ public:
     void
     updateHash() final override
     {
-        hash_ =
-            SHAMapHash{sha512Half(HashPrefix::transactionID, item_->slice())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::transactionID, item_->slice())};
     }
 
     void
@@ -64,6 +59,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

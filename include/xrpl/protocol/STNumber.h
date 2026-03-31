@@ -1,13 +1,13 @@
-#ifndef XRPL_PROTOCOL_STNUMBER_H_INCLUDED
-#define XRPL_PROTOCOL_STNUMBER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STTakesAsset.h>
 
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /**
  * A serializable number.
@@ -19,8 +19,19 @@ namespace ripple {
  * it can represent a value of any token type (XRP, IOU, or MPT)
  * without paying the storage cost of duplicating asset information
  * that may be deduced from the context.
+ *
+ * STNumber derives from STTakesAsset, so that it can be associated with the
+ * related Asset during transaction processing. Which asset is relevant depends
+ * on the object and transaction. As of this writing, only Vault, LoanBroker,
+ * and Loan objects use STNumber fields. All of those fields represent amounts
+ * of the Vault's Asset, so they should be associated with the Vault's Asset.
+ *
+ * e.g.
+ *     associateAsset(*loanSle, asset);
+ *     associateAsset(*brokerSle, asset);
+ *     associateAsset(*vaultSle, asset);
  */
-class STNumber : public STBase, public CountedObject<STNumber>
+class STNumber : public STTakesAsset, public CountedObject<STNumber>
 {
 private:
     Number value_;
@@ -56,6 +67,9 @@ public:
     bool
     isDefault() const override;
 
+    void
+    associateAsset(Asset const& a) override;
+
     operator Number() const
     {
         return value_;
@@ -84,6 +98,4 @@ partsFromString(std::string const& number);
 STNumber
 numberFromJson(SField const& field, Json::Value const& value);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

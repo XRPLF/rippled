@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_ROLE_H_INCLUDED
-#define XRPL_SERVER_ROLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/json/json_value.h>
@@ -14,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Indicates the level of administrative permission to grant.
  * IDENTIFIED role has unlimited resources but cannot perform some
@@ -70,6 +69,4 @@ ipAllowed(
 std::string_view
 forwardedFor(http_request_type const& request);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

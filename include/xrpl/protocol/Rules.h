@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_RULES_H_INCLUDED
-#define XRPL_LEDGER_RULES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -7,7 +6,7 @@
 
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 isFeatureEnabled(uint256 const& feature);
@@ -47,9 +46,7 @@ public:
 private:
     // Allow a friend function to construct Rules.
     friend Rules
-    makeRulesGivenLedger(
-        DigestAwareReadView const& ledger,
-        Rules const& current);
+    makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 
     friend Rules
     makeRulesGivenLedger(
@@ -91,8 +88,7 @@ setCurrentTransactionRules(std::optional<Rules> r);
 class CurrentTransactionRulesGuard
 {
 public:
-    explicit CurrentTransactionRulesGuard(Rules r)
-        : saved_(getCurrentTransactionRules())
+    explicit CurrentTransactionRulesGuard(Rules r) : saved_(getCurrentTransactionRules())
     {
         setCurrentTransactionRules(std::move(r));
     }
@@ -111,5 +107,4 @@ private:
     std::optional<Rules> saved_;
 };
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

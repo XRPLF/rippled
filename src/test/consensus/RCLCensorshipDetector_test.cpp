@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class RCLCensorshipDetector_test : public beast::unit_test::suite
@@ -79,6 +79,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

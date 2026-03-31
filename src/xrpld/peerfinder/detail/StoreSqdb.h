@@ -1,11 +1,11 @@
-#ifndef XRPL_PEERFINDER_STORESQDB_H_INCLUDED
-#define XRPL_PEERFINDER_STORESQDB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/core/SociDB.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
-namespace ripple {
+#include <xrpl/rdb/SociDB.h>
+
+namespace xrpl {
 namespace PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
@@ -21,8 +21,7 @@ public:
         currentSchemaVersion = 4
     };
 
-    explicit StoreSqdb(
-        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+    explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : m_journal(journal)
     {
     }
@@ -46,8 +45,7 @@ public:
         std::size_t n(0);
 
         readPeerFinderDB(m_sqlDb, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(
-                beast::IP::Endpoint::from_string(s));
+            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
 
             if (!is_unspecified(endpoint))
             {
@@ -56,8 +54,7 @@ public:
             }
             else
             {
-                JLOG(m_journal.error())
-                    << "Bad address string '" << s << "' in Bootcache table";
+                JLOG(m_journal.error()) << "Bad address string '" << s << "' in Bootcache table";
             }
         });
 
@@ -89,6 +86,4 @@ private:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

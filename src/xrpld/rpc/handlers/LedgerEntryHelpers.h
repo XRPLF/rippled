@@ -12,38 +12,31 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace LedgerEntryHelpers {
 
-Unexpected<Json::Value>
-missingFieldError(
-    Json::StaticString const field,
-    std::optional<std::string> err = std::nullopt)
+inline Unexpected<Json::Value>
+missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
-    auto error = RPC::missing_field_message(std::string(field.c_str()));
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = std::move(error);
+    json[jss::error_message] = RPC::missing_field_message(std::string(field.c_str()));
     return Unexpected(json);
 }
 
-Unexpected<Json::Value>
-invalidFieldError(
-    std::string const& err,
-    Json::StaticString const field,
-    std::string const& type)
+inline Unexpected<Json::Value>
+invalidFieldError(std::string const& err, Json::StaticString const field, std::string const& type)
 {
     Json::Value json = Json::objectValue;
-    auto error = RPC::expected_field_message(field, type);
     json[jss::error] = err;
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = std::move(error);
+    json[jss::error_message] = RPC::expected_field_message(field, type);
     return Unexpected(json);
 }
 
-Unexpected<Json::Value>
+inline Unexpected<Json::Value>
 malformedError(std::string const& err, std::string const& message)
 {
     Json::Value json = Json::objectValue;
@@ -53,7 +46,7 @@ malformedError(std::string const& err, std::string const& message)
     return Unexpected(json);
 }
 
-Expected<bool, Json::Value>
+inline Expected<bool, Json::Value>
 hasRequired(
     Json::Value const& params,
     std::initializer_list<Json::StaticString> fields,
@@ -93,7 +86,7 @@ required(
 }
 
 template <>
-std::optional<AccountID>
+inline std::optional<AccountID>
 parse(Json::Value const& param)
 {
     if (!param.isString())
@@ -108,7 +101,7 @@ parse(Json::Value const& param)
     return account;
 }
 
-Expected<AccountID, Json::Value>
+inline Expected<AccountID, Json::Value>
 requiredAccountID(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -117,20 +110,20 @@ requiredAccountID(
     return required<AccountID>(params, fieldName, err, "AccountID");
 }
 
-std::optional<Blob>
+inline std::optional<Blob>
 parseHexBlob(Json::Value const& param, std::size_t maxLength)
 {
     if (!param.isString())
         return std::nullopt;
 
-    auto const blob = strUnHex(param.asString());
+    auto blob = strUnHex(param.asString());
     if (!blob || blob->empty() || blob->size() > maxLength)
         return std::nullopt;
 
     return blob;
 }
 
-Expected<Blob, Json::Value>
+inline Expected<Blob, Json::Value>
 requiredHexBlob(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -149,7 +142,7 @@ requiredHexBlob(
 }
 
 template <>
-std::optional<std::uint32_t>
+inline std::optional<std::uint32_t>
 parse(Json::Value const& param)
 {
     if (param.isUInt() || (param.isInt() && param.asInt() >= 0))
@@ -165,7 +158,7 @@ parse(Json::Value const& param)
     return std::nullopt;
 }
 
-Expected<std::uint32_t, Json::Value>
+inline Expected<std::uint32_t, Json::Value>
 requiredUInt32(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -175,7 +168,7 @@ requiredUInt32(
 }
 
 template <>
-std::optional<uint256>
+inline std::optional<uint256>
 parse(Json::Value const& param)
 {
     uint256 uNodeIndex;
@@ -187,7 +180,7 @@ parse(Json::Value const& param)
     return uNodeIndex;
 }
 
-Expected<uint256, Json::Value>
+inline Expected<uint256, Json::Value>
 requiredUInt256(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -197,7 +190,7 @@ requiredUInt256(
 }
 
 template <>
-std::optional<uint192>
+inline std::optional<uint192>
 parse(Json::Value const& param)
 {
     uint192 field;
@@ -209,7 +202,7 @@ parse(Json::Value const& param)
     return field;
 }
 
-Expected<uint192, Json::Value>
+inline Expected<uint192, Json::Value>
 requiredUInt192(
     Json::Value const& params,
     Json::StaticString const fieldName,
@@ -218,7 +211,27 @@ requiredUInt192(
     return required<uint192>(params, fieldName, err, "Hash192");
 }
 
-Expected<STXChainBridge, Json::Value>
+template <>
+inline std::optional<Issue>
+parse(Json::Value const& param)
+{
+    try
+    {
+        return issueFromJson(param);
+    }
+    catch (std::runtime_error const&)
+    {
+        return std::nullopt;
+    }
+}
+
+inline Expected<Issue, Json::Value>
+requiredIssue(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+{
+    return required<Issue>(params, fieldName, err, "Issue");
+}
+
+inline Expected<STXChainBridge, Json::Value>
 parseBridgeFields(Json::Value const& params)
 {
     if (auto const value = hasRequired(
@@ -232,15 +245,15 @@ parseBridgeFields(Json::Value const& params)
         return Unexpected(value.error());
     }
 
-    auto const lockingChainDoor = requiredAccountID(
-        params, jss::LockingChainDoor, "malformedLockingChainDoor");
+    auto const lockingChainDoor =
+        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
     if (!lockingChainDoor)
     {
         return Unexpected(lockingChainDoor.error());
     }
 
-    auto const issuingChainDoor = requiredAccountID(
-        params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
+    auto const issuingChainDoor =
+        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
     if (!issuingChainDoor)
     {
         return Unexpected(issuingChainDoor.error());
@@ -253,8 +266,7 @@ parseBridgeFields(Json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError(
-            "malformedIssue", jss::LockingChainIssue, "Issue");
+        return invalidFieldError("malformedIssue", jss::LockingChainIssue, "Issue");
     }
 
     Issue issuingChainIssue;
@@ -264,17 +276,13 @@ parseBridgeFields(Json::Value const& params)
     }
     catch (std::runtime_error const& ex)
     {
-        return invalidFieldError(
-            "malformedIssue", jss::IssuingChainIssue, "Issue");
+        return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
     }
 
     return STXChainBridge(
-        *lockingChainDoor,
-        lockingChainIssue,
-        *issuingChainDoor,
-        issuingChainIssue);
+        *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
 }  // namespace LedgerEntryHelpers
 
-}  // namespace ripple
+}  // namespace xrpl

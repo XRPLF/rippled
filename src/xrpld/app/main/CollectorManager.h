@@ -1,10 +1,9 @@
-#ifndef XRPL_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
-#define XRPL_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Insight.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Provides the beast::insight::Collector service. */
 class CollectorManager
@@ -22,6 +21,4 @@ public:
 std::unique_ptr<CollectorManager>
 make_CollectorManager(Section const& params, beast::Journal journal);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

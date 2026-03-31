@@ -1,10 +1,9 @@
-#ifndef XRPL_RPC_RPCHANDLER_H_INCLUDED
-#define XRPL_RPC_RPCHANDLER_H_INCLUDED
+#pragma once
 
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 struct JsonContext;
@@ -17,6 +16,4 @@ Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

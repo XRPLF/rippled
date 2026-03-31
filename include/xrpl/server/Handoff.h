@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_HANDOFF_H_INCLUDED
-#define XRPL_SERVER_HANDOFF_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Writer.h>
 
@@ -8,13 +7,11 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
-using http_request_type =
-    boost::beast::http::request<boost::beast::http::dynamic_body>;
+using http_request_type = boost::beast::http::request<boost::beast::http::dynamic_body>;
 
-using http_response_type =
-    boost::beast::http::response<boost::beast::http::dynamic_body>;
+using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /** Used to indicate the result of a server connection handoff. */
 struct Handoff
@@ -36,6 +33,4 @@ struct Handoff
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

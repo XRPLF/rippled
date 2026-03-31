@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPACCOUNTSTATELEAFNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPACCOUNTSTATELEAFNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -7,17 +6,14 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A leaf node for a state object. */
-class SHAMapAccountStateLeafNode final
-    : public SHAMapLeafNode,
-      public CountedObject<SHAMapAccountStateLeafNode>
+class SHAMapAccountStateLeafNode final : public SHAMapLeafNode,
+                                         public CountedObject<SHAMapAccountStateLeafNode>
 {
 public:
-    SHAMapAccountStateLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid)
+    SHAMapAccountStateLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
         : SHAMapLeafNode(std::move(item), cowid)
     {
         updateHash();
@@ -34,8 +30,7 @@ public:
     intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const final override
     {
-        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-            item_, cowid, hash_);
+        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
@@ -47,8 +42,7 @@ public:
     void
     updateHash() final override
     {
-        hash_ = SHAMapHash{
-            sha512Half(HashPrefix::leafNode, item_->slice(), item_->key())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::leafNode, item_->slice(), item_->key())};
     }
 
     void
@@ -68,6 +62,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

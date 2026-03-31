@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_LOADMANAGER_H_INCLUDED
-#define XRPL_APP_MAIN_LOADMANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -8,7 +7,7 @@
 #include <mutex>
 #include <thread>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -94,6 +93,4 @@ private:
 std::unique_ptr<LoadManager>
 make_LoadManager(Application& app, beast::Journal journal);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

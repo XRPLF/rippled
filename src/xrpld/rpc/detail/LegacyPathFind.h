@@ -1,9 +1,8 @@
-#ifndef XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
-#define XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
+#pragma once
 
 #include <atomic>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -28,6 +27,4 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

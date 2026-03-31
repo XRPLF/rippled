@@ -1,11 +1,10 @@
-#ifndef XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
-#define XRPL_PROTOCOL_STBITSTRING_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 // The template parameter could be an unsigned type, however there's a bug in
 // gdb (last checked in gdb 12.1) that prevents gdb from finding the RTTI
@@ -79,8 +78,7 @@ inline STBitString<Bits>::STBitString(value_type const& v) : value_(v)
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SField const& n, value_type const& v)
-    : STBase(n), value_(v)
+inline STBitString<Bits>::STBitString(SField const& n, value_type const& v) : STBase(n), value_(v)
 {
 }
 
@@ -151,11 +149,8 @@ template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STBitString::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == getSType(),
-        "ripple::STBitString::add : field type match");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STBitString::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == getSType(), "xrpl::STBitString::add : field type match");
     s.addBitString<Bits>(value_);
 }
 
@@ -175,7 +170,8 @@ STBitString<Bits>::value() const
 }
 
 template <int Bits>
-STBitString<Bits>::operator value_type() const
+STBitString<Bits>::
+operator value_type() const
 {
     return value_;
 }
@@ -187,6 +183,4 @@ STBitString<Bits>::isDefault() const
     return value_ == beast::zero;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,11 +1,10 @@
-#ifndef XRPL_NODESTORE_TYPES_H_INCLUDED
-#define XRPL_NODESTORE_TYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/NodeObject.h>
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 enum {
@@ -37,6 +36,4 @@ using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
 }  // namespace NodeStore
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

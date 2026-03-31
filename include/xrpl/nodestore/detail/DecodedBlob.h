@@ -1,9 +1,8 @@
-#ifndef XRPL_NODESTORE_DECODEDBLOB_H_INCLUDED
-#define XRPL_NODESTORE_DECODEDBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/NodeObject.h>
 
-namespace ripple {
+namespace xrpl {
 namespace NodeStore {
 
 /** Parsed key/value blob into NodeObject components.
@@ -43,6 +42,4 @@ private:
 };
 
 }  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

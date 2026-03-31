@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_PEERS_PEERSET_H_INCLUDED
-#define XRPL_APP_PEERS_PEERSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Supports data retrieval by managing a set of peers.
 
@@ -73,6 +72,4 @@ make_PeerSetBuilder(Application& app);
 std::unique_ptr<PeerSet>
 make_DummyPeerSet(Application& app);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

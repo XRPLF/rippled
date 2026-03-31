@@ -1,10 +1,9 @@
-#ifndef XRPL_PROTOCOL_KEYTYPE_H_INCLUDED
-#define XRPL_PROTOCOL_KEYTYPE_H_INCLUDED
+#pragma once
 
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 enum class KeyType {
     secp256k1 = 0,
@@ -42,6 +41,4 @@ operator<<(Stream& s, KeyType type)
     return s << to_string(type);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

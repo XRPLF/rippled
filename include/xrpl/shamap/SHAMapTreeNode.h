@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -11,7 +10,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
@@ -56,9 +55,7 @@ protected:
     {
     }
 
-    explicit SHAMapTreeNode(
-        std::uint32_t cowid,
-        SHAMapHash const& hash) noexcept
+    explicit SHAMapTreeNode(std::uint32_t cowid, SHAMapHash const& hash) noexcept
         : hash_(hash), cowid_(cowid)
     {
     }
@@ -170,6 +167,4 @@ private:
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

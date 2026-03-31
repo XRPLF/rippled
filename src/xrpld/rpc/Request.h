@@ -1,12 +1,11 @@
-#ifndef XRPL_RPC_REQUEST_H_INCLUDED
-#define XRPL_RPC_REQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Fees.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -51,6 +50,4 @@ private:
 };
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

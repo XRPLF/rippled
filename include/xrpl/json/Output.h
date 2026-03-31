@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_OUTPUT_H_INCLUDED
-#define XRPL_JSON_OUTPUT_H_INCLUDED
+#pragma once
 
 #include <boost/beast/core/string.hpp>
 
@@ -15,9 +14,7 @@ using Output = std::function<void(boost::beast::string_view const&)>;
 inline Output
 stringOutput(std::string& s)
 {
-    return [&](boost::beast::string_view const& b) {
-        s.append(b.data(), b.size());
-    };
+    return [&](boost::beast::string_view const& b) { s.append(b.data(), b.size()); };
 }
 
 /** Writes a minimal representation of a Json value to an Output in O(n) time.
@@ -37,5 +34,3 @@ std::string
 jsonAsString(Json::Value const&);
 
 }  // namespace Json
-
-#endif

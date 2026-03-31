@@ -1,18 +1,17 @@
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/Steps.h>
-#include <xrpld/app/paths/detail/StrandFlow.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/Flow.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/tx/paths/detail/StrandFlow.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct RippleCalcTestParams
@@ -26,7 +25,9 @@ struct RippleCalcTestParams
     STPathSet paths;
 
     explicit RippleCalcTestParams(Json::Value const& jv)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         : srcAccount{*parseBase58<AccountID>(jv[jss::Account].asString())}
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         , dstAccount{*parseBase58<AccountID>(jv[jss::Destination].asString())}
         , dstAmt{amountFromJson(sfAmount, jv[jss::Amount])}
     {
@@ -44,27 +45,27 @@ struct RippleCalcTestParams
                 {
                     if (pe.isMember(jss::account))
                     {
-                        assert(
-                            !pe.isMember(jss::currency) &&
-                            !pe.isMember(jss::issuer));
+                        assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
                         p.emplace_back(
-                            *parseBase58<AccountID>(
-                                pe[jss::account].asString()),
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            *parseBase58<AccountID>(pe[jss::account].asString()),
                             std::nullopt,
                             std::nullopt);
                     }
-                    else if (
-                        pe.isMember(jss::currency) && pe.isMember(jss::issuer))
+                    else if (pe.isMember(jss::currency) && pe.isMember(jss::issuer))
                     {
-                        auto const currency =
-                            to_currency(pe[jss::currency].asString());
+                        auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
-                            issuer = *parseBase58<AccountID>(
-                                pe[jss::issuer].asString());
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
-                            assert(isXRP(*parseBase58<AccountID>(
-                                pe[jss::issuer].asString())));
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                            assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -112,10 +113,8 @@ class RandomAccountParams
             return;
 
         auto const percent = qualityPercentDist_(engine_);
-        auto const& field =
-            qDir == QualityDirection::in ? sfQualityIn : sfQualityOut;
-        auto const value =
-            static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE);
+        auto const& field = qDir == QualityDirection::in ? sfQualityIn : sfQualityOut;
+        auto const value = static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE);
         jv[field.jsonName] = value;
     };
 
@@ -137,13 +136,9 @@ class RandomAccountParams
     };
 
 public:
-    explicit RandomAccountParams(
-        std::uint32_t trustAmount = 100,
-        std::uint32_t initialBalance = 50)
+    explicit RandomAccountParams(std::uint32_t trustAmount = 100, std::uint32_t initialBalance = 50)
         // Use a deterministic seed so the unit tests run in a reproducible way
-        : engine_{1977u}
-        , trustAmount_{trustAmount}
-        , initialBalance_{initialBalance} {};
+        : engine_{1977u}, trustAmount_{trustAmount}, initialBalance_{initialBalance} {};
 
     void
     maybeSetTransferRate(jtx::Env& env, jtx::Account const& acc)
@@ -158,7 +153,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};
@@ -204,7 +199,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
     prettyQuality(Quality const& q)
     {
         std::stringstream sstr;
-        STAmount rate = q.rate();
+        STAmount const rate = q.rate();
         sstr << rate << " (" << q << ")";
         return sstr.str();
     };
@@ -225,7 +220,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox sb(closed.get(), tapNONE);
+        PaymentSandbox const sb(closed.get(), tapNONE);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
@@ -234,7 +229,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             return std::nullopt;
         }();
 
-        beast::Journal dummyJ{beast::Journal::getNullSink()};
+        beast::Journal const dummyJ{beast::Journal::getNullSink()};
 
         auto sr = toStrands(
             sb,
@@ -251,9 +246,9 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             std::nullopt,
             dummyJ);
 
-        BEAST_EXPECT(sr.first == tesSUCCESS);
+        BEAST_EXPECT(isTesSuccess(sr.first));
 
-        if (sr.first != tesSUCCESS)
+        if (!isTesSuccess(sr.first))
             return;
 
         // Due to the floating point calculations, theoretical and actual
@@ -269,21 +264,21 @@ class TheoreticalQuality_test : public beast::unit_test::suite
 
         for (auto const& strand : sr.second)
         {
-            Quality const theoreticalQ = *qualityUpperBound(sb, strand);
-            auto const f = flow<IOUAmount, IOUAmount>(
-                sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
+            Quality const theoreticalQ =
+                *qualityUpperBound(sb, strand);  // NOLINT(bugprone-unchecked-optional-access)
+            auto const f =
+                flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
             BEAST_EXPECT(f.success);
             Quality const actualQ(f.out, f.in);
             if (actualQ != theoreticalQ && !compareClose(actualQ, theoreticalQ))
             {
                 BEAST_EXPECT(actualQ == theoreticalQ);  // get the failure
-                log << "\nAcutal != Theoretical\n";
+                log << "\nActual != Theoretical\n";
                 log << "\nTQ: " << prettyQuality(theoreticalQ) << "\n";
                 log << "AQ: " << prettyQuality(actualQ) << "\n";
                 logStrand(log, strand);
             }
-            if (expectedQ && expectedQ != theoreticalQ &&
-                !compareClose(*expectedQ, theoreticalQ))
+            if (expectedQ && expectedQ != theoreticalQ && !compareClose(*expectedQ, theoreticalQ))
             {
                 BEAST_EXPECT(expectedQ == theoreticalQ);  // get the failure
                 log << "\nExpected != Theoretical\n";
@@ -300,8 +295,6 @@ public:
     {
         testcase("Direct Step");
 
-        // clang-format off
-
         // Set up a payment through four accounts: alice -> bob -> carol -> dan
         // For each relevant trust line on the path, there are three things that can vary:
         //  1) input quality
@@ -309,8 +302,6 @@ public:
         //  3) debt direction
         // For each account, there is one thing that can vary:
         //  1) transfer rate
-
-        // clang-format on
 
         using namespace jtx;
 
@@ -351,8 +342,7 @@ public:
             auto const carol = Account("carol" + iterAsStr);
             auto const dan = Account("dan" + iterAsStr);
             std::array<Account, numAccounts> accounts{{alice, bob, carol, dan}};
-            static_assert(
-                numAccounts == 4, "Path is only correct for four accounts");
+            static_assert(numAccounts == 4, "Path is only correct for four accounts");
             path const accountsPath(accounts[1], accounts[2]);
             env.fund(XRP(10000), alice, bob, carol, dan);
             env.close();
@@ -370,15 +360,13 @@ public:
                 if (j == numAccounts)
                     continue;
 
-                rndAccParams.setupTrustLines(
-                    env, accounts[ii], accounts[j], currency);
-                rndAccParams.maybeSetInitialBalance(
-                    env, accounts[ii], accounts[j], currency);
+                rndAccParams.setupTrustLines(env, accounts[ii], accounts[j], currency);
+                rndAccParams.maybeSetInitialBalance(env, accounts[ii], accounts[j], currency);
             }
 
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(accounts.front(), accounts.back(), iou(paymentAmount)),
                 accountsPath,
                 txflags(tfNoRippleDirect))};
@@ -393,14 +381,12 @@ public:
         testcase("Book Step");
         using namespace jtx;
 
-        // clang-format off
+        // Setup a payment through an offer:
+        //   alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
+        // For each relevant trust line, vary input quality, output quality, debt direction. For
+        // each account, vary transfer rate.
 
-        // Setup a payment through an offer: alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
-        // For each relevant trust line, vary input quality, output quality, debt direction.
-        // For each account, vary transfer rate.
-        // The USD/bob|EUR/carol offer owner is "Oscar"
-
-        // clang-format on
+        // The USD/bob|EUR/carol offer owner is "Oscar".
 
         int const numTestIterations = reqNumIterations.value_or(100);
 
@@ -427,8 +413,7 @@ public:
             auto const USDB = bob["USD"];
             auto const EURC = carol["EUR"];
             constexpr std::size_t const numAccounts = 5;
-            std::array<Account, numAccounts> accounts{
-                {alice, bob, carol, dan, oscar}};
+            std::array<Account, numAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
@@ -443,14 +428,10 @@ public:
 
             for (auto const& currency : {usdCurrency, eurCurrency})
             {
-                rndAccParams.setupTrustLines(
-                    env, alice, bob, currency);  // first step in payment
-                rndAccParams.setupTrustLines(
-                    env, carol, dan, currency);  // last step in payment
-                rndAccParams.setupTrustLines(
-                    env, oscar, bob, currency);  // offer owner
-                rndAccParams.setupTrustLines(
-                    env, oscar, carol, currency);  // offer owner
+                rndAccParams.setupTrustLines(env, alice, bob, currency);    // first step in payment
+                rndAccParams.setupTrustLines(env, carol, dan, currency);    // last step in payment
+                rndAccParams.setupTrustLines(env, oscar, bob, currency);    // offer owner
+                rndAccParams.setupTrustLines(env, oscar, carol, currency);  // offer owner
             }
 
             rndAccParams.maybeSetInitialBalance(env, alice, bob, usdCurrency);
@@ -464,7 +445,7 @@ public:
             // Accounts are set up, make the payment
             IOU const srcIOU{bob, usdCurrency};
             IOU const dstIOU{carol, eurCurrency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(alice, dan, dstIOU(paymentAmount)),
                 sendmax(srcIOU(100 * paymentAmount)),
                 bookPath,
@@ -479,8 +460,7 @@ public:
     {
         testcase("Relative quality distance");
 
-        auto toQuality = [](std::uint64_t mantissa,
-                            int exponent = 0) -> Quality {
+        auto toQuality = [](std::uint64_t mantissa, int exponent = 0) -> Quality {
             // The only way to construct a Quality from an STAmount is to take
             // their ratio. Set the denominator STAmount to `one` to easily
             // create a quality from a single amount
@@ -492,18 +472,14 @@ public:
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(100)) == 0);
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(100, 1)) == 9);
         BEAST_EXPECT(relativeDistance(toQuality(100), toQuality(110)) == .1);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 90), toQuality(110, 90)) == .1);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 90), toQuality(110, 91)) == 10);
-        BEAST_EXPECT(
-            relativeDistance(toQuality(100, 0), toQuality(100, 90)) == 1e90);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 90), toQuality(110, 90)) == .1);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 90), toQuality(110, 91)) == 10);
+        BEAST_EXPECT(relativeDistance(toQuality(100, 0), toQuality(100, 90)) == 1e90);
         // Make the mantissa in the smaller value bigger than the mantissa in
         // the larger value. Instead of checking the exact result, we check that
         // it's large. If the values did not compare correctly in
         // `relativeDistance`, then the returned value would be negative.
-        BEAST_EXPECT(
-            relativeDistance(toQuality(102, 0), toQuality(101, 90)) >= 1e89);
+        BEAST_EXPECT(relativeDistance(toQuality(102, 0), toQuality(101, 90)) >= 1e89);
     }
 
     void
@@ -516,7 +492,7 @@ public:
                 return std::nullopt;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return std::nullopt;
@@ -533,7 +509,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, xrpl, 3);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

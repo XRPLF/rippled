@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STBASE_H_INCLUDED
-#define XRPL_PROTOCOL_STBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -11,7 +10,7 @@
 #include <typeinfo>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Note, should be treated as flags that can be | and &
 struct JsonOptions
@@ -84,7 +83,7 @@ to_json(T const& t)
 
 namespace detail {
 class STVar;
-}
+}  // namespace detail
 
 // VFALCO TODO fix this restriction on copy assignment.
 //
@@ -219,6 +218,4 @@ STBase::emplace(std::size_t n, void* buf, T&& val)
     return new (buf) U(std::forward<T>(val));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

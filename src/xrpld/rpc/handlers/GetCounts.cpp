@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/Context.h>
 
@@ -11,8 +10,9 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+namespace xrpl {
 
 static void
 textTime(
@@ -53,29 +53,25 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (app.config().useTxTables())
     {
-        auto const db =
-            dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+        auto& db = app.getRelationalDatabase();
 
-        if (!db)
-            Throw<std::runtime_error>("Failed to get relational database");
-
-        auto dbKB = db->getKBUsedAll();
+        auto dbKB = db.getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;
 
-        dbKB = db->getKBUsedLedger();
+        dbKB = db.getKBUsedLedger();
 
         if (dbKB > 0)
             ret[jss::dbKBLedger] = dbKB;
 
-        dbKB = db->getKBUsedTransaction();
+        dbKB = db.getKBUsedTransaction();
 
         if (dbKB > 0)
             ret[jss::dbKBTransaction] = dbKB;
 
         {
-            std::size_t c = app.getOPs().getLocalTxCount();
+            std::size_t const c = app.getOPs().getLocalTxCount();
             if (c > 0)
                 ret[jss::local_txs] = static_cast<Json::UInt>(c);
         }
@@ -83,19 +79,15 @@ getCountsJson(Application& app, int minObjectCount)
 
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
-    ret[jss::historical_perminute] =
-        static_cast<int>(app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
+    ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
+    ret[jss::SLE_hit_rate] = app.getCachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
-    ret[jss::fullbelow_size] =
-        static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
-    ret[jss::treenode_cache_size] =
-        app.getNodeFamily().getTreeNodeCache()->getCacheSize();
-    ret[jss::treenode_track_size] =
-        app.getNodeFamily().getTreeNodeCache()->getTrackSize();
+    ret[jss::fullbelow_size] = static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
+    ret[jss::treenode_cache_size] = app.getNodeFamily().getTreeNodeCache()->getCacheSize();
+    ret[jss::treenode_track_size] = app.getNodeFamily().getTreeNodeCache()->getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
@@ -126,4 +118,4 @@ doGetCounts(RPC::JsonContext& context)
     return getCountsJson(context.app, minCount);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

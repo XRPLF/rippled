@@ -2,14 +2,14 @@
 
 #include <xrpl/beast/unit_test.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 // Make sure "plump" order books don't have problems
 class PlumpBook_test : public beast::unit_test::suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -42,7 +42,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, ripple, 5);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, xrpl, 5);
 
 //------------------------------------------------------------------------------
 
@@ -57,14 +57,14 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ThinBook, app, ripple);
+BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 
 //------------------------------------------------------------------------------
 
 class OversizeMeta_test : public beast::unit_test::suite
 {
 public:
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -100,7 +100,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, xrpl, 3);
 
 //------------------------------------------------------------------------------
 
@@ -123,12 +123,14 @@ public:
                 len -= l2 + 1;
             }
             else
+            {
                 len = l2;
+            }
         }
         return lo;
     }
 
-    void
+    static void
     createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
@@ -160,13 +162,12 @@ public:
     void
     run() override
     {
-        auto const result =
-            bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
+        auto const result = bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
         log << "Min oversize offers = " << result << '\n';
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, ripple, 50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

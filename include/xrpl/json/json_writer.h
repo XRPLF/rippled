@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_WRITER_H_INCLUDED
-#define XRPL_JSON_JSON_WRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -90,7 +89,7 @@ private:
     void
     writeArrayValue(Value const& value);
     bool
-    isMultineArray(Value const& value);
+    isMultilineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void
@@ -109,7 +108,7 @@ private:
     std::string indentString_;
     int rightMargin_;
     int indentSize_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 /** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
@@ -157,7 +156,7 @@ private:
     void
     writeArrayValue(Value const& value);
     bool
-    isMultineArray(Value const& value);
+    isMultilineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void
@@ -176,7 +175,7 @@ private:
     std::string indentString_;
     int rightMargin_;
     std::string indentation_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 std::string
@@ -316,14 +315,10 @@ public:
     operator<<(std::ostream& o, Compact const& cJv)
     {
         detail::write_value(
-            [&o](void const* data, std::size_t n) {
-                o.write(static_cast<char const*>(data), n);
-            },
+            [&o](void const* data, std::size_t n) { o.write(static_cast<char const*>(data), n); },
             cJv.jv_);
         return o;
     }
 };
 
 }  // namespace Json
-
-#endif  // JSON_WRITER_H_INCLUDED

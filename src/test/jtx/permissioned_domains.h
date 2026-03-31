@@ -1,17 +1,16 @@
-#ifndef XRPL_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
-#define XRPL_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/deposit.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 namespace pdomain {
 
 // Helpers for PermissionedDomains testing
-using Credential = ripple::test::jtx::deposit::AuthorizeCredentials;
+using Credential = xrpl::test::jtx::deposit::AuthorizeCredentials;
 using Credentials = std::vector<Credential>;
 
 // helpers
@@ -51,6 +50,4 @@ getNewDomain(std::shared_ptr<STObject const> const& meta);
 }  // namespace pdomain
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

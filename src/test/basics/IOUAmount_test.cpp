@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/IOUAmount.h>
 
-namespace ripple {
+namespace xrpl {
 
 class IOUAmount_test : public beast::unit_test::suite
 {
@@ -55,7 +55,7 @@ public:
         using beast::zero;
 
         {
-            IOUAmount z(zero);
+            IOUAmount const z(zero);
             BEAST_EXPECT(z == zero);
             BEAST_EXPECT(z >= zero);
             BEAST_EXPECT(z <= zero);
@@ -94,9 +94,11 @@ public:
         BEAST_EXPECT(z >= z);
         BEAST_EXPECT(z <= z);
         BEAST_EXPECT(z == -z);
+        // NOLINTBEGIN(misc-redundant-expression)
         unexpected(z > z);
         unexpected(z < z);
         unexpected(z != z);
+        // NOLINTEND(misc-redundant-expression)
         unexpected(z != -z);
 
         BEAST_EXPECT(n < z);
@@ -141,15 +143,27 @@ public:
     {
         testcase("IOU strings");
 
-        BEAST_EXPECT(to_string(IOUAmount(-2, 0)) == "-2");
-        BEAST_EXPECT(to_string(IOUAmount(0, 0)) == "0");
-        BEAST_EXPECT(to_string(IOUAmount(2, 0)) == "2");
-        BEAST_EXPECT(to_string(IOUAmount(25, -3)) == "0.025");
-        BEAST_EXPECT(to_string(IOUAmount(-25, -3)) == "-0.025");
-        BEAST_EXPECT(to_string(IOUAmount(25, 1)) == "250");
-        BEAST_EXPECT(to_string(IOUAmount(-25, 1)) == "-250");
-        BEAST_EXPECT(to_string(IOUAmount(2, 20)) == "2000000000000000e5");
-        BEAST_EXPECT(to_string(IOUAmount(-2, -20)) == "-2000000000000000e-35");
+        auto test = [this](IOUAmount const& n, std::string const& expected) {
+            auto const result = to_string(n);
+            std::stringstream ss;
+            ss << "to_string(" << result << "). Expected: " << expected;
+            BEAST_EXPECTS(result == expected, ss.str());
+        };
+
+        for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+        {
+            NumberMantissaScaleGuard const mg(mantissaSize);
+
+            test(IOUAmount(-2, 0), "-2");
+            test(IOUAmount(0, 0), "0");
+            test(IOUAmount(2, 0), "2");
+            test(IOUAmount(25, -3), "0.025");
+            test(IOUAmount(-25, -3), "-0.025");
+            test(IOUAmount(25, 1), "250");
+            test(IOUAmount(-25, 1), "-250");
+            test(IOUAmount(2, 20), "2e20");
+            test(IOUAmount(-2, -20), "-2e-20");
+        }
     }
 
     void
@@ -169,14 +183,14 @@ public:
         {
             // multiply by a number that would overflow the mantissa, then
             // divide by the same number, and check we didn't lose any value
-            IOUAmount bigMan(maxMantissa, 0);
+            IOUAmount const bigMan(maxMantissa, 0);
             BEAST_EXPECT(bigMan == mulRatio(bigMan, maxUInt, maxUInt, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(bigMan == mulRatio(bigMan, maxUInt, maxUInt, false));
         }
         {
             // Similar test as above, but for negative values
-            IOUAmount bigMan(-maxMantissa, 0);
+            IOUAmount const bigMan(-maxMantissa, 0);
             BEAST_EXPECT(bigMan == mulRatio(bigMan, maxUInt, maxUInt, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(bigMan == mulRatio(bigMan, maxUInt, maxUInt, false));
@@ -184,46 +198,42 @@ public:
 
         {
             // small amounts
-            IOUAmount tiny(minMantissa, minExponent);
+            IOUAmount const tiny(minMantissa, minExponent);
             // Round up should give the smallest allowable number
             BEAST_EXPECT(tiny == mulRatio(tiny, 1, maxUInt, true));
             BEAST_EXPECT(tiny == mulRatio(tiny, maxUInt - 1, maxUInt, true));
             // rounding down should be zero
             BEAST_EXPECT(beast::zero == mulRatio(tiny, 1, maxUInt, false));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(beast::zero == mulRatio(tiny, maxUInt - 1, maxUInt, false));
 
             // tiny negative numbers
-            IOUAmount tinyNeg(-minMantissa, minExponent);
+            IOUAmount const tinyNeg(-minMantissa, minExponent);
             // Round up should give zero
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, maxUInt, true));
-            BEAST_EXPECT(
-                beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, maxUInt - 1, maxUInt, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, maxUInt, false));
-            BEAST_EXPECT(
-                tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
         }
 
         {  // rounding
             {
-                IOUAmount one(1, 0);
+                IOUAmount const one(1, 0);
                 auto const rup = mulRatio(one, maxUInt - 1, maxUInt, true);
                 auto const rdown = mulRatio(one, maxUInt - 1, maxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
             {
-                IOUAmount big(maxMantissa, maxExponent);
+                IOUAmount const big(maxMantissa, maxExponent);
                 auto const rup = mulRatio(big, maxUInt - 1, maxUInt, true);
                 auto const rdown = mulRatio(big, maxUInt - 1, maxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
 
             {
-                IOUAmount negOne(-1, 0);
+                IOUAmount const negOne(-1, 0);
                 auto const rup = mulRatio(negOne, maxUInt - 1, maxUInt, true);
-                auto const rdown =
-                    mulRatio(negOne, maxUInt - 1, maxUInt, false);
+                auto const rdown = mulRatio(negOne, maxUInt - 1, maxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
         }
@@ -239,7 +249,7 @@ public:
             IOUAmount big(maxMantissa, maxExponent);
             except([&] { mulRatio(big, 2, 0, true); });
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     //--------------------------------------------------------------------------
 
@@ -255,6 +265,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IOUAmount, basics, ripple);
+BEAST_DEFINE_TESTSUITE(IOUAmount, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

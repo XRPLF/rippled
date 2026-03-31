@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STCURRENCY_H_INCLUDED
-#define XRPL_PROTOCOL_STCURRENCY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/SField.h>
@@ -7,7 +6,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STCurrency final : public STBase
 {
@@ -114,6 +113,4 @@ operator<(STCurrency const& lhs, Currency const& rhs)
     return lhs.currency() < rhs;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

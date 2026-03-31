@@ -1,11 +1,10 @@
 #include <test/jtx/ledgerStateFix.h>
 
-#include <xrpld/app/tx/detail/LedgerStateFix.h>
-
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
@@ -27,4 +26,4 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

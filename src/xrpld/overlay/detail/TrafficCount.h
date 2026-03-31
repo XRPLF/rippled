@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TRAFFIC_H_INCLUDED
-#define XRPL_OVERLAY_TRAFFIC_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
@@ -7,7 +6,7 @@
 #include <atomic>
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     TrafficCount is used to count ingress and egress wire bytes and number of
@@ -42,8 +41,7 @@ public:
         std::atomic<std::uint64_t> messagesIn{0};
         std::atomic<std::uint64_t> messagesOut{0};
 
-        TrafficStats(TrafficCount::category cat)
-            : name(TrafficCount::to_string(cat))
+        TrafficStats(TrafficCount::category cat) : name(TrafficCount::to_string(cat))
         {
         }
 
@@ -195,8 +193,7 @@ public:
     addCount(category cat, bool inbound, int bytes)
     {
         XRPL_ASSERT(
-            cat <= category::unknown,
-            "ripple::TrafficCount::addCount : valid category input");
+            cat <= category::unknown, "xrpl::TrafficCount::addCount : valid category input");
 
         auto it = counts_.find(cat);
 
@@ -355,5 +352,4 @@ protected:
     };
 };
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

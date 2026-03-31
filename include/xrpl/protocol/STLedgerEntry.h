@@ -1,15 +1,14 @@
-#ifndef XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
-#define XRPL_PROTOCOL_STLEDGERENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Rules;
 namespace test {
 class Invariants_test;
-}
+}  // namespace test
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
@@ -108,6 +107,4 @@ STLedgerEntry::getType() const
     return type_;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

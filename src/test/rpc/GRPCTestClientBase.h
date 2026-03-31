@@ -1,5 +1,4 @@
-#ifndef XRPL_GRPCTESTCLIENTBASE_H
-#define XRPL_GRPCTESTCLIENTBASE_H
+#pragma once
 
 #include <test/jtx/envconfig.h>
 
@@ -7,19 +6,20 @@
 
 #include <grpcpp/grpcpp.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 struct GRPCTestClientBase
 {
     explicit GRPCTestClientBase(std::string const& port)
-        : stub_(org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
-              grpc::CreateChannel(
-                  beast::IP::Endpoint(
-                      boost::asio::ip::make_address(getEnvLocalhostAddr()),
-                      std::stoi(port))
-                      .to_string(),
-                  grpc::InsecureChannelCredentials())))
+        : stub_(
+              org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
+                  grpc::CreateChannel(
+                      beast::IP::Endpoint(
+                          boost::asio::ip::make_address(getEnvLocalhostAddr()),
+                          std::stoi(port))
+                          .to_string(),
+                      grpc::InsecureChannelCredentials())))
     {
     }
 
@@ -29,5 +29,4 @@ struct GRPCTestClientBase
 };
 
 }  // namespace test
-}  // namespace ripple
-#endif  // XRPL_GRPCTESTCLIENTBASE_H
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
-#define XRPL_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -7,7 +6,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class ClusterNode
 {
@@ -54,6 +53,4 @@ private:
     NetClock::time_point mReportTime = {};
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -20,7 +20,7 @@
 #include <iterator>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 Seed::~Seed()
 {
@@ -46,9 +46,9 @@ Seed::Seed(uint128 const& seed)
 Seed
 randomSeed()
 {
-    std::array<std::uint8_t, 16> buffer;
+    std::array<std::uint8_t, 16> buffer{};
     beast::rngfill(buffer.data(), buffer.size(), crypto_prng());
-    Seed seed(makeSlice(buffer));
+    Seed const seed(makeSlice(buffer));
     secure_erase(buffer.data(), buffer.size());
     return seed;
 }
@@ -80,8 +80,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
     if (str.empty())
         return std::nullopt;
 
-    if (parseBase58<AccountID>(str) ||
-        parseBase58<PublicKey>(TokenType::NodePublic, str) ||
+    if (parseBase58<AccountID>(str) || parseBase58<PublicKey>(TokenType::NodePublic, str) ||
         parseBase58<PublicKey>(TokenType::AccountPublic, str) ||
         parseBase58<SecretKey>(TokenType::NodePrivate, str) ||
         parseBase58<SecretKey>(TokenType::AccountSecret, str))
@@ -124,4 +123,4 @@ seedAs1751(Seed const& seed)
     return encodedKey;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
