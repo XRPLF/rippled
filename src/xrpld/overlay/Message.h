@@ -91,7 +91,7 @@ private:
      *   currently LZ4 only. If None then the message is uncompressed.
      * @param uncompressedBytes Size of the uncompressed message
      */
-    void
+    static void
     setHeader(
         std::uint8_t* in,
         std::uint32_t payloadBytes,
@@ -112,8 +112,8 @@ private:
      * @param in Payload header pointer
      * @return Message type
      */
-    int
-    getType(std::uint8_t const* in) const;
+    static int
+    getType(std::uint8_t const* in);
 };
 
 }  // namespace xrpl

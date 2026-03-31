@@ -16,8 +16,8 @@ getEndpoint(std::string const& peer)
 {
     try
     {
-        std::size_t first = peer.find_first_of(":");
-        std::size_t last = peer.find_last_of(":");
+        std::size_t first = peer.find_first_of(':');
+        std::size_t last = peer.find_last_of(':');
         std::string peerClean(peer);
         if (first != last)
         {
@@ -56,7 +56,7 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     , bindListener_(std::move(bindListener))
     , handler_(std::move(handler))
     , forward_(std::move(forward))
-    , requiredCondition_(std::move(requiredCondition))
+    , requiredCondition_(requiredCondition)
     , loadType_(std::move(loadType))
     , secureGatewayIPs_(secureGatewayIPs)
 {
@@ -120,7 +120,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
     {
         auto usage = getUsage();
         bool isUnlimited = clientIsUnlimited();
-        if (!isUnlimited && usage.disconnect(app_.journal("gRPCServer")))
+        if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
             grpc::Status status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
@@ -145,11 +145,11 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                     toLog << user.value();
                 toLog << " isUnlimited = " << isUnlimited;
 
-                JLOG(app_.journal("GRPCServer::Calldata").debug()) << toLog.str();
+                JLOG(app_.getJournal("GRPCServer::Calldata").debug()) << toLog.str();
             }
 
             RPC::GRPCContext<Request> context{
-                {app_.journal("gRPCServer"),
+                {app_.getJournal("gRPCServer"),
                  app_,
                  loadType,
                  app_.getOPs(),
@@ -285,7 +285,8 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
-GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.journal("gRPC Server"))
+GRPCServerImpl::GRPCServerImpl(Application& app)
+    : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
     // if present, get endpoint from config
     if (app_.config().exists(SECTION_PORT_GRPC))

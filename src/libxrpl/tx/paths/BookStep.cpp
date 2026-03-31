@@ -1,6 +1,3 @@
-#include <xrpld/app/paths/AMMLiquidity.h>
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -11,6 +8,8 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/paths/OfferStream.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -452,7 +451,7 @@ public:
     std::uint32_t
     getOfrInRate(Step const* prevStep, AccountID const& owner, std::uint32_t trIn) const
     {
-        auto const srcAcct = prevStep ? prevStep->directStepSrcAcct() : std::nullopt;
+        auto const srcAcct = (prevStep != nullptr) ? prevStep->directStepSrcAcct() : std::nullopt;
 
         return owner == srcAcct  // If offer crossing && prevStep is DirectI
             ? QUALITY_ONE        // && src is offer owner
@@ -467,9 +466,9 @@ public:
         AccountID const& strandDst,
         std::uint32_t trOut) const
     {
-        return                                       // If offer crossing
-            prevStep && prevStep->bookStepBook() &&  // && prevStep is BookStep
-                owner == strandDst                   // && dest is offer owner
+        return                                                    // If offer crossing
+            (prevStep != nullptr) && prevStep->bookStepBook() &&  // && prevStep is BookStep
+                owner == strandDst                                // && dest is offer owner
             ? QUALITY_ONE
             : trOut;  // then rate = QUALITY_ONE
     }
@@ -1260,13 +1259,14 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
     // Do not allow two books to output the same issue. This may cause offers on
     // one step to unfund offers in another step.
-    if (!ctx.seenBookOuts.insert(book_.out).second || ctx.seenDirectIssues[0].count(book_.out))
+    if (!ctx.seenBookOuts.insert(book_.out).second ||
+        (ctx.seenDirectIssues[0].count(book_.out) != 0u))
     {
         JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
 
-    if (ctx.seenDirectIssues[1].count(book_.out))
+    if (ctx.seenDirectIssues[1].count(book_.out) != 0u)
     {
         JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
@@ -1282,7 +1282,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         return tecNO_ISSUER;
     }
 
-    if (ctx.prevStep)
+    if (ctx.prevStep != nullptr)
     {
         if (auto const prev = ctx.prevStep->directStepSrcAcct())
         {
@@ -1292,7 +1292,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
             auto sle = view.read(keylet::line(*prev, cur, book_.in.currency));
             if (!sle)
                 return terNO_LINE;
-            if ((*sle)[sfFlags] & ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
+            if (((*sle)[sfFlags] & ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple)) != 0u)
                 return terNO_RIPPLE;
         }
     }

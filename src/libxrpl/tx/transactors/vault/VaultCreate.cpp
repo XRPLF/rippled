@@ -221,7 +221,7 @@ VaultCreate::doApply()
     {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     }
-    if (scale)
+    if (scale != 0u)
         vault->at(sfScale) = scale;
     view().insert(vault);
 

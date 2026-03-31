@@ -42,7 +42,7 @@ struct TxResult
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
     std::optional<uint256> ledgerHash;
-    TxSearched searchedAll = TxSearched::unknown;
+    TxSearched searchedAll = TxSearched::Unknown;
 };
 
 struct TxArgs
@@ -77,7 +77,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    result.searchedAll = TxSearched::unknown;
+    result.searchedAll = TxSearched::Unknown;
     std::variant<TxPair, TxSearched> v;
 
     if (args.ctid)
@@ -172,10 +172,10 @@ populateJsonResponse(
     // handle errors
     if (error.toErrorCode() != rpcSUCCESS)
     {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::unknown)
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::Unknown)
         {
             response = Json::Value(Json::objectValue);
-            response[jss::searched_all] = (result.searchedAll == TxSearched::all);
+            response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
         else

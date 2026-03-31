@@ -123,7 +123,7 @@ LedgerOracle::lookup(Ledger::ID const& id) const
 }
 
 std::size_t
-LedgerOracle::branches(std::set<Ledger> const& ledgers) const
+LedgerOracle::branches(std::set<Ledger> const& ledgers)
 {
     // Tips always maintains the Ledgers with largest sequence number
     // along all known chains.

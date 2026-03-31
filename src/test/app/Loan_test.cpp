@@ -388,7 +388,7 @@ protected:
                     if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                         env.test.BEAST_EXPECT(vaultSle))
                     {
-                        if ((flags & lsfLoanImpaired) && !(flags & lsfLoanDefault))
+                        if (((flags & lsfLoanImpaired) != 0u) && ((flags & lsfLoanDefault) == 0u))
                         {
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
@@ -746,7 +746,7 @@ protected:
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
 
-    void
+    static void
     topUpBorrower(
         jtx::Env& env,
         BrokerInfo const& broker,
@@ -1439,7 +1439,7 @@ protected:
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
         static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
+        auto const deleter = ((++deleteCounter % 2) != 0u) ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 
@@ -1468,7 +1468,7 @@ protected:
         }
     }
 
-    std::string
+    static std::string
     getCurrencyLabel(Asset const& asset)
     {
         if (asset.native())
@@ -1539,7 +1539,7 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
@@ -1809,9 +1809,9 @@ protected:
                 if (!BEAST_EXPECT(vaultSle))
                 {
                     // This will be wrong, but the test has failed anyway.
-                    return lender;
+                    return Account{lender};
                 }
-                auto const vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
+                auto vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
                 return vaultPseudo;
             }();
 
@@ -2149,7 +2149,7 @@ protected:
             state.totalValue = 0;
             state.managementFeeOutstanding = 0;
             state.previousPaymentDate =
-                state.nextPaymentDate + state.paymentInterval * (numPayments - 1);
+                state.nextPaymentDate + (state.paymentInterval * (numPayments - 1));
             state.nextPaymentDate = 0;
             verifyLoanStatus(state);
 
@@ -2875,6 +2875,7 @@ protected:
             // Create vaults and loan brokers
             std::array const assets{mptAsset, iouAsset};
             std::vector<BrokerInfo> brokers;
+            brokers.reserve(assets.size());
             for (auto const& asset : assets)
             {
                 brokers.emplace_back(createVaultAndBroker(env, asset, lender));
@@ -2983,7 +2984,7 @@ protected:
                 BEAST_EXPECT(sleMPT1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower), fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -3007,7 +3008,7 @@ protected:
                 BEAST_EXPECT(sleMPT2 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3029,7 +3030,7 @@ protected:
                 BEAST_EXPECT(sleLine1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower), fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -3052,7 +3053,7 @@ protected:
                 auto const sleLine2 = env.le(trustline);
                 BEAST_EXPECT(sleLine2 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
@@ -3102,7 +3103,7 @@ protected:
                 BEAST_EXPECT(sleMPT3 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3152,7 +3153,7 @@ protected:
                 auto const sleLine3 = env.le(trustline);
                 BEAST_EXPECT(sleLine3 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
@@ -3408,6 +3409,7 @@ protected:
 
         // Create vaults and loan brokers
         std::vector<BrokerInfo> brokers;
+        brokers.reserve(assets.size());
         for (auto const& asset : assets)
         {
             brokers.emplace_back(createVaultAndBroker(
@@ -4566,7 +4568,7 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
