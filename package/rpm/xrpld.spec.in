@@ -71,6 +71,10 @@ install -Dm0644 %{SOURCE6} %{buildroot}%{_opt_prefix}/bin/xrpld.logrotate
 install -Dm0755 %{SOURCE7} %{buildroot}%{_opt_prefix}/bin/update-xrpld.sh
 install -Dm0644 %{SOURCE8} %{buildroot}%{_opt_prefix}/bin/update-xrpld-cron
 
+# Install doc/license files.
+install -Dm0644 %{SOURCE9}  %{buildroot}%{_opt_prefix}/share/LICENSE.md
+install -Dm0644 %{SOURCE10} %{buildroot}%{_opt_prefix}/share/README.md
+
 %pre
 %sysusers_create_compat %{SOURCE4}
 
@@ -85,8 +89,8 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_postun_with_restart xrpld.service
 
 %files
-%license %{SOURCE9}
-%doc %{SOURCE10}
+%license %{_opt_prefix}/share/LICENSE.md
+%doc %{_opt_prefix}/share/README.md
 
 %dir %{_opt_prefix}
 %dir %{_opt_prefix}/bin
