@@ -403,7 +403,7 @@ public:
             // Note that we're bypassing almost all of the ledger's safety
             // checks with this modify() call.  If you call close() between
             // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
                 // Get the account root we want to hijack.
                 auto const sle = view.read(keylet::account(gw.id()));
                 if (!sle)
@@ -552,7 +552,7 @@ public:
         auto stx = std::make_shared<STTx>(*jtx.stx);
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);

@@ -464,7 +464,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.logs().threshold(beast::severities::kWarning);
+        app.getLogs().threshold(beast::severities::kWarning);
     }
 
     /**
@@ -803,8 +803,8 @@ logAll(
     LedgerReplayClient& client,
     beast::severities::Severity level = Severity::kTrace)
 {
-    server.app.logs().threshold(level);
-    client.app.logs().threshold(level);
+    server.app.getLogs().threshold(level);
+    client.app.getLogs().threshold(level);
 }
 // logAll(net.server, net.client);
 
@@ -968,6 +968,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         auto makeSkipList = [](int count) -> std::vector<uint256> {
             std::vector<uint256> sList;
+            sList.reserve(count);
             for (int i = 0; i < count; ++i)
                 sList.emplace_back(i);
             return sList;

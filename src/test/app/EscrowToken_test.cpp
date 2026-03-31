@@ -2518,7 +2518,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             auto const seq1 = env.seq(alice);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, tapNONE);
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(alice, seq1));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
@@ -2745,7 +2745,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice, bob);
 
             auto const seq1 = env.seq(alice);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, tapNONE);
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(alice, seq1));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};

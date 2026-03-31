@@ -37,7 +37,7 @@ public:
         XRPL_ASSERT((flags & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     STTx const& tx;
     TER const preclaimResult;
     XRPAmount const baseFee;

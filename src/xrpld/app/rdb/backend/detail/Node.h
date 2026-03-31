@@ -377,10 +377,10 @@ newestAccountTxPage(
  * @param id Hash of the transaction.
  * @param range Range of ledgers to check, if present.
  * @param ec Default value of error code.
- * @return Transaction and its metadata if found, TxSearched::all if range
+ * @return Transaction and its metadata if found, TxSearched::All if range
  *         given and all ledgers from range are present in the database,
- *         TxSearched::some if range given and not all ledgers are present,
- *         TxSearched::unknown if range not given or deserializing error
+ *         TxSearched::Some if range given and not all ledgers are present,
+ *         TxSearched::Unknown if range not given or deserializing error
  *         occurred. In the last case error code modified in ec link
  *         parameter, in other cases default error code remained.
  */

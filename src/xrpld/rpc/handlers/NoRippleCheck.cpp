@@ -98,7 +98,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);

@@ -70,7 +70,7 @@ struct PseudoTx_test : public beast::unit_test::suite
             BEAST_EXPECT(isPseudoTx(stx));
             BEAST_EXPECT(!passesLocalChecks(stx, reason));
             BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temINVALID);
                 return result.applied;
