@@ -1,5 +1,7 @@
 #include <test/jtx/owners.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+
 namespace xrpl {
 namespace detail {
 

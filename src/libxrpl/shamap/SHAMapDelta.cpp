@@ -136,7 +136,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         auto [ourNode, otherNode] = nodeStack.top();
         nodeStack.pop();
 
-        if (!ourNode || !otherNode)
+        if ((ourNode == nullptr) || (otherNode == nullptr))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::compare : missing a node");

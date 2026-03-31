@@ -44,7 +44,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     createGossip(Gossip& gossip)
     {
         std::uint8_t const v(10 + rand_int(9));
@@ -182,7 +182,7 @@ public:
                 }
             }
         }
-        if (readmitted == false)
+        if (!readmitted)
         {
             fail("Dropped Consumer left on blacklist too long");
             return;

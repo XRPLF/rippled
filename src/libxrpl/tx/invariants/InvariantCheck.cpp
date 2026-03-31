@@ -3,6 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -358,7 +360,7 @@ NoZeroEscrow::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    bool const effectiveBad = rv.rules().enabled(fixInvariantOverwrite) ? bad_ : badLegacy_;
+    bool const effectiveBad = rv.rules().enabled(fixSecurity3_1_3) ? bad_ : badLegacy_;
 
     if (effectiveBad)
     {
@@ -627,8 +629,7 @@ NoXRPTrustLines::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    bool const bad =
-        rv.rules().enabled(fixInvariantOverwrite) ? xrpTrustLine_ : xrpTrustLineLegacy_;
+    bool const bad = rv.rules().enabled(fixSecurity3_1_3) ? xrpTrustLine_ : xrpTrustLineLegacy_;
 
     if (!bad)
         return true;
@@ -648,11 +649,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = uFlags & lsfLowFreeze;
-        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
+        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
-        bool const highFreeze = uFlags & lsfHighFreeze;
-        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
+        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         deepFreezeWithoutFreeze_ |= bad;
@@ -668,8 +669,8 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    bool const bad = rv.rules().enabled(fixInvariantOverwrite) ? deepFreezeWithoutFreeze_
-                                                               : deepFreezeWithoutFreezeLegacy_;
+    bool const bad = rv.rules().enabled(fixSecurity3_1_3) ? deepFreezeWithoutFreeze_
+                                                          : deepFreezeWithoutFreezeLegacy_;
 
     if (!bad)
         return true;

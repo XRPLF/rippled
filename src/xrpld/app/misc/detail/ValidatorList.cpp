@@ -137,7 +137,7 @@ ValidatorList::load(
     JLOG(j_.debug()) << "Loading configured trusted validator list publisher keys";
 
     std::size_t count = 0;
-    for (auto key : publisherKeys)
+    for (auto const& key : publisherKeys)
     {
         JLOG(j_.trace()) << "Processing '" << key << "'";
 
@@ -181,7 +181,7 @@ ValidatorList::load(
     {
         // Want truncated result when dividing an odd integer
         listThreshold_ = (publisherLists_.size() < 3) ? 1  //
-                                                      : publisherLists_.size() / 2 + 1;
+                                                      : (publisherLists_.size() / 2) + 1;
         JLOG(j_.debug()) << "Validator list threshold computed as " << listThreshold_;
     }
 
@@ -699,11 +699,11 @@ ValidatorList::sendValidatorList(
     {
         messageVersion = 1;
     }
-    if (!messageVersion)
+    if (messageVersion == 0u)
         return;
     auto const [newPeerSequence, numVLs] = buildValidatorListMessages(
         messageVersion, peerSequence, maxSequence, rawVersion, rawManifest, blobInfos, messages);
-    if (newPeerSequence)
+    if (newPeerSequence != 0u)
     {
         XRPL_ASSERT(
             !messages.empty(),
@@ -1256,7 +1256,7 @@ ValidatorList::loadLists()
             continue;
 
         auto size = file_size(fullPath, ec);
-        if (!ec && !size)
+        if (!ec && (size == 0u))
         {
             // Treat an empty file as a missing file, because
             // nobody else is going to write it.
@@ -1406,7 +1406,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
 
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
+    auto pubKey = validatorManifests_.getMasterKey(identity);
     if (keyListings_.contains(pubKey))
         return pubKey;
     return std::nullopt;
@@ -1415,7 +1415,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
 {
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
+    auto pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.contains(pubKey))
         return pubKey;
     return std::nullopt;
@@ -1433,7 +1433,7 @@ bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
-    return identity.size() && publisherLists_.contains(identity) &&
+    return (identity.size() != 0u) && publisherLists_.contains(identity) &&
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
 
@@ -1484,7 +1484,7 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    return publisherLists_.size() + (!localPublisherList.list.empty());
+    return publisherLists_.size() + static_cast<size_t>(!localPublisherList.list.empty());
 }
 
 std::size_t
@@ -1649,7 +1649,7 @@ ValidatorList::getJson() const
                 future.validFrom > timeKeeper_.now() + 600s,
                 "xrpl::ValidatorList::getJson : minimum valid from");
         }
-        if (remaining.size())
+        if (remaining.size() != 0u)
             curr[jss::remaining] = std::move(remaining);
     }
 

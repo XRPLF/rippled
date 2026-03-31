@@ -237,7 +237,7 @@ template <
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
-    auto const m = std::make_shared<T>();
+    auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
     stream.Skip(header.header_size);

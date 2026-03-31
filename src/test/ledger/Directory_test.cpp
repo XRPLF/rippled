@@ -3,6 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
@@ -36,7 +37,7 @@ struct Directory_test : public beast::unit_test::suite
 
     // Insert n empty pages, numbered [0, ... n - 1], in the
     // specified directory:
-    void
+    static void
     makePages(Sandbox& sb, uint256 const& base, std::uint64_t n)
     {
         for (std::uint64_t i = 0; i < n; ++i)
@@ -203,7 +204,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            for (auto c : currencies)
+            for (auto const& c : currencies)
             {
                 env(trust(charlie, c(50)));
                 env.close();
@@ -273,7 +274,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                env(offer_cancel(alice, firstOfferSeq + page * dirNodeMaxEntries + i));
+                env(offer_cancel(alice, firstOfferSeq + (page * dirNodeMaxEntries) + i));
                 env.close();
             }
         }

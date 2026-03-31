@@ -296,7 +296,7 @@ Reader::match(Location pattern, int patternLength)
 
     int index = patternLength;
 
-    while (index--)
+    while ((index--) != 0)
     {
         if (current_[index] != pattern[index])
             return false;
@@ -362,7 +362,7 @@ Reader::readNumber()
 
         while (current_ != end_)
         {
-            if (!std::isdigit(static_cast<unsigned char>(*current_)))
+            if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
                 auto ret =
                     std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
@@ -913,7 +913,7 @@ Reader::getFormattedErrorMessages() const
         formattedMessage += "* " + getLocationLineAndColumn(error.token_.start_) + "\n";
         formattedMessage += "  " + error.message_ + "\n";
 
-        if (error.extra_)
+        if (error.extra_ != nullptr)
             formattedMessage += "See " + getLocationLineAndColumn(error.extra_) + " for detail.\n";
     }
 

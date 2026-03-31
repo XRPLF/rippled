@@ -59,7 +59,7 @@ public:
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
         test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-        beast::Journal journal{env.app().journal("ValidatorKeys_test")};
+        beast::Journal journal{env.app().getJournal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =

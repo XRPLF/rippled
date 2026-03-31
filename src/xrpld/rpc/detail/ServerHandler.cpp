@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
@@ -80,7 +79,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
     std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(":");
+    std::string::size_type nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
     std::string strUser = strUserPass.substr(0, nColon);
@@ -98,9 +97,9 @@ ServerHandler::ServerHandler(
     CollectorManager& cm)
     : app_(app)
     , m_resourceManager(resourceManager)
-    , m_journal(app_.journal("Server"))
+    , m_journal(app_.getJournal("Server"))
     , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_context, app_.journal("Server")))
+    , m_server(make_Server(*this, io_context, app_.getJournal("Server")))
     , m_jobQueue(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -126,14 +125,14 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
         if (auto it = endpoints_.find(port.name); it != endpoints_.end())
         {
             auto const endpointPort = it->second.port();
-            if (!port.port)
+            if (port.port == 0u)
                 port.port = endpointPort;
 
-            if (!setup_.client.port &&
+            if ((setup_.client.port == 0u) &&
                 (port.protocol.count("http") > 0 || port.protocol.count("https") > 0))
                 setup_.client.port = endpointPort;
 
-            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+            if ((setup_.overlay.port() == 0u) && (port.protocol.count("peer") > 0))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -163,7 +162,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
         return ++count_[port];
     }();
 
-    if (port.limit && c >= port.limit)
+    if ((port.limit != 0) && c >= port.limit)
     {
         JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
@@ -218,7 +217,7 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remote_address);
+        return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remote_address);
 
     if (is_ws && isStatusRequest(request))
         return statusResponse(request);
@@ -270,7 +269,7 @@ ServerHandler::onRequest(Session& session)
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
@@ -278,7 +277,7 @@ ServerHandler::onRequest(Session& session)
     // Check user/password authorization
     if (!authorized(session.port(), build_map(session.request())))
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
@@ -291,7 +290,7 @@ ServerHandler::onRequest(Session& session)
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
+        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.getJournal("RPC"));
         detachedSession->close(true);
         return;
     }
@@ -440,7 +439,7 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.journal("RPCHandler"),
+                {app_.getJournal("RPCHandler"),
                  app_,
                  loadType,
                  app_.getOPs(),
@@ -574,7 +573,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto rpcJ = app_.journal("RPC");
+    auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
     {
@@ -1135,7 +1134,7 @@ parse_Ports(Config const& config, std::ostream& log)
 
             // Remove the peer protocol, and if that would
             // leave the port empty, remove the port as well
-            if (p.erase("peer") && p.empty())
+            if ((p.erase("peer") != 0u) && p.empty())
             {
                 it = result.erase(it);
             }

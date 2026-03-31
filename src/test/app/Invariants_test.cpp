@@ -4,6 +4,9 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -41,7 +44,7 @@ class Invariants_test : public beast::unit_test::suite
     defaultAmendments()
     {
         return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault | fixInvariantOverwrite;
+            featureSingleAssetVault | fixSecurity3_1_3;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -1254,7 +1257,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
                     keylet::nftpage_max(A1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
-                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
                 nftPage->setFieldH256(sfNextPageMin, keylet::nftpage_max(A2).key);
 
                 ac.view().insert(nftPage);
@@ -1267,7 +1270,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
                     keylet::nftpage_max(A1), (nfTokens[1].getFieldH256(sfNFTokenID))));
-                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1288,7 +1291,7 @@ class Invariants_test : public beast::unit_test::suite
         sle->setAccountID(sfOwner, A1);
         sle->setFieldU32(sfSequence, seq);
 
-        if (numCreds)
+        if (numCreds != 0u)
         {
             // This array is sorted naturally, but if you willing to change this
             // behavior don't forget to use credentials::makeSorted

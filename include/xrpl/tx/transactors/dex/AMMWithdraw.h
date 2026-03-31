@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
