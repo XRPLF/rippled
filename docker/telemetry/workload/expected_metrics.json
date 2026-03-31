@@ -133,8 +133,7 @@
       "rippled-system-overlay-detail",
       "rippled-system-ledger-sync",
       "rippled-validator-health",
-      "rippled-peer-quality",
-      "system-node-health"
+      "rippled-peer-quality"
     ]
   }
 }
