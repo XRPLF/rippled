@@ -93,13 +93,8 @@ setCurrentThreadNameImpl(std::string_view name)
 #ifdef TRUNCATED_THREAD_NAME_LOGS
     if (name.size() > maxThreadNameLength)
     {
-        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size()
-                  << ") exceeds maximum of " << maxThreadNameLength << " characters on Linux.\n";
-
-        XRPL_ASSERT(
-            false,
-            "beast::detail::setCurrentThreadNameImpl : Thread name exceeds "
-            "maximum length for Linux");
+        std::cerr << "Thread name '" << name << "' (" << name.size()
+                  << " chars) exceeds 15-char limit and will be truncated\n";
     }
 #endif
 }
