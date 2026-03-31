@@ -17,7 +17,10 @@ namespace xrpl {
           it may not contain any duplicates!)
 */
 
-constexpr ProtocolVersion const supportedProtocolList[]{{2, 1}, {2, 2}};
+constexpr ProtocolVersion const supportedProtocolList[]{
+    {2, 1},
+    {2, 2},
+};
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
