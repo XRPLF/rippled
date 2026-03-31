@@ -48,7 +48,7 @@ doConnect(RPC::JsonContext& context)
     auto ip = beast::IP::Endpoint::from_string(ip_str);
 
     if (!is_unspecified(ip))
-        context.app.overlay().connect(ip.at_port(iPort));
+        context.app.getOverlay().connect(ip.at_port(iPort));
 
     return RPC::makeObjectValue(
         "attempting connection to IP:" + ip_str + " port: " + std::to_string(iPort));

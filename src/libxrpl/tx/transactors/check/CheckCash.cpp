@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -82,7 +81,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -155,7 +155,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
@@ -172,7 +172,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 bool const canonical_gt(dstId > issuerId);
 
                 bool const is_authorized(
-                    sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                    (sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
                 if (!is_authorized)
                 {
@@ -232,7 +232,7 @@ CheckCash::doApply()
     //
     // If it is not a check to self (as should be the case), then there's
     // work to do...
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
     if (srcId != account_)

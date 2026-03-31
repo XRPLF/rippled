@@ -1,7 +1,7 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -55,7 +55,7 @@ doGatewayBalances(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
         return rpcError(rpcACT_MALFORMED);
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     context.loadType = Resource::feeHeavyBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
@@ -76,7 +76,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(std::move(id.value()));
+                    hotWallets.insert(id.value());
                     return true;
                 }
             }

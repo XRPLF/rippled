@@ -15,7 +15,7 @@ bumpLastPage(
     std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>
 {
     Expected<void, Error> res{};
-    env.app().openLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
+    env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
         Sandbox sb(&view, tapNONE);
 
         // Find the root page

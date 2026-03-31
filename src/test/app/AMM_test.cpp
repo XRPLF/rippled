@@ -1918,7 +1918,7 @@ private:
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
             BEAST_EXPECT(expectHolding(env, carol, USD(30'000)));
             BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{30'000'000'000 - 2 * baseFee}));
+                expectLedgerEntryRoot(env, carol, XRPAmount{30'000'000'000 - (2 * baseFee)}));
         });
 
         // Equal withdrawal by tokens 1000000, 10%
@@ -2732,13 +2732,13 @@ private:
 
                 // 10th Interval after close, price for 1st interval.
                 env(ammAlice.bid({.account = carol}));
-                env.close(seconds(10 * AUCTION_SLOT_INTERVAL_DURATION + 1));
+                env.close(seconds((10 * AUCTION_SLOT_INTERVAL_DURATION) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
 
                 // 20th Interval (expired) after close, price for 10th interval.
                 env(ammAlice.bid({.account = bob}));
                 env.close(
-                    seconds(AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION + 1));
+                    seconds((AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION) + 1));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{127'33875, -5}));
 
                 // 0 Interval.
@@ -4111,7 +4111,7 @@ private:
                 fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
                 env(trust(alice, EUR(200)));
                 for (int i = 0; i < 30; ++i)
-                    env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+                    env(offer(alice, EUR(1.0 + (0.01 * i)), XRP(1)));
                 // This is worse quality offer than 30 offers above.
                 // It will not be consumed because of AMM offers limit.
                 env(offer(alice, EUR(140), XRP(100)));
@@ -4151,7 +4151,7 @@ private:
                 fund(env, gw, {bob}, {EUR(400)}, Fund::IOUOnly);
                 env(trust(alice, EUR(200)));
                 for (int i = 0; i < 29; ++i)
-                    env(offer(alice, EUR(1.0 + 0.01 * i), XRP(1)));
+                    env(offer(alice, EUR(1.0 + (0.01 * i)), XRP(1)));
                 // This is worse quality offer than 30 offers above.
                 // It will not be consumed because of AMM offers limit.
                 env(offer(alice, EUR(140), XRP(100)));
@@ -4268,7 +4268,7 @@ private:
             env(ammAlice.bid({.account = carol, .bidMin = 100}));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{4'999'900}));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
-            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(22500000000 - 4 * baseFee));
+            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(22500000000 - (4 * baseFee)));
             priceXRP = ammAssetOut(
                 STAmount{XRPAmount{10'000'000'000}},
                 STAmount{token1, 9'999'900},
@@ -4276,7 +4276,7 @@ private:
                 0);
             // Carol withdraws
             ammAlice.withdrawAll(carol, XRP(0));
-            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(29999949999 - 5 * baseFee));
+            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(29999949999 - (5 * baseFee)));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10'000'000'000} - priceXRP, USD(10'000), IOUAmount{5'000'000}));
             BEAST_EXPECT(ammAlice.expectLPTokens(alice, IOUAmount{5'000'000}));
@@ -5040,7 +5040,7 @@ private:
                     // 30,000 initial - (deposit+withdraw) * 10
                     BEAST_EXPECT(
                         accountBalance(env, carol) ==
-                        std::to_string(30'000'000'000 - 20 * baseFee));
+                        std::to_string(30'000'000'000 - (20 * baseFee)));
                     BEAST_EXPECT(accountBalance(env, ed) == xrpBalance);
                     BEAST_EXPECT(accountBalance(env, paul) == xrpBalance);
                     BEAST_EXPECT(accountBalance(env, natalie) == xrpBalance);
@@ -5064,7 +5064,7 @@ private:
                     BEAST_EXPECT(accountBalance(env, dan) == xrpBalanceText);
                     BEAST_EXPECT(
                         accountBalance(env, carol) ==
-                        std::to_string(30'000'000'000 - 20 * baseFee - 10));
+                        std::to_string(30'000'000'000 - (20 * baseFee) - 10));
                     BEAST_EXPECT(accountBalance(env, ed) == (xrpBalance + drops(2)).getText());
                     BEAST_EXPECT(accountBalance(env, paul) == (xrpBalance + drops(3)).getText());
                     BEAST_EXPECT(accountBalance(env, natalie) == (xrpBalance + drops(5)).getText());
@@ -5155,7 +5155,7 @@ private:
                 all);
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
+            for (auto i = 0; i < (maxDeletableAMMTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);

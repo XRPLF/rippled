@@ -443,7 +443,7 @@ AMM::deposit(
     // If including asset1In and asset2In or tokens as
     // deposit min amounts then must set the flags
     // explicitly instead of relying on this logic.
-    if (!(jvFlags & tfDepositSubTx))
+    if ((jvFlags & tfDepositSubTx) == 0u)
     {
         if (tokens && !asset1In)
         {
@@ -573,7 +573,7 @@ AMM::withdraw(
     std::uint32_t jvFlags = 0;
     if (flags)
         jvFlags = *flags;
-    if (!(jvFlags & tfWithdrawSubTx))
+    if ((jvFlags & tfWithdrawSubTx) == 0u)
     {
         if (tokens && !asset1Out)
         {
@@ -775,7 +775,7 @@ AMM::expectAuctionSlot(auto&& cb) const
                 // to avoid the failure.
                 auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
                 auto const slotInterval = ammAuctionTimeSlot(
-                    env_.app().timeKeeper().now().time_since_epoch().count(), auctionSlot);
+                    env_.app().getTimeKeeper().now().time_since_epoch().count(), auctionSlot);
                 auto const slotPrice = auctionSlot[sfPrice].iou();
                 auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
                 return cb(slotFee, slotInterval, slotPrice, authAccounts);

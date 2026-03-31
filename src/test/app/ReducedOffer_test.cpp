@@ -491,7 +491,7 @@ public:
         }
     }
 
-    Amounts
+    static Amounts
     jsonOfferToAmounts(Json::Value const& json)
     {
         STAmount const in = amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);

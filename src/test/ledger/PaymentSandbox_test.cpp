@@ -88,7 +88,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         env.fund(XRP(10000), alice, gw1, gw2);
 
-        auto j = env.app().journal("View");
+        auto j = env.app().getJournal("View");
 
         auto const USD_gw1 = gw1["USD"];
         auto const USD_gw2 = gw2["USD"];

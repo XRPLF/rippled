@@ -78,7 +78,7 @@ Config::makeConfig(
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
+    if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
     {
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
