@@ -4648,8 +4648,7 @@ class Vault_test : public beast::unit_test::suite
                     "VaultClawback (share) - " + prefix + " owner incomplete share clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
                 auto const& vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
                 env(vault.clawback({
@@ -4684,8 +4683,7 @@ class Vault_test : public beast::unit_test::suite
                     " owner explicit complete share clawback succeeds");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor);
                 auto const& vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
                 env(vault.clawback({
@@ -4701,8 +4699,7 @@ class Vault_test : public beast::unit_test::suite
                 testcase("VaultClawback (share) - " + prefix + " owner can clawback own shares");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
                 auto const& vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
                 env(vault.clawback({
@@ -4719,7 +4716,7 @@ class Vault_test : public beast::unit_test::suite
                 testcase("VaultClawback (share) - " + prefix + " empty vault share clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, owner);
                 auto const& vaultSle = env.le(vaultKeylet);
-                if (BEAST_EXPECT(vaultSle != nullptr))
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
                 env(vault.clawback({
@@ -4901,8 +4898,7 @@ class Vault_test : public beast::unit_test::suite
                 testcase("VaultClawback (asset) - " + prefix + " issuer share clawback fails");
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor, issuer);
                 auto const& vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 Asset share = vaultSle->at(sfShareMPTID);
 
@@ -4965,8 +4961,7 @@ class Vault_test : public beast::unit_test::suite
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor, issuer);
 
                 auto const vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
 
                 PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
@@ -5025,8 +5020,7 @@ class Vault_test : public beast::unit_test::suite
                 auto [vault, vaultKeylet] = setupVault(asset, owner, depositor, issuer);
 
                 auto const vaultSle = env.le(vaultKeylet);
-                BEAST_EXPECT(vaultSle != nullptr);
-                if (!vaultSle)
+                if (!BEAST_EXPECT(vaultSle))
                     return;
                 PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
@@ -5051,8 +5045,6 @@ class Vault_test : public beast::unit_test::suite
                     BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(60).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(100).value());
                 }
-
-                auto const sharesBefore = env.balance(depositor, shares);
 
                 // Request 100 but only 60 available — clamped to 60
                 env(vault.clawback({
