@@ -14,7 +14,7 @@
 
 namespace beast {
 class Journal;
-}
+}  // namespace beast
 
 namespace xrpl {
 class Application;

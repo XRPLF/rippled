@@ -45,7 +45,7 @@ public:
     MemoryDB&
     open(std::string const& path)
     {
-        std::lock_guard _(mutex_);
+        std::lock_guard const _(mutex_);
         auto const result =
             map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
@@ -116,14 +116,13 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
-        uint256 const hash(uint256::fromVoid(key));
 
-        std::lock_guard _(db_->mutex);
+        std::lock_guard const _(db_->mutex);
 
-        Map::iterator iter = db_->table.find(hash);
+        Map::iterator const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();
@@ -134,18 +133,22 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -155,7 +158,7 @@ public:
     store(std::shared_ptr<NodeObject> const& object) override
     {
         XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
-        std::lock_guard _(db_->mutex);
+        std::lock_guard const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
 

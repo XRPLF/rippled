@@ -255,7 +255,7 @@ public:
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
             // Iterate over a copy of the peer list because peer
             // destruction can invalidate iterators.
@@ -429,7 +429,7 @@ private:
         http_request_type const& request,
         address_type remote_address);
 
-    std::shared_ptr<Writer>
+    static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
@@ -474,7 +474,7 @@ private:
         Controlled through the config section [crawl] overlay=[0|1]
     */
     Json::Value
-    getOverlayInfo();
+    getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
@@ -522,7 +522,7 @@ private:
 
     /** Send once a second transactions' hashes aggregated by peers. */
     void
-    sendTxQueue();
+    sendTxQueue() const;
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */
@@ -573,7 +573,7 @@ private:
     collect_metrics()
     {
         auto counts = m_traffic.getCounts();
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         XRPL_ASSERT(
             counts.size() == m_stats.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");

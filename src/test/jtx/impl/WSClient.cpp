@@ -27,7 +27,7 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv_) : jv(jv_)
+        explicit msg(Json::Value&& jv_) : jv(std::move(jv_))
         {
         }
     };
@@ -49,13 +49,15 @@ class WSClientImpl : public WSClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
 
-            return {*pp.ip, *pp.port};
+            return {*pp.ip, *pp.port};  // NOLINT(bugprone-unchecked-optional-access)
         }
         Throw<std::runtime_error>("Missing WebSocket port");
         return {};  // Silence compiler control paths return value warning
@@ -107,6 +109,7 @@ class WSClientImpl : public WSClient
                                           {
                                               stream_.cancel();
                                           }
+                                          // NOLINTNEXTLINE(bugprone-empty-catch)
                                           catch (boost::system::system_error const&)
                                           {
                                               // ignored
@@ -177,7 +180,9 @@ public:
                 jp[jss::id] = 5;
             }
             else
+            {
                 jp[jss::command] = cmd;
+            }
             auto const s = to_string(jp);
             ws_.write_some(true, buffer(s));
         }
@@ -267,7 +272,7 @@ private:
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {
-            std::lock_guard lock(m_);
+            std::lock_guard const lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
@@ -281,7 +286,7 @@ private:
     void
     on_read_done()
     {
-        std::lock_guard lock(m0_);
+        std::lock_guard const lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }

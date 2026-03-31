@@ -129,7 +129,7 @@ fillHandler(JsonContext& context, Handler const*& result)
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
+    std::string const strCommand = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
 
@@ -137,13 +137,13 @@ fillHandler(JsonContext& context, Handler const*& result)
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
     auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
 
-    if (!handler)
+    if (handler == nullptr)
         return rpcUNKNOWN_COMMAND;
 
     if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
         return rpcNO_PERMISSION;
 
-    error_code_i res = conditionMet(handler->condition_, context);
+    error_code_i const res = conditionMet(handler->condition_, context);
     if (res != rpcSUCCESS)
     {
         return res;
@@ -215,11 +215,9 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
 
             return ret;
         }
-        else
-        {
-            auto ret = callMethod(context, method, handler->name_, result);
-            return ret;
-        }
+
+        auto ret = callMethod(context, method, handler->name_, result);
+        return ret;
     }
 
     return rpcUNKNOWN_COMMAND;
@@ -230,7 +228,7 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
     auto handler = RPC::getHandler(version, betaEnabled, method);
 
-    if (!handler)
+    if (handler == nullptr)
         return Role::FORBID;
 
     return handler->role_;

@@ -31,10 +31,10 @@ class Peers_test : public beast::unit_test::suite
         {
             auto kp = generateKeyPair(KeyType::secp256k1, generateSeed("seed" + std::to_string(i)));
 
-            std::string name = "Node " + std::to_string(i);
+            std::string const name = "Node " + std::to_string(i);
 
             using namespace std::chrono_literals;
-            env.app().cluster().update(kp.first, name, 200, env.timeKeeper().now() - 10s);
+            env.app().getCluster().update(kp.first, name, 200, env.timeKeeper().now() - 10s);
             nodes.insert(std::make_pair(toBase58(TokenType::NodePublic, kp.first), name));
         }
 
@@ -53,8 +53,8 @@ class Peers_test : public beast::unit_test::suite
                 continue;
             if (!BEAST_EXPECT((*it).isMember(jss::tag)))
                 continue;
-            auto tag = (*it)[jss::tag].asString();
-            BEAST_EXPECTS((*it)[jss::tag].asString() == nodes[key], key);
+            auto const tag = (*it)[jss::tag].asString();
+            BEAST_EXPECTS(tag == nodes[key], key);
         }
         BEAST_EXPECT(peers.isMember(jss::peers) && peers[jss::peers].isNull());
     }

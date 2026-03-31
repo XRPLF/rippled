@@ -116,9 +116,9 @@ doLedgerData(RPC::JsonContext& context)
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
 doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
 {
-    org::xrpl::rpc::v1::GetLedgerDataRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -140,14 +140,14 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     {
         startKey = *key;
     }
-    else if (request.marker().size() != 0)
+    else if (!request.marker().empty())
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
+        grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "marker malformed"};
         return {response, errorStatus};
     }
 
     auto e = ledger->sles.end();
-    if (request.end_marker().size() != 0)
+    if (!request.end_marker().empty())
     {
         auto const key = uint256::fromVoidChecked(request.end_marker());
 

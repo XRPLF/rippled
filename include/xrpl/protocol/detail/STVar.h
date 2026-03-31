@@ -25,16 +25,10 @@ extern nonPresentObject_t nonPresentObject;
 
 // Concept to constrain STVar constructors, which
 // instantiate ST* types from SerializedTypeID
-// clang-format off
 template <typename... Args>
 concept ValidConstructSTArgs =
-    (std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SField>> ||
-     std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SerialIter, SField>>);
-// clang-format on
+    (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>> ||
+     std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>);
 
 // "variant" that can hold any type of serialized object
 // and includes a small-object allocation optimization.
@@ -44,7 +38,7 @@ private:
     // The largest "small object" we can accommodate
     static std::size_t constexpr max_size = 72;
 
-    std::aligned_storage<max_size>::type d_;
+    std::aligned_storage<max_size>::type d_ = {};
     STBase* p_ = nullptr;
 
 public:

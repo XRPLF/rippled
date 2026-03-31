@@ -11,7 +11,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <string>
 
@@ -53,7 +53,7 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountNFTokens, context))
         return *err;
 
@@ -131,7 +131,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
                 obj[jss::nft_serial] = nft::getSerial(nftokenID);
-                if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
+                if (std::uint16_t const xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
             }
 
@@ -144,9 +144,13 @@ doAccountNFTs(RPC::JsonContext& context)
         }
 
         if (auto npm = (*cp)[~sfNextPageMin])
+        {
             cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
+        }
         else
+        {
             cp = nullptr;
+        }
     }
 
     if (markerSet && !markerFound)
@@ -229,9 +233,13 @@ getAccountObjects(
             jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
+            {
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            }
             else
+            {
                 cp = nullptr;
+            }
 
             if (--mlimit == 0)
             {
@@ -429,13 +437,13 @@ doAccountObjects(RPC::JsonContext& context)
             rpcStatus.inject(result);
             return result;
         }
-        else if (type != ltANY)
+        if (type != ltANY)
         {
             typeFilter = std::vector<LedgerEntryType>({type});
         }
     }
 
-    unsigned int limit;
+    unsigned int limit = 0;
     if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
         return *err;
 

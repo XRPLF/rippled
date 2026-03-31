@@ -191,14 +191,14 @@ public:
         }
         {
             // Request an invalid ledger.
-            Json::Value args{depositAuthArgs(alice, becky, "-1")};
+            Json::Value const args{depositAuthArgs(alice, becky, "-1")};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
                 result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
-            Json::Value args{depositAuthArgs(alice, becky, "17")};
+            Json::Value const args{depositAuthArgs(alice, becky, "17")};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
@@ -211,7 +211,7 @@ public:
         }
         {
             // alice is not yet funded.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "srcActNotFound", "Source account not found.");
         }
@@ -219,7 +219,7 @@ public:
         env.close();
         {
             // becky is not yet funded.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "dstActNotFound", "Destination account not found.");
         }
@@ -227,7 +227,7 @@ public:
         env.close();
         {
             // Once becky is funded try it again and see it succeed.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             validateDepositAuthResult(result, true);
         }
@@ -246,9 +246,11 @@ public:
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
+        {
             BEAST_EXPECT(
                 result.isMember(jss::deposit_authorized) &&
                 (result[jss::deposit_authorized] == true));
+        }
 
         BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
         if (!error.empty())
@@ -398,24 +400,16 @@ public:
 
         {
             static std::vector<std::string> const credIds = {
-                "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "58004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "68004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "78004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4",
-                "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4"};
+                "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "58004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "68004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "78004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+                "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
+            };
             assert(credIds.size() > maxCredentialsArraySize);
 
             testcase("deposit_authorized too long credentials");

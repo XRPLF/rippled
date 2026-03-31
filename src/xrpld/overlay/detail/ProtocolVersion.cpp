@@ -17,13 +17,10 @@ namespace xrpl {
           it may not contain any duplicates!)
 */
 
-// clang-format off
-constexpr ProtocolVersion const supportedProtocolList[]
-{
+constexpr ProtocolVersion const supportedProtocolList[]{
     {2, 1},
-    {2, 2}
+    {2, 2},
 };
-// clang-format on
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
@@ -61,7 +58,7 @@ to_string(ProtocolVersion const& p)
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
-    static boost::regex re(
+    static boost::regex const re(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
         "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
@@ -81,8 +78,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
         if (boost::regex_match(s, m, re))
         {
-            std::uint16_t major;
-            std::uint16_t minor;
+            std::uint16_t major = 0;
+            std::uint16_t minor = 0;
             if (!beast::lexicalCastChecked(major, std::string(m[1])))
                 continue;
 
@@ -115,9 +112,8 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) {
-        result = v;
-    };
+    std::function<void(ProtocolVersion const&)> const pickVersion =
+        [&result](ProtocolVersion const& v) { result = v; };
 
     std::set_intersection(
         std::begin(versions),

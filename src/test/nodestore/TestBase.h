@@ -138,7 +138,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == ok);
 
@@ -158,7 +158,7 @@ public:
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash().cbegin(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == notFound);
         }
@@ -187,7 +187,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            std::shared_ptr<NodeObject> object = db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);

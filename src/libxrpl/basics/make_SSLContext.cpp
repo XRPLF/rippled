@@ -140,7 +140,7 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int const ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 
@@ -239,6 +239,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_certificate_file(cert_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
@@ -252,7 +253,7 @@ initAuthenticated(
         // VFALCO Replace fopen() with RAII
         FILE* f = fopen(chain_file.c_str(), "r");
 
-        if (!f)
+        if (f == nullptr)
         {
             LogicError(
                 "Problem opening SSL chain file" +
@@ -271,9 +272,11 @@ initAuthenticated(
                 if (!cert_set)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
+                    {
                         LogicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
+                    }
 
                     cert_set = true;
                 }
@@ -298,6 +301,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_private_key_file(key_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)

@@ -129,7 +129,7 @@ public:
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
     // This constructor is only public so std::make_shared has access.
-    // The function`make_TrustedPublisherServer` should be used to create
+    // The function `make_TrustedPublisherServer` should be used to create
     // instances.
     // The `futures` member is expected to be structured as
     // effective / expiration time point pairs for use in version 2 UNLs
@@ -170,7 +170,7 @@ public:
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             return std::make_pair(data, blob);
         }();
         auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
@@ -198,7 +198,7 @@ public:
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
             blobInfo.emplace_back(blob, sig);
         }
@@ -249,7 +249,7 @@ public:
     {
         error_code ec;
         acceptor_.close(ec);
-        // TODO consider making this join
+        // TODO: consider making this join
         // any running do_peer threads
     }
 
@@ -562,7 +562,7 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "text/example");
                     // if huge was requested, lie about content length
-                    std::uint64_t cl = boost::starts_with(path, "/textfile/huge")
+                    std::uint64_t const cl = boost::starts_with(path, "/textfile/huge")
                         ? std::numeric_limits<uint64_t>::max()
                         : 1024;
                     res.content_length(cl);

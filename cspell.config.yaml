@@ -99,6 +99,7 @@ words:
   - endmacro
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -111,6 +112,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation
@@ -173,6 +175,11 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - nixfmt
+  - nixos
+  - nixpkgs
+  - NOLINT
+  - NOLINTNEXTLINE
   - nonxrp
   - noripple
   - nudb
@@ -199,6 +206,7 @@ words:
   - ptrs
   - pushd
   - pyenv
+  - pyparsing
   - qalloc
   - queuable
   - Raphson
@@ -224,6 +232,7 @@ words:
   - seqit
   - sf
   - SFIELD
+  - sfields
   - shamap
   - shamapitem
   - sidechain
@@ -288,6 +297,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

@@ -3,6 +3,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -25,7 +26,7 @@ static void
 iteratePriceData(
     RPC::JsonContext& context,
     std::shared_ptr<SLE const> const& sle,
-    std::function<bool(STObject const&)>&& f)
+    std::function<bool(STObject const&)> const& f)
 {
     using Meta = std::shared_ptr<STObject const>;
     constexpr std::uint8_t maxHistory = 3;
@@ -55,14 +56,14 @@ iteratePriceData(
         if (prevChain == chain)
             return;
 
-        if (!oracle || f(*oracle) || isNew)
+        if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
         if (++history > maxHistory)
             return;
 
-        uint256 prevTx = chain->getFieldH256(sfPreviousTxnID);
-        std::uint32_t prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
+        uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
+        std::uint32_t const prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);
         if (!ledger)
@@ -87,8 +88,8 @@ iteratePriceData(
             if (isNew && history == 1)
                 return;
 
-            oracle = isNew ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
-                           : &static_cast<STObject const&>(node.peekAtField(sfFinalFields));
+            oracle = isNew ? &safe_downcast<STObject const&>(node.peekAtField(sfNewFields))
+                           : &safe_downcast<STObject const&>(node.peekAtField(sfFinalFields));
             break;
         }
     }
@@ -148,7 +149,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
     // support positive int, uint, and a number represented as a string
     auto validUInt = [](Json::Value const& params, Json::StaticString const& field) {
         auto const& jv = params[field];
-        std::uint32_t v;
+        std::uint32_t v = 0;
         return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
             (jv.isString() && beast::lexicalCastChecked(v, jv.asString()));
     };
@@ -217,6 +218,12 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
+    // Get the ledger
+    std::shared_ptr<ReadView const> ledger;
+    result = RPC::lookupLedger(ledger, context);
+    if (!ledger)
+        return result;  // LCOV_EXCL_LINE
+
     // Collect the dataset into bimap keyed by lastUpdateTime and
     // STAmount (Number is int64 and price is uint64)
     Prices prices;
@@ -236,11 +243,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
             RPC::inject_error(rpcINVALID_PARAMS, result);
             return result;
         }
-
-        std::shared_ptr<ReadView const> ledger;
-        result = RPC::lookupLedger(ledger, context);
-        if (!ledger)
-            return result;  // LCOV_EXCL_LINE
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
@@ -283,8 +285,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (auto const threshold = std::get<std::uint32_t>(timeThreshold))
     {
         // threshold defines an acceptable range {max,min} of lastUpdateTime as
-        // {latestTime, latestTime - threshold}, the prices with lastUpdateTime
-        // greater than (latestTime - threshold) are erased.
+        // {latestTime, latestTime - threshold}. Prices with lastUpdateTime
+        // less than (latestTime - threshold) are erased (outdated prices).
         auto const oldestTime = prices.left.rbegin()->first;
         auto const upperBound = latestTime > threshold ? (latestTime - threshold) : oldestTime;
         if (upperBound > oldestTime)
@@ -318,7 +320,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size_ / 2;
         if ((size_ % 2) == 0)
         {
-            static STAmount two{noIssue(), 2, 0};
+            static STAmount const two{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;

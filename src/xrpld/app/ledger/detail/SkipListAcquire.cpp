@@ -16,7 +16,7 @@ SkipListAcquire::SkipListAcquire(
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
           {jtREPLAY_TASK, "SkipListAcq", LedgerReplayParameters::MAX_QUEUED_TASKS},
-          app.journal("LedgerReplaySkipList"))
+          app.getJournal("LedgerReplaySkipList"))
     , inboundLedgers_(inboundLedgers)
     , peerSet_(std::move(peerSet))
 {
@@ -127,7 +127,7 @@ SkipListAcquire::processData(
             return;
         }
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
 
@@ -151,7 +151,7 @@ SkipListAcquire::addDataCallback(OnSkipListDataCB&& cb)
 std::shared_ptr<SkipListAcquire::SkipListData const>
 SkipListAcquire::getData() const
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     return data_;
 }
 

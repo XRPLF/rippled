@@ -17,7 +17,7 @@ TEST(RangeSet, prevMissing)
 
     RangeSet<std::uint32_t> set;
     for (std::uint32_t i = 0; i < 10; ++i)
-        set.insert(range(10 * i, 10 * i + 5));
+        set.insert(range(10 * i, (10 * i) + 5));
 
     for (std::uint32_t i = 1; i < 100; ++i)
     {

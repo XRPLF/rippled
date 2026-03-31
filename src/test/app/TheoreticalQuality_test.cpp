@@ -9,7 +9,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/paths/detail/StrandFlow.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 namespace xrpl {
 namespace test {
@@ -25,7 +25,9 @@ struct RippleCalcTestParams
     STPathSet paths;
 
     explicit RippleCalcTestParams(Json::Value const& jv)
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         : srcAccount{*parseBase58<AccountID>(jv[jss::Account].asString())}
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         , dstAccount{*parseBase58<AccountID>(jv[jss::Destination].asString())}
         , dstAmt{amountFromJson(sfAmount, jv[jss::Amount])}
     {
@@ -45,6 +47,7 @@ struct RippleCalcTestParams
                     {
                         assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
                         p.emplace_back(
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             *parseBase58<AccountID>(pe[jss::account].asString()),
                             std::nullopt,
                             std::nullopt);
@@ -54,9 +57,15 @@ struct RippleCalcTestParams
                         auto const currency = to_currency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             issuer = *parseBase58<AccountID>(pe[jss::issuer].asString());
+                        }
                         else
+                        {
+                            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
+                        }
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
@@ -144,7 +153,7 @@ public:
         jtx::Env& env,
         jtx::Account const& acc,
         jtx::Account const& peer,
-        Currency const& currency)
+        Currency const& currency) const
     {
         using namespace jtx;
         IOU const iou{acc, currency};
@@ -190,7 +199,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
     prettyQuality(Quality const& q)
     {
         std::stringstream sstr;
-        STAmount rate = q.rate();
+        STAmount const rate = q.rate();
         sstr << rate << " (" << q << ")";
         return sstr.str();
     };
@@ -211,7 +220,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox sb(closed.get(), tapNONE);
+        PaymentSandbox const sb(closed.get(), tapNONE);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
@@ -220,7 +229,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             return std::nullopt;
         }();
 
-        beast::Journal dummyJ{beast::Journal::getNullSink()};
+        beast::Journal const dummyJ{beast::Journal::getNullSink()};
 
         auto sr = toStrands(
             sb,
@@ -237,9 +246,9 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             std::nullopt,
             dummyJ);
 
-        BEAST_EXPECT(sr.first == tesSUCCESS);
+        BEAST_EXPECT(isTesSuccess(sr.first));
 
-        if (sr.first != tesSUCCESS)
+        if (!isTesSuccess(sr.first))
             return;
 
         // Due to the floating point calculations, theoretical and actual
@@ -255,7 +264,8 @@ class TheoreticalQuality_test : public beast::unit_test::suite
 
         for (auto const& strand : sr.second)
         {
-            Quality const theoreticalQ = *qualityUpperBound(sb, strand);
+            Quality const theoreticalQ =
+                *qualityUpperBound(sb, strand);  // NOLINT(bugprone-unchecked-optional-access)
             auto const f =
                 flow<IOUAmount, IOUAmount>(sb, strand, IOUAmount(10, 0), IOUAmount(5, 0), dummyJ);
             BEAST_EXPECT(f.success);
@@ -285,8 +295,6 @@ public:
     {
         testcase("Direct Step");
 
-        // clang-format off
-
         // Set up a payment through four accounts: alice -> bob -> carol -> dan
         // For each relevant trust line on the path, there are three things that can vary:
         //  1) input quality
@@ -294,8 +302,6 @@ public:
         //  3) debt direction
         // For each account, there is one thing that can vary:
         //  1) transfer rate
-
-        // clang-format on
 
         using namespace jtx;
 
@@ -360,7 +366,7 @@ public:
 
             // Accounts are set up, make the payment
             IOU const iou{accounts.back(), currency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(accounts.front(), accounts.back(), iou(paymentAmount)),
                 accountsPath,
                 txflags(tfNoRippleDirect))};
@@ -375,14 +381,12 @@ public:
         testcase("Book Step");
         using namespace jtx;
 
-        // clang-format off
+        // Setup a payment through an offer:
+        //   alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
+        // For each relevant trust line, vary input quality, output quality, debt direction. For
+        // each account, vary transfer rate.
 
-        // Setup a payment through an offer: alice (USD/bob) -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
-        // For each relevant trust line, vary input quality, output quality, debt direction.
-        // For each account, vary transfer rate.
-        // The USD/bob|EUR/carol offer owner is "Oscar"
-
-        // clang-format on
+        // The USD/bob|EUR/carol offer owner is "Oscar".
 
         int const numTestIterations = reqNumIterations.value_or(100);
 
@@ -409,7 +413,7 @@ public:
             auto const USDB = bob["USD"];
             auto const EURC = carol["EUR"];
             constexpr std::size_t const numAccounts = 5;
-            std::array<Account, numAccounts> accounts{{alice, bob, carol, dan, oscar}};
+            std::array<Account, numAccounts> const accounts{{alice, bob, carol, dan, oscar}};
 
             // sendmax should be in USDB and delivered amount should be in EURC
             // normalized path should be:
@@ -441,7 +445,7 @@ public:
             // Accounts are set up, make the payment
             IOU const srcIOU{bob, usdCurrency};
             IOU const dstIOU{carol, eurCurrency};
-            RippleCalcTestParams rcp{env.json(
+            RippleCalcTestParams const rcp{env.json(
                 pay(alice, dan, dstIOU(paymentAmount)),
                 sendmax(srcIOU(100 * paymentAmount)),
                 bookPath,
@@ -488,7 +492,7 @@ public:
                 return std::nullopt;
             try
             {
-                std::size_t pos;
+                std::size_t pos = 0;
                 auto const r = stoi(s, &pos);
                 if (pos != s.size())
                     return std::nullopt;
