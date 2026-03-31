@@ -1907,6 +1907,17 @@ class LoanBroker_test : public beast::unit_test::suite
             env(set(alice, vaultKL2.key), loanBrokerID(brokerKL.key), ter(tecNO_PERMISSION));
         }
 
+        // Pre-amendment: non-existent vault on update → tecNO_ENTRY
+        {
+            testcase("LoanBrokerSet pre-amendment: non-existent vault on update");
+            Env env(*this);
+            env.disableFeature(featureLendingProtocolV1_1);
+            auto const [vaultID, brokerKL] = setup(env);
+
+            // Update with a VaultID that doesn't exist
+            env(set(alice, uint256{1}), loanBrokerID(brokerKL.key), ter(tecNO_ENTRY));
+        }
+
         // Pre-amendment: Create without VaultID → temINVALID
         {
             testcase("LoanBrokerSet pre-amendment: create requires VaultID");

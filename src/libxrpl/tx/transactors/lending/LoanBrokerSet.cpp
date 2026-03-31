@@ -7,6 +7,7 @@
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 namespace xrpl {
+
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -97,7 +98,7 @@ LoanBrokerSet::getValueFields()
  * @param id The vault ID to look up.
  * @return The vault SLE on success, or a TER error.
  */
-static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
 readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& id)
 {
     auto const sle = ctx.view.read(keylet::vault(id));
@@ -121,7 +122,7 @@ readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& i
  * @param brokerID The LoanBroker ID to update.
  * @return The vault SLE on success, or a TER error.
  */
-static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
 preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 const& brokerID)
 {
     auto const& tx = ctx.tx;
@@ -197,9 +198,12 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
  * @param account The transaction submitter (vault owner).
  * @return The vault SLE on success, or a TER error.
  */
-static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
 preclaimCreate(PreclaimContext const& ctx, AccountID const& account)
 {
+    XRPL_ASSERT(
+        ctx.tx.isFieldPresent(sfVaultID),
+        "xrpl::LoanBrokerSet::preclaimCreate : VaultID is present in the transaction");
     auto const vault = readVault(ctx, account, ctx.tx[sfVaultID]);
     if (!vault)
         return vault;
