@@ -43,8 +43,7 @@ class Invariants_test : public beast::unit_test::suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 |
-            featureSingleAssetVault | fixSecurity3_1_3;
+        return xrpl::test::jtx::testable_amendments() | featureInvariantsV1_1 | fixSecurity3_1_3;
     }
 
     /** Run a specific test case to put the ledger into a state that will be

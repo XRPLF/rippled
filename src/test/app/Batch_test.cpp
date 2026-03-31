@@ -2608,8 +2608,7 @@ class Batch_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        test::jtx::Env env{
-            *this, features | featureSingleAssetVault | featureLendingProtocol | featureMPTokensV1};
+        test::jtx::Env env{*this, features};
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
