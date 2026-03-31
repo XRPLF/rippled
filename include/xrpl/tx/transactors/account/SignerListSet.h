@@ -24,6 +24,7 @@ private:
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
+    virtual ~SignerListSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
     explicit SignerListSet(ApplyContext& ctx) : Transactor(ctx)

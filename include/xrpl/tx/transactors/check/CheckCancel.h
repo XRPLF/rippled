@@ -7,6 +7,7 @@ namespace xrpl {
 class CheckCancel : public Transactor
 {
 public:
+    virtual ~CheckCancel() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit CheckCancel(ApplyContext& ctx) : Transactor(ctx)

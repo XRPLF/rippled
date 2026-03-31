@@ -7,6 +7,7 @@ namespace xrpl {
 class LoanManage : public Transactor
 {
 public:
+    virtual ~LoanManage() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit LoanManage(ApplyContext& ctx) : Transactor(ctx)

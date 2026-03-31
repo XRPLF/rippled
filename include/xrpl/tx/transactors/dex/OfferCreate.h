@@ -12,6 +12,7 @@ class Sandbox;
 class OfferCreate : public Transactor
 {
 public:
+    virtual ~OfferCreate() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */

@@ -8,6 +8,7 @@ namespace xrpl {
 class TrustSet : public Transactor
 {
 public:
+    virtual ~TrustSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit TrustSet(ApplyContext& ctx) : Transactor(ctx)

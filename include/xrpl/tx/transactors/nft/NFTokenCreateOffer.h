@@ -7,6 +7,7 @@ namespace xrpl {
 class NFTokenCreateOffer : public Transactor
 {
 public:
+    virtual ~NFTokenCreateOffer() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit NFTokenCreateOffer(ApplyContext& ctx) : Transactor(ctx)

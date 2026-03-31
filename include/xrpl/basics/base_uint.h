@@ -335,11 +335,13 @@ public:
     operator=(std::uint64_t uHost)
     {
         *this = beast::zero;
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
             unsigned u[2];
             std::uint64_t ul;
         };
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
         data_[WIDTH - 2] = u[0];

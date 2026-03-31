@@ -7,6 +7,7 @@ namespace xrpl {
 class AccountDelete : public Transactor
 {
 public:
+    virtual ~AccountDelete() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
     explicit AccountDelete(ApplyContext& ctx) : Transactor(ctx)

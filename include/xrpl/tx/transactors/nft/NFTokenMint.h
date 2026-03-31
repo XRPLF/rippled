@@ -9,6 +9,7 @@ namespace xrpl {
 class NFTokenMint : public Transactor
 {
 public:
+    virtual ~NFTokenMint() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit NFTokenMint(ApplyContext& ctx) : Transactor(ctx)

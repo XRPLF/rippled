@@ -25,6 +25,7 @@ public:
 class qualityInPercent
 {
 private:
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     std::uint32_t qIn_;
 
 public:
@@ -53,6 +54,7 @@ public:
 class qualityOutPercent
 {
 private:
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     std::uint32_t qOut_;
 
 public:

@@ -16,6 +16,7 @@ namespace xrpl {
 class OracleDelete : public Transactor
 {
 public:
+    virtual ~OracleDelete() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit OracleDelete(ApplyContext& ctx) : Transactor(ctx)

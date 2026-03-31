@@ -8,6 +8,7 @@ namespace xrpl {
 class LoanSet : public Transactor
 {
 public:
+    virtual ~LoanSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit LoanSet(ApplyContext& ctx) : Transactor(ctx)
