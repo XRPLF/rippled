@@ -362,7 +362,7 @@ public:
     {
         for (auto id : peers)
         {
-            assert(links_.find(id) != links_.end());
+            assert(links_.contains(id));
             f(*links_[id], message_);
         }
     }
@@ -507,7 +507,7 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 public:
     using id_t = Peer::id_t;
     using clock_type = ManualClock;
-    OverlaySim(Application& app) : slots_(app.logs(), *this, app.config()), logs_(app.logs())
+    OverlaySim(Application& app) : slots_(app, *this, app.config()), registry_(app)
     {
     }
 
@@ -561,7 +561,7 @@ public:
         Peer::id_t id = 0;
         if (peersCache_.empty() || !useCache)
         {
-            peer = std::make_shared<PeerSim>(*this, logs_.journal("Squelch"));
+            peer = std::make_shared<PeerSim>(*this, registry_.getJournal("Squelch"));
             id = peer->id();
         }
         else
@@ -637,7 +637,7 @@ public:
     getSelectedPeer(PublicKey const& validator)
     {
         auto selected = slots_.getSelected(validator);
-        assert(selected.size());
+        assert(!selected.empty());
         return *selected.begin();
     }
 
@@ -673,7 +673,7 @@ private:
     Peers peers_;
     Peers peersCache_;
     reduce_relay::Slots<ManualClock> slots_;
-    Logs& logs_;
+    ServiceRegistry& registry_;
 };
 
 class Network
@@ -785,7 +785,7 @@ public:
         }
     }
 
-    void
+    static void
     for_rand(std::uint32_t min, std::uint32_t max, std::function<void(std::uint32_t)> f)
     {
         auto size = max - min;
@@ -879,14 +879,14 @@ protected:
     }
 
     /** Send squelch (if duration is set) or unsquelch (if duration not set) */
-    Peer::id_t
+    static Peer::id_t
     sendSquelch(
         PublicKey const& validator,
         PeerWPtr const& peerPtr,
         std::optional<std::uint32_t> duration)
     {
         protocol::TMSquelch squelch;
-        bool res = duration ? true : false;
+        bool res = static_cast<bool>(duration);
         squelch.set_squelch(res);
         squelch.set_validatorpubkey(validator.data(), validator.size());
         if (res)
@@ -1004,8 +1004,8 @@ protected:
                 // take place because there is no peers in Squelched state in
                 // any of the slots where the peer is in Selected state
                 // (allCounting is true)
-                bool handled = (event.isSelected_ == false && !event.handled_) ||
-                    (event.isSelected_ == true && (event.handled_ || allCounting));
+                bool handled = (!event.isSelected_ && !event.handled_) ||
+                    (event.isSelected_ && (event.handled_ || allCounting));
                 BEAST_EXPECT(handled);
                 event.state_ = State::Off;
                 event.isSelected_ = false;
@@ -1406,7 +1406,7 @@ vp_base_squelch_max_selected_peers=2
             auto createSlots = [&](bool baseSquelchEnabled) -> reduce_relay::Slots<ManualClock> {
                 env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = baseSquelchEnabled;
                 return reduce_relay::Slots<ManualClock>(
-                    env_.app().logs(), network_.overlay(), env_.app().config());
+                    env_.app(), network_.overlay(), env_.app().config());
             };
             // base squelching must not be ready if squelching is disabled
             BEAST_EXPECT(!createSlots(false).baseSquelchReady());
@@ -1487,8 +1487,7 @@ vp_base_squelch_max_selected_peers=2
 
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
-                reduce_relay::Slots<ManualClock> slots(
-                    env_.app().logs(), handler, env_.app().config());
+                reduce_relay::Slots<ManualClock> slots(env_.app(), handler, env_.app().config());
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
@@ -1499,7 +1498,7 @@ vp_base_squelch_max_selected_peers=2
                     {
                         // make unique message hash to make the
                         // slot's internal hash router accept the message
-                        std::uint64_t mid = m * 1000 + peer;
+                        std::uint64_t mid = (m * 1000) + peer;
                         uint256 const message{mid};
                         slots.updateSlotAndSquelch(
                             message, validator, peer, protocol::MessageType::mtVALIDATION);

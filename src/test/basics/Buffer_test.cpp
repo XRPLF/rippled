@@ -9,8 +9,8 @@ namespace test {
 
 struct Buffer_test : beast::unit_test::suite
 {
-    bool
-    sane(Buffer const& b) const
+    static bool
+    sane(Buffer const& b)
     {
         if (b.empty())
             return b.data() == nullptr;

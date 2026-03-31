@@ -247,7 +247,7 @@ ValidVault::finalize(
             for (auto const& e : beforeMPTs_)
             {
                 if (e.share.getMptID() == beforeVault.shareMPTID)
-                    return std::move(e);
+                    return e;
             }
             return std::nullopt;
         }();
@@ -416,7 +416,7 @@ ValidVault::finalize(
         for (auto const& e : beforeMPTs_)
         {
             if (e.share.getMptID() == beforeVault.shareMPTID)
-                return std::move(e);
+                return e;
         }
         return std::nullopt;
     }();

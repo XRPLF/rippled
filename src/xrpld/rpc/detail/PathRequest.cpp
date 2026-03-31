@@ -1,12 +1,11 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/AccountCurrencies.h>
-#include <xrpld/app/paths/PathRequest.h>
-#include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/paths/detail/PathfinderUtils.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/AccountCurrencies.h>
+#include <xrpld/rpc/detail/PathRequest.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -24,7 +23,7 @@ PathRequest::PathRequest(
     Application& app,
     std::shared_ptr<InfoSub> const& subscriber,
     int id,
-    PathRequests& owner,
+    PathRequestManager& owner,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
@@ -47,7 +46,7 @@ PathRequest::PathRequest(
     std::function<void(void)> const& completion,
     Resource::Consumer& consumer,
     int id,
-    PathRequests& owner,
+    PathRequestManager& owner,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
@@ -191,7 +190,7 @@ PathRequest::isValid(std::shared_ptr<RippleLineCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->getFlags() & lsfDisallowXRP);
+        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto usDestCurrID = accountDestCurrencies(*raDstAccount, crCache, !disallowXRP);
 
@@ -546,7 +545,7 @@ PathRequest::findPaths(
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
             domain,         // --> Domain.
-            app_.logs(),
+            app_,
             &rcInput);
 
         if (!convert_all_ && !fullLiquidityPath.empty() &&
@@ -565,7 +564,7 @@ PathRequest::findPaths(
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
                 domain,         // --> Domain.
-                app_.logs());
+                app_);
 
             if (!isTesSuccess(rc.result()))
             {
@@ -609,7 +608,7 @@ PathRequest::findPaths(
         after four source currencies, 50 - (4 * 4) = 34.
     */
     int const size = sourceCurrencies.size();
-    consumer_.charge({std::clamp(size * size + 34, 50, 400), "path update"});
+    consumer_.charge({std::clamp((size * size) + 34, 50, 400), "path update"});
     return true;
 }
 

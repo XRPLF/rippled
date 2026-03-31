@@ -24,7 +24,7 @@ namespace detail {
 class ServerDefinitions
 {
 private:
-    std::string
+    static std::string
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
     translate(std::string const& inp);
 
@@ -93,7 +93,7 @@ ServerDefinitions::translate(std::string const& inp)
     // convert snake_case to CamelCase
     for (;;)
     {
-        pos = inpToProcess.find("_");
+        pos = inpToProcess.find('_');
         if (pos == std::string::npos)
             pos = inpToProcess.size();
         std::string token = inpToProcess.substr(0, pos);

@@ -7,7 +7,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/core/HashRouter.h>
@@ -815,8 +814,8 @@ PeerImp::PeerImp(
     , id_(id)
     , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
-    , sink_(app_.journal("Peer"), prefix_)
-    , p_sink_(app_.journal("Protocol"), prefix_)
+    , sink_(app_.getJournal("Peer"), prefix_)
+    , p_sink_(app_.getJournal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
@@ -833,7 +832,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
     , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))

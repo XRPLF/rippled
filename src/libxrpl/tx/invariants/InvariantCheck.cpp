@@ -631,11 +631,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = uFlags & lsfLowFreeze;
-        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
+        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
-        bool const highFreeze = uFlags & lsfHighFreeze;
-        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
+        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
 
         deepFreezeWithoutFreeze_ = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
     }

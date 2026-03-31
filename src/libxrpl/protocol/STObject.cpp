@@ -204,7 +204,7 @@ void
 STObject::applyTemplateFromSField(SField const& sField)
 {
     SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
-    if (elements)
+    if (elements != nullptr)
         applyTemplate(*elements);  // May throw
 }
 
@@ -276,7 +276,7 @@ STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
-    if (!o)
+    if (o == nullptr)
         return false;
 
     return t == *o;
@@ -343,7 +343,7 @@ STObject::isEquivalent(STBase const& t) const
 {
     STObject const* v = dynamic_cast<STObject const*>(&t);
 
-    if (!v)
+    if (v == nullptr)
         return false;
 
     if (mType != nullptr && v->mType == mType)
@@ -480,7 +480,7 @@ STObject::setFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() | f);
@@ -492,7 +492,7 @@ STObject::clearFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() & ~f);
@@ -510,7 +510,7 @@ STObject::getFlags(void) const
 {
     STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return 0;
 
     return t->value();
@@ -574,7 +574,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return mType ? mType->style(field) : soeINVALID;
+    return (mType != nullptr) ? mType->style(field) : soeINVALID;
 }
 
 unsigned char
@@ -877,10 +877,7 @@ STObject::operator==(STObject const& obj) const
             ++fields;
     }
 
-    if (fields != matches)
-        return false;
-
-    return true;
+    return fields == matches;
 }
 
 void
@@ -917,7 +914,8 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields))
+        if ((base.getSType() != STI_NOTPRESENT) &&
+            base.getFName().shouldInclude(static_cast<bool>(whichFields)))
         {
             sf.push_back(&base);
         }

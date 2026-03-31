@@ -40,7 +40,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     auto const flags = ctx.tx.getFlags();
 
-    if (flags & tfClawTwoAssets && asset.account != asset2.account)
+    if (((flags & tfClawTwoAssets) != 0u) && asset.account != asset2.account)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
@@ -90,7 +90,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -215,7 +216,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const flags = ctx_.tx.getFlags();
-    if (flags & tfClawTwoAssets)
+    if ((flags & tfClawTwoAssets) != 0u)
         return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;

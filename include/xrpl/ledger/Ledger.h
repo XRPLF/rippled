@@ -1,13 +1,12 @@
 #pragma once
 
-#include <xrpld/core/Config.h>
-#include <xrpld/core/TimeKeeper.h>
-
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -15,7 +14,7 @@
 
 namespace xrpl {
 
-class Application;
+class ServiceRegistry;
 class Job;
 class TransactionMaster;
 
@@ -83,21 +82,26 @@ public:
     */
     Ledger(
         create_genesis_t,
-        Config const& config,
+        Rules const& rules,
+        Fees const& fees,
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerHeader const& info, Config const& config, Family& family);
+    Ledger(LedgerHeader const& info, Rules const& rules, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
         @param acquire If true, acquires the ledger if not found locally
+
+        @note The fees parameter provides default values, but setup() may
+              override them from the ledger state if fee-related SLEs exist.
     */
     Ledger(
         LedgerHeader const& info,
         bool& loaded,
         bool acquire,
-        Config const& config,
+        Rules const& rules,
+        Fees const& fees,
         Family& family,
         beast::Journal j);
 
@@ -113,7 +117,8 @@ public:
     Ledger(
         std::uint32_t ledgerSeq,
         NetClock::time_point closeTime,
-        Config const& config,
+        Rules const& rules,
+        Fees const& fees,
         Family& family);
 
     ~Ledger() = default;
@@ -322,7 +327,7 @@ public:
     walkLedger(beast::Journal j, bool parallel = false) const;
 
     bool
-    assertSensible(beast::Journal ledgerJ) const;
+    isSensible() const;
 
     void
     invariants() const;
@@ -379,8 +384,26 @@ private:
     bool
     setup();
 
-    void
-    defaultFees(Config const& config);
+    /** @brief Deserialize a SHAMapItem containing a single STTx.
+     *
+     * @param item The SHAMapItem to deserialize.
+     * @return A shared pointer to the deserialized transaction.
+     * @throw May throw on deserialization error.
+     */
+    static std::shared_ptr<STTx const>
+    deserializeTx(SHAMapItem const& item);
+
+    /** @brief Deserialize a SHAMapItem containing STTx + STObject metadata.
+     *
+     * The SHAMapItem must contain two variable length serialization objects.
+     *
+     * @param item The SHAMapItem to deserialize.
+     * @return A pair containing shared pointers to the deserialized transaction
+     *         and metadata.
+     * @throw May throw on deserialization error.
+     */
+    static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
+    deserializeTxPlusMeta(SHAMapItem const& item);
 
     bool mImmutable;
 
@@ -401,55 +424,5 @@ private:
 
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
-
-//------------------------------------------------------------------------------
-//
-// API
-//
-//------------------------------------------------------------------------------
-
-extern bool
-pendSaveValidated(
-    Application& app,
-    std::shared_ptr<Ledger const> const& ledger,
-    bool isSynchronous,
-    bool isCurrent);
-
-std::shared_ptr<Ledger>
-loadLedgerHelper(LedgerHeader const& sinfo, Application& app, bool acquire);
-
-std::shared_ptr<Ledger>
-loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire = true);
-
-std::shared_ptr<Ledger>
-loadByHash(uint256 const& ledgerHash, Application& app, bool acquire = true);
-
-// Fetch the ledger with the highest sequence contained in the database
-extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-getLatestLedger(Application& app);
-
-/** Deserialize a SHAMapItem containing a single STTx
-
-    Throw:
-
-        May throw on deserializaton error
-*/
-std::shared_ptr<STTx const>
-deserializeTx(SHAMapItem const& item);
-
-/** Deserialize a SHAMapItem containing STTx + STObject metadata
-
-    The SHAMap must contain two variable length
-    serialization objects.
-
-    Throw:
-
-        May throw on deserializaton error
-*/
-std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
-deserializeTxPlusMeta(SHAMapItem const& item);
-
-uint256
-calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl
