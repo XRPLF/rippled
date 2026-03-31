@@ -1,6 +1,6 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Indexes.h>
 
 /*
@@ -142,10 +142,12 @@ public:
                 return acctSeq > seqProx;  // Remove tefPAST_SEQ
 
             if (seqProx.isTicket() && acctSeq.value() <= seqProx.value())
+            {
                 // Keep ticket from the future.  Note, however, that the
                 // transaction will not be held indefinitely since LocalTxs
                 // will only hold a transaction for a maximum of 5 ledgers.
                 return false;
+            }
 
             // Ticket should have been created by now.  Remove if ticket
             // does not exist.

@@ -71,9 +71,14 @@ DerivedData
 /.zed/
 
 # AI tools.
+/.agent
+/.agents
 /.augment
 /.claude
 /CLAUDE.md
+
+# Python
+__pycache__
 
 # Direnv's directory
 /.direnv

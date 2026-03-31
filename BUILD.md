@@ -125,9 +125,9 @@ default profile.
 
 ### Patched recipes
 
-The recipes in Conan Center occasionally need to be patched for compatibility
-with the latest version of `xrpld`. We maintain a fork of the Conan Center
-[here](https://github.com/XRPLF/conan-center-index/) containing the patches.
+Occasionally, we need patched recipes or recipes not present in Conan Center.
+We maintain a fork of the Conan Center Index
+[here](https://github.com/XRPLF/conan-center-index/) containing the modified and newly added recipes.
 
 To ensure our patched recipes are used, you must add our Conan remote at a
 higher index than the default Conan Center remote, so it is consulted first. You
@@ -137,19 +137,11 @@ can do this by running:
 conan remote add --index 0 xrplf https://conan.ripplex.io
 ```
 
-Alternatively, you can pull the patched recipes into the repository and use them
-locally:
+Alternatively, you can pull our recipes from the repository and export them locally:
 
 ```bash
-# Extract the version number from the lockfile.
-function extract_version {
-  version=$(cat conan.lock | sed -nE "s@.+${1}/(.+)#.+@\1@p" | head -n1)
-  echo ${version}
-}
-
 # Define which recipes to export.
-recipes=('ed25519' 'grpc' 'nudb' 'openssl' 'secp256k1' 'snappy' 'soci')
-folders=('all'     'all'  'all'  '3.x.x'   'all'       'all'    'all')
+recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'nudb' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -158,29 +150,19 @@ cd conan-center-index
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-for ((index = 1; index <= ${#recipes[@]}; index++)); do
-  recipe=${recipes[index]}
-  folder=${folders[index]}
-  echo "Checking out recipe '${recipe}' from folder '${folder}'..."
-  git sparse-checkout add recipes/${recipe}/${folder}
+for recipe in "${recipes[@]}"; do
+  echo "Checking out recipe '${recipe}'..."
+  git sparse-checkout add recipes/${recipe}
 done
 git fetch origin master
 git checkout master
-cd ../..
 
-# Export the recipes into the local cache.
-for ((index = 1; index <= ${#recipes[@]}; index++)); do
-  recipe=${recipes[index]}
-  folder=${folders[index]}
-  version=$(extract_version ${recipe})
-  echo "Exporting '${recipe}/${version}' from '${recipe}/${folder}'..."
-  conan export --version $(extract_version ${recipe}) \
-    external/conan-center-index/recipes/${recipe}/${folder}
-done
+./export_all.sh
+cd ../../
 ```
 
 In the case we switch to a newer version of a dependency that still requires a
-patch, it will be necessary for you to pull in the changes and re-export the
+patch or add a new dependency, it will be necessary for you to pull in the changes and re-export the
 updated dependencies with the newer version. However, if we switch to a newer
 version that no longer requires a patch, no action is required on your part, as
 the new recipe will be automatically pulled from the official Conan Center.
@@ -189,6 +171,8 @@ the new recipe will be automatically pulled from the official Conan Center.
 > You might need to add `--lockfile=""` to your `conan install` command
 > to avoid automatic use of the existing `conan.lock` file when you run
 > `conan export` manually on your machine
+>
+> This is not recommended though, as you might end up using different revisions of recipes.
 
 ### Conan profile tweaks
 
@@ -204,39 +188,14 @@ Possible values are ['5.0', '5.1', '6.0', '6.1', '7.0', '7.3', '8.0', '8.1',
 Read "http://docs.conan.io/2/knowledge/faq.html#error-invalid-setting"
 ```
 
-you need to amend the list of compiler versions in
-`$(conan config home)/settings.yml`, by appending the required version number(s)
+you need to add your compiler to the list of compiler versions in
+`$(conan config home)/settings_user.yml`, by adding the required version number(s)
 to the `version` array specific for your compiler. For example:
 
 ```yaml
-apple-clang:
-  version:
-    [
-      "5.0",
-      "5.1",
-      "6.0",
-      "6.1",
-      "7.0",
-      "7.3",
-      "8.0",
-      "8.1",
-      "9.0",
-      "9.1",
-      "10.0",
-      "11.0",
-      "12.0",
-      "13",
-      "13.0",
-      "13.1",
-      "14",
-      "14.0",
-      "15",
-      "15.0",
-      "16",
-      "16.0",
-      "17",
-      "17.0",
-    ]
+compiler:
+  apple-clang:
+    version: ["17.0"]
 ```
 
 #### Multiple compilers

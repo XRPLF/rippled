@@ -32,7 +32,10 @@ WorkSSL::onConnect(error_code const& ec)
 {
     auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
-        return fail(err);
+    {
+        fail(err);
+        return;
+    }
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
@@ -44,7 +47,10 @@ void
 WorkSSL::onHandshake(error_code const& ec)
 {
     if (ec)
-        return fail(ec);
+    {
+        fail(ec);
+        return;
+    }
 
     onStart();
 }

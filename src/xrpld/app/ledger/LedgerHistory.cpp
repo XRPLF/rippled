@@ -1,7 +1,8 @@
 #include <xrpld/app/ledger/LedgerHistory.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
@@ -19,14 +20,14 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
           app_.config().getValueFor(SizedItem::ledgerSize),
           std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
           stopwatch(),
-          app_.journal("TaggedCache"))
+          app_.getJournal("TaggedCache"))
     , m_consensus_validated(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
           stopwatch(),
-          app_.journal("TaggedCache"))
-    , j_(app.journal("LedgerHistory"))
+          app_.getJournal("TaggedCache"))
+    , j_(app.getJournal("LedgerHistory"))
 {
 }
 
@@ -73,7 +74,9 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
         }
     }
 
-    std::shared_ptr<Ledger const> ret = loadByIndex(index, app_);
+    Rules const rules{app_.config().features};
+    Fees const fees = app_.config().FEES.toFees();
+    std::shared_ptr<Ledger const> ret = loadByIndex(index, rules, fees, app_);
 
     if (!ret)
         return ret;
@@ -111,7 +114,9 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
         return ret;
     }
 
-    ret = loadByHash(hash, app_);
+    Rules const rules{app_.config().features};
+    Fees const fees = app_.config().FEES.toFees();
+    ret = loadByHash(hash, rules, fees, app_);
 
     if (!ret)
         return ret;
@@ -337,9 +342,11 @@ LedgerHistory::handleMismatch(
     if (builtConsensusHash && validatedConsensusHash)
     {
         if (builtConsensusHash != validatedConsensusHash)
+        {
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
+        }
         else
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
@@ -350,7 +357,9 @@ LedgerHistory::handleMismatch(
     auto const validTx = leaves(validLedger->txMap());
 
     if (builtTx == validTx)
+    {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
+    }
     else
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";

@@ -45,11 +45,9 @@ class Delegate_test : public beast::unit_test::suite
         env.close();
 
         // delegating an empty permission list when the delegate ledger object
-        // does not exist will not create the ledger object
-        env(delegate::set(gw, alice, std::vector<std::string>{}));
+        // does not exist is not allowed
+        env(delegate::set(gw, alice, {}), ter(tecNO_ENTRY));
         env.close();
-        auto const entry = delegate::entry(env, gw, alice);
-        BEAST_EXPECT(entry[jss::result][jss::error] == "entryNotFound");
 
         auto const permissions = std::vector<std::string>{
             "Payment", "EscrowCreate", "EscrowFinish", "TrustlineAuthorize", "CheckCreate"};
@@ -92,9 +90,7 @@ class Delegate_test : public beast::unit_test::suite
         // newPermissions
         comparePermissions(delegate::entry(env, gw, alice), newPermissions, gw, alice);
 
-        // gw deletes all permissions delegated to alice, this will delete
-        // the
-        // ledger entry
+        // gw deletes all permissions delegated to alice, this will delete the ledger entry
         env(delegate::set(gw, alice, {}));
         env.close();
         auto const jle = delegate::entry(env, gw, alice);
@@ -204,27 +200,48 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test reserve");
         using namespace jtx;
 
-        // test reserve for DelegateSet
+        // reserve requirement not met
         {
             Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
-            Account carol{"carol"};
 
-            env.fund(drops(env.current()->fees().accountReserve(0)), alice);
-            env.fund(drops(env.current()->fees().accountReserve(1)), bob, carol);
+            auto const txFee = env.current()->fees().base;
+            env.fund(env.current()->fees().accountReserve(0) + txFee, alice);
+            env.fund(XRP(100000), bob);
             env.close();
 
             // alice does not have enough reserve to create Delegate
             env(delegate::set(alice, bob, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+        }
 
-            // bob has enough reserve
-            env(delegate::set(bob, alice, {"Payment"}));
+        // reserve recovered after deleting delegation object
+        {
+            Env env(*this);
+            Account bob{"bob"};
+            Account alice{"alice"};
+            Account carol{"carol"};
+
+            auto const txFee = env.current()->fees().base;
+
+            env.fund(env.current()->fees().accountReserve(1) + (txFee * 4), alice);
+            env.fund(XRP(100000), bob, carol);
             env.close();
 
-            // now bob create another Delegate, he does not have
-            // enough reserve
-            env(delegate::set(bob, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            // alice consumes 1 txFee and requires 1 object reserve
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            // alice does not have enough reserve to create another delegation object
+            env(delegate::set(alice, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            // deleting delegation object recovers 1 reserve
+            env(delegate::set(alice, bob, {}));
+            env.close();
+
+            // now alice can delegate again
+            env(delegate::set(alice, carol, {"Payment"}));
         }
 
         // test reserve when sending transaction on behalf of other account
@@ -1614,13 +1631,7 @@ class Delegate_test : public beast::unit_test::suite
             {"CredentialDelete", featureCredentials},
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
-            {"PermissionedDomainDelete", featurePermissionedDomains},
-            {"VaultCreate", featureSingleAssetVault},
-            {"VaultSet", featureSingleAssetVault},
-            {"VaultDelete", featureSingleAssetVault},
-            {"VaultDeposit", featureSingleAssetVault},
-            {"VaultWithdraw", featureSingleAssetVault},
-            {"VaultClawback", featureSingleAssetVault}};
+            {"PermissionedDomainDelete", featurePermissionedDomains}};
 
         // Can not delegate tx if any required feature disabled.
         {
@@ -1661,6 +1672,56 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testTxDelegableCount()
+    {
+        testcase("Delegable Transactions Completeness");
+
+        std::size_t delegableCount = 0;
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, delegable, ...) \
+    if (delegable == xrpl::delegable)                 \
+    {                                                 \
+        delegableCount++;                             \
+    }
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
+        // ====================================================================
+        // IMPORTANT NOTICE:
+        //
+        // If this test fails, it indicates that the 'Delegation::delegable' status
+        // in transactions.macro has been changed. Delegation allows accounts to act
+        // on behalf of others, significantly increasing the security surface.
+        //
+        //
+        // To ENSURE any added transaction is safe and compatible with delegation:
+        //
+        // 1. Verify that the transaction is intended to be delegable.
+        // 2. Every standard test case for that transaction MUST be
+        //    duplicated and verified for a Delegated context.
+        // 3. Ensure that Fee, Reserve, and Signing are correctly handled.
+        //
+        // DO NOT modify expectedDelegableCount unless all scenarios, including
+        // edge cases, have been fully tested and verified.
+        // ====================================================================
+        std::size_t const expectedDelegableCount = 75;
+
+        BEAST_EXPECTS(
+            delegableCount == expectedDelegableCount,
+            "\n[SECURITY] New delegable transaction detected!"
+            "\n  Expected: " +
+                std::to_string(expectedDelegableCount) +
+                "\n  Actual:   " + std::to_string(delegableCount) +
+                "\n  Action: Verify security requirements to interact with Delegation feature");
+    }
+
+    void
     run() override
     {
         FeatureBitset const all = jtx::testable_amendments();
@@ -1684,6 +1745,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
         testTxRequireFeatures(all);
+        testTxDelegableCount();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);

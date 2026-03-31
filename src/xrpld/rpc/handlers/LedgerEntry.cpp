@@ -7,8 +7,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -70,9 +70,11 @@ parseIndex(Json::Value const& params, Json::StaticString const fieldName, unsign
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
+        {
             // Note this only finds the "short" skip list. Use "hashes":index to
             // get the long list.
             return keylet::skip().key;
+        }
     }
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -326,7 +328,7 @@ parseDepositPreauth(
             "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
     }
 
-    return keylet::depositPreauth(*owner, std::move(sorted)).key;
+    return keylet::depositPreauth(*owner, sorted).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -532,8 +534,10 @@ parseMPTokenIssuance(
 {
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
+    {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedMPTokenIssuance", fieldName, "Hash192");
+    }
 
     return keylet::mptIssuance(*mptIssuanceID).key;
 }
@@ -901,8 +905,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // this exception return an invalidParam error.
             return RPC::make_error(rpcINVALID_PARAMS);
         }
-        else
-            throw;
+
+        throw;
     }
 
     // Return the computed index regardless of whether the node exists.

@@ -178,7 +178,8 @@ SQLiteDatabase::saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger,
 {
     if (existsLedger())
     {
-        if (!detail::saveValidatedLedger(*ledgerDb_, txdb_, registry_.app(), ledger, current))
+        if (!detail::saveValidatedLedger(
+                *ledgerDb_, txdb_, registry_.get().getApp(), ledger, current))
             return false;
     }
 
@@ -314,7 +315,7 @@ SQLiteDatabase::getTxHistory(LedgerIndex startIndex)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto const res = detail::getTxHistory(*db, registry_.app(), startIndex, 20).first;
+        auto const res = detail::getTxHistory(*db, registry_.get().getApp(), startIndex, 20).first;
 
         if (!res.empty())
             return res;
@@ -329,12 +330,13 @@ SQLiteDatabase::getOldestAccountTxs(AccountTxOptions const& options)
     if (!useTxTables_)
         return {};
 
-    LedgerMaster& ledgerMaster = registry_.getLedgerMaster();
+    LedgerMaster& ledgerMaster = registry_.get().getLedgerMaster();
 
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getOldestAccountTxs(*db, registry_.app(), ledgerMaster, options, j_).first;
+        return detail::getOldestAccountTxs(*db, registry_.get().getApp(), ledgerMaster, options, j_)
+            .first;
     }
 
     return {};
@@ -346,12 +348,13 @@ SQLiteDatabase::getNewestAccountTxs(AccountTxOptions const& options)
     if (!useTxTables_)
         return {};
 
-    LedgerMaster& ledgerMaster = registry_.getLedgerMaster();
+    LedgerMaster& ledgerMaster = registry_.get().getLedgerMaster();
 
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getNewestAccountTxs(*db, registry_.app(), ledgerMaster, options, j_).first;
+        return detail::getNewestAccountTxs(*db, registry_.get().getApp(), ledgerMaster, options, j_)
+            .first;
     }
 
     return {};
@@ -366,7 +369,7 @@ SQLiteDatabase::getOldestAccountTxsB(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getOldestAccountTxsB(*db, registry_.app(), options, j_).first;
+        return detail::getOldestAccountTxsB(*db, registry_.get().getApp(), options, j_).first;
     }
 
     return {};
@@ -381,7 +384,7 @@ SQLiteDatabase::getNewestAccountTxsB(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getNewestAccountTxsB(*db, registry_.app(), options, j_).first;
+        return detail::getNewestAccountTxsB(*db, registry_.get().getApp(), options, j_).first;
     }
 
     return {};
@@ -395,13 +398,15 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
 
     static std::uint32_t const page_length(200);
     auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
+        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
     AccountTxs ret;
-    auto onTransaction =
-        [&ret, &app = registry_.app()](
-            std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
-        };
+    auto onTransaction = [&ret, &app = registry_.get().getApp()](
+                             std::uint32_t ledger_index,
+                             std::string const& status,
+                             Blob const& rawTxn,
+                             Blob const& rawMeta) {
+        convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
+    };
 
     if (existsTransaction())
     {
@@ -423,13 +428,15 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
 
     static std::uint32_t const page_length(200);
     auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
+        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
     AccountTxs ret;
-    auto onTransaction =
-        [&ret, &app = registry_.app()](
-            std::uint32_t ledger_index, std::string const& status, Blob&& rawTxn, Blob&& rawMeta) {
-            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
-        };
+    auto onTransaction = [&ret, &app = registry_.get().getApp()](
+                             std::uint32_t ledger_index,
+                             std::string const& status,
+                             Blob const& rawTxn,
+                             Blob const& rawMeta) {
+        convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
+    };
 
     if (existsTransaction())
     {
@@ -451,7 +458,7 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
 
     static std::uint32_t const page_length(500);
     auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
+        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
     MetaTxsList ret;
     auto onTransaction =
         [&ret](
@@ -479,7 +486,7 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
 
     static std::uint32_t const page_length(500);
     auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.app()), std::placeholders::_1);
+        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
     MetaTxsList ret;
     auto onTransaction =
         [&ret](
@@ -506,15 +513,15 @@ SQLiteDatabase::getTransaction(
     error_code_i& ec)
 {
     if (!useTxTables_)
-        return TxSearched::unknown;
+        return TxSearched::Unknown;
 
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getTransaction(*db, registry_.app(), id, range, ec);
+        return detail::getTransaction(*db, registry_.get().getApp(), id, range, ec);
     }
 
-    return TxSearched::unknown;
+    return TxSearched::Unknown;
 }
 
 SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
@@ -602,10 +609,10 @@ SQLiteDatabase::closeTransactionDB()
 SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
     : registry_(registry)
     , useTxTables_(config.useTxTables())
-    , j_(registry.journal("SQLiteDatabase"))
+    , j_(registry.getJournal("SQLiteDatabase"))
 {
     DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, &registry_.logs()}))
+    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, registry_}))
     {
         std::string_view constexpr error = "Failed to create ledger databases";
 

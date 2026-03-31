@@ -16,7 +16,7 @@ class seconds_clock_thread
 {
     using Clock = basic_seconds_clock::Clock;
 
-    bool stop_;
+    bool stop_{false};
     std::mutex mut_;
     std::condition_variable cv_;
     std::thread thread_;
@@ -48,8 +48,7 @@ seconds_clock_thread::~seconds_clock_thread()
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread()
-    : stop_{false}, tp_{Clock::now().time_since_epoch().count()}
+seconds_clock_thread::seconds_clock_thread() : tp_{Clock::now().time_since_epoch().count()}
 {
     thread_ = std::thread(&seconds_clock_thread::run, this);
 }

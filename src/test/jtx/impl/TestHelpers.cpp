@@ -2,6 +2,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {

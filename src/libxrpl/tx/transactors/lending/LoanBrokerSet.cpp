@@ -1,11 +1,12 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 namespace xrpl {
-
 bool
 LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -318,7 +319,7 @@ LoanBrokerSet::doApply()
         // one for the pseudo-account.
         adjustOwnerCount(view, owner, 2, j_);
         auto const ownerCount = owner->at(sfOwnerCount);
-        if (mPriorBalance < view.fees().accountReserve(ownerCount))
+        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
@@ -327,7 +328,7 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

@@ -57,7 +57,7 @@ class STObject : public STBase, public CountedObject<STObject>
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
-    SOTemplate const* mType;
+    SOTemplate const* mType{};
 
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
@@ -401,7 +401,7 @@ public:
     getStyle(SField const& field) const;
 
     bool
-    hasMatchingEntry(STBase const&);
+    hasMatchingEntry(STBase const&) const;
 
     bool
     operator==(STObject const& o) const;

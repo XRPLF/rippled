@@ -112,8 +112,10 @@ Serializer::addFieldID(int type, int name)
 
     if (type < 16)
     {
-        if (name < 16)  // common type, common name
+        if (name < 16)
+        {  // common type, common name
             mData.push_back(static_cast<unsigned char>((type << 4) | name));
+        }
         else
         {
             // common type, uncommon name
@@ -187,7 +189,7 @@ int
 Serializer::addVL(Slice const& slice)
 {
     int ret = addEncoded(slice.size());
-    if (slice.size())
+    if (!slice.empty())
         addRaw(slice.data(), slice.size());
     return ret;
 }
@@ -197,7 +199,7 @@ Serializer::addVL(void const* ptr, int len)
 {
     int ret = addEncoded(len);
 
-    if (len)
+    if (len != 0)
         addRaw(ptr, len);
 
     return ret;
@@ -206,7 +208,7 @@ Serializer::addVL(void const* ptr, int len)
 int
 Serializer::addEncoded(int length)
 {
-    std::array<std::uint8_t, 4> bytes;
+    std::array<std::uint8_t, 4> bytes{};
     int numBytes = 0;
 
     if (length <= 192)
@@ -230,7 +232,9 @@ Serializer::addEncoded(int length)
         numBytes = 3;
     }
     else
+    {
         Throw<std::overflow_error>("lenlen");
+    }
 
     return addRaw(&bytes[0], numBytes);
 }
@@ -294,7 +298,7 @@ Serializer::decodeVLLength(int b1, int b2)
     if (b1 > 240)
         Throw<std::overflow_error>("b1>240");
 
-    return 193 + (b1 - 193) * 256 + b2;
+    return 193 + ((b1 - 193) * 256) + b2;
 }
 
 int
@@ -306,7 +310,7 @@ Serializer::decodeVLLength(int b1, int b2, int b3)
     if (b1 > 254)
         Throw<std::overflow_error>("b1>254");
 
-    return 12481 + (b1 - 241) * 65536 + b2 * 256 + b3;
+    return 12481 + ((b1 - 241) * 65536) + (b2 * 256) + b3;
 }
 
 //------------------------------------------------------------------------------
@@ -466,7 +470,7 @@ int
 SerialIter::getVLDataLength()
 {
     int b1 = get8();
-    int datLen;
+    int datLen = 0;
     int lenLen = Serializer::decodeLengthLength(b1);
     if (lenLen == 1)
     {

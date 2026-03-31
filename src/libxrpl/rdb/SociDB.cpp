@@ -81,9 +81,13 @@ void
 open(soci::session& s, std::string const& beName, std::string const& connectionString)
 {
     if (beName == "sqlite")
+    {
         s.open(soci::sqlite3, connectionString);
+    }
     else
+    {
         Throw<std::runtime_error>("Unsupported soci backend: " + beName);
+    }
 }
 
 static sqlite_api::sqlite3*
@@ -94,7 +98,7 @@ getConnection(soci::session& s)
     if (auto b = dynamic_cast<soci::sqlite3_session_backend*>(be))
         result = b->conn_;
 
-    if (!result)
+    if (result == nullptr)
         Throw<std::logic_error>("Didn't get a database connection.");
 
     return result;
@@ -103,7 +107,7 @@ getConnection(soci::session& s)
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
-    if (!getConnection(s))
+    if (getConnection(s) == nullptr)
         Throw<std::logic_error>("No connection found.");
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
@@ -143,18 +147,26 @@ void
 convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, reinterpret_cast<char const*>(&from[0]), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 void
 convert(std::string const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, from.data(), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 namespace {
@@ -175,8 +187,11 @@ public:
         std::uintptr_t id,
         std::weak_ptr<soci::session> session,
         JobQueue& q,
-        Logs& logs)
-        : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
+        ServiceRegistry& registry)
+        : id_(id)
+        , session_(std::move(session))
+        , jobQueue_(q)
+        , j_(registry.getJournal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
@@ -237,7 +252,7 @@ public:
     {
         auto [conn, keepAlive] = getConnection();
         (void)keepAlive;
-        if (!conn)
+        if (conn == nullptr)
             return;
 
         int log = 0, ckpt = 0;
@@ -295,9 +310,9 @@ makeCheckpointer(
     std::uintptr_t id,
     std::weak_ptr<soci::session> session,
     JobQueue& queue,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
-    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
+    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, registry);
 }
 
 }  // namespace xrpl

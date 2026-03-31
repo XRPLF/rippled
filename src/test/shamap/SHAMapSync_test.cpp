@@ -107,7 +107,7 @@ public:
 
             BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
 
-            unexpected(a.size() < 1, "NodeSize");
+            unexpected(a.empty(), "NodeSize");
 
             BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
                              .isGood());

@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/DecayingSample.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/core/JobQueue.h>
@@ -38,7 +37,7 @@ public:
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
-        , j_(app.journal("InboundLedger"))
+        , j_(app.getJournal("InboundLedger"))
         , m_clock(clock)
         , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))
@@ -174,8 +173,10 @@ public:
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
+            {
                 app_.getJobQueue().addJob(
                     jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+            }
 
             return true;
         }
@@ -290,9 +291,13 @@ public:
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
+                {
                     ret[std::to_string(it.second)][jss::failed] = true;
+                }
                 else
+                {
                     ret[to_string(it.first)][jss::failed] = true;
+                }
             }
         }
 
@@ -301,9 +306,13 @@ public:
             // getJson is expensive, so call without the lock
             std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
+            {
                 ret[std::to_string(seq)] = it.second->getJson(0);
+            }
             else
+            {
                 ret[to_string(it.first)] = it.second->getJson(0);
+            }
         }
 
         return ret;
@@ -340,7 +349,7 @@ public:
 
         // Make a list of things to sweep, while holding the lock
         std::vector<MapType::mapped_type> stuffToSweep;
-        std::size_t total;
+        std::size_t total = 0;
 
         {
             ScopedLockType sl(mLock);

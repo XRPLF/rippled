@@ -693,12 +693,12 @@ private:
     };
 
     // Helper function returns requiredFeeLevel.
-    FeeLevel64
+    static FeeLevel64
     getRequiredFeeLevel(
         OpenView& view,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
-        std::lock_guard<std::mutex> const& lock) const;
+        std::lock_guard<std::mutex> const& lock);
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.

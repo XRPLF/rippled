@@ -35,7 +35,7 @@ class Batch_test : public beast::unit_test::suite
         std::string txHash;
     };
 
-    Json::Value
+    static Json::Value
     getTxByIndex(Json::Value const& jrr, int const index)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
@@ -46,7 +46,7 @@ class Batch_test : public beast::unit_test::suite
         return {};
     }
 
-    Json::Value
+    static Json::Value
     getLastLedger(jtx::Env& env)
     {
         Json::Value params;
@@ -93,6 +93,7 @@ class Batch_test : public beast::unit_test::suite
 
         auto const ids = batchTxn.stx->getBatchTransactionIDs();
         std::vector<std::string> txIDs;
+        txIDs.reserve(ids.size());
         for (auto const& id : ids)
             txIDs.push_back(strHex(id));
         TxID const batchID = batchTxn.stx->getTransactionID();
@@ -125,7 +126,7 @@ class Batch_test : public beast::unit_test::suite
         return p;
     }
 
-    auto
+    static auto
     openLedgerFee(jtx::Env& env, XRPAmount const& batchFee)
     {
         using namespace jtx;
@@ -1379,7 +1380,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -1422,7 +1423,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
                 batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -2259,7 +2260,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfTxnSignature] = "DEADBEEF";
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate("TxnSignature set", s.slice(), __LINE__);
         }
 
@@ -2273,7 +2274,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfSigningPubKey] = strHex(alice.pk());
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "SigningPubKey set",
                 s.slice(),
@@ -2292,7 +2293,7 @@ class Batch_test : public beast::unit_test::suite
             txn[sfSigners] = Json::arrayValue;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Signers set",
                 s.slice(),
@@ -2308,7 +2309,7 @@ class Batch_test : public beast::unit_test::suite
 
             STParsedJSONObject parsed("test", jt.jv);
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Fully signed", s.slice(), __LINE__, std::nullopt, std::nullopt, !withBatch);
         }
@@ -2322,7 +2323,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "No signing fields set",
                 s.slice(),
@@ -2347,7 +2348,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn = batch::inner(amendTx.getJson(JsonOptions::none), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            parsed.object->add(s);
+            parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
             submitAndValidate(
                 "Pseudo-transaction",
                 s.slice(),
@@ -3280,7 +3281,6 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
 
             auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
             env.close();
 
@@ -3373,7 +3373,6 @@ class Batch_test : public beast::unit_test::suite
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
-            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
             env(noopTxn, ter(tesSUCCESS));
 
             // Batch Txn
@@ -3629,7 +3628,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(isPseudoTx(stx));
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;

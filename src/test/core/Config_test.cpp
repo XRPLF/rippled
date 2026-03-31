@@ -284,7 +284,7 @@ port_wss_admin
         expectException([&c] { c.legacy("server"); });  // not a single line
 
         // set a legacy value
-        BEAST_EXPECT(c.legacy("not_in_file") == "");
+        BEAST_EXPECT(c.legacy("not_in_file").empty());
         c.legacy("not_in_file", "new_value");
         BEAST_EXPECT(c.legacy("not_in_file") == "new_value");
     }
@@ -358,8 +358,8 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                x ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
 
             // The XDG config directory is not set: the config file must be in a
@@ -394,8 +394,8 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x)
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                if (x != nullptr)
                     setenv("XDG_CONFIG_HOME", x, 1);
             }
         }
@@ -434,7 +434,7 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString("");
-                BEAST_EXPECT(c.legacy("database_path") == "");
+                BEAST_EXPECT(c.legacy("database_path").empty());
             }
         }
         {
@@ -533,7 +533,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -546,7 +546,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -561,7 +561,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 255);
 
         try
@@ -576,7 +576,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 10000);
     }
 
@@ -1280,7 +1280,7 @@ r.ripple.com:51235
         for (auto const& t : tests)
         {
             Section s;
-            s.append(t.line.data());
+            s.append(std::string(t.line));
             BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
             if (t.field.empty())
             {
@@ -1289,7 +1289,7 @@ r.ripple.com:51235
             else
             {
                 std::string field;
-                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(set(field, std::string(t.field), s), t.line);
                 BEAST_EXPECTS(field == t.expect, t.line);
             }
         }
@@ -1299,6 +1299,7 @@ r.ripple.com:51235
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
         }
 
@@ -1307,6 +1308,7 @@ r.ripple.com:51235
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
         }
     }
@@ -1335,7 +1337,7 @@ r.ripple.com:51235
             auto val_3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val_3 == "mystring");
             auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4 == "");
+            BEAST_EXPECT(val_4.empty());
             auto val_5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val_5 == "default");
 
@@ -1427,7 +1429,7 @@ r.ripple.com:51235
             {"months", 2592000, 1, false},
             {"years", 31536000, 1, false}};
 
-        std::string space = "";
+        std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;
@@ -1435,22 +1437,30 @@ r.ripple.com:51235
 [amendment_majority_time]
 )xrpldConfig");
             toLoad += std::to_string(val) + space + unit;
-            space = space == "" ? " " : "";
+            space = space.empty() ? " " : "";
 
             try
             {
                 c.loadFromString(toLoad);
                 if (shouldPass)
+                {
                     BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                }
                 else
+                {
                     fail();
+                }
             }
             catch (std::runtime_error&)
             {
                 if (!shouldPass)
+                {
                     pass();
+                }
                 else
+                {
                     fail();
+                }
             }
         }
     }
