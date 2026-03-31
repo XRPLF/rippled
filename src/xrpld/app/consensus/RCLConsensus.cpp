@@ -455,6 +455,10 @@ RCLConsensus::Adaptor::onAccept(
     XRPL_TRACE_SET_ATTR("xrpl.consensus.proposers", static_cast<int64_t>(result.proposers));
     XRPL_TRACE_SET_ATTR(
         "xrpl.consensus.round_time_ms", static_cast<int64_t>(result.roundTime.read().count()));
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.validation_quorum", static_cast<int64_t>(app_.getValidators().quorum()));
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.proposers_validated", static_cast<int64_t>(result.proposers));
 
     app_.getJobQueue().addJob(
         jtACCEPT,
@@ -536,10 +540,6 @@ RCLConsensus::Adaptor::doAccept(
     XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", proposing);
     XRPL_TRACE_SET_ATTR(
         "xrpl.consensus.round_time_ms", static_cast<int64_t>(result.roundTime.read().count()));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.validation_quorum", static_cast<int64_t>(app_.getValidators().quorum()));
-    XRPL_TRACE_SET_ATTR(
-        "xrpl.consensus.proposers_validated", static_cast<int64_t>(result.proposers));
     // Parent ledger's close time — enables computing close-time deltas across
     // consecutive rounds without correlating separate spans.
     XRPL_TRACE_SET_ATTR(
