@@ -1168,7 +1168,7 @@ rippleSendMultiMPT(
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
     // maxMPTokenAmount (19 digits).
-    std::int64_t totalSendAmount{0};
+    std::uint64_t totalSendAmount{0};
     auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
     auto const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
