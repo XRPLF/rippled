@@ -196,7 +196,7 @@ ValidLoanBroker::finalize(
             if (tx.getTxnType() != ttLOAN_BROKER_DELETE &&
                 after->at(sfCoverAvailable) > pseudoBalance)
             {
-                JLOG(j.fatal()) <<  //
+                JLOG(j.fatal()) <<  
                     "Invariant failed: Loan Broker cover available is greater "
                     "than pseudo-account asset balance";
                 return false;
