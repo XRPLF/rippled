@@ -191,8 +191,7 @@ TransactionAcquire::takeNodes(
                 {
                     JLOG(journal_.debug()) << "Got root TXS node, already have it";
                 }
-                else if (!mMap->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
-                              .isGood())
+                else if (!mMap->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
@@ -201,7 +200,7 @@ TransactionAcquire::takeNodes(
                     mHaveRoot = true;
                 }
             }
-            else if (!mMap->addKnownNode(d.first, std::move(d.second), &sf).isGood())
+            else if (!mMap->addKnownNode(d.first, d.second, &sf).isGood())
             {
                 JLOG(journal_.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid();

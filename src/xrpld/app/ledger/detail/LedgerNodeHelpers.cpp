@@ -77,7 +77,7 @@ getSHAMapNodeID(
     if (!ledger_node.has_nodeid())
         return std::nullopt;
 
-    auto const nodeID = deserializeSHAMapNodeID(ledger_node.nodeid());
+    auto nodeID = deserializeSHAMapNodeID(ledger_node.nodeid());
     if (!nodeID.has_value())
         return std::nullopt;
 

@@ -167,8 +167,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         // Valid: leaf node.
         {
             auto const leafItem = makeTestItem(12345);
-            auto const leafNode =
-                intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(leafItem), 1);
+            auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
             auto const leafData = serializeNode(leafNode);
             auto result = getTreeNode(leafData);
             BEAST_EXPECT(result.has_value());
@@ -190,8 +189,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         // Invalid: truncated data.
         {
             auto const leafItem = makeTestItem(54321);
-            auto const leafNode =
-                intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(leafItem), 1);
+            auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
             // Truncate the data to trigger an exception in SHAMapTreeNode::makeAccountState when
             // the data is used to deserialize the node.
             uint256 tag;
