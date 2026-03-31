@@ -139,6 +139,12 @@ public:
     double
     agreementPct24h() const;
 
+    /** Agreement percentage over the last 7 days.
+     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+     */
+    double
+    agreementPct7d() const;
+
     /** @} */
 
     /** @name Rolling-window count getters */
@@ -159,6 +165,14 @@ public:
     /** Number of misses in the 24-hour window. */
     uint64_t
     missed24h() const;
+
+    /** Number of agreements in the 7-day window. */
+    uint64_t
+    agreements7d() const;
+
+    /** Number of misses in the 7-day window. */
+    uint64_t
+    missed7d() const;
 
     /** @} */
 
@@ -223,7 +237,10 @@ private:
     /// Duration of the long rolling window.
     static constexpr auto kWindow24h = std::chrono::hours(24);
 
-    /// Protects pending_, window1h_, and window24h_.
+    /// Duration of the extended rolling window (7 days).
+    static constexpr auto kWindow7d = std::chrono::hours(168);
+
+    /// Protects pending_, window1h_, window24h_, and window7d_.
     mutable std::mutex mutex_;
 
     /// Pending ledger events indexed by ledger hash.
@@ -234,6 +251,9 @@ private:
 
     /// Sliding window of reconciled events (last 24 hours).
     std::deque<WindowEvent> window24h_;
+
+    /// Sliding window of reconciled events (last 7 days).
+    std::deque<WindowEvent> window7d_;
 
     /// Lifetime count of agreements.
     std::atomic<uint64_t> totalAgreements_{0};

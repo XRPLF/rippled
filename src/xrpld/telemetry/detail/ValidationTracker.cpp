@@ -62,6 +62,7 @@ ValidationTracker::reconcile()
             WindowEvent we{now, evt.ledgerHash, evt.agreed};
             window1h_.push_back(we);
             window24h_.push_back(we);
+            window7d_.push_back(we);
         }
         else if (
             evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&
@@ -75,6 +76,7 @@ ValidationTracker::reconcile()
             // Flip the corresponding window entries from miss to agreement.
             repairWindowEntry(window1h_, evt.ledgerHash);
             repairWindowEntry(window24h_, evt.ledgerHash);
+            repairWindowEntry(window7d_, evt.ledgerHash);
         }
     }
 
@@ -92,6 +94,10 @@ ValidationTracker::evictStaleWindows(TimePoint now)
     auto const cutoff24h = now - kWindow24h;
     while (!window24h_.empty() && window24h_.front().time < cutoff24h)
         window24h_.pop_front();
+
+    auto const cutoff7d = now - kWindow7d;
+    while (!window7d_.empty() && window7d_.front().time < cutoff7d)
+        window7d_.pop_front();
 }
 
 void
@@ -184,6 +190,33 @@ ValidationTracker::missed24h() const
     std::lock_guard lock(mutex_);
     return static_cast<uint64_t>(std::count_if(
         window24h_.begin(), window24h_.end(), [](auto const& e) { return !e.agreed; }));
+}
+
+double
+ValidationTracker::agreementPct7d() const
+{
+    std::lock_guard lock(mutex_);
+    if (window7d_.empty())
+        return 0.0;
+    auto const agreed = static_cast<double>(
+        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return e.agreed; }));
+    return (agreed / static_cast<double>(window7d_.size())) * 100.0;
+}
+
+uint64_t
+ValidationTracker::agreements7d() const
+{
+    std::lock_guard lock(mutex_);
+    return static_cast<uint64_t>(
+        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return e.agreed; }));
+}
+
+uint64_t
+ValidationTracker::missed7d() const
+{
+    std::lock_guard lock(mutex_);
+    return static_cast<uint64_t>(
+        std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return !e.agreed; }));
 }
 
 uint64_t
