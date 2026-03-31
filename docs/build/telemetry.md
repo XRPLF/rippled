@@ -16,10 +16,10 @@ This document explains how to build rippled with OpenTelemetry distributed traci
   - [Observability Stack](#observability-stack)
     - [Start the stack](#start-the-stack)
     - [Verify the stack](#verify-the-stack)
-    - [View traces in Jaeger](#view-traces-in-jaeger)
+    - [View traces in Grafana Explore](#view-traces-in-grafana-explore)
   - [Running Tests](#running-tests)
   - [Troubleshooting](#troubleshooting)
-    - [No traces appear in Jaeger](#no-traces-appear-in-jaeger)
+    - [No traces appear in Grafana](#no-traces-appear-in-grafana)
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
   - [Architecture](#architecture)
@@ -31,7 +31,7 @@ This document explains how to build rippled with OpenTelemetry distributed traci
 Rippled supports optional [OpenTelemetry](https://opentelemetry.io/) distributed tracing.
 When enabled, it instruments RPC requests with trace spans that are exported via
 OTLP/HTTP to an OpenTelemetry Collector, which forwards them to a tracing backend
-such as Jaeger.
+such as Grafana Tempo.
 
 Telemetry is **off by default** at both compile time and runtime:
 
@@ -153,11 +153,11 @@ trace_peer=0
 
 A Docker Compose stack is provided in `docker/telemetry/` with three services:
 
-| Service            | Port                                           | Purpose                                              |
-| ------------------ | ---------------------------------------------- | ---------------------------------------------------- |
-| **OTel Collector** | `4317` (gRPC), `4318` (HTTP), `13133` (health) | Receives OTLP spans, batches, and forwards to Jaeger |
-| **Jaeger**         | `16686` (UI)                                   | Trace storage and visualization                      |
-| **Grafana**        | `3000`                                         | Dashboards (Jaeger pre-configured as datasource)     |
+| Service            | Port                                           | Purpose                                             |
+| ------------------ | ---------------------------------------------- | --------------------------------------------------- |
+| **OTel Collector** | `4317` (gRPC), `4318` (HTTP), `13133` (health) | Receives OTLP spans, batches, and forwards to Tempo |
+| **Tempo**          | `3200` (HTTP API)                              | Trace storage backend                               |
+| **Grafana**        | `3000`                                         | Dashboards (Tempo pre-configured as datasource)     |
 
 ### Start the stack
 
@@ -171,18 +171,15 @@ docker compose -f docker/telemetry/docker-compose.yml up -d
 # Collector health
 curl http://localhost:13133
 
-# Jaeger UI
-open http://localhost:16686
-
-# Grafana
+# Grafana (Explore -> Tempo for traces)
 open http://localhost:3000
 ```
 
-### View traces in Jaeger
+### View traces in Grafana Explore
 
-1. Open `http://localhost:16686` in a browser.
-2. Select the service name (e.g. `rippled`) from the **Service** dropdown.
-3. Click **Find Traces**.
+1. Open `http://localhost:3000` in a browser.
+2. Navigate to **Explore** and select the **Tempo** datasource.
+3. Use **Search** or **TraceQL** to find traces by service name (e.g. `rippled`).
 4. Click into any trace to see the span tree and attributes.
 
 Traced RPC operations produce a span hierarchy like:
@@ -229,13 +226,13 @@ curl -s -X POST http://127.0.0.1:5005/ \
 
 ## Troubleshooting
 
-### No traces appear in Jaeger
+### No traces appear in Grafana
 
 1. Confirm the OTel Collector is running: `docker compose -f docker/telemetry/docker-compose.yml ps`
 2. Check collector logs for errors: `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector`
 3. Confirm `[telemetry] enabled=1` is set in the rippled config.
 4. Confirm `endpoint` points to the correct collector address (`http://localhost:4318/v1/traces`).
-5. Wait for the batch delay to elapse (default `5000` ms) before checking Jaeger.
+5. Wait for the batch delay to elapse (default `5000` ms) before checking Grafana Explore.
 
 ### Conan lockfile error
 
@@ -265,7 +262,7 @@ The Conan package provides a single umbrella target
 | `src/xrpld/telemetry/TracingInstrumentation.h` | Convenience macros (`XRPL_TRACE_RPC`, etc.)                 |
 | `src/xrpld/rpc/detail/ServerHandler.cpp`       | RPC entry point instrumentation                             |
 | `src/xrpld/rpc/detail/RPCHandler.cpp`          | Per-command instrumentation                                 |
-| `docker/telemetry/docker-compose.yml`          | Observability stack (Collector + Jaeger + Grafana)          |
+| `docker/telemetry/docker-compose.yml`          | Observability stack (Collector + Tempo + Grafana)           |
 | `docker/telemetry/otel-collector-config.yaml`  | OTel Collector pipeline configuration                       |
 
 ### Conditional compilation
