@@ -306,7 +306,7 @@ MetricsRegistry::registerAsyncGauges()
             try
             {
                 // SLE cache hit rate (0.0 - 1.0).
-                auto sleRate = app.cachedSLEs().rate();
+                auto sleRate = app.getCachedSLEs().rate();
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(sleRate, {{"metric", "SLE_hit_rate"}});
@@ -370,7 +370,7 @@ MetricsRegistry::registerAsyncGauges()
 
             try
             {
-                auto const metrics = app.getTxQ().getMetrics(*app.openLedger().current());
+                auto const metrics = app.getTxQ().getMetrics(*app.getOpenLedger().current());
 
                 auto observe = [&](char const* name, double value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
@@ -459,7 +459,7 @@ MetricsRegistry::registerAsyncGauges()
                     static_cast<double>(feeTrack.getClusterFee()) / loadBase);
 
                 // Fee escalation factors from TxQ.
-                auto const metrics = app.getTxQ().getMetrics(*app.openLedger().current());
+                auto const metrics = app.getTxQ().getMetrics(*app.getOpenLedger().current());
                 auto refLevel = static_cast<double>(metrics.referenceFeeLevel.fee());
                 if (refLevel > 0)
                 {
@@ -588,7 +588,7 @@ MetricsRegistry::registerAsyncGauges()
                     "uptime", static_cast<int64_t>(UptimeClock::now().time_since_epoch().count()));
 
                 // Total peer count (inbound + outbound).
-                observe("peers", static_cast<int64_t>(app.overlay().size()));
+                observe("peers", static_cast<int64_t>(app.getOverlay().size()));
 
                 // Validated ledger sequence (0 if none yet).
                 observe(
@@ -603,7 +603,7 @@ MetricsRegistry::registerAsyncGauges()
                 // Cumulative resource-related peer disconnects.
                 observe(
                     "peer_disconnects_resources",
-                    static_cast<int64_t>(app.overlay().getPeerDisconnectCharges()));
+                    static_cast<int64_t>(app.getOverlay().getPeerDisconnectCharges()));
 
                 // Last consensus round data (from JSON — only public API).
                 auto const consensusInfo = app.getOPs().getConsensusInfo();
@@ -795,7 +795,7 @@ MetricsRegistry::registerAsyncGauges()
                 int totalPeers = 0;
                 auto const ownVersion = std::string(BuildInfo::getVersionString());
 
-                app.overlay().foreach([&](std::shared_ptr<Peer> const& peer) {
+                app.getOverlay().foreach([&](std::shared_ptr<Peer> const& peer) {
                     ++totalPeers;
                     auto const pj = peer->json();
                     if (pj.isMember(jss::latency))
@@ -881,19 +881,19 @@ MetricsRegistry::registerAsyncGauges()
                 auto const age = app.getLedgerMaster().getValidatedLedgerAge();
                 observe("ledger_age_seconds", static_cast<double>(age.count()));
 
-                // Transaction rate: tx count from current open ledger divided
-                // by ledger interval. A rough approximation — a proper
-                // smoothed rate would require storing previous counts.
-                if (ledger)
-                {
-                    auto txCount = ledger->txs.size();
-                    // Approximate rate: txs per ~4s ledger interval.
-                    observe("transaction_rate", static_cast<double>(txCount) / 4.0);
-                }
+                // Transaction rate from the open ledger's tx count.
+                // OpenView::txCount() tracks transactions in the current
+                // open ledger; dividing by the ledger age gives an
+                // approximate rate.
+                auto const& openLedger = app.getOpenLedger();
+                auto const txInLedger = openLedger.current()->txCount();
+                auto const ageVal = age.count();
+                if (ageVal > 0)
+                    observe(
+                        "transaction_rate",
+                        static_cast<double>(txInLedger) / static_cast<double>(ageVal));
                 else
-                {
                     observe("transaction_rate", 0.0);
-                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
