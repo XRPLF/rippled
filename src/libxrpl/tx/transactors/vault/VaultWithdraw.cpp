@@ -73,8 +73,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const mptIssuanceID = vault->at(sfShareMPTID);
-        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -83,13 +82,32 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
-        if (!maybeAssets)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        try
+        {
+            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
+            if (!maybeAssets)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        if (auto const ret = canWithdraw(
-                ctx.view, account, dstAcct, *maybeAssets, ctx.tx.isFieldPresent(sfDestinationTag)))
-            return ret;
+            if (auto const ret = canWithdraw(
+                    ctx.view,
+                    account,
+                    dstAcct,
+                    *maybeAssets,
+                    ctx.tx.isFieldPresent(sfDestinationTag)))
+                return ret;
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale).value()  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            return tecPATH_DRY;
+        }
     }
     else
     {
