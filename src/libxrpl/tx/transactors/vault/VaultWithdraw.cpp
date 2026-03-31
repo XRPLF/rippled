@@ -100,10 +100,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         {
             // It's easy to hit this exception from Number with large enough Scale
             // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
+            JLOG(ctx.j.debug())  //
                 << "VaultWithdraw: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+                << " scale=" << (int)vault->at(sfScale)  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal)
                 << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
                 << ", amount=" << amount.value();
             return tecPATH_DRY;
