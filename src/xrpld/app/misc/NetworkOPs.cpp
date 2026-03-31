@@ -2446,6 +2446,8 @@ bool
 NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::string const& source)
 {
     JLOG(m_journal.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
+    if (auto* mr = registry_.getMetricsRegistry())
+        mr->incrementValidationsChecked();
 
     std::unique_lock lock(validationsMutex_);
     BypassAccept bypassAccept = BypassAccept::no;
