@@ -250,7 +250,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Overlay_Peer_Disconnects_Charges{exported_instance=~\"$node\"}",
+          "expr": "rippled_server_info{metric=\"peer_disconnects_resources\",exported_instance=~\"$node\"}",
           "legendFormat": "Disconnects [{{exported_instance}}]"
         }
       ],

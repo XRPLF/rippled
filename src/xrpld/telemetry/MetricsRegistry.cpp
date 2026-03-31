@@ -148,6 +148,10 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         meter_->CreateUInt64Counter("rippled_state_changes_total", "Total operating mode changes");
     jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
         "rippled_jq_trans_overflow_total", "Total job queue transaction overflows");
+    validationAgreementsCounter_ = meter_->CreateUInt64Counter(
+        "rippled_validation_agreements_total", "Total validation agreements");
+    validationMissedCounter_ =
+        meter_->CreateUInt64Counter("rippled_validation_missed_total", "Total validation misses");
 
     // Register all observable (async) gauges.
     registerAsyncGauges();
@@ -951,10 +955,6 @@ MetricsRegistry::registerAsyncGauges()
 
             try
             {
-                // Use getCountsJson which includes backend-reported sizes.
-                Json::Value obj(Json::objectValue);
-                app.getNodeStore().getCountsJson(obj);
-
                 auto observe = [&](char const* name, int64_t value) {
                     opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                         opentelemetry::metrics::ObserverResultT<int64_t>>>(result)

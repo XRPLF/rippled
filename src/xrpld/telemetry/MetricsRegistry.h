@@ -372,6 +372,13 @@ private:
     /// Counter: rippled_jq_trans_overflow_total — incremented on job queue transaction overflows.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         jqTransOverflowCounter_;
+    /// Counter: rippled_validation_agreements_total — incremented by ValidationTracker on
+    /// agreement.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        validationAgreementsCounter_;
+    /// Counter: rippled_validation_missed_total — incremented by ValidationTracker on miss.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        validationMissedCounter_;
 
     /** Register all observable gauge callbacks with the OTel SDK.
         Called once during start().
