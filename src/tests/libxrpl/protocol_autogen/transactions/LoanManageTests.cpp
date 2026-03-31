@@ -143,4 +143,4 @@ TEST(TransactionsLoanManageTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

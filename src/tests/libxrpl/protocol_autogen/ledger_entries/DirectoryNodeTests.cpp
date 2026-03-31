@@ -220,7 +220,7 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    DirectoryNode const entryFromSle{sle};
+    DirectoryNode entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -481,4 +481,4 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

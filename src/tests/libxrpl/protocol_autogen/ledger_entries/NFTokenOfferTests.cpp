@@ -150,7 +150,7 @@ TEST(NFTokenOfferTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    NFTokenOffer const entryFromSle{sle};
+    NFTokenOffer entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -321,4 +321,4 @@ TEST(NFTokenOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

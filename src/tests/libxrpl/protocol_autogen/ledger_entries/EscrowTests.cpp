@@ -224,7 +224,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Escrow const entryFromSle{sle};
+    Escrow entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -488,4 +488,4 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasIssuerNode());
     EXPECT_FALSE(entry.getIssuerNode().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

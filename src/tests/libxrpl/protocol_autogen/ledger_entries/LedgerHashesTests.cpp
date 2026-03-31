@@ -90,7 +90,7 @@ TEST(LedgerHashesTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    LedgerHashes const entryFromSle{sle};
+    LedgerHashes entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -189,4 +189,4 @@ TEST(LedgerHashesTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLastLedgerSequence());
     EXPECT_FALSE(entry.getLastLedgerSequence().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

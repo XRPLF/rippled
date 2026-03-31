@@ -195,4 +195,4 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getAmount().has_value());
 }
 
-} // namespace xrpl::transactions
+}

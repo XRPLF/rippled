@@ -218,7 +218,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Vault const entryFromSle{sle};
+    Vault entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -473,4 +473,4 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

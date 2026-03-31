@@ -143,4 +143,4 @@ TEST(TransactionsOfferCancelTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

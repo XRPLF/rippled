@@ -160,7 +160,7 @@ TEST(OracleTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Oracle const entryFromSle{sle};
+    Oracle entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -343,4 +343,4 @@ TEST(OracleTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasURI());
     EXPECT_FALSE(entry.getURI().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

@@ -294,4 +294,4 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getTradingFee().has_value());
 }
 
-} // namespace xrpl::transactions
+}

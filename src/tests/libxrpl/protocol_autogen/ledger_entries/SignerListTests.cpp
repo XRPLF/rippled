@@ -128,7 +128,7 @@ TEST(SignerListTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    SignerList const entryFromSle{sle};
+    SignerList entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -272,4 +272,4 @@ TEST(SignerListTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasOwner());
     EXPECT_FALSE(entry.getOwner().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

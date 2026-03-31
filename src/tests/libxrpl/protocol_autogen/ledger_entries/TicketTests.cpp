@@ -106,7 +106,7 @@ TEST(TicketTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Ticket const entryFromSle{sle};
+    Ticket entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -206,4 +206,4 @@ TEST(TicketTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(TicketBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-} // namespace xrpl::ledger_entries
+}

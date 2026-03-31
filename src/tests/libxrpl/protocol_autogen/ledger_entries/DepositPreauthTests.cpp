@@ -120,7 +120,7 @@ TEST(DepositPreauthTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    DepositPreauth const entryFromSle{sle};
+    DepositPreauth entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -255,4 +255,4 @@ TEST(DepositPreauthTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAuthorizeCredentials());
     EXPECT_FALSE(entry.getAuthorizeCredentials().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

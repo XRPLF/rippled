@@ -127,4 +127,4 @@ TEST(TransactionsDIDDeleteTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

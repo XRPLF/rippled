@@ -158,7 +158,7 @@ TEST(BridgeTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Bridge const entryFromSle{sle};
+    Bridge entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -338,4 +338,4 @@ TEST(BridgeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasMinAccountCreateAmount());
     EXPECT_FALSE(entry.getMinAccountCreateAmount().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

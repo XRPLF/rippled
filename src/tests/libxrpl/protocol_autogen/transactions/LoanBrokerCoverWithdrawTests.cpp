@@ -231,4 +231,4 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
 
-} // namespace xrpl::transactions
+}

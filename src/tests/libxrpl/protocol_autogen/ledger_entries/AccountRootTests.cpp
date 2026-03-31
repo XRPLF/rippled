@@ -320,7 +320,7 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    AccountRoot const entryFromSle{sle};
+    AccountRoot entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -704,4 +704,4 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

@@ -218,7 +218,7 @@ TEST(PayChannelTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    PayChannel const entryFromSle{sle};
+    PayChannel entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -473,4 +473,4 @@ TEST(PayChannelTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDestinationNode());
     EXPECT_FALSE(entry.getDestinationNode().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

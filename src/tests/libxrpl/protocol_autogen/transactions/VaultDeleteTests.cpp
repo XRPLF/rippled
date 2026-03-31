@@ -143,4 +143,4 @@ TEST(TransactionsVaultDeleteTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

@@ -116,7 +116,7 @@ TEST(NegativeUNLTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    NegativeUNL const entryFromSle{sle};
+    NegativeUNL entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -248,4 +248,4 @@ TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

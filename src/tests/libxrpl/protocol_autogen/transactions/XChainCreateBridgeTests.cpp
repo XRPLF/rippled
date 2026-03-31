@@ -210,4 +210,4 @@ TEST(TransactionsXChainCreateBridgeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getMinAccountCreateAmount().has_value());
 }
 
-} // namespace xrpl::transactions
+}

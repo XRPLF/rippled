@@ -143,4 +143,4 @@ TEST(TransactionsMPTokenIssuanceDestroyTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

@@ -159,4 +159,4 @@ TEST(TransactionsCredentialAcceptTests, BuilderThrowsOnWrongTxType)
 }
 
 
-} // namespace xrpl::transactions
+}

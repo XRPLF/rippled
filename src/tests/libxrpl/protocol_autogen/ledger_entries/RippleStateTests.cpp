@@ -178,7 +178,7 @@ TEST(RippleStateTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    RippleState const entryFromSle{sle};
+    RippleState entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -385,4 +385,4 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasHighQualityOut());
     EXPECT_FALSE(entry.getHighQualityOut().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

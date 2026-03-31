@@ -152,7 +152,7 @@ TEST(CredentialTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Credential const entryFromSle{sle};
+    Credential entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -326,4 +326,4 @@ TEST(CredentialTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasSubjectNode());
     EXPECT_FALSE(entry.getSubjectNode().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

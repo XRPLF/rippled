@@ -252,4 +252,4 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
 
-} // namespace xrpl::transactions
+}

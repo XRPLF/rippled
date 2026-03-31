@@ -504,4 +504,4 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getGracePeriod().has_value());
 }
 
-} // namespace xrpl::transactions
+}

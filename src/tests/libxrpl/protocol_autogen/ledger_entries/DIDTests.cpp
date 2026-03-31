@@ -132,7 +132,7 @@ TEST(DIDTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    DID const entryFromSle{sle};
+    DID entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -282,4 +282,4 @@ TEST(DIDTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

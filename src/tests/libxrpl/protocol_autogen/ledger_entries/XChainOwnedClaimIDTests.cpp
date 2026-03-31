@@ -146,7 +146,7 @@ TEST(XChainOwnedClaimIDTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    XChainOwnedClaimID const entryFromSle{sle};
+    XChainOwnedClaimID entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -280,4 +280,4 @@ TEST(XChainOwnedClaimIDTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(XChainOwnedClaimIDBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-} // namespace xrpl::ledger_entries
+}

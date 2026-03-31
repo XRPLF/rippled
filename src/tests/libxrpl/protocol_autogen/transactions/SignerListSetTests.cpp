@@ -192,4 +192,4 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getSignerEntries().has_value());
 }
 
-} // namespace xrpl::transactions
+}

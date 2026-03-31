@@ -228,4 +228,4 @@ TEST(TransactionsXChainCommitTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getOtherChainDestination().has_value());
 }
 
-} // namespace xrpl::transactions
+}

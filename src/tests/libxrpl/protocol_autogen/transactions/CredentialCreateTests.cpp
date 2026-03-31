@@ -231,4 +231,4 @@ TEST(TransactionsCredentialCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getURI().has_value());
 }
 
-} // namespace xrpl::transactions
+}

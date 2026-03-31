@@ -279,4 +279,4 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getMutableFlags().has_value());
 }
 
-} // namespace xrpl::transactions
+}

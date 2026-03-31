@@ -273,4 +273,4 @@ TEST(TransactionsAMMWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getLPTokenIn().has_value());
 }
 
-} // namespace xrpl::transactions
+}

@@ -200,7 +200,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    MPTokenIssuance const entryFromSle{sle};
+    MPTokenIssuance entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -434,4 +434,4 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasMutableFlags());
     EXPECT_FALSE(entry.getMutableFlags().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

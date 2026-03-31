@@ -216,4 +216,4 @@ TEST(TransactionsNFTokenAcceptOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getNFTokenBrokerFee().has_value());
 }
 
-} // namespace xrpl::transactions
+}

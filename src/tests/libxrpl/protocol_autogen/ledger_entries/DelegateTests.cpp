@@ -116,7 +116,7 @@ TEST(DelegateTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Delegate const entryFromSle{sle};
+    Delegate entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -220,4 +220,4 @@ TEST(DelegateTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(DelegateBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-} // namespace xrpl::ledger_entries
+}

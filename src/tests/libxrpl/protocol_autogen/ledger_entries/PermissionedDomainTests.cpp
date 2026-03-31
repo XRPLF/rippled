@@ -116,7 +116,7 @@ TEST(PermissionedDomainTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    PermissionedDomain const entryFromSle{sle};
+    PermissionedDomain entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -220,4 +220,4 @@ TEST(PermissionedDomainTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(PermissionedDomainBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-} // namespace xrpl::ledger_entries
+}

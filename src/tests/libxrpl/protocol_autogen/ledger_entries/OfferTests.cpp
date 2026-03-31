@@ -182,7 +182,7 @@ TEST(OfferTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Offer const entryFromSle{sle};
+    Offer entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -392,4 +392,4 @@ TEST(OfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAdditionalBooks());
     EXPECT_FALSE(entry.getAdditionalBooks().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

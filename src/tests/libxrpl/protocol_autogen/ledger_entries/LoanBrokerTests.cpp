@@ -242,7 +242,7 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    LoanBroker const entryFromSle{sle};
+    LoanBroker entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -527,4 +527,4 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasCoverRateLiquidation());
     EXPECT_FALSE(entry.getCoverRateLiquidation().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

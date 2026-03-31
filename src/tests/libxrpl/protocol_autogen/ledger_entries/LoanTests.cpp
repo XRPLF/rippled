@@ -360,7 +360,7 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Loan const entryFromSle{sle};
+    Loan entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -792,4 +792,4 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLoanScale());
     EXPECT_FALSE(entry.getLoanScale().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

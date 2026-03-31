@@ -130,7 +130,7 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    MPToken const entryFromSle{sle};
+    MPToken entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -277,4 +277,4 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLockedAmount());
     EXPECT_FALSE(entry.getLockedAmount().has_value());
 }
-} // namespace xrpl::ledger_entries
+}

@@ -166,7 +166,7 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    AMM const entryFromSle{sle};
+    AMM entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -358,4 +358,4 @@ TEST(AMMTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
-} // namespace xrpl::ledger_entries
+}
