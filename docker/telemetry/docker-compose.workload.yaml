@@ -3,8 +3,7 @@
 # Runs a 5-node validator cluster with full OTel telemetry stack:
 #   - 5 rippled validator nodes (consensus network)
 #   - OTel Collector (traces + StatsD metrics)
-#   - Jaeger (trace search UI)
-#   - Tempo (production trace backend)
+#   - Tempo (trace backend + search API)
 #   - Prometheus (metrics)
 #   - Loki (log aggregation for log-trace correlation)
 #   - Grafana (dashboards + trace/log exploration)
@@ -44,18 +43,7 @@ services:
       # Mount the validation workdir so filelog receiver can tail node logs.
       - /tmp/xrpld-validation:/var/log/rippled:ro
     depends_on:
-      - jaeger
       - tempo
-    networks:
-      - workload-net
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250" # gRPC
     networks:
       - workload-net
 
@@ -100,7 +88,6 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
-      - jaeger
       - tempo
       - prometheus
       - loki

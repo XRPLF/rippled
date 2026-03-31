@@ -61,7 +61,7 @@ New span attributes on `rpc.command.*`:
 
 **File**: `src/xrpld/rpc/detail/RPCHandler.cpp` (in the `rpc.command.*` span creation block, after existing setAttribute calls)
 
-**Rationale**: RPC is the operator's primary interaction point. When a node is amendment-blocked or degraded, every RPC response is suspect. Tagging spans with this state enables Jaeger queries like `{name=~"rpc.command.*"} | xrpl.node.amendment_blocked = true` to find all RPCs served during a blocked period.
+**Rationale**: RPC is the operator's primary interaction point. When a node is amendment-blocked or degraded, every RPC response is suspect. Tagging spans with this state enables Tempo TraceQL queries like `{name=~"rpc.command.*" && span.xrpl.node.amendment_blocked = true}` to find all RPCs served during a blocked period.
 
 **Exit Criteria**:
 

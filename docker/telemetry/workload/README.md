@@ -28,7 +28,7 @@ run-full-validation.sh (shell orchestrator)
   |
   |-- docker-compose.workload.yaml
   |     |-- otel-collector (traces via OTLP + StatsD receiver)
-  |     |-- jaeger (trace search API)
+  |     |-- tempo (trace backend + TraceQL search API)
   |     |-- prometheus (metrics scraping)
   |     |-- grafana (dashboards, provisioned automatically)
   |

@@ -2,7 +2,7 @@
 # run-full-validation.sh — Orchestrates the full telemetry validation pipeline.
 #
 # Sequence:
-#   1. Start the observability stack (OTel Collector, Jaeger, Tempo, Prometheus, Loki, Grafana)
+#   1. Start the observability stack (OTel Collector, Tempo, Prometheus, Loki, Grafana)
 #   2. Start a multi-node rippled cluster with full telemetry enabled
 #   3. Wait for consensus
 #   4. Run workload orchestrator (RPC load, TX submission, propagation wait)
@@ -147,13 +147,13 @@ for attempt in $(seq 1 30); do
     sleep 1
 done
 
-log "Waiting for Jaeger..."
+log "Waiting for Tempo..."
 for attempt in $(seq 1 30); do
-    if curl -sf "http://localhost:16686/" >/dev/null 2>&1; then
-        ok "Jaeger ready (attempt $attempt)"
+    if curl -sf "http://localhost:3200/ready" >/dev/null 2>&1; then
+        ok "Tempo ready (attempt $attempt)"
         break
     fi
-    [ "$attempt" -eq 30 ] && die "Jaeger not ready after 30s"
+    [ "$attempt" -eq 30 ] && die "Tempo not ready after 30s"
     sleep 1
 done
 
@@ -375,7 +375,7 @@ echo ""
 ls -la "$REPORT_DIR/" 2>/dev/null || true
 echo ""
 echo "  Observability stack is running:"
-echo "    Jaeger UI:     http://localhost:16686"
+echo "    Tempo:         http://localhost:3200"
 echo "    Grafana:       http://localhost:3000"
 echo "    Prometheus:    http://localhost:9090"
 echo ""
