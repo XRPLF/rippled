@@ -334,22 +334,13 @@ allPathElements(AccountID const& a, Issue const& iss)
 namespace loanBroker {
 
 Json::Value
-set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+set(AccountID const& account, std::optional<uint256> const& vaultId, uint32_t flags)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerSet;
     jv[sfAccount] = to_string(account);
-    jv[sfVaultID] = to_string(vaultId);
-    jv[sfFlags] = flags;
-    return jv;
-}
-
-Json::Value
-set(AccountID const& account, uint32_t flags)
-{
-    Json::Value jv;
-    jv[sfTransactionType] = jss::LoanBrokerSet;
-    jv[sfAccount] = to_string(account);
+    if (vaultId)
+        jv[sfVaultID] = to_string(*vaultId);
     jv[sfFlags] = flags;
     return jv;
 }

@@ -684,13 +684,11 @@ class LoanBroker_test : public beast::unit_test::suite
                     // fields that can't be changed
 
                     // LoanBrokerID
-                    env(set(alice, vault.vaultID), loanBrokerID(nextKeylet.key), ter(tecNO_ENTRY));
-                    // VaultID
-                    env(set(alice, nextKeylet.key), loanBrokerID(broker->key()), ter(tecNO_ENTRY));
+                    env(set(alice), loanBrokerID(nextKeylet.key), ter(tecNO_ENTRY));
+                    // VaultID (rejected in preflight when amendment is active)
+                    env(set(alice, nextKeylet.key), loanBrokerID(broker->key()), ter(temINVALID));
                     // Owner
-                    env(set(evan, vault.vaultID),
-                        loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
+                    env(set(evan), loanBrokerID(broker->key()), ter(tecNO_PERMISSION));
                     // ManagementFeeRate
                     env(set(alice),
                         loanBrokerID(broker->key()),

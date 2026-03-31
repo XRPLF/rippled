@@ -223,18 +223,18 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
 
-    auto const vault = [&]() -> Expected<std::shared_ptr<SLE const>, TER> {
+    auto const maybeVault = [&]() -> Expected<std::shared_ptr<SLE const>, TER> {
         if (auto const brokerID = ctx.tx[~sfLoanBrokerID])
             return preclaimUpdate(ctx, account, *brokerID);
         return preclaimCreate(ctx, account);
     }();
 
-    if (!vault)
-        return vault.error();
+    if (!maybeVault)
+        return maybeVault.error();
 
     // Check that relevant values can be represented as the vault asset
     // type. This is mostly only relevant for integral (non-IOU) types.
-    Asset const asset = (*vault)->at(sfAsset);
+    Asset const asset = (*maybeVault)->at(sfAsset);
     for (auto const& field : getValueFields())
     {
         if (auto const value = ctx.tx[field]; value && STAmount{asset, *value} != *value)
