@@ -3,7 +3,7 @@
 #
 # Launches a 6-node xrpld consensus network with telemetry enabled,
 # exercises RPC / transaction / consensus code paths, then verifies
-# that the expected spans and metrics appear in Jaeger and Prometheus.
+# that the expected spans and metrics appear in Tempo and Prometheus.
 #
 # Usage:
 #   bash docker/telemetry/integration-test.sh
@@ -14,7 +14,7 @@
 #   - curl, jq
 #
 # The script leaves the observability stack and xrpld nodes running
-# so you can manually inspect Jaeger (localhost:16686) and Grafana
+# so you can manually inspect Tempo (localhost:3200) and Grafana
 # (localhost:3000). Run with --cleanup to tear down instead.
 
 set -euo pipefail
@@ -35,7 +35,7 @@ CONSENSUS_TIMEOUT=120
 GENESIS_ACCOUNT="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
 GENESIS_SEED="snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
 DEST_ACCOUNT=""  # Generated dynamically via wallet_propose
-JAEGER="http://localhost:16686"
+TEMPO="http://localhost:3200"
 PROM="http://localhost:9090"
 
 # Counters for pass/fail
@@ -53,8 +53,10 @@ die()  { printf "\033[1;31m[ERROR]\033[0m %s\n" "$*" >&2; exit 1; }
 check_span() {
     local op="$1"
     local count
-    count=$(curl -sf "$JAEGER/api/traces?service=rippled&operation=$op&limit=5&lookback=1h" \
-        | jq '.data | length' 2>/dev/null || echo 0)
+    count=$(curl -sf "$TEMPO/api/search" \
+        --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
+        --data-urlencode "limit=5" \
+        | jq '.traces | length' 2>/dev/null || echo 0)
     if [ "$count" -gt 0 ]; then
         ok "$op  ($count traces)"
     else
@@ -141,14 +143,14 @@ for attempt in $(seq 1 30); do
     sleep 1
 done
 
-log "Waiting for Jaeger to be ready..."
+log "Waiting for Tempo to be ready..."
 for attempt in $(seq 1 30); do
-    if curl -sf "$JAEGER/" >/dev/null 2>&1; then
-        log "Jaeger ready (attempt $attempt)."
+    if curl -sf "$TEMPO/ready" >/dev/null 2>&1; then
+        log "Tempo ready (attempt $attempt)."
         break
     fi
     if [ "$attempt" -eq 30 ]; then
-        die "Jaeger not ready after 30s"
+        die "Tempo not ready after 30s"
     fi
     sleep 1
 done
@@ -458,16 +460,17 @@ log "Waiting 15s for consensus round + batch export..."
 sleep 15
 
 # ---------------------------------------------------------------------------
-# Step 9: Verify Jaeger traces
+# Step 9: Verify Tempo traces
 # ---------------------------------------------------------------------------
-log "Verifying spans in Jaeger..."
+log "Verifying spans in Tempo..."
 
 # Check service registration
-services=$(curl -sf "$JAEGER/api/services" | jq -r '.data[]' 2>/dev/null || echo "")
+services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" \
+    | jq -r '.tagValues[].value' 2>/dev/null || echo "")
 if echo "$services" | grep -q "rippled"; then
-    ok "Service 'rippled' registered in Jaeger"
+    ok "Service 'rippled' registered in Tempo"
 else
-    fail "Service 'rippled' NOT found in Jaeger (found: $services)"
+    fail "Service 'rippled' NOT found in Tempo (found: $services)"
 fi
 
 log ""
@@ -534,7 +537,7 @@ echo "==========================================================="
 echo ""
 echo "  Observability stack is running:"
 echo ""
-echo "    Jaeger UI:     http://localhost:16686"
+echo "    Tempo:         http://localhost:3200"
 echo "    Grafana:       http://localhost:3000"
 echo "    Prometheus:    http://localhost:9090"
 echo ""

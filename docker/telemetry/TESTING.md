@@ -2,7 +2,7 @@
 
 This document describes how to verify the rippled OpenTelemetry telemetry
 pipeline end-to-end, from span generation through the observability stack
-(otel-collector, Jaeger, Prometheus, Grafana).
+(otel-collector, Tempo, Prometheus, Grafana).
 
 ---
 
@@ -49,8 +49,8 @@ Wait for services to be ready:
 # otel-collector health
 curl -sf http://localhost:13133/ && echo "collector ready"
 
-# Jaeger UI
-curl -sf http://localhost:16686/ > /dev/null && echo "jaeger ready"
+# Tempo readiness
+curl -sf http://localhost:3200/ready > /dev/null && echo "tempo ready"
 ```
 
 ### Step 2: Start xrpld in standalone mode
@@ -111,32 +111,36 @@ Close the ledger again to finalize:
 curl -s http://localhost:5005 -d '{"method":"ledger_accept"}'
 ```
 
-### Step 5: Verify traces in Jaeger
+### Step 5: Verify traces in Tempo
 
 Wait 5 seconds for the batch export, then:
 
 ```bash
-JAEGER="http://localhost:16686"
+TEMPO="http://localhost:3200"
 
 # Check rippled service is registered
-curl -s "$JAEGER/api/services" | jq '.data'
+curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Check RPC spans
-curl -s "$JAEGER/api/traces?service=rippled&operation=rpc.request&limit=5&lookback=1h" \
-  | jq '.data | length'
+curl -s "$TEMPO/api/search" \
+  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.request"}' \
+  --data-urlencode 'limit=5' | jq '.traces | length'
 
-curl -s "$JAEGER/api/traces?service=rippled&operation=rpc.process&limit=5&lookback=1h" \
-  | jq '.data | length'
+curl -s "$TEMPO/api/search" \
+  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.process"}' \
+  --data-urlencode 'limit=5' | jq '.traces | length'
 
-curl -s "$JAEGER/api/traces?service=rippled&operation=rpc.command.server_info&limit=5&lookback=1h" \
-  | jq '.data | length'
+curl -s "$TEMPO/api/search" \
+  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.command.server_info"}' \
+  --data-urlencode 'limit=5' | jq '.traces | length'
 
 # Check transaction spans
-curl -s "$JAEGER/api/traces?service=rippled&operation=tx.process&limit=5&lookback=1h" \
-  | jq '.data | length'
+curl -s "$TEMPO/api/search" \
+  --data-urlencode 'q={resource.service.name="rippled" && name="tx.process"}' \
+  --data-urlencode 'limit=5' | jq '.traces | length'
 ```
 
-Or open the Jaeger UI: http://localhost:16686
+Or open Grafana Explore with Tempo datasource: http://localhost:3000
 
 ### Step 6: Teardown
 
@@ -189,7 +193,7 @@ The script will:
 4. Start all 6 nodes
 5. Wait for consensus ("proposing" state)
 6. Exercise RPC, submit transactions
-7. Verify all span categories in Jaeger
+7. Verify all span categories in Tempo
 8. Verify spanmetrics in Prometheus
 9. Print results and leave the stack running
 
@@ -362,7 +366,7 @@ curl -s http://localhost:5005 -d '{
 
 Wait 15 seconds for consensus and batch export.
 
-#### Step 8: Verify in Jaeger
+#### Step 8: Verify in Tempo
 
 See the "Verification Queries" section below.
 
@@ -390,18 +394,15 @@ All 12 production span names instrumented across Phases 2-4:
 
 ## Verification Queries
 
-### Jaeger API
+### Tempo API
 
-Base URL: `http://localhost:16686`
+Base URL: `http://localhost:3200`
 
 ```bash
-JAEGER="http://localhost:16686"
+TEMPO="http://localhost:3200"
 
 # List all services
-curl -s "$JAEGER/api/services" | jq '.data'
-
-# List operations for rippled
-curl -s "$JAEGER/api/services/rippled/operations" | jq '.data'
+curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Query traces by operation
 for op in "rpc.request" "rpc.process" \
@@ -410,8 +411,10 @@ for op in "rpc.request" "rpc.process" \
           "consensus.proposal.send" "consensus.ledger_close" \
           "consensus.accept" "consensus.accept.apply" \
           "consensus.validation.send"; do
-  count=$(curl -s "$JAEGER/api/traces?service=rippled&operation=$op&limit=5&lookback=1h" \
-    | jq '.data | length')
+  count=$(curl -s "$TEMPO/api/search" \
+    --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
+    --data-urlencode "limit=5" \
+    | jq '.traces | length')
   printf "%-35s %s traces\n" "$op" "$count"
 done
 ```
@@ -448,14 +451,14 @@ Pre-configured dashboards:
 
 Pre-configured datasources:
 
-- **Jaeger**: Trace data at `http://jaeger:16686`
+- **Tempo**: Trace data at `http://tempo:3200`
 - **Prometheus**: Metrics at `http://prometheus:9090`
 
 ---
 
 ## Troubleshooting
 
-### No traces in Jaeger
+### No traces in Tempo
 
 1. Check otel-collector logs:
    ```bash

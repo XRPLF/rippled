@@ -2,11 +2,11 @@
 
 > **Goal**: End-to-end verification of the complete telemetry pipeline using a
 > 6-node consensus network. Proves that RPC, transaction, and consensus spans
-> flow through the observability stack (otel-collector, Jaeger, Prometheus,
+> flow through the observability stack (otel-collector, Tempo, Prometheus,
 > Grafana) under realistic conditions.
 >
 > **Scope**: Integration test script, manual testing plan, 6-node local network
-> setup, Jaeger/Prometheus/Grafana verification.
+> setup, Tempo/Prometheus/Grafana verification.
 >
 > **Branch**: `pratik/otel-phase5-docs-deployment`
 
@@ -14,7 +14,7 @@
 
 | Document                                                         | Relevance                                  |
 | ---------------------------------------------------------------- | ------------------------------------------ |
-| [07-observability-backends.md](./07-observability-backends.md)   | Jaeger, Grafana, Prometheus setup          |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo, Grafana, Prometheus setup           |
 | [05-configuration-reference.md](./05-configuration-reference.md) | Collector config, Docker Compose           |
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 5 tasks, definition of done          |
 | [Phase5_taskList.md](./Phase5_taskList.md)                       | Phase 5 main task list (5.6 = integration) |
@@ -25,7 +25,7 @@
 
 **Objective**: Automated bash script that stands up a 6-node xrpld network
 with telemetry, exercises all span categories, and verifies data in
-Jaeger/Prometheus.
+Tempo/Prometheus.
 
 **What to do**:
 
@@ -43,7 +43,7 @@ Jaeger/Prometheus.
 
 - [ ] Script starts without errors
 - [ ] All 6 nodes reach "proposing" state
-- [ ] Observability stack is healthy (otel-collector, Jaeger, Prometheus, Grafana)
+- [ ] Observability stack is healthy (otel-collector, Tempo, Prometheus, Grafana)
 
 ---
 
@@ -55,7 +55,7 @@ Jaeger/Prometheus.
 
 - Send `server_info`, `server_state`, `ledger` RPCs to node1 (port 5005)
 - Wait for batch export (5s)
-- Query Jaeger API for:
+- Query Tempo API for:
   - `rpc.request` spans (ServerHandler::onRequest)
   - `rpc.process` spans (ServerHandler::processRequest)
   - `rpc.command.server_info` spans (callMethod)
@@ -65,9 +65,9 @@ Jaeger/Prometheus.
 
 **Verification**:
 
-- [ ] Jaeger shows `rpc.request` traces
-- [ ] Jaeger shows `rpc.process` traces
-- [ ] Jaeger shows `rpc.command.*` traces with correct attributes
+- [ ] Tempo shows `rpc.request` traces
+- [ ] Tempo shows `rpc.process` traces
+- [ ] Tempo shows `rpc.command.*` traces with correct attributes
 
 ---
 
@@ -80,7 +80,7 @@ Jaeger/Prometheus.
 - Get genesis account sequence via `account_info` RPC
 - Submit Payment transaction using genesis seed (`snoPBrXtMeMyMHUVTgbuqAfg1SUTb`)
 - Wait for consensus inclusion (10s)
-- Query Jaeger API for:
+- Query Tempo API for:
   - `tx.process` spans (NetworkOPsImp::processTransaction) on submitting node
   - `tx.receive` spans (PeerImp::handleTransaction) on peer nodes
 - Verify `xrpl.tx.hash` attribute on `tx.process` spans
@@ -88,8 +88,8 @@ Jaeger/Prometheus.
 
 **Verification**:
 
-- [ ] Jaeger shows `tx.process` traces with `xrpl.tx.hash`
-- [ ] Jaeger shows `tx.receive` traces with `xrpl.peer.id`
+- [ ] Tempo shows `tx.process` traces with `xrpl.tx.hash`
+- [ ] Tempo shows `tx.receive` traces with `xrpl.peer.id`
 
 ---
 
@@ -100,7 +100,7 @@ Jaeger/Prometheus.
 **What to do**:
 
 - Consensus runs automatically in 6-node network
-- Query Jaeger API for:
+- Query Tempo API for:
   - `consensus.proposal.send` (Adaptor::propose)
   - `consensus.ledger_close` (Adaptor::onClose)
   - `consensus.accept` (Adaptor::onAccept)
@@ -112,10 +112,10 @@ Jaeger/Prometheus.
 
 **Verification**:
 
-- [ ] Jaeger shows `consensus.ledger_close` traces with `xrpl.consensus.mode`
-- [ ] Jaeger shows `consensus.accept` traces with `xrpl.consensus.proposers`
-- [ ] Jaeger shows `consensus.proposal.send` traces
-- [ ] Jaeger shows `consensus.validation.send` traces
+- [ ] Tempo shows `consensus.ledger_close` traces with `xrpl.consensus.mode`
+- [ ] Tempo shows `consensus.accept` traces with `xrpl.consensus.proposers`
+- [ ] Tempo shows `consensus.proposal.send` traces
+- [ ] Tempo shows `consensus.validation.send` traces
 
 ---
 
@@ -148,7 +148,7 @@ Jaeger/Prometheus.
   - Single-node standalone test (quick verification)
   - 6-node consensus test (full verification)
   - Expected span catalog (all 12 span names with attributes)
-  - Verification queries (Jaeger API, Prometheus API)
+  - Verification queries (Tempo API, Prometheus API)
   - Troubleshooting guide
 
 **Key new file**: `docker/telemetry/TESTING.md`
@@ -171,14 +171,14 @@ Jaeger/Prometheus.
 - Debug any failures
 - Leave stack running for manual verification
 - Share URLs:
-  - Jaeger: `http://localhost:16686`
+  - Tempo: `http://localhost:3200`
   - Grafana: `http://localhost:3000`
   - Prometheus: `http://localhost:9090`
 
 **Verification**:
 
 - [ ] Script completes with all checks passing
-- [ ] Jaeger UI shows rippled service with all expected span names
+- [ ] Tempo UI shows rippled service with all expected span names
 - [ ] Grafana dashboards load and show data
 
 ---
@@ -215,7 +215,7 @@ Jaeger/Prometheus.
 **Exit Criteria**:
 
 - [ ] All 6 xrpld nodes reach "proposing" state
-- [ ] All 11 expected span names visible in Jaeger
+- [ ] All 11 expected span names visible in Tempo
 - [ ] Spanmetrics available in Prometheus
 - [ ] Grafana dashboards show data
 - [ ] Manual testing plan document complete
