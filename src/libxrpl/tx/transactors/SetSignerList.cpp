@@ -76,8 +76,8 @@ SetSignerList::preflight(PreflightContext const& ctx)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
-        NotTEC const ter =
-            validateQuorumAndSignerEntries(std::get<1>(result), std::get<2>(result), account, ctx.j, ctx.rules);
+        NotTEC const ter = validateQuorumAndSignerEntries(
+            std::get<1>(result), std::get<2>(result), account, ctx.j, ctx.rules);
         if (ter != tesSUCCESS)
         {
             return ter;
@@ -113,8 +113,12 @@ SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    XRPL_ASSERT(std::get<0>(result) == tesSUCCESS, "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
-    XRPL_ASSERT(std::get<3>(result) != unknown, "xrpl::SetSignerList::preCompute : result is known operation");
+    XRPL_ASSERT(
+        std::get<0>(result) == tesSUCCESS,
+        "xrpl::SetSignerList::preCompute : result is tesSUCCESS");
+    XRPL_ASSERT(
+        std::get<3>(result) != unknown,
+        "xrpl::SetSignerList::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -143,8 +147,12 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // The static_cast should always be safe since entryCount should always
     // be in the range from 1 to 32.
     // We've got a lot of room to grow.
-    XRPL_ASSERT(entryCount >= STTx::minMultiSigners, "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
-    XRPL_ASSERT(entryCount <= STTx::maxMultiSigners, "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
+    XRPL_ASSERT(
+        entryCount >= STTx::minMultiSigners,
+        "xrpl::signerCountBasedOwnerCountDelta : minimum signers");
+    XRPL_ASSERT(
+        entryCount <= STTx::maxMultiSigners,
+        "xrpl::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -172,7 +180,8 @@ removeSignersFromLedger(
     if ((signers->getFlags() & lsfOneOwnerCount) == 0)
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
+        removeFromOwnerCount =
+            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
     }
 
     // Remove the node from the account directory.
@@ -186,7 +195,8 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCount(view, view.peek(accountKeylet), removeFromOwnerCount, registry.journal("View"));
+    adjustOwnerCount(
+        view, view.peek(accountKeylet), removeFromOwnerCount, registry.journal("View"));
 
     view.erase(signers);
 
@@ -194,13 +204,18 @@ removeSignersFromLedger(
 }
 
 TER
-SetSignerList::removeFromLedger(ServiceRegistry& registry, ApplyView& view, AccountID const& account, beast::Journal j)
+SetSignerList::removeFromLedger(
+    ServiceRegistry& registry,
+    ApplyView& view,
+    AccountID const& account,
+    beast::Journal j)
 {
     auto const accountKeylet = keylet::account(account);
     auto const ownerDirKeylet = keylet::ownerDir(account);
     auto const signerListKeylet = keylet::signers(account);
 
-    return removeSignersFromLedger(registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
+    return removeSignersFromLedger(
+        registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
 }
 
 NotTEC
@@ -272,8 +287,8 @@ SetSignerList::replaceSignerList()
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
     // checking the reserve.
-    if (TER const ter =
-            removeSignersFromLedger(ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
+    if (TER const ter = removeSignersFromLedger(
+            ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
     auto const sle = view().peek(accountKeylet);
@@ -301,7 +316,8 @@ SetSignerList::replaceSignerList()
 
     auto viewJ = ctx_.registry.journal("View");
     // Add the signer list to the account's directory.
-    auto const page = ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
+    auto const page =
+        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
 
     JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_) << ": "
                      << (page ? "success" : "failure");
@@ -332,7 +348,8 @@ SetSignerList::destroySignerList()
 
     auto const ownerDirKeylet = keylet::ownerDir(account_);
     auto const signerListKeylet = keylet::signers(account_);
-    return removeSignersFromLedger(ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
+    return removeSignersFromLedger(
+        ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
 }
 
 void

@@ -19,7 +19,12 @@ namespace xrpl {
     @note If a signature already exists, it is overwritten.
 */
 void
-sign(STObject& st, HashPrefix const& prefix, KeyType type, SecretKey const& sk, SF_VL const& sigField = sfSignature);
+sign(
+    STObject& st,
+    HashPrefix const& prefix,
+    KeyType type,
+    SecretKey const& sk,
+    SF_VL const& sigField = sfSignature);
 
 /** Returns `true` if STObject contains valid signature
 
@@ -30,7 +35,11 @@ sign(STObject& st, HashPrefix const& prefix, KeyType type, SecretKey const& sk, 
     If not specified the value defaults to `sfSignature`.
 */
 bool
-verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL const& sigField = sfSignature);
+verify(
+    STObject const& st,
+    HashPrefix const& prefix,
+    PublicKey const& pk,
+    SF_VL const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
 Serializer

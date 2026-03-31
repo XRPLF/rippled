@@ -34,7 +34,10 @@ CanonicalTXSet::insert(std::shared_ptr<STTx const> const& txn)
 {
     map_.insert(
         std::make_pair(
-            Key(accountKey(txn->getAccountID(sfAccount)), txn->getSeqProxy(), txn->getTransactionID()), txn));
+            Key(accountKey(txn->getAccountID(sfAccount)),
+                txn->getSeqProxy(),
+                txn->getTransactionID()),
+            txn));
 }
 
 std::shared_ptr<STTx const>
@@ -58,7 +61,8 @@ CanonicalTXSet::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
     Key const after(effectiveAccount, seqProxy, beast::zero);
     auto const itrNext{map_.lower_bound(after)};
     if (itrNext != map_.end() && itrNext->first.getAccount() == effectiveAccount &&
-        (!itrNext->second->getSeqProxy().isSeq() || itrNext->second->getSeqProxy().value() == seqProxy.value() + 1))
+        (!itrNext->second->getSeqProxy().isSeq() ||
+         itrNext->second->getSeqProxy().value() == seqProxy.value() + 1))
     {
         result = std::move(itrNext->second);
         map_.erase(itrNext);

@@ -52,7 +52,10 @@ std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
 class LedgerReplayer final
 {
 public:
-    LedgerReplayer(Application& app, InboundLedgers& inboundLedgers, std::unique_ptr<PeerSetBuilder> peerSetBuilder);
+    LedgerReplayer(
+        Application& app,
+        InboundLedgers& inboundLedgers,
+        std::unique_ptr<PeerSetBuilder> peerSetBuilder);
 
     ~LedgerReplayer();
 
@@ -86,7 +89,9 @@ public:
      * @note info and txns must have been verified against the ledger hash
      */
     void
-    gotReplayDelta(LedgerHeader const& info, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
+    gotReplayDelta(
+        LedgerHeader const& info,
+        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
     void

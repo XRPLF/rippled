@@ -70,7 +70,8 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         if (rounded != beast::zero)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal << ", which rounds to " << rounded;
+            JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal
+                               << ", which rounds to " << rounded;
             return tecHAS_OBLIGATIONS;
             // LCOV_EXCL_STOP
         }
@@ -111,18 +112,21 @@ LoanBrokerDelete::doApply()
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    if (!view().dirRemove(keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
+    if (!view().dirRemove(
+            keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
-    if (!view().dirRemove(keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
+    if (!view().dirRemove(
+            keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
-        if (auto const ter = accountSend(view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
+        if (auto const ter = accountSend(
+                view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
             return ter;
     }
 

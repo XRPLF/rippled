@@ -24,14 +24,16 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
         return {response, errorStatus};
     }
 
-    std::shared_ptr<Ledger const> baseLedger = std::dynamic_pointer_cast<Ledger const>(baseLedgerRv);
+    std::shared_ptr<Ledger const> baseLedger =
+        std::dynamic_pointer_cast<Ledger const>(baseLedgerRv);
     if (!baseLedger)
     {
         grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "base ledger not validated"};
         return {response, errorStatus};
     }
 
-    std::shared_ptr<Ledger const> desiredLedger = std::dynamic_pointer_cast<Ledger const>(desiredLedgerRv);
+    std::shared_ptr<Ledger const> desiredLedger =
+        std::dynamic_pointer_cast<Ledger const>(desiredLedgerRv);
     if (!desiredLedger)
     {
         grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "base ledger not validated"};
@@ -42,7 +44,8 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
 
     int maxDifferences = std::numeric_limits<int>::max();
 
-    bool res = baseLedger->stateMap().compare(desiredLedger->stateMap(), differences, maxDifferences);
+    bool res =
+        baseLedger->stateMap().compare(desiredLedger->stateMap(), differences, maxDifferences);
     if (!res)
     {
         grpc::Status errorStatus{

@@ -130,7 +130,8 @@ public:
             BEAST_EXPECT(jrrnUnlSize == 2);
             for (std::uint32_t x = 0; x < jrrnUnlSize; ++x)
             {
-                auto parsedKey = parseBase58<PublicKey>(TokenType::NodePublic, jrrnUnl[x].asString());
+                auto parsedKey =
+                    parseBase58<PublicKey>(TokenType::NodePublic, jrrnUnl[x].asString());
                 BEAST_EXPECT(parsedKey);
                 if (parsedKey)
                     BEAST_EXPECT(disabledKeys.find(*parsedKey) != disabledKeys.end());
@@ -148,7 +149,9 @@ public:
     {
         using namespace test::jtx;
 
-        auto toStr = [](PublicKey const& publicKey) { return toBase58(TokenType::NodePublic, publicKey); };
+        auto toStr = [](PublicKey const& publicKey) {
+            return toBase58(TokenType::NodePublic, publicKey);
+        };
 
         // Validator keys that will be in the published list
         std::vector<Validator> validators = {
@@ -164,7 +167,13 @@ public:
         NetClock::time_point const validFrom2{validUntil - 60s};
         NetClock::time_point const validUntil2{validFrom2 + 3600s};
         auto server = make_TrustedPublisherServer(
-            worker.get_io_context(), validators, validUntil, {{validFrom2, validUntil2}}, false, 1, false);
+            worker.get_io_context(),
+            validators,
+            validUntil,
+            {{validFrom2, validUntil2}},
+            false,
+            1,
+            false);
 
         //----------------------------------------------------------------------
         // Publisher list site unavailable v1
@@ -177,7 +186,8 @@ public:
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS).append(strHex(server->publisherPublic()));
+                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -195,7 +205,9 @@ public:
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
-                BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == std::numeric_limits<std::uint32_t>::max());
+                BEAST_EXPECT(
+                    jrr[jss::validation_quorum].asUInt() ==
+                    std::numeric_limits<std::uint32_t>::max());
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
                 BEAST_EXPECT(jrr[jss::trusted_validator_keys].size() == 0);
                 BEAST_EXPECT(jrr[jss::validator_list][jss::expiration] == "unknown");
@@ -234,7 +246,8 @@ public:
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS).append(strHex(server->publisherPublic()));
+                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -252,7 +265,9 @@ public:
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
-                BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == std::numeric_limits<std::uint32_t>::max());
+                BEAST_EXPECT(
+                    jrr[jss::validation_quorum].asUInt() ==
+                    std::numeric_limits<std::uint32_t>::max());
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
                 BEAST_EXPECT(jrr[jss::trusted_validator_keys].size() == 0);
                 BEAST_EXPECT(jrr[jss::validator_list][jss::expiration] == "unknown");
@@ -294,7 +309,8 @@ public:
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS).append(strHex(server->publisherPublic()));
+                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -306,16 +322,22 @@ public:
                 startKeys.insert(calcNodeID(val.masterPublic));
 
             env.app().validators().updateTrusted(
-                startKeys, env.timeKeeper().now(), env.app().getOPs(), env.app().overlay(), env.app().getHashRouter());
+                startKeys,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
-                BEAST_EXPECT(jrr[jss::info][jss::validator_list][jss::expiration] == to_string(validUntil));
+                BEAST_EXPECT(
+                    jrr[jss::info][jss::validator_list][jss::expiration] == to_string(validUntil));
             }
             {
                 auto const jrr = env.rpc("server_state")[jss::result];
                 BEAST_EXPECT(
-                    jrr[jss::state][jss::validator_list_expires].asUInt() == validUntil.time_since_epoch().count());
+                    jrr[jss::state][jss::validator_list_expires].asUInt() ==
+                    validUntil.time_since_epoch().count());
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
@@ -380,7 +402,8 @@ public:
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS).append(strHex(server->publisherPublic()));
+                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -392,16 +415,22 @@ public:
                 startKeys.insert(calcNodeID(val.masterPublic));
 
             env.app().validators().updateTrusted(
-                startKeys, env.timeKeeper().now(), env.app().getOPs(), env.app().overlay(), env.app().getHashRouter());
+                startKeys,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
-                BEAST_EXPECT(jrr[jss::info][jss::validator_list][jss::expiration] == to_string(validUntil2));
+                BEAST_EXPECT(
+                    jrr[jss::info][jss::validator_list][jss::expiration] == to_string(validUntil2));
             }
             {
                 auto const jrr = env.rpc("server_state")[jss::result];
                 BEAST_EXPECT(
-                    jrr[jss::state][jss::validator_list_expires].asUInt() == validUntil2.time_since_epoch().count());
+                    jrr[jss::state][jss::validator_list_expires].asUInt() ==
+                    validUntil2.time_since_epoch().count());
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
@@ -433,7 +462,8 @@ public:
                     BEAST_EXPECT(jp[jss::pubkey_publisher] == strHex(server->publisherPublic()));
                     BEAST_EXPECT(jp[jss::expiration] == to_string(validUntil));
                     BEAST_EXPECT(jp[jss::version] == 2);
-                    if (BEAST_EXPECT(jp.isMember(jss::remaining)) && BEAST_EXPECT(jp[jss::remaining].isArray()) &&
+                    if (BEAST_EXPECT(jp.isMember(jss::remaining)) &&
+                        BEAST_EXPECT(jp[jss::remaining].isArray()) &&
                         BEAST_EXPECT(jp[jss::remaining].size() == 1))
                     {
                         auto const& r = jp[jss::remaining][0u];
@@ -483,7 +513,8 @@ public:
         Env env{*this};
         auto result = env.rpc("validation_create");
         BEAST_EXPECT(result.isMember(jss::result) && result[jss::result][jss::status] == "success");
-        result = env.rpc("validation_create", "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE");
+        result =
+            env.rpc("validation_create", "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE");
         BEAST_EXPECT(result.isMember(jss::result) && result[jss::result][jss::status] == "success");
     }
 
