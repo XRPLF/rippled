@@ -983,13 +983,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const aa = env.le(keylet::escrow(alice.id(), aseq));
             BEAST_EXPECT(aa);
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
             {
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), aa) != iod.end());
             }
@@ -1004,13 +1004,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             {
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bb) != iod.end());
             }
@@ -1022,15 +1022,15 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bb) != iod.end());
             }
@@ -1042,11 +1042,11 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) == bod.end());
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bb) == iod.end());
             }
@@ -1085,20 +1085,20 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) != iod.end());
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bc) != iod.end());
@@ -1110,19 +1110,19 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(env.le(keylet::escrow(bob.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) == iod.end());
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bc) != iod.end());
@@ -1134,19 +1134,19 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ab) == iod.end());
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), bc) == iod.end());
@@ -1182,14 +1182,14 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(ag);
 
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ag) != aod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ag) != iod.end());
             }
@@ -1199,14 +1199,14 @@ struct EscrowToken_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ag) == aod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
 
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 2);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), ag) == iod.end());
             }
@@ -1229,7 +1229,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> tests = {{
+        std::array<TestAccountData, 8> const tests = {{
             // src > dst && src > issuer && dst no trustline
             {Account("alice2"), Account("bob0"), Account{"gw0"}, false, true},
             // src < dst && src < issuer && dst no trustline
@@ -1335,7 +1335,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        std::array<TestAccountData, 4> gwDstTests = {{
+        std::array<TestAccountData, 4> const gwDstTests = {{
             // src > dst && src > issuer && dst has trustline
             {Account("alice2"), Account{"gw0"}, true},
             // src < dst && src < issuer && dst has trustline
@@ -2522,7 +2522,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 Sandbox sb(&view, tapNONE);
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(alice, seq1));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
-                STAmount amt(mpt, 10);
+                STAmount const amt(mpt, 10);
                 sleNew->setAccountID(sfDestination, bob);
                 sleNew->setFieldAmount(sfAmount, amt);
                 sb.insert(sleNew);
@@ -2749,7 +2749,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 Sandbox sb(&view, tapNONE);
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(alice, seq1));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
-                STAmount amt(mpt, 10);
+                STAmount const amt(mpt, 10);
                 sleNew->setAccountID(sfDestination, bob);
                 sleNew->setFieldAmount(sfAmount, amt);
                 sb.insert(sleNew);
@@ -3100,13 +3100,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const aa = env.le(keylet::escrow(alice.id(), aseq));
             BEAST_EXPECT(aa);
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
             {
-                xrpl::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 1);
                 BEAST_EXPECT(std::find(iod.begin(), iod.end(), aa) == iod.end());
             }
@@ -3121,7 +3121,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
@@ -3133,11 +3133,11 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
@@ -3149,7 +3149,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) == bod.end());
             }
@@ -3191,16 +3191,16 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
             }
@@ -3211,16 +3211,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(env.le(keylet::escrow(bob.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
             }
 
@@ -3230,16 +3230,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(!env.le(keylet::escrow(bob.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
         }

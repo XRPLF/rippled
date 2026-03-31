@@ -14,7 +14,7 @@
 
 namespace soci {
 class session;
-}
+}  // namespace soci
 
 namespace xrpl {
 

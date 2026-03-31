@@ -58,7 +58,7 @@ to_string(ProtocolVersion const& p)
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
-    static boost::regex re(
+    static boost::regex const re(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
         "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
@@ -112,9 +112,8 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) {
-        result = v;
-    };
+    std::function<void(ProtocolVersion const&)> const pickVersion =
+        [&result](ProtocolVersion const& v) { result = v; };
 
     std::set_intersection(
         std::begin(versions),

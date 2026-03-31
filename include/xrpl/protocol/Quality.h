@@ -304,8 +304,8 @@ Quality::ceil_TAmounts_helper(
 
     // Use the existing STAmount implementation for now, but consider
     // replacing with code specific to IOUAMount and XRPAmount
-    Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
-    STAmount stLim(toSTAmount(limit));
+    Amounts const stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+    STAmount const stLim(toSTAmount(limit));
     Amounts const stRes = ((*this).*ceil_function)(stAmt, stLim, roundUp...);
     return TAmounts<In, Out>(toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
 }

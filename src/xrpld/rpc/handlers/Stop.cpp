@@ -7,7 +7,7 @@ namespace xrpl {
 
 namespace RPC {
 struct JsonContext;
-}
+}  // namespace RPC
 
 Json::Value
 doStop(RPC::JsonContext& context)
