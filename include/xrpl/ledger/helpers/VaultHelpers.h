@@ -2,6 +2,7 @@
 
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <memory>
 #include <optional>
@@ -77,5 +78,8 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
 
 }  // namespace xrpl

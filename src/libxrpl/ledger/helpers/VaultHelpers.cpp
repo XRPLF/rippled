@@ -2,6 +2,7 @@
 //
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
 namespace xrpl {
@@ -107,6 +108,12 @@ sharesToAssetsWithdraw(
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
+}
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx)
+{
+    return rules.enabled(featureLendingProtocolV1_1) && tx.isFlag(tfVaultDonate);
 }
 
 }  // namespace xrpl
