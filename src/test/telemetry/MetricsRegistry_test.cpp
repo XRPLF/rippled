@@ -368,7 +368,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MetricsRegistry, telemetry, ripple);
+BEAST_DEFINE_TESTSUITE(MetricsRegistry, telemetry, xrpl);
 
 }  // namespace test
 }  // namespace xrpl

@@ -57,6 +57,12 @@ endif()
 xrpl_add_test(telemetry)
 target_link_libraries(xrpl.test.telemetry PRIVATE xrpl.imports.test)
 target_include_directories(xrpl.test.telemetry PRIVATE ${CMAKE_SOURCE_DIR}/src)
+# ValidationTracker lives in xrpld but has no OTel SDK dependency —
+# compile its .cpp directly so the test can link without all of xrpld.
+target_sources(
+    xrpl.test.telemetry
+    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
+)
 if(telemetry)
     target_link_libraries(
         xrpl.test.telemetry
