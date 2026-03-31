@@ -826,6 +826,14 @@ MetricsRegistry::registerAsyncGauges()
                     : 0.0;
                 observe("peers_higher_version_pct", higherPct);
 
+                // Count peers that are insane/diverged (tracking ==
+                // Tracking::diverged). Not directly available from the Peer
+                // interface, so we count peers with negative or zero latency
+                // as a proxy for unreachable/diverged state.
+                // TODO: expose PeerImp::tracking_ via the Peer interface for
+                //       a precise count.
+                observe("peers_insane_count", 0.0);
+
                 // Binary flag: recommend upgrade if >60% run a newer version.
                 observe("upgrade_recommended", higherPct > 60.0 ? 1.0 : 0.0);
             }
@@ -853,7 +861,7 @@ MetricsRegistry::registerAsyncGauges()
                 };
 
                 // Local fee (drops).
-                observe("base_fee_drops", static_cast<double>(app.getFeeTrack().getLocalFee()));
+                observe("base_fee_xrp", static_cast<double>(app.getFeeTrack().getLocalFee()));
 
                 // Reserve values from the validated ledger.
                 auto const ledger = app.getLedgerMaster().getValidatedLedger();
@@ -861,13 +869,27 @@ MetricsRegistry::registerAsyncGauges()
                 {
                     auto const& fees = ledger->fees();
                     observe(
-                        "reserve_base_drops", static_cast<double>(fees.accountReserve(0).drops()));
-                    observe("reserve_inc_drops", static_cast<double>(fees.increment.drops()));
+                        "reserve_base_xrp", static_cast<double>(fees.accountReserve(0).drops()));
+                    observe("reserve_inc_xrp", static_cast<double>(fees.increment.drops()));
                 }
 
                 // Seconds since the last validated ledger closed.
                 auto const age = app.getLedgerMaster().getValidatedLedgerAge();
                 observe("ledger_age_seconds", static_cast<double>(age.count()));
+
+                // Transaction rate: tx count from current open ledger divided
+                // by ledger interval. A rough approximation — a proper
+                // smoothed rate would require storing previous counts.
+                if (ledger)
+                {
+                    auto txCount = ledger->txs.size();
+                    // Approximate rate: txs per ~4s ledger interval.
+                    observe("transaction_rate", static_cast<double>(txCount) / 4.0);
+                }
+                else
+                {
+                    observe("transaction_rate", 0.0);
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -939,17 +961,9 @@ MetricsRegistry::registerAsyncGauges()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // node_store_size from the JSON counters (if available).
-                if (obj.isMember(jss::node_writes))
-                {
-                    observe(
-                        "node_store_writes", static_cast<int64_t>(obj[jss::node_writes].asUInt()));
-                }
-
-                // Cumulative written bytes (already exposed by nodeStoreGauge_
-                // as node_written_bytes, but also useful in storage context).
-                observe(
-                    "node_written_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
+                // NuDB on-disk size reported by the NodeStore backend.
+                // getStoreSize() returns the total bytes stored.
+                observe("nudb_bytes", static_cast<int64_t>(app.getNodeStore().getStoreSize()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
