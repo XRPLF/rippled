@@ -24,11 +24,7 @@ public:
 
     // Interface used by AccountDelete
     static TER
-    deleteDelegate(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 };
 
 }  // namespace xrpl
