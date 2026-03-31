@@ -157,7 +157,7 @@ class ValidatorList
 
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
-        std::size_t sequence;
+        std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;

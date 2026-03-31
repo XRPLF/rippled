@@ -766,7 +766,7 @@ STObject::Proxy<T>::assign(U&& u)
         st_->makeFieldAbsent(*f_);
         return;
     }
-    T* t;
+    T* t = nullptr;
     if (style_ == soeINVALID)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else

@@ -231,7 +231,7 @@ struct Peer
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically

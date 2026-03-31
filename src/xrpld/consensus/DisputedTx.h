@@ -258,8 +258,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
     if (!ourVote_ && (yays_ == 0))
         return false;
 
-    bool newPosition;
-    int weight;
+    bool newPosition = false;
+    int weight = 0;
 
     // When proposing, to prevent avalanche stalls, we increase the needed
     // weight slightly over time. We also need to ensure that the consensus has

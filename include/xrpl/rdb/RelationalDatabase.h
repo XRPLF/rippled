@@ -88,8 +88,8 @@ public:
     struct AccountTxResult
     {
         std::variant<AccountTxs, MetaTxsList> transactions;
-        LedgerRange ledgerRange;
-        uint32_t limit;
+        LedgerRange ledgerRange{};
+        uint32_t limit{};
         std::optional<AccountTxMarker> marker;
     };
 

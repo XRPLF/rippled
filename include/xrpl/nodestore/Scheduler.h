@@ -16,7 +16,7 @@ struct FetchReport
     {
     }
 
-    std::chrono::milliseconds elapsed;
+    std::chrono::milliseconds elapsed{};
     FetchType const fetchType;
     bool wasFound = false;
 };

@@ -397,7 +397,7 @@ Door<Handler>::query_fd_stats() const
     return std::nullopt;
 #else
     FDStats s;
-    struct rlimit rl;
+    struct rlimit rl{};
     if (getrlimit(RLIMIT_NOFILE, &rl) != 0 || rl.rlim_cur == RLIM_INFINITY)
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);

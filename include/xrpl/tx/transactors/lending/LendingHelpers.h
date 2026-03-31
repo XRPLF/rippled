@@ -143,7 +143,7 @@ struct LoanProperties
     // - A minimum scale required to represent the periodic payment accurately
     // All loan state values (principal, interest, fees) are rounded to this
     // scale.
-    std::int32_t loanScale;
+    std::int32_t loanScale{};
 
     // The principal portion of the first payment.
     Number firstPaymentPrincipal;

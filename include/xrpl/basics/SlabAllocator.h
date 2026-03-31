@@ -91,7 +91,7 @@ class SlabAllocator
         std::uint8_t*
         allocate() noexcept
         {
-            std::uint8_t* ret;
+            std::uint8_t* ret = nullptr;
 
             {
                 std::lock_guard const l(m_);
