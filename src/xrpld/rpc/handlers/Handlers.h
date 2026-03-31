@@ -45,6 +45,8 @@ doFeature(RPC::JsonContext&);
 Json::Value
 doFee(RPC::JsonContext&);
 Json::Value
+doFeeVote(RPC::JsonContext&);
+Json::Value
 doFetchInfo(RPC::JsonContext&);
 Json::Value
 doGatewayBalances(RPC::JsonContext&);

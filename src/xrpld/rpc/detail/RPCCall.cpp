@@ -472,6 +472,22 @@ private:
         return jvRequest;
     }
 
+    // fee_vote [<reference_fee> [<account_reserve> [<owner_reserve>]]]
+    Json::Value
+    parseFeeVote(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest(Json::objectValue);
+
+        if (jvParams.size() > 0)
+            jvRequest[jss::reference_fee] = jvParams[0u].asString();
+        if (jvParams.size() > 1)
+            jvRequest[jss::account_reserve] = jvParams[1u].asString();
+        if (jvParams.size() > 2)
+            jvRequest[jss::owner_reserve] = jvParams[2u].asString();
+
+        return jvRequest;
+    }
+
     // get_counts [<min_count>]
     Json::Value
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -1268,6 +1284,7 @@ public:
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
             {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 11},
             {"feature", &RPCParser::parseFeature, 0, 2},
+            {"fee_vote", &RPCParser::parseFeeVote, 0, 3},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
             {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
             {"get_counts", &RPCParser::parseGetCounts, 0, 1},

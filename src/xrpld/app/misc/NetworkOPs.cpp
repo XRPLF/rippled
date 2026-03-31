@@ -436,6 +436,10 @@ public:
     acceptLedger(std::optional<std::chrono::milliseconds> consensusDelay) override;
     void
     reportFeeChange() override;
+    std::tuple<XRPAmount, XRPAmount, XRPAmount>
+    getFeeVote() const override;
+    void
+    setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve) override;
     void
     reportConsensusStateChange(ConsensusPhase phase);
 
@@ -3086,6 +3090,18 @@ NetworkOPsImp::reportFeeChange()
     {
         m_job_queue.addJob(jtCLIENT_FEE_CHANGE, "PubFee", [this]() { pubServer(); });
     }
+}
+
+std::tuple<XRPAmount, XRPAmount, XRPAmount>
+NetworkOPsImp::getFeeVote() const
+{
+    return mConsensus.getFeeVote();
+}
+
+void
+NetworkOPsImp::setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve)
+{
+    mConsensus.setFeeVote(referenceFee, accountReserve, ownerReserve);
 }
 
 void

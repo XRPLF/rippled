@@ -3,6 +3,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/messages.h>
 #include <xrpl/server/InfoSub.h>
@@ -11,6 +12,7 @@
 #include <boost/asio.hpp>
 
 #include <memory>
+#include <tuple>
 
 namespace xrpl {
 
@@ -227,6 +229,12 @@ public:
 
     virtual void
     reportFeeChange() = 0;
+
+    virtual std::tuple<XRPAmount, XRPAmount, XRPAmount>
+    getFeeVote() const = 0;
+
+    virtual void
+    setFeeVote(XRPAmount referenceFee, XRPAmount accountReserve, XRPAmount ownerReserve) = 0;
 
     virtual void
     updateLocalTx(ReadView const& newValidLedger) = 0;
