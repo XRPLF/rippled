@@ -35,7 +35,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
     if (!srcID)
         return rpcError(rpcACT_MALFORMED);
-    auto const srcAcct{std::move(srcID.value())};
+    auto const srcAcct{srcID.value()};
 
     // Validate destination_account.
     if (!params.isMember(jss::destination_account))
@@ -49,7 +49,7 @@ doDepositAuthorized(RPC::JsonContext& context)
     auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
     if (!dstID)
         return rpcError(rpcACT_MALFORMED);
-    auto const dstAcct{std::move(dstID.value())};
+    auto const dstAcct{dstID.value()};
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
