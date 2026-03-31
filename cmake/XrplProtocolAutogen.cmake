@@ -15,7 +15,6 @@ set(CODEGEN_VENV_DIR
 )
 
 # Function to set up code generation for protocol_autogen module
-# This runs at configure time to generate C++ wrapper classes from macro files
 function(setup_protocol_autogen)
     # Directory paths
     set(MACRO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/protocol/detail")
@@ -25,7 +24,7 @@ function(setup_protocol_autogen)
     set(AUTOGEN_TEST_DIR
         "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl/protocol_autogen"
     )
-    set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/scripts")
+    set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/scripts/codegen")
 
     # Input macro files
     set(TRANSACTIONS_MACRO "${MACRO_DIR}/transactions.macro")
@@ -43,6 +42,7 @@ function(setup_protocol_autogen)
     set(LEDGER_TEST_TEMPLATE
         "${SCRIPTS_DIR}/templates/LedgerEntryTests.cpp.mako"
     )
+    set(UPDATE_STAMP_SCRIPT "${SCRIPTS_DIR}/update_codegen_stamp.py")
 
     # Check if code generation is disabled
     if(XRPL_NO_CODEGEN)
@@ -60,7 +60,33 @@ function(setup_protocol_autogen)
     file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/ledger_entries")
     file(MAKE_DIRECTORY "${AUTOGEN_TEST_DIR}/transactions")
 
-    # Find Python3 - check if already found by Conan or find it ourselves
+    # === Stamp file check ===
+    # All input files whose content affects code generation output.
+    set(STAMP_FILE "${CMAKE_CURRENT_SOURCE_DIR}/scripts/codegen/.codegen_stamp")
+    set(ALL_INPUT_FILES
+        "${TRANSACTIONS_MACRO}"
+        "${LEDGER_ENTRIES_MACRO}"
+        "${SFIELDS_MACRO}"
+        "${GENERATE_TX_SCRIPT}"
+        "${GENERATE_LEDGER_SCRIPT}"
+        "${REQUIREMENTS_FILE}"
+        "${MACRO_PARSER_COMMON}"
+        "${TX_TEMPLATE}"
+        "${TX_TEST_TEMPLATE}"
+        "${LEDGER_TEMPLATE}"
+        "${LEDGER_TEST_TEMPLATE}"
+    )
+
+    # Tell CMake to reconfigure automatically when any input file changes.
+    # The reconfigure itself is cheap — it runs the stamp check below
+    # which only invokes stdlib Python (no venv needed).
+    set_property(
+        DIRECTORY
+        APPEND
+        PROPERTY CMAKE_CONFIGURE_DEPENDS ${ALL_INPUT_FILES}
+    )
+
+    # Find Python3 (needed for stamp check; no venv required).
     if(NOT Python3_EXECUTABLE)
         find_package(Python3 COMPONENTS Interpreter QUIET)
     endif()
@@ -79,19 +105,45 @@ function(setup_protocol_autogen)
         return()
     endif()
 
-    message(STATUS "Using Python3 for code generation: ${Python3_EXECUTABLE}")
+    # Check whether the stamp is up-to-date (stdlib-only, no venv).
+    execute_process(
+        COMMAND
+            ${Python3_EXECUTABLE} "${UPDATE_STAMP_SCRIPT}" --check
+            "${STAMP_FILE}" ${ALL_INPUT_FILES}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        RESULT_VARIABLE STAMP_CHECK_RESULT
+    )
 
-    # Set up Python virtual environment for code generation
+    # ------------------------------------------------------------------
+    # Fast path: stamp matches — generated files are up to date.
+    # ------------------------------------------------------------------
+    if(STAMP_CHECK_RESULT EQUAL 0)
+        message(
+            STATUS
+            "Protocol autogen: inputs unchanged (stamp matches), skipping generation"
+        )
+        return()
+    endif()
+
+    # ------------------------------------------------------------------
+    # Slow path: stamp mismatch — run generation at configure time.
+    # ------------------------------------------------------------------
+    message(
+        STATUS
+        "Protocol autogen: inputs changed, running code generation..."
+    )
+
+    # Set up Python virtual environment for code generation.
     if(CODEGEN_VENV_DIR)
-        # User-provided venv - skip automatic setup
+        # User-provided venv - skip automatic setup.
         set(VENV_DIR "${CODEGEN_VENV_DIR}")
         message(STATUS "Using user-provided Python venv: ${VENV_DIR}")
     else()
-        # Use default venv in build directory
+        # Use default venv in build directory.
         set(VENV_DIR "${CMAKE_CURRENT_BINARY_DIR}/codegen_venv")
     endif()
 
-    # Determine the Python executable path in the venv
+    # Determine the Python/pip executables inside the venv.
     if(WIN32)
         set(VENV_PYTHON "${VENV_DIR}/Scripts/python.exe")
         set(VENV_PIP "${VENV_DIR}/Scripts/pip.exe")
@@ -100,9 +152,9 @@ function(setup_protocol_autogen)
         set(VENV_PIP "${VENV_DIR}/bin/pip")
     endif()
 
-    # Only auto-setup venv if not user-provided
+    # Create or update the virtual environment if needed.
     if(NOT CODEGEN_VENV_DIR)
-        # Check if venv needs to be created or updated
+        # Check if venv needs to be created or updated.
         set(VENV_NEEDS_UPDATE FALSE)
         if(NOT EXISTS "${VENV_PYTHON}")
             set(VENV_NEEDS_UPDATE TRUE)
@@ -122,8 +174,9 @@ function(setup_protocol_autogen)
             )
         endif()
 
-        # Create/update virtual environment if needed
+        # Create/update virtual environment if needed.
         if(VENV_NEEDS_UPDATE)
+            # Create the venv.
             message(
                 STATUS
                 "Setting up Python virtual environment at ${VENV_DIR}"
@@ -140,7 +193,7 @@ function(setup_protocol_autogen)
                 )
             endif()
 
-            # Check pip index URL configuration
+            # Warn if pip is configured with a non-default index (may need VPN).
             execute_process(
                 COMMAND ${VENV_PIP} config get global.index-url
                 OUTPUT_VARIABLE PIP_INDEX_URL
@@ -162,6 +215,7 @@ function(setup_protocol_autogen)
                 endif()
             endif()
 
+            # Install dependencies.
             message(STATUS "Installing Python dependencies...")
             execute_process(
                 COMMAND ${VENV_PIP} install --upgrade pip
@@ -185,125 +239,56 @@ function(setup_protocol_autogen)
                 )
             endif()
 
-            # Mark requirements as installed
+            # Mark requirements as installed.
             file(TOUCH "${VENV_DIR}/.requirements_installed")
             message(STATUS "Python virtual environment ready")
         endif()
     endif()
 
-    # At configure time - get list of output files for transactions
+    # Generate transaction classes.
     execute_process(
-        COMMAND
-            ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
-            "${AUTOGEN_TEST_DIR}/transactions" --list-outputs
-        OUTPUT_VARIABLE TX_OUTPUT_FILES
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        RESULT_VARIABLE TX_LIST_RESULT
-        ERROR_VARIABLE TX_LIST_ERROR
-    )
-    if(NOT TX_LIST_RESULT EQUAL 0)
-        message(
-            FATAL_ERROR
-            "Failed to list transaction output files:\n${TX_LIST_ERROR}"
-        )
-    endif()
-    # Convert newline-separated list to CMake list
-    string(REPLACE "\\" "/" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
-    string(REPLACE "\n" ";" TX_OUTPUT_FILES "${TX_OUTPUT_FILES}")
-
-    # At configure time - get list of output files for ledger entries
-    execute_process(
-        COMMAND
-            ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
-            --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
-            "${AUTOGEN_TEST_DIR}/ledger_entries" --list-outputs
-        OUTPUT_VARIABLE LEDGER_OUTPUT_FILES
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        RESULT_VARIABLE LEDGER_LIST_RESULT
-        ERROR_VARIABLE LEDGER_LIST_ERROR
-    )
-    if(NOT LEDGER_LIST_RESULT EQUAL 0)
-        message(
-            FATAL_ERROR
-            "Failed to list ledger entry output files:\n${LEDGER_LIST_ERROR}"
-        )
-    endif()
-    # Convert newline-separated list to CMake list
-    string(REPLACE "\\" "/" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
-    string(REPLACE "\n" ";" LEDGER_OUTPUT_FILES "${LEDGER_OUTPUT_FILES}")
-
-    # Custom command to generate transaction classes at build time
-    add_custom_command(
-        OUTPUT ${TX_OUTPUT_FILES}
         COMMAND
             ${VENV_PYTHON} "${GENERATE_TX_SCRIPT}" "${TRANSACTIONS_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/transactions" --test-dir
             "${AUTOGEN_TEST_DIR}/transactions" --sfields-macro
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        DEPENDS
-            "${TRANSACTIONS_MACRO}"
-            "${SFIELDS_MACRO}"
-            "${GENERATE_TX_SCRIPT}"
-            "${MACRO_PARSER_COMMON}"
-            "${TX_TEMPLATE}"
-            "${TX_TEST_TEMPLATE}"
-            "${REQUIREMENTS_FILE}"
-        COMMENT "Generating transaction classes from transactions.macro..."
-        VERBATIM
+        RESULT_VARIABLE TX_RESULT
+        ERROR_VARIABLE TX_ERROR
     )
+    if(NOT TX_RESULT EQUAL 0)
+        message(FATAL_ERROR "Transaction code generation failed:\n${TX_ERROR}")
+    endif()
 
-    # Custom command to generate ledger entry classes at build time
-    add_custom_command(
-        OUTPUT ${LEDGER_OUTPUT_FILES}
+    # Generate ledger entry classes.
+    execute_process(
         COMMAND
             ${VENV_PYTHON} "${GENERATE_LEDGER_SCRIPT}" "${LEDGER_ENTRIES_MACRO}"
             --header-dir "${AUTOGEN_HEADER_DIR}/ledger_entries" --test-dir
             "${AUTOGEN_TEST_DIR}/ledger_entries" --sfields-macro
             "${SFIELDS_MACRO}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        DEPENDS
-            "${LEDGER_ENTRIES_MACRO}"
-            "${SFIELDS_MACRO}"
-            "${GENERATE_LEDGER_SCRIPT}"
-            "${MACRO_PARSER_COMMON}"
-            "${LEDGER_TEMPLATE}"
-            "${LEDGER_TEST_TEMPLATE}"
-            "${REQUIREMENTS_FILE}"
-        COMMENT "Generating ledger entry classes from ledger_entries.macro..."
-        VERBATIM
+        RESULT_VARIABLE LEDGER_RESULT
+        ERROR_VARIABLE LEDGER_ERROR
     )
+    if(NOT LEDGER_RESULT EQUAL 0)
+        message(
+            FATAL_ERROR
+            "Ledger entry code generation failed:\n${LEDGER_ERROR}"
+        )
+    endif()
 
-    # Create a custom target that depends on all generated files
-    add_custom_target(
-        protocol_autogen_generate
-        DEPENDS ${TX_OUTPUT_FILES} ${LEDGER_OUTPUT_FILES}
-        COMMENT "Protocol autogen code generation"
+    # Update the stamp file so subsequent configures skip generation.
+    execute_process(
+        COMMAND
+            ${Python3_EXECUTABLE} "${UPDATE_STAMP_SCRIPT}" --update
+            "${STAMP_FILE}" ${ALL_INPUT_FILES}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        RESULT_VARIABLE STAMP_RESULT
     )
+    if(NOT STAMP_RESULT EQUAL 0)
+        message(WARNING "Failed to update codegen stamp file")
+    endif()
 
-    # Extract test files from output lists (files ending in Tests.cpp)
-    set(PROTOCOL_AUTOGEN_TEST_SOURCES "")
-    foreach(FILE ${TX_OUTPUT_FILES} ${LEDGER_OUTPUT_FILES})
-        if(FILE MATCHES "Tests\\.cpp$")
-            list(APPEND PROTOCOL_AUTOGEN_TEST_SOURCES "${FILE}")
-        endif()
-    endforeach()
-    # Export test sources to parent scope for use in test CMakeLists.txt
-    set(PROTOCOL_AUTOGEN_TEST_SOURCES
-        "${PROTOCOL_AUTOGEN_TEST_SOURCES}"
-        CACHE INTERNAL
-        "Generated protocol_autogen test sources"
-    )
-
-    # Register dependencies so CMake reconfigures when macro files change
-    # (to update the list of output files)
-    set_property(
-        DIRECTORY
-        APPEND
-        PROPERTY
-            CMAKE_CONFIGURE_DEPENDS
-                "${TRANSACTIONS_MACRO}"
-                "${LEDGER_ENTRIES_MACRO}"
-    )
+    message(STATUS "Protocol autogen: code generation complete")
 endfunction()

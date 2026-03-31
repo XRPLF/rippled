@@ -6,15 +6,15 @@ This directory contains auto-generated C++ wrapper classes for XRP Ledger protoc
 
 The files in this directory are automatically generated at **CMake configure time** from macro definition files:
 
-- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `scripts/generate_tx_classes.py`
-- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/generate_ledger_classes.py`
+- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `scripts/codegen/generate_tx_classes.py`
+- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/codegen/generate_ledger_classes.py`
 
 ## Generation Process
 
 The generation happens automatically when you **configure** the project (not during build). When you run CMake, the system:
 
 1. Creates a Python virtual environment in the build directory (`codegen_venv`)
-2. Installs Python dependencies from `scripts/requirements.txt` into the venv (only if needed)
+2. Installs Python dependencies from `scripts/codegen/requirements.txt` into the venv (only if needed)
 3. Runs the Python generation scripts using the venv Python interpreter
 4. Parses the macro files to extract type definitions
 5. Generates type-safe C++ wrapper classes using Mako templates
@@ -26,7 +26,7 @@ The code is regenerated when:
 
 - You run CMake configure for the first time
 - The Python virtual environment doesn't exist
-- `scripts/requirements.txt` has been modified
+- `scripts/codegen/requirements.txt` has been modified
 
 To force regeneration, delete the build directory and reconfigure.
 
@@ -55,9 +55,9 @@ The generated `.h` files **are checked into version control**. This means:
 To modify the generated classes:
 
 - Edit the macro files in `include/xrpl/protocol/detail/`
-- Edit the Mako templates in `scripts/templates/`
-- Edit the generation scripts in `scripts/`
-- Update Python dependencies in `scripts/requirements.txt`
+- Edit the Mako templates in `scripts/codegen/templates/`
+- Edit the generation scripts in `scripts/codegen/`
+- Update Python dependencies in `scripts/codegen/requirements.txt`
 - Run CMake configure to regenerate
 
 ## Adding Common Fields
@@ -73,7 +73,7 @@ Base classes:
 
 Templates (update to pass required common fields to base class constructors):
 
-- `scripts/templates/Transaction.h.mako`
-- `scripts/templates/LedgerEntry.h.mako`
+- `scripts/codegen/templates/Transaction.h.mako`
+- `scripts/codegen/templates/LedgerEntry.h.mako`
 
 These files are **not auto-generated** and must be updated by hand.
