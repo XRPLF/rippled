@@ -1289,14 +1289,14 @@ addEmptyHolding(
         dstId,
         index.key,
         sleDst,
-        /*auth=*/false,
-        /*noRipple=*/true,
-        /*freeze=*/false,
+        /*bAuth=*/false,
+        /*bNoRipple=*/true,
+        /*bFreeze=*/false,
         /*deepFreeze*/ false,
-        /*balance=*/STAmount{Issue{currency, noAccount()}},
-        /*limit=*/STAmount{Issue{currency, dstId}},
-        /*qualityIn=*/0,
-        /*qualityOut=*/0,
+        /*saBalance=*/STAmount{Issue{currency, noAccount()}},
+        /*saLimit=*/STAmount{Issue{currency, dstId}},
+        /*uSrcQualityIn=*/0,
+        /*uSrcQualityOut=*/0,
         journal);
 }
 

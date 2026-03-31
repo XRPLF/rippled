@@ -3,15 +3,13 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/SociDB.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/nodestore/Database.h>
@@ -23,6 +21,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <utility>
 #include <vector>
@@ -879,18 +878,12 @@ Ledger::updateSkipList()
 bool
 Ledger::isFlagLedger() const
 {
-    return header_.seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isFlagLedger(header_.seq);
 }
 bool
 Ledger::isVotingLedger() const
 {
-    return (header_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
-}
-
-bool
-isFlagLedger(LedgerIndex seq)
-{
-    return seq % FLAG_LEDGER_INTERVAL == 0;
+    return ::xrpl::isVotingLedger(header_.seq + 1);
 }
 
 static bool
@@ -905,11 +898,9 @@ saveValidatedLedger(Application& app, std::shared_ptr<Ledger const> const& ledge
         return true;
     }
 
-    auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = app.getRelationalDatabase();
 
-    auto const res = db->saveValidatedLedger(ledger, current);
+    auto const res = db.saveValidatedLedger(ledger, current);
 
     // Clients can now trust the database for
     // information about this ledger sequence.

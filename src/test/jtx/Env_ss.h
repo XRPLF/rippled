@@ -23,19 +23,20 @@ private:
         SignSubmitRunner&
         operator=(SignSubmitRunner&&) = delete;
 
-        SignSubmitRunner(Env& env, JTx&& jt) : env_(env), jt_(jt)
+        SignSubmitRunner(Env& env, JTx&& jt, std::source_location loc) : env_(env), jt_(jt), loc_(loc)
         {
         }
 
         void
         operator()(Json::Value const& params = Json::nullValue)
         {
-            env_.sign_and_submit(jt_, params);
+            env_.sign_and_submit(jt_, params, loc_);
         }
 
     private:
         Env& env_;
         JTx const jt_;
+        std::source_location const loc_;
     };
 
 public:
@@ -47,12 +48,20 @@ public:
     {
     }
 
-    template <class JsonValue, class... FN>
+    template <class... FN>
     SignSubmitRunner
-    operator()(JsonValue&& jv, FN const&... fN)
+    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
     {
-        auto jtx = env_.jt(std::forward<JsonValue>(jv), fN...);
-        return SignSubmitRunner(env_, std::move(jtx));
+        auto jtx = env_.jt(std::move(jv.value), fN...);
+        return SignSubmitRunner(env_, std::move(jtx), jv.loc);
+    }
+
+    template <class... FN>
+    SignSubmitRunner
+    operator()(WithSourceLocation<JTx> jv, FN const&... fN)
+    {
+        auto jtx = env_.jt(std::move(jv.value), fN...);
+        return SignSubmitRunner(env_, std::move(jtx), jv.loc);
     }
 };
 

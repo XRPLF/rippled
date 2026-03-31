@@ -2149,7 +2149,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
     }
 
     void
-    testXChainAddAccountCreateNonBatchAttestation()
+    testXChainAddAccountCreateNonBatchAttestation()  // cspell: disable-line
     {
         using namespace jtx;
 
@@ -3417,7 +3417,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         testXChainCommit();
         testXChainAddAttestation();
         testXChainAddClaimNonBatchAttestation();
-        testXChainAddAccountCreateNonBatchAttestation();
+        testXChainAddAccountCreateNonBatchAttestation();  // cspell: disable-line
         testXChainClaim();
         testXChainCreateAccount();
         testFeeDipsIntoReserve();
@@ -3535,6 +3535,7 @@ private:
             do
             {
                 callback_called = false;
+                // cspell: ignore attns
                 for (size_t i = 0; i < signers_attns.size(); ++i)
                 {
                     for (auto& [bridge, claims] : signers_attns[i])

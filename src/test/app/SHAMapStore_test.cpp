@@ -44,10 +44,10 @@ class SHAMapStore_test : public beast::unit_test::suite
 
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
-        std::optional<LedgerHeader> oinfo = env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
-        if (!oinfo)
+        std::optional<LedgerHeader> outInfo = env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
+        if (!outInfo)
             return false;
-        LedgerHeader const& info = oinfo.value();
+        LedgerHeader const& info = outInfo.value();
 
         std::string const outHash = to_string(info.hash);
         LedgerIndex const outSeq = info.seq;
@@ -91,8 +91,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
-        auto const [actualRows, actualFirst, actualLast] =
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getLedgerCountMinMax();
+        auto const [actualRows, actualFirst, actualLast] = env.app().getRelationalDatabase().getLedgerCountMinMax();
 
         BEAST_EXPECT(actualRows == rows);
         BEAST_EXPECT(actualFirst == first);
@@ -102,14 +101,13 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     transactionCheck(jtx::Env& env, int const rows)
     {
-        BEAST_EXPECT(dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getTransactionCount() == rows);
+        BEAST_EXPECT(env.app().getRelationalDatabase().getTransactionCount() == rows);
     }
 
     void
     accountTransactionCheck(jtx::Env& env, int const rows)
     {
-        BEAST_EXPECT(
-            dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())->getAccountTransactionCount() == rows);
+        BEAST_EXPECT(env.app().getRelationalDatabase().getAccountTransactionCount() == rows);
     }
 
     int
@@ -490,19 +488,8 @@ public:
         Env env(*this, envconfig(onlineDelete));
 
         /////////////////////////////////////////////////////////////
-        // Create the backend. Normally, SHAMapStoreImp handles all these
-        // details
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
-
-        // Provide default values:
-        if (!nscfg.exists("cache_size"))
-            nscfg.set(
-                "cache_size", std::to_string(env.app().config().getValueFor(SizedItem::treeCacheSize, std::nullopt)));
-
-        if (!nscfg.exists("cache_age"))
-            nscfg.set(
-                "cache_age", std::to_string(env.app().config().getValueFor(SizedItem::treeCacheAge, std::nullopt)));
-
+        // Create NodeStore with two backends to allow online deletion of data.
+        // Normally, SHAMapStoreImp handles all these details.
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 
         std::string const writableDb = "write";
@@ -510,9 +497,8 @@ public:
         auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
-        // Create NodeStore with two backends to allow online deletion of
-        // data
         constexpr int readThreads = 4;
+        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,
             readThreads,

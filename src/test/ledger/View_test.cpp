@@ -982,8 +982,8 @@ class GetAmendments_test : public beast::unit_test::suite
         BEAST_EXPECT(majorities.size() >= 2);
 
         // None of the amendments should be enabled yet.
-        auto enableds = getEnabledAmendments(*env.closed());
-        BEAST_EXPECT(enableds.empty());
+        auto enabledAmendments = getEnabledAmendments(*env.closed());
+        BEAST_EXPECT(enabledAmendments.empty());
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
@@ -992,12 +992,12 @@ class GetAmendments_test : public beast::unit_test::suite
         {
             using namespace std::chrono_literals;
             env.close(80min);
-            enableds = getEnabledAmendments(*env.closed());
-            if (!enableds.empty())
+            enabledAmendments = getEnabledAmendments(*env.closed());
+            if (!enabledAmendments.empty())
                 break;
         }
         BEAST_EXPECT(i == 255);
-        BEAST_EXPECT(enableds.size() >= 2);
+        BEAST_EXPECT(enabledAmendments.size() >= 2);
     }
 
     void

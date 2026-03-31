@@ -1,10 +1,9 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/ApplyContext.h>
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -442,7 +441,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         env(ledgerStateFix::nftPageLinks(daria, alice), fee(linkFixFee));
         env.close();
 
-        // alices's last page should now be present and include no links.
+        // alice's last page should now be present and include no links.
         {
             auto aliceLastNFTokenPage = env.le(keylet::nftpage_max(alice));
             if (!BEAST_EXPECT(aliceLastNFTokenPage))

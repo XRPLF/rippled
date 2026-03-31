@@ -3,13 +3,12 @@
 #include <test/jtx.h>
 #include <test/jtx/mpt.h>
 
-#include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/tx/detail/Batch.h>
-#include <xrpld/app/tx/detail/LoanSet.h>
-
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/tx/transactors/Batch.h>
+#include <xrpl/tx/transactors/Lending/LendingHelpers.h>
+#include <xrpl/tx/transactors/Lending/LoanSet.h>
 
 #include <chrono>
 

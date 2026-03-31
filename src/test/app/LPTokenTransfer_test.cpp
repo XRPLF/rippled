@@ -355,7 +355,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env(token::acceptSellOffer(carol, sellOfferIndex));
             env.close();
 
-            // gateway freezes bobs's USD
+            // gateway freezes bob's USD
             env(trust(gw, bob["USD"](0), tfSetFreeze));
             env.close();
 

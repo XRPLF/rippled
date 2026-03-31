@@ -1,13 +1,13 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
-#include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -130,14 +130,6 @@ std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
-
-    // Provide default values:
-    if (!nscfg.exists("cache_size"))
-        nscfg.set("cache_size", std::to_string(app_.config().getValueFor(SizedItem::treeCacheSize, std::nullopt)));
-
-    if (!nscfg.exists("cache_age"))
-        nscfg.set("cache_age", std::to_string(app_.config().getValueFor(SizedItem::treeCacheAge, std::nullopt)));
-
     std::unique_ptr<NodeStore::Database> db;
 
     if (deleteInterval_)
@@ -226,8 +218,6 @@ SHAMapStoreImp::run()
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
-    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
-    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
@@ -490,16 +480,19 @@ void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
-    fullBelowCache_->clear();
+    // Also clear the FullBelowCache so its generation counter is bumped.
+    // This prevents stale "full below" markers from persisting across
+    // backend rotation/online deletion and interfering with SHAMap sync.
+    app_.getNodeFamily().getFullBelowCache()->clear();
 }
 
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(*treeNodeCache_))
+    if (freshenCache(*app_.getNodeFamily().getTreeNodeCache()))
         return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
-        return;
+
+    freshenCache(app_.getMasterTransaction().getCache());
 }
 
 void
@@ -514,16 +507,13 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (healthWait() == stopping)
         return;
 
-    SQLiteDatabase* const db = dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase());
-
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = app_.getRelationalDatabase();
 
     clearSql(
         lastRotated,
         "Ledgers",
-        [db]() -> std::optional<LedgerIndex> { return db->getMinLedgerSeq(); },
-        [db](LedgerIndex min) -> void { db->deleteBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
@@ -533,16 +523,16 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db->getAccountTransactionsMinLedgerSeq(); },
-        [&db](LedgerIndex min) -> void { db->deleteAccountTransactionsBeforeLedgerSeq(min); });
+        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() == stopping)
         return;
 }

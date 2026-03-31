@@ -1,8 +1,7 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
-
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/tx/transactors/Lending/LoanBrokerCoverDeposit.h>
 
 namespace xrpl {
 namespace test {
@@ -905,7 +904,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             if (asset.holds<Issue>())
             {
-                // preclaim: AllowTrustLineClaback is not set
+                // preclaim: AllowTrustLineClawback is not set
                 env(coverClawback(issuer),
                     loanBrokerID(brokerKeylet.key),
                     amount(vaultInfo.asset(2)),

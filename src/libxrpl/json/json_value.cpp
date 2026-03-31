@@ -777,7 +777,8 @@ Value::size() const
     return 0;  // unreachable;
 }
 
-Value::operator bool() const
+Value::
+operator bool() const
 {
     if (isNull())
         return false;

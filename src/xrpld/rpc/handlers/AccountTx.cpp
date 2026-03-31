@@ -8,6 +8,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/json/json_value.h>
@@ -26,8 +27,6 @@ using TxnsDataBinary = RelationalDatabase::MetaTxsList;
 using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
 using AccountTxArgs = RelationalDatabase::AccountTxArgs;
 using AccountTxResult = RelationalDatabase::AccountTxResult;
-
-using LedgerShortcut = RelationalDatabase::LedgerShortcut;
 using LedgerSpecifier = RelationalDatabase::LedgerSpecifier;
 
 // parses args into a ledger specifier, or returns a Json object on error
@@ -208,22 +207,19 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         args.limit,
         isUnlimited(context.role)};
 
-    auto const db = dynamic_cast<SQLiteDatabase*>(&context.app.getRelationalDatabase());
-
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
+    auto& db = context.app.getRelationalDatabase();
 
     if (args.binary)
     {
         if (args.forward)
         {
-            auto [tx, marker] = db->oldestAccountTxPageB(options);
+            auto [tx, marker] = db.oldestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = db->newestAccountTxPageB(options);
+            auto [tx, marker] = db.newestAccountTxPageB(options);
             result.transactions = tx;
             result.marker = marker;
         }
@@ -232,13 +228,13 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     {
         if (args.forward)
         {
-            auto [tx, marker] = db->oldestAccountTxPage(options);
+            auto [tx, marker] = db.oldestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }
         else
         {
-            auto [tx, marker] = db->newestAccountTxPage(options);
+            auto [tx, marker] = db.newestAccountTxPage(options);
             result.transactions = tx;
             result.marker = marker;
         }

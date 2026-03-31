@@ -3,14 +3,15 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/LoadManager.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <tuple>
 
@@ -106,7 +107,7 @@ public:
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
-            BEAST_EXPECT(jv[jss::result][jss::network_id] == env.app().config().NETWORK_ID);
+            BEAST_EXPECT(jv[jss::result][jss::network_id] == env.app().getNetworkIDService().getNetworkID());
         }
 
         {
@@ -115,7 +116,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3 && jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 3 &&
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
@@ -125,7 +127,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 4 && jv[jss::network_id] == env.app().config().NETWORK_ID;
+                return jv[jss::ledger_index] == 4 &&
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
@@ -451,7 +454,7 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
-                uint32_t netID = env.app().config().NETWORK_ID;
+                uint32_t netID = env.app().getNetworkIDService().getNetworkID();
                 if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
@@ -510,7 +513,7 @@ public:
         jv[jss::streams][0u] = "ledger";
         jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
-        BEAST_EXPECT(jr[jss::network_id] == env.app().config().NETWORK_ID);
+        BEAST_EXPECT(jr[jss::network_id] == env.app().getNetworkIDService().getNetworkID());
 
         jr = env.rpc("json", "unsubscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
@@ -835,8 +838,7 @@ public:
             {
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
-                env.apply(
-                    pay(from, to, jtx::XRP(numXRP)),
+                env(pay(from, to, jtx::XRP(numXRP)),
                     jtx::seq(jtx::autofill),
                     jtx::fee(jtx::autofill),
                     jtx::sig(jtx::autofill));

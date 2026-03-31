@@ -108,8 +108,9 @@ public:
 
         BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
-        BEAST_EXPECT(std::equal(
-            uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
+        BEAST_EXPECT(
+            std::equal(
+                uncompressed.begin() + xrpl::compression::headerBytes, uncompressed.end(), decompressed.begin()));
     }
 
     std::shared_ptr<protocol::TMManifests>
@@ -172,12 +173,12 @@ public:
         std::string usdTxBlob = "";
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jrequestUsd;
-            jrequestUsd[jss::secret] = toBase58(generateSeed("bob"));
-            jrequestUsd[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
-            Json::Value jreply_usd = wsc->invoke("sign", jrequestUsd);
+            Json::Value requestUSD;
+            requestUSD[jss::secret] = toBase58(generateSeed("bob"));
+            requestUSD[jss::tx_json] = pay("bob", "alice", bob["USD"](fund / 2));
+            Json::Value replyUSD = wsc->invoke("sign", requestUSD);
 
-            usdTxBlob = toBinary(jreply_usd[jss::result][jss::tx_blob].asString());
+            usdTxBlob = toBinary(replyUSD[jss::result][jss::tx_blob].asString());
         }
 
         auto transaction = std::make_shared<protocol::TMTransaction>();

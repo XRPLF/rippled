@@ -93,12 +93,6 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
     storeStats(1, nObj->getData().size());
 }
 
-void
-DatabaseRotatingImp::sweep()
-{
-    // nothing to do
-}
-
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
 {

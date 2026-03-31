@@ -2003,8 +2003,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
-                                       R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2019,10 +2020,12 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":"250",)"
-                                       R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2040,10 +2043,12 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":"19","Method":"250",)"
-                                       R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransactionResult":"tecFROZEN"})");
+            std::string const goodJson(
+                R"({"CloseResolution":"19","Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2061,8 +2066,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransactionResult":"terQUEUED"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"terQUEUED"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2076,8 +2082,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":"pony",)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":"pony",)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2091,8 +2098,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":3294967296,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3294967296,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2106,8 +2114,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":-10,"Method":42,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":-10,"Method":42,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2121,8 +2130,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":3.141592653,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":3.141592653,)"
+                R"("TransactionResult":"tesSUCCESS"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2136,10 +2146,12 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
-                                       R"("TransferFee":"65535"})");
-            std::string const expectedJson(R"({"CloseResolution":19,"Method":250,)"
-                                           R"("TransferFee":65535})");
+            std::string const goodJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"65535"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":65535})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
@@ -2154,8 +2166,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":"65536"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"65536"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2169,8 +2182,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":"Payment"})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":"Payment"})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))
@@ -2184,8 +2198,9 @@ class STParsedJSON_test : public beast::unit_test::suite
         }
 
         {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransferFee":true})");
+            std::string const json(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":true})");
 
             Json::Value jv;
             if (BEAST_EXPECT(parseJSONString(json, jv)))

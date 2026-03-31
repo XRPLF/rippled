@@ -1,13 +1,12 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/misc/AMMHelpers.h>
-#include <xrpld/app/misc/AMMUtils.h>
-
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
+#include <xrpl/tx/transactors/AMM/AMMUtils.h>
 
 namespace xrpl {
 namespace test {
@@ -253,12 +252,12 @@ AMM::expectAmmRpcInfo(
 }
 
 bool
-AMM::expectAmmInfo(STAmount const& asset1, STAmount const& asset2, IOUAmount const& balance, Json::Value const& jvres)
+AMM::expectAmmInfo(STAmount const& asset1, STAmount const& asset2, IOUAmount const& balance, Json::Value const& jvRes)
     const
 {
-    if (!jvres.isMember(jss::amm))
+    if (!jvRes.isMember(jss::amm))
         return false;
-    auto const& jv = jvres[jss::amm];
+    auto const& jv = jvRes[jss::amm];
     if (!jv.isMember(jss::amount) || !jv.isMember(jss::amount2) || !jv.isMember(jss::lp_token))
         return false;
     STAmount asset1Info;
@@ -360,26 +359,26 @@ AMM::deposit(
         maxEP->setJson(jv[jss::EPrice]);
     if (tfee)
         jv[jss::TradingFee] = *tfee;
-    std::uint32_t jvflags = 0;
+    std::uint32_t jvFlags = 0;
     if (flags)
-        jvflags = *flags;
+        jvFlags = *flags;
     // If including asset1In and asset2In or tokens as
     // deposit min amounts then must set the flags
     // explicitly instead of relying on this logic.
-    if (!(jvflags & tfDepositSubTx))
+    if (!(jvFlags & tfDepositSubTx))
     {
         if (tokens && !asset1In)
-            jvflags |= tfLPToken;
+            jvFlags |= tfLPToken;
         else if (tokens && asset1In)
-            jvflags |= tfOneAssetLPToken;
+            jvFlags |= tfOneAssetLPToken;
         else if (asset1In && asset2In)
-            jvflags |= tfTwoAsset;
+            jvFlags |= tfTwoAsset;
         else if (maxEP && asset1In)
-            jvflags |= tfLimitLPToken;
+            jvFlags |= tfLimitLPToken;
         else if (asset1In)
-            jvflags |= tfSingleAsset;
+            jvFlags |= tfSingleAsset;
     }
-    jv[jss::Flags] = jvflags;
+    jv[jss::Flags] = jvFlags;
     return deposit(account, jv, assets, seq, ter);
 }
 
@@ -465,23 +464,23 @@ AMM::withdraw(
         STAmount const saMaxEP{*maxEP, lptIssue_};
         saMaxEP.setJson(jv[jss::EPrice]);
     }
-    std::uint32_t jvflags = 0;
+    std::uint32_t jvFlags = 0;
     if (flags)
-        jvflags = *flags;
-    if (!(jvflags & tfWithdrawSubTx))
+        jvFlags = *flags;
+    if (!(jvFlags & tfWithdrawSubTx))
     {
         if (tokens && !asset1Out)
-            jvflags |= tfLPToken;
+            jvFlags |= tfLPToken;
         else if (asset1Out && asset2Out)
-            jvflags |= tfTwoAsset;
+            jvFlags |= tfTwoAsset;
         else if (tokens && asset1Out)
-            jvflags |= tfOneAssetLPToken;
+            jvFlags |= tfOneAssetLPToken;
         else if (asset1Out && maxEP)
-            jvflags |= tfLimitLPToken;
+            jvFlags |= tfLimitLPToken;
         else if (asset1Out)
-            jvflags |= tfSingleAsset;
+            jvFlags |= tfSingleAsset;
     }
-    jv[jss::Flags] = jvflags;
+    jv[jss::Flags] = jvFlags;
     return withdraw(account, jv, seq, assets, ter);
 }
 
