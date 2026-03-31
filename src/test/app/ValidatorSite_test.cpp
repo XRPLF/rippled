@@ -139,7 +139,7 @@ private:
             p->legacy("database_path", good.subdir().string());
             return p;
         }());
-        auto& trustedKeys = env.app().validators();
+        auto& trustedKeys = env.app().getValidators();
         env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;
@@ -155,7 +155,7 @@ private:
             std::vector<Validator> list;
             std::string uri;
             FetchListConfig const& cfg;
-            bool isRetry;
+            bool isRetry{};
         };
         std::vector<publisher> servers;
 
@@ -225,8 +225,10 @@ private:
 
             Json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
+            {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
                 myStatus[jss::last_refresh_message].asString().empty() != u.cfg.failFetch,
                 to_string(myStatus) + "\n" + sink.messages().str());
@@ -238,7 +240,7 @@ private:
                     sink.messages().str());
             }
 
-            if (u.cfg.expectedRefreshMin)
+            if (u.cfg.expectedRefreshMin != 0)
             {
                 BEAST_EXPECTS(
                     myStatus[jss::refresh_interval_min].asInt() == u.cfg.expectedRefreshMin,
@@ -307,8 +309,10 @@ private:
             auto const jv = sites->getJson();
             Json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
+            {
                 if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
                 myStatus[jss::last_refresh_message].asString().empty() != u.shouldFail,
                 to_string(myStatus));

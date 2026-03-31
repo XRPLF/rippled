@@ -35,8 +35,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
             RPC::inject_error(rpcACT_MALFORMED, jvResult);
             return std::nullopt;
         }
-        else if (
-            !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
+        if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(Json::Value::maxUInt))
         {

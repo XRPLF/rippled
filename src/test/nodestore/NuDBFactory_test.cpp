@@ -17,7 +17,7 @@ class NuDBFactory_test : public TestBase
 {
 private:
     // Helper function to create a Section with specified parameters
-    Section
+    static Section
     createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;

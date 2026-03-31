@@ -1,6 +1,8 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
+#include <algorithm>
+
 namespace xrpl {
 namespace PeerFinder {
 
@@ -51,7 +53,7 @@ Config::applyTuning()
 }
 
 void
-Config::onWrite(beast::PropertyStream::Map& map)
+Config::onWrite(beast::PropertyStream::Map& map) const
 {
     map["max_peers"] = maxPeers;
     map["out_peers"] = outPeers;
@@ -76,13 +78,12 @@ Config::makeConfig(
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
+    if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
     {
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
 
-        if (config.maxPeers < Tuning::minOutCount)
-            config.maxPeers = Tuning::minOutCount;
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::minOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
@@ -93,9 +94,13 @@ Config::makeConfig(
         // Calculate the largest number of inbound connections we could
         // take.
         if (config.maxPeers >= config.outPeers)
+        {
             config.inPeers = config.maxPeers - config.outPeers;
+        }
         else
+        {
             config.inPeers = 0;
+        }
     }
     else
     {

@@ -111,7 +111,7 @@ public:
     checkInvariants(TER const result, XRPAmount const fee);
 
 private:
-    TER
+    static TER
     failInvariantCheck(TER const result);
 
     template <std::size_t... Is>

@@ -52,7 +52,9 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
             pUrl.port = 443;
     }
     else
+    {
         throw std::runtime_error("Unsupported scheme: '" + pUrl.scheme + "'");
+    }
 }
 
 ValidatorSite::Site::Site(std::string uri)
@@ -61,7 +63,6 @@ ValidatorSite::Site::Site(std::string uri)
     , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestEndpoint{}
     , lastRequestSuccessful{false}
 {
 }
@@ -71,7 +72,7 @@ ValidatorSite::ValidatorSite(
     std::optional<beast::Journal> j,
     std::chrono::seconds timeout)
     : app_{app}
-    , j_{j ? *j : app_.logs().journal("ValidatorSite")}
+    , j_{j ? *j : app_.getJournal("ValidatorSite")}
     , timer_{app_.getIOContext()}
     , fetching_{false}
     , pending_{false}
@@ -100,7 +101,7 @@ ValidatorSite::~ValidatorSite()
 bool
 ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
 {
-    auto const sites = app_.validators().loadLists();
+    auto const sites = app_.getValidators().loadLists();
     return sites.empty() || load(sites, lock_sites);
 }
 
@@ -301,7 +302,9 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         // first, which will leave activeResource empty.
         auto const& site = sites_[siteIdx];
         if (site.activeResource)
+        {
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
+        }
         else
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
@@ -367,7 +370,7 @@ ValidatorSite::parseJsonResponse(
             body[jss::manifest].isString() && body.isMember(jss::version) &&
             body[jss::version].isInt();
         // Check the version-specific blob & signature fields
-        std::uint32_t version;
+        std::uint32_t version = 0;
         std::vector<ValidatorBlobInfo> blobs;
         if (valid)
         {
@@ -391,8 +394,15 @@ ValidatorSite::parseJsonResponse(
         "xrpl::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
-    auto const applyResult = app_.validators().applyListsAndBroadcast(
-        manifest, version, blobs, uri, hash, app_.overlay(), app_.getHashRouter(), app_.getOPs());
+    auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        manifest,
+        version,
+        blobs,
+        uri,
+        hash,
+        app_.getOverlay(),
+        app_.getHashRouter(),
+        app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
@@ -453,13 +463,13 @@ ValidatorSite::parseJsonResponse(
 
 std::shared_ptr<ValidatorSite::Site::Resource>
 ValidatorSite::processRedirect(
-    detail::response_type& res,
+    detail::response_type const& res,
     std::size_t siteIdx,
     std::lock_guard<std::mutex> const& sites_lock)
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
-    if (res.find(field::location) == res.end() || res[field::location].empty())
+    if (!res.contains(field::location) || res[field::location].empty())
     {
         JLOG(j_.warn()) << "Request for validator list at " << sites_[siteIdx].activeResource->uri
                         << " returned a redirect with no Location.";
@@ -496,7 +506,7 @@ void
 ValidatorSite::onSiteFetch(
     boost::system::error_code const& ec,
     endpoint_type const& endpoint,
-    detail::response_type&& res,
+    detail::response_type const& res,
     std::size_t siteIdx)
 {
     std::lock_guard lock_sites{sites_mutex_};
