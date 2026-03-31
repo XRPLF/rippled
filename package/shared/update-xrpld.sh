@@ -36,7 +36,7 @@ if command -v apt-get &>/dev/null; then
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrpld
   }
 elif command -v yum &>/dev/null; then
-  REPO=${REPO-stable}
+  REPO=${REPO:-stable}
   if [[ ! "$REPO" =~ ^(stable|unstable|nightly|develop)$ ]]; then
     echo "Invalid REPO value: ${REPO}" >&2
     exit 1
