@@ -175,7 +175,7 @@
 
 - Test context propagation:
   - Manually verify with 2+ node setup that trace IDs match across nodes
-  - Confirm parent-child span relationships are correct in Jaeger
+  - Confirm parent-child span relationships are correct in Tempo
 
 - Handle edge cases:
   - Missing trace context (older peers): create new root span

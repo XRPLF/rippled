@@ -10,7 +10,7 @@
 
 | Document                                                         | Relevance                                                                  |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [07-observability-backends.md](./07-observability-backends.md)   | Jaeger setup (§7.1), Grafana dashboards (§7.6), alerts (§7.6.3)            |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo setup (§7.1), Grafana dashboards (§7.6), alerts (§7.6.3)             |
 | [05-configuration-reference.md](./05-configuration-reference.md) | Collector config (§5.5), production config (§5.5.2), Docker Compose (§5.6) |
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 5 tasks (§6.6), definition of done (§6.11.5)                         |
 
@@ -49,7 +49,7 @@
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [debug, otlp/jaeger, spanmetrics]
+          exporters: [debug, otlp/tempo, spanmetrics]
         metrics:
           receivers: [spanmetrics]
           exporters: [prometheus]
@@ -198,10 +198,10 @@
 
 **What to do**:
 
-1. Start full Docker stack (Collector, Jaeger, Grafana, Prometheus)
+1. Start full Docker stack (Collector, Tempo, Grafana, Prometheus)
 2. Build rippled with `telemetry=ON`
 3. Run in standalone mode with telemetry enabled
-4. Generate RPC traffic and verify traces in Jaeger
+4. Generate RPC traffic and verify traces in Tempo
 5. Verify dashboards populate in Grafana
 6. Verify alerts trigger correctly
 7. Test telemetry OFF path (no regressions)
@@ -210,7 +210,7 @@
 **Verification Checklist**:
 
 - [ ] Docker stack starts without errors
-- [ ] Traces appear in Jaeger with correct hierarchy
+- [ ] Traces appear in Tempo with correct hierarchy
 - [ ] Grafana dashboards show metrics derived from spans
 - [ ] Prometheus scrapes spanmetrics successfully
 - [ ] Alerts can be triggered by simulated conditions

@@ -179,7 +179,7 @@
 >
 > **Downstream**: Phase 7 (MetricsRegistry uses these attributes for alerting context), Phase 10 (validation checks for these attributes).
 
-**Objective**: Add node-level health state to every `rpc.command.*` span so operators can correlate RPC behavior with node state in Jaeger/Tempo.
+**Objective**: Add node-level health state to every `rpc.command.*` span so operators can correlate RPC behavior with node state in Tempo.
 
 **What to do**:
 
@@ -195,7 +195,7 @@
 | `xrpl.node.amendment_blocked` | bool   | `context.app.getOPs().isAmendmentBlocked()` | `true`   |
 | `xrpl.node.server_state`      | string | `context.app.getOPs().strOperatingMode()`   | `"full"` |
 
-**Rationale**: When a node is amendment-blocked or in a degraded state, every RPC response is suspect. Tagging spans with this state enables Jaeger queries like:
+**Rationale**: When a node is amendment-blocked or in a degraded state, every RPC response is suspect. Tagging spans with this state enables Tempo TraceQL queries like:
 
 ```
 {name=~"rpc.command.*"} | xrpl.node.amendment_blocked = true
@@ -211,7 +211,7 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 
 - [ ] `rpc.command.server_info` spans carry `xrpl.node.amendment_blocked` and `xrpl.node.server_state` attributes
 - [ ] No measurable latency impact (attribute values are cached atomics, not computed per-call)
-- [ ] Attributes appear in Jaeger span detail view
+- [ ] Attributes appear in Tempo trace detail view
 
 ---
 
