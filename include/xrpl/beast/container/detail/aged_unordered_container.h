@@ -318,7 +318,9 @@ private:
         {
         }
 
-        config_t(config_t&& other, Allocator const& alloc)
+        config_t(
+            config_t&& other,
+            Allocator const& alloc)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             : ValueHash(std::move(other.hash_function()))
             , KeyValueEqual(std::move(other.key_eq()))
             , beast::detail::empty_base_optimization<ElementAllocator>(alloc)
@@ -774,7 +776,9 @@ public:
 
     aged_unordered_container(aged_unordered_container&& other);
 
-    aged_unordered_container(aged_unordered_container&& other, Allocator const& alloc);
+    aged_unordered_container(
+        aged_unordered_container&& other,
+        Allocator const& alloc);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     aged_unordered_container(std::initializer_list<value_type> init, clock_type& clock);
 
@@ -1838,7 +1842,9 @@ template <
     class KeyEqual,
     class Allocator>
 aged_unordered_container<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::
-    aged_unordered_container(aged_unordered_container&& other, Allocator const& alloc)
+    aged_unordered_container(
+        aged_unordered_container&& other,
+        Allocator const& alloc)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     : m_config(std::move(other.m_config), alloc)
     , m_buck(alloc)
     , m_cont(m_buck, std::cref(m_config.value_hash()), std::cref(m_config.key_value_equal()))

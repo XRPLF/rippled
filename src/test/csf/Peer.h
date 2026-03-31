@@ -501,16 +501,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value const& consensusJson)
     {
         onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -520,7 +514,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        Json::Value const& consensusJson,
         bool const validating)
     {
         schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {

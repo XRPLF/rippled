@@ -173,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status;
+        PublisherStatus status = PublisherStatus::unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
