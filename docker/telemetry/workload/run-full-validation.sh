@@ -5,11 +5,9 @@
 #   1. Start the observability stack (OTel Collector, Jaeger, Tempo, Prometheus, Loki, Grafana)
 #   2. Start a multi-node rippled cluster with full telemetry enabled
 #   3. Wait for consensus
-#   4. Run the RPC load generator
-#   5. Run the transaction submitter
-#   6. Wait for telemetry data to propagate
-#   7. Run the telemetry validation suite
-#   8. (Optional) Run the performance benchmark
+#   4. Run workload orchestrator (RPC load, TX submission, propagation wait)
+#   5. Run the telemetry validation suite
+#   6. (Optional) Run the performance benchmark
 #
 # Usage:
 #   ./run-full-validation.sh --xrpld /path/to/xrpld
@@ -52,6 +50,7 @@ TX_TPS=5
 TX_DURATION=120
 WITH_BENCHMARK=false
 SKIP_LOKI=false
+WORKLOAD_PROFILE="full-validation"
 REPORT_DIR="$WORKDIR/reports"
 
 GENESIS_ACCOUNT="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
@@ -70,6 +69,7 @@ usage() {
     echo "  --rpc-duration SECS  RPC load duration (default: 120)"
     echo "  --tx-tps TPS         Transaction submit rate (default: 5)"
     echo "  --tx-duration SECS   Transaction submit duration (default: 120)"
+    echo "  --profile NAME       Workload profile (default: full-validation)"
     echo "  --with-benchmark     Also run performance benchmarks"
     echo "  --skip-loki          Skip Loki log-trace correlation checks"
     echo "  --cleanup            Tear down everything and exit"
@@ -85,6 +85,7 @@ while [ $# -gt 0 ]; do
         --rpc-duration)  RPC_DURATION="$2"; shift 2 ;;
         --tx-tps)        TX_TPS="$2"; shift 2 ;;
         --tx-duration)   TX_DURATION="$2"; shift 2 ;;
+        --profile)       WORKLOAD_PROFILE="$2"; shift 2 ;;
         --with-benchmark) WITH_BENCHMARK=true; shift ;;
         --skip-loki)     SKIP_LOKI=true; shift ;;
         --cleanup)       # Cleanup mode
@@ -311,48 +312,28 @@ for attempt in $(seq 1 60); do
 done
 
 # ---------------------------------------------------------------------------
-# Step 4: Run RPC load generator
+# Step 4: Run workload orchestrator
 # ---------------------------------------------------------------------------
-log "Step 4: Running RPC load generator (${RPC_RATE} RPS for ${RPC_DURATION}s)..."
+log "Step 4: Running workload orchestrator (profile: $WORKLOAD_PROFILE)..."
 
 WS_ENDPOINTS=""
 for i in $(seq 1 "$NUM_NODES"); do
     WS_ENDPOINTS="$WS_ENDPOINTS ws://localhost:$((WS_PORT_BASE + i - 1))"
 done
 
-python3 "$SCRIPT_DIR/rpc_load_generator.py" \
+python3 "$SCRIPT_DIR/workload_orchestrator.py" \
+    --profile "$WORKLOAD_PROFILE" \
     --endpoints $WS_ENDPOINTS \
-    --rate "$RPC_RATE" \
-    --duration "$RPC_DURATION" \
-    --output "$REPORT_DIR/rpc-load-results.json" || \
-    warn "RPC load generator returned non-zero exit"
+    --report "$REPORT_DIR/workload-report.json" \
+    --report-dir "$REPORT_DIR" || \
+    warn "Workload orchestrator returned non-zero exit"
 
-ok "RPC load generation complete."
-
-# ---------------------------------------------------------------------------
-# Step 5: Run transaction submitter
-# ---------------------------------------------------------------------------
-log "Step 5: Running transaction submitter (${TX_TPS} TPS for ${TX_DURATION}s)..."
-
-python3 "$SCRIPT_DIR/tx_submitter.py" \
-    --endpoint "ws://localhost:$WS_PORT_BASE" \
-    --tps "$TX_TPS" \
-    --duration "$TX_DURATION" \
-    --output "$REPORT_DIR/tx-submit-results.json" || \
-    warn "Transaction submitter returned non-zero exit"
-
-ok "Transaction submission complete."
+ok "Workload orchestration complete."
 
 # ---------------------------------------------------------------------------
-# Step 6: Wait for telemetry propagation
+# Step 5: Run telemetry validation suite
 # ---------------------------------------------------------------------------
-log "Step 6: Waiting 60s for telemetry data to propagate..."
-sleep 60
-
-# ---------------------------------------------------------------------------
-# Step 7: Run telemetry validation suite
-# ---------------------------------------------------------------------------
-log "Step 7: Running telemetry validation suite..."
+log "Step 5: Running telemetry validation suite..."
 
 VALIDATION_ARGS="--report $REPORT_DIR/validation-report.json"
 if [ "$SKIP_LOKI" = true ]; then
@@ -369,10 +350,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 8: (Optional) Run benchmark
+# Step 6: (Optional) Run benchmark
 # ---------------------------------------------------------------------------
 if [ "$WITH_BENCHMARK" = true ]; then
-    log "Step 8: Running performance benchmark..."
+    log "Step 6: Running performance benchmark..."
     bash "$SCRIPT_DIR/benchmark.sh" \
         --xrpld "$XRPLD" \
         --duration 120 \

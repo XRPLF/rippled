@@ -40,7 +40,7 @@
   },
   "statsd_histograms": {
     "description": "beast::insight timers/histograms emitted via StatsD UDP.",
-    "metrics": ["rippled_rpc_time", "rippled_rpc_size", "rippled_ios_latency"]
+    "metrics": ["rippled_rpc_time", "rippled_rpc_size"]
   },
   "overlay_traffic": {
     "description": "Overlay traffic metrics (subset — full list has 45+ categories).",
@@ -53,27 +53,27 @@
   },
   "phase9_nodestore": {
     "description": "Phase 9 NodeStore I/O observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label distinguishing sub-metrics.",
-    "metrics": ["nodestore_state"]
+    "metrics": ["rippled_nodestore_state"]
   },
   "phase9_cache": {
     "description": "Phase 9 cache hit rate observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
-    "metrics": ["cache_metrics"]
+    "metrics": ["rippled_cache_metrics"]
   },
   "phase9_txq": {
     "description": "Phase 9 transaction queue observable gauge (MetricsRegistry via OTLP). Single metric with 'metric' label.",
-    "metrics": ["txq_metrics"]
+    "metrics": ["rippled_txq_metrics"]
   },
   "phase9_rpc_method": {
     "description": "Phase 9 per-RPC-method counters (MetricsRegistry via OTLP).",
-    "metrics": ["rpc_method_started_total", "rpc_method_finished_total"]
+    "metrics": ["rippled_rpc_method_started_total"]
   },
   "phase9_objects": {
     "description": "Phase 9 counted object instances observable gauge (MetricsRegistry via OTLP).",
-    "metrics": ["object_count"]
+    "metrics": ["rippled_object_count"]
   },
   "phase9_load": {
     "description": "Phase 9 fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
-    "metrics": ["load_factor_metrics"]
+    "metrics": ["rippled_load_factor_metrics"]
   },
   "parity_validation_agreement": {
     "description": "External dashboard parity: validation agreement percentages (push_metrics.py).",

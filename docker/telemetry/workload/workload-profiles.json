@@ -1,0 +1,98 @@
+{
+  "profiles": {
+    "full-validation": {
+      "description": "Full 18-dashboard coverage with burst/idle/plateau patterns",
+      "phases": [
+        {
+          "name": "warmup",
+          "description": "Low load to populate baseline gauges and node health metrics",
+          "duration_sec": 30,
+          "rpc": {
+            "rate": 5,
+            "weights": { "server_info": 50, "fee": 30, "ledger": 20 }
+          },
+          "tx": null
+        },
+        {
+          "name": "steady-state",
+          "description": "Medium sustained load — plateau data for all dashboards",
+          "duration_sec": 60,
+          "rpc": { "rate": 30 },
+          "tx": { "tps": 3 }
+        },
+        {
+          "name": "rpc-burst",
+          "description": "Heavy RPC to saturate job queue and spike latency",
+          "duration_sec": 30,
+          "rpc": { "rate": 100 },
+          "tx": null
+        },
+        {
+          "name": "tx-flood",
+          "description": "High TX rate for fee escalation and TxQ pressure",
+          "duration_sec": 30,
+          "rpc": { "rate": 5, "weights": { "server_info": 50, "fee": 50 } },
+          "tx": {
+            "tps": 20,
+            "weights": { "Payment": 70, "OfferCreate": 20, "TrustSet": 10 }
+          }
+        },
+        {
+          "name": "mixed-peak",
+          "description": "Realistic peak load — consensus and ledger ops under stress",
+          "duration_sec": 60,
+          "rpc": { "rate": 50 },
+          "tx": { "tps": 10 }
+        },
+        {
+          "name": "cooldown",
+          "description": "Low load for recovery metrics and state transition data",
+          "duration_sec": 30,
+          "rpc": { "rate": 5, "weights": { "server_info": 80, "fee": 20 } },
+          "tx": null
+        }
+      ],
+      "propagation_wait_sec": 60
+    },
+    "quick-smoke": {
+      "description": "Fast smoke test — minimal data for CI quick checks",
+      "phases": [
+        {
+          "name": "smoke",
+          "description": "Single phase covering all generator types",
+          "duration_sec": 30,
+          "rpc": { "rate": 20 },
+          "tx": { "tps": 3 }
+        }
+      ],
+      "propagation_wait_sec": 30
+    },
+    "stress": {
+      "description": "Heavy sustained load for performance benchmarking",
+      "phases": [
+        {
+          "name": "ramp-up",
+          "description": "Gradually increasing load",
+          "duration_sec": 30,
+          "rpc": { "rate": 20 },
+          "tx": { "tps": 5 }
+        },
+        {
+          "name": "peak",
+          "description": "Maximum sustained load",
+          "duration_sec": 120,
+          "rpc": { "rate": 150 },
+          "tx": { "tps": 25 }
+        },
+        {
+          "name": "sustain",
+          "description": "Continued high load for stability check",
+          "duration_sec": 60,
+          "rpc": { "rate": 100 },
+          "tx": { "tps": 15 }
+        }
+      ],
+      "propagation_wait_sec": 60
+    }
+  }
+}

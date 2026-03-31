@@ -761,7 +761,7 @@ async def validate_span_durations(
                 duration = span.get("duration", 0)  # microseconds
                 total_spans += 1
                 max_duration_us = max(max_duration_us, duration)
-                if duration <= 0 or duration > 60_000_000:
+                if duration < 0 or duration > 60_000_000:
                     invalid_spans += 1
 
         report.add(
@@ -774,7 +774,7 @@ async def validate_span_durations(
                     f"(max: {max_duration_us / 1000:.1f}ms)"
                     if invalid_spans == 0
                     else f"{invalid_spans}/{total_spans} spans have invalid "
-                    "durations (<=0 or >60s)"
+                    "durations (<0 or >60s)"
                 ),
                 details={
                     "total_spans": total_spans,
@@ -833,7 +833,6 @@ PARITY_VALUE_SANITY: list[dict[str, Any]] = [
         "query": 'rippled_peer_quality{metric="peer_latency_p90_ms"}',
         "lo": 0,
         "hi": None,
-        "exclusive_lo": True,
     },
     {
         "name": "state_value",

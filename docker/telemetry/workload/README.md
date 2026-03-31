@@ -19,13 +19,12 @@ docker/telemetry/workload/run-full-validation.sh --cleanup
 
 ## Architecture
 
-The validation suite runs a 2-node rippled cluster as local processes alongside
-a Docker Compose telemetry stack. The 2-node setup is sufficient for exercising
-consensus, peer-to-peer spans (proposals, validations), and all metric pipelines,
-while keeping CI resource usage manageable.
+The validation suite runs a multi-node rippled cluster as local processes alongside
+a Docker Compose telemetry stack. The cluster exercises consensus, peer-to-peer
+spans (proposals, validations), and all metric pipelines.
 
 ```
-run-full-validation.sh (orchestrator)
+run-full-validation.sh (shell orchestrator)
   |
   |-- docker-compose.workload.yaml
   |     |-- otel-collector (traces via OTLP + StatsD receiver)
@@ -36,13 +35,15 @@ run-full-validation.sh (orchestrator)
   |-- generate-validator-keys.sh
   |     -> validator-keys.json, validators.txt
   |
-  |-- 2x xrpld nodes (local processes, full telemetry)
+  |-- Nx xrpld nodes (local processes, full telemetry)
   |     - Each node: [telemetry] enabled=1, trace_rpc/consensus/transactions
   |     - [signing_support] true (server-side signing for tx_submitter)
   |     - Peer discovery via [ips] (not [ips_fixed]) for active peer counts
   |
-  |-- rpc_load_generator.py (WebSocket RPC traffic)
-  |-- tx_submitter.py (transaction diversity)
+  |-- workload_orchestrator.py (phased load execution)
+  |     |-- rpc_load_generator.py (WebSocket RPC traffic)
+  |     |-- tx_submitter.py (transaction diversity)
+  |     -> workload-report.json + per-phase reports
   |
   |-- validate_telemetry.py (pass/fail checks)
   |     -> validation-report.json
@@ -51,6 +52,58 @@ run-full-validation.sh (orchestrator)
         -> benchmark-report-*.md
 ```
 
+## Workload Profiles
+
+The workload orchestrator (`workload_orchestrator.py`) reads named profiles
+from `workload-profiles.json` and executes sequential load phases. Within
+each phase, the RPC generator and TX submitter run concurrently.
+
+### Available Profiles
+
+| Profile           | Phases | Duration                     | Purpose                                                     |
+| ----------------- | ------ | ---------------------------- | ----------------------------------------------------------- |
+| `full-validation` | 6      | ~5 min + 1 min propagation   | Full 18-dashboard coverage with burst/idle/plateau patterns |
+| `quick-smoke`     | 1      | ~30s + 30s propagation       | Fast CI smoke test                                          |
+| `stress`          | 3      | ~3.5 min + 1 min propagation | Heavy sustained load for benchmarking                       |
+
+### full-validation Phases
+
+| Phase        | RPC Rate | TX TPS | Duration | Dashboard Coverage                              |
+| ------------ | -------- | ------ | -------- | ----------------------------------------------- |
+| warmup       | 5 RPS    | —      | 30s      | Node Health, Validator Health (baseline gauges) |
+| steady-state | 30 RPS   | 3 TPS  | 60s      | All dashboards (plateau data)                   |
+| rpc-burst    | 100 RPS  | —      | 30s      | Job Queue, RPC Performance (latency spikes)     |
+| tx-flood     | 5 RPS    | 20 TPS | 30s      | Fee Market & TxQ, Transaction Overview          |
+| mixed-peak   | 50 RPS   | 10 TPS | 60s      | Consensus Health, Ledger Operations             |
+| cooldown     | 5 RPS    | —      | 30s      | Recovery patterns, state transitions            |
+
+### Custom Profiles
+
+Add profiles to `workload-profiles.json`:
+
+```json
+{
+  "profiles": {
+    "my-custom": {
+      "description": "Custom profile for specific testing",
+      "phases": [
+        {
+          "name": "phase-name",
+          "description": "What this phase exercises",
+          "duration_sec": 60,
+          "rpc": { "rate": 50, "weights": { "server_info": 80, "fee": 20 } },
+          "tx": { "tps": 5, "weights": { "Payment": 100 } }
+        }
+      ],
+      "propagation_wait_sec": 30
+    }
+  }
+}
+```
+
+Set `"rpc"` or `"tx"` to `null` to skip that generator for a phase.
+Custom `"weights"` override the default command/transaction distribution.
+
 ## Tools Reference
 
 ### run-full-validation.sh
@@ -58,19 +111,36 @@ run-full-validation.sh (orchestrator)
 Orchestrates the complete validation pipeline. Starts the telemetry stack, starts a multi-node rippled cluster, generates load, and validates the results.
 
 ```bash
-# Full validation with defaults
+# Full validation with defaults (uses full-validation profile)
 ./run-full-validation.sh --xrpld /path/to/xrpld
 
-# Custom load parameters
-./run-full-validation.sh --xrpld /path/to/xrpld \
-    --rpc-rate 100 --rpc-duration 300 \
-    --tx-tps 10 --tx-duration 300
+# Quick smoke test
+./run-full-validation.sh --xrpld /path/to/xrpld --profile quick-smoke
 
-# Include performance benchmarks
-./run-full-validation.sh --xrpld /path/to/xrpld --with-benchmark
+# Stress test with benchmarks
+./run-full-validation.sh --xrpld /path/to/xrpld --profile stress --with-benchmark
 
 # Skip Loki checks (if Phase 8 not deployed)
 ./run-full-validation.sh --xrpld /path/to/xrpld --skip-loki
+```
+
+### workload_orchestrator.py
+
+Reads a named profile from `workload-profiles.json` and executes sequential
+load phases. Within each phase, `rpc_load_generator.py` and `tx_submitter.py`
+run as concurrent subprocesses. Produces per-phase reports and a combined
+summary.
+
+```bash
+# Run with a specific profile
+python3 workload_orchestrator.py --profile full-validation
+
+# Multiple endpoints
+python3 workload_orchestrator.py --profile full-validation \
+    --endpoints ws://localhost:6006 ws://localhost:6007
+
+# Save combined report
+python3 workload_orchestrator.py --profile stress --report /tmp/report.json
 ```
 
 ### rpc_load_generator.py
@@ -203,12 +273,13 @@ The validation runs as a GitHub Actions workflow (`.github/workflows/telemetry-v
 
 ## Configuration Files
 
-| File                    | Purpose                                                       |
-| ----------------------- | ------------------------------------------------------------- |
-| `expected_spans.json`   | Span inventory (names, attributes, hierarchies, config flags) |
-| `expected_metrics.json` | Metric inventory — every listed metric must be present        |
-| `test_accounts.json`    | Test account roles (keys generated at runtime)                |
-| `requirements.txt`      | Python dependencies                                           |
+| File                     | Purpose                                                       |
+| ------------------------ | ------------------------------------------------------------- |
+| `workload-profiles.json` | Named load profiles with phase definitions                    |
+| `expected_spans.json`    | Span inventory (names, attributes, hierarchies, config flags) |
+| `expected_metrics.json`  | Metric inventory — every listed metric must be present        |
+| `test_accounts.json`     | Test account roles (keys generated at runtime)                |
+| `requirements.txt`       | Python dependencies                                           |
 
 ### expected_metrics.json Format
 
