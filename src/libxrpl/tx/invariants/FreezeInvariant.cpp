@@ -271,12 +271,7 @@ TransfersNotFrozen::validateFrozenState(
         "xrpl::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
-    if (enforce)
-    {
-        return false;
-    }
-
-    return true;
+    return !enforce;
 }
 
 }  // namespace xrpl

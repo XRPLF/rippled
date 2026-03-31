@@ -23,7 +23,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
     // Helper function that returns new nft id for an account and create
     // specified number of sell offers
-    uint256
+    static uint256
     createNftAndOffers(
         test::jtx::Env& env,
         test::jtx::Account const& owner,
@@ -59,7 +59,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
         noisy = true,
     };
 
-    void
+    static void
     printNFTPages(test::jtx::Env& env, Volume vol)
     {
         Json::Value jvParams;

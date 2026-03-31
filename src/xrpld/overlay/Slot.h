@@ -536,14 +536,14 @@ class Slots final
 
 public:
     /**
-     * @param logs reference to the logger
+     * @param registry The service registry.
      * @param handler Squelch/unsquelch implementation
      * @param config reference to the global config
      */
-    Slots(Logs& logs, SquelchHandler const& handler, Config const& config)
+    Slots(ServiceRegistry& registry, SquelchHandler const& handler, Config const& config)
         : handler_(handler)
-        , logs_(logs)
-        , journal_(logs.journal("Slots"))
+        , logs_(registry.getLogs())
+        , journal_(registry.getJournal("Slots"))
         , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
     {
