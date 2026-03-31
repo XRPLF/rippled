@@ -230,7 +230,8 @@ public:
 
         {
             // Similar test as above, but for negative values
-            XRPAmount const big(minXRP);
+            XRPAmount big(minXRP);  // NOLINT(misc-const-correctness): const breaks overflow check
+                                    // at end of this scope
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, false));
@@ -239,7 +240,6 @@ public:
             // naively, and check that it gives the correct answer
             BEAST_EXPECT(mulRatio(big, 3, 4, false).value() == (big.value() / 4) * 3);
             BEAST_EXPECT(mulRatio(big, 3, 4, true).value() == (big.value() / 4) * 3);
-            // NOLINTNEXTLINE(clang-diagnostic-integer-overflow)
             BEAST_EXPECT((big.value() * 3) / 4 != (big.value() / 4) * 3);
         }
 
