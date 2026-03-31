@@ -998,7 +998,7 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | ------------------------------------- | ------- | -------------------------------- | --------------------- |
 | `rippled_ledgers_closed_total`        | Counter | Ledgers closed by consensus      | RCLConsensus.cpp      |
 | `rippled_validations_sent_total`      | Counter | Validations sent                 | RCLConsensus.cpp      |
-| `rippled_validations_checked_total`   | Counter | Network validations observed     | LedgerMaster.cpp      |
+| `rippled_validations_checked_total`   | Counter | Network validations observed     | NetworkOPs.cpp        |
 | `rippled_validation_agreements_total` | Counter | Cumulative validation agreements | ValidationTracker.cpp |
 | `rippled_validation_missed_total`     | Counter | Cumulative validation misses     | ValidationTracker.cpp |
 | `rippled_state_changes_total`         | Counter | Operating mode transitions       | NetworkOPs.cpp        |

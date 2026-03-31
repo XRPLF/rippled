@@ -670,4 +670,66 @@ flowchart LR
 
 ---
 
+## Slide 11: External Dashboard Parity (Phase 7+)
+
+### Bridging Community Monitoring into Native OTel
+
+The community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard) provides 86 metrics for validator operators. We integrated the 29 missing metrics natively into the OTel pipeline.
+
+### New Metric Categories
+
+```mermaid
+graph LR
+    subgraph "New Observable Gauges"
+        VH["Validator Health<br/>amendment_blocked, UNL expiry,<br/>quorum"]
+        PQ["Peer Quality<br/>P90 latency, insane peers,<br/>version awareness"]
+        LE["Ledger Economy<br/>fees, reserves, tx rate,<br/>ledger age"]
+        ST["State Tracking<br/>state value 0-6,<br/>time in state"]
+        VA["Validation Agreement<br/>1h/24h agreement %,<br/>agreements, misses"]
+    end
+
+    subgraph "Counters"
+        C1["ledgers_closed_total"]
+        C2["validations_sent_total"]
+        C3["state_changes_total"]
+    end
+
+    style VH fill:#1565c0,color:#fff
+    style PQ fill:#2e7d32,color:#fff
+    style LE fill:#e65100,color:#fff
+    style ST fill:#6a1b9a,color:#fff
+    style VA fill:#c62828,color:#fff
+    style C1 fill:#37474f,color:#fff
+    style C2 fill:#37474f,color:#fff
+    style C3 fill:#37474f,color:#fff
+```
+
+### ValidationTracker — Agreement Computation
+
+```mermaid
+sequenceDiagram
+    participant C as RCLConsensus
+    participant VT as ValidationTracker
+    participant MR as MetricsRegistry
+    participant P as Prometheus
+
+    C->>VT: recordOurValidation(hash, seq)
+    Note over VT: Stores pending event
+    C->>VT: recordNetworkValidation(hash, seq)
+    Note over VT: Marks network validated
+    MR->>VT: reconcile() [every 10s]
+    Note over VT: After 8s grace period:<br/>both validated → agreed<br/>only one → missed<br/>5min late repair window
+    MR->>P: Export agreement_pct_1h/24h
+```
+
+### New Grafana Dashboards
+
+| Dashboard        | Key Panels                                          |
+| ---------------- | --------------------------------------------------- |
+| Validator Health | Agreement %, amendment blocked, quorum, state value |
+| Peer Quality     | P90 latency, version awareness, upgrade recommended |
+| Ledger Economy   | Base fee, reserves, ledger age, transaction rate    |
+
+---
+
 _End of Presentation_
