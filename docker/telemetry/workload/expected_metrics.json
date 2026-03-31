@@ -75,8 +75,52 @@
     "description": "Phase 9 fee escalation and load factor observable gauge (MetricsRegistry via OTLP).",
     "metrics": ["load_factor_metrics"]
   },
+  "parity_validation_agreement": {
+    "description": "External dashboard parity: validation agreement percentages (push_metrics.py).",
+    "metrics": [
+      "rippled_validation_agreement{metric=\"agreement_pct_1h\"}",
+      "rippled_validation_agreement{metric=\"agreement_pct_24h\"}"
+    ]
+  },
+  "parity_validator_health": {
+    "description": "External dashboard parity: validator health indicators (push_metrics.py).",
+    "metrics": [
+      "rippled_validator_health{metric=\"amendment_blocked\"}",
+      "rippled_validator_health{metric=\"unl_expiry_days\"}"
+    ]
+  },
+  "parity_peer_quality": {
+    "description": "External dashboard parity: peer quality metrics (push_metrics.py).",
+    "metrics": [
+      "rippled_peer_quality{metric=\"peer_latency_p90_ms\"}",
+      "rippled_peer_quality{metric=\"peers_insane_count\"}"
+    ]
+  },
+  "parity_ledger_economy": {
+    "description": "External dashboard parity: ledger economy metrics (push_metrics.py).",
+    "metrics": [
+      "rippled_ledger_economy{metric=\"base_fee_xrp\"}",
+      "rippled_ledger_economy{metric=\"transaction_rate\"}"
+    ]
+  },
+  "parity_state_tracking": {
+    "description": "External dashboard parity: server state tracking (push_metrics.py).",
+    "metrics": ["rippled_state_tracking{metric=\"state_value\"}"]
+  },
+  "parity_counters": {
+    "description": "External dashboard parity: monotonic counters (push_metrics.py).",
+    "metrics": [
+      "rippled_ledgers_closed_total",
+      "rippled_validations_sent_total",
+      "rippled_state_changes_total"
+    ]
+  },
+  "parity_storage": {
+    "description": "External dashboard parity: storage detail metrics (push_metrics.py).",
+    "metrics": ["rippled_storage_detail{metric=\"nudb_bytes\"}"]
+  },
   "grafana_dashboards": {
-    "description": "All 10 Grafana dashboards that must render data.",
+    "description": "All 13 Grafana dashboards that must render data.",
     "uids": [
       "rippled-rpc-perf",
       "rippled-transactions",
@@ -87,7 +131,10 @@
       "rippled-system-network",
       "rippled-system-rpc",
       "rippled-system-overlay-detail",
-      "rippled-system-ledger-sync"
+      "rippled-system-ledger-sync",
+      "rippled-validator-health",
+      "rippled-peer-quality",
+      "system-node-health"
     ]
   }
 }

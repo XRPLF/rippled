@@ -9,7 +9,10 @@ Validation categories:
   1. Span validation     — All 16+ span types present with required attributes
   2. Metric validation   — SpanMetrics, StatsD, and Phase 9 metrics are non-zero
   3. Log-trace correlation — Loki logs contain trace_id/span_id fields
-  4. Dashboard validation — All 10 Grafana dashboards render data
+  4. Dashboard validation — All 13 Grafana dashboards render data
+  5. External parity     — Span attrs, metric existence, and value sanity for
+                           external dashboard parity (validator-health,
+                           peer-quality, system-node-health)
 
 Usage:
     python3 validate_telemetry.py --report /tmp/validation-report.json
@@ -792,6 +795,227 @@ async def validate_span_durations(
 
 
 # ---------------------------------------------------------------------------
+# External Dashboard Parity Validation
+# ---------------------------------------------------------------------------
+
+# Span attributes that external dashboards (validator-health, peer-quality,
+# system-node-health) depend on.  Each entry maps a span name to the
+# attributes that must be present for external dashboard panels to render.
+PARITY_SPAN_ATTRS: list[dict[str, str]] = [
+    {"span": "rpc.command.server_info", "attr": "xrpl.node.amendment_blocked"},
+    {"span": "rpc.command.server_info", "attr": "xrpl.node.server_state"},
+    {"span": "tx.receive", "attr": "xrpl.peer.version"},
+    {"span": "consensus.validation.send", "attr": "xrpl.validation.ledger_hash"},
+    {"span": "consensus.validation.send", "attr": "xrpl.validation.full"},
+    {"span": "peer.validation.receive", "attr": "xrpl.peer.validation.ledger_hash"},
+    {"span": "consensus.accept", "attr": "xrpl.consensus.validation_quorum"},
+    {"span": "consensus.accept", "attr": "xrpl.consensus.proposers_validated"},
+]
+
+# Value sanity bounds for external-parity metrics.  Each entry specifies a
+# Prometheus query and the acceptable range [lo, hi] for the returned value.
+PARITY_VALUE_SANITY: list[dict[str, Any]] = [
+    {
+        "name": "validation_agreement_pct_1h",
+        "query": 'rippled_validation_agreement{metric="agreement_pct_1h"}',
+        "lo": 0,
+        "hi": 100,
+    },
+    {
+        "name": "unl_expiry_days",
+        "query": 'rippled_validator_health{metric="unl_expiry_days"}',
+        "lo": 0,
+        "hi": None,
+        "exclusive_lo": True,
+    },
+    {
+        "name": "peer_latency_p90_ms",
+        "query": 'rippled_peer_quality{metric="peer_latency_p90_ms"}',
+        "lo": 0,
+        "hi": None,
+        "exclusive_lo": True,
+    },
+    {
+        "name": "state_value",
+        "query": 'rippled_state_tracking{metric="state_value"}',
+        "lo": 0,
+        "hi": 7,
+    },
+]
+
+
+async def validate_parity_span_attrs(
+    session: aiohttp.ClientSession,
+    jaeger_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate span attributes required by external dashboard panels.
+
+    For each (span, attribute) pair in PARITY_SPAN_ATTRS, queries Jaeger
+    for the span and checks that the attribute key exists on at least one
+    span in the returned traces.
+
+    Args:
+        session:    aiohttp client session.
+        jaeger_url: Base URL for Jaeger API.
+        report:     ValidationReport to accumulate results.
+    """
+    logger.info("--- External Parity: Span Attribute Checks ---")
+
+    for entry in PARITY_SPAN_ATTRS:
+        span_name = entry["span"]
+        attr_name = entry["attr"]
+        check_name = f"parity.span_attr.{span_name}.{attr_name}"
+
+        try:
+            params = {
+                "service": "rippled",
+                "operation": span_name,
+                "limit": 5,
+                "lookback": "1h",
+            }
+            async with session.get(f"{jaeger_url}/api/traces", params=params) as resp:
+                data = await resp.json()
+                traces = data.get("data", [])
+
+            if not traces:
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="parity",
+                        passed=False,
+                        message=(
+                            f"{span_name}: no traces found, "
+                            f"cannot verify attr {attr_name}"
+                        ),
+                    )
+                )
+                continue
+
+            # Search all spans across returned traces for the attribute.
+            found = False
+            for trace in traces:
+                for span in trace.get("spans", []):
+                    for tag in span.get("tags", []):
+                        if tag.get("key") == attr_name:
+                            found = True
+                            break
+                    if found:
+                        break
+                if found:
+                    break
+
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=found,
+                    message=(
+                        f"{span_name}: attribute '{attr_name}' present"
+                        if found
+                        else f"{span_name}: attribute '{attr_name}' missing"
+                    ),
+                )
+            )
+        except Exception as exc:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=False,
+                    message=f"{span_name}: attr check failed ({exc})",
+                )
+            )
+
+
+async def validate_parity_value_sanity(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Validate that external-parity metric values fall within sane bounds.
+
+    For each entry in PARITY_VALUE_SANITY, queries the current value from
+    Prometheus and checks it against the specified [lo, hi] range.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- External Parity: Value Sanity Checks ---")
+
+    for entry in PARITY_VALUE_SANITY:
+        name = entry["name"]
+        query = entry["query"]
+        lo = entry["lo"]
+        hi = entry["hi"]
+        exclusive_lo = entry.get("exclusive_lo", False)
+        check_name = f"parity.value_sanity.{name}"
+
+        try:
+            params = {"query": query}
+            async with session.get(
+                f"{prometheus_url}/api/v1/query", params=params
+            ) as resp:
+                data = await resp.json()
+                results = data.get("data", {}).get("result", [])
+
+            if not results:
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="parity",
+                        passed=False,
+                        message=f"{name}: no data returned from Prometheus",
+                    )
+                )
+                continue
+
+            # Use the first result's value.
+            value = float(results[0]["value"][1])
+
+            # Check bounds.
+            in_range = True
+            if exclusive_lo:
+                in_range = in_range and (value > lo)
+            else:
+                in_range = in_range and (value >= lo)
+            if hi is not None:
+                in_range = in_range and (value <= hi)
+
+            # Build human-readable bound description.
+            lo_op = ">" if exclusive_lo else ">="
+            bound_desc = f"{lo_op} {lo}"
+            if hi is not None:
+                bound_desc += f" and <= {hi}"
+
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=in_range,
+                    message=(
+                        f"{name}: value {value} is within bounds ({bound_desc})"
+                        if in_range
+                        else f"{name}: value {value} out of bounds "
+                        f"(expected {bound_desc})"
+                    ),
+                    details={"value": value, "lo": lo, "hi": hi},
+                )
+            )
+        except Exception as exc:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="parity",
+                    passed=False,
+                    message=f"{name}: sanity check failed ({exc})",
+                )
+            )
+
+
+# ---------------------------------------------------------------------------
 # Main validation orchestrator
 # ---------------------------------------------------------------------------
 
@@ -825,6 +1049,8 @@ async def run_validation(
         if not skip_loki:
             await validate_log_trace_correlation(session, loki_url, jaeger_url, report)
         await validate_dashboards(session, grafana_url, report)
+        await validate_parity_span_attrs(session, jaeger_url, report)
+        await validate_parity_value_sanity(session, prometheus_url, report)
 
     report.end_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     return report
