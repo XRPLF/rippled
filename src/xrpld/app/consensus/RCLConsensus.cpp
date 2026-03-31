@@ -536,6 +536,10 @@ RCLConsensus::Adaptor::doAccept(
     XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", proposing);
     XRPL_TRACE_SET_ATTR(
         "xrpl.consensus.round_time_ms", static_cast<int64_t>(result.roundTime.read().count()));
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.validation_quorum", static_cast<int64_t>(app_.getValidators().quorum()));
+    XRPL_TRACE_SET_ATTR(
+        "xrpl.consensus.proposers_validated", static_cast<int64_t>(result.proposers));
     // Parent ledger's close time — enables computing close-time deltas across
     // consecutive rounds without correlating separate spans.
     XRPL_TRACE_SET_ATTR(
@@ -885,6 +889,8 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 #endif
     XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq", static_cast<int64_t>(ledger.seq()));
     XRPL_TRACE_SET_ATTR("xrpl.consensus.proposing", proposing);
+    XRPL_TRACE_SET_ATTR("xrpl.validation.ledger_hash", to_string(ledger.id()).c_str());
+    XRPL_TRACE_SET_ATTR("xrpl.validation.full", proposing);
 
     using namespace std::chrono_literals;
 
