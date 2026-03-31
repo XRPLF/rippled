@@ -78,7 +78,7 @@ jobs:
         id: run_clang_tidy
         continue-on-error: true
         env:
-          TARGETS: ${{ inputs.files != '' && inputs.files || 'src tests' }}
+          TARGETS: ${{ inputs.files != '' && inputs.files || '^(?!.*src/tests/libxrpl/protocol_autogen/).*(/src/|/tests/).*\.cpp$' }}
         run: |
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" ${TARGETS} 2>&1 | tee clang-tidy-output.txt
 

@@ -270,14 +270,14 @@ Before running clang-tidy, you must build the project to generate required files
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build src include tests
+run-clang-tidy -p build '^(?!.*src/tests/libxrpl/protocol_autogen/).*(/src/|/tests/).*\.cpp$'
 ```
 
 This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
 If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
 
 ```
-run-clang-tidy -p build -fix src include tests
+run-clang-tidy -p build -fix '^(?!.*src/tests/libxrpl/protocol_autogen/).*(/src/|/tests/).*\.cpp$'
 ```
 
 ## Contracts and instrumentation
