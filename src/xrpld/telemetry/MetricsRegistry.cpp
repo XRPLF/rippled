@@ -1005,6 +1005,12 @@ MetricsRegistry::registerAsyncGauges()
                     "agreements_24h",
                     static_cast<double>(self->validationTracker_.agreements24h()));
                 observe("missed_24h", static_cast<double>(self->validationTracker_.missed24h()));
+
+                // 7-day window (matches external xrpl-validator-dashboard).
+                observe("agreement_pct_7d", self->validationTracker_.agreementPct7d());
+                observe(
+                    "agreements_7d", static_cast<double>(self->validationTracker_.agreements7d()));
+                observe("missed_7d", static_cast<double>(self->validationTracker_.missed7d()));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
