@@ -23,26 +23,24 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
 fi
 trap cleanup EXIT
 
-source /etc/os-release
 can_update=false
 
-if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]] ; then
-  # Silent update
+if command -v apt-get &>/dev/null; then
   apt-get update -qq
 
-  # The next line is an "awk"ward way to check if the package needs to be updated.
-  XRPLD=$(apt-get install -s --only-upgrade xrpld | awk '/^Inst/ { print $2 }')
-  test "$XRPLD" == "xrpld" && can_update=true
+  if apt-get -s --only-upgrade install xrpld 2>/dev/null | grep -q '^Inst xrpld'; then
+    can_update=true
+  fi
 
   function apply_update {
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrpld
   }
-elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" || "$ID" == "scientific" ]] ; then
-  RIPPLE_REPO=${RIPPLE_REPO-stable}
-  yum --disablerepo=* --enablerepo="ripple-${RIPPLE_REPO}" clean expire-cache
+elif command -v yum &>/dev/null; then
+  REPO=${REPO-stable}
+  yum --disablerepo=* --enablerepo="ripple-${REPO}" clean expire-cache
 
   # yum check-update exits 100 when updates are available, 0 for none, 1 for errors.
-  yum check-update -q --enablerepo="ripple-${RIPPLE_REPO}" xrpld
+  yum check-update -q --enablerepo="ripple-${REPO}" xrpld
   rc=$?
   if [ $rc -eq 100 ]; then
     can_update=true
@@ -52,10 +50,10 @@ elif [[ "$ID" == "fedora" || "$ID" == "centos" || "$ID" == "rhel" || "$ID" == "s
   fi
 
   function apply_update {
-    yum update -y --enablerepo="ripple-${RIPPLE_REPO}" xrpld
+    yum update -y --enablerepo="ripple-${REPO}" xrpld
   }
 else
-  echo "unrecognized distro!"
+  echo "No supported package manager found (apt-get or yum)"
   exit 1
 fi
 

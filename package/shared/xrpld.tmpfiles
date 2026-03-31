@@ -1,5 +1,2 @@
 d /var/lib/xrpld    0750 xrpld xrpld -
-d /var/lib/xrpld/db 0750 xrpld xrpld -
 d /var/log/xrpld    0750 xrpld xrpld -
-d /var/opt/ripple/lib 0750 xrpld xrpld -
-d /var/opt/ripple/log 0750 xrpld xrpld -

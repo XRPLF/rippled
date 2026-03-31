@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: XRPL Foundation <contact@xrpl.org>
 Rules-Requires-Root: no
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper-compat (= 13)
 Standards-Version: 4.7.0
 Homepage: https://github.com/XRPLF/rippled
 Vcs-Git: https://github.com/XRPLF/rippled.git
