@@ -14,7 +14,7 @@ private:
         using FeeLevel32 = FeeLevel<std::uint32_t>;
 
         {
-            XRPAmount x{100};
+            XRPAmount const x{100};
             BEAST_EXPECT(x.drops() == 100);
             BEAST_EXPECT((std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
             auto y = 4u * x;
@@ -25,8 +25,8 @@ private:
             BEAST_EXPECT(z.value() == 1600);
             BEAST_EXPECT((std::is_same_v<decltype(z)::unit_type, unit::dropTag>));
 
-            FeeLevel32 f{10};
-            FeeLevel32 baseFee{100};
+            FeeLevel32 const f{10};
+            FeeLevel32 const baseFee{100};
 
             auto drops = mulDiv(baseFee, x, f);
 
@@ -39,15 +39,15 @@ private:
             BEAST_EXPECT((std::is_same_v<std::remove_reference_t<decltype(*drops)>, XRPAmount>));
         }
         {
-            XRPAmount x{100};
+            XRPAmount const x{100};
             BEAST_EXPECT(x.value() == 100);
             BEAST_EXPECT((std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
             auto y = 4u * x;
             BEAST_EXPECT(y.value() == 400);
             BEAST_EXPECT((std::is_same_v<decltype(y)::unit_type, unit::dropTag>));
 
-            FeeLevel64 f{10};
-            FeeLevel64 baseFee{100};
+            FeeLevel64 const f{10};
+            FeeLevel64 const baseFee{100};
 
             auto drops = mulDiv(baseFee, x, f);
 
@@ -59,16 +59,16 @@ private:
             BEAST_EXPECT((std::is_same_v<std::remove_reference_t<decltype(*drops)>, XRPAmount>));
         }
         {
-            FeeLevel64 x{1024};
+            FeeLevel64 const x{1024};
             BEAST_EXPECT(x.value() == 1024);
             BEAST_EXPECT((std::is_same_v<decltype(x)::unit_type, unit::feelevelTag>));
-            std::uint64_t m = 4;
+            std::uint64_t const m = 4;
             auto y = m * x;
             BEAST_EXPECT(y.value() == 4096);
             BEAST_EXPECT((std::is_same_v<decltype(y)::unit_type, unit::feelevelTag>));
 
-            XRPAmount basefee{10};
-            FeeLevel64 referencefee{256};
+            XRPAmount const basefee{10};
+            FeeLevel64 const referencefee{256};
 
             auto drops = mulDiv(x, basefee, referencefee);
 
@@ -88,56 +88,56 @@ private:
         using FeeLevel32 = FeeLevel<std::uint32_t>;
 
         {
-            FeeLevel32 x{std::numeric_limits<std::uint32_t>::max()};
+            FeeLevel32 const x{std::numeric_limits<std::uint32_t>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{x.fee()});
         }
 
         {
-            FeeLevel32 x{std::numeric_limits<std::uint32_t>::min()};
+            FeeLevel32 const x{std::numeric_limits<std::uint32_t>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{x.fee()});
         }
 
         {
-            FeeLevel64 x{std::numeric_limits<std::uint64_t>::max()};
+            FeeLevel64 const x{std::numeric_limits<std::uint64_t>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::uint32_t>::max()});
         }
 
         {
-            FeeLevel64 x{std::numeric_limits<std::uint64_t>::min()};
+            FeeLevel64 const x{std::numeric_limits<std::uint64_t>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::uintValue);
             BEAST_EXPECT(y == Json::Value{0});
         }
 
         {
-            FeeLevelDouble x{std::numeric_limits<double>::max()};
+            FeeLevelDouble const x{std::numeric_limits<double>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::realValue);
             BEAST_EXPECT(y == Json::Value{std::numeric_limits<double>::max()});
         }
 
         {
-            FeeLevelDouble x{std::numeric_limits<double>::min()};
+            FeeLevelDouble const x{std::numeric_limits<double>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::realValue);
             BEAST_EXPECT(y == Json::Value{std::numeric_limits<double>::min()});
         }
 
         {
-            XRPAmount x{std::numeric_limits<std::int64_t>::max()};
+            XRPAmount const x{std::numeric_limits<std::int64_t>::max()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::intValue);
             BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::int32_t>::max()});
         }
 
         {
-            XRPAmount x{std::numeric_limits<std::int64_t>::min()};
+            XRPAmount const x{std::numeric_limits<std::int64_t>::min()};
             auto y = x.jsonClipped();
             BEAST_EXPECT(y.type() == Json::intValue);
             BEAST_EXPECT(y == Json::Value{std::numeric_limits<std::int32_t>::min()});
@@ -156,7 +156,7 @@ private:
             auto explicitmake = [&](auto x) -> FeeLevel64 { return FeeLevel64{x}; };
 
             [[maybe_unused]]
-            FeeLevel64 defaulted;
+            FeeLevel64 const defaulted{};
             FeeLevel64 test{0};
             BEAST_EXPECT(test.fee() == 0);
 
@@ -241,7 +241,7 @@ private:
             auto explicitmake = [&](auto x) -> FeeLevelDouble { return FeeLevelDouble{x}; };
 
             [[maybe_unused]]
-            FeeLevelDouble defaulted;
+            FeeLevelDouble const defaulted{};
             FeeLevelDouble test{0};
             BEAST_EXPECT(test.fee() == 0);
 

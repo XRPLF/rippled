@@ -798,7 +798,7 @@ Ledger::updateSkipList()
     if (header_.seq == 0)  // genesis ledger has no previous ledger
         return;
 
-    std::uint32_t prevIndex = header_.seq - 1;
+    std::uint32_t const prevIndex = header_.seq - 1;
 
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)

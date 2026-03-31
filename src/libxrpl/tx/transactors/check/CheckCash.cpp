@@ -365,7 +365,7 @@ CheckCash::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+            scope_exit const fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                 if (auto const sleTrustLine = psb.peek(trustLineKey))
                     sleTrustLine->at(tweakedLimit) = savedLimit;
             });

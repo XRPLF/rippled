@@ -22,7 +22,7 @@ reduceOffer(auto const& amount)
     static Number const reducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
-    NumberRoundModeGuard mg(Number::towards_zero);
+    NumberRoundModeGuard const mg(Number::towards_zero);
     return amount * reducedOfferPct;
 }
 
@@ -173,7 +173,7 @@ getAMMOfferStartWithTakerGets(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const a = 1;
     auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
@@ -240,7 +240,7 @@ getAMMOfferStartWithTakerPays(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const& a = f;
     auto const b = pool.in * (1 + f);
@@ -435,7 +435,7 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
         // 1-fee
         // maximize:
         // fee
-        saveNumberRoundMode _{Number::getround()};
+        saveNumberRoundMode const _{Number::getround()};
 
         Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;
@@ -499,7 +499,7 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
         // maximize:
         // tfee/100000
 
-        saveNumberRoundMode _{Number::getround()};
+        saveNumberRoundMode const _{Number::getround()};
 
         Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;

@@ -93,7 +93,7 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
         nodes_.pop();
 
     nodes_.push(&root);
-    bool successful = readValue(0);
+    bool const successful = readValue(0);
     Token token{};
     skipCommentTokens(token);
 
@@ -186,7 +186,7 @@ Reader::readToken(Token& token)
 {
     skipSpaces();
     token.start_ = current_;
-    Char c = getNextChar();
+    Char const c = getNextChar();
     bool ok = true;
 
     switch (c)
@@ -275,7 +275,7 @@ Reader::skipSpaces()
 {
     while (current_ != end_)
     {
-        Char c = *current_;
+        Char const c = *current_;
 
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
         {
@@ -309,7 +309,7 @@ Reader::match(Location pattern, int patternLength)
 bool
 Reader::readComment()
 {
-    Char c = getNextChar();
+    Char const c = getNextChar();
 
     if (c == '*')
         return readCStyleComment();
@@ -325,7 +325,7 @@ Reader::readCStyleComment()
 {
     while (current_ != end_)
     {
-        Char c = getNextChar();
+        Char const c = getNextChar();
 
         if (c == '*' && *current_ == '/')
             break;
@@ -339,7 +339,7 @@ Reader::readCppStyleComment()
 {
     while (current_ != end_)
     {
-        Char c = getNextChar();
+        Char const c = getNextChar();
 
         if (c == '\r' || c == '\n')
             break;
@@ -444,7 +444,7 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 
         Value& value = currentValue()[name];
         nodes_.push(&value);
-        bool ok = readValue(depth + 1);
+        bool const ok = readValue(depth + 1);
         nodes_.pop();
 
         if (!ok)  // error already set
@@ -506,7 +506,8 @@ Reader::readArray(Token& tokenStart, unsigned depth)
             ok = readToken(token);
         }
 
-        bool badTokenType = (token.type_ != tokenArraySeparator && token.type_ != tokenArrayEnd);
+        bool const badTokenType =
+            (token.type_ != tokenArraySeparator && token.type_ != tokenArrayEnd);
 
         if (!ok || badTokenType)
         {
@@ -525,7 +526,7 @@ bool
 Reader::decodeNumber(Token& token)
 {
     Location current = token.start_;
-    bool isNegative = *current == '-';
+    bool const isNegative = *current == '-';
 
     if (isNegative)
         ++current;
@@ -546,7 +547,7 @@ Reader::decodeNumber(Token& token)
 
     while (current < token.end_ && (value <= Value::maxUInt))
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c < '0' || c > '9')
         {
@@ -606,7 +607,7 @@ Reader::decodeDouble(Token& token)
     double value = 0;
     int const bufferSize = 32;
     int count = 0;
-    int length = int(token.end_ - token.start_);
+    int const length = int(token.end_ - token.start_);
     // Sanity check to avoid buffer overflow exploits.
     if (length < 0)
     {
@@ -627,7 +628,7 @@ Reader::decodeDouble(Token& token)
     }
     else
     {
-        std::string buffer(token.start_, token.end_);
+        std::string const buffer(token.start_, token.end_);
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
@@ -657,7 +658,7 @@ Reader::decodeString(Token& token, std::string& decoded)
 
     while (current != end)
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c == '"')
         {
@@ -668,7 +669,7 @@ Reader::decodeString(Token& token, std::string& decoded)
             if (current == end)
                 return addError("Empty escape sequence in string", token, current);
 
-            Char escape = *current++;
+            Char const escape = *current++;
 
             switch (escape)
             {
@@ -783,7 +784,7 @@ Reader::decodeUnicodeEscapeSequence(
 
     for (int index = 0; index < 4; ++index)
     {
-        Char c = *current++;
+        Char const c = *current++;
         unicode *= 16;
 
         if (c >= '0' && c <= '9')
@@ -825,7 +826,7 @@ Reader::addError(std::string const& message, Token& token, Location extra)
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
-    int errorCount = int(errors_.size());
+    int const errorCount = int(errors_.size());
     Token skip{};
 
     while (true)
@@ -872,7 +873,7 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column) cons
 
     while (current < location && current != end_)
     {
-        Char c = *current++;
+        Char const c = *current++;
 
         if (c == '\r')
         {
@@ -924,7 +925,7 @@ std::istream&
 operator>>(std::istream& sin, Value& root)
 {
     Json::Reader reader;
-    bool ok = reader.parse(sin, root);
+    bool const ok = reader.parse(sin, root);
 
     // XRPL_ASSERT(ok, "Json::operator>>() : parse succeeded");
     if (!ok)

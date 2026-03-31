@@ -144,7 +144,7 @@ public:
         testcase("standalone");
 
         Sim s;
-        PeerGroup peers = s.createGroup(1);
+        PeerGroup const peers = s.createGroup(1);
         Peer* peer = peers[0];
         peer->targetLedgers = 1;
         peer->start();
@@ -235,7 +235,7 @@ public:
             // All peers are in sync even with a slower peer 0
             if (BEAST_EXPECT(sim.synchronized()))
             {
-                for (Peer* peer : network)
+                for (Peer const* peer : network)
                 {
                     auto const& lcl = peer->lastClosedLedger;
                     BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
@@ -292,7 +292,7 @@ public:
                     // Verify all peers have same LCL but are missing
                     // transaction 0,1 which was not received by all peers
                     // before the ledger closed
-                    for (Peer* peer : network)
+                    for (Peer const* peer : network)
                     {
                         // Closed ledger has all but transaction 0,1
                         auto const& lcl = peer->lastClosedLedger;
@@ -317,7 +317,7 @@ public:
                         BEAST_EXPECT(slowPeer->prevProposers == fast.size());
                     }
 
-                    for (Peer* peer : fast)
+                    for (Peer const* peer : fast)
                     {
                         // Due to the network link delay settings
                         //    Peer 0 initially proposes {0}
@@ -388,8 +388,8 @@ public:
         Sim sim;
 
         PeerGroup groupA = sim.createGroup(2);
-        PeerGroup groupB = sim.createGroup(2);
-        PeerGroup groupC = sim.createGroup(2);
+        PeerGroup const groupB = sim.createGroup(2);
+        PeerGroup const groupC = sim.createGroup(2);
         PeerGroup network = groupA + groupB + groupC;
 
         network.trust(network);
@@ -397,7 +397,7 @@ public:
 
         // Run consensus without skew until we have a short close time
         // resolution
-        Peer* firstPeer = *groupA.begin();
+        Peer const* firstPeer = *groupA.begin();
         while (firstPeer->lastClosedLedger.closeTimeResolution() >= parms.proposeFRESHNESS)
             sim.run(1);
 
@@ -412,7 +412,7 @@ public:
         // All nodes agreed to disagree on the close time
         if (BEAST_EXPECT(sim.synchronized()))
         {
-            for (Peer* peer : network)
+            for (Peer const* peer : network)
                 BEAST_EXPECT(!peer->lastClosedLedger.closeAgree());
         }
     }
@@ -457,13 +457,13 @@ public:
             Sim sim;
 
             PeerGroup minority = sim.createGroup(2);
-            PeerGroup majorityA = sim.createGroup(3);
-            PeerGroup majorityB = sim.createGroup(5);
+            PeerGroup const majorityA = sim.createGroup(3);
+            PeerGroup const majorityB = sim.createGroup(5);
 
             PeerGroup majority = majorityA + majorityB;
-            PeerGroup network = minority + majority;
+            PeerGroup const network = minority + majority;
 
-            SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             minority.trustAndConnect(minority + majorityA, delay);
             majority.trustAndConnect(majority, delay);
 
@@ -556,10 +556,10 @@ public:
 
             Sim sim;
             PeerGroup loner = sim.createGroup(1);
-            PeerGroup friends = sim.createGroup(3);
+            PeerGroup const friends = sim.createGroup(3);
             loner.trust(loner + friends);
 
-            PeerGroup others = sim.createGroup(6);
+            PeerGroup const others = sim.createGroup(6);
             PeerGroup clique = friends + others;
             clique.trust(clique);
 
@@ -581,7 +581,7 @@ public:
             sim.run(2);
 
             // Check all peers recovered
-            for (Peer* p : network)
+            for (Peer const* p : network)
                 BEAST_EXPECT(p->prevLedgerID() == network[0]->prevLedgerID());
         }
     }
@@ -596,7 +596,7 @@ public:
         // This is a specialized test engineered to yield ledgers with different
         // close times even though the peers believe they had close time
         // consensus on the ledger.
-        ConsensusParms parms;
+        ConsensusParms const parms;
 
         Sim sim;
 
@@ -634,7 +634,7 @@ public:
         NetClock::duration when = network[0]->now().time_since_epoch();
 
         // Check we are before the 30s to 20s transition
-        NetClock::duration resolution = network[0]->lastClosedLedger.closeTimeResolution();
+        NetClock::duration const resolution = network[0]->lastClosedLedger.closeTimeResolution();
         BEAST_EXPECT(resolution == NetClock::duration{30s});
 
         while (((when % NetClock::duration{30s}) != NetClock::duration{15s}) ||
@@ -650,7 +650,7 @@ public:
         {
             // close time should be ahead of clock time since we engineered
             // the close time to round up
-            for (Peer* peer : network)
+            for (Peer const* peer : network)
             {
                 BEAST_EXPECT(peer->lastClosedLedger.closeTime() > peer->now());
                 BEAST_EXPECT(peer->lastClosedLedger.closeAgree());
@@ -692,26 +692,26 @@ public:
         using namespace std::chrono;
         testcase("fork");
 
-        std::uint32_t numPeers = 10;
+        std::uint32_t const numPeers = 10;
         // Vary overlap between two UNLs
         for (std::uint32_t overlap = 0; overlap <= numPeers; ++overlap)
         {
             ConsensusParms const parms{};
             Sim sim;
 
-            std::uint32_t numA = (numPeers - overlap) / 2;
-            std::uint32_t numB = numPeers - numA - overlap;
+            std::uint32_t const numA = (numPeers - overlap) / 2;
+            std::uint32_t const numB = numPeers - numA - overlap;
 
-            PeerGroup aOnly = sim.createGroup(numA);
-            PeerGroup bOnly = sim.createGroup(numB);
-            PeerGroup commonOnly = sim.createGroup(overlap);
+            PeerGroup const aOnly = sim.createGroup(numA);
+            PeerGroup const bOnly = sim.createGroup(numB);
+            PeerGroup const commonOnly = sim.createGroup(overlap);
 
             PeerGroup a = aOnly + commonOnly;
             PeerGroup b = bOnly + commonOnly;
 
-            PeerGroup network = a + b;
+            PeerGroup const network = a + b;
 
-            SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             a.trustAndConnect(a, delay);
             b.trustAndConnect(b, delay);
 
@@ -721,7 +721,7 @@ public:
             {
                 // Nodes have only seen transactions from their neighbors
                 peer->openTxs.insert(Tx{static_cast<std::uint32_t>(peer->id)});
-                for (Peer* to : sim.trustGraph.trustedPeers(peer))
+                for (Peer const* to : sim.trustGraph.trustedPeers(peer))
                     peer->openTxs.insert(Tx{static_cast<std::uint32_t>(to->id)});
             }
             sim.run(1);
@@ -759,7 +759,7 @@ public:
         validators.trust(validators);
         center.trust(validators);
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -866,7 +866,7 @@ public:
         Sim sim;
 
         // Goes A->B->D
-        PeerGroup groupABD = sim.createGroup(2);
+        PeerGroup const groupABD = sim.createGroup(2);
         // Single node that initially fully validates C before the split
         PeerGroup groupCfast = sim.createGroup(1);
         // Generates C, but fails to fully validate before the split
@@ -875,8 +875,8 @@ public:
         PeerGroup groupNotFastC = groupABD + groupCsplit;
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
-        SimDuration fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the
@@ -987,14 +987,14 @@ public:
 
         ConsensusParms const parms{};
         Sim sim;
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
 
         PeerGroup behind = sim.createGroup(3);
-        PeerGroup ahead = sim.createGroup(2);
+        PeerGroup const ahead = sim.createGroup(2);
         PeerGroup network = ahead + behind;
 
         hash_set<Peer::NodeKey_t> trustedKeys;
-        for (Peer* p : network)
+        for (Peer const* p : network)
             trustedKeys.insert(p->key);
         for (Peer* p : network)
             p->trustedKeys = trustedKeys;
@@ -1061,7 +1061,7 @@ public:
         Tx const txFollowingTrue{97};
         Tx const txFollowingFalse{96};
         int const numPeers = 100;
-        ConsensusParms p;
+        ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
         auto logs = std::make_unique<Logs>(beast::severities::kError);

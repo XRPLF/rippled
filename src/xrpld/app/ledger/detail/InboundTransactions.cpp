@@ -64,7 +64,7 @@ public:
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             auto it = m_map.find(hash);
 
@@ -80,7 +80,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             if (auto it = m_map.find(hash); it != m_map.end())
             {
@@ -118,12 +118,12 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
-        protocol::TMLedgerData& packet = *packet_ptr;
+        protocol::TMLedgerData const& packet = *packet_ptr;
 
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
                          << ") for acquiring ledger: " << hash;
 
-        TransactionAcquire::pointer ta = getAcquire(hash);
+        TransactionAcquire::pointer const ta = getAcquire(hash);
 
         if (ta == nullptr)
         {
@@ -163,7 +163,7 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             auto& inboundSet = m_map[hash];
 
@@ -188,7 +188,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard const lock(mLock);
 
         // Protect zero set from expiration
         m_zeroSet.mSeq = seq;
@@ -200,7 +200,7 @@ public:
             auto it = m_map.begin();
 
             std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
-            std::uint32_t maxSeq = seq + setKeepRounds;
+            std::uint32_t const maxSeq = seq + setKeepRounds;
 
             while (it != m_map.end())
             {
@@ -219,7 +219,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard const lock(mLock);
         stopping_ = true;
         m_map.clear();
     }

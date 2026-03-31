@@ -27,9 +27,9 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        HashRouterFlags key1(HashRouterFlags::PRIVATE1);
-        HashRouterFlags key2(HashRouterFlags::PRIVATE2);
-        HashRouterFlags key3(HashRouterFlags::PRIVATE3);
+        HashRouterFlags const key1(HashRouterFlags::PRIVATE1);
+        HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
+        HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
 
         auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
         auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
@@ -69,10 +69,10 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        HashRouterFlags key1(HashRouterFlags::PRIVATE1);
-        HashRouterFlags key2(HashRouterFlags::PRIVATE2);
-        HashRouterFlags key3(HashRouterFlags::PRIVATE3);
-        HashRouterFlags key4(HashRouterFlags::PRIVATE4);
+        HashRouterFlags const key1(HashRouterFlags::PRIVATE1);
+        HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
+        HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
+        HashRouterFlags const key4(HashRouterFlags::PRIVATE4);
 
         auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
         auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
@@ -242,7 +242,7 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(5s, 1s), stopwatch);
         uint256 const key(1);
-        HashRouter::PeerShortID peer = 1;
+        HashRouter::PeerShortID const peer = 1;
         HashRouterFlags flags = HashRouterFlags::UNDEFINED;
 
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
@@ -259,7 +259,7 @@ class HashRouter_test : public beast::unit_test::suite
 
         using namespace std::chrono_literals;
         {
-            Config cfg;
+            Config const cfg;
             // default
             auto const setup = setup_HashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 300s);
@@ -298,7 +298,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter relay time must be less than or equal to hold "
                     "time";
                 BEAST_EXPECT(e.what() == expected);
@@ -317,7 +317,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter hold time must be at least 12 seconds (the "
                     "approximate validation time for three "
                     "ledgers).";
@@ -337,7 +337,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter relay time must be at least 8 seconds (the "
                     "approximate validation time for two ledgers).";
                 BEAST_EXPECT(e.what() == expected);
@@ -365,9 +365,9 @@ class HashRouter_test : public beast::unit_test::suite
         using HF = HashRouterFlags;
         using UHF = std::underlying_type_t<HF>;
 
-        HF f1 = HF::BAD;
-        HF f2 = HF::SAVED;
-        HF combined = f1 | f2;
+        HF const f1 = HF::BAD;
+        HF const f2 = HF::SAVED;
+        HF const combined = f1 | f2;
 
         BEAST_EXPECT(static_cast<UHF>(combined) == (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
 
@@ -375,7 +375,7 @@ class HashRouter_test : public beast::unit_test::suite
         temp |= f2;
         BEAST_EXPECT(temp == combined);
 
-        HF intersect = combined & f1;
+        HF const intersect = combined & f1;
         BEAST_EXPECT(intersect == f1);
 
         HF temp2 = combined;

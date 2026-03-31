@@ -128,7 +128,7 @@ public:
     SpanTip<Ledger>
     tip() const
     {
-        Seq tipSeq{end_ - Seq{1}};
+        Seq const tipSeq{end_ - Seq{1}};
         return SpanTip<Ledger>{tipSeq, ledger_[tipSeq], ledger_};
     }
 
@@ -149,8 +149,8 @@ private:
     std::optional<Span>
     sub(Seq from, Seq to) const
     {
-        Seq newFrom = clamp(from);
-        Seq newTo = clamp(to);
+        Seq const newFrom = clamp(from);
+        Seq const newTo = clamp(to);
         if (newFrom < newTo)
             return Span(newFrom, newTo, ledger_);
         return std::nullopt;
@@ -344,6 +344,7 @@ class LedgerTrie
     std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
+        // NOLINTNEXTLINE(misc-const-correctness)
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers

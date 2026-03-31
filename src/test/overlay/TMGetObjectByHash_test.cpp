@@ -100,10 +100,10 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         auto stream_ptr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
 
@@ -132,7 +132,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            uint256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));

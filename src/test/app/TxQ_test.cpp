@@ -500,7 +500,7 @@ public:
 
         // We haven't yet shown that ticket-based transactions can be added
         // to the queue in any order.  We should do that...
-        std::uint32_t tkt250 = tkt1 + 249;
+        std::uint32_t const tkt250 = tkt1 + 249;
         env(noop(alice), ticket::use(tkt250 - 0), fee(baseFee * 3.0), queued);
         env(noop(alice), ticket::use(tkt1 + 14), fee(baseFee * 2.9), queued);
         env(noop(alice), ticket::use(tkt250 - 1), fee(baseFee * 2.8), queued);
@@ -1520,7 +1520,7 @@ public:
 
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1541,7 +1541,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1562,7 +1562,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "2"},
@@ -3387,6 +3387,7 @@ public:
             BEAST_EXPECT(jv[jss::status] == "success");
         }
 
+        // NOLINTNEXTLINE(misc-const-correctness)
         Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"}, i{"i"};
 
         // Fund the first few accounts at non escalated fee
@@ -3528,7 +3529,8 @@ public:
             }
 
             auto const den = (metrics.txPerLedger * metrics.txPerLedger);
-            FeeLevel64 feeLevel = (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
+            FeeLevel64 const feeLevel =
+                (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
 
             auto result = toDrops(feeLevel, env.current()->fees().base).drops();
 

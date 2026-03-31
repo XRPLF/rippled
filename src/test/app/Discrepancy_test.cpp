@@ -24,13 +24,13 @@ class Discrepancy_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
 
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
-        Account A5{"A5"};
-        Account A6{"A6"};
-        Account A7{"A7"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
+        Account const A5{"A5"};
+        Account const A6{"A6"};
+        Account const A7{"A7"};
 
         env.fund(XRP(2000), A1);
         env.fund(XRP(1000), A2, A6, A7);
@@ -68,7 +68,7 @@ class Discrepancy_test : public beast::unit_test::suite
         env(offer(A7, XRP(1233), A6["CNY"](25)));
         env.close();
 
-        test::PathSet payPaths{
+        test::PathSet const payPaths{
             test::Path{A2["JPY"], A2},
             test::Path{XRP, A2["JPY"], A2},
             test::Path{A6, XRP, A2["JPY"], A2}};
@@ -84,7 +84,7 @@ class Discrepancy_test : public beast::unit_test::suite
         jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
-        uint64_t fee{jrr[jss::Fee].asUInt()};
+        uint64_t const fee{jrr[jss::Fee].asUInt()};
         auto meta = jrr[jss::meta];
         uint64_t sumPrev{0};
         uint64_t sumFinal{0};

@@ -121,7 +121,7 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
     for (;;)
     {
-        Worker* const worker = stack.pop_front();
+        Worker const* const worker = stack.pop_front();
 
         if (worker != nullptr)
         {
@@ -150,7 +150,7 @@ Workers::Worker::Worker(Workers& workers, std::string const& threadName, int con
 Workers::Worker::~Worker()
 {
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -162,7 +162,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard lock{mutex_};
+    std::lock_guard const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -178,7 +178,7 @@ Workers::Worker::run()
         //
         if (++m_workers.m_activeCount == 1)
         {
-            std::lock_guard lk{m_workers.m_mut};
+            std::lock_guard const lk{m_workers.m_mut};
             m_workers.m_allPaused = false;
         }
 
@@ -225,7 +225,7 @@ Workers::Worker::run()
             // the predicate evaluation and the actual sleep.
             if (--m_workers.m_runningTaskCount == 0)
             {
-                std::lock_guard lk{m_workers.m_mut};
+                std::lock_guard const lk{m_workers.m_mut};
                 m_workers.m_cv.notify_all();
             }
         }
@@ -241,7 +241,7 @@ Workers::Worker::run()
         //
         if (--m_workers.m_activeCount == 0)
         {
-            std::lock_guard lk{m_workers.m_mut};
+            std::lock_guard const lk{m_workers.m_mut};
             m_workers.m_allPaused = true;
             m_workers.m_cv.notify_all();
         }
