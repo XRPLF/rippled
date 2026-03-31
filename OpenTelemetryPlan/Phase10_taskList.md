@@ -40,7 +40,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 - Create `docker/telemetry/docker-compose.workload.yaml`:
   - 5 rippled validator nodes with UNL configured for each other
   - All telemetry enabled: `[telemetry] enabled=1`, `[insight] server=otel`
-  - Full OTel stack: Collector, Jaeger, Tempo, Prometheus, Loki, Grafana
+  - Full OTel stack: Collector, Tempo, Prometheus, Loki, Grafana
   - Shared network with service discovery
 
 - Each node should:
@@ -121,7 +121,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
 - Create `docker/telemetry/workload/validate_telemetry.py`:
 
-  **Span validation** (queries Jaeger/Tempo API):
+  **Span validation** (queries Tempo API):
   - Assert all 16 span names appear in traces
   - Assert each span has its required attributes (22 total attributes across spans)
   - Assert parent-child relationships are correct (`rpc.request` → `rpc.process` → `rpc.command.*`)
@@ -135,7 +135,7 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 
   **Log-trace correlation validation** (queries Loki API):
   - Assert logs contain `trace_id=` and `span_id=` fields
-  - Pick a random trace_id from Jaeger → query Loki for matching logs → assert results exist
+  - Pick a random trace_id from Tempo → query Loki for matching logs → assert results exist
   - Assert Grafana derived field links are functional
 
   **Dashboard validation**:
