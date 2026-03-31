@@ -1,8 +1,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -27,25 +27,29 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (!params.isMember(jss::source_account))
         return RPC::missing_field_error(jss::source_account);
     if (!params[jss::source_account].isString())
+    {
         return RPC::make_error(
             rpcINVALID_PARAMS, RPC::expected_field_message(jss::source_account, "a string"));
+    }
 
     auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
     if (!srcID)
         return rpcError(rpcACT_MALFORMED);
-    auto const srcAcct{std::move(srcID.value())};
+    auto const srcAcct{srcID.value()};
 
     // Validate destination_account.
     if (!params.isMember(jss::destination_account))
         return RPC::missing_field_error(jss::destination_account);
     if (!params[jss::destination_account].isString())
+    {
         return RPC::make_error(
             rpcINVALID_PARAMS, RPC::expected_field_message(jss::destination_account, "a string"));
+    }
 
     auto dstID = parseBase58<AccountID>(params[jss::destination_account].asString());
     if (!dstID)
         return rpcError(rpcACT_MALFORMED);
-    auto const dstAcct{std::move(dstID.value())};
+    auto const dstAcct{dstID.value()};
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
@@ -69,7 +73,7 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth = (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
@@ -84,7 +88,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 RPC::expected_field_message(
                     jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
-        else if (creds.size() > maxCredentialsArraySize)
+        if (creds.size() > maxCredentialsArraySize)
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS, RPC::expected_field_message(jss::credentials, "array too long"));
@@ -118,7 +122,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if (!(sleCred->getFlags() & lsfAccepted))
+            if ((sleCred->getFlags() & lsfAccepted) == 0u)
             {
                 RPC::inject_error(rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
                 return result;
@@ -151,8 +155,10 @@ doDepositAuthorized(RPC::JsonContext& context)
     // not set, then the deposit should be fine.
     bool depositAuthorized = true;
     if (reqAuth)
+    {
         depositAuthorized = ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
             (credentialsPresent && ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
+    }
 
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] = params[jss::destination_account].asString();

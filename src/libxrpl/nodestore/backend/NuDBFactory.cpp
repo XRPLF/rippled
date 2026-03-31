@@ -214,11 +214,15 @@ public:
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -227,7 +231,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e(no);
+        EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
@@ -349,7 +353,7 @@ private:
         auto const kp = (folder / "nudb.key").string();
 
         std::size_t const defaultSize = nudb::block_size(kp);  // Default 4K from NuDB
-        std::size_t blockSize = defaultSize;
+        std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -430,7 +434,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory instance{manager};
+    static NuDBFactory const instance{manager};
 }
 
 }  // namespace NodeStore

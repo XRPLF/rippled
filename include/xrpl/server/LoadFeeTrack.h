@@ -39,28 +39,28 @@ public:
     setRemoteFee(std::uint32_t f)
     {
         JLOG(j_.trace()) << "setRemoteFee: " << f;
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         remoteTxnLoadFee_ = f;
     }
 
     std::uint32_t
     getRemoteFee() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return remoteTxnLoadFee_;
     }
 
     std::uint32_t
     getLocalFee() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return localTxnLoadFee_;
     }
 
     std::uint32_t
     getClusterFee() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return clusterTxnLoadFee_;
     }
 
@@ -73,14 +73,14 @@ public:
     std::uint32_t
     getLoadFactor() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return std::max({clusterTxnLoadFee_, localTxnLoadFee_, remoteTxnLoadFee_});
     }
 
     std::pair<std::uint32_t, std::uint32_t>
     getScalingFactors() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
 
         return std::make_pair(
             std::max(localTxnLoadFee_, remoteTxnLoadFee_),
@@ -91,7 +91,7 @@ public:
     setClusterFee(std::uint32_t fee)
     {
         JLOG(j_.trace()) << "setClusterFee: " << fee;
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         clusterTxnLoadFee_ = fee;
     }
 
@@ -103,14 +103,14 @@ public:
     bool
     isLoadedLocal() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee);
     }
 
     bool
     isLoadedCluster() const
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) ||
             (clusterTxnLoadFee_ != lftNormalFee);
     }

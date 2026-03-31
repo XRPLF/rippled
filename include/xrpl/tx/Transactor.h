@@ -13,7 +13,7 @@ namespace xrpl {
 struct PreflightContext
 {
 public:
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
@@ -56,7 +56,7 @@ public:
 struct PreclaimContext
 {
 public:
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     ReadView const& view;
     TER preflightResult;
     ApplyFlags flags;
@@ -209,7 +209,7 @@ public:
     checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     ticketDelete(
         ApplyView& view,

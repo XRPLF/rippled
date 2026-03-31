@@ -77,7 +77,7 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
-    int length = sit.getBytesLeft();
+    int const length = sit.getBytesLeft();
 
     if ((length < txMinSizeBytes) || (length > txMaxSizeBytes))
         Throw<std::runtime_error>("Transaction length invalid");
@@ -199,8 +199,10 @@ STTx::getSeqProxy() const
 
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
+    {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
         return SeqProxy::sequence(seq);
+    }
 
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
@@ -327,7 +329,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
     if (binary)
     {
-        Serializer s = STObject::getSerializer();
+        Serializer const s = STObject::getSerializer();
         std::string const dataBin = strHex(s.peekData());
 
         if (V1)
@@ -337,8 +339,8 @@ STTx::getJson(JsonOptions options, bool binary) const
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
-        else
-            return Json::Value{dataBin};
+
+        return Json::Value{dataBin};
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
@@ -376,7 +378,7 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
-    static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format const bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
@@ -500,9 +502,11 @@ multiSignHelper(
             errorWhat = e.what();
         }
         if (!validSig)
+        {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 errorWhat.value_or("") + ".");
+        }
     }
     // All signatures verified.
     return {};
@@ -570,13 +574,13 @@ STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
-        getFieldArray(sfRawTransactions).size() != 0,
+        !getFieldArray(sfRawTransactions).empty(),
         "STTx::getBatchTransactionIDs : empty raw transactions");
 
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
     // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.size() == 0)
+    if (batchTxnIds_.empty())
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))
             batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
@@ -614,7 +618,7 @@ isMemoOkay(STObject const& st, std::string& reason)
     {
         auto memoObj = dynamic_cast<STObject const*>(&memo);
 
-        if (!memoObj || (memoObj->getFName() != sfMemo))
+        if ((memoObj == nullptr) || (memoObj->getFName() != sfMemo))
         {
             reason = "A memo array may contain only Memo objects.";
             return false;
@@ -652,20 +656,20 @@ isMemoOkay(STObject const& st, std::string& reason)
             static constexpr std::array<char, 256> const allowedSymbols = []() {
                 std::array<char, 256> a{};
 
-                std::string_view symbols(
+                std::string_view const symbols(
                     "0123456789"
                     "-._~:/?#[]@!$&'()*+,;=%"
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz");
 
-                for (unsigned char c : symbols)
+                for (unsigned char const c : symbols)
                     a[c] = 1;
                 return a;
             }();
 
-            for (unsigned char c : *optData)
+            for (unsigned char const c : *optData)
             {
-                if (!allowedSymbols[c])
+                if (allowedSymbols[c] == 0)
                 {
                     reason =
                         "The MemoType and MemoFormat fields may only "
@@ -687,7 +691,7 @@ isAccountFieldOkay(STObject const& st)
     for (int i = 0; i < st.getCount(); ++i)
     {
         auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex(i));
-        if (t && t->isDefault())
+        if ((t != nullptr) && t->isDefault())
             return false;
     }
 

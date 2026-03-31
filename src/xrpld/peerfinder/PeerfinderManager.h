@@ -74,7 +74,7 @@ struct Config
 
     /** Write the configuration into a property stream */
     void
-    onWrite(beast::PropertyStream::Map& map);
+    onWrite(beast::PropertyStream::Map& map) const;
 
     /** Make PeerFinder::Config from configuration parameters
      * @param config server's configuration

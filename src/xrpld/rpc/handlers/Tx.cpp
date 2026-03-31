@@ -42,7 +42,7 @@ struct TxResult
     std::optional<std::string> ctid;
     std::optional<NetClock::time_point> closeTime;
     std::optional<uint256> ledgerHash;
-    TxSearched searchedAll = TxSearched::unknown;
+    TxSearched searchedAll = TxSearched::Unknown;
 };
 
 struct TxArgs
@@ -77,7 +77,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    result.searchedAll = TxSearched::unknown;
+    result.searchedAll = TxSearched::Unknown;
     std::variant<TxPair, TxSearched> v;
 
     if (args.ctid)
@@ -125,7 +125,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
         return {result, rpcSUCCESS};
     }
 
-    std::shared_ptr<Ledger const> ledger = context.ledgerMaster.getLedgerBySeq(txn->getLedger());
+    std::shared_ptr<Ledger const> const ledger =
+        context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
     if (ledger && !ledger->open())
         result.ledgerHash = ledger->header().hash;
@@ -148,12 +149,12 @@ doTxHelp(RPC::Context& context, TxArgs args)
         // compute outgoing CTID
         if (meta->getAsObject().isFieldPresent(sfTransactionIndex))
         {
-            uint32_t lgrSeq = ledger->header().seq;
-            uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
-            uint32_t netID = context.app.getNetworkIDService().getNetworkID();
+            uint32_t const lgrSeq = ledger->header().seq;
+            uint32_t const txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
+            uint32_t const netID = context.app.getNetworkIDService().getNetworkID();
 
             if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-                result.ctid = RPC::encodeCTID(lgrSeq, (uint32_t)txnIdx, (uint32_t)netID);
+                result.ctid = RPC::encodeCTID(lgrSeq, txnIdx, netID);
         }
     }
 
@@ -172,10 +173,10 @@ populateJsonResponse(
     // handle errors
     if (error.toErrorCode() != rpcSUCCESS)
     {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::unknown)
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::Unknown)
         {
             response = Json::Value(Json::objectValue);
-            response[jss::searched_all] = (result.searchedAll == TxSearched::all);
+            response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
         else
@@ -192,7 +193,9 @@ populateJsonResponse(
             constexpr auto optionsJson =
                 JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
             if (args.binary)
+            {
                 response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+            }
             else
             {
                 response[jss::tx_json] = result.txn->getJson(optionsJson);
@@ -258,8 +261,10 @@ doTxJson(RPC::JsonContext& context)
     TxArgs args;
 
     if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
+    {
         // specifying both is ambiguous
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     if (context.params.isMember(jss::transaction))
     {
@@ -286,7 +291,9 @@ doTxJson(RPC::JsonContext& context)
         args.ctid = {lgr_seq, txn_idx};
     }
     else
+    {
         return rpcError(rpcINVALID_PARAMS);
+    }
 
     args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
 
@@ -304,7 +311,7 @@ doTxJson(RPC::JsonContext& context)
         }
     }
 
-    std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
+    std::pair<TxResult, RPC::Status> const res = doTxHelp(context, args);
     return populateJsonResponse(res, args, context);
 }
 

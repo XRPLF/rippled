@@ -10,7 +10,7 @@
 
 namespace Json {
 class Object;
-}
+}  // namespace Json
 
 namespace xrpl {
 namespace RPC {

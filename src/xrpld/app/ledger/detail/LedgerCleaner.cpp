@@ -1,6 +1,8 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/jss.h>
@@ -74,7 +76,7 @@ public:
     {
         JLOG(j_.info()) << "Stopping";
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -90,10 +92,12 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
 
         if (maxRange_ == 0)
+        {
             map["status"] = "idle";
+        }
         else
         {
             map["status"] = "running";
@@ -120,7 +124,7 @@ public:
         app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
 
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -259,7 +263,9 @@ private:
             return false;
         }
 
-        auto dbLedger = loadByIndex(ledgerIndex, app_);
+        Rules const rules{app_.config().features};
+        Fees const fees = app_.config().FEES.toFees();
+        auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
@@ -274,7 +280,7 @@ private:
             doTxns = true;
         }
 
-        if (doNodes && !nodeLedger->walkLedger(app_.journal("Ledger")))
+        if (doNodes && !nodeLedger->walkLedger(app_.getJournal("Ledger")))
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
@@ -321,8 +327,8 @@ private:
                 // No. Try to get another ledger that might have the hash we
                 // need: compute the index and hash of a ledger that will have
                 // the hash we need.
-                LedgerIndex refIndex = getCandidateLedger(ledgerIndex);
-                LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
+                LedgerIndex const refIndex = getCandidateLedger(ledgerIndex);
+                LedgerHash const refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
                 XRPL_ASSERT(nonzero, "xrpl::LedgerCleanerImp::getHash : nonzero hash");
@@ -348,7 +354,7 @@ private:
     doLedgerCleaner()
     {
         auto shouldExit = [this] {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             return shouldExit_;
         };
 
@@ -369,7 +375,7 @@ private:
             }
 
             {
-                std::lock_guard lock(mutex_);
+                std::lock_guard const lock(mutex_);
                 if ((minRange_ > maxRange_) || (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
@@ -397,7 +403,7 @@ private:
             if (fail)
             {
                 {
-                    std::lock_guard lock(mutex_);
+                    std::lock_guard const lock(mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -406,7 +412,7 @@ private:
             else
             {
                 {
-                    std::lock_guard lock(mutex_);
+                    std::lock_guard const lock(mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)

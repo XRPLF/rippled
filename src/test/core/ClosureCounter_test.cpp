@@ -17,7 +17,7 @@ class ClosureCounter_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j{env_.app().journal("ClosureCounter_test")};
+    beast::Journal j{env_.app().getJournal("ClosureCounter_test")};
 
     void
     testConstruction()
@@ -214,15 +214,14 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(strCounter.count() == 1);
             BEAST_EXPECT(wrapped);
 
-            // Make the string big enough to (probably) avoid the small string
-            // optimization.
+            // Make the string big enough to (probably) avoid the small string optimization.
             TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
             TrackedString const result =
                 (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);
+            BEAST_EXPECT(strRValue.str.empty());  // NOLINT(bugprone-use-after-move)
         }
     }
 
@@ -300,7 +299,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.
-        while (threadExited == false)
+        while (!threadExited)
             ;
         localThread.join();
     }

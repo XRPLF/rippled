@@ -112,7 +112,7 @@ public:
 
                 auto sig = signDigest(pk, sk, digest);
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
 
                 // Wrong digest:
@@ -150,7 +150,7 @@ public:
 
                 auto sig = sign(pk, sk, makeSlice(data));
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verify(pk, makeSlice(data), sig));
 
                 // Construct wrong data:
@@ -216,7 +216,7 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {

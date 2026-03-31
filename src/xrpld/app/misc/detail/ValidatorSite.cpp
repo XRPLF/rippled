@@ -52,7 +52,9 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
             pUrl.port = 443;
     }
     else
+    {
         throw std::runtime_error("Unsupported scheme: '" + pUrl.scheme + "'");
+    }
 }
 
 ValidatorSite::Site::Site(std::string uri)
@@ -61,7 +63,6 @@ ValidatorSite::Site::Site(std::string uri)
     , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestEndpoint{}
     , lastRequestSuccessful{false}
 {
 }
@@ -71,7 +72,7 @@ ValidatorSite::ValidatorSite(
     std::optional<beast::Journal> j,
     std::chrono::seconds timeout)
     : app_{app}
-    , j_{j ? *j : app_.logs().journal("ValidatorSite")}
+    , j_{j ? *j : app_.getJournal("ValidatorSite")}
     , timer_{app_.getIOContext()}
     , fetching_{false}
     , pending_{false}
@@ -100,7 +101,7 @@ ValidatorSite::~ValidatorSite()
 bool
 ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)
 {
-    auto const sites = app_.validators().loadLists();
+    auto const sites = app_.getValidators().loadLists();
     return sites.empty() || load(sites, lock_sites);
 }
 
@@ -109,7 +110,7 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
-    std::lock_guard lock{sites_mutex_};
+    std::lock_guard const lock{sites_mutex_};
 
     return load(siteURIs, lock);
 }
@@ -146,8 +147,8 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
-    std::lock_guard l0{sites_mutex_};
-    std::lock_guard l1{state_mutex_};
+    std::lock_guard const l0{sites_mutex_};
+    std::lock_guard const l1{state_mutex_};
     if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
 }
@@ -215,7 +216,7 @@ ValidatorSite::makeRequest(
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
     auto timeoutCancel = [this]() {
-        std::lock_guard lock_state{state_mutex_};
+        std::lock_guard const lock_state{state_mutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
         try
@@ -226,12 +227,13 @@ ValidatorSite::makeRequest(
         {
         }
     };
-    auto onFetch =
-        [this, siteIdx, timeoutCancel](
-            error_code const& err, endpoint_type const& endpoint, detail::response_type&& resp) {
-            timeoutCancel();
-            onSiteFetch(err, endpoint, std::move(resp), siteIdx);
-        };
+    auto onFetch = [this, siteIdx, timeoutCancel](
+                       error_code const& err,
+                       endpoint_type const& endpoint,
+                       detail::response_type const& resp) {
+        timeoutCancel();
+        onSiteFetch(err, endpoint, resp, siteIdx);
+    };
 
     auto onFetchFile = [this, siteIdx, timeoutCancel](
                            error_code const& err, std::string const& resp) {
@@ -278,7 +280,7 @@ ValidatorSite::makeRequest(
     sp->run();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     timer_.expires_after(requestTimeout_);
     timer_.async_wait([this, siteIdx](boost::system::error_code const& ec) {
         this->onRequestTimeout(siteIdx, ec);
@@ -292,7 +294,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         return;
 
     {
-        std::lock_guard lock_site{sites_mutex_};
+        std::lock_guard const lock_site{sites_mutex_};
         // In some circumstances, both this function and the response
         // handler (onSiteFetch or onTextFetch) can get queued and
         // processed. In all observed cases, the response handler
@@ -301,13 +303,15 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         // first, which will leave activeResource empty.
         auto const& site = sites_[siteIdx];
         if (site.activeResource)
+        {
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
+        }
         else
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     if (auto sp = work_.lock())
         sp->cancel();
 }
@@ -326,7 +330,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 
     try
     {
-        std::lock_guard lock{sites_mutex_};
+        std::lock_guard const lock{sites_mutex_};
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
         // the WorkSSL client ctor can throw if SSL init fails
@@ -391,8 +395,15 @@ ValidatorSite::parseJsonResponse(
         "xrpl::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
-    auto const applyResult = app_.validators().applyListsAndBroadcast(
-        manifest, version, blobs, uri, hash, app_.overlay(), app_.getHashRouter(), app_.getOPs());
+    auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        manifest,
+        version,
+        blobs,
+        uri,
+        hash,
+        app_.getOverlay(),
+        app_.getHashRouter(),
+        app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
         Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
@@ -459,7 +470,7 @@ ValidatorSite::processRedirect(
 {
     using namespace boost::beast::http;
     std::shared_ptr<Site::Resource> newLocation;
-    if (res.find(field::location) == res.end() || res[field::location].empty())
+    if (!res.contains(field::location) || res[field::location].empty())
     {
         JLOG(j_.warn()) << "Request for validator list at " << sites_[siteIdx].activeResource->uri
                         << " returned a redirect with no Location.";
@@ -568,7 +579,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -581,7 +592,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
-    std::lock_guard lock_sites{sites_mutex_};
+    std::lock_guard const lock_sites{sites_mutex_};
     {
         try
         {
@@ -605,7 +616,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -621,7 +632,7 @@ ValidatorSite::getJson() const
     Json::Value jrr(Json::objectValue);
     Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
     {
-        std::lock_guard lock{sites_mutex_};
+        std::lock_guard const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
             Json::Value& v = jSites.append(Json::objectValue);

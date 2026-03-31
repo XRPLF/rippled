@@ -57,7 +57,7 @@ Endpoint::to_string() const
     if (port() != 0 && address().is_v6())
         s += '[';
     s += address().to_string();
-    if (port())
+    if (port() != 0u)
     {
         if (address().is_v6())
             s += ']';
@@ -95,10 +95,14 @@ operator>>(std::istream& is, Endpoint& endpoint)
     char i{0};
     char readTo{0};
     is.get(i);
-    if (i == '[')  // we are an IPv6 endpoint
+    if (i == '[')
+    {  // we are an IPv6 endpoint
         readTo = ']';
+    }
     else
+    {
         addrStr += i;
+    }
 
     while (is && is.rdbuf()->in_avail() > 0 && is.get(i))
     {
@@ -107,7 +111,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
         // so we continue to honor that here by assuming we are at the end
         // of the address portion if we hit a space (or the separator
         // we were expecting to see)
-        if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
+        if ((isspace(static_cast<unsigned char>(i)) != 0) || ((readTo != 0) && i == readTo))
             break;
 
         if ((i == '.') || (i >= '0' && i <= ':') || (i >= 'a' && i <= 'f') ||
@@ -116,14 +120,13 @@ operator>>(std::istream& is, Endpoint& endpoint)
             addrStr += i;
 
             // don't exceed a reasonable length...
-            if (addrStr.size() == INET6_ADDRSTRLEN ||
-                (readTo && readTo == ':' && addrStr.size() > 15))
+            if (addrStr.size() == INET6_ADDRSTRLEN || (readTo == ':' && addrStr.size() > 15))
             {
                 is.setstate(std::ios_base::failbit);
                 return is;
             }
 
-            if (!readTo && (i == '.' || i == ':'))
+            if ((readTo == 0) && (i == '.' || i == ':'))
             {
                 // if we see a dot first, must be IPv4
                 // otherwise must be non-bracketed IPv6
@@ -141,7 +144,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
     if (readTo == ']' && is.rdbuf()->in_avail() > 0)
     {
         is.get(i);
-        if (!(isspace(static_cast<unsigned char>(i)) || i == ':'))
+        if ((isspace(static_cast<unsigned char>(i)) == 0) && i != ':')
         {
             is.unget();
             is.setstate(std::ios_base::failbit);
@@ -166,7 +169,9 @@ operator>>(std::istream& is, Endpoint& endpoint)
         endpoint = Endpoint(addr, port);
     }
     else
+    {
         endpoint = Endpoint(addr);
+    }
 
     return is;
 }

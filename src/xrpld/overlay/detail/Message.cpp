@@ -103,10 +103,13 @@ Message::compress()
         if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
         {
             bufferCompressed_.resize(headerBytesCompressed + compressedSize);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
             setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }
         else
+        {
             bufferCompressed_.resize(0);
+        }
     }
 }
 
@@ -188,16 +191,18 @@ Message::getBuffer(Compressed tryCompressed)
 
     std::call_once(once_flag_, &Message::compress, this);
 
-    if (bufferCompressed_.size() > 0)
+    if (!bufferCompressed_.empty())
+    {
         return bufferCompressed_;
-    else
-        return buffer_;
+    }
+
+    return buffer_;
 }
 
 int
-Message::getType(std::uint8_t const* in) const
+Message::getType(std::uint8_t const* in)
 {
-    int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
+    int const type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;
 }
 

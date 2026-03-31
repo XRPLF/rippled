@@ -8,7 +8,7 @@ namespace xrpl {
 class Rules;
 namespace test {
 class Invariants_test;
-}
+}  // namespace test
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {

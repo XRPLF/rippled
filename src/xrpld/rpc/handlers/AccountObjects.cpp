@@ -131,7 +131,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
                 obj[jss::nft_serial] = nft::getSerial(nftokenID);
-                if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
+                if (std::uint16_t const xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
             }
 
@@ -144,9 +144,13 @@ doAccountNFTs(RPC::JsonContext& context)
         }
 
         if (auto npm = (*cp)[~sfNextPageMin])
+        {
             cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
+        }
         else
+        {
             cp = nullptr;
+        }
     }
 
     if (markerSet && !markerFound)
@@ -229,9 +233,13 @@ getAccountObjects(
             jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
+            {
                 cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            }
             else
+            {
                 cp = nullptr;
+            }
 
             if (--mlimit == 0)
             {
@@ -429,7 +437,7 @@ doAccountObjects(RPC::JsonContext& context)
             rpcStatus.inject(result);
             return result;
         }
-        else if (type != ltANY)
+        if (type != ltANY)
         {
             typeFilter = std::vector<LedgerEntryType>({type});
         }

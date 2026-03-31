@@ -36,17 +36,19 @@ class LedgerLoad_test : public beast::unit_test::suite
     struct SetupData
     {
         std::string const dbPath;
-        std::string ledgerFile{};
-        Json::Value ledger{};
-        Json::Value hashes{};
-        uint256 trapTxHash{};
+        // NOLINTBEGIN(readability-redundant-member-init)
+        std::string ledgerFile = {};
+        Json::Value ledger = {};
+        Json::Value hashes = {};
+        uint256 trapTxHash = {};
+        // NOLINTEND(readability-redundant-member-init)
     };
 
     SetupData
     setupLedger(beast::temp_dir const& td)
     {
         using namespace test::jtx;
-        SetupData retval = {td.path()};
+        SetupData retval = {.dbPath = td.path()};
 
         retval.ledgerFile = td.file("ledgerdata.json");
 
@@ -107,7 +109,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger file specified for startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LOAD_FILE, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, sd.ledgerFile, StartUpType::LoadFile, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -125,19 +127,19 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // empty path
         except([&] {
-            Env env(
+            Env const env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LOAD_FILE, std::nullopt),
+                envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LoadFile, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
 
         // file does not exist
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
-                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LOAD_FILE, std::nullopt),
+                    ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LoadFile, std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -156,13 +158,13 @@ class LedgerLoad_test : public beast::unit_test::suite
             return;
 
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    StartUpType::LOAD_FILE,
+                    StartUpType::LoadFile,
                     std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
@@ -180,7 +182,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::LOAD, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Load, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -201,7 +203,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -227,7 +229,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, sd.trapTxHash),
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, sd.trapTxHash),
             nullptr,
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -255,9 +257,9 @@ class LedgerLoad_test : public beast::unit_test::suite
         {
             // will throw an exception, because we cannot load a ledger for
             // replay when trapTxHash is set to an invalid transaction
-            Env env(
+            Env const env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, ~sd.trapTxHash),
+                envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, ~sd.trapTxHash),
                 nullptr,
                 beast::severities::kDisabled);
             BEAST_EXPECT(false);
@@ -281,7 +283,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger "latest" specified for startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, "latest", StartUpType::LOAD, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, "latest", StartUpType::Load, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -299,7 +301,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with specific ledger index at startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, "43", StartUpType::LOAD, std::nullopt),
+            envconfig(ledgerConfig, sd.dbPath, "43", StartUpType::Load, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -312,7 +314,7 @@ public:
     void
     run() override
     {
-        beast::temp_dir td;
+        beast::temp_dir const td;
         auto sd = setupLedger(td);
 
         // test cases

@@ -550,9 +550,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail &&
                 validations.canValidateSeq(newLedger.seq()))
             {
-                bool isFull = proposing;
+                bool const isFull = proposing;
 
-                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
+                Validation const v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -880,7 +880,7 @@ struct Peer
         issue(StartRound{bestLCL, lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> nowUntrusted;
+        hash_set<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 

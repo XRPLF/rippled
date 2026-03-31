@@ -1,5 +1,8 @@
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -101,7 +104,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
                 return err;
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     // Source MPToken must exist (if asset is an MPT)
@@ -196,8 +201,10 @@ VaultDeposit::doApply()
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount)
+        }
+        if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";

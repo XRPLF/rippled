@@ -33,7 +33,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
     };
 
-    auto
+    static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
         auto const section_name = boost::starts_with(proto, "h") ? "port_rpc" : "port_ws";
@@ -69,7 +69,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return p;
     }
 
-    auto
+    static auto
     makeWSUpgrade(std::string const& host, uint16_t port)
     {
         using namespace boost::asio;
@@ -97,7 +97,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return req;
     }
 
-    auto
+    static auto
     makeHTTPRequest(
         std::string const& host,
         uint16_t port,
@@ -217,7 +217,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return;
     }
 
-    auto
+    static auto
     makeAdminRequest(
         jtx::Env& env,
         std::string const& proto,
@@ -572,7 +572,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // for zero limit, pick an arbitrary nonzero number of clients - all
         // should connect fine.
 
-        int testTo = (limit == 0) ? 50 : limit + 1;
+        int const testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
             clients.emplace_back(
@@ -616,9 +616,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::switching_protocols);
-        BEAST_EXPECT(resp.find("Upgrade") != resp.end() && resp["Upgrade"] == "websocket");
-        BEAST_EXPECT(
-            resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
+        BEAST_EXPECT(resp.contains("Upgrade") && resp["Upgrade"] == "websocket");
+        BEAST_EXPECT(resp.contains("Connection") && boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void
@@ -1107,7 +1106,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doHTTPRequest(env, yield, false, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::internal_server_error);
-        std::regex body{"Server cannot accept clients"};
+        std::regex const body{"Server cannot accept clients"};
         BEAST_EXPECT(std::regex_search(resp.body(), body));
     }
 

@@ -5,5 +5,5 @@ namespace beast {
 namespace insight {
 
 HookImpl::~HookImpl() = default;
-}
+}  // namespace insight
 }  // namespace beast

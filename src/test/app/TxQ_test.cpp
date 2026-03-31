@@ -24,7 +24,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     static constexpr FeeLevel64 baseFeeLevel{256};
     static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 
-    void
+    static void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
@@ -32,7 +32,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
             env(noop(account));
     }
 
-    auto
+    static auto
     openLedgerCost(jtx::Env& env)
     {
         using namespace jtx;
@@ -52,7 +52,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Get a fee level of a transaction made by an account
     // This fee level is used to ensure we can place transaction into TxQ
-    auto
+    static auto
     txFeeLevelByAccount(jtx::Env& env, jtx::Account const& account)
     {
         using namespace jtx;
@@ -65,7 +65,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
 
     // Calculating expected median fee level based on known fee levels of median
     // transaction levels.
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel1, FeeLevel64 const feeLevel2)
     {
         FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
@@ -73,7 +73,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         return std::max(expectedMedFeeLevel, minEscalationFeeLevel).fee();
     }
 
-    auto
+    static auto
     calcMedFeeLevel(FeeLevel64 const feeLevel)
     {
         return calcMedFeeLevel(feeLevel, feeLevel);
@@ -261,9 +261,7 @@ public:
         env(noop(alice), fee(baseFee * 2.0), queued);
 
         // Queue is full now.
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, daria) + 1);
-        // clang-format on
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
         env(noop(charlie), ter(telCAN_NOT_QUEUE_FULL));
@@ -274,18 +272,22 @@ public:
         env(noop(charlie), fee(baseFee * 10), queued);
 
         // Queue is still full, of course, but the min fee has gone up
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, elmo) + 1);
-        // clang-format on
 
         // Close out the ledger, the transactions are accepted, the
         // queue is cleared, then the localTxs are retried. At this
         // point, daria's transaction that was dropped from the queue
         // is put back in. Neat.
         env.close();
-        // clang-format off
-        checkMetrics(*this, env, 2, 8, 5, 4, baseFeeLevel.fee(), calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            2,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee(),
+            calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
 
         env.close();
         checkMetrics(*this, env, 0, 10, 2, 5);
@@ -498,7 +500,7 @@ public:
 
         // We haven't yet shown that ticket-based transactions can be added
         // to the queue in any order.  We should do that...
-        std::uint32_t tkt250 = tkt1 + 249;
+        std::uint32_t const tkt250 = tkt1 + 249;
         env(noop(alice), ticket::use(tkt250 - 0), fee(baseFee * 3.0), queued);
         env(noop(alice), ticket::use(tkt1 + 14), fee(baseFee * 2.9), queued);
         env(noop(alice), ticket::use(tkt250 - 1), fee(baseFee * 2.8), queued);
@@ -551,16 +553,16 @@ public:
         // The lowest fee ticket is baseFee * 2.1, trying to replace it
         env(noop(alice),
             ticket::use(tkt1 + 18),
-            fee(baseFee * 2.1 * 1.25 - 1),
+            fee((baseFee * 2.1 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt1 + 18), fee(baseFee * 2.1 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt1 + 18), fee((baseFee * 2.1 * 1.25) + 1), queued);
 
         // New lowest fee ticket is baseFee * 2.2
         env(noop(alice),
             ticket::use(tkt250 - 4),
-            fee(baseFee * 2.2 * 1.25 - 1),
+            fee((baseFee * 2.2 * 1.25) - 1),
             ter(telCAN_NOT_QUEUE_FEE));
-        env(noop(alice), ticket::use(tkt250 - 4), fee(baseFee * 2.2 * 1.25 + 1), queued);
+        env(noop(alice), ticket::use(tkt250 - 4), fee((baseFee * 2.2 * 1.25) + 1), queued);
 
         env.close();
         env.require(owners(alice, 227), tickets(alice, 227));
@@ -750,15 +752,13 @@ public:
 
         env.close();
         // alice's transaction is still hanging around
-        // clang-format off
-        checkMetrics(*this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
 
         constexpr auto anotherLargeFeeMultiplier = 800;
         auto const anotherLargeFee = baseFee * anotherLargeFeeMultiplier;
         // Keep alice's transaction waiting.
-        // clang-format off
         env(noop(bob), fee(anotherLargeFee), queued);
         env(noop(charlie), fee(anotherLargeFee), queued);
         env(noop(daria), fee(anotherLargeFee), queued);
@@ -766,24 +766,36 @@ public:
         env(noop(edgar), fee(anotherLargeFee), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), seq(env.seq(felicia) + 1), queued);
-        checkMetrics(*this, env, 8, 8, 5, 4, baseFeeLevel.fee() + 1, baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            8,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee() + 1,
+            baseFeeLevel.fee() * largeFeeMultiplier);
 
         env.close();
         // alice's transaction expired without getting
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
-        // clang-format off
-        checkMetrics(*this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 7);
 
         env.close();
         // And now the queue is empty
-        // clang-format off
-        checkMetrics(*this, env, 0, 12, 1, 6, baseFeeLevel.fee(), baseFeeLevel.fee() * anotherLargeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            0,
+            12,
+            1,
+            6,
+            baseFeeLevel.fee(),
+            baseFeeLevel.fee() * anotherLargeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 8);
     }
@@ -857,9 +869,7 @@ public:
             feeCarol = (feeCarol + 1) * 125 / 100;
             ++seqCarol;
         }
-        // clang-format off
-        checkMetrics(*this, env, 6, 6, 4, 3, baseFeeLevel.fee() * aliceFeeMultiplier + 1);
-        // clang-format on
+        checkMetrics(*this, env, 6, 6, 4, 3, (baseFeeLevel.fee() * aliceFeeMultiplier) + 1);
 
         // Carol submits high enough to beat Bob's average fee which kicks
         // out Bob's queued transaction.  However Bob's transaction stays
@@ -950,7 +960,7 @@ public:
 
             Env::ParsedResult parsed;
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, env.journal);
                 parsed.ter = result.ter;
                 return result.applied;
@@ -1505,14 +1515,12 @@ public:
 
             env.close();
             // If not for the maximum, the per ledger would be 11.
-            // clang-format off
             checkMetrics(*this, env, 0, 10, 0, 5, baseFeeLevel.fee(), calcMedFeeLevel(medFeeLevel));
-            // clang-format on
         }
 
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1533,7 +1541,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1554,7 +1562,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "2"},
@@ -2310,7 +2318,7 @@ public:
             auto const jtx = env.jt(offer_cancel(alice, 3), seq(5), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2322,7 +2330,7 @@ public:
             auto const jtx = env.jt(trust("carol", USD(50000000)), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2332,7 +2340,7 @@ public:
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
             auto const pf =
                 preflight(env.app(), env.current()->rules(), *jtx.stx, tapNONE, env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
             BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
@@ -2632,7 +2640,7 @@ public:
 
         // Start by procuring tickets for alice to use to keep her queue full
         // without affecting the sequence gap that will appear later.
-        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee(baseFee * 20 + 1), ter(terQUEUED));
+        env(ticket::create(alice, 11), seq(aliceSeq + 0), fee((baseFee * 20) + 1), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 11), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 12), last_ledger_seq(11), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 13), last_ledger_seq(11), ter(terQUEUED));
@@ -2757,14 +2765,18 @@ public:
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
+            {
                 envs(
                     noop(alice),
                     fee(baseFee * 100),
                     seq(none),
                     json(jss::LastLedgerSequence, lastLedgerSeq),
                     ter(terQUEUED))(submitParams);
+            }
             else
+            {
                 envs(noop(alice), fee(baseFee * 100), seq(none), ter(terQUEUED))(submitParams);
+            }
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
@@ -3375,6 +3387,7 @@ public:
             BEAST_EXPECT(jv[jss::status] == "success");
         }
 
+        // NOLINTNEXTLINE(misc-const-correctness)
         Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"}, i{"i"};
 
         // Fund the first few accounts at non escalated fee
@@ -3516,7 +3529,8 @@ public:
             }
 
             auto const den = (metrics.txPerLedger * metrics.txPerLedger);
-            FeeLevel64 feeLevel = (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
+            FeeLevel64 const feeLevel =
+                (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
 
             auto result = toDrops(feeLevel, env.current()->fees().base).drops();
 
@@ -3869,10 +3883,10 @@ public:
         // (This requires calling directly into the open ledger,
         //  which won't work if unit tests are separated to only
         //  be callable via RPC.)
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), seq(aliceSeq), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -3937,10 +3951,10 @@ public:
         // (This requires calling directly into the open ledger,
         //  which won't work if unit tests are separated to only
         //  be callable via RPC.)
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), ticket::use(tktSeq0 + 1), fee(openLedgerCost(env)));
             auto const result = xrpl::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
         // the queued transaction is still there
@@ -4079,7 +4093,7 @@ public:
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
         auto prepareFee = [&](uint64_t multiplier) {
-            return fee(txFee - multiplier * baseFee / 10);
+            return fee(txFee - (multiplier * baseFee / 10));
         };
 
         uint64_t multiplier = 0;

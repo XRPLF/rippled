@@ -24,7 +24,7 @@ private:
               std::chrono::milliseconds{0})
     {
         using namespace std::chrono_literals;
-        int maxLimit = std::numeric_limits<int>::max();
+        int const maxLimit = std::numeric_limits<int>::max();
 
         auto add = [this](
                        JobType jt,

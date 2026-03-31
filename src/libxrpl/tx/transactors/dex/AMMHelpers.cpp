@@ -7,7 +7,7 @@ ammLPTokens(STAmount const& asset1, STAmount const& asset2, Issue const& lptIssu
 {
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
     auto const rounding = isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
-    NumberRoundModeGuard g(rounding);
+    NumberRoundModeGuard const g(rounding);
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
 }
@@ -34,12 +34,10 @@ lpTokensOut(
         auto const t = lptAMMBalance * (r - c) / (1 + c);
         return toSTAmount(lptAMMBalance.issue(), t);
     }
-    else
-    {
-        // minimize tokens out
-        auto const frac = (r - c) / (1 + c);
-        return multiply(lptAMMBalance, frac, Number::downward);
-    }
+
+    // minimize tokens out
+    auto const frac = (r - c) / (1 + c);
+    return multiply(lptAMMBalance, frac, Number::downward);
 }
 
 /* Equation 4 solves equation 3 for b:
@@ -72,12 +70,10 @@ ammAssetIn(
     {
         return toSTAmount(asset1Balance.issue(), asset1Balance * solveQuadraticEq(a, b, c));
     }
-    else
-    {
-        // maximize deposit
-        auto const frac = solveQuadraticEq(a, b, c);
-        return multiply(asset1Balance, frac, Number::upward);
-    }
+
+    // maximize deposit
+    auto const frac = solveQuadraticEq(a, b, c);
+    return multiply(asset1Balance, frac, Number::upward);
 }
 
 /* Equation 7:
@@ -99,12 +95,10 @@ lpTokensIn(
         auto const t = lptAMMBalance * (c - root2(c * c - 4 * fr)) / 2;
         return toSTAmount(lptAMMBalance.issue(), t);
     }
-    else
-    {
-        // maximize tokens in
-        auto const frac = (c - root2(c * c - 4 * fr)) / 2;
-        return multiply(lptAMMBalance, frac, Number::upward);
-    }
+
+    // maximize tokens in
+    auto const frac = (c - root2(c * c - 4 * fr)) / 2;
+    return multiply(lptAMMBalance, frac, Number::upward);
 }
 
 /* Equation 8 solves equation 7 for b:
@@ -131,12 +125,10 @@ ammAssetOut(
         auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
         return toSTAmount(assetBalance.issue(), b);
     }
-    else
-    {
-        // minimize withdraw
-        auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
-        return multiply(assetBalance, frac, Number::downward);
-    }
+
+    // minimize withdraw
+    auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
+    return multiply(assetBalance, frac, Number::downward);
 }
 
 Number
@@ -150,7 +142,7 @@ adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposi
 {
     // Force rounding downward to ensure adjusted tokens are less or equal
     // to requested tokens.
-    saveNumberRoundMode rm(Number::setround(Number::rounding_mode::downward));
+    saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::downward));
     if (isDeposit == IsDeposit::Yes)
         return (lptAMMBalance + lpTokens) - lptAMMBalance;
     return (lpTokens - lptAMMBalance) + lptAMMBalance;
@@ -194,29 +186,37 @@ adjustAmountsByLPTokens(
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
             auto const amount2Actual = toSTAmount(amount2->issue(), fr * *amount2);
             if (!ammRoundingEnabled)
+            {
                 return std::make_tuple(
                     amountActual < amount ? amountActual : amount,
                     amount2Actual < amount2 ? amount2Actual : amount2,
                     lpTokensActual);
-            else
-                return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
+            }
+
+            return std::make_tuple(amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
         auto const amountActual = [&]() {
             if (isDeposit == IsDeposit::Yes)
+            {
                 return ammAssetIn(amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            else if (!ammRoundingEnabled)
+            }
+            if (!ammRoundingEnabled)
+            {
                 return ammAssetOut(amountBalance, lptAMMBalance, lpTokens, tfee);
-            else
-                return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
+            }
+
+            return ammAssetOut(amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
         if (!ammRoundingEnabled)
+        {
             return amountActual < amount
                 ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
                 : std::make_tuple(amount, std::nullopt, lpTokensActual);
-        else
-            return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
+        }
+
+        return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
     XRPL_ASSERT(
@@ -241,15 +241,17 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
     // use numerically stable citardauq formula for quadratic equation solution
     // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     if (b > 0)
+    {
         return (2 * c) / (-b - root2(d));
-    else
-        return (2 * c) / (-b + root2(d));
+    }
+
+    return (2 * c) / (-b + root2(d));
 }
 
 STAmount
 multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm)
 {
-    NumberRoundModeGuard g(rm);
+    NumberRoundModeGuard const g(rm);
     auto const t = amount * frac;
     return toSTAmount(amount.issue(), t, rm);
 }
@@ -268,7 +270,7 @@ getRoundedAsset(
     auto const rm = detail::getAssetRounding(isDeposit);
     if (isDeposit == IsDeposit::Yes)
         return multiply(balance, productCb(), rm);
-    NumberRoundModeGuard g(rm);
+    NumberRoundModeGuard const g(rm);
     return toSTAmount(balance.issue(), productCb(), rm);
 }
 
@@ -302,7 +304,7 @@ getRoundedLPTokens(
         auto const rm = detail::getLPTokenRounding(isDeposit);
         if (isDeposit == IsDeposit::Yes)
         {
-            NumberRoundModeGuard g(rm);
+            NumberRoundModeGuard const g(rm);
             return toSTAmount(lptAMMBalance.issue(), productCb(), rm);
         }
         return multiply(lptAMMBalance, productCb(), rm);

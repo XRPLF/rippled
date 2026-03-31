@@ -278,7 +278,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         LedgerHistoryHelper h;
         BEAST_EXPECT(t.empty());
 
-        Ledger genesis = h[""];
+        Ledger const genesis = h[""];
         t.insert(genesis);
         BEAST_EXPECT(!t.empty());
         t.remove(genesis);
@@ -344,7 +344,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         using Seq = Ledger::Seq;
         // Empty
         {
-            LedgerTrie<Ledger> t;
+            LedgerTrie<Ledger> const t;
             BEAST_EXPECT(t.getPreferred(Seq{0}) == std::nullopt);
             BEAST_EXPECT(t.getPreferred(Seq{2}) == std::nullopt);
         }
@@ -352,7 +352,7 @@ class LedgerTrie_test : public beast::unit_test::suite
         {
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
-            Ledger genesis = h[""];
+            Ledger const genesis = h[""];
             t.insert(genesis);
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -669,21 +669,25 @@ class LedgerTrie_test : public beast::unit_test::suite
         for (std::uint32_t i = 0; i < iterations; ++i)
         {
             // pick a random ledger history
-            std::string curr = "";
-            char depth = depthDist(gen);
+            std::string curr;
+            char const depth = depthDist(gen);
             char offset = 0;
             for (char d = 0; d < depth; ++d)
             {
-                char a = offset + widthDist(gen);
+                char const a = offset + widthDist(gen);
                 curr += a;
                 offset = (a + 1) * width;
             }
 
             // 50-50 to add remove
             if (flip(gen) == 0)
+            {
                 t.insert(h[curr]);
+            }
             else
+            {
                 t.remove(h[curr]);
+            }
             if (!BEAST_EXPECT(t.checkInvariants()))
                 return;
         }

@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
@@ -79,12 +78,12 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
-    std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(":");
+    std::string const strUserPass = base64_decode(strUserPass64);
+    std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
-    std::string strUser = strUserPass.substr(0, nColon);
-    std::string strPassword = strUserPass.substr(nColon + 1);
+    std::string const strUser = strUserPass.substr(0, nColon);
+    std::string const strPassword = strUserPass.substr(nColon + 1);
     return strUser == port.user && strPassword == port.password;
 }
 
@@ -98,9 +97,9 @@ ServerHandler::ServerHandler(
     CollectorManager& cm)
     : app_(app)
     , m_resourceManager(resourceManager)
-    , m_journal(app_.journal("Server"))
+    , m_journal(app_.getJournal("Server"))
     , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_context, app_.journal("Server")))
+    , m_server(make_Server(*this, io_context, app_.getJournal("Server")))
     , m_jobQueue(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -126,14 +125,14 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
         if (auto it = endpoints_.find(port.name); it != endpoints_.end())
         {
             auto const endpointPort = it->second.port();
-            if (!port.port)
+            if (port.port == 0u)
                 port.port = endpointPort;
 
-            if (!setup_.client.port &&
+            if ((setup_.client.port == 0u) &&
                 (port.protocol.count("http") > 0 || port.protocol.count("https") > 0))
                 setup_.client.port = endpointPort;
 
-            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+            if ((setup_.overlay.port() == 0u) && (port.protocol.count("peer") > 0))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -159,11 +158,11 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return ++count_[port];
     }();
 
-    if (port.limit && c >= port.limit)
+    if ((port.limit != 0) && c >= port.limit)
     {
         JLOG(m_journal.trace()) << port.name << " is full; dropping " << endpoint;
         return false;
@@ -218,7 +217,7 @@ ServerHandler::onHandoff(
     }
 
     if (bundle && p.count("peer") > 0)
-        return app_.overlay().onHandoff(std::move(bundle), std::move(request), remote_address);
+        return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remote_address);
 
     if (is_ws && isStatusRequest(request))
         return statusResponse(request);
@@ -270,7 +269,7 @@ ServerHandler::onRequest(Session& session)
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
@@ -278,12 +277,12 @@ ServerHandler::onRequest(Session& session)
     // Check user/password authorization
     if (!authorized(session.port(), build_map(session.request())))
     {
-        HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
+        HTTPReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
         return;
     }
 
-    std::shared_ptr<Session> detachedSession = session.detach();
+    std::shared_ptr<Session> const detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
         jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -291,7 +290,7 @@ ServerHandler::onRequest(Session& session)
     if (postResult == nullptr)
     {
         // The coroutine was rejected, probably because we're shutting down.
-        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.journal("RPC"));
+        HTTPReply(503, "Service Unavailable", makeOutput(*detachedSession), app_.getJournal("RPC"));
         detachedSession->close(true);
         return;
     }
@@ -344,14 +343,14 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandler::onStopped(Server&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }
@@ -363,9 +362,13 @@ void
 logDuration(Json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = (duration >= 10s) ? journal.error()
-        : (duration >= 1s)               ? journal.warn()
-                                         : journal.debug();
+    auto const level = [&]() {
+        if (duration >= 10s)
+            return journal.error();
+        if (duration >= 1s)
+            return journal.warn();
+        return journal.debug();
+    }();
 
     JLOG(level) << "RPC request processing duration = "
                 << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
@@ -436,7 +439,7 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.journal("RPCHandler"),
+                {app_.getJournal("RPCHandler"),
                  app_,
                  loadType,
                  app_.getOPs(),
@@ -535,9 +538,13 @@ ServerHandler::processSession(
         }());
 
     if (beast::rfc2616::is_keep_alive(session->request()))
+    {
         session->complete();
+    }
     else
+    {
         session->close(true);
+    }
 }
 
 static Json::Value
@@ -566,7 +573,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto rpcJ = app_.journal("RPC");
+    auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
     {
@@ -643,8 +650,10 @@ ServerHandler::processRequest(
         auto role = Role::FORBID;
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
+        {
             required = RPC::roleRequired(
                 apiVersion, app_.config().BETA_RPC_API, jsonRPC[jss::method].asString());
+        }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
@@ -723,7 +732,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        std::string strMethod = method.asString();
+        std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
             usage.charge(Resource::feeMalformedRPC);
@@ -749,8 +758,9 @@ ServerHandler::processRequest(
         {
             params = jsonRPC[jss::params];
             if (!params)
+            {
                 params = Json::Value(Json::objectValue);
-
+            }
             else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::feeMalformedRPC);
@@ -909,9 +919,13 @@ ServerHandler::processRequest(
         if (params.isMember(jss::id))
             r[jss::id] = params[jss::id];
         if (batch)
+        {
             reply.append(std::move(r));
+        }
         else
+        {
             reply = std::move(r);
+        }
 
         if (reply.isMember(jss::result) && reply[jss::result].isMember(jss::result))
         {
@@ -957,9 +971,13 @@ ServerHandler::processRequest(
     {
         static int const maxSize = 10000;
         if (response.size() <= maxSize)
+        {
             stream << "Reply: " << response;
+        }
         else
+        {
             stream << "Reply: " << response.substr(0, maxSize);
+        }
     }
 
     HTTPReply(httpStatus, response, output, rpcJ);
@@ -1009,10 +1027,14 @@ ServerHandler::Setup::makeContexts()
         if (p.secure())
         {
             if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
+            {
                 p.context = make_SSLContext(p.ssl_ciphers);
+            }
             else
+            {
                 p.context =
                     make_SSLContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
+            }
         }
         else
         {
@@ -1112,10 +1134,14 @@ parse_Ports(Config const& config, std::ostream& log)
 
             // Remove the peer protocol, and if that would
             // leave the port empty, remove the port as well
-            if (p.erase("peer") && p.empty())
+            if ((p.erase("peer") != 0u) && p.empty())
+            {
                 it = result.erase(it);
+            }
             else
+            {
                 ++it;
+            }
         }
     }
     else
@@ -1143,15 +1169,22 @@ setup_Client(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
+    {
         if (iter->protocol.count("http") > 0 || iter->protocol.count("https") > 0)
             break;
+    }
     if (iter == setup.ports.cend())
         return;
     setup.client.secure = iter->protocol.count("https") > 0;
-    setup.client.ip = beast::IP::is_unspecified(iter->ip) ?
-                                                          // VFALCO HACK! to make localhost work
-        (iter->ip.is_v6() ? "::1" : "127.0.0.1")
-                                                          : iter->ip.to_string();
+    if (beast::IP::is_unspecified(iter->ip))
+    {
+        // VFALCO HACK! to make localhost work
+        setup.client.ip = iter->ip.is_v6() ? "::1" : "127.0.0.1";
+    }
+    else
+    {
+        setup.client.ip = iter->ip.to_string();
+    }
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;

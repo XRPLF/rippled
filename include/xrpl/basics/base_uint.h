@@ -212,7 +212,7 @@ private:
         while (in != sv.end())
         {
             std::uint32_t accum = {};
-            for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
+            for (std::uint32_t const shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::okay)
@@ -444,7 +444,7 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+            std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
 
             data_[i] = boost::endian::native_to_big(static_cast<std::uint32_t>(n));
