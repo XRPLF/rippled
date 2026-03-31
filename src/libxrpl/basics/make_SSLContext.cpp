@@ -140,7 +140,7 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int const ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 

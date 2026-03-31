@@ -1067,7 +1067,7 @@ public:
         // Since the local validator vote record expires after 24 hours,
         // with 23 hour flapping the amendment will go live.  But with 25
         // hour flapping the amendment will not go live.
-        for (int flapRateHours : {23, 25})
+        for (int const flapRateHours : {23, 25})
         {
             test::jtx::Env env{*this, feat};
             auto const testAmendment = amendmentId("validatorFlapping");

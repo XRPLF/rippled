@@ -87,7 +87,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 
     if (size == 33)
     {
-        unsigned int depth = *(static_cast<unsigned char const*>(data) + 32);
+        unsigned int const depth = *(static_cast<unsigned char const*>(data) + 32);
         if (depth <= SHAMap::leafDepth)
         {
             auto const id = uint256::fromVoid(data);

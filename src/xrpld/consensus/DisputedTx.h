@@ -97,7 +97,7 @@ public:
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
-        int total = nays_ + yays_ + (proposing ? 1 : 0);
+        int const total = nays_ + yays_ + (proposing ? 1 : 0);
         if (!total)
             // There are no votes, so we know nothing
             return false;

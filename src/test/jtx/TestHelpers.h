@@ -596,7 +596,7 @@ checkMetrics(
     std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
     std::source_location const location = std::source_location::current())
 {
-    int line = location.line();
+    int const line = location.line();
     char const* file = location.file_name();
     FeeLevel64 const expectedMin{expectedMinFeeLevel};
     FeeLevel64 const expectedMed{expectedMedFeeLevel};

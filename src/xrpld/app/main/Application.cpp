@@ -1811,7 +1811,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             // VFALCO TODO This is the only place that
             //             constructor is used, try to remove it
-            STLedgerEntry sle(*stp.object, uIndex);
+            STLedgerEntry const sle(*stp.object, uIndex);
 
             if (!loadLedger->addSLE(sle))
             {

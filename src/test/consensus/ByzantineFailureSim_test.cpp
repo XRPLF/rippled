@@ -39,7 +39,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         f.trustAndConnect(f + d + e + g, delay);
         g.trustAndConnect(g + a + f, delay);
 
-        PeerGroup network = a + b + c + d + e + f + g;
+        PeerGroup const network = a + b + c + d + e + f + g;
 
         StreamCollector sc{std::cout};
 
