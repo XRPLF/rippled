@@ -49,9 +49,8 @@ public:
 
         explicit Child(OverlayImpl& overlay);
 
-        virtual ~Child();
-
     public:
+        virtual ~Child();
         virtual void
         stop() = 0;
     };

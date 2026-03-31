@@ -44,7 +44,7 @@ private:
 
         async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
 
-        ~async_op();
+        virtual ~async_op();
 
         void
         stop() override;
