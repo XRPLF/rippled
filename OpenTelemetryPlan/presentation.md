@@ -76,7 +76,7 @@ flowchart LR
     Insight -->|"UDP"| StatsD["StatsD Server"]
     Journal -->|"File I/O"| LogFile["perf.log / debug.log"]
 
-    Collector --> Tempo["Tempo / Jaeger"]
+    Collector --> Tempo["Tempo"]
     StatsD --> Graphite["Graphite / Grafana"]
     LogFile --> Loki["Loki (optional)"]
 
