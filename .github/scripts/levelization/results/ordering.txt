@@ -21,6 +21,7 @@ libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
 libxrpl.protocol_autogen > xrpl.protocol_autogen
 libxrpl.rdb > xrpl.basics
+libxrpl.rdb > xrpl.core
 libxrpl.rdb > xrpl.rdb
 libxrpl.resource > xrpl.basics
 libxrpl.resource > xrpl.json
@@ -184,7 +185,6 @@ xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
 xrpl.core > xrpl.json
-xrpl.core > xrpl.ledger
 xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics

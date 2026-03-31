@@ -25,7 +25,7 @@ class SkipList_test : public beast::unit_test::suite
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {
-                auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
+                auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
                 next->updateSkipList();
                 history.push_back(next);
                 prev = next;

@@ -137,7 +137,7 @@ ValidatorList::load(
     JLOG(j_.debug()) << "Loading configured trusted validator list publisher keys";
 
     std::size_t count = 0;
-    for (auto key : publisherKeys)
+    for (auto const& key : publisherKeys)
     {
         JLOG(j_.trace()) << "Processing '" << key << "'";
 
@@ -1406,7 +1406,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
 
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
+    auto pubKey = validatorManifests_.getMasterKey(identity);
     if (keyListings_.contains(pubKey))
         return pubKey;
     return std::nullopt;
@@ -1415,7 +1415,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 std::optional<PublicKey>
 ValidatorList::getTrustedKey(ValidatorList::shared_lock const&, PublicKey const& identity) const
 {
-    auto const pubKey = validatorManifests_.getMasterKey(identity);
+    auto pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.contains(pubKey))
         return pubKey;
     return std::nullopt;
