@@ -3869,6 +3869,135 @@ class Invariants_test : public beast::unit_test::suite
             precloseMpt);
     }
 
+    // Verify that without fixSecurity3_1_3, the overwrite bug is
+    // preserved: a valid entry after a bad entry overwrites the flag,
+    // causing the invariant to incorrectly pass.
+    void
+    testInvariantOverwriteLegacy()
+    {
+        using namespace test::jtx;
+        auto const features = defaultAmendments() - fixSecurity3_1_3;
+
+        // NoXRPTrustLines: a trust line with sfLowLimit set to xrpIssue
+        // (bad), followed by a valid trust line visited last (higher key).
+        // Legacy = assignment overwrites the flag from true to false.
+        // The invariant checks sfLowLimit/sfHighLimit issue, not the
+        // keylet currency, so we use non-XRP keylet currencies to
+        // control the hash ordering.
+        testcase << "legacy overwrite: NoXRPTrustLines";
+        doInvariantCheck(
+            Env(*this, features),
+            {{}},
+            [this](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Account const A3{"A3"};
+
+                // Try currency pairs until we find one where bad < good.
+                struct Pair
+                {
+                    char const* badCcy;
+                    char const* goodCcy;
+                };
+                constexpr Pair pairs[] = {
+                    {"AAA", "ZZZ"},
+                    {"ZZZ", "AAA"},
+                    {"USD", "EUR"},
+                    {"EUR", "USD"},
+                };
+                for (auto const& [bc, gc] : pairs)
+                {
+                    auto const bk = keylet::line(A1, A2, A1[bc].currency);
+                    auto const gk = keylet::line(A1, A3, A1[gc].currency);
+                    if (bk.key < gk.key)
+                    {
+                        // Bad entry: sfLowLimit has xrpIssue, making
+                        // isXrp = true
+                        auto sleBad = std::make_shared<SLE>(bk);
+                        sleBad->setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
+                        sleBad->setFieldAmount(sfHighLimit, A1[bc](0));
+                        ac.view().insert(sleBad);
+
+                        // Good entry: proper non-XRP limits
+                        auto sleGood = std::make_shared<SLE>(gk);
+                        sleGood->setFieldAmount(sfLowLimit, A1[gc](0));
+                        sleGood->setFieldAmount(sfHighLimit, A1[gc](0));
+                        ac.view().insert(sleGood);
+                        return true;
+                    }
+                }
+                // Should not reach here.
+                return BEAST_EXPECT(false);
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS});
+
+        // NoDeepFreezeTrustLinesWithoutFreeze: bad deep-freeze trust line
+        // and a valid trust line. Legacy = assignment means the last-visited
+        // entry determines the flag. We ensure good sorts after bad.
+        testcase << "legacy overwrite: NoDeepFreezeTrustLinesWithoutFreeze";
+        doInvariantCheck(
+            Env(*this, features),
+            {{}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Account const A3{"A3"};
+
+                auto const key_A2_usd = keylet::line(A1, A2, A1["USD"].currency);
+                auto const key_A3_eur = keylet::line(A1, A3, A1["EUR"].currency);
+                auto const key_A3_usd = keylet::line(A1, A3, A1["USD"].currency);
+                auto const key_A2_eur = keylet::line(A1, A2, A1["EUR"].currency);
+
+                // Pick the pairing where bad sorts before good.
+                bool const useA2bad = key_A2_usd.key < key_A3_eur.key;
+                auto const badKey = useA2bad ? key_A2_usd : key_A3_usd;
+                auto const badCcy = A1["USD"].currency;
+                auto const goodKey = useA2bad ? key_A3_eur : key_A2_eur;
+                auto const goodCcy = A1["EUR"].currency;
+
+                auto const sleBad = std::make_shared<SLE>(badKey);
+                sleBad->setFieldAmount(sfLowLimit, STAmount(Issue(badCcy, A1.id()), 0));
+                sleBad->setFieldAmount(sfHighLimit, STAmount(Issue(badCcy, A1.id()), 0));
+                sleBad->setFieldU32(sfFlags, lsfLowDeepFreeze);
+                ac.view().insert(sleBad);
+
+                auto const sleGood = std::make_shared<SLE>(goodKey);
+                sleGood->setFieldAmount(sfLowLimit, STAmount(Issue(goodCcy, A1.id()), 0));
+                sleGood->setFieldAmount(sfHighLimit, STAmount(Issue(goodCcy, A1.id()), 0));
+                sleGood->setFieldU32(sfFlags, 0u);
+                ac.view().insert(sleGood);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS});
+
+        // NoZeroEscrow: MPT outstanding exceeds max, but locked <= outstanding.
+        // Legacy = assignment overwrites bad_ = true with the result of
+        // outstanding < locked (which is false), so NoZeroEscrow passes.
+        // ValidMPTIssuance still fires ("a MPT issuance was created"), so
+        // the overall result is tecINVARIANT_FAILED, but we verify that
+        // the NoZeroEscrow message is absent (it would be present with the
+        // fix enabled).
+        testcase << "legacy overwrite: NoZeroEscrow MPT";
+        doInvariantCheck(
+            Env(*this, features),
+            {{"a MPT issuance was created"}},
+            [&](Account const& A1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!BEAST_EXPECT(sle))
+                    return false;
+
+                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
+                sleNew->setFieldU64(sfLockedAmount, 10);
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+    }
+
 public:
     void
     run() override
@@ -3894,6 +4023,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testInvariantOverwriteLegacy();
     }
 };
 
