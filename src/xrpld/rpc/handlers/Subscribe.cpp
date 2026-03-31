@@ -5,7 +5,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -62,7 +61,7 @@ doSubscribe(RPC::JsonContext& context)
                     strUrl,
                     strUsername,
                     strPassword,
-                    context.app.logs());
+                    context.app);
                 ispSub =
                     context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
             }
@@ -281,10 +280,8 @@ doSubscribe(RPC::JsonContext& context)
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }
-                else
-                {
-                    book.domain = domain;
-                }
+
+                book.domain = domain;
             }
 
             if (!isConsistent(book))

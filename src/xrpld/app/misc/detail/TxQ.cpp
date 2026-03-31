@@ -121,7 +121,7 @@ TxQ::FeeMetrics::update(
         txnsExpected_ = std::min(next, maximumTxnCount_.value_or(next));
     }
 
-    if (!size)
+    if (size == 0)
     {
         escalationMultiplier_ = setup.minimumEscalationMultiplier;
     }
@@ -185,16 +185,16 @@ sumOfFirstSquares(std::size_t xIn)
 }
 
 // Unit tests for sumOfSquares()
-static_assert(sumOfFirstSquares(1).first == true);
+static_assert(sumOfFirstSquares(1).first);
 static_assert(sumOfFirstSquares(1).second == 1);
 
-static_assert(sumOfFirstSquares(2).first == true);
+static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first == true, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
 static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
 
-static_assert(sumOfFirstSquares(0x200000).first == false, "");
+static_assert(!sumOfFirstSquares(0x200000).first, "");
 static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
 
 }  // namespace detail
@@ -308,10 +308,11 @@ TxQ::MaybeTx&
 TxQ::TxQAccount::add(MaybeTx&& txn)
 {
     auto const seqProx = txn.seqProxy;
+    [[maybe_unused]] auto const* txnPtr = &txn;
 
     auto result = transactions.emplace(seqProx, std::move(txn));
     XRPL_ASSERT(result.second, "xrpl::TxQ::TxQAccount::add : emplace succeeded");
-    XRPL_ASSERT(&result.first->second != &txn, "xrpl::TxQ::TxQAccount::add : transaction moved");
+    XRPL_ASSERT(&result.first->second != txnPtr, "xrpl::TxQ::TxQAccount::add : transaction moved");
 
     return result.first->second;
 }
@@ -357,7 +358,7 @@ TxQ::canBeHeld(
     // queue yet, but should be added in the future.
     // tapFAIL_HARD transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
-        (flags & tapFAIL_HARD))
+        ((flags & tapFAIL_HARD) != 0u))
         return telCAN_NOT_QUEUE;
 
     {
@@ -386,23 +387,29 @@ TxQ::canBeHeld(
     // transaction fills the _first_ sequence hole for the account.
     auto const txSeqProx = tx.getSeqProxy();
     if (txSeqProx.isTicket())
+    {
         // Tickets always follow sequence-based transactions, so a ticket
         // cannot unblock a sequence-based transaction.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // This is the next queuable sequence-based SeqProxy for the account.
     SeqProxy const nextQueuable = nextQueuableSeqImpl(sleAccount, lock);
     if (txSeqProx != nextQueuable)
+    {
         // The provided transaction does not fill the next open sequence gap.
         return telCAN_NOT_QUEUE_FULL;
+    }
 
     // Make sure they are not just topping off the account's queued
     // sequence-based transactions.
     if (auto const nextTxIter = txQAcct.transactions.upper_bound(nextQueuable);
         nextTxIter != txQAcct.transactions.end() && nextTxIter->first.isSeq())
+    {
         // There is a next transaction and it is sequence based.  They are
         // filling a real gap.  Allow it.
         return tesSUCCESS;
+    }
 
     return telCAN_NOT_QUEUE_FULL;
 }
@@ -690,7 +697,7 @@ TxQ::apply(
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
     auto const pfResult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfResult.ter != tesSUCCESS)
+    if (!isTesSuccess(pfResult.ter))
         return {pfResult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
@@ -718,9 +725,11 @@ TxQ::apply(
     if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
+        {
             // The ticket number is low enough that it should already be
             // in the ledger if it were ever going to exist.
             return {tefNO_TICKET, false};
+        }
 
         // We don't queue transactions that use Tickets unless
         // we can find the Ticket in the ledger.
@@ -762,9 +771,11 @@ TxQ::apply(
         TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
+        {
             // Even though there may be transactions in the queue, there are
             // none that we should pay attention to.
             return {};
+        }
 
         return {TxIter{firstIter, acctTxs.end()}};
     }();
@@ -928,7 +939,7 @@ TxQ::apply(
             //
             //  o Additional transactions with Sequences should
             //    follow preceding sequence-based transactions with no
-            //    gaps (except for those required by CreateTicket
+            //    gaps (except for those required by TicketCreate
             //    transactions).
 
             // Find the entry in the queue that precedes the new
@@ -949,9 +960,13 @@ TxQ::apply(
                 if (txSeqProx.isSeq())
                 {
                     if (txSeqProx < acctSeqProx)
+                    {
                         return {tefPAST_SEQ, false};
-                    else if (txSeqProx > acctSeqProx)
+                    }
+                    if (txSeqProx > acctSeqProx)
+                    {
                         return {terPRE_SEQ, false};
+                    }
                 }
             }
             else if (!replacedTxIter)
@@ -1301,9 +1316,13 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
     for (auto txQAccountIter = byAccount_.begin(); txQAccountIter != byAccount_.end();)
     {
         if (txQAccountIter->second.empty())
+        {
             txQAccountIter = byAccount_.erase(txQAccountIter);
+        }
         else
+        {
             ++txQAccountIter;
+        }
     }
 }
 
@@ -1393,9 +1412,13 @@ TxQ::accept(Application& app, OpenView& view)
                 candidateIter->retriesRemaining <= 0)
             {
                 if (candidateIter->retriesRemaining <= 0)
+                {
                     account.retryPenalty = true;
+                }
                 else
+                {
                     account.dropPenalty = true;
+                }
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
@@ -1406,9 +1429,13 @@ TxQ::accept(Application& app, OpenView& view)
                                  << transToken(txnResult) << ". Leave in queue."
                                  << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
+                {
                     candidateIter->retriesRemaining = 1;
+                }
                 else
+                {
                     --candidateIter->retriesRemaining;
+                }
                 candidateIter->lastResult = txnResult;
                 if (account.dropPenalty && account.transactions.size() > 1 && isFull<95>())
                 {
@@ -1447,7 +1474,9 @@ TxQ::accept(Application& app, OpenView& view)
                     }
                 }
                 else
+                {
                     ++candidateIter;
+                }
             }
         }
         else
@@ -1462,9 +1491,13 @@ TxQ::accept(Application& app, OpenView& view)
     // reordered.
     LedgerHash const& parentHash = view.header().parentHash;
     if (parentHash == parentHash_)
+    {
         JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
+    }
     else
+    {
         parentHash_ = parentHash;
+    }
 
     [[maybe_unused]] auto const startingSize = byFee_.size();
     // byFee_ doesn't "own" the candidate objects inside it, so it's
@@ -1532,12 +1565,14 @@ TxQ::nextQueuableSeqImpl(
     TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
 
     if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
+    {
         // Either...
         //   o There are no queued sequence-based transactions equal to or
         //     following acctSeqProx or
         //   o acctSeqProx is not currently in the queue.
         // So acctSeqProx is as good as it gets.
         return acctSeqProx;
+    }
 
     // There are sequence-based transactions queued that follow acctSeqProx.
     // Locate the first opening to put a transaction into.
@@ -1557,7 +1592,7 @@ TxQ::getRequiredFeeLevel(
     OpenView& view,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
-    std::lock_guard<std::mutex> const& lock) const
+    std::lock_guard<std::mutex> const& lock)
 {
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
@@ -1735,7 +1770,7 @@ TxQ::getTxs() const
 Json::Value
 TxQ::doRPC(Application& app) const
 {
-    auto const view = app.openLedger().current();
+    auto const view = app.getOpenLedger().current();
     if (!view)
     {
         BOOST_ASSERT(false);
@@ -1798,7 +1833,7 @@ setup_TxQ(Config const& config)
     set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
     set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
-    std::uint32_t max;
+    std::uint32_t max = 0;
     if (set(max, "maximum_txn_in_ledger", section))
     {
         if (max < setup.minimumTxnInLedger)

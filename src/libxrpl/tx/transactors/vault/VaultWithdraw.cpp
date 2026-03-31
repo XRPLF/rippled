@@ -1,5 +1,7 @@
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -144,7 +146,9 @@ VaultWithdraw::doApply()
             assetsWithdrawn = *maybeAssets;
         }
         else
+        {
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
     }
     catch (std::overflow_error const&)
     {
@@ -230,7 +234,7 @@ VaultWithdraw::doApply()
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, mPriorBalance, assetsWithdrawn, j_);
+        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 }  // namespace xrpl

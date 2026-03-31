@@ -234,9 +234,13 @@ public:
 
                 auto lines = env.rpc("json", "noripple_check", to_string(params));
                 if (apiVersion < 2u)
+                {
                     BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                }
                 else
+                {
                     BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                }
             }
         }
     }

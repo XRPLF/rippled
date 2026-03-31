@@ -1,3 +1,5 @@
+#include <test/unit_test/utils.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
@@ -70,12 +72,16 @@ public:
         {
             auto const canonicality = ecdsaCanonicality(makeSlice(sig));
             BEAST_EXPECT(canonicality);
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*canonicality == ECDSACanonicality::fullyCanonical);
         }
 
         {
             auto const canonicality = ecdsaCanonicality(makeSlice(non));
             BEAST_EXPECT(canonicality);
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
         }
 
@@ -95,6 +101,8 @@ public:
             auto const [pk, sk] = randomKeyPair(KeyType::secp256k1);
 
             BEAST_EXPECT(pk == derivePublicKey(KeyType::secp256k1, sk));
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*publicKeyType(pk) == KeyType::secp256k1);
 
             for (std::size_t j = 0; j < 32; j++)
@@ -104,7 +112,7 @@ public:
 
                 auto sig = signDigest(pk, sk, digest);
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
 
                 // Wrong digest:
@@ -133,7 +141,7 @@ public:
             auto const [pk, sk] = randomKeyPair(type);
 
             BEAST_EXPECT(pk == derivePublicKey(type, sk));
-            BEAST_EXPECT(*publicKeyType(pk) == type);
+            BEAST_EXPECT(*publicKeyType(pk) == type);  // NOLINT(bugprone-unchecked-optional-access)
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -142,7 +150,7 @@ public:
 
                 auto sig = sign(pk, sk, makeSlice(data));
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verify(pk, makeSlice(data), sig));
 
                 // Construct wrong data:
@@ -183,7 +191,7 @@ public:
                 TokenType::NodePrivate, "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         {
@@ -193,7 +201,7 @@ public:
                 TokenType::NodePrivate, "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Try converting short, long and malformed data
@@ -261,20 +269,21 @@ public:
             BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<SecretKey>(TokenType::NodePrivate, si);
-            BEAST_EXPECT(ski && keys[i] == *ski);
+            BEAST_EXPECT(ski && test::equal(keys[i], *ski));
 
             for (std::size_t j = i; j != keys.size(); ++j)
             {
-                BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
+                BEAST_EXPECT(test::equal(keys[i], keys[j]) == (i == j));
 
                 auto const sj = toBase58(TokenType::NodePrivate, keys[j]);
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
                 auto const skj = parseBase58<SecretKey>(TokenType::NodePrivate, sj);
-                BEAST_EXPECT(skj && keys[j] == *skj);
+                BEAST_EXPECT(skj && test::equal(keys[j], *skj));
 
-                BEAST_EXPECT((*ski == *skj) == (i == j));
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                BEAST_EXPECT(test::equal(*ski, *skj) == (i == j));
             }
         }
     }
@@ -292,8 +301,9 @@ public:
             auto kp = generateKeyPair(KeyType::secp256k1, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
-            BEAST_EXPECT(calcAccountID(kp.first) == *id);
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
+            BEAST_EXPECT(
+                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
@@ -310,8 +320,9 @@ public:
             auto kp = generateKeyPair(KeyType::ed25519, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
-            BEAST_EXPECT(calcAccountID(kp.first) == *id);
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
+            BEAST_EXPECT(
+                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
