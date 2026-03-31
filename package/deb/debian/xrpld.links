@@ -4,7 +4,6 @@ opt/xrpld/bin/xrpld usr/bin/xrpld
 
 ## remove when "rippled" deprecated
 opt/xrpld/bin/xrpld opt/xrpld/bin/rippled
-opt/xrpld/bin/xrpld usr/bin/rippled
 opt/xrpld/bin/xrpld usr/local/bin/rippled
 opt/xrpld/etc/xrpld.cfg opt/xrpld/etc/rippled.cfg
 opt/xrpld opt/ripple

@@ -80,7 +80,7 @@ foreach(PKG deb rpm)
         COMMAND
             sh -c
             "docker rm -f xrpld_${PKG}_install_test 2>/dev/null || true && \
-            docker run --rm -d \
+            docker run -d \
             --name xrpld_${PKG}_install_test \
             --memory=45g --memory-swap=45g \
             --privileged \

@@ -26,7 +26,7 @@ Source8:  update-xrpld-cron
 Source9:  LICENSE.md
 Source10: README.md
 
-BuildArch:     x86_64
+ExclusiveArch: x86_64
 BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
@@ -57,7 +57,6 @@ ln -s %{_opt_prefix}/bin/xrpld %{buildroot}/usr/bin/xrpld
 
 ## remove when "rippled" deprecated
 ln -s xrpld                     %{buildroot}%{_opt_prefix}/bin/rippled
-ln -s %{_opt_prefix}/bin/xrpld  %{buildroot}/usr/bin/rippled
 ln -s %{_opt_prefix}/bin/xrpld  %{buildroot}/usr/local/bin/rippled
 ln -s xrpld.cfg                 %{buildroot}%{_opt_prefix}/etc/rippled.cfg
 ln -s %{_opt_prefix}            %{buildroot}/opt/ripple
@@ -116,7 +115,6 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 
 # TODO: remove when rippled deprecated
 %{_opt_prefix}/bin/rippled
-/usr/bin/rippled
 /usr/local/bin/rippled
 %{_opt_prefix}/etc/rippled.cfg
 /etc/opt/ripple

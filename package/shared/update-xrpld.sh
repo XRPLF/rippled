@@ -8,7 +8,7 @@ if [[ $(id -u) -ne 0 ]] ; then
    exit 1
 fi
 
-LOCKDIR=/tmp/xrpld-update.lock
+LOCKDIR=/run/lock/xrpld-update.lock
 UPDATELOG=/var/log/xrpld/update.log
 
 function cleanup {
@@ -37,6 +37,10 @@ if command -v apt-get &>/dev/null; then
   }
 elif command -v yum &>/dev/null; then
   REPO=${REPO-stable}
+  if [[ ! "$REPO" =~ ^(stable|unstable|nightly|develop)$ ]]; then
+    echo "Invalid REPO value: ${REPO}" >&2
+    exit 1
+  fi
   yum --disablerepo=* --enablerepo="ripple-${REPO}" clean expire-cache
 
   # yum check-update exits 100 when updates are available, 0 for none, 1 for errors.
@@ -59,7 +63,7 @@ fi
 
 # Do the actual update and restart the service after reloading systemctl daemon.
 if [ "$can_update" = true ] ; then
-  exec 3>&1 1>>"${UPDATELOG}" 2>&1
+  exec >>"${UPDATELOG}" 2>&1
   set -e
   apply_update
   systemctl daemon-reload

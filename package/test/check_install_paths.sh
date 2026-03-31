@@ -46,5 +46,4 @@ fi
 /opt/ripple/bin/xrpld    --version
 /opt/ripple/bin/rippled  --version
 /usr/bin/xrpld           --version
-/usr/bin/rippled         --version
 /usr/local/bin/rippled   --version

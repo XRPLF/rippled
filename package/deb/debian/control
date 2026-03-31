@@ -21,13 +21,3 @@ Description: XRP Ledger daemon
  xrpld is the reference implementation of the XRP Ledger protocol.
  It participates in the peer-to-peer XRP Ledger network, processes
  transactions, and maintains the ledger database.
-
-Package: rippled
-Architecture: all
-Section: oldlibs
-Priority: optional
-Depends: xrpld, ${misc:Depends}
-Description: transitional package - use xrpld
- The rippled package has been renamed to xrpld. This transitional
- package ensures a smooth upgrade and can be safely removed after
- xrpld is installed.
