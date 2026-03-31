@@ -215,11 +215,8 @@ public:
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
         auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
-
-        // clang-format off
         if (!buf) [[unlikely]]
             return nullptr;
-        // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's

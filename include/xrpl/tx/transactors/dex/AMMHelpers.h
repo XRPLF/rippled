@@ -121,7 +121,6 @@ withinRelativeDistance(Quality const& calcQuality, Quality const& reqQuality, Nu
  * @param dist requested relative distance
  * @return true if within dist, false otherwise
  */
-// clang-format off
 template <typename Amt>
     requires(
         std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
@@ -134,7 +133,6 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
     auto const [min, max] = std::minmax(calc, req);
     return ((max - min) / max) < dist;
 }
-// clang-format on
 
 /** Solve quadratic equation to find takerGets or takerPays. Round
  * to minimize the amount in order to maximize the quality.
