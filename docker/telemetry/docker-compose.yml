@@ -2,13 +2,12 @@
 #
 # Provides services for local development:
 #   - otel-collector: receives OTLP traces from rippled, batches and
-#     forwards them to Jaeger and Tempo. Listens on ports 4317 (gRPC)
+#     forwards them to Tempo. Listens on ports 4317 (gRPC)
 #     and 4318 (HTTP).
-#   - jaeger: all-in-one tracing backend with UI on port 16686.
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
-#   - grafana: dashboards on port 3000, pre-configured with Jaeger, Tempo
-#     datasources.
+#   - grafana: dashboards on port 3000, pre-configured with Tempo
+#     datasource.
 #
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
@@ -31,18 +30,7 @@ services:
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     depends_on:
-      - jaeger
       - tempo
-    networks:
-      - rippled-telemetry
-
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14250:14250" # gRPC
     networks:
       - rippled-telemetry
 
@@ -67,7 +55,6 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
-      - jaeger
       - tempo
     networks:
       - rippled-telemetry
