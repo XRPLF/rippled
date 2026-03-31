@@ -162,6 +162,8 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     XRPL_TRACE_SET_ATTR("xrpl.rpc.command", name.c_str());
     XRPL_TRACE_SET_ATTR("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
     XRPL_TRACE_SET_ATTR("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
+    XRPL_TRACE_SET_ATTR("xrpl.node.amendment_blocked", context.app.getOPs().isAmendmentBlocked());
+    XRPL_TRACE_SET_ATTR("xrpl.node.server_state", context.app.getOPs().strOperatingMode().c_str());
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
