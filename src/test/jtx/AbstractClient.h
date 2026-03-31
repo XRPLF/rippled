@@ -5,7 +5,7 @@
 namespace xrpl {
 namespace test {
 
-/* Abstract XRPL Client interface.
+/* Abstract XRPL client interface.
 
    This abstracts the transport layer, allowing
    commands to be submitted to an xrpld server.
