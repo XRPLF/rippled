@@ -411,7 +411,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         if (ledgerIndex <= 0)
             return Unexpected(RPC::make_param_error("Ledger index too small"));
 
-        auto const j = context.app.journal("RPCHandler");
+        auto const j = context.app.getJournal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated
         // ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);

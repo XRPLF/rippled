@@ -151,7 +151,7 @@ private:
     void
     addPeer(jtx::Env& env, std::vector<std::shared_ptr<PeerTest>>& peers, std::uint16_t& nDisabled)
     {
-        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
+        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
         (nDisabled == 0)
             ? request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false))
@@ -216,7 +216,7 @@ private:
             m.set_rawtransaction(s.data(), s.size());
             m.set_deferred(false);
             m.set_status(protocol::TransactionStatus::tsNEW);
-            env.app().overlay().relay(uint256{0}, m, toSkip);
+            env.app().getOverlay().relay(uint256{0}, m, toSkip);
             BEAST_EXPECT(PeerTest::sendTx_ == expectRelay && PeerTest::queueTx_ == expectQueue);
         }
     }

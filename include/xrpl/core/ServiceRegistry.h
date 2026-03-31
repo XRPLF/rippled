@@ -3,7 +3,6 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/ledger/CachedSLEs.h>
 
 #include <boost/asio.hpp>
 
@@ -22,6 +21,20 @@ class PerfLog;
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+class TaggedCache;
+class STLedgerEntry;
+using SLE = STLedgerEntry;
+using CachedSLEs = TaggedCache<uint256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
@@ -89,7 +102,7 @@ public:
     getNodeFamily() = 0;
 
     virtual TimeKeeper&
-    timeKeeper() = 0;
+    getTimeKeeper() = 0;
 
     virtual JobQueue&
     getJobQueue() = 0;
@@ -98,7 +111,7 @@ public:
     getTempNodeCache() = 0;
 
     virtual CachedSLEs&
-    cachedSLEs() = 0;
+    getCachedSLEs() = 0;
 
     virtual NetworkIDService&
     getNetworkIDService() = 0;
@@ -120,26 +133,26 @@ public:
     getValidations() = 0;
 
     virtual ValidatorList&
-    validators() = 0;
+    getValidators() = 0;
 
     virtual ValidatorSite&
-    validatorSites() = 0;
+    getValidatorSites() = 0;
 
     virtual ManifestCache&
-    validatorManifests() = 0;
+    getValidatorManifests() = 0;
 
     virtual ManifestCache&
-    publisherManifests() = 0;
+    getPublisherManifests() = 0;
 
     // Network services
     virtual Overlay&
-    overlay() = 0;
+    getOverlay() = 0;
 
     virtual Cluster&
-    cluster() = 0;
+    getCluster() = 0;
 
     virtual PeerReservationTable&
-    peerReservations() = 0;
+    getPeerReservations() = 0;
 
     virtual Resource::Manager&
     getResourceManager() = 0;
@@ -174,13 +187,13 @@ public:
     getLedgerReplayer() = 0;
 
     virtual PendingSaves&
-    pendingSaves() = 0;
+    getPendingSaves() = 0;
 
     virtual OpenLedger&
-    openLedger() = 0;
+    getOpenLedger() = 0;
 
     virtual OpenLedger const&
-    openLedger() const = 0;
+    getOpenLedger() const = 0;
 
     // Transaction and operation services
     virtual NetworkOPs&
@@ -210,16 +223,16 @@ public:
     isStopping() const = 0;
 
     virtual beast::Journal
-    journal(std::string const& name) = 0;
+    getJournal(std::string const& name) = 0;
 
     virtual boost::asio::io_context&
     getIOContext() = 0;
 
     virtual Logs&
-    logs() = 0;
+    getLogs() = 0;
 
     virtual std::optional<uint256> const&
-    trapTxID() const = 0;
+    getTrapTxID() const = 0;
 
     /** Retrieve the "wallet database" */
     virtual DatabaseCon&
@@ -228,7 +241,7 @@ public:
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.
     virtual Application&
-    app() = 0;
+    getApp() = 0;
 };
 
 }  // namespace xrpl

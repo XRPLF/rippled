@@ -139,7 +139,7 @@ private:
             p->legacy("database_path", good.subdir().string());
             return p;
         }());
-        auto& trustedKeys = env.app().validators();
+        auto& trustedKeys = env.app().getValidators();
         env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;
@@ -298,6 +298,7 @@ private:
         auto sites = std::make_unique<ValidatorSite>(env.app(), journal);
 
         std::vector<std::string> uris;
+        uris.reserve(servers.size());
         for (auto const& u : servers)
             uris.push_back(u.uri);
         sites->load(uris);

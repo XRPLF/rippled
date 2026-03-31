@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
@@ -258,10 +257,10 @@ checkPayment(
 
             STPathSet result;
 
-            if (auto ledger = app.openLedger().current())
+            if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger, app.journal("RippleLineCache")),
+                    std::make_shared<RippleLineCache>(ledger, app.getJournal("RippleLineCache")),
                     srcAddressID,
                     *dstAccountID,
                     sendMax.issue().currency,
@@ -280,7 +279,7 @@ checkPayment(
                 }
             }
 
-            auto j = app.journal("RPCHandler");
+            auto j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: " << result.getJson(JsonOptions::none);
 
             if (!result.empty())
@@ -402,7 +401,7 @@ transactionPreProcessImpl(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
-    auto j = app.journal("RPCHandler");
+    auto j = app.getJournal("RPCHandler");
 
     Json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
@@ -461,7 +460,7 @@ transactionPreProcessImpl(
 
     std::shared_ptr<SLE const> sle;
     if (verify)
-        sle = app.openLedger().current()->read(keylet::account(srcAddressID));
+        sle = app.getOpenLedger().current()->read(keylet::account(srcAddressID));
 
     if (verify && !sle)
     {
@@ -565,7 +564,7 @@ transactionPreProcessImpl(
 
                 auto delegatedAddressID = *ptrDelegatedAddressID;
                 auto delegatedSle =
-                    app.openLedger().current()->read(keylet::account(delegatedAddressID));
+                    app.getOpenLedger().current()->read(keylet::account(delegatedAddressID));
                 if (!delegatedSle)
                     return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
 
@@ -765,7 +764,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 [[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
-    auto const& ledger = app.openLedger().current();
+    auto const& ledger = app.getOpenLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
     // parsing works properly it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
@@ -827,7 +826,7 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
         if (!passesLocalChecks(stTx, reason))
             return config.FEES.reference_fee;
 
-        return calculateBaseFee(*app.openLedger().current(), stTx);
+        return calculateBaseFee(*app.getOpenLedger().current(), stTx);
     }
     catch (std::exception& e)
     {
@@ -848,7 +847,7 @@ getCurrentNetworkFee(
 {
     XRPAmount const feeDefault = getTxFee(app, config, tx);
 
-    auto ledger = app.openLedger().current();
+    auto ledger = app.getOpenLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
     XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
     XRPAmount fee = loadFee;
@@ -950,7 +949,7 @@ transactionSign(
 {
     using namespace detail;
 
-    auto j = app.journal("RPCHandler");
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
@@ -961,7 +960,7 @@ transactionSign(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<ReadView const> ledger = app.openLedger().current();
+    std::shared_ptr<ReadView const> ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -985,8 +984,8 @@ transactionSubmit(
 {
     using namespace detail;
 
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
@@ -1107,8 +1106,8 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
@@ -1219,8 +1218,8 @@ transactionSubmitMultiSigned(
     Application& app,
     ProcessTransactionFn const& processTransaction)
 {
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must

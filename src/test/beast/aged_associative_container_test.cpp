@@ -1362,7 +1362,7 @@ aged_associative_container_test_base::testArrayCreate()
     {
         // Copy construct key
         typename Traits::template Cont<> c(clock);
-        for (auto e : v)
+        for (auto const& e : v)
             c[e.first] = e.second;
         checkContents(c, v);
     }

@@ -435,7 +435,7 @@ struct Flow_test : public beast::unit_test::suite
             BEAST_EXPECT(isOffer(env, bob, BTC(60), EUR(50)));
             BEAST_EXPECT(isOffer(env, carol, BTC(1000), EUR(1)));
 
-            auto flowJournal = env.app().logs().journal("Flow");
+            auto flowJournal = env.app().getJournal("Flow");
             auto const flowResult = [&] {
                 STAmount deliver(USD(51));
                 STAmount smax(BTC(61));
@@ -474,7 +474,7 @@ struct Flow_test : public beast::unit_test::suite
             }();
 
             BEAST_EXPECT(flowResult.removableOffers.size() == 1);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
                 Sandbox sb(&view, tapNONE);

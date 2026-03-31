@@ -9,12 +9,12 @@ namespace xrpl {
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
     , db_(app.getNodeStore())
-    , j_(app.journal("NodeFamily"))
+    , j_(app.getJournal("NodeFamily"))
     , fbCache_(
           std::make_shared<FullBelowCache>(
               "Node family full below cache",
               stopwatch(),
-              app.journal("NodeFamilyFulLBelowCache"),
+              app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
               fullBelowTargetSize,
               fullBelowExpiration))

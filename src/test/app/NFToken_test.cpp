@@ -399,7 +399,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Note that we're bypassing almost all of the ledger's safety
         // checks with this modify() call.  If you call close() between
         // here and the end of the test all the effort will be lost.
-        env.app().openLedger().modify([&alice](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&alice](OpenView& view, beast::Journal j) {
             // Get the account root we want to hijack.
             auto const sle = view.read(keylet::account(alice.id()));
             if (!sle)

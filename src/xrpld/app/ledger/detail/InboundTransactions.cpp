@@ -3,7 +3,6 @@
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
@@ -54,7 +53,7 @@ public:
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
         , m_peerSetBuilder(std::move(peerSetBuilder))
-        , j_(app_.journal("InboundTransactions"))
+        , j_(app_.getJournal("InboundTransactions"))
     {
         m_zeroSet.mSet =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());

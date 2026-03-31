@@ -222,7 +222,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         {
             //(1) the ledger after genesis, not a flag ledger
-            l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+            l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
 
             auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
             auto txReEnable_1 = createTx(false, l->seq(), publicKeys[1]);
@@ -239,7 +239,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             // generate more ledgers
             for (auto i = 0; i < 256 - 2; ++i)
             {
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -274,7 +274,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(good_size);
                 if (good_size)
                     BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -326,7 +326,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                     BEAST_EXPECT(l->validatorToDisable() == publicKeys[1]);
                     BEAST_EXPECT(l->validatorToReEnable() == publicKeys[0]);
                 }
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -368,7 +368,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                     BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                     BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
                 }
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -417,7 +417,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                     BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                     BEAST_EXPECT(l->validatorToReEnable() == publicKeys[0]);
                 }
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -459,7 +459,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                     BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
                     BEAST_EXPECT(l->validatorToReEnable() == publicKeys[1]);
                 }
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -473,7 +473,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             for (auto i = 0; i < 256; ++i)
             {
                 BEAST_EXPECT(negUnlSizeTest(l, 0, false, false));
-                l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             }
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
@@ -557,7 +557,7 @@ struct NetworkHistory
         int nidx = 0;
         while (l->seq() <= param.numLedgers)
         {
-            l = std::make_shared<Ledger>(*l, env.app().timeKeeper().closeTime());
+            l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
             history.push_back(l);
 
             if (l->isFlagLedger())
@@ -605,7 +605,11 @@ struct NetworkHistory
     {
         static auto keyPair = randomKeyPair(KeyType::secp256k1);
         return std::make_shared<STValidation>(
-            env.app().timeKeeper().now(), keyPair.first, keyPair.second, v, [&](STValidation& v) {
+            env.app().getTimeKeeper().now(),
+            keyPair.first,
+            keyPair.second,
+            v,
+            [&](STValidation& v) {
                 v.setFieldH256(sfLedgerHash, ledger->header().hash);
                 v.setFieldU32(sfLedgerSequence, ledger->seq());
                 v.setFlag(vfFullValidation);
@@ -1682,7 +1686,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(
-                env.app().timeKeeper().now(),
+                env.app().getTimeKeeper().now(),
                 keys.first,
                 keys.second,
                 calcNodeID(keys.first),
@@ -1713,7 +1717,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
         }
 
         // setup the ValidatorList
-        auto& validators = env.app().validators();
+        auto& validators = env.app().getValidators();
         auto& local = *nUnlKeys.begin();
         std::vector<std::string> cfgPublishers;
         validators.load(local, cfgKeys, cfgPublishers);
@@ -1721,7 +1725,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
             activeValidators,
             env.timeKeeper().now(),
             env.app().getOPs(),
-            env.app().overlay(),
+            env.app().getOverlay(),
             env.app().getHashRouter());
         BEAST_EXPECT(validators.getTrustedMasterKeys().size() == numNodes);
         validators.setNegativeUNL(nUnlKeys);

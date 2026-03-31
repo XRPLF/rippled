@@ -133,7 +133,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
     // Does request specify a ledger or ledger range?
     if (ledgerSpecifier)
     {
-        auto const status = std::visit(
+        auto status = std::visit(
             [&](auto const& ls) -> RPC::Status {
                 using T = std::decay_t<decltype(ls)>;
                 if constexpr (std::is_same_v<T, LedgerRange>)
@@ -167,7 +167,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                 else
                 {
                     std::shared_ptr<ReadView const> ledgerView;
-                    auto const status = getLedger(ledgerView, ls, context);
+                    auto status = getLedger(ledgerView, ls, context);
                     if (!ledgerView)
                     {
                         return status;
@@ -211,12 +211,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     result.marker = args.marker;
 
     RelationalDatabase::AccountTxPageOptions options = {
-        args.account,
-        result.ledgerRange.min,
-        result.ledgerRange.max,
-        result.marker,
-        args.limit,
-        isUnlimited(context.role)};
+        args.account, result.ledgerRange, result.marker, args.limit, isUnlimited(context.role)};
 
     auto& db = context.app.getRelationalDatabase();
 
