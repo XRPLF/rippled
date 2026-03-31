@@ -173,7 +173,7 @@
 
 - Edit `docker/telemetry/integration-test.sh`:
   - After sending RPC requests (which create spans), grep rippled's log output for `trace_id=`
-  - Verify trace_id matches a trace visible in Jaeger
+  - Verify trace_id matches a trace visible in Tempo
   - Optionally: query Loki via API to confirm log ingestion
 
 **Key modified files**:

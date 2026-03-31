@@ -15,7 +15,7 @@ docker compose -f docker/telemetry/docker-compose.yml up -d
 This starts:
 
 - **OTel Collector** on ports 4317 (gRPC) and 4318 (HTTP)
-- **Jaeger** UI on http://localhost:16686
+- **Tempo** on http://localhost:3200 (trace backend)
 - **Prometheus** on http://localhost:9090
 - **Loki** on http://localhost:3100 (log aggregation)
 - **Grafana** on http://localhost:3000
@@ -405,7 +405,7 @@ count_over_time({job="rippled"} |= "trace_id=" [5m])
 
 ## Troubleshooting
 
-### No traces appearing in Jaeger
+### No traces appearing in Tempo
 
 1. Check rippled logs for `Telemetry starting` message
 2. Verify `enabled=1` in the `[telemetry]` config section
