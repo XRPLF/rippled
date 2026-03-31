@@ -2,7 +2,6 @@
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/ledger/CanonicalTXSet.h>
