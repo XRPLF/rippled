@@ -6,7 +6,6 @@
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -546,7 +545,7 @@ PathRequest::findPaths(
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
             domain,         // --> Domain.
-            app_.logs(),
+            app_,
             &rcInput);
 
         if (!convert_all_ && !fullLiquidityPath.empty() &&
@@ -565,7 +564,7 @@ PathRequest::findPaths(
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
                 domain,         // --> Domain.
-                app_.logs());
+                app_);
 
             if (!isTesSuccess(rc.result()))
             {
