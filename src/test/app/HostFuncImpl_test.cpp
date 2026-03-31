@@ -2071,12 +2071,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     Bytes const floatIntZero       =  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00};  // 0
     Bytes const floatIntMax        =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00};  // 2^63-1
     Bytes const floatUIntMax       =  {0x19, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A, 0x00, 0x00, 0x00, 0x01};  // 2^64-1
+
     Bytes const floatMaxExp        =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00};  // 1e(Number::maxExponent + normalExp)
     Bytes const floatPreMaxExp     =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0x00, 0x00, 0x7F, 0xFF};  // 1e(Number::maxExponent + normalExp - 1)
     Bytes const floatMinusMaxExp   =  {0xF2, 0x1F, 0x49, 0x4C, 0x58, 0x9C, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00};  // -1e(Number::maxExponent + normalExp)
-    Bytes const floatMaxIOU        =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x63, 0xFF, 0x9C, 0x00, 0x00, 0x00, 0x4E};  // 1e(96)-1
     Bytes const floatMinExp        =  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00};  // 1e(Number::minExponent - normalExp)
     Bytes const floatMax           =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x80, 0x00};  // Number::maxRep e(Number::maxExponent - normalExp)
+
+    Bytes const floatMaxIOU        =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x63, 0xFF, 0x9C, 0x00, 0x00, 0x00, 0x4E};  // 9999999999999999e(96)
+    Bytes const floatMinIOU        =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x9D};  // 1e(-96 - 3 + normalExp = -81)
+
     Bytes const float1             =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE};  // 1
     Bytes const floatMinus1        =  {0xF2, 0x1F, 0x49, 0x4C, 0x58, 0x9C, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xEE};  // -1
     Bytes const float1More         =  {0x0D, 0xE0, 0xB6, 0xB3, 0xA7, 0x64, 0x03, 0xE8, 0xFF, 0xFF, 0xFF, 0xEE};  // 1.000 000 000 000 001
@@ -2092,7 +2096,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
     template <class T>
     void
-    printFloats(T m, int e)
+    printFloats(std::string_view descr, T m, int e)
     {
         Serializer msg;
         Number n;
@@ -2108,8 +2112,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         STNumber(sfNumber, n).add(msg);
         auto const& data = msg.modData();
-        std::cout << "m: " << std::setw(20) << n.mantissa() << ", e: " << std::setw(12)
-                  << n.exponent() << ", hex: ";
+        std::cout << std::setw(24) << descr << " m: " << std::setw(20) << n.mantissa()
+                  << ", e: " << std::setw(8) << n.exponent() << ", hex: ";
         std::cout << std::hex << std::uppercase << std::setfill('0');
         for (auto const& c : data)
             std::cout << std::setw(2) << (unsigned)c << " ";
@@ -2119,23 +2123,29 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     void
     printNumbersBin()
     {
-        printFloats(std::numeric_limits<int64_t>::min(), 0);
-        printFloats(0, 0);
-        printFloats(std::numeric_limits<int64_t>::max(), 0);
-        printFloats(std::numeric_limits<uint64_t>::max(), 0);
-        printFloats(1, Number::maxExponent + normalExp);
-        printFloats(1, Number::maxExponent + normalExp - 1);
-        printFloats(-1, Number::maxExponent + normalExp);
-        printFloats(STAmount::cMaxValue, STAmount::cMaxOffset);
-        printFloats(1, Number::minExponent - normalExp);
-        printFloats(Number::maxRep, Number::maxExponent);
-        printFloats(1, 0);
-        printFloats(-1, 0);
-        printFloats(1'000'000'000'000'001, -15);
-        printFloats(2, 0);
-        printFloats(10, 0);
-        printFloats(3141592653589793, -15);
-        printFloats(-3, 0);
+        printFloats("int64.min", std::numeric_limits<int64_t>::min(), 0);
+        printFloats("zero", 0, 0);
+        printFloats("int64.max", std::numeric_limits<int64_t>::max(), 0);
+        printFloats("uint64.max", std::numeric_limits<uint64_t>::max(), 0);
+
+        printFloats("Number 1 max exp", 1, Number::maxExponent + normalExp);
+        printFloats("Number (max exp - 1)", 1, Number::maxExponent + normalExp - 1);
+        printFloats("Number -1 max exp", -1, Number::maxExponent + normalExp);
+
+        printFloats("Number.max", Number::maxRep, Number::maxExponent);
+        printFloats("Number min positive", 1, Number::minExponent + normalExp);
+        printFloats(
+            "Number.min", std::numeric_limits<int64_t>::min(), Number::maxExponent - normalExp);
+        printFloats("STAmount.max", STAmount::cMaxValue, STAmount::cMaxOffset);
+        printFloats("STAmount min positive", STAmount::cMinValue, STAmount::cMinOffset);
+
+        printFloats("one", 1, 0);
+        printFloats("-one", -1, 0);
+        printFloats("1,00...01", 1'000'000'000'000'001, -15);
+        printFloats("two", 2, 0);
+        printFloats("ten", 10, 0);
+        printFloats("pi", 3141592653589793, -15);
+        printFloats("-three", -3, 0);
         return;
     }
 
@@ -2415,6 +2425,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
+            // Number can't hold int64.min, it is rounded and we get -3, not -1
             auto const result = hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus3);
         }
@@ -2813,7 +2824,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             STAmount const amount = XRP(100);
@@ -2856,6 +2867,21 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(ex);
         }
+
+        auto const USD = env.master["USD"];
+        {
+            STAmount const amount(
+                IOUAmount(STAmount::cMinValue, STAmount::cMinOffset), USD.issue());
+            auto const result = hfs.floatFromSTAmount(amount, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinIOU);
+        }
+
+        {
+            STAmount const amount(
+                IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset), USD.issue());
+            auto const result = hfs.floatFromSTAmount(amount, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+        }
     }
 
     void
@@ -2868,7 +2894,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Test with invalid rounding mode
         {
@@ -2909,7 +2935,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatToInt(makeSlice(float1), -1);
@@ -2938,21 +2964,45 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const result = hfs.floatToInt(makeSlice(floatIntZero), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == 0);
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(*result, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
             auto const result = hfs.floatToInt(makeSlice(float1), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == 1);
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(*result, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
             auto const result = hfs.floatToInt(makeSlice(floatMinus1), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == -1);
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(*result, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
             auto const result = hfs.floatToInt(makeSlice(floatIntMax), 0);
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == std::numeric_limits<int64_t>::max());
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(*result, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
+        }
+
+        {
+            // Number can't hold int64.min, it is rounded and we get int64_t.min - 3, which doesn't
+            // fit into int64
+            auto const result = hfs.floatToInt(makeSlice(floatIntMin), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
         {
@@ -2997,7 +3047,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(invalid));
@@ -3009,30 +3059,50 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 0) &&
                 BEAST_EXPECT(result->second == std::numeric_limits<int32_t>::min());
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(float1));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
                 BEAST_EXPECT(result->second == -normalExp);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == -1000000000000000000) &&
                 BEAST_EXPECT(result->second == -normalExp);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(float10));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
                 BEAST_EXPECT(result->second == -normalExp + 1);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float10);
         }
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatPi));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 3141592653589793000) &&
                 BEAST_EXPECT(result->second == -normalExp);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatPi);
         }
 
         {
@@ -3040,6 +3110,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(result) &&
                 BEAST_EXPECT(result->first == std::numeric_limits<int64_t>::max()) &&
                 BEAST_EXPECT(result->second == 0);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
         }
 
         {
@@ -3047,12 +3121,20 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(result) &&
                 BEAST_EXPECT(result->first == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
                 BEAST_EXPECT(result->second == 1);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
             auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMax));
             BEAST_EXPECT(result) && BEAST_EXPECT(result->first == Number::maxRep) &&
                 BEAST_EXPECT(result->second == Number::maxExponent);
+
+            // roundtrip
+            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMax);
         }
     }
 
@@ -3066,7 +3148,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatNegate(makeSlice(invalid));
@@ -3117,7 +3199,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatAbs(makeSlice(invalid));

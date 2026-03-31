@@ -152,7 +152,7 @@ floatFromIntImpl(int64_t x, int32_t mode)
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber num(x);
+        detail::WasmNumber const num(x);
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();
@@ -263,11 +263,11 @@ floatToMantissaAndExponentImpl(Slice const& x)
 {
     try
     {
-        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        detail::FloatState const rm(Number::rounding_mode::to_nearest);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber num(x);
+        detail::WasmNumber const num(x);
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);  // LCOV_EXCL_LINE
 
@@ -286,15 +286,15 @@ floatNegateImpl(Slice const& x)
 {
     try
     {
-        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        detail::FloatState const rm(Number::rounding_mode::to_nearest);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber num(x);
+        detail::WasmNumber const num(x);
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber res = -num;
+        detail::WasmNumber const res = -num;
         return res.toBytes();
     }
     // LCOV_EXCL_START
@@ -310,15 +310,15 @@ floatAbsImpl(Slice const& x)
 {
     try
     {
-        detail::FloatState rm(Number::rounding_mode::to_nearest);
+        detail::FloatState const rm(Number::rounding_mode::to_nearest);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber num(x);
+        detail::WasmNumber const num(x);
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber res = abs(num);
+        detail::WasmNumber const res = abs(num);
         return res.toBytes();
     }
     // LCOV_EXCL_START
