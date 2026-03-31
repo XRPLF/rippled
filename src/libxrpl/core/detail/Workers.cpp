@@ -225,7 +225,7 @@ Workers::Worker::run()
             // the predicate evaluation and the actual sleep.
             if (--m_workers.m_runningTaskCount == 0)
             {
-                std::lock_guard lk{m_workers.m_mut};
+                std::lock_guard const lk{m_workers.m_mut};
                 m_workers.m_cv.notify_all();
             }
         }
