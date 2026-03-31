@@ -328,7 +328,7 @@ parseDepositPreauth(
             "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
     }
 
-    return keylet::depositPreauth(*owner, std::move(sorted)).key;
+    return keylet::depositPreauth(*owner, sorted).key;
 }
 
 static Expected<uint256, Json::Value>

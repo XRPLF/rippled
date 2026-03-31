@@ -38,7 +38,7 @@ PaymentChannelFund::doApply()
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.getJournal("View"));
+            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (src != txAccount)

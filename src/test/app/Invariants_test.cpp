@@ -1261,7 +1261,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
                     keylet::nftpage_max(A1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
-                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
                 nftPage->setFieldH256(sfNextPageMin, keylet::nftpage_max(A2).key);
 
                 ac.view().insert(nftPage);
@@ -1274,7 +1274,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
                     keylet::nftpage_max(A1), (nfTokens[1].getFieldH256(sfNFTokenID))));
-                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
                 return true;

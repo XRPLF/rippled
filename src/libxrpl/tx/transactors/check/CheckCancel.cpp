@@ -57,7 +57,7 @@ CheckCancel::doApply()
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.registry.getJournal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
 
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.

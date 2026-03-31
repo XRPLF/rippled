@@ -344,7 +344,7 @@ NFTokenAcceptOffer::transferNFToken(
     if (!tokenAndPage)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto const ret = nft::removeToken(view(), seller, nftokenID, std::move(tokenAndPage->page));
+    if (auto const ret = nft::removeToken(view(), seller, nftokenID, tokenAndPage->page);
         !isTesSuccess(ret))
         return ret;
 
