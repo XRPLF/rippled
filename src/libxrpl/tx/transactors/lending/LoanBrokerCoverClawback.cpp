@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 //
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -118,14 +119,14 @@ determineAsset(
     {
         return amount.asset();
     }
-    else if (holder == brokerPseudoAccountID)
+    if (holder == brokerPseudoAccountID)
     {
         // We want the asset to match the vault asset, so use the account as the
         // issuer
         return Issue{amount.getCurrency(), account};
     }
-    else
-        return Unexpected(tecWRONG_ASSET);
+
+    return Unexpected(tecWRONG_ASSET);
 }
 
 Expected<STAmount, TER>

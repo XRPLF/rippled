@@ -40,13 +40,17 @@ class AMMCalc_test : public beast::unit_test::suite
         boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
-            if (delimited)
+            if (delimited != nullptr)
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
+            {
                 return XRP(std::stoll(match[2]));
-            // drops
-            else if (match[1] == "XRPA")
+                // drops
+            }
+            if (match[1] == "XRPA")
+            {
                 return XRPAmount{std::stoll(match[2])};
+            }
             return amountFromString(gw[match[1]].asset(), match[2]);
         }
         return std::nullopt;
@@ -68,7 +72,7 @@ class AMMCalc_test : public beast::unit_test::suite
             // input is rate * 100, no fraction
             std::uint32_t rate = 10'000'000 * std::stoi(match[2].str());
             // true if delimited - )
-            return {{currency, rate, match[3] != "" ? true : false}};
+            return {{currency, rate, match[3] != ""}};
         }
         return std::nullopt;
     }
@@ -90,7 +94,7 @@ class AMMCalc_test : public beast::unit_test::suite
         if (p == end_)
             return std::nullopt;
         std::string const s = *p;
-        bool const amm = s[0] == 'O' ? false : true;
+        bool const amm = s[0] != 'O';
         auto const a1 = getAmt(p++);
         if (!a1 || p == end_)
             return std::nullopt;
@@ -120,7 +124,9 @@ class AMMCalc_test : public beast::unit_test::suite
                     break;
             }
             else
+            {
                 return std::nullopt;
+            }
         }
         return rates;
     }
@@ -155,7 +161,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return {{pairs, *swap, *rate, fee}};
     }
 
-    std::string
+    static std::string
     toString(STAmount const& a)
     {
         std::stringstream str;
@@ -163,7 +169,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return str.str();
     }
 
-    STAmount
+    static STAmount
     mulratio(STAmount const& amt, std::uint32_t a, std::uint32_t b, bool round)
     {
         if (a == b)
@@ -173,7 +179,7 @@ class AMMCalc_test : public beast::unit_test::suite
         return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
     }
 
-    void
+    static void
     swapOut(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);
@@ -236,7 +242,7 @@ class AMMCalc_test : public beast::unit_test::suite
         std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
     }
 
-    void
+    static void
     swapIn(swapargs const& args)
     {
         auto const vp = std::get<steps>(args);
@@ -398,13 +404,17 @@ class AMMCalc_test : public beast::unit_test::suite
                                 env.current()->rules(),
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
+                        {
                             std::cout << "amm offer: " << toString(ammOffer->in) << " "
                                       << toString(ammOffer->out)
                                       << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
                                       << " " << toString(pool->first.out - ammOffer->out)
                                       << std::endl;
+                        }
                         else
+                        {
                             std::cout << "can't change the pool's SP quality" << std::endl;
+                        }
                         return true;
                     }
                 }

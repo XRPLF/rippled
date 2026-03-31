@@ -92,9 +92,11 @@ public:
                 // alice's offer should be fully crossed and so gone from
                 // the ledger.
                 if (!BEAST_EXPECT(!offerInLedger(env, alice, aliceOfferSeq)))
+                {
                     // If the in-ledger offer was not consumed then further
                     // results are meaningless.
                     return 1;
+                }
 
                 // bob's offer should be in the ledger, but reduced in size.
                 unsigned int badRate = 1;
@@ -489,7 +491,7 @@ public:
         }
     }
 
-    Amounts
+    static Amounts
     jsonOfferToAmounts(Json::Value const& json)
     {
         STAmount const in = amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);

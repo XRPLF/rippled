@@ -39,7 +39,7 @@ private:
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.journal("PeerSet"))
+PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.getJournal("PeerSet"))
 {
 }
 
@@ -51,7 +51,7 @@ PeerSetImpl::addPeers(
 {
     using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
 
-    auto const& overlay = app_.overlay();
+    auto const& overlay = app_.getOverlay();
 
     std::vector<ScoredPeer> pairs;
     pairs.reserve(overlay.size());
@@ -110,7 +110,7 @@ PeerSetImpl::sendRequest(
 
     for (auto id : peers_)
     {
-        if (auto p = app_.overlay().findPeerByShortID(id))
+        if (auto p = app_.getOverlay().findPeerByShortID(id))
         {
             if (app_.getHashRouter().shouldProcessForPeer(messageHash, p->id(), interval))
             {
@@ -158,7 +158,7 @@ make_PeerSetBuilder(Application& app)
 class DummyPeerSet : public PeerSet
 {
 public:
-    DummyPeerSet(Application& app) : j_(app.journal("DummyPeerSet"))
+    DummyPeerSet(Application& app) : j_(app.getJournal("DummyPeerSet"))
     {
     }
 

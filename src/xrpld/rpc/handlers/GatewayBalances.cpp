@@ -1,9 +1,10 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -54,7 +55,7 @@ doGatewayBalances(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
         return rpcError(rpcACT_MALFORMED);
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     context.loadType = Resource::feeHeavyBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
@@ -75,7 +76,7 @@ doGatewayBalances(RPC::JsonContext& context)
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(std::move(id.value()));
+                    hotWallets.insert(id.value());
                     return true;
                 }
             }
@@ -173,7 +174,7 @@ doGatewayBalances(RPC::JsonContext& context)
             // A positive balance means the cold wallet has an asset
             // (unusual)
 
-            if (hotWallets.count(peer) > 0)
+            if (hotWallets.contains(peer))
             {
                 // This is a specified hot wallet
                 hotBalances[peer].push_back(-rs->getBalance());

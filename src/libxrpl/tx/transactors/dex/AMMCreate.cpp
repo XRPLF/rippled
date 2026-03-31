@@ -1,6 +1,7 @@
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
@@ -72,13 +73,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount.issue();
         return ter;
     }
 
-    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount2.issue(), accountID); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: account is not authorized, " << amount2.issue();
         return ter;
@@ -163,14 +164,15 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
-        if (auto const sle = ctx.view.read(keylet::account(issue.account)); !sle)
+        auto const sle = ctx.view.read(keylet::account(issue.account));
+        if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (sle->getFlags() & lsfAllowTrustLineClawback)
+        if (sle->getFlags() & lsfAllowTrustLineClawback)
             return tecNO_PERMISSION;
         return tesSUCCESS;
     };
 
-    if (auto const ter = clawbackDisabled(amount.issue()); ter != tesSUCCESS)
+    if (auto const ter = clawbackDisabled(amount.issue()); !isTesSuccess(ter))
         return ter;
     return clawbackDisabled(amount2.issue());
 }
@@ -231,7 +233,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
 
     // Send LPT to LP.
     auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
         return {res, false};
@@ -244,22 +246,22 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
         {
-            if (SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
-                !sleRippleState)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            else
+            SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
+            if (!sleRippleState)
             {
-                auto const flags = sleRippleState->getFlags();
-                sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
-                sb.update(sleRippleState);
+                return tecINTERNAL;  // LCOV_EXCL_LINE
             }
+
+            auto const flags = sleRippleState->getFlags();
+            sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
+            sb.update(sleRippleState);
         }
         return tesSUCCESS;
     };
 
     // Send asset1.
     res = sendAndTrustSet(amount);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << amount;
         return {res, false};
@@ -267,7 +269,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
 
     // Send asset2.
     res = sendAndTrustSet(amount2);
-    if (res != tesSUCCESS)
+    if (!isTesSuccess(res))
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send " << amount2;
         return {res, false};
@@ -279,12 +281,12 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         Book const book{issueIn, issueOut, std::nullopt};
         auto const dir = keylet::quality(keylet::book(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx_.registry.getOrderBookDB().addOrderBook(book);
+            ctx_.registry.get().getOrderBookDB().addOrderBook(book);
     };
     addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
     addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));
 
-    return {res, res == tesSUCCESS};
+    return {res, isTesSuccess(res)};
 }
 
 TER

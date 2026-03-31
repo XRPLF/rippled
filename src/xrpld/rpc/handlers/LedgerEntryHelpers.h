@@ -20,10 +20,9 @@ Unexpected<Json::Value>
 missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
-    auto error = RPC::missing_field_message(std::string(field.c_str()));
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = std::move(error);
+    json[jss::error_message] = RPC::missing_field_message(std::string(field.c_str()));
     return Unexpected(json);
 }
 
@@ -31,10 +30,9 @@ Unexpected<Json::Value>
 invalidFieldError(std::string const& err, Json::StaticString const field, std::string const& type)
 {
     Json::Value json = Json::objectValue;
-    auto error = RPC::expected_field_message(field, type);
     json[jss::error] = err;
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = std::move(error);
+    json[jss::error_message] = RPC::expected_field_message(field, type);
     return Unexpected(json);
 }
 
@@ -118,7 +116,7 @@ parseHexBlob(Json::Value const& param, std::size_t maxLength)
     if (!param.isString())
         return std::nullopt;
 
-    auto const blob = strUnHex(param.asString());
+    auto blob = strUnHex(param.asString());
     if (!blob || blob->empty() || blob->size() > maxLength)
         return std::nullopt;
 

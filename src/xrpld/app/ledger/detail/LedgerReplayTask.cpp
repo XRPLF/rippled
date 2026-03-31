@@ -67,13 +67,13 @@ LedgerReplayTask::LedgerReplayTask(
     InboundLedgers& inboundLedgers,
     LedgerReplayer& replayer,
     std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-    TaskParameter&& parameter)
+    TaskParameter const& parameter)
     : TimeoutCounter(
           app,
           parameter.finishHash_,
           LedgerReplayParameters::TASK_TIMEOUT,
           {jtREPLAY_TASK, "LedReplTask", LedgerReplayParameters::MAX_QUEUED_TASKS},
-          app.journal("LedgerReplayTask"))
+          app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
     , parameter_(parameter)
@@ -186,7 +186,9 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
                 parent_ = l;
             }
             else
+            {
                 return;
+            }
         }
 
         complete_ = true;
@@ -251,9 +253,13 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
         if (auto sptr = wptr.lock(); sptr)
         {
             if (!good)
+            {
                 sptr->cancel();
+            }
             else
+            {
                 sptr->deltaReady(hash);
+            }
         }
     });
 

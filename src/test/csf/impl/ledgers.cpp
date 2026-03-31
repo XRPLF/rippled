@@ -58,7 +58,9 @@ mismatch(Ledger const& a, Ledger const& b)
             count -= step + Seq{1};
         }
         else
+        {
             count = step;
+        }
     }
     return start;
 }
@@ -88,9 +90,13 @@ LedgerOracle::accept(
     next.closeTimeResolution = closeTimeResolution;
     next.closeTimeAgree = consensusCloseTime != NetClock::time_point{};
     if (next.closeTimeAgree)
+    {
         next.closeTime = effCloseTime(consensusCloseTime, closeTimeResolution, parent.closeTime());
+    }
     else
+    {
         next.closeTime = parent.closeTime() + 1s;
+    }
 
     next.parentCloseTime = parent.closeTime();
     next.parentID = parent.id();
@@ -117,7 +123,7 @@ LedgerOracle::lookup(Ledger::ID const& id) const
 }
 
 std::size_t
-LedgerOracle::branches(std::set<Ledger> const& ledgers) const
+LedgerOracle::branches(std::set<Ledger> const& ledgers)
 {
     // Tips always maintains the Ledgers with largest sequence number
     // along all known chains.

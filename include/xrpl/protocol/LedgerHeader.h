@@ -74,4 +74,8 @@ deserializeHeader(Slice data, bool hasHash = false);
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
+/** Calculate the hash of a ledger header. */
+uint256
+calculateLedgerHash(LedgerHeader const& info);
+
 }  // namespace xrpl
