@@ -972,10 +972,53 @@ MetricsRegistry::registerAsyncGauges()
         },
         this);
 
-    // TODO(Task 7.15): Wire validation agreement gauge to ValidationTracker
-    // after rebase brings ValidationTracker from Phase 7 into this branch.
-    // Will observe: agreement_pct_1h, agreement_pct_24h, agreements_1h,
-    // missed_1h, agreements_24h, missed_24h from validationTracker_.
+    // --- Task 7.15: Validation agreement gauges ---
+    // Reports rolling-window agreement percentages and counts from
+    // ValidationTracker.  reconcile() is called at the start of the
+    // callback so that pending ledger events are resolved before the
+    // window data is read (the callback fires every ~10 s from the
+    // PeriodicExportingMetricReader thread).
+    validationAgreementGauge_ = meter_->CreateDoubleObservableGauge(
+        "rippled_validation_agreement",
+        "Validation agreement percentages and counts (1h/24h windows)");
+    validationAgreementGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+
+            try
+            {
+                // Reconcile pending events before reading window data.
+                self->validationTracker_.reconcile();
+
+                auto observe = [&](char const* name, double value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<double>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                observe("agreement_pct_1h", self->validationTracker_.agreementPct1h());
+                observe("agreement_pct_24h", self->validationTracker_.agreementPct24h());
+                observe(
+                    "agreements_1h", static_cast<double>(self->validationTracker_.agreements1h()));
+                observe("missed_1h", static_cast<double>(self->validationTracker_.missed1h()));
+                observe(
+                    "agreements_24h",
+                    static_cast<double>(self->validationTracker_.agreements24h()));
+                observe("missed_24h", static_cast<double>(self->validationTracker_.missed24h()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
+
+    // Note: validationAgreementsCounter_ and validationMissedCounter_ are
+    // created above but not currently incremented.  The
+    // rippled_validation_agreement gauge already provides agreement and miss
+    // counts from ValidationTracker's rolling windows and lifetime totals.
+    // These counters are reserved for future use if a push-style counter
+    // integration with ValidationTracker is desired.
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

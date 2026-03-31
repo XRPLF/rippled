@@ -38,6 +38,8 @@
                     |       +-- rippled_state_changes_total
                     |       +-- rippled_jq_trans_overflow_total
                     |
+                    +-- ValidationTracker  (validation agreement tracker)
+                    |
                     +-- Observable Gauges  (async callbacks, polled by reader)
                             +-- Cache hit rates  (SLE, ledger, AL)
                             +-- TreeNode / FullBelow sizes
@@ -54,6 +56,7 @@
                             +-- Ledger economy (fees, reserves, age)
                             +-- State tracking (mode value, time in state)
                             +-- Storage detail (NuDB sizes)
+                            +-- Validation agreement (1h/24h pct, counts)
 
     Control-flow for async gauges:
 
@@ -121,6 +124,8 @@
       and the .cpp, then calling the new record*() method from the
       instrumentation site.
 */
+
+#include <xrpld/telemetry/ValidationTracker.h>
 
 #include <xrpl/beast/utility/Journal.h>
 
@@ -268,6 +273,17 @@ public:
     void
     incrementJqTransOverflow();
 
+    /** Access the validation agreement tracker.
+        Used by consensus and ledger hooks to record our validations and
+        network validations so the tracker can compute agreement percentages.
+        @return Reference to the internal ValidationTracker instance.
+    */
+    ValidationTracker&
+    getValidationTracker()
+    {
+        return validationTracker_;
+    }
+
 private:
     /// Master enable flag; when false all methods are no-ops.
     bool const enabled_;
@@ -277,6 +293,12 @@ private:
 
     /// Journal for logging.
     beast::Journal const journal_;
+
+    /// Tracks validation agreement between this node and the network.
+    /// Lives outside the XRPL_ENABLE_TELEMETRY guard because it is
+    /// always safe to record events; the gauge callback simply won't
+    /// fire when telemetry is disabled.
+    ValidationTracker validationTracker_;
 
 #ifdef XRPL_ENABLE_TELEMETRY
     /// The SDK MeterProvider that owns the export pipeline.
@@ -354,6 +376,10 @@ private:
     /// Observable gauge for storage detail metrics (NuDB on-disk size).
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         storageDetailGauge_;
+    /// Observable gauge for validation agreement metrics (1h/24h percentages
+    /// and counts from ValidationTracker).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        validationAgreementGauge_;
 
     // --- External dashboard parity counters (Task 7.14) ---
     /// Counter: rippled_ledgers_closed_total — incremented each consensus round.

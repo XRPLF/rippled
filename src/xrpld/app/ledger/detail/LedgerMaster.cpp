@@ -12,6 +12,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/MathUtilities.h>
@@ -250,6 +251,11 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
         "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)max_ledger_difference_;
     mValidLedgerSeq = l->header().seq;
+
+    // Record the network-validated ledger for the agreement tracker so it
+    // can compare against our own validations.
+    if (auto* mr = app_.getMetricsRegistry())
+        mr->getValidationTracker().recordNetworkValidation(l->header().hash, l->header().seq);
 
     app_.getOPs().updateLocalTx(*l);
     app_.getSHAMapStore().onLedgerClosed(getValidatedLedger());

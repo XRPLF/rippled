@@ -982,7 +982,12 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
     // Record validation sent for OTel dashboard parity counter.
     if (auto* mr = app_.getMetricsRegistry())
+    {
         mr->incrementValidationsSent();
+        // Record our validation for the agreement tracker so it can
+        // compare against network-validated ledgers.
+        mr->getValidationTracker().recordOurValidation(ledger.id(), ledger.seq());
+    }
 }
 
 void
