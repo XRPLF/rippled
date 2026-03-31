@@ -11,6 +11,13 @@
     unconditionally.
 */
 
+// On Windows, WinSock2.h must be included before WinSock.h.  OTel SDK
+// headers transitively pull in WinSock.h, so we pre-include Boost.Asio's
+// socket header to establish the correct ordering.
+#ifdef _WIN32
+#include <boost/asio/detail/socket_types.hpp>
+#endif
+
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/beast/unit_test.h>
