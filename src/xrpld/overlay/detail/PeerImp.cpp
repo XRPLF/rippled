@@ -2419,6 +2419,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 false);
             val->setSeen(closeTime);
         }
+        XRPL_TRACE_SET_ATTR(                                                // LCOV_EXCL_LINE
+            "xrpl.peer.validation.ledger_hash",                              // LCOV_EXCL_LINE
+            to_string(val->getLedgerHash()).c_str());                         // LCOV_EXCL_LINE
+        XRPL_TRACE_SET_ATTR("xrpl.peer.validation.full", val->isFull());  // LCOV_EXCL_LINE
 
         if (!isCurrent(
                 app_.getValidations().parms(),
