@@ -1,5 +1,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -43,35 +44,35 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
         return temMALFORMED;
     }
-    if (flags & tfLPToken)
+    if ((flags & tfLPToken) != 0u)
     {
         // if included then both amount and amount2 are deposit min
         if (!lpTokens || ePrice || (amount && !amount2) || (!amount && amount2) || tradingFee)
             return temMALFORMED;
     }
-    else if (flags & tfSingleAsset)
+    else if ((flags & tfSingleAsset) != 0u)
     {
         // if included then lpTokens is deposit min
         if (!amount || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if (flags & tfTwoAsset)
+    else if ((flags & tfTwoAsset) != 0u)
     {
         // if included then lpTokens is deposit min
         if (!amount || !amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if (flags & tfOneAssetLPToken)
+    else if ((flags & tfOneAssetLPToken) != 0u)
     {
         if (!amount || !lpTokens || amount2 || ePrice || tradingFee)
             return temMALFORMED;
     }
-    else if (flags & tfLimitLPToken)
+    else if ((flags & tfLimitLPToken) != 0u)
     {
         if (!amount || !ePrice || lpTokens || amount2 || tradingFee)
             return temMALFORMED;
     }
-    else if (flags & tfTwoAssetIfEmpty)
+    else if ((flags & tfTwoAssetIfEmpty) != 0u)
     {
         if (!amount || !amount2 || ePrice || lpTokens)
             return temMALFORMED;
@@ -155,7 +156,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if (ctx.tx.getFlags() & tfTwoAssetIfEmpty)
+    if ((ctx.tx.getFlags() & tfTwoAssetIfEmpty) != 0u)
     {
         if (lptAMMBalance != beast::zero)
             return tecAMM_NOT_EMPTY;
@@ -282,7 +283,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     };
 
     // amount and amount2 are deposit min in case of tfLPToken
-    if (!(ctx.tx.getFlags() & tfLPToken))
+    if ((ctx.tx.getFlags() & tfLPToken) == 0u)
     {
         if (auto const ter = checkAmount(amount, true))
             return ter;

@@ -1,7 +1,7 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 
@@ -9,6 +9,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
@@ -69,8 +70,8 @@ makeLedgerDBs(
             boost::format("PRAGMA cache_size=-%d;") %
             kilobytes(config.getValueFor(SizedItem::txnDBCache)));
 
-        if (!setup.standAlone || setup.startUp == StartUpType::LOAD ||
-            setup.startUp == StartUpType::LOAD_FILE || setup.startUp == StartUpType::REPLAY)
+        if (!setup.standAlone || setup.startUp == StartUpType::Load ||
+            setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
         {
             // Check if AccountTransactions has primary key
             std::string cid, name, type;
@@ -168,7 +169,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = app.journal("Ledger");
+    auto j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
@@ -221,7 +222,7 @@ saveValidatedLedger(
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        app.pendingSaves().finishWork(seq);
+        app.getPendingSaves().finishWork(seq);
         return false;
     }
 
@@ -674,16 +675,16 @@ transactionsSQL(
     std::string maxClause;
     std::string minClause;
 
-    if (options.maxLedger)
+    if (options.ledgerRange.max != 0u)
     {
         maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
+            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.ledgerRange.max);
     }
 
-    if (options.minLedger)
+    if (options.ledgerRange.min != 0u)
     {
         minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);
+            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.ledgerRange.min);
     }
 
     std::string sql;
@@ -1020,14 +1021,14 @@ accountTxPage(
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %
-            toBase58(options.account) % options.minLedger % options.maxLedger % order % order %
-            queryLimit);
+            toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
+            order % queryLimit);
     }
     else
     {
         char const* const compare = forward ? ">=" : "<=";
-        std::uint32_t const minLedger = forward ? findLedger + 1 : options.minLedger;
-        std::uint32_t const maxLedger = forward ? options.maxLedger : findLedger - 1;
+        std::uint32_t const minLedger = forward ? findLedger + 1 : options.ledgerRange.min;
+        std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
         sql = boost::str(
@@ -1191,7 +1192,7 @@ getTransaction(
         auto const got_data = session.got_data();
 
         if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return TxSearched::unknown;
+            return TxSearched::Unknown;
 
         if (!got_data)
         {
@@ -1204,10 +1205,10 @@ getTransaction(
                 soci::into(count, rti);
 
             if (!session.got_data() || rti != soci::i_ok)
-                return TxSearched::some;
+                return TxSearched::Some;
 
-            return count == (range->last() - range->first() + 1) ? TxSearched::all
-                                                                 : TxSearched::some;
+            return count == (range->last() - range->first() + 1) ? TxSearched::All
+                                                                 : TxSearched::Some;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -1229,13 +1230,13 @@ getTransaction(
     }
     catch (std::exception& e)
     {
-        JLOG(app.journal("Ledger").warn())
+        JLOG(app.getJournal("Ledger").warn())
             << "Unable to deserialize transaction from raw SQL value. Error: " << e.what();
 
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return TxSearched::unknown;
+    return TxSearched::Unknown;
 }
 
 bool

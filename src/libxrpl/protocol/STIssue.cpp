@@ -110,7 +110,7 @@ bool
 STIssue::isEquivalent(STBase const& t) const
 {
     STIssue const* v = dynamic_cast<STIssue const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

@@ -75,7 +75,7 @@ static std::string
 sliceToHex(Slice const& slice)
 {
     std::string s;
-    if (slice[0] & 0x80)
+    if ((slice[0] & 0x80) != 0)
     {
         s.reserve(2 * (slice.size() + 2));
         s = "0x00";

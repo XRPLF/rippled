@@ -119,7 +119,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.issue(), 30000};
+            auto defIOU = STAmount{a.issue(), 30000};
             if (a <= defIOU)
                 return defIOU;
             return a + STAmount{a.issue(), 1000};
@@ -149,13 +149,13 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 }
 
 XRPAmount
-AMMTest::reserve(jtx::Env& env, std::uint32_t count) const
+AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count);
 }
 
 XRPAmount
-AMMTest::ammCrtFee(jtx::Env& env) const
+AMMTest::ammCrtFee(jtx::Env& env)
 {
     return env.current()->fees().increment;
 }

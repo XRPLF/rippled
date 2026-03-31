@@ -11,7 +11,7 @@ namespace xrpl {
 
 class STParsedJSON_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     parseJSONString(std::string const& json, Json::Value& to)
     {
         Json::Reader reader;

@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -44,7 +45,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     if (arg.fund)
     {
         env_.fund(arg.xrp, issuer_);
-        for (auto it : holders_)
+        for (auto const& it : holders_)
             env_.fund(arg.xrpHolders, it.second);
     }
     if (close_)
@@ -52,7 +53,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     if (arg.fund)
     {
         env_.require(owners(issuer_, 0));
-        for (auto it : holders_)
+        for (auto const& it : holders_)
         {
             if (issuer_.id() == it.second.id())
                 Throw<std::runtime_error>("Issuer can't be holder");
@@ -369,7 +370,7 @@ MPTTester::set(MPTSet const& arg)
          .metadata = arg.metadata,
          .delegate = arg.delegate,
          .domainID = arg.domainID});
-    if (submit(arg, jv) == tesSUCCESS && (arg.flags.value_or(0) || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS && ((arg.flags.value_or(0) != 0u) || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);

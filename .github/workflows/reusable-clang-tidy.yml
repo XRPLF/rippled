@@ -51,5 +51,5 @@ jobs:
     if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.any_cpp_changed == 'true' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
     uses: ./.github/workflows/reusable-clang-tidy-files.yml
     with:
-      files: ${{ needs.determine-files.outputs.clang_tidy_config_changed == 'true' && '' || (inputs.check_only_changed && needs.determine-files.outputs.all_changed_files || '') }}
+      files: ${{ (needs.determine-files.outputs.clang_tidy_config_changed != 'true' && inputs.check_only_changed) && needs.determine-files.outputs.all_changed_files || '' }}
       create_issue_on_failure: ${{ inputs.create_issue_on_failure }}

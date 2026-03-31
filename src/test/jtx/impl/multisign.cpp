@@ -83,7 +83,7 @@ msig::operator()(Env& env, JTx& jt) const
             jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }
     };
-    if (!subField)
+    if (subField == nullptr)
     {
         jt.mainSigners.emplace_back(callback);
     }

@@ -34,7 +34,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         return cfg;
     }
 
-    bool
+    static bool
     goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
         auto good = json.isMember(jss::result) && !RPC::contains_error(json[jss::result]) &&
@@ -73,7 +73,7 @@ class SHAMapStore_test : public beast::unit_test::suite
             outTxHash == ledger[jss::transaction_hash].asString();
     }
 
-    bool
+    static bool
     bad(Json::Value const& json, error_code_i error = rpcLGR_NOT_FOUND)
     {
         return json.isMember(jss::result) && RPC::contains_error(json[jss::result]) &&
@@ -346,9 +346,9 @@ public:
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
-        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + deleteInterval / 2));
+        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (deleteInterval / 2)));
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + deleteInterval / 2);
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (deleteInterval / 2));
 
         store.rendezvous();
 
@@ -481,7 +481,7 @@ public:
             section,
             megabytes(env.app().config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler,
-            env.app().logs().journal("NodeStoreTest"))};
+            env.app().getJournal("NodeStoreTest"))};
         backend->open();
         return backend;
     }
@@ -514,7 +514,7 @@ public:
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            env.app().logs().journal("NodeStoreTest"));
+            env.app().getJournal("NodeStoreTest"));
 
         /////////////////////////////////////////////////////////////
         // Check basic functionality
