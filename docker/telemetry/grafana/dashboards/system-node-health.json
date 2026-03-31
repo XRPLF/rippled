@@ -1139,6 +1139,211 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "--- OTel: Ledger Economy ---",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 93
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "Base Fee (drops)",
+      "description": "Current network base transaction fee in drops. Sourced from MetricsRegistry ledger_economy observable gauge. 1 XRP = 1,000,000 drops.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 94
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledger_economy{metric=\"base_fee_xrp\",exported_instance=~\"$node\"}",
+          "legendFormat": "Base Fee [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Reserve Base (drops)",
+      "description": "Current account reserve base in drops. The minimum XRP balance required to maintain an account on the ledger.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 94
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledger_economy{metric=\"reserve_base_xrp\",exported_instance=~\"$node\"}",
+          "legendFormat": "Reserve Base [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Reserve Inc (drops)",
+      "description": "Current owner reserve increment in drops. Additional XRP required per owned object (trust lines, offers, etc.).",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 94
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledger_economy{metric=\"reserve_inc_xrp\",exported_instance=~\"$node\"}",
+          "legendFormat": "Reserve Inc [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Age",
+      "description": "Age of the current open ledger in seconds. Values growing beyond the expected ~4s close interval indicate the node is not closing ledgers on schedule.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 94
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledger_economy{metric=\"ledger_age_seconds\",exported_instance=~\"$node\"}",
+          "legendFormat": "Ledger Age [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 8
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Rate",
+      "description": "Current transaction throughput rate from ledger economy metrics. Shows the volume of transactions being processed per interval.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 102
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledger_economy{metric=\"transaction_rate\",exported_instance=~\"$node\"}",
+          "legendFormat": "Tx Rate [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Transactions",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
