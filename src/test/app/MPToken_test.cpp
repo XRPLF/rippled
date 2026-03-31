@@ -3351,12 +3351,12 @@ class MPToken_test : public beast::unit_test::suite
         {
             // KNOWN BUG (pre-fixSecurity3_1_3): preserved for ledger replay only
             env.disableFeature(fixSecurity3_1_3);
-            env.close();
             runTest(
                 R{{alice.id(), 100}, {bob.id(), 100}},
                 tesSUCCESS,
                 200,
                 "pre-amendment allows over-send");
+            env.enableFeature(fixSecurity3_1_3);
         }
     }
 
