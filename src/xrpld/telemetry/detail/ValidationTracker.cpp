@@ -48,7 +48,7 @@ ValidationTracker::reconcile()
 
     for (auto& [hash, evt] : pending_)
     {
-        if (!evt.reconciled && (now - evt.recordTime) > kGracePeriod)
+        if (!evt.reconciled && (now - evt.recordTime) >= kGracePeriod)
         {
             // Initial reconciliation after grace period.
             evt.reconciled = true;
@@ -106,9 +106,21 @@ ValidationTracker::evictOldPending(TimePoint now)
             ++it;
     }
 
-    // Hard trim if still over limit -- remove oldest reconciled entries.
+    // Hard trim if still over limit -- remove reconciled entries that are
+    // past the late-repair window first, then any reconciled entry as a
+    // last resort.
     if (pending_.size() > kMaxPendingEvents)
     {
+        // Pass 1: only entries past late-repair window.
+        for (auto it = pending_.begin();
+             it != pending_.end() && pending_.size() > kMaxPendingEvents;)
+        {
+            if (it->second.reconciled && it->second.recordTime < cutoff)
+                it = pending_.erase(it);
+            else
+                ++it;
+        }
+        // Pass 2: any reconciled entry if still over limit.
         for (auto it = pending_.begin();
              it != pending_.end() && pending_.size() > kMaxPendingEvents;)
         {
