@@ -11,22 +11,21 @@ The files in this directory are generated from macro definition files:
 
 ## Generation Process
 
-Generation is triggered manually via a CMake target:
+Generation requires a one-time setup step to create a virtual environment
+and install Python dependencies, followed by running the generation target:
 
 ```bash
-cmake --build .build --target codegen
+cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
+cmake --build . --target code_gen        # generate code
 ```
 
-This runs the Python generation scripts, which:
-
-1. Set up a Python virtual environment (if `CODEGEN_VENV_DIR` is provided, dependencies are installed there; otherwise they are installed directly)
-2. Parse the macro files to extract type definitions
-3. Generate type-safe C++ wrapper classes using Mako templates
-4. Place the generated headers in this directory
+By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The
+`setup_code_gen` target creates a venv there and installs the required packages.
+The `code_gen` target then uses the venv's Python interpreter to run generation.
 
 ### Python Dependencies
 
-The code generation requires the following Python packages:
+The code generation requires the following Python packages (installed by `setup_code_gen`):
 
 - `pcpp` - C preprocessor for Python
 - `pyparsing` - Parser combinator library
@@ -42,7 +41,7 @@ The generated `.h` files **are checked into version control**. This means:
 
 ## Modifying Generated Code
 
-**Do not manually edit generated files.** Any changes will be overwritten the next time `codegen` is run.
+**Do not manually edit generated files.** Any changes will be overwritten the next time `code_gen` is run.
 
 To modify the generated classes:
 
@@ -50,7 +49,7 @@ To modify the generated classes:
 - Edit the Mako templates in `scripts/codegen/templates/`
 - Edit the generation scripts in `scripts/codegen/`
 - Update Python dependencies in `scripts/codegen/requirements.txt`
-- Run `cmake --build .build --target codegen` to regenerate
+- Run `cmake --build . --target code_gen` to regenerate
 
 ## Adding Common Fields
 

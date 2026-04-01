@@ -8,19 +8,6 @@ classes for each ledger entry type, similar to the transaction wrapper classes.
 Uses pcpp to preprocess the macro file and pyparsing to parse the DSL.
 """
 
-# Bootstrap: must happen before any third-party imports so the venv is
-# ready and we re-exec into it if necessary.
-import argparse as _argparse
-from pathlib import Path as _Path
-
-_bp = _argparse.ArgumentParser(add_help=False)
-_bp.add_argument("--venv-dir", default=None)
-_args, _ = _bp.parse_known_args()
-if _args.venv_dir:
-    from venv_bootstrap import ensure_venv
-
-    ensure_venv(_Path(_args.venv_dir))
-
 import io
 import argparse
 from pathlib import Path

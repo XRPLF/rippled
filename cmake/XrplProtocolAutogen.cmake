@@ -3,9 +3,9 @@
 #]===================================================================]
 
 set(CODEGEN_VENV_DIR
-    ""
+    "${CMAKE_CURRENT_SOURCE_DIR}/.venv"
     CACHE PATH
-    "Path to a Python virtual environment for code generation. If provided, dependencies will be installed into this venv. Otherwise, dependencies will be installed directly."
+    "Path to a Python virtual environment for code generation. A venv will be created here by setup_code_gen and used to run generation scripts."
 )
 
 # Directory paths
@@ -64,18 +64,74 @@ endif()
 if(NOT Python3_EXECUTABLE)
     message(
         WARNING
-        "Python3 not found. The 'codegen' target will not be available."
+        "Python3 not found. The 'code_gen' and 'setup_code_gen' targets will not be available."
     )
     return()
 endif()
 
+# Warn if pip is configured with a non-default index (may need VPN).
+execute_process(
+    COMMAND ${Python3_EXECUTABLE} -m pip config get global.index-url
+    OUTPUT_VARIABLE PIP_INDEX_URL
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE PIP_CONFIG_RESULT
+)
+if(PIP_CONFIG_RESULT EQUAL 0 AND PIP_INDEX_URL)
+    if(
+        NOT PIP_INDEX_URL STREQUAL "https://pypi.org/simple"
+        AND NOT PIP_INDEX_URL STREQUAL "https://pypi.python.org/simple"
+    )
+        message(
+            WARNING
+            "Private pip index URL detected: ${PIP_INDEX_URL}\n"
+            "You may need to connect to VPN to access this URL."
+        )
+    endif()
+endif()
+
+# Determine which Python interpreter to use for code generation.
+if(CODEGEN_VENV_DIR)
+    if(WIN32)
+        set(CODEGEN_PYTHON "${CODEGEN_VENV_DIR}/Scripts/python.exe")
+    else()
+        set(CODEGEN_PYTHON "${CODEGEN_VENV_DIR}/bin/python")
+    endif()
+else()
+    set(CODEGEN_PYTHON "${Python3_EXECUTABLE}")
+    message(
+        WARNING
+        "CODEGEN_VENV_DIR is not set. Dependencies will be installed globally.\n"
+        "If this is not intended, reconfigure with:\n"
+        "  cmake . -UCODEGEN_VENV_DIR"
+    )
+endif()
+
+# Custom target to create a venv and install Python dependencies.
+# Run manually with: cmake --build . --target setup_code_gen
+if(CODEGEN_VENV_DIR)
+    add_custom_target(
+        setup_code_gen
+        COMMAND ${Python3_EXECUTABLE} -m venv "${CODEGEN_VENV_DIR}"
+        COMMAND ${CODEGEN_PYTHON} -m pip install -r "${REQUIREMENTS_FILE}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Creating venv and installing code generation dependencies..."
+    )
+else()
+    add_custom_target(
+        setup_code_gen
+        COMMAND ${Python3_EXECUTABLE} -m pip install -r "${REQUIREMENTS_FILE}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Installing code generation dependencies..."
+    )
+endif()
+
 # Custom target for code generation, excluded from ALL.
-# Run manually with: cmake --build . --target codegen
+# Run manually with: cmake --build . --target code_gen
 add_custom_target(
-    codegen
+    code_gen
     COMMAND
-        ${CMAKE_COMMAND} -DPYTHON3_EXECUTABLE=${Python3_EXECUTABLE}
-        -DCODEGEN_VENV_DIR=${CODEGEN_VENV_DIR}
+        ${CMAKE_COMMAND} -DCODEGEN_PYTHON=${CODEGEN_PYTHON}
         -DGENERATE_TX_SCRIPT=${GENERATE_TX_SCRIPT}
         -DGENERATE_LEDGER_SCRIPT=${GENERATE_LEDGER_SCRIPT}
         -DTRANSACTIONS_MACRO=${TRANSACTIONS_MACRO}

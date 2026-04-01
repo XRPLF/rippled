@@ -468,7 +468,8 @@ generation scripts/templates in `scripts/codegen/`, you need to regenerate the
 files:
 
 ```
-cmake --build . --target codegen
+cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
+cmake --build . --target code_gen        # regenerate code
 ```
 
 The regenerated files should be committed alongside your changes.
