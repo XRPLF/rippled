@@ -23,7 +23,7 @@ operator==(Config const& lhs, Config const& rhs)
     return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
         lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
         lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == lhs.features && lhs.ipLimit == rhs.ipLimit &&
+        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
         lhs.listeningPort == rhs.listeningPort;
 }
 
@@ -78,7 +78,7 @@ Config::makeConfig(
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
+    if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
     {
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;

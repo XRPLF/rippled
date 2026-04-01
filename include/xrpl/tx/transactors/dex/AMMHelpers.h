@@ -22,7 +22,7 @@ reduceOffer(auto const& amount)
     static Number const reducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
-    NumberRoundModeGuard mg(Number::towards_zero);
+    NumberRoundModeGuard const mg(Number::towards_zero);
     return amount * reducedOfferPct;
 }
 
@@ -121,7 +121,6 @@ withinRelativeDistance(Quality const& calcQuality, Quality const& reqQuality, Nu
  * @param dist requested relative distance
  * @return true if within dist, false otherwise
  */
-// clang-format off
 template <typename Amt>
     requires(
         std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
@@ -134,7 +133,6 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
     auto const [min, max] = std::minmax(calc, req);
     return ((max - min) / max) < dist;
 }
-// clang-format on
 
 /** Solve quadratic equation to find takerGets or takerPays. Round
  * to minimize the amount in order to maximize the quality.
@@ -175,7 +173,7 @@ getAMMOfferStartWithTakerGets(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const a = 1;
     auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
@@ -203,7 +201,7 @@ getAMMOfferStartWithTakerGets(
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto const amounts = getAmounts(*nTakerGets); Quality{amounts} < targetQuality)
+    if (auto amounts = getAmounts(*nTakerGets); Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.out));
     else
         return amounts;
@@ -242,7 +240,7 @@ getAMMOfferStartWithTakerPays(
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const& a = f;
     auto const b = pool.in * (1 + f);
@@ -270,7 +268,7 @@ getAMMOfferStartWithTakerPays(
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto const amounts = getAmounts(*nTakerPays); Quality{amounts} < targetQuality)
+    if (auto amounts = getAmounts(*nTakerPays); Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.in));
     else
         return amounts;
@@ -335,8 +333,7 @@ changeSpotPriceQuality(
             }
             auto const takerPays = toAmount<TIn>(getIssue(pool.in), nTakerPays, Number::upward);
             // should not fail
-            if (auto const amounts =
-                    TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+            if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
                 Quality{amounts} < quality &&
                 !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
             {
@@ -362,7 +359,7 @@ changeSpotPriceQuality(
 
     // Generate the offer starting with XRP side. Return seated offer amounts
     // if the offer can be generated, otherwise nullopt.
-    auto const amounts = [&]() {
+    auto amounts = [&]() {
         if (isXRP(getIssue(pool.out)))
             return getAMMOfferStartWithTakerGets(pool, quality, tfee);
         return getAMMOfferStartWithTakerPays(pool, quality, tfee);
@@ -438,7 +435,7 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
         // 1-fee
         // maximize:
         // fee
-        saveNumberRoundMode _{Number::getround()};
+        saveNumberRoundMode const _{Number::getround()};
 
         Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;
@@ -502,7 +499,7 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
         // maximize:
         // tfee/100000
 
-        saveNumberRoundMode _{Number::getround()};
+        saveNumberRoundMode const _{Number::getround()};
 
         Number::setround(Number::upward);
         auto const numerator = pool.in * pool.out;

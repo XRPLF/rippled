@@ -72,12 +72,12 @@ public:
     isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
-    uint32_t
-    txToPermissionType(TxType const& type) const;
+    static uint32_t
+    txToPermissionType(TxType const& type);
 
     // tx type value is permission value minus one
-    TxType
-    permissionToTxType(uint32_t const& value) const;
+    static TxType
+    permissionToTxType(uint32_t const& value);
 };
 
 }  // namespace xrpl

@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        uses: XRPLF/actions/prepare-runner@2bbc2dc1abeec7bfaa886804ab86871ac201764e
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -199,7 +199,7 @@ jobs:
           fi
 
       - name: Upload the binary (Linux)
-        if: ${{ github.repository == 'XRPLF/rippled' && runner.os == 'Linux' }}
+        if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && runner.os == 'Linux' }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: xrpld-${{ inputs.config_name }}
@@ -298,7 +298,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           disable_search: true
           disable_telem: true

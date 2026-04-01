@@ -313,8 +313,8 @@ randomRankedTrust(
     Generator& g)
 {
     std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])
@@ -337,8 +337,8 @@ randomRankedConnect(
     SimDuration delay)
 {
     std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])

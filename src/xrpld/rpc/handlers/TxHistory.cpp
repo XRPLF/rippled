@@ -27,7 +27,7 @@ doTxHistory(RPC::JsonContext& context)
     if (!context.params.isMember(jss::start))
         return rpcError(rpcINVALID_PARAMS);
 
-    unsigned int startIndex = context.params[jss::start].asUInt();
+    unsigned int const startIndex = context.params[jss::start].asUInt();
 
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
         return rpcError(rpcNO_PERMISSION);

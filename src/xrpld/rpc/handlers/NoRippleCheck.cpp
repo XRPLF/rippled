@@ -1,11 +1,12 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -87,7 +88,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    Json::Value dummy;
+    Json::Value dummy;  // NOLINT(misc-const-correctness)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
@@ -97,7 +98,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);
@@ -106,16 +107,16 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
-    if (bDefaultRipple & !roleGateway)
+    if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {
         problems.append(
             "You appear to have set your default ripple flag even though you "
             "are not a gateway. This is not recommended unless you are "
             "experimenting");
     }
-    else if (roleGateway & !bDefaultRipple)
+    else if ((static_cast<int>(roleGateway) & static_cast<int>(!bDefaultRipple)) != 0)
     {
         problems.append("You should immediately set your default ripple flag");
         if (transactions)
@@ -150,9 +151,10 @@ doNoRippleCheck(RPC::JsonContext& context)
                 }
                 if (needFix)
                 {
-                    AccountID peer =
+                    AccountID const peer =
                         ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit).getIssuer();
-                    STAmount peerLimit = ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
+                    STAmount const peerLimit =
+                        ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());

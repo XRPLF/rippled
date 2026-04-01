@@ -255,7 +255,7 @@ public:
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
             // Iterate over a copy of the peer list because peer
             // destruction can invalidate iterators.
@@ -429,7 +429,7 @@ private:
         http_request_type const& request,
         address_type remote_address);
 
-    std::shared_ptr<Writer>
+    static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
@@ -573,7 +573,7 @@ private:
     collect_metrics()
     {
         auto counts = m_traffic.getCounts();
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         XRPL_ASSERT(
             counts.size() == m_stats.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");

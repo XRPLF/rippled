@@ -155,9 +155,9 @@ class DistributedValidators_test : public beast::unit_test::suite
         sim.run(1);
 
         // Run for 10 minutes, submitting 100 tx/second
-        std::chrono::nanoseconds simDuration = 10min;
-        std::chrono::nanoseconds quiet = 10s;
-        Rate rate{100, 1000ms};
+        std::chrono::nanoseconds const simDuration = 10min;
+        std::chrono::nanoseconds const quiet = 10s;
+        Rate const rate{100, 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);

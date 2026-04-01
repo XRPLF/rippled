@@ -6,7 +6,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Overlay.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
@@ -66,7 +65,7 @@ InboundLedger::InboundLedger(
           hash,
           ledgerAcquireTimeout,
           {jtLEDGER_DATA, "InboundLedger", 5},
-          app.journal("InboundLedger"))
+          app.getJournal("InboundLedger"))
     , m_clock(clock)
     , mHaveHeader(false)
     , mHaveState(false)
@@ -121,14 +120,14 @@ InboundLedger::getPeerCount() const
 {
     auto const& peerIds = mPeerSet->getPeerIds();
     return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.overlay().findPeerByShortID(id) != nullptr);
+        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
     });
 }
 
 void
 InboundLedger::update(std::uint32_t seq)
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     // If we didn't know the sequence number, but now do, save it
     if ((seq != 0) && (mSeq == 0))
@@ -141,7 +140,7 @@ InboundLedger::update(std::uint32_t seq)
 bool
 InboundLedger::checkLocal()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         if (mLedger)
@@ -224,8 +223,9 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
+            Rules const rules{app_.config().features};
             mLedger = std::make_shared<Ledger>(
-                deserializePrefixedHeader(makeSlice(data)), app_.config(), app_.getNodeFamily());
+                deserializePrefixedHeader(makeSlice(data)), rules, app_.getNodeFamily());
             if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
             {
                 // We know for a fact the ledger can never be acquired
@@ -363,7 +363,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
         mByHash = true;
 
-        std::size_t pc = getPeerCount();
+        std::size_t const pc = getPeerCount();
         JLOG(journal_.debug()) << "No progress(" << pc << ") for ledger " << hash_;
 
         // addPeers triggers if the reason is not HISTORY
@@ -529,7 +529,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = mPeerSet->getPeerIds();
                 std::for_each(peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
-                    if (auto p = app_.overlay().findPeerByShortID(id))
+                    if (auto p = app_.getOverlay().findPeerByShortID(id))
                     {
                         mByHash = false;
                         p->send(packet);
@@ -777,7 +777,8 @@ InboundLedger::takeHeader(std::string const& data)
         return true;
 
     auto* f = &app_.getNodeFamily();
-    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), app_.config(), *f);
+    Rules const rules{app_.config().features};
+    mLedger = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), rules, *f);
     if (mLedger->header().hash != hash_ || (mSeq != 0 && mSeq != mLedger->header().seq))
     {
         JLOG(journal_.warn()) << "Acquire hash mismatch: " << mLedger->header().hash
@@ -995,7 +996,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard sl(mReceivedDataLock);
+    std::lock_guard const sl(mReceivedDataLock);
 
     if (isDone())
         return false;
@@ -1031,7 +1032,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
 
         SHAMapAddNode san;
 
-        ScopedLockType sl(mtx_);
+        ScopedLockType const sl(mtx_);
 
         try
         {
@@ -1083,7 +1084,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             return -1;
         }
 
-        ScopedLockType sl(mtx_);
+        ScopedLockType const sl(mtx_);
 
         // Verify node IDs and data are complete
         for (auto const& node : packet.nodes())
@@ -1207,7 +1208,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard sl(mReceivedDataLock);
+            std::lock_guard const sl(mReceivedDataLock);
 
             if (mReceivedData.empty())
             {
@@ -1222,7 +1223,7 @@ InboundLedger::runData()
         {
             if (auto peer = entry.first.lock())
             {
-                int count = processData(peer, *(entry.second));
+                int const count = processData(peer, *(entry.second));
                 dataCounts.update(std::move(peer), count);
             }
         }
@@ -1241,7 +1242,7 @@ InboundLedger::getJson(int)
 {
     Json::Value ret(Json::objectValue);
 
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     ret[jss::hash] = to_string(hash_);
 

@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 //
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -116,7 +117,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
@@ -276,7 +277,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
