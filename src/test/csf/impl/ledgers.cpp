@@ -42,14 +42,14 @@ mismatch(Ledger const& a, Ledger const& b)
 
     // end is 1 past end of range
     Seq start{0};
-    Seq end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
+    Seq const end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
 
     // Find mismatch in [start,end)
     // Binary search
     Seq count = end - start;
     while (count > Seq{0})
     {
-        Seq step = count / Seq{2};
+        Seq const step = count / Seq{2};
         Seq curr = start + step;
         if (a[curr] == b[curr])
         {

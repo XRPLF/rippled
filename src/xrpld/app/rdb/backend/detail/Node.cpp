@@ -105,7 +105,7 @@ makeLedgerDBs(
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -115,7 +115,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -330,7 +330,7 @@ saveValidatedLedger(
         }
 
         {
-            static std::string addLedger(
+            static std::string const addLedger(
                 R"sql(INSERT OR REPLACE INTO Ledgers
                 (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
                 CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
@@ -576,7 +576,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string sql = boost::str(
+    std::string const sql = boost::str(
         boost::format(
             "SELECT LedgerSeq, Status, RawTxn "
             "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
@@ -749,7 +749,7 @@ getAccountTxs(
 {
     RelationalDatabase::AccountTxs ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -873,7 +873,7 @@ getAccountTxsB(
 {
     std::vector<RelationalDatabase::txnMetaLedgerType> ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -1222,7 +1222,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 
@@ -1242,7 +1242,8 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info space = boost::filesystem::space(config.legacy("database_path"));
+    boost::filesystem::space_info const space =
+        boost::filesystem::space(config.legacy("database_path"));
 
     if (space.available < megabytes(512))
     {
@@ -1252,8 +1253,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 
     if (config.useTxTables())
     {
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(config);
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
+        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(config);
+        boost::filesystem::path const dbPath = dbSetup.dataDir / TxDBName;
         boost::system::error_code ec;
         std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
         if (ec)
@@ -1274,8 +1275,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         }();
         std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
-        std::uint32_t freePages = maxPages - pageCount;
-        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
+        std::uint32_t const freePages = maxPages - pageCount;
+        std::uint64_t const freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
                        << "; SQLite page size: " << pageSize << " bytes"

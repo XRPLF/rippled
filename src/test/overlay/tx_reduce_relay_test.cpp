@@ -159,10 +159,11 @@ private:
         auto stream_ptr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
-        beast::IP::Endpoint remote(
+        beast::IP::Endpoint const local(
+            boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
+        beast::IP::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
@@ -224,7 +225,7 @@ private:
     void
     run() override
     {
-        bool log = false;
+        bool const log = false;
         std::set<Peer::id_t> skip = {0, 1, 2, 3, 4};
         testConfig(log);
         // relay to all peers, no hash queue

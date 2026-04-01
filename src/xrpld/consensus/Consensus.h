@@ -1116,7 +1116,7 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
     using namespace std::chrono;
 
     // it is shortly before ledger close time
-    bool anyTransactions = adaptor_.hasOpenTransactions();
+    bool const anyTransactions = adaptor_.hasOpenTransactions();
     auto proposersClosed = currPeerPositions_.size();
     auto proposersValidated = adaptor_.proposersValidated(prevLedgerID_);
 
@@ -1186,7 +1186,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
         previousLedger_.seq() - std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
     auto [quorum, trustedKeys] = adaptor_.getQuorumKeys();
     std::size_t const totalValidators = trustedKeys.size();
-    std::size_t laggards = adaptor_.laggards(previousLedger_.seq(), trustedKeys);
+    std::size_t const laggards = adaptor_.laggards(previousLedger_.seq(), trustedKeys);
     std::size_t const offline = trustedKeys.size();
 
     std::stringstream vars;
@@ -1408,7 +1408,7 @@ this.
 inline int
 participantsNeeded(int participants, int percent)
 {
-    int result = ((participants * percent) + (percent / 2)) / 100;
+    int const result = ((participants * percent) + (percent / 2)) / 100;
 
     return (result == 0) ? 1 : result;
 }
@@ -1757,7 +1757,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
             "xrpl::Consensus::createDisputes : has disputed transactions");
 
-        Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
+        Tx_t const tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())

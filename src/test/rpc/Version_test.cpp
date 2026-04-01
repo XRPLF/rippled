@@ -77,13 +77,13 @@ class Version_test : public beast::unit_test::suite
     {
         testcase("test getAPIVersionNumber function");
 
-        unsigned int versionIfUnspecified =
+        unsigned int const versionIfUnspecified =
             RPC::apiVersionIfUnspecified < RPC::apiMinimumSupportedVersion
             ? RPC::apiInvalidVersion
             : RPC::apiVersionIfUnspecified;
 
-        Json::Value j_array = Json::Value(Json::arrayValue);
-        Json::Value j_null = Json::Value(Json::nullValue);
+        Json::Value const j_array = Json::Value(Json::arrayValue);
+        Json::Value const j_null = Json::Value(Json::nullValue);
         BEAST_EXPECT(RPC::getAPIVersionNumber(j_array, false) == versionIfUnspecified);
         BEAST_EXPECT(RPC::getAPIVersionNumber(j_null, false) == versionIfUnspecified);
 
@@ -185,7 +185,7 @@ class Version_test : public beast::unit_test::suite
     {
         testcase("config test");
         {
-            Config c;
+            Config const c;
             BEAST_EXPECT(c.BETA_RPC_API == false);
         }
 

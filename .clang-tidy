@@ -87,16 +87,19 @@ Checks: "-*,
   # cppcoreguidelines-use-default-member-init, # has issues
   # cppcoreguidelines-virtual-class-destructor, # has issues
   hicpp-ignored-remove-result,
-  # misc-definitions-in-headers, # has issues
+  misc-const-correctness,
+  misc-definitions-in-headers,
   misc-header-include-cycle,
   misc-misplaced-const,
+  misc-redundant-expression,
   misc-static-assert,
-  # misc-throw-by-value-catch-by-reference, # has issues
+  misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
   misc-unused-using-decls,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
+  llvm-namespace-comment,
   performance-faster-string-find,
   performance-for-range-copy,
   performance-implicit-conversion-in-loop,
@@ -134,10 +137,7 @@ Checks: "-*,
 # ---
 # other checks that have issues that need to be resolved:
 #
-# llvm-namespace-comment,
-# misc-const-correctness,
 # misc-include-cleaner,
-# misc-redundant-expression,
 #
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable

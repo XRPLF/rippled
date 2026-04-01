@@ -46,7 +46,7 @@ struct Expected_test : beast::unit_test::suite
             BEAST_EXPECT(expected.value() == "Valid value");
             BEAST_EXPECT(*expected == "Valid value");
             BEAST_EXPECT(expected->at(0) == 'V');
-            std::string mv = std::move(*expected);
+            std::string const mv = std::move(*expected);
             BEAST_EXPECT(mv == "Valid value");
 
             bool throwOccurred = false;

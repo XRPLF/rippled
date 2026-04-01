@@ -311,7 +311,7 @@ template <class T>
 bool
 set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
-    bool found_and_valid = set<T>(target, name, section);
+    bool const found_and_valid = set<T>(target, name, section);
     if (!found_and_valid)
         target = defaultValue;
     return found_and_valid;

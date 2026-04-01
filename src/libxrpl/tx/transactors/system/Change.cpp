@@ -142,7 +142,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 

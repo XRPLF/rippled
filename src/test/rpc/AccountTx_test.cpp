@@ -97,7 +97,7 @@ class AccountTx_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
-        Account A1{"A1"};
+        Account const A1{"A1"};
         env.fund(XRP(10000), A1);
         env.close();
 
@@ -541,7 +541,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // PayChan
         {
-            std::uint32_t payChanSeq{env.seq(alice)};
+            std::uint32_t const payChanSeq{env.seq(alice)};
             Json::Value payChanCreate;
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
