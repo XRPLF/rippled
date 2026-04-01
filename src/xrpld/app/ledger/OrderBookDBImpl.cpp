@@ -26,7 +26,7 @@ make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config)
 void
 OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 {
-    if (!standalone_ && registry_.getOPs().isNeedNetworkLedger())
+    if (!standalone_ && registry_.get().getOPs().isNeedNetworkLedger())
     {
         JLOG(j_.warn()) << "Eliding full order book update: no ledger";
         return;
@@ -56,7 +56,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         }
         else
         {
-            registry_.getJobQueue().addJob(
+            registry_.get().getJobQueue().addJob(
                 jtUPDATE_PF, "OBUpd" + std::to_string(ledger->seq()), [this, ledger]() {
                     update(ledger);
                 });
@@ -95,7 +95,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     {
         for (auto& sle : ledger->sles)
         {
-            if (registry_.isStopping())
+            if (registry_.get().isStopping())
             {
                 JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
@@ -167,7 +167,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
         xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
-    registry_.getLedgerMaster().newOrderBookDB();
+    registry_.get().getLedgerMaster().newOrderBookDB();
 }
 
 void
@@ -249,7 +249,7 @@ OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& d
 }
 
 bool
-OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
+OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> const& domain)
 {
     std::lock_guard sl(mLock);
     if (domain)

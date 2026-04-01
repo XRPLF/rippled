@@ -67,7 +67,7 @@ doAccountChannels(RPC::JsonContext& context)
     {
         return rpcError(rpcACT_MALFORMED);
     }
-    AccountID const accountID{std::move(id.value())};
+    AccountID const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
