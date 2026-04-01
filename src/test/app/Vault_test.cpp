@@ -2,6 +2,7 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/mpt.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -5640,6 +5641,240 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testVaultEscrowedMPT()
+    {
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // Verify vault deposit/withdraw/clawback respect sfLockedAmount.
+        // When MPT tokens are escrowed, sfMPTAmount is reduced and
+        // sfLockedAmount is increased. Vault operations go through
+        // accountSend/accountHolds which read sfMPTAmount, so escrowed
+        // tokens are naturally excluded.
+
+        {
+            testcase("Vault deposit fails when MPT asset is escrowed");
+
+            Env env{*this, testable_amendments()};
+            auto const baseFee = env.current()->fees().base;
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
+            env.close();
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            mptt.authorize({.account = bob});
+            PrettyAsset asset = mptt.issuanceID();
+            env(pay(issuer, depositor, asset(100)));
+            env.close();
+
+            // Escrow 60 of 100 MPT tokens: sfMPTAmount drops to 40
+            auto const escrowSeq = env.seq(depositor);
+            env(escrow::create(depositor, bob, asset(60)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            Vault vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS));
+            env.close();
+
+            // Deposit 100 should fail — only 40 spendable
+            env(vault.deposit(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            // Deposit 40 (the unlocked balance) should succeed
+            env(vault.deposit({.depositor = depositor, .id = vaultKeylet.key, .amount = asset(40)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            {
+                auto const sle = env.le(vaultKeylet);
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(40).value());
+            }
+
+            // Clean up escrow
+            env(escrow::finish(bob, depositor, escrowSeq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+        }
+
+        {
+            testcase("Vault withdraw respects escrowed shares");
+
+            Env env{*this, testable_amendments()};
+            auto const baseFee = env.current()->fees().base;
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
+            env.close();
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            PrettyAsset asset = mptt.issuanceID();
+            env(pay(issuer, depositor, asset(100)));
+            env.close();
+
+            Vault vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS));
+            env.close();
+
+            // Deposit 100 → get shares
+            env(vault.deposit(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            env.memoize(Account("vault", vaultSle->at(sfAccount)));
+            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+
+            // Authorize bob for share MPT so he can receive escrowed shares
+            auto const shareMPTID = vaultSle->at(sfShareMPTID);
+            {
+                Json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[sfMPTokenIssuanceID] = to_string(shareMPTID);
+                jv[jss::TransactionType] = jss::MPTokenAuthorize;
+                env(jv, ter(tesSUCCESS));
+                env.close();
+            }
+
+            // Escrow 60% of shares
+            auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
+            env(escrow::create(depositor, bob, escrowAmount),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Withdraw all 100 should fail — only 40% of shares are unlocked
+            env(vault.withdraw(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            // Withdraw 40 (matching unlocked shares) should succeed
+            env(vault.withdraw(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(40)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            {
+                auto const sle = env.le(vaultKeylet);
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(60).value());
+            }
+        }
+
+        {
+            testcase("Vault clawback only recovers unlocked shares");
+
+            Env env{*this, testable_amendments() | fixSecurity3_1_3};
+            auto const baseFee = env.current()->fees().base;
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(10000), issuer, owner, depositor, bob);
+            env.close();
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            PrettyAsset asset = mptt.issuanceID();
+            env(pay(issuer, depositor, asset(100)));
+            env.close();
+
+            Vault vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx, ter(tesSUCCESS));
+            env.close();
+
+            // Deposit 100 → get shares
+            env(vault.deposit(
+                    {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(100)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const vaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            env.memoize(Account("vault", vaultSle->at(sfAccount)));
+            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+
+            // Authorize bob for share MPT so he can receive escrowed shares
+            auto const shareMPTID = vaultSle->at(sfShareMPTID);
+            {
+                Json::Value jv;
+                jv[jss::Account] = bob.human();
+                jv[sfMPTokenIssuanceID] = to_string(shareMPTID);
+                jv[jss::TransactionType] = jss::MPTokenAuthorize;
+                env(jv, ter(tesSUCCESS));
+                env.close();
+            }
+
+            // Escrow 60% of shares
+            auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
+            env(escrow::create(depositor, bob, escrowAmount),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Zero-amount clawback ("all") — should only recover assets
+            // corresponding to unlocked shares (40%)
+            env(vault.clawback({
+                    .issuer = issuer,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                }),
+                ter(tesSUCCESS));
+            env.close();
+
+            {
+                auto const sle = env.le(vaultKeylet);
+                BEAST_EXPECT(sle != nullptr);
+                // Only 40 of 100 assets recovered (matching 40% unlocked shares)
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(60).value());
+                BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(60).value());
+
+                // Depositor's unlocked shares are now 0
+                auto const sharesAfter = env.balance(depositor, shares);
+                BEAST_EXPECT(sharesAfter == shares(0));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -5659,6 +5894,7 @@ public:
         testRPC();
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();
+        testVaultEscrowedMPT();
         testAssetsMaximum();
     }
 };
