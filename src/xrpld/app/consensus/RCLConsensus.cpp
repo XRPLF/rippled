@@ -137,7 +137,7 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
     prop.set_currenttxhash(proposal.position().begin(), proposal.position().size());
-    prop.set_previousledger(proposal.prevLedger().begin(), proposal.position().size());
+    prop.set_previousledger(proposal.prevLedger().begin(), proposal.prevLedger().size());
 
     auto const pk = peerPos.publicKey().slice();
     prop.set_nodepubkey(pk.data(), pk.size());
