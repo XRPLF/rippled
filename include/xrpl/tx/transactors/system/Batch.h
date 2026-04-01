@@ -9,7 +9,6 @@ namespace xrpl {
 class Batch : public Transactor
 {
 public:
-    virtual ~Batch() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit Batch(ApplyContext& ctx) : Transactor(ctx)

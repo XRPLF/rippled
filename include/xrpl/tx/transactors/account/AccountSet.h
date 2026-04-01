@@ -8,7 +8,6 @@ namespace xrpl {
 class AccountSet : public Transactor
 {
 public:
-    virtual ~AccountSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     explicit AccountSet(ApplyContext& ctx) : Transactor(ctx)

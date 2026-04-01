@@ -23,7 +23,6 @@ struct MPTCreateArgs
 class MPTokenIssuanceCreate : public Transactor
 {
 public:
-    virtual ~MPTokenIssuanceCreate() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit MPTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)

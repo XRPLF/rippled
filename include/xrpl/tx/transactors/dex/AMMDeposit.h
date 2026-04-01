@@ -42,7 +42,6 @@ class Sandbox;
 class AMMDeposit : public Transactor
 {
 public:
-    virtual ~AMMDeposit() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMDeposit(ApplyContext& ctx) : Transactor(ctx)

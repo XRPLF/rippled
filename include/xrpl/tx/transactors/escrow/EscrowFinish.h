@@ -7,7 +7,6 @@ namespace xrpl {
 class EscrowFinish : public Transactor
 {
 public:
-    virtual ~EscrowFinish() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit EscrowFinish(ApplyContext& ctx) : Transactor(ctx)

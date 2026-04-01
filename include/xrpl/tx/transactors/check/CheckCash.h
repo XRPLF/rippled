@@ -7,7 +7,6 @@ namespace xrpl {
 class CheckCash : public Transactor
 {
 public:
-    virtual ~CheckCash() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit CheckCash(ApplyContext& ctx) : Transactor(ctx)

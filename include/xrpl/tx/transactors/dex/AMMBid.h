@@ -45,7 +45,6 @@ namespace xrpl {
 class AMMBid : public Transactor
 {
 public:
-    virtual ~AMMBid() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMBid(ApplyContext& ctx) : Transactor(ctx)

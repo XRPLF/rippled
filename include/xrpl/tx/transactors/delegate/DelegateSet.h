@@ -7,7 +7,6 @@ namespace xrpl {
 class DelegateSet : public Transactor
 {
 public:
-    virtual ~DelegateSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit DelegateSet(ApplyContext& ctx) : Transactor(ctx)

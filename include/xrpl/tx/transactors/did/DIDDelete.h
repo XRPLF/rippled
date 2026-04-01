@@ -7,7 +7,6 @@ namespace xrpl {
 class DIDDelete : public Transactor
 {
 public:
-    virtual ~DIDDelete() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)

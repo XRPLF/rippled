@@ -7,7 +7,6 @@ namespace xrpl {
 class CredentialCreate : public Transactor
 {
 public:
-    virtual ~CredentialCreate() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit CredentialCreate(ApplyContext& ctx) : Transactor(ctx)

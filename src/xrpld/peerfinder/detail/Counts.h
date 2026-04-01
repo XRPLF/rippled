@@ -13,13 +13,6 @@ namespace PeerFinder {
 class Counts
 {
 public:
-    Counts()
-
-    {
-    }
-
-    //--------------------------------------------------------------------------
-
     /** Adds the slot state and properties to the slot counts. */
     void
     add(Slot const& s)

@@ -12,7 +12,6 @@ constexpr size_t xbridgeMaxAccountCreateClaims = 128;
 class XChainCreateBridge : public Transactor
 {
 public:
-    virtual ~XChainCreateBridge() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit XChainCreateBridge(ApplyContext& ctx) : Transactor(ctx)
@@ -32,7 +31,6 @@ public:
 class BridgeModify : public Transactor
 {
 public:
-    virtual ~BridgeModify() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit BridgeModify(ApplyContext& ctx) : Transactor(ctx)
@@ -68,7 +66,6 @@ using XChainModifyBridge = BridgeModify;
 class XChainClaim : public Transactor
 {
 public:
-    virtual ~XChainClaim() = default;
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
@@ -94,7 +91,6 @@ public:
 class XChainCommit : public Transactor
 {
 public:
-    virtual ~XChainCommit() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     static TxConsequences
@@ -127,7 +123,6 @@ public:
 class XChainCreateClaimID : public Transactor
 {
 public:
-    virtual ~XChainCreateClaimID() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit XChainCreateClaimID(ApplyContext& ctx) : Transactor(ctx)
@@ -156,7 +151,6 @@ public:
 class XChainAddClaimAttestation : public Transactor
 {
 public:
-    virtual ~XChainAddClaimAttestation() = default;
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
@@ -177,7 +171,6 @@ public:
 class XChainAddAccountCreateAttestation : public Transactor
 {
 public:
-    virtual ~XChainAddAccountCreateAttestation() = default;
     // Blocker since we cannot accurately calculate the consequences
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
@@ -223,7 +216,6 @@ public:
 class XChainCreateAccountCommit : public Transactor
 {
 public:
-    virtual ~XChainCreateAccountCommit() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit XChainCreateAccountCommit(ApplyContext& ctx) : Transactor(ctx)

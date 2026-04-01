@@ -7,7 +7,6 @@ namespace xrpl {
 class LoanBrokerCoverClawback : public Transactor
 {
 public:
-    virtual ~LoanBrokerCoverClawback() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit LoanBrokerCoverClawback(ApplyContext& ctx) : Transactor(ctx)

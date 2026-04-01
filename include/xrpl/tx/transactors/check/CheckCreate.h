@@ -7,7 +7,6 @@ namespace xrpl {
 class CheckCreate : public Transactor
 {
 public:
-    virtual ~CheckCreate() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit CheckCreate(ApplyContext& ctx) : Transactor(ctx)

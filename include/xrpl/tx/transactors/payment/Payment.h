@@ -13,7 +13,6 @@ class Payment : public Transactor
     static std::size_t const MaxPathLength = 8;
 
 public:
-    virtual ~Payment() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     explicit Payment(ApplyContext& ctx) : Transactor(ctx)

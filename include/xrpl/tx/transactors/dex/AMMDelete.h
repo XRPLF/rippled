@@ -13,7 +13,6 @@ namespace xrpl {
 class AMMDelete : public Transactor
 {
 public:
-    virtual ~AMMDelete() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)

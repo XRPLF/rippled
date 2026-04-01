@@ -7,7 +7,6 @@ namespace xrpl {
 class LedgerStateFix : public Transactor
 {
 public:
-    virtual ~LedgerStateFix() = default;
     enum FixType : std::uint16_t {
         nfTokenPageLink = 1,
     };

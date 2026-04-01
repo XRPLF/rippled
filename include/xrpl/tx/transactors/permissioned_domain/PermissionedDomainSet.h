@@ -7,7 +7,6 @@ namespace xrpl {
 class PermissionedDomainSet : public Transactor
 {
 public:
-    virtual ~PermissionedDomainSet() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit PermissionedDomainSet(ApplyContext& ctx) : Transactor(ctx)

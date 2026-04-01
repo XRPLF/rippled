@@ -7,7 +7,6 @@ namespace xrpl {
 class NFTokenBurn : public Transactor
 {
 public:
-    virtual ~NFTokenBurn() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit NFTokenBurn(ApplyContext& ctx) : Transactor(ctx)

@@ -7,7 +7,6 @@ namespace xrpl {
 class VaultClawback : public Transactor
 {
 public:
-    virtual ~VaultClawback() = default;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit VaultClawback(ApplyContext& ctx) : Transactor(ctx)
