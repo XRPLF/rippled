@@ -396,20 +396,7 @@ private:
         }
 
         if (jvParams.size() >= 6)
-        {
-            if (auto const proof = jvParseInt(jvParams[5u]))
-            {
-                if (*proof != 0)
-                    jvRequest[jss::proof] = true;
-            }
-            else
-            {
-                return RPC::invalid_field_error(jss::proof);
-            }
-        }
-
-        if (jvParams.size() == 7)
-            jvRequest[jss::marker] = jvParams[6u];
+            jvRequest[jss::marker] = jvParams[5u];
 
         return jvRequest;
     }
