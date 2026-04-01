@@ -437,7 +437,7 @@ struct Flow_test : public beast::unit_test::suite
 
             auto flowJournal = env.app().getJournal("Flow");
             auto const flowResult = [&] {
-                STAmount deliver(USD(51));
+                STAmount const deliver(USD(51));
                 STAmount smax(BTC(61));
                 PaymentSandbox sb(env.current().get(), tapNONE);
                 STPathSet paths;
@@ -450,10 +450,10 @@ struct Flow_test : public beast::unit_test::suite
                 };
                 {
                     // BTC -> USD
-                    STPath p1({IPE(USD.issue())});
+                    STPath const p1({IPE(USD.issue())});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath p2({IPE(EUR.issue()), IPE(USD.issue())});
+                    STPath const p2({IPE(EUR.issue()), IPE(USD.issue())});
                     paths.push_back(p2);
                 }
 
@@ -876,8 +876,10 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(bob, USD(20)));
 
-            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{
+                USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{
+                USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(offer(gw, drops(9000000000), tinyAmt3));
             env(pay(alice, bob, tinyAmt1),
@@ -900,8 +902,10 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(alice, USD(20)));
 
-            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{
+                USD.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{
+                USD.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(pay(gw, alice, tinyAmt1));
 

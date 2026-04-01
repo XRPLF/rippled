@@ -38,7 +38,7 @@ TEST(json_value, construct_and_compare_Json_StaticString)
     EXPECT_EQ(test1, test2);
     EXPECT_NE(test1, test3);
 
-    std::string str{sample};
+    std::string const str{sample};
     EXPECT_EQ(str, test2);
     EXPECT_NE(str, test3);
     EXPECT_EQ(test2, str);
@@ -52,7 +52,7 @@ TEST(json_value, different_types)
 
     auto testCopy = [](Json::ValueType typ) {
         Json::Value val{typ};
-        Json::Value cpy{val};
+        Json::Value const cpy{val};
         EXPECT_EQ(val.type(), typ);
         EXPECT_EQ(cpy.type(), typ);
         return val;
@@ -135,7 +135,7 @@ TEST(json_value, different_types)
     {
         Json::Value const staticStrV{staticStr};
         {
-            Json::Value cpy{staticStrV};
+            Json::Value const cpy{staticStrV};
             EXPECT_EQ(staticStrV.type(), Json::stringValue);
             EXPECT_EQ(cpy.type(), Json::stringValue);
         }
@@ -588,13 +588,13 @@ TEST(json_value, bad_json)
 
 TEST(json_value, edge_cases)
 {
-    std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max();
-    std::int32_t max_int = std::numeric_limits<std::int32_t>::max();
-    std::int32_t min_int = std::numeric_limits<std::int32_t>::min();
+    std::uint32_t const max_uint = std::numeric_limits<std::uint32_t>::max();
+    std::int32_t const max_int = std::numeric_limits<std::int32_t>::max();
+    std::int32_t const min_int = std::numeric_limits<std::int32_t>::min();
 
-    std::uint32_t a_uint = max_uint - 1978;
-    std::int32_t a_large_int = max_int - 1978;
-    std::int32_t a_small_int = min_int + 1978;
+    std::uint32_t const a_uint = max_uint - 1978;
+    std::int32_t const a_large_int = max_int - 1978;
+    std::int32_t const a_small_int = min_int + 1978;
 
     {
         std::string json = "{\"max_uint\":" + std::to_string(max_uint);
@@ -628,7 +628,7 @@ TEST(json_value, edge_cases)
         EXPECT_LT(j1["a_small_int"], a_uint);
     }
 
-    std::uint64_t overflow = std::uint64_t(max_uint) + 1;
+    std::uint64_t const overflow = std::uint64_t(max_uint) + 1;
     {
         std::string json = "{\"overflow\":";
         json += std::to_string(overflow);
@@ -640,7 +640,7 @@ TEST(json_value, edge_cases)
         EXPECT_FALSE(r2.parse(json, j2));
     }
 
-    std::int64_t underflow = std::int64_t(min_int) - 1;
+    std::int64_t const underflow = std::int64_t(min_int) - 1;
     {
         std::string json = "{\"underflow\":";
         json += std::to_string(underflow);
@@ -739,7 +739,7 @@ TEST(json_value, copy)
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
 
-    Json::Value v2 = v1;
+    Json::Value const v2 = v1;
     EXPECT_TRUE(v1.isDouble());
     EXPECT_EQ(v1.asDouble(), 2.5);
     EXPECT_TRUE(v2.isDouble());
@@ -819,7 +819,7 @@ TEST(json_value, comparisons)
     b["a"] = Json::Int(-1);
     testGreaterThan("negative");
 
-    Json::Int big = std::numeric_limits<int>::max();
+    Json::Int const big = std::numeric_limits<int>::max();
     Json::UInt bigger = big;
     bigger++;
 
@@ -859,7 +859,7 @@ TEST(json_value, conversions)
     // TODO: What's the thinking here?
     {
         // null
-        Json::Value val;
+        Json::Value const val;
         EXPECT_TRUE(val.isNull());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "");
@@ -880,7 +880,7 @@ TEST(json_value, conversions)
     }
     {
         // int
-        Json::Value val = -1234;
+        Json::Value const val = -1234;
         EXPECT_TRUE(val.isInt());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "-1234");
@@ -901,7 +901,7 @@ TEST(json_value, conversions)
     }
     {
         // uint
-        Json::Value val = 1234U;
+        Json::Value const val = 1234U;
         EXPECT_TRUE(val.isUInt());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "1234");
@@ -922,7 +922,7 @@ TEST(json_value, conversions)
     }
     {
         // real
-        Json::Value val = 2.0;
+        Json::Value const val = 2.0;
         EXPECT_TRUE(val.isDouble());
         // val.asCString() should trigger an assertion failure
         EXPECT_TRUE(std::regex_match(val.asString(), std::regex("^2\\.0*$")));
@@ -943,7 +943,7 @@ TEST(json_value, conversions)
     }
     {
         // numeric string
-        Json::Value val = "54321";
+        Json::Value const val = "54321";
         EXPECT_TRUE(val.isString());
         EXPECT_EQ(strcmp(val.asCString(), "54321"), 0);
         EXPECT_EQ(val.asString(), "54321");
@@ -964,7 +964,7 @@ TEST(json_value, conversions)
     }
     {
         // non-numeric string
-        Json::Value val(Json::stringValue);
+        Json::Value const val(Json::stringValue);
         EXPECT_TRUE(val.isString());
         EXPECT_EQ(val.asCString(), nullptr);
         EXPECT_EQ(val.asString(), "");
@@ -985,7 +985,7 @@ TEST(json_value, conversions)
     }
     {
         // bool false
-        Json::Value val = false;
+        Json::Value const val = false;
         EXPECT_TRUE(val.isBool());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "false");
@@ -1006,7 +1006,7 @@ TEST(json_value, conversions)
     }
     {
         // bool true
-        Json::Value val = true;
+        Json::Value const val = true;
         EXPECT_TRUE(val.isBool());
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "true");
@@ -1027,7 +1027,7 @@ TEST(json_value, conversions)
     }
     {
         // array type
-        Json::Value val(Json::arrayValue);
+        Json::Value const val(Json::arrayValue);
         EXPECT_TRUE(val.isArray());
         // val.asCString should trigger an assertion failure
         EXPECT_THROW(val.asString(), Json::error);
@@ -1048,7 +1048,7 @@ TEST(json_value, conversions)
     }
     {
         // object type
-        Json::Value val(Json::objectValue);
+        Json::Value const val(Json::objectValue);
         EXPECT_TRUE(val.isObject());
         // val.asCString should trigger an assertion failure
         EXPECT_THROW(val.asString(), Json::error);

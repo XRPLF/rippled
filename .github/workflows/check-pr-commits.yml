@@ -1,7 +1,7 @@
 name: Check PR commits
 
 on:
-  pull_request:
+  pull_request_target:
 
 # The action needs to have write permissions to post comments on the PR.
 permissions:

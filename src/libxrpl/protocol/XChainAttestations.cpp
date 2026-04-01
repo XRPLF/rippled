@@ -74,7 +74,7 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
-    std::vector<std::uint8_t> msg = message(bridge);
+    std::vector<std::uint8_t> const msg = message(bridge);
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 

@@ -16,7 +16,7 @@ namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 class Logs;
 struct Coro_create_t

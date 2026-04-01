@@ -96,7 +96,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         failed_ = true;

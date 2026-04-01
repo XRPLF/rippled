@@ -71,7 +71,7 @@ template <class Rep, class Period>
 std::ostream&
 pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state _(os);
+    save_stream_state const _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -332,7 +332,7 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
             if (!status.ok() || (pdb == nullptr))
                 Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
@@ -374,7 +374,7 @@ public:
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
-                std::unique_ptr<char[]> clean(new char[size]);
+                std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
                 filter_inner(clean.get(), size);
                 auto const out = nodeobject_compress(clean.get(), size, buf);
@@ -458,7 +458,7 @@ public:
             // Create empty buckets
             for (std::size_t i = 0; i < bn; ++i)
             {
-                bucket b(kh.block_size, buf.get() + (i * kh.block_size), empty);
+                bucket const b(kh.block_size, buf.get() + (i * kh.block_size), empty);
             }
             // Insert all keys into buckets
             // Iterate Data File

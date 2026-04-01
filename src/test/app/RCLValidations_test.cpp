@@ -55,7 +55,7 @@ class RCLValidations_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<Ledger const>> history;
 
         jtx::Env env(*this);
-        Config config;
+        Config const config;
         auto prev = std::make_shared<Ledger const>(
             create_genesis,
             Rules{config.features},
@@ -100,7 +100,7 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Empty ledger
         {
-            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
+            RCLValidatedLedger const a{RCLValidatedLedger::MakeGenesis{}};
             BEAST_EXPECT(a.seq() == Seq{0});
             BEAST_EXPECT(a[Seq{0}] == ID{0});
             BEAST_EXPECT(a.minSeq() == Seq{0});
@@ -108,8 +108,8 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Full history ledgers
         {
-            std::shared_ptr<Ledger const> ledger = history.back();
-            RCLValidatedLedger a{ledger, env.journal};
+            std::shared_ptr<Ledger const> const ledger = history.back();
+            RCLValidatedLedger const a{ledger, env.journal};
             BEAST_EXPECT(a.seq() == ledger->header().seq);
             BEAST_EXPECT(a.minSeq() == a.seq() - maxAncestors);
             // Ensure the ancestral 256 ledgers have proper ID
@@ -130,21 +130,21 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Empty with non-empty
         {
-            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
+            RCLValidatedLedger const a{RCLValidatedLedger::MakeGenesis{}};
 
             for (auto const& ledger : {history.back(), history[maxAncestors - 1]})
             {
-                RCLValidatedLedger b{ledger, env.journal};
+                RCLValidatedLedger const b{ledger, env.journal};
                 BEAST_EXPECT(mismatch(a, b) == 1);
                 BEAST_EXPECT(mismatch(b, a) == 1);
             }
         }
         // Same chains, different seqs
         {
-            RCLValidatedLedger a{history.back(), env.journal};
+            RCLValidatedLedger const a{history.back(), env.journal};
             for (Seq s = a.seq(); s > 0; s--)
             {
-                RCLValidatedLedger b{history[s - 1], env.journal};
+                RCLValidatedLedger const b{history[s - 1], env.journal};
                 if (s >= a.minSeq())
                 {
                     BEAST_EXPECT(mismatch(a, b) == b.seq() + 1);
@@ -162,8 +162,8 @@ class RCLValidations_test : public beast::unit_test::suite
             // Alt history diverged at history.size()/2
             for (Seq s = 1; s < history.size(); ++s)
             {
-                RCLValidatedLedger a{history[s - 1], env.journal};
-                RCLValidatedLedger b{altHistory[s - 1], env.journal};
+                RCLValidatedLedger const a{history[s - 1], env.journal};
+                RCLValidatedLedger const b{altHistory[s - 1], env.journal};
 
                 BEAST_EXPECT(a.seq() == b.seq());
                 if (s <= diverge)
@@ -183,10 +183,10 @@ class RCLValidations_test : public beast::unit_test::suite
         // Different chains, different seqs
         {
             // Compare around the divergence point
-            RCLValidatedLedger a{history[diverge], env.journal};
+            RCLValidatedLedger const a{history[diverge], env.journal};
             for (Seq offset = diverge / 2; offset < 3 * diverge / 2; ++offset)
             {
-                RCLValidatedLedger b{altHistory[offset - 1], env.journal};
+                RCLValidatedLedger const b{altHistory[offset - 1], env.journal};
                 if (offset <= diverge)
                 {
                     BEAST_EXPECT(mismatch(a, b) == b.seq() + 1);
@@ -221,7 +221,7 @@ class RCLValidations_test : public beast::unit_test::suite
         // Generate a chain of 256 + 10 ledgers
         jtx::Env env(*this);
         auto& j = env.journal;
-        Config config;
+        Config const config;
         auto prev = std::make_shared<Ledger const>(
             create_genesis,
             Rules{config.features},

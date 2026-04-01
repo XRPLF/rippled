@@ -57,7 +57,7 @@ public:
 
         // only 'a' has out edges
         BEAST_EXPECT(graph.outVertices().size() == 1);
-        std::vector<char> expected = {'b', 'c'};
+        std::vector<char> const expected = {'b', 'c'};
 
         BEAST_EXPECT((graph.outVertices('a') == expected));
         BEAST_EXPECT(graph.outVertices('b').size() == 0);
@@ -66,7 +66,7 @@ public:
 
         std::stringstream ss;
         graph.saveDot(ss, [](char v) { return v; });
-        std::string expectedDot =
+        std::string const expectedDot =
             "digraph {\n"
             "a -> b;\n"
             "a -> c;\n"

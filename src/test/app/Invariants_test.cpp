@@ -127,7 +127,7 @@ class Invariants_test : public beast::unit_test::suite
 
         OpenView ov{*env.current()};
         test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
+        beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
 
         BEAST_EXPECT(precheck(A1, A2, ac));
@@ -845,7 +845,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(A1, (*sle)[sfSequence] + 2));
 
                 Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
-                STAmount amt(usd, -1);
+                STAmount const amt(usd, -1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
                 return true;
@@ -862,7 +862,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(A1, (*sle)[sfSequence] + 2));
 
                 Issue const bad{badCurrency(), AccountID(0x4985601)};
-                STAmount amt(bad, 1);
+                STAmount const amt(bad, 1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
                 return true;
@@ -879,7 +879,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(A1, (*sle)[sfSequence] + 2));
 
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
-                STAmount amt(mpt, -1);
+                STAmount const amt(mpt, -1);
                 sleNew->setFieldAmount(sfAmount, amt);
                 ac.view().insert(sleNew);
                 return true;
@@ -1026,8 +1026,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
                 sleNew->setFieldH256(sfAMMID, uint256(1));
-                sleNew->setFieldU32(
-                    sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDefaultRipple);
+                sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
             },
@@ -1253,8 +1252,8 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
-        std::initializer_list<TER> badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
-        std::initializer_list<TER> failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
         testcase << "PermissionedDomain" + std::string(fixPDEnabled ? " fix" : "");
 
@@ -1338,7 +1337,7 @@ class Invariants_test : public beast::unit_test::suite
 
                 // update PD with empty rules
                 {
-                    STArray credentials(sfAcceptedCredentials, 2);
+                    STArray const credentials(sfAcceptedCredentials, 2);
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
                     ac.view().update(slePd);
                 }
@@ -1438,15 +1437,16 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
             fixPDEnabled ? failTers : badTers);
 
-        std::initializer_list<TER> goodTers = {tesSUCCESS, tesSUCCESS};
+        std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
-        std::vector<std::string> badMoreThan1{
+        std::vector<std::string> const badMoreThan1{
             {"transaction affected more than 1 permissioned domain entry."}};
-        std::vector<std::string> emptyV;
-        std::vector<std::string> badNoDomains{{"no domain objects affected by"}};
-        std::vector<std::string> badNotDeleted{{"domain object modified, but not deleted by "}};
-        std::vector<std::string> badDeleted{{"domain object deleted by"}};
-        std::vector<std::string> badTx{
+        std::vector<std::string> const emptyV;
+        std::vector<std::string> const badNoDomains{{"no domain objects affected by"}};
+        std::vector<std::string> const badNotDeleted{
+            {"domain object modified, but not deleted by "}};
+        std::vector<std::string> const badDeleted{{"domain object deleted by"}};
+        std::vector<std::string> const badTx{
             {"domain object(s) affected by an unauthorized transaction."}};
 
         {
@@ -1596,11 +1596,11 @@ class Invariants_test : public beast::unit_test::suite
         using namespace jtx;
 
         AccountID pseudoAccountID;
-        Preclose createPseudo = [&, this](Account const& a, Account const& b, Env& env) {
+        Preclose const createPseudo = [&, this](Account const& a, Account const& b, Env& env) {
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
             // Create vault
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, vKeylet] = vault.create({.owner = a, .asset = xrpAsset});
             env(tx);
             env.close();
@@ -1724,7 +1724,7 @@ class Invariants_test : public beast::unit_test::suite
 
         std::uint32_t const seq = env.seq(A1);
         env(pdomain::setTx(A1, credentials));
-        uint256 key = pdomain::getNewDomain(env.meta());
+        uint256 const key = pdomain::getNewDomain(env.meta());
 
         // std::cout << "PD, acc: " << A1.id() << ", seq: " << seq << ", k: " <<
         // key << std::endl;
@@ -1942,7 +1942,7 @@ class Invariants_test : public beast::unit_test::suite
 
         // Create vault
         uint256 vaultID;
-        Vault vault{env};
+        Vault const vault{env};
         auto [tx, vKeylet] = vault.create({.owner = a, .asset = asset});
         env(tx);
         BEAST_EXPECT(env.le(vKeylet));
@@ -1967,7 +1967,7 @@ class Invariants_test : public beast::unit_test::suite
 
         // Initialize with a placeholder value because there's no default ctor
         Keylet loanBrokerKeylet = keylet::amendments();
-        Preclose createLoanBroker = [&, this](Account const& a, Account const& b, Env& env) {
+        Preclose const createLoanBroker = [&, this](Account const& a, Account const& b, Env& env) {
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
             loanBrokerKeylet = this->createLoanBroker(a, env, xrpAsset);
@@ -2073,12 +2073,12 @@ class Invariants_test : public beast::unit_test::suite
             };
 
             Keylet loanBrokerKeylet = keylet::amendments();
-            Preclose createLoanBroker = [&, this](
-                                            Account const& alice, Account const& issuer, Env& env) {
-                auto const asset = setupAsset(alice, issuer, env);
-                loanBrokerKeylet = this->createLoanBroker(alice, env, asset);
-                return BEAST_EXPECT(env.le(loanBrokerKeylet));
-            };
+            Preclose const createLoanBroker =
+                [&, this](Account const& alice, Account const& issuer, Env& env) {
+                    auto const asset = setupAsset(alice, issuer, env);
+                    loanBrokerKeylet = this->createLoanBroker(alice, env, asset);
+                    return BEAST_EXPECT(env.le(loanBrokerKeylet));
+                };
 
             // Ensure the test scenarios are set up completely. The test cases
             // will need to recompute any of these values it needs for itself
@@ -2443,7 +2443,7 @@ class Invariants_test : public beast::unit_test::suite
         Account A4{"A4"};
         auto const precloseXrp = [&](Account const& A1, Account const& A2, Env& env) -> bool {
             env.fund(XRP(1000), A3, A4);
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
             env(tx);
             env(vault.deposit({.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
@@ -2467,7 +2467,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2487,7 +2487,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttPAYMENT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2507,7 +2507,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttPAYMENT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2543,7 +2543,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2572,7 +2572,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 {
                     auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                     env(tx);
@@ -2618,7 +2618,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2644,7 +2644,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 env(vault.deposit({.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
@@ -2680,7 +2680,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2693,7 +2693,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2706,7 +2706,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2719,7 +2719,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2732,7 +2732,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2758,7 +2758,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -2780,7 +2780,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 env(vault.deposit({.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
@@ -3020,7 +3020,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3046,7 +3046,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3073,7 +3073,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3101,7 +3101,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3125,7 +3125,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3153,7 +3153,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_CREATE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = A1, .asset = xrpIssue()});
                 env(tx);
                 return true;
@@ -3708,7 +3708,7 @@ class Invariants_test : public beast::unit_test::suite
             }
 
             auto const mptID = makeMptID(env.seq(A3) - 1, A3);
-            Asset asset = MPTIssue(mptID);
+            Asset const asset = MPTIssue(mptID);
             // Authorize A1 A2 A4
             {
                 Json::Value jv;
@@ -3731,7 +3731,7 @@ class Invariants_test : public beast::unit_test::suite
                 env.close();
             }
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = A1, .asset = asset});
             env(tx);
             env(vault.deposit({.depositor = A1, .id = keylet.key, .amount = asset(10)}));

@@ -127,7 +127,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // empty path
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LoadFile, std::nullopt),
                 nullptr,
@@ -136,7 +136,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // file does not exist
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LoadFile, std::nullopt),
@@ -158,7 +158,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             return;
 
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig,
@@ -257,7 +257,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         {
             // will throw an exception, because we cannot load a ledger for
             // replay when trapTxHash is set to an invalid transaction
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::Replay, ~sd.trapTxHash),
                 nullptr,
@@ -314,7 +314,7 @@ public:
     void
     run() override
     {
-        beast::temp_dir td;
+        beast::temp_dir const td;
         auto sd = setupLedger(td);
 
         // test cases
