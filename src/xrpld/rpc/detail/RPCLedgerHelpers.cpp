@@ -166,7 +166,7 @@ ledgerFromSpecifier(
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-    LedgerCase ledgerCase = specifier.ledger_case();
+    LedgerCase const ledgerCase = specifier.ledger_case();
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
@@ -375,7 +375,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
     auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
 
-    if ((hasHash + hasIndex) != 1)
+    if ((static_cast<int>(hasHash) + static_cast<int>(hasIndex)) != 1)
     {
         return Unexpected(
             RPC::make_param_error(
@@ -411,7 +411,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         if (ledgerIndex <= 0)
             return Unexpected(RPC::make_param_error("Ledger index too small"));
 
-        auto const j = context.app.journal("RPCHandler");
+        auto const j = context.app.getJournal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated
         // ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);

@@ -56,14 +56,14 @@ iteratePriceData(
         if (prevChain == chain)
             return;
 
-        if (!oracle || f(*oracle) || isNew)
+        if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
         if (++history > maxHistory)
             return;
 
-        uint256 prevTx = chain->getFieldH256(sfPreviousTxnID);
-        std::uint32_t prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
+        uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
+        std::uint32_t const prevSeq = chain->getFieldU32(sfPreviousTxnLgrSeq);
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);
         if (!ledger)
@@ -320,7 +320,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size_ / 2;
         if ((size_ % 2) == 0)
         {
-            static STAmount two{noIssue(), 2, 0};
+            static STAmount const two{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;

@@ -80,7 +80,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
         stack_.push(Collection());
         stack_.top().type = ct;
@@ -152,7 +152,7 @@ public:
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
-        check(tags.find(tag) == tags.end(), "Already seen tag " + tag);
+        check(!tags.contains(tag), "Already seen tag " + tag);
         tags.insert(tag);
 #endif
 

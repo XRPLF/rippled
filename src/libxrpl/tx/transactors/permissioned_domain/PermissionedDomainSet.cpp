@@ -100,8 +100,6 @@ PermissionedDomainSet::doApply()
         Keylet const pdKeylet =
             keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
-        if (!slePd)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));

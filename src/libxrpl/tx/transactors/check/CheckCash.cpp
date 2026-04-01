@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -82,7 +81,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -155,7 +155,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 return tecNO_ISSUER;
             }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
             {
                 auto const sleTrustLine = ctx.view.read(keylet::line(dstId, issuerId, currency));
 
@@ -172,7 +172,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 bool const canonical_gt(dstId > issuerId);
 
                 bool const is_authorized(
-                    sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth));
+                    (sleTrustLine->at(sfFlags) & (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
                 if (!is_authorized)
                 {
@@ -232,7 +232,7 @@ CheckCash::doApply()
     //
     // If it is not a check to self (as should be the case), then there's
     // work to do...
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
     if (srcId != account_)
@@ -325,28 +325,26 @@ CheckCash::doApply()
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
 
-                // clang-format off
                 if (TER const ter = trustCreate(
-                        psb,                            // payment sandbox
-                        destLow,                        // is dest low?
-                        issuer,                         // source
-                        account_,                       // destination
-                        trustLineKey.key,               // ledger index
-                        sleDst,                         // Account to add to
-                        false,                          // authorize account
-                        (sleDst->getFlags() & lsfDefaultRipple) == 0,
-                        false,                          // freeze trust line
-                        false,                          // deep freeze trust line
-                        initialBalance,                 // zero initial balance
-                        Issue(currency, account_),      // limit of zero
-                        0,                              // quality in
-                        0,                              // quality out
-                        viewJ);                         // journal
+                        psb,                                           // payment sandbox
+                        destLow,                                       // is dest low?
+                        issuer,                                        // source
+                        account_,                                      // destination
+                        trustLineKey.key,                              // ledger index
+                        sleDst,                                        // Account to add to
+                        false,                                         // authorize account
+                        (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
+                        false,                                         // freeze trust line
+                        false,                                         // deep freeze trust line
+                        initialBalance,                                // zero initial balance
+                        Issue(currency, account_),                     // limit of zero
+                        0,                                             // quality in
+                        0,                                             // quality out
+                        viewJ);                                        // journal
                     !isTesSuccess(ter))
                 {
                     return ter;
                 }
-                // clang-format on
 
                 psb.update(sleDst);
 
@@ -367,7 +365,7 @@ CheckCash::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+            scope_exit const fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                 if (auto const sleTrustLine = psb.peek(trustLineKey))
                     sleTrustLine->at(tweakedLimit) = savedLimit;
             });

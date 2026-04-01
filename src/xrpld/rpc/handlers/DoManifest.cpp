@@ -32,25 +32,25 @@ doManifest(RPC::JsonContext& context)
     // first attempt to use params as ephemeral key,
     // if this lookup succeeds master key will be returned,
     // else an unseated optional is returned
-    auto const mk = context.app.validatorManifests().getMasterKey(*pk);
+    auto const mk = context.app.getValidatorManifests().getMasterKey(*pk);
 
-    auto const ek = context.app.validatorManifests().getSigningKey(mk);
+    auto const ek = context.app.getValidatorManifests().getSigningKey(mk);
 
     // if ephemeral key not found, we don't have specified manifest
     if (!ek)
         return ret;
 
-    if (auto const manifest = context.app.validatorManifests().getManifest(mk))
+    if (auto const manifest = context.app.getValidatorManifests().getManifest(mk))
         ret[jss::manifest] = base64_encode(*manifest);
     Json::Value details;
 
     details[jss::master_key] = toBase58(TokenType::NodePublic, mk);
     details[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);
 
-    if (auto const seq = context.app.validatorManifests().getSequence(mk))
+    if (auto const seq = context.app.getValidatorManifests().getSequence(mk))
         details[jss::seq] = *seq;
 
-    if (auto const domain = context.app.validatorManifests().getDomain(mk))
+    if (auto const domain = context.app.getValidatorManifests().getDomain(mk))
         details[jss::domain] = *domain;
 
     ret[jss::details] = details;
