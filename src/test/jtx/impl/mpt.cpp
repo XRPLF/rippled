@@ -15,15 +15,22 @@ namespace xrpl {
 namespace test {
 namespace jtx {
 
+/**
+ * @brief Helper function to convert a PedersenProofParams into the C library struct.
+ *
+ * @param params The Pedersen commitment proof parameters.
+ * @return The equivalent mpt_pedersen_proof_params for use with the C library.
+ */
 static mpt_pedersen_proof_params
-makePedersenParams(PedersenProofParams const& p)
+makePedersenParams(PedersenProofParams const& params)
 {
-    mpt_pedersen_proof_params params{};
-    std::memcpy(params.pedersen_commitment, p.pedersenCommitment.data(), kMPT_PEDERSEN_COMMIT_SIZE);
-    params.amount = p.amt;
-    std::memcpy(params.ciphertext, p.encryptedAmt.data(), kMPT_ELGAMAL_TOTAL_SIZE);
-    std::memcpy(params.blinding_factor, p.blindingFactor.data(), kMPT_BLINDING_FACTOR_SIZE);
-    return params;
+    mpt_pedersen_proof_params res{};
+    std::memcpy(
+        res.pedersen_commitment, params.pedersenCommitment.data(), kMPT_PEDERSEN_COMMIT_SIZE);
+    res.amount = params.amt;
+    std::memcpy(res.ciphertext, params.encryptedAmt.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+    std::memcpy(res.blinding_factor, params.blindingFactor.data(), kMPT_BLINDING_FACTOR_SIZE);
+    return res;
 }
 
 void
