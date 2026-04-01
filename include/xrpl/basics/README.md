@@ -2,7 +2,7 @@
 
 Utility functions and classes.
 
-libxrpl/basics should contain no dependencies on other modules.
+The module xrpl/basics should contain no dependencies on other modules.
 
 # Choosing an xrpld container.
 

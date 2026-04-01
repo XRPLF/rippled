@@ -6,7 +6,7 @@ For more details on operating an XRP Ledger server securely, please visit https:
 
 ## Supported Versions
 
-Software constantly evolves. In order to focus resources, we only generally only accept vulnerability reports that affect recent and current versions of the software. We always accept reports for issues present in the **master**, **release** or **develop** branches, and with proposed, [open pull requests](https://github.com/XRPLF/rippled/pulls).
+Software constantly evolves. In order to focus resources, we generally only accept vulnerability reports that affect recent and current versions of the software. We always accept reports for issues present in the **master**, **release** or **develop** branches, and with proposed, [open pull requests](https://github.com/XRPLF/rippled/pulls).
 
 ## Identifying and Reporting Vulnerabilities
 
