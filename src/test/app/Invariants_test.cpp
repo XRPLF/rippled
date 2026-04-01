@@ -2253,7 +2253,7 @@ class Invariants_test : public beast::unit_test::suite
             // Test: cover available less than pseudo-account asset balance
             {
                 Keylet brokerKeylet = keylet::amendments();
-                Preclose createBrokerWithCover =
+                Preclose const createBrokerWithCover =
                     [&, this](Account const& alice, Account const& issuer, Env& env) {
                         auto const asset = setupAsset(alice, issuer, env);
                         brokerKeylet = this->createLoanBroker(alice, env, asset);
