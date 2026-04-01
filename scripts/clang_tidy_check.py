@@ -56,10 +56,7 @@ def build_include_graph(build_dir: Path, repo_root: Path) -> tuple[dict, set]:
             continue
         scanned.add(file)
 
-        try:
-            content = file.read_text(errors="ignore")
-        except OSError:
-            continue
+        content = file.read_text()
 
         for line in content.splitlines():
             m = INCLUDE_RE.match(line)
