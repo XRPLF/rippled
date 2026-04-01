@@ -5250,7 +5250,7 @@ class Vault_test : public beast::unit_test::suite
             Account const issuer{"issuer"};
             Account const depositor{"depositor"};
             Account const charlie{"charlie"};
-            Vault vault{env};
+            Vault const vault{env};
 
             env.fund(XRP(1000), issuer, owner, depositor, charlie);
             env(fset(issuer, asfAllowTrustLineClawback));
