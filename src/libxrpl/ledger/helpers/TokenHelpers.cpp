@@ -1203,8 +1203,9 @@ rippleSendMultiMPT(
                 if (view.rules().enabled(fixSecurity3_1_3))
                 {
                     // Post-fixSecurity3_1_3: aggregate MaximumAmount
-                    // check. Each condition guards the subtraction
-                    // in the next to prevent underflow.
+                    // check. WARNING: the order of conditions is
+                    // critical — each guards the subtraction in the
+                    // next against unsigned underflow. Do not reorder.
                     bool const exceedsMaximumAmount =
                         // This send alone exceeds the max cap
                         sendAmount > maximumAmount ||
