@@ -43,11 +43,11 @@ class Vault_test : public beast::unit_test::suite
     testSequences()
     {
         using namespace test::jtx;
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        Account charlie{"charlie"};  // authorized 3rd party
-        Account dave{"dave"};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const charlie{"charlie"};  // authorized 3rd party
+        Account const dave{"dave"};
 
         auto const testSequence = [&, this](
                                       std::string const& prefix,
@@ -1279,8 +1279,8 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("IOU fail create no ripling");
                 Env env{*this, testable_amendments()};
-                Account issuer{"issuer"};
-                Account owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
                 env.close();
                 env(fclear(issuer, asfDefaultRipple));
@@ -1296,8 +1296,8 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("IOU no issuer");
                 Env env{*this, testable_amendments()};
-                Account issuer{"issuer"};
-                Account owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const owner{"owner"};
                 env.fund(XRP(1000), owner);
                 env.close();
 
@@ -1376,9 +1376,9 @@ class Vault_test : public beast::unit_test::suite
                                 Asset const& asset,
                                 Vault& vault)> test) {
             Env env{*this, testable_amendments()};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
             Vault vault{env};
@@ -1435,9 +1435,9 @@ class Vault_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, testable_amendments()};
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
         env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
 
@@ -1548,9 +1548,9 @@ class Vault_test : public beast::unit_test::suite
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
             Env env{*this, testable_amendments()};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
             env.fund(XRP(args.initialXRP), issuer, owner, depositor);
             env.close();
             Vault vault{env};
@@ -2172,8 +2172,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("MPT shares to a vault");
 
             Env env{*this, testable_amendments()};
-            Account owner{"owner"};
-            Account issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
             env.fund(XRP(1000000), owner, issuer);
             env.close();
             Vault const vault{env};
@@ -4740,8 +4740,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
@@ -4956,8 +4956,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
