@@ -1738,10 +1738,12 @@ MPTTester::convertBack(MPTConvertBack const& arg)
                 *arg.account,
                 *arg.amt,
                 contextHash,
-                {pedersenCommitment,
-                 *prevSpendingBalance,
-                 *prevEncryptedSpendingBalance,
-                 pcBlindingFactor});
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *prevSpendingBalance,
+                    .encryptedAmt = *prevEncryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
         }
         jv[sfZKProof] = strHex(proof);
     }
