@@ -851,8 +851,9 @@ STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type&& v)
-    -> OptionalProxy&  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+STObject::OptionalProxy<T>::operator=(
+    optional_type&& v)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    -> OptionalProxy&
 {
     if (v)
         this->assign(std::move(*v));
@@ -931,8 +932,8 @@ STObject::Transform::operator()(detail::STVar const& e) const
 
 //------------------------------------------------------------------------------
 
-inline STObject::STObject(SerialIter&& sit, SField const& name)
-    : STObject(sit, name)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+inline STObject::STObject(SerialIter&& sit, SField const& name) : STObject(sit, name)
 {
 }
 

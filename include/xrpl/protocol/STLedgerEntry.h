@@ -87,8 +87,8 @@ inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
 }
 
 inline STLedgerEntry::STLedgerEntry(
-    SerialIter&& sit,
-    uint256 const& index)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    SerialIter&& sit,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    uint256 const& index)
     : STLedgerEntry(sit, index)
 {
 }

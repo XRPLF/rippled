@@ -100,9 +100,8 @@ public:
     {
     }
 
-    TxSet(MutableTxSet&& m)
-        : txs_{std::move(m.txs_)}
-        , id_{calcID(txs_)}  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    TxSet(MutableTxSet&& m)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        : txs_{m.txs_}, id_{calcID(txs_)}
     {
     }
 
