@@ -160,12 +160,12 @@ public:
                  mantissaReduce <= 5'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount aliceUSD{
+                STAmount const aliceUSD{
                     bobOffer.out.issue(),
                     bobOffer.out.mantissa() - mantissaReduce,
                     bobOffer.out.exponent()};
-                STAmount aliceXRP{bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
-                Amounts aliceOffer{aliceUSD, aliceXRP};
+                STAmount const aliceXRP{bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
+                Amounts const aliceOffer{aliceUSD, aliceXRP};
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
 
@@ -292,12 +292,12 @@ public:
                  mantissaReduce <= 4'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount bobUSD{
+                STAmount const bobUSD{
                     aliceOffer.out.issue(),
                     aliceOffer.out.mantissa() - mantissaReduce,
                     aliceOffer.out.exponent()};
-                STAmount bobXRP{aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
-                Amounts bobOffer{bobUSD, bobXRP};
+                STAmount const bobXRP{aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
+                Amounts const bobOffer{bobUSD, bobXRP};
 
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
@@ -445,7 +445,7 @@ public:
                 // Examine the aftermath of alice's offer.
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
-                    STAmount aliceBalanceUSD = env.balance(alice, USD);
+                    STAmount const aliceBalanceUSD = env.balance(alice, USD);
 #if 0
                     std::cout
                         << "bob initial: " << initialBobUSD
@@ -580,7 +580,7 @@ public:
                 {
                     Json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
 
-                    Amounts aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
+                    Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
                     BEAST_EXPECT(aliceReducedOffer.in < aliceInitialOffer.in);
                     BEAST_EXPECT(aliceReducedOffer.out < aliceInitialOffer.out);

@@ -45,7 +45,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     if (arg.fund)
     {
         env_.fund(arg.xrp, issuer_);
-        for (auto it : holders_)
+        for (auto const& it : holders_)
             env_.fund(arg.xrpHolders, it.second);
     }
     if (close_)
@@ -53,7 +53,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     if (arg.fund)
     {
         env_.require(owners(issuer_, 0));
-        for (auto it : holders_)
+        for (auto const& it : holders_)
         {
             if (issuer_.id() == it.second.id())
                 Throw<std::runtime_error>("Issuer can't be holder");
@@ -140,7 +140,7 @@ MPTTester::create(MPTCreate const& arg)
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
-    Json::Value jv = createJV(
+    Json::Value const jv = createJV(
         {.issuer = issuer_,
          .maxAmt = arg.maxAmt,
          .assetScale = arg.assetScale,
@@ -217,7 +217,7 @@ MPTTester::destroy(MPTDestroy const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv =
+    Json::Value const jv =
         destroyJV({.issuer = arg.issuer ? arg.issuer : issuer_, .id = arg.id ? arg.id : id_});
     submit(arg, jv);
 }
@@ -251,7 +251,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = authorizeJV({
+    Json::Value const jv = authorizeJV({
         .account = arg.account ? arg.account : issuer_,
         .holder = arg.holder,
         .id = arg.id ? arg.id : id_,
@@ -361,7 +361,7 @@ MPTTester::set(MPTSet const& arg)
 {
     if (!arg.id && !id_)
         Throw<std::runtime_error>("MPT has not been created");
-    Json::Value jv = setJV(
+    Json::Value const jv = setJV(
         {.account = arg.account ? arg.account : issuer_,
          .holder = arg.holder,
          .id = arg.id ? arg.id : id_,

@@ -216,7 +216,7 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {

@@ -16,7 +16,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     auto owner = sle->getAccountID(sfAccount);
 
     // Detect legacy directories.
-    uint256 uDirectory = sle->getFieldH256(sfBookDirectory);
+    uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
 
     if (!view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false))
     {

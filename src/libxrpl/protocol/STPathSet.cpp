@@ -45,7 +45,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     std::vector<STPathElement> path;
     for (;;)
     {
-        int iType = sit.get8();
+        int const iType = sit.get8();
 
         if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
         {
@@ -153,7 +153,7 @@ STPath::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
-    for (auto it : mPath)
+    for (auto const& it : mPath)
     {
         Json::Value elem(Json::objectValue);
         auto const iType = it.getNodeType();
@@ -179,7 +179,7 @@ Json::Value
 STPathSet::getJson(JsonOptions options) const
 {
     Json::Value ret(Json::arrayValue);
-    for (auto it : value)
+    for (auto const& it : value)
         ret.append(it.getJson(options));
 
     return ret;
@@ -205,7 +205,7 @@ STPathSet::add(Serializer& s) const
 
         for (auto const& speElement : spPath)
         {
-            int iType = speElement.getNodeType();
+            int const iType = speElement.getNodeType();
 
             s.add8(iType);
 

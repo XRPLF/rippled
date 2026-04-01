@@ -199,7 +199,7 @@ BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
     if (!links_.disconnect(peer1, peer2))
         return false;
-    bool r = links_.disconnect(peer2, peer1);
+    bool const r = links_.disconnect(peer2, peer1);
     (void)r;
     assert(r);
     return true;

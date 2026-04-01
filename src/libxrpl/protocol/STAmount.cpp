@@ -154,7 +154,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 
     if (value != 0u)
     {
-        bool isNegative = (offset & 256) == 0;
+        bool const isNegative = (offset & 256) == 0;
         offset = (offset & 255) - 97;  // center the range
 
         if (value < cMinValue || value > cMaxValue || offset < cMinOffset || offset > cMaxOffset)
@@ -410,7 +410,7 @@ operator+(STAmount const& v1, STAmount const& v2)
     // This addition cannot overflow an std::int64_t. It can overflow an
     // STAmount and the constructor will throw.
 
-    std::int64_t fv = vv1 + vv2;
+    std::int64_t const fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return {v1.getFName(), v1.asset()};
@@ -454,13 +454,13 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
 
     try
     {
-        STAmount r = divide(offerIn, offerOut, noIssue());
+        STAmount const r = divide(offerIn, offerOut, noIssue());
         if (r == beast::zero)  // offer is too good
             return 0;
         XRPL_ASSERT(
             (r.exponent() >= -100) && (r.exponent() <= 155),
             "xrpl::getRate : exponent inside range");
-        std::uint64_t ret = r.exponent() + 100;
+        std::uint64_t const ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
     catch (...)
@@ -502,8 +502,8 @@ canAdd(STAmount const& a, STAmount const& b)
     // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount const A = a.xrp();
+        XRPAmount const B = b.xrp();
 
         return !(
             (B > XRPAmount{0} &&
@@ -517,16 +517,16 @@ canAdd(STAmount const& a, STAmount const& b)
     {
         static STAmount const one{IOUAmount{1, 0}, noIssue()};
         static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
-        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
-        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
+        STAmount const lhs = divide((a - b) + b, a, noIssue()) - one;
+        STAmount const rhs = divide((b - a) + a, b, noIssue()) - one;
         return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= maxLoss;
     }
 
     // MPT (overflow & underflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
+        MPTAmount const A = a.mpt();
+        MPTAmount const B = b.mpt();
         return !(
             (B > MPTAmount{0} &&
              A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
@@ -570,8 +570,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // XRP case (underflow & overflow check)
     if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = a.xrp();
-        XRPAmount B = b.xrp();
+        XRPAmount const A = a.xrp();
+        XRPAmount const B = b.xrp();
         // Check for underflow
         if (B > XRPAmount{0} && A < B)
             return false;
@@ -593,8 +593,8 @@ canSubtract(STAmount const& a, STAmount const& b)
     // MPT case (underflow & overflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = a.mpt();
-        MPTAmount B = b.mpt();
+        MPTAmount const A = a.mpt();
+        MPTAmount const B = b.mpt();
 
         // Underflow check
         if (B > MPTAmount{0} && A < B)
@@ -847,7 +847,7 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover())
         {
-            Number num(mIsNegative, mValue, mOffset, Number::unchecked{});
+            Number const num(mIsNegative, mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {
                 auto const value = val.value();
                 mIsNegative = value < 0;
@@ -977,8 +977,8 @@ amountFromQuality(std::uint64_t rate)
     if (rate == 0)
         return STAmount(noIssue());
 
-    std::uint64_t mantissa = rate & ~(255ull << (64 - 8));
-    int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
+    std::uint64_t const mantissa = rate & ~(255ull << (64 - 8));
+    int const exponent = static_cast<int>(rate >> (64 - 8)) - 100;
 
     return STAmount(noIssue(), mantissa, exponent);
 }
@@ -1474,7 +1474,7 @@ roundToScale(STAmount const& value, std::int32_t scale, Number::rounding_mode ro
 
     STAmount const referenceValue{value.asset(), STAmount::cMinValue, scale, value.negative()};
 
-    NumberRoundModeGuard mg(rounding);
+    NumberRoundModeGuard const mg(rounding);
     // With an IOU, the the result of addition will be truncated to the
     // precision of the larger value, which in this case is referenceValue. Then
     // remove the reference value via subtraction, and we're left with the
@@ -1516,8 +1516,8 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     if (v1.native() && v2.native() && xrp)
     {
-        std::uint64_t minV = std::min(getSNValue(v1), getSNValue(v2));
-        std::uint64_t maxV = std::max(getSNValue(v1), getSNValue(v2));
+        std::uint64_t const minV = std::min(getSNValue(v1), getSNValue(v2));
+        std::uint64_t const maxV = std::max(getSNValue(v1), getSNValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Native value overflow");

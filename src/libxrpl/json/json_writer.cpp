@@ -47,8 +47,8 @@ std::string
 valueToString(Int value)
 {
     char buffer[32];
-    char* current = buffer + sizeof(buffer);
-    bool isNegative = value < 0;
+    char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
+    bool const isNegative = value < 0;
 
     if (isNegative)
         value = -value;
@@ -66,7 +66,7 @@ std::string
 valueToString(UInt value)
 {
     char buffer[32];
-    char* current = buffer + sizeof(buffer);
+    char* current = buffer + sizeof(buffer);  // NOLINT(misc-const-correctness)
     uintToString(value, current);
     XRPL_ASSERT(current >= buffer, "Json::valueToString(UInt) : buffer check");
     return current;
@@ -106,7 +106,7 @@ valueToQuotedString(char const* value)
     // We have to walk value and escape any special characters.
     // Appending to std::string is not efficient, but this should be rare.
     // (Note: forward slashes are *not* rare, but I am not escaping them.)
-    unsigned maxsize = (strlen(value) * 2) + 3;  // all-escaped+quotes+NULL
+    unsigned const maxsize = (strlen(value) * 2) + 3;  // all-escaped+quotes+NULL
     std::string result;
     result.reserve(maxsize);  // to avoid lots of mallocs
     result += "\"";
@@ -213,7 +213,7 @@ FastWriter::writeValue(Value const& value)
 
         case arrayValue: {
             document_ += "[";
-            int size = value.size();
+            int const size = value.size();
 
             for (int index = 0; index < size; ++index)
             {
@@ -338,7 +338,7 @@ StyledWriter::writeValue(Value const& value)
 void
 StyledWriter::writeArrayValue(Value const& value)
 {
-    unsigned size = value.size();
+    unsigned const size = value.size();
 
     if (size == 0)
     {
@@ -346,13 +346,13 @@ StyledWriter::writeArrayValue(Value const& value)
     }
     else
     {
-        bool isArrayMultiLine = isMultilineArray(value);
+        bool const isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
             writeWithIndent("[");
             indent();
-            bool hasChildValue = !childValues_.empty();
+            bool const hasChildValue = !childValues_.empty();
             unsigned index = 0;
 
             while (true)
@@ -401,7 +401,7 @@ StyledWriter::writeArrayValue(Value const& value)
 bool
 StyledWriter::isMultilineArray(Value const& value)
 {
-    int size = value.size();
+    int const size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
     childValues_.clear();
 
@@ -449,7 +449,7 @@ StyledWriter::writeIndent()
 {
     if (!document_.empty())
     {
-        char last = document_[document_.length() - 1];
+        char const last = document_[document_.length() - 1];
 
         if (last == ' ')  // already indented
             return;
@@ -573,7 +573,7 @@ StyledStreamWriter::writeValue(Value const& value)
 void
 StyledStreamWriter::writeArrayValue(Value const& value)
 {
-    unsigned size = value.size();
+    unsigned const size = value.size();
 
     if (size == 0)
     {
@@ -581,13 +581,13 @@ StyledStreamWriter::writeArrayValue(Value const& value)
     }
     else
     {
-        bool isArrayMultiLine = isMultilineArray(value);
+        bool const isArrayMultiLine = isMultilineArray(value);
 
         if (isArrayMultiLine)
         {
             writeWithIndent("[");
             indent();
-            bool hasChildValue = !childValues_.empty();
+            bool const hasChildValue = !childValues_.empty();
             unsigned index = 0;
 
             while (true)
@@ -636,7 +636,7 @@ StyledStreamWriter::writeArrayValue(Value const& value)
 bool
 StyledStreamWriter::isMultilineArray(Value const& value)
 {
-    int size = value.size();
+    int const size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
     childValues_.clear();
 
