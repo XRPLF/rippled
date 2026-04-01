@@ -98,9 +98,7 @@ private:
      * validator message source
      */
     Slot(SquelchHandler const& handler, beast::Journal journal, uint16_t maxSelectedPeers)
-        : reachedThreshold_(0)
-        , lastSelected_(clock_type::now())
-        , state_(SlotState::Counting)
+        : lastSelected_(clock_type::now())
         , handler_(handler)
         , journal_(journal)
         , maxSelectedPeers_(maxSelectedPeers)
@@ -220,14 +218,14 @@ private:
     std::unordered_set<id_t> considered_;
 
     // number of peers that reached MAX_MESSAGE_THRESHOLD
-    std::uint16_t reachedThreshold_;
+    std::uint16_t reachedThreshold_{0};
 
     // last time peers were selected, used to age the slot
     typename clock_type::time_point lastSelected_;
 
-    SlotState state_;                // slot's state
-    SquelchHandler const& handler_;  // squelch/unsquelch handler
-    beast::Journal const journal_;   // logging
+    SlotState state_{SlotState::Counting};  // slot's state
+    SquelchHandler const& handler_;         // squelch/unsquelch handler
+    beast::Journal const journal_;          // logging
 
     // the maximum number of peers that should be selected as a validator
     // message source

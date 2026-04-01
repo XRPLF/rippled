@@ -48,14 +48,14 @@ protected:
 
     struct buffer
     {
-        buffer(void const* ptr, std::size_t len) : data(new char[len]), bytes(len), used(0)
+        buffer(void const* ptr, std::size_t len) : data(new char[len]), bytes(len)
         {
             memcpy(data.get(), ptr, len);
         }
 
         std::unique_ptr<char[]> data;
         std::size_t bytes;
-        std::size_t used;
+        std::size_t used{0};
     };
 
     Port const& port_;
