@@ -117,7 +117,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory instance{manager};
+    static NullFactory const instance{manager};
 }
 
 }  // namespace NodeStore

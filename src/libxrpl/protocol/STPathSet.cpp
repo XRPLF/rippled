@@ -45,7 +45,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     std::vector<STPathElement> path;
     for (;;)
     {
-        int iType = sit.get8();
+        int const iType = sit.get8();
 
         if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
         {
@@ -205,7 +205,7 @@ STPathSet::add(Serializer& s) const
 
         for (auto const& speElement : spPath)
         {
-            int iType = speElement.getNodeType();
+            int const iType = speElement.getNodeType();
 
             s.add8(iType);
 

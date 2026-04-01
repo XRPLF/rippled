@@ -572,7 +572,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // for zero limit, pick an arbitrary nonzero number of clients - all
         // should connect fine.
 
-        int testTo = (limit == 0) ? 50 : limit + 1;
+        int const testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
             clients.emplace_back(
@@ -1106,7 +1106,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doHTTPRequest(env, yield, false, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::internal_server_error);
-        std::regex body{"Server cannot accept clients"};
+        std::regex const body{"Server cannot accept clients"};
         BEAST_EXPECT(std::regex_search(resp.body(), body));
     }
 

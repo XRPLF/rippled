@@ -4,5 +4,5 @@ namespace beast {
 namespace insight {
 
 Collector::~Collector() = default;
-}
+}  // namespace insight
 }  // namespace beast

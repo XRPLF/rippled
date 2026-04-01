@@ -22,7 +22,7 @@ doCanDelete(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::can_delete))
     {
-        Json::Value canDelete = context.params.get(jss::can_delete, 0);
+        Json::Value const canDelete = context.params.get(jss::can_delete, 0);
         std::uint32_t canDeleteSeq = 0;
 
         if (canDelete.isUInt())

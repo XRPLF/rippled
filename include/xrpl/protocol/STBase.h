@@ -83,7 +83,7 @@ to_json(T const& t)
 
 namespace detail {
 class STVar;
-}
+}  // namespace detail
 
 // VFALCO TODO fix this restriction on copy assignment.
 //

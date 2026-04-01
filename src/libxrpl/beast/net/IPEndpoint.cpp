@@ -120,8 +120,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
             addrStr += i;
 
             // don't exceed a reasonable length...
-            if (addrStr.size() == INET6_ADDRSTRLEN ||
-                ((readTo != 0) && readTo == ':' && addrStr.size() > 15))
+            if (addrStr.size() == INET6_ADDRSTRLEN || (readTo == ':' && addrStr.size() > 15))
             {
                 is.setstate(std::ios_base::failbit);
                 return is;

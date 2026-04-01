@@ -69,7 +69,7 @@ public:
     int
     add32(T i)
     {
-        int ret = mData.size();
+        int const ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
@@ -85,7 +85,7 @@ public:
     int
     add64(T i)
     {
-        int ret = mData.size();
+        int const ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
@@ -299,7 +299,7 @@ template <class Iter>
 int
 Serializer::addVL(Iter begin, Iter end, int len)
 {
-    int ret = addEncoded(len);
+    int const ret = addEncoded(len);
     for (; begin != end; ++begin)
     {
         addRaw(begin->data(), begin->size());

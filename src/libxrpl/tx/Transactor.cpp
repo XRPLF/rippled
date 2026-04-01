@@ -34,7 +34,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
+        uint32_t const nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -777,7 +777,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1073,15 +1073,15 @@ Transactor::operator()()
     //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
+    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
         Serializer ser;
         ctx_.tx.add(ser);
         SerialIter sit(ser.slice());
-        STTx s2(sit);
+        STTx const s2(sit);
 
         if (!s2.isEquivalent(ctx_.tx))
         {

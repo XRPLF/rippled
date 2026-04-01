@@ -41,18 +41,18 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
             (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
-            RPC::Status status{rpcINVALID_PARAMS, "invalidParams"};
+            RPC::Status const status{rpcINVALID_PARAMS, "invalidParams"};
             status.inject(response);
             return response;
         }
     }
     if (params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max))
     {
-        uint32_t min =
+        uint32_t const min =
             params.isMember(jss::ledger_index_min) && params[jss::ledger_index_min].asInt() >= 0
             ? params[jss::ledger_index_min].asUInt()
             : 0;
-        uint32_t max =
+        uint32_t const max =
             params.isMember(jss::ledger_index_max) && params[jss::ledger_index_max].asInt() >= 0
             ? params[jss::ledger_index_max].asUInt()
             : UINT32_MAX;
@@ -64,7 +64,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
         {
-            RPC::Status status{rpcINVALID_PARAMS, "ledgerHashNotString"};
+            RPC::Status const status{rpcINVALID_PARAMS, "ledgerHashNotString"};
             status.inject(response);
             return response;
         }
@@ -72,7 +72,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         LedgerHash hash;
         if (!hash.parseHex(hashValue.asString()))
         {
-            RPC::Status status{rpcINVALID_PARAMS, "ledgerHashMalformed"};
+            RPC::Status const status{rpcINVALID_PARAMS, "ledgerHashMalformed"};
             status.inject(response);
             return response;
         }
@@ -87,7 +87,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         }
         else
         {
-            std::string ledgerStr = params[jss::ledger_index].asString();
+            std::string const ledgerStr = params[jss::ledger_index].asString();
 
             if (ledgerStr == "current" || ledgerStr.empty())
             {
@@ -103,7 +103,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             }
             else
             {
-                RPC::Status status{rpcINVALID_PARAMS, "ledger_index string malformed"};
+                RPC::Status const status{rpcINVALID_PARAMS, "ledger_index string malformed"};
                 status.inject(response);
                 return response;
             }
@@ -118,7 +118,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 {
     std::uint32_t uValidatedMin = 0;
     std::uint32_t uValidatedMax = 0;
-    bool bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
+    bool const bValidated = context.ledgerMaster.getValidatedRange(uValidatedMin, uValidatedMax);
 
     if (!bValidated)
     {
@@ -173,7 +173,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                         return status;
                     }
 
-                    bool validated = context.ledgerMaster.isValidated(*ledgerView);
+                    bool const validated = context.ledgerMaster.isValidated(*ledgerView);
 
                     if (!validated || ledgerView->header().seq > uValidatedMax ||
                         ledgerView->header().seq < uValidatedMin)
@@ -210,7 +210,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 
     result.marker = args.marker;
 
-    RelationalDatabase::AccountTxPageOptions options = {
+    RelationalDatabase::AccountTxPageOptions const options = {
         args.account, result.ledgerRange, result.marker, args.limit, isUnlimited(context.role)};
 
     auto& db = context.app.getRelationalDatabase();
@@ -419,7 +419,7 @@ doAccountTxJson(RPC::JsonContext& context)
             !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||
             !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))
         {
-            RPC::Status status{
+            RPC::Status const status{
                 rpcINVALID_PARAMS,
                 "invalid marker. Provide ledger index via ledger field, and "
                 "transaction sequence number via seq field"};

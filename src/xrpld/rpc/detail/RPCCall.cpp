@@ -104,15 +104,15 @@ private:
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
-        static boost::regex reCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
+        static boost::regex const reCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 
         if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
         {
             Json::Value jvResult(Json::objectValue);
-            std::string strCurrency = smMatch[1];
-            std::string strIssuer = smMatch[2];
+            std::string const strCurrency = smMatch[1];
+            std::string const strIssuer = smMatch[2];
 
             jvResult[jss::currency] = strCurrency;
 
@@ -203,7 +203,7 @@ private:
     parseFetchInfo(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
-        unsigned int iParams = jvParams.size();
+        unsigned int const iParams = jvParams.size();
 
         if (iParams != 0)
             jvRequest[jvParams[0u].asString()] = true;
@@ -262,8 +262,8 @@ private:
         }
         else
         {
-            std::int64_t uLedgerMin = jvParams[1u].asInt();
-            std::int64_t uLedgerMax = jvParams[2u].asInt();
+            std::int64_t const uLedgerMin = jvParams[1u].asInt();
+            std::int64_t const uLedgerMax = jvParams[2u].asInt();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -324,7 +324,7 @@ private:
         {
             try
             {
-                int iLimit = jvParams[4u].asInt();
+                int const iLimit = jvParams[4u].asInt();
 
                 if (iLimit > 0)
                     jvRequest[jss::limit] = iLimit;
@@ -339,7 +339,7 @@ private:
         {
             try
             {
-                int bProof = jvParams[5u].asInt();
+                int const bProof = jvParams[5u].asInt();
                 if (bProof != 0)
                     jvRequest[jss::proof] = true;
             }
@@ -365,7 +365,7 @@ private:
         if (jvParams.size() == 0u)
             return jvRequest;
 
-        std::string input = jvParams[0u].asString();
+        std::string const input = jvParams[0u].asString();
         if (input.find_first_not_of("0123456789") == std::string::npos)
         {
             jvRequest["can_delete"] = jvParams[0u].asUInt();
@@ -395,7 +395,7 @@ private:
         // handle case where there is one argument of the form ip:port
         if (std::count(ip.begin(), ip.end(), ':') == 1)
         {
-            std::size_t colon = ip.find_last_of(':');
+            std::size_t const colon = ip.find_last_of(':');
             jvRequest[jss::ip] = std::string{ip, 0, colon};
             jvRequest[jss::port] = Json::Value{std::string{ip, colon + 1}}.asUInt();
             return jvRequest;
@@ -571,7 +571,7 @@ private:
     {
         Json::Reader reader;
         Json::Value jv;
-        bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
+        bool const valid_parse = reader.parse(jvParams[0u].asString(), jv);
         if (valid_parse && isValidJson2(jv))
         {
             if (jv.isObject())
@@ -653,7 +653,7 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        std::string strLedger = jvParams[0u].asString();
+        std::string const strLedger = jvParams[0u].asString();
 
         if (strLedger.length() == 64)
         {
@@ -854,8 +854,8 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw1(Json::Value const& jvParams)
     {
-        std::string strIdent = jvParams[0u].asString();
-        unsigned int iCursor = jvParams.size();
+        std::string const strIdent = jvParams[0u].asString();
+        unsigned int const iCursor = jvParams.size();
 
         if (!parseBase58<AccountID>(strIdent))
             return rpcError(rpcACT_MALFORMED);
@@ -875,7 +875,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseVault(Json::Value const& jvParams)
     {
-        std::string strVaultID = jvParams[0u].asString();
+        std::string const strVaultID = jvParams[0u].asString();
         uint256 id = beast::zero;
         if (!id.parseHex(strVaultID))
             return rpcError(rpcINVALID_PARAMS);
@@ -919,7 +919,7 @@ private:
     {
         Json::Reader reader;
         Json::Value jvRequest{Json::objectValue};
-        bool bLedger = 2 == jvParams.size();
+        bool const bLedger = 2 == jvParams.size();
 
         JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
 
@@ -985,7 +985,7 @@ private:
                 return std::nullopt;
             if (jvParams.size() < 4 && bOffline)
                 return std::nullopt;
-            Json::UInt index = bOffline ? 3u : 2u;
+            Json::UInt const index = bOffline ? 3u : 2u;
             return jvParams[index].asString();
         }();
 
@@ -1598,7 +1598,7 @@ rpcClient(
             else
             {
                 // Transport error.
-                Json::Value jvRpcError = jvOutput;
+                Json::Value const jvRpcError = jvOutput;
 
                 jvOutput = rpcError(rpcJSON_RPC);
                 jvOutput["result"] = jvRpcError;
