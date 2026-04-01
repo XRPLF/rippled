@@ -105,7 +105,7 @@ doAccountLines(RPC::JsonContext& context)
 
     // this flag allows the requester to ask incoming trustlines in default
     // state be omitted
-    bool ignoreDefault =
+    bool const ignoreDefault =
         params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
 
     Json::Value& jsonLines(result[jss::lines] = Json::arrayValue);

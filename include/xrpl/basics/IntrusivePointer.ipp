@@ -68,9 +68,7 @@ SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>&
 SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -101,9 +99,7 @@ SharedIntrusive<T>::operator=(SharedIntrusive&& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>&
 SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
@@ -307,9 +303,7 @@ WeakIntrusive<T>::WeakIntrusive(SharedIntrusive<T> const& rhs) : ptr_{rhs.unsafe
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 WeakIntrusive<T>&
 WeakIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -454,9 +448,7 @@ SharedWeakUnion<T>::operator=(SharedWeakUnion const& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>&
 SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -470,9 +462,7 @@ SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>&
 SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
 {

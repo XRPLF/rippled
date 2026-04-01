@@ -10,7 +10,7 @@ namespace xrpl {
 
 namespace RPC {
 struct JsonContext;
-}
+}  // namespace RPC
 
 // Result:
 // {

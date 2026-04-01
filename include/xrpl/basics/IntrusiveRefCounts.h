@@ -448,7 +448,7 @@ inline void
 partialDestructorFinished(T** o)
 {
     T& self = **o;
-    IntrusiveRefCounts::RefCountPair p =
+    IntrusiveRefCounts::RefCountPair const p =
         self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
     XRPL_ASSERT(
         (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit && !p.strong),
