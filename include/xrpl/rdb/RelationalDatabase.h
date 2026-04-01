@@ -30,6 +30,17 @@ struct LedgerRange
     uint32_t max;
 };
 
+enum class DelegateType {
+    Delegatee,  // This account sent txs on behalf of others
+    Delegator   // This account had txs sent on its behalf by others
+};
+
+struct DelegateFilter
+{
+    DelegateType type;
+    std::optional<AccountID> counterparty;
+};
+
 class RelationalDatabase
 {
 public:
@@ -64,6 +75,7 @@ public:
         std::optional<AccountTxMarker> marker;
         std::uint32_t limit;
         bool bAdmin;
+        std::optional<DelegateFilter> delegate;
     };
 
     using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
@@ -83,6 +95,7 @@ public:
         bool forward = false;
         uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     struct AccountTxResult
@@ -91,6 +104,7 @@ public:
         LedgerRange ledgerRange;
         uint32_t limit;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     virtual ~RelationalDatabase() = default;
