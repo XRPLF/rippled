@@ -1,6 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
@@ -33,7 +33,7 @@ DIDDelete::deleteSLE(
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DID Token from owner.";
+        JLOG(j.fatal()) << "Unable to delete DID from owner.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }

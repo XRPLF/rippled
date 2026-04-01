@@ -141,6 +141,7 @@ make_shamapitem(uint256 const& tag, Slice data)
     XRPL_ASSERT(
         data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
 
+    // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
     // If we can't grab memory from the slab allocators, we fall back to

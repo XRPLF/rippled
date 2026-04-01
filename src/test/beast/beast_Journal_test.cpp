@@ -9,10 +9,10 @@ public:
     class TestSink : public Journal::Sink
     {
     private:
-        int m_count;
+        int m_count{0};
 
     public:
-        TestSink() : Sink(severities::kWarning, false), m_count(0)
+        TestSink() : Sink(severities::kWarning, false)
         {
         }
 
@@ -50,7 +50,7 @@ public:
         using namespace beast::severities;
         sink.threshold(kInfo);
 
-        Journal j(sink);
+        Journal const j(sink);
 
         j.trace() << " ";
         BEAST_EXPECT(sink.count() == 0);

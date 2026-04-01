@@ -7,8 +7,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -70,9 +70,11 @@ parseIndex(Json::Value const& params, Json::StaticString const fieldName, unsign
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
+        {
             // Note this only finds the "short" skip list. Use "hashes":index to
             // get the long list.
             return keylet::skip().key;
+        }
     }
     return parseObjectID(params, fieldName, "hex string");
 }
@@ -326,7 +328,7 @@ parseDepositPreauth(
             "malformedAuthorizedCredentials", jss::authorized_credentials, "array");
     }
 
-    return keylet::depositPreauth(*owner, std::move(sorted)).key;
+    return keylet::depositPreauth(*owner, sorted).key;
 }
 
 static Expected<uint256, Json::Value>
@@ -368,7 +370,7 @@ parseDirectoryNode(
             "malformedRequest", "Must have exactly one of `owner` and `dir_root` fields.");
     }
 
-    std::uint64_t uSubIndex = params.get(jss::sub_index, 0).asUInt();
+    std::uint64_t const uSubIndex = params.get(jss::sub_index, 0).asUInt();
 
     if (params.isMember(jss::dir_root))
     {
@@ -532,8 +534,10 @@ parseMPTokenIssuance(
 {
     auto const mptIssuanceID = LedgerEntryHelpers::parse<uint192>(params);
     if (!mptIssuanceID)
+    {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedMPTokenIssuance", fieldName, "Hash192");
+    }
 
     return keylet::mptIssuance(*mptIssuanceID).key;
 }
@@ -901,8 +905,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // this exception return an invalidParam error.
             return RPC::make_error(rpcINVALID_PARAMS);
         }
-        else
-            throw;
+
+        throw;
     }
 
     // Return the computed index regardless of whether the node exists.
@@ -952,9 +956,9 @@ doLedgerEntry(RPC::JsonContext& context)
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
 doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
 {
-    org::xrpl::rpc::v1::GetLedgerEntryRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -974,14 +978,14 @@ doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     auto const key = uint256::fromVoidChecked(request.key());
     if (!key)
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
+        grpc::Status const errorStatus{grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
         return {response, errorStatus};
     }
 
     auto const sleNode = ledger->read(keylet::unchecked(*key));
     if (!sleNode)
     {
-        grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "object not found"};
+        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "object not found"};
         return {response, errorStatus};
     }
 

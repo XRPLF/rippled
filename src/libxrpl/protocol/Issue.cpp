@@ -25,11 +25,17 @@ Issue::getText() const
         ret += "/";
 
         if (isXRP(account))
+        {
             ret += "0";
+        }
         else if (account == noAccount())
+        {
             ret += "1";
+        }
         else
+        {
             ret += to_string(account);
+        }
     }
 
     return ret;

@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 //
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -56,9 +57,11 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
+    {
         // The loan will be making one set of calculations for one full or late
         // payment
         return normalCost;
+    }
 
     // The fee is based on the potential number of payments, unless the loan is
     // being fully paid off.
@@ -67,8 +70,10 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     auto const loanSle = view.read(keylet::loan(loanID));
     if (!loanSle)
+    {
         // Let preclaim worry about the error for this
         return normalCost;
+    }
 
     if (loanSle->at(sfPaymentRemaining) <= loanPaymentsPerFeeIncrement)
     {
@@ -78,24 +83,32 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     if (hasExpired(view, loanSle->at(sfNextPaymentDueDate)))
+    {
         // If the payment is late, and the late payment flag is not set, it'll
         // fail
         return normalCost;
+    }
 
     auto const brokerSle = view.read(keylet::loanbroker(loanSle->at(sfLoanBrokerID)));
     if (!brokerSle)
+    {
         // Let preclaim worry about the error for this
         return normalCost;
+    }
     auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
+    {
         // Let preclaim worry about the error for this
         return normalCost;
+    }
 
     auto const asset = vaultSle->at(sfAsset);
 
     if (asset != amount.asset())
+    {
         // Let preclaim worry about the error for this
         return normalCost;
+    }
 
     auto const scale = loanSle->at(sfLoanScale);
 
@@ -104,7 +117,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
@@ -264,7 +277,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -517,9 +530,11 @@ LoanPay::doApply()
             if (auto const ter = addEmptyHolding(
                     view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
                 ter && ter != tecDUPLICATE)
+            {
                 // ignore tecDUPLICATE. That means the holding already exists,
                 // and is fine here
                 return ter;
+            }
         }
         if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
             return ter;

@@ -3,9 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
@@ -42,7 +46,6 @@ escrowUnlockApplyHelper<Issue>(
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
-    bool const issuerHigh = issuer > receiver;
 
     if (senderIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -50,7 +53,7 @@ escrowUnlockApplyHelper<Issue>(
     if (receiverIssuer)
         return tesSUCCESS;
 
-    if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
+    if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
@@ -66,28 +69,26 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(amount.issue());
         initialBalance.setIssuer(noAccount());
 
-        // clang-format off
         if (TER const ter = trustCreate(
-                view,                           // payment sandbox
-                recvLow,                        // is dest low?
-                issuer,                         // source
-                receiver,                       // destination
-                trustLineKey.key,               // ledger index
-                sleDest,                        // Account to add to
-                false,                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,
-                false,                          // freeze trust line
-                false,                          // deep freeze trust line
-                initialBalance,                 // zero initial balance
-                Issue(currency, receiver),      // limit of zero
-                0,                              // quality in
-                0,                              // quality out
-                journal);                       // journal
+                view,                                           // payment sandbox
+                recvLow,                                        // is dest low?
+                issuer,                                         // source
+                receiver,                                       // destination
+                trustLineKey.key,                               // ledger index
+                sleDest,                                        // Account to add to
+                false,                                          // authorize account
+                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
+                false,                                          // freeze trust line
+                false,                                          // deep freeze trust line
+                initialBalance,                                 // zero initial balance
+                Issue(currency, receiver),                      // limit of zero
+                0,                                              // quality in
+                0,                                              // quality out
+                journal);                                       // journal
             !isTesSuccess(ter))
         {
-            return ter; // LCOV_EXCL_LINE
+            return ter;  // LCOV_EXCL_LINE
         }
-        // clang-format on
 
         view.update(sleDest);
     }
@@ -129,12 +130,12 @@ escrowUnlockApplyHelper<Issue>(
         // if the issuer is the high, then we use the low limit
         // otherwise we use the high limit
         STAmount const lineLimit =
-            sleRippleState->getFieldAmount(issuerHigh ? sfLowLimit : sfHighLimit);
+            sleRippleState->getFieldAmount(recvLow ? sfLowLimit : sfHighLimit);
 
         STAmount lineBalance = sleRippleState->getFieldAmount(sfBalance);
 
         // flip the sign of the line balance if the issuer is not high
-        if (!issuerHigh)
+        if (!recvLow)
             lineBalance.negate();
 
         // add the final amount to the line balance
@@ -149,7 +150,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!receiverIssuer)
     {
         auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
-        if (ter != tesSUCCESS)
+        if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;

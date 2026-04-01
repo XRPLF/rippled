@@ -110,9 +110,13 @@ public:
     run(bool backed, beast::Journal const& journal)
     {
         if (backed)
+        {
             testcase("add/traverse backed");
+        }
         else
+        {
             testcase("add/traverse unbacked");
+        }
 
         tests::TestNodeFamily f(journal);
 
@@ -163,12 +167,16 @@ public:
         unexpected(i != e, "bad traverse");
 
         if (backed)
+        {
             testcase("snapshot backed");
+        }
         else
+        {
             testcase("snapshot unbacked");
+        }
 
-        SHAMapHash mapHash = sMap.getHash();
-        std::shared_ptr<SHAMap> map2 = sMap.snapShot(false);
+        SHAMapHash const mapHash = sMap.getHash();
+        std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
         map2->invariants();
         unexpected(sMap.getHash() != mapHash, "bad snapshot");
         unexpected(map2->getHash() != mapHash, "bad snapshot");
@@ -191,9 +199,13 @@ public:
         sMap.dump();
 
         if (backed)
+        {
             testcase("build/tear backed");
+        }
         else
+        {
             testcase("build/tear unbacked");
+        }
         {
             constexpr std::array keys{
                 uint256(
@@ -269,9 +281,13 @@ public:
         }
 
         if (backed)
+        {
             testcase("iterate backed");
+        }
         else
+        {
             testcase("iterate unbacked");
+        }
 
         {
             constexpr std::array keys{
@@ -354,7 +370,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
                 path->insert(path->begin(), path->front());
                 BEAST_EXPECT(!map.verifyProofPath(root, k, *path));
                 // wrong key
-                uint256 wrongKey(c + 1);
+                uint256 const wrongKey(c + 1);
                 BEAST_EXPECT(!map.getProofPath(wrongKey));
             }
             if (c == 99)

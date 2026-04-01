@@ -5603,7 +5603,7 @@ public:
                 apiVersion <= RPC::apiMaximumValidVersion))
             return;
 
-        test::jtx::Env env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
+        test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
         for (RPCCallTestData const& rpcCallTest : rpcCallTestArray)
