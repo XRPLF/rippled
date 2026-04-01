@@ -156,6 +156,14 @@ def staged_files(repo_root: Path) -> list[str]:
         text=True,
         cwd=repo_root,
     )
+    if result.returncode != 0:
+        print(
+            "clang-tidy check failed: 'git diff --staged' command failed.",
+            file=sys.stderr,
+        )
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+        sys.exit(result.returncode or 1)
     return [str(repo_root / p) for p in result.stdout.splitlines() if p]
 
 

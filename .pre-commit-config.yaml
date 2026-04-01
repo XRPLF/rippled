@@ -64,10 +64,10 @@ repos:
       - id: clang-tidy
         name: "clang-tidy (enable with: TIDY=1)"
         entry: ./scripts/clang_tidy_check.py
-        language: system
+        language: python
         types_or: [c++, c]
         exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # to disable batching
+        pass_filenames: false # script determines the staged files itself
 
       - id: nix-fmt
         name: Format Nix files
