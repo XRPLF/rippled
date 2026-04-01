@@ -4,7 +4,7 @@ namespace xrpl {
 namespace NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback), m_scheduler(scheduler), mWriteLoad(0), mWritePending(false)
+    : m_callback(callback), m_scheduler(scheduler)
 {
     mWriteSet.reserve(batchWritePreallocationSize);
 }

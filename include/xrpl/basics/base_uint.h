@@ -335,11 +335,13 @@ public:
     operator=(std::uint64_t uHost)
     {
         *this = beast::zero;
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
             unsigned u[2];
             std::uint64_t ul;
         };
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
         data_[WIDTH - 2] = u[0];
@@ -621,7 +623,7 @@ template <>
 inline std::size_t
 extract(uint256 const& key)
 {
-    std::size_t result;
+    std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
     // (will optimize to equivalent code)
     std::memcpy(&result, key.data(), sizeof(std::size_t));

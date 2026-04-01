@@ -150,7 +150,7 @@ parse(Json::Value const& param)
 
     if (param.isString())
     {
-        std::uint32_t v;
+        std::uint32_t v = 0;
         if (beast::lexicalCastChecked(v, param.asString()))
             return v;
     }

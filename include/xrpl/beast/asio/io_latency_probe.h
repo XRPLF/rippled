@@ -23,15 +23,15 @@ private:
 
     std::recursive_mutex m_mutex;
     std::condition_variable_any m_cond;
-    std::size_t m_count;
+    std::size_t m_count{1};
     duration const m_period;
     boost::asio::io_context& m_ios;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
-    bool m_cancel;
+    bool m_cancel{false};
 
 public:
     io_latency_probe(duration const& period, boost::asio::io_context& ios)
-        : m_count(1), m_period(period), m_ios(ios), m_timer(m_ios), m_cancel(false)
+        : m_period(period), m_ios(ios), m_timer(m_ios)
     {
     }
 

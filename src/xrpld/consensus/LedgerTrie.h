@@ -72,7 +72,7 @@ public:
         XRPL_ASSERT(ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
-    Span(Ledger ledger) : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
+    Span(Ledger ledger) : end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
     {
     }
 

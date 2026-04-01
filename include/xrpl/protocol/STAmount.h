@@ -35,9 +35,9 @@ public:
 
 private:
     Asset mAsset;
-    mantissa_type mValue;
+    mantissa_type mValue{};
     exponent_type mOffset;
-    bool mIsNegative;
+    bool mIsNegative{};
 
 public:
     using value_type = STAmount;

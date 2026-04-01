@@ -23,7 +23,7 @@ private:
     // A 64-byte buffer should to be big enough for us
     static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
 
-    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_;
+    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_{};
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 

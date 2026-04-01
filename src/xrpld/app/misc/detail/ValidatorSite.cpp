@@ -60,10 +60,9 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
 ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
-    , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestSuccessful{false}
+
 {
 }
 

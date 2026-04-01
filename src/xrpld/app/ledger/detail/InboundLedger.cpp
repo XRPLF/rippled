@@ -67,14 +67,8 @@ InboundLedger::InboundLedger(
           {jtLEDGER_DATA, "InboundLedger", 5},
           app.getJournal("InboundLedger"))
     , m_clock(clock)
-    , mHaveHeader(false)
-    , mHaveState(false)
-    , mHaveTransactions(false)
-    , mSignaled(false)
-    , mByHash(true)
     , mSeq(seq)
     , mReason(reason)
-    , mReceiveDispatched(false)
     , mPeerSet(std::move(peerSet))
 {
     JLOG(journal_.trace()) << "Acquiring ledger " << hash_;
