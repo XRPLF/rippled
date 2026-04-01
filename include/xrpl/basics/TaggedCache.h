@@ -97,47 +97,24 @@ public:
     del(key_type const& key, bool valid);
 
 public:
-    /** Tag type for canonicalize: replace the cache entry with caller's data. */
-    struct ReplaceCache
-    {
-    };
-
-    /** Tag type for canonicalize: replace caller's pointer with cached data. */
-    struct ReplaceClient
-    {
-    };
-
     /** Replace aliased objects with originals.
 
         Due to concurrency it is possible for two separate objects with
         the same content and referring to the same unique "thing" to exist.
-        This routine eliminates the duplicate and performs a replacement
-        on the callers shared pointer if needed.
+        These routines eliminate the duplicate and perform a replacement
+        as needed.
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
 
         @return `true` If the key already existed.
-
-        Usage:
-        - `canonicalize(ReplaceCache{}, key, data)`: Replace the cache entry
-          with the caller's data.
-        - `canonicalize(ReplaceClient{}, key, data)`: Replace the caller's
-          pointer with the cached data.
     */
-    template <typename ReplacePolicy>
-    bool
-    canonicalize(
-        ReplacePolicy,
-        key_type const& key,
-        std::conditional_t<
-            std::is_same_v<ReplacePolicy, ReplaceCache>,
-            SharedPointerType const&,
-            SharedPointerType&> data);
 
+    /** Replace the cache entry with the caller's data. */
     bool
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data);
 
+    /** Replace the caller's pointer with the cached data. */
     bool
     canonicalize_replace_client(key_type const& key, SharedPointerType& data);
 
@@ -280,6 +257,14 @@ private:
     using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
 
     using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
+
+    /** Look up key; if missing, emplace a new entry.
+        If found, touch the existing entry.
+        Caller must hold m_mutex.
+        @return {iterator, true} if newly inserted, {iterator, false} if found.
+    */
+    std::pair<typename cache_type::iterator, bool>
+    touchOrInsert(key_type const& key, SharedPointerType const& data);
 
     [[nodiscard]] std::thread
     sweepHelper(

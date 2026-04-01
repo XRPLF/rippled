@@ -304,66 +304,67 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <typename ReplacePolicy>
-inline bool
+inline std::pair<
+    typename TaggedCache<
+        Key,
+        T,
+        IsKeyCache,
+        SharedWeakUnionPointer,
+        SharedPointerType,
+        Hash,
+        KeyEqual,
+        Mutex>::cache_type::iterator,
+    bool>
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(
-        ReplacePolicy,
-        key_type const& key,
-        std::conditional_t<
-            std::is_same_v<ReplacePolicy, ReplaceCache>,
-            SharedPointerType const&,
-            SharedPointerType&> data)
+    touchOrInsert(key_type const& key, SharedPointerType const& data)
 {
-    static_assert(
-        std::is_same_v<ReplacePolicy, ReplaceCache> ||
-        std::is_same_v<ReplacePolicy, ReplaceClient>);
+    auto [it, inserted] = m_cache.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(key),
+        std::forward_as_tuple(m_clock.now(), data));
 
-    std::lock_guard lock(m_mutex);
-
-    auto cit = m_cache.find(key);
-
-    if (cit == m_cache.end())
+    if (inserted)
     {
-        m_cache.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(key),
-            std::forward_as_tuple(m_clock.now(), data));
         ++m_cache_count;
-        return false;
+    }
+    else
+    {
+        it->second.touch(m_clock.now());
     }
 
-    Entry& entry = cit->second;
-    entry.touch(m_clock.now());
+    return {it, inserted};
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    canonicalize_replace_cache(key_type const& key, SharedPointerType const& data)
+{
+    std::lock_guard lock(m_mutex);
+
+    auto [it, inserted] = touchOrInsert(key, data);
+    if (inserted)
+        return false;
+
+    Entry& entry = it->second;
 
     if (entry.isCached())
     {
-        if constexpr (std::is_same_v<ReplacePolicy, ReplaceCache>)
-        {
-            entry.ptr = data;
-        }
-        else
-        {
-            data = entry.ptr.getStrong();
-        }
-
+        entry.ptr = data;
         return true;
     }
 
-    auto cachedData = entry.lock();
-
-    if (cachedData)
+    if (auto cachedData = entry.lock())
     {
-        if constexpr (std::is_same_v<ReplacePolicy, ReplaceCache>)
-        {
-            entry.ptr = data;
-        }
-        else
-        {
-            entry.ptr.convertToStrong();
-            data = cachedData;
-        }
-
+        entry.ptr = data;
         ++m_cache_count;
         return true;
     }
@@ -384,25 +385,33 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize_replace_cache(key_type const& key, SharedPointerType const& data)
-{
-    return canonicalize(ReplaceCache{}, key, data);
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
-inline bool
-TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalize_replace_client(key_type const& key, SharedPointerType& data)
 {
-    return canonicalize(ReplaceClient{}, key, data);
+    std::lock_guard lock(m_mutex);
+
+    auto [it, inserted] = touchOrInsert(key, data);
+    if (inserted)
+        return false;
+
+    Entry& entry = it->second;
+
+    if (entry.isCached())
+    {
+        data = entry.ptr.getStrong();
+        return true;
+    }
+
+    if (auto cachedData = entry.lock())
+    {
+        entry.ptr.convertToStrong();
+        data = cachedData;
+        ++m_cache_count;
+        return true;
+    }
+
+    entry.ptr = data;
+    ++m_cache_count;
+    return false;
 }
 
 template <
