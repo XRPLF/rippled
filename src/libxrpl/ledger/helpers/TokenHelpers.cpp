@@ -1169,8 +1169,8 @@ rippleSendMultiMPT(
     // small-scale mantissa (~16 digits) can lose precision for values near
     // maxMPTokenAmount (19 digits).
     std::uint64_t totalSendAmount{0};
-    auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-    auto const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+    std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer
     // fees for third-party transit sends). takeFromSender accumulates only
@@ -1198,14 +1198,14 @@ rippleSendMultiMPT(
                     "xrpl::rippleSendMultiMPT",
                     "sender == issuer, takeFromSender == zero");
 
-                auto const sendAmount = amount.mpt().value();
+                std::uint64_t const sendAmount = amount.mpt().value();
 
                 if (view.rules().enabled(fixSecurity3_1_3))
                 {
                     // Post-fixSecurity3_1_3: aggregate MaximumAmount
                     // check. Each condition guards the subtraction
                     // in the next to prevent underflow.
-                    auto const exceedsMaximumAmount =
+                    bool const exceedsMaximumAmount =
                         // This send alone exceeds the max cap
                         sendAmount > maximumAmount ||
                         // The aggregate of all sends exceeds the max cap
