@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/server/FDGuard.h>
+#include <xrpl/server/detail/ExponentialBackoff.h>
 #include <xrpl/server/detail/PlainHTTPPeer.h>
 #include <xrpl/server/detail/SSLHTTPPeer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -17,14 +19,6 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/predef.h>
-
-#if !BOOST_OS_WINDOWS
-#include <sys/resource.h>
-
-#include <dirent.h>
-#include <unistd.h>
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -90,26 +84,11 @@ private:
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_;
     bool plain_;
-    static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
-    static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
-    std::chrono::milliseconds accept_delay_{INITIAL_ACCEPT_DELAY};
+    ExponentialBackoff backoff_;
     boost::asio::steady_timer backoff_timer_;
-    static constexpr double FREE_FD_THRESHOLD = 0.70;
-
-    struct FDStats
-    {
-        std::uint64_t used{0};
-        std::uint64_t limit{0};
-    };
 
     void
     reOpen();
-
-    std::optional<FDStats>
-    query_fd_stats() const;
-
-    bool
-    should_throttle_for_fds();
 
 public:
     Door(Handler& handler, boost::asio::io_context& io_context, Port const& port, beast::Journal j);
@@ -335,13 +314,13 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
 {
     while (acceptor_.is_open())
     {
-        if (should_throttle_for_fds())
+        if (FDGuard::should_throttle(0.70))
         {
-            backoff_timer_.expires_after(accept_delay_);
+            backoff_timer_.expires_after(backoff_.current());
             boost::system::error_code tec;
             backoff_timer_.async_wait(do_yield[tec]);
-            accept_delay_ = std::min(accept_delay_ * 2, MAX_ACCEPT_DELAY);
-            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
+            auto const delay = backoff_.increase();
+            JLOG(j_.warn()) << "Throttling do_accept for " << delay.count() << "ms.";
             continue;
         }
 
@@ -358,14 +337,15 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             if (ec == boost::asio::error::no_descriptors ||
                 ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << accept_delay_.count() << "ms.";
+                auto const delay = backoff_.current();
+                JLOG(j_.warn()) << "accept: Too many open files. Pausing for " << delay.count()
+                                << "ms.";
 
-                backoff_timer_.expires_after(accept_delay_);
+                backoff_timer_.expires_after(delay);
                 boost::system::error_code tec;
                 backoff_timer_.async_wait(do_yield[tec]);
 
-                accept_delay_ = std::min(accept_delay_ * 2, MAX_ACCEPT_DELAY);
+                backoff_.increase();
             }
             else
             {
@@ -374,7 +354,7 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             continue;
         }
 
-        accept_delay_ = INITIAL_ACCEPT_DELAY;
+        backoff_.reset();
 
         if (ssl_ && plain_)
         {
@@ -387,59 +367,6 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
             create(ssl_, boost::asio::null_buffers{}, std::move(stream), remote_address);
         }
     }
-}
-
-template <class Handler>
-std::optional<typename Door<Handler>::FDStats>
-Door<Handler>::query_fd_stats() const
-{
-#if BOOST_OS_WINDOWS
-    return std::nullopt;
-#else
-    FDStats s;
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) != 0 || rl.rlim_cur == RLIM_INFINITY)
-        return std::nullopt;
-    s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
-#if BOOST_OS_LINUX
-    constexpr char const* kFdDir = "/proc/self/fd";
-#else
-    constexpr char const* kFdDir = "/dev/fd";
-#endif
-    if (DIR* d = ::opendir(kFdDir))
-    {
-        std::uint64_t cnt = 0;
-        while (::readdir(d) != nullptr)
-            ++cnt;
-        ::closedir(d);
-        // readdir counts '.', '..', and the DIR* itself shows in the list
-        s.used = (cnt >= 3) ? (cnt - 3) : 0;
-        return s;
-    }
-    return std::nullopt;
-#endif
-}
-
-template <class Handler>
-bool
-Door<Handler>::should_throttle_for_fds()
-{
-#if BOOST_OS_WINDOWS
-    return false;
-#else
-    auto const stats = query_fd_stats();
-    if (!stats || stats->limit == 0)
-        return false;
-
-    auto const& s = *stats;
-    auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const free_ratio = static_cast<double>(free) / static_cast<double>(s.limit);
-    if (free_ratio < FREE_FD_THRESHOLD)
-    {
-        return true;
-    }
-    return false;
-#endif
 }
 
 }  // namespace xrpl

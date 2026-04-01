@@ -361,6 +361,15 @@ GRPCServerImpl::shutdown()
     server_->Shutdown();
     JLOG(journal_.debug()) << "Server has been shutdown";
 
+    // Cancel any pending backoff alarm
+    backoffAlarm_.Cancel();
+    {
+        std::lock_guard lk(backoffMutex_);
+        deferredListeners_.clear();
+        backoffScheduled_ = false;
+    }
+    JLOG(journal_.debug()) << "Backoff alarm cancelled";
+
     // Always shutdown the completion queue after the server. This call allows
     // cq_.Next() to return false, once all events posted to the completion
     // queue have been processed. See handleRpcs() for more details.
@@ -390,7 +399,7 @@ GRPCServerImpl::handleRpcs()
     bool ok = false;
     // Block waiting to read the next event from the completion queue. The
     // event is uniquely identified by its tag, which in this case is the
-    // memory address of a CallData instance.
+    // memory address of a CallData instance or a BackoffTag instance.
     // The return value of Next should always be checked. This return value
     // tells us whether there is any kind of event or cq_ is shutting down.
     // When cq_.Next(...) returns false, all work has been completed and the
@@ -404,7 +413,18 @@ GRPCServerImpl::handleRpcs()
     // loop to exit.
     while (cq_->Next(&tag, &ok))
     {
-        auto ptr = static_cast<Processor*>(tag);
+        auto base = static_cast<CQTag*>(tag);
+
+        // Handle backoff alarm events
+        if (base->kind == CQTag::Kind::Backoff)
+        {
+            JLOG(journal_.debug()) << "Backoff alarm fired";
+            onBackoffFired();
+            continue;
+        }
+
+        // Handle CallData events
+        auto ptr = static_cast<Processor*>(base);
         JLOG(journal_.trace()) << "Processing CallData object."
                                << " ptr = " << ptr << " ok = " << ok;
 
@@ -419,12 +439,54 @@ GRPCServerImpl::handleRpcs()
             if (!ptr->isFinished())
             {
                 JLOG(journal_.debug()) << "Received new request. Processing";
-                // ptr is now processing a request, so create a new CallData
-                // object to handle additional requests
-                auto cloned = ptr->clone();
-                requests.push_back(cloned);
-                // process the request
-                ptr->process();
+
+                // Check FD pressure before creating clone
+                if (FDGuard::should_throttle(0.70))
+                {
+                    JLOG(journal_.warn()) << "gRPC FD pressure detected - deferring listener";
+
+                    {
+                        std::lock_guard lk(backoffMutex_);
+
+                        // Find shared_ptr for this raw pointer
+                        auto it = std::find_if(
+                            requests.begin(),
+                            requests.end(),
+                            [ptr](std::shared_ptr<Processor>& sPtr) { return sPtr.get() == ptr; });
+                        BOOST_ASSERT(it != requests.end());
+                        deferredListeners_.push_back(*it);
+
+                        if (!backoffScheduled_)
+                        {
+                            backoffScheduled_ = true;
+
+                            auto deadline = std::chrono::system_clock::now() + backoff_.current();
+
+                            backoffAlarm_.Set(
+                                cq_.get(), deadline, static_cast<void*>(&backoffTag_));
+
+                            auto const delay = backoff_.increase();
+
+                            JLOG(journal_.warn())
+                                << "Scheduled backoff alarm for " << delay.count() << "ms";
+                        }
+                    }
+
+                    // Process current request
+                    ptr->process();
+                }
+                else
+                {
+                    // Not throttled - reset delay and clone immediately
+                    backoff_.reset();
+
+                    // ptr is now processing a request, so create a new CallData
+                    // object to handle additional requests
+                    auto cloned = ptr->clone();
+                    requests.push_back(cloned);
+                    // process the request
+                    ptr->process();
+                }
             }
             else
             {
@@ -434,6 +496,57 @@ GRPCServerImpl::handleRpcs()
         }
     }
     JLOG(journal_.debug()) << "Completion Queue drained";
+}
+
+void
+GRPCServerImpl::onBackoffFired()
+{
+    std::vector<std::shared_ptr<Processor>> deferred;
+
+    {
+        std::lock_guard lk(backoffMutex_);
+        backoffScheduled_ = false;
+        deferred.swap(deferredListeners_);
+    }
+
+    JLOG(journal_.debug()) << "Processing " << deferred.size() << " deferred listeners";
+
+    if (FDGuard::should_throttle(0.70))
+    {
+        JLOG(journal_.warn()) << "Still under FD pressure - rescheduling backoff";
+
+        std::lock_guard lk(backoffMutex_);
+
+        deferredListeners_.insert(
+            deferredListeners_.end(),
+            std::make_move_iterator(deferred.begin()),
+            std::make_move_iterator(deferred.end()));
+
+        if (!backoffScheduled_)
+        {
+            backoffScheduled_ = true;
+
+            auto deadline = std::chrono::system_clock::now() + backoff_.current();
+
+            backoffAlarm_.Set(cq_.get(), deadline, static_cast<void*>(&backoffTag_));
+
+            auto const delay = backoff_.increase();
+
+            JLOG(journal_.warn()) << "Rescheduled backoff alarm for " << delay.count() << "ms";
+        }
+
+        return;
+    }
+
+    // Recovery - FD pressure relieved
+    JLOG(journal_.info()) << "FD pressure relieved - resuming normal operation";
+    backoff_.reset();
+
+    for (auto const& ptr : deferred)
+    {
+        auto cloned = ptr->clone();
+        requests_.push_back(cloned);
+    }
 }
 
 // create a CallData instance for each RPC
