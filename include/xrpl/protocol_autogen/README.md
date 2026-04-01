@@ -6,8 +6,8 @@ This directory contains auto-generated C++ wrapper classes for XRP Ledger protoc
 
 The files in this directory are generated from macro definition files:
 
-- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `scripts/codegen/generate_tx_classes.py`
-- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/codegen/generate_ledger_classes.py`
+- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `cmake/scripts/codegen/generate_tx_classes.py`
+- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `cmake/scripts/codegen/generate_ledger_classes.py`
 
 ## Generation Process
 
@@ -46,9 +46,9 @@ The generated `.h` files **are checked into version control**. This means:
 To modify the generated classes:
 
 - Edit the macro files in `include/xrpl/protocol/detail/`
-- Edit the Mako templates in `scripts/codegen/templates/`
-- Edit the generation scripts in `scripts/codegen/`
-- Update Python dependencies in `scripts/codegen/requirements.txt`
+- Edit the Mako templates in `cmake/scripts/codegen/templates/`
+- Edit the generation scripts in `cmake/scripts/codegen/`
+- Update Python dependencies in `cmake/scripts/codegen/requirements.txt`
 - Run `cmake --build . --target code_gen` to regenerate
 
 ## Adding Common Fields
@@ -64,7 +64,7 @@ Base classes:
 
 Templates (update to pass required common fields to base class constructors):
 
-- `scripts/codegen/templates/Transaction.h.mako`
-- `scripts/codegen/templates/LedgerEntry.h.mako`
+- `cmake/scripts/codegen/templates/Transaction.h.mako`
+- `cmake/scripts/codegen/templates/LedgerEntry.h.mako`
 
 These files are **not auto-generated** and must be updated by hand.

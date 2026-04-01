@@ -16,7 +16,7 @@ set(AUTOGEN_HEADER_DIR
 set(AUTOGEN_TEST_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/libxrpl/protocol_autogen"
 )
-set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/scripts/codegen")
+set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/scripts/codegen")
 
 # Input macro files
 set(TRANSACTIONS_MACRO "${MACRO_DIR}/transactions.macro")

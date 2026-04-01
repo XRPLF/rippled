@@ -464,7 +464,7 @@ install ccache --version 4.11.3 --allow-downgrade`.
 The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
 from macro definition files in `include/xrpl/protocol/detail/`. If you modify
 the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the
-generation scripts/templates in `scripts/codegen/`, you need to regenerate the
+generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the
 files:
 
 ```
