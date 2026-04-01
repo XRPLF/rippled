@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Pre-commit hook that runs clang-tidy on changed files using run-clang-tidy."""
 
+from __future__ import annotations
+
 import json
 import os
 import re
