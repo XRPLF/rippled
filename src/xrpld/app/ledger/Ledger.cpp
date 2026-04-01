@@ -1031,7 +1031,7 @@ pendSaveValidated(
     if (!isSynchronous &&
         app.getJobQueue().addJob(
             isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
-            std::to_string(ledger->seq()),
+            "Pub" + std::to_string(ledger->seq()),
             [&app, ledger, isCurrent]() {
                 saveValidatedLedger(app, ledger, isCurrent);
             }))
