@@ -349,7 +349,7 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
-    bool success;
+    bool success = false;
 
     switch (header->message_type)
     {

@@ -15,16 +15,14 @@ TODO
 
 //------------------------------------------------------------------------------
 
-LoadMonitor::Stats::Stats() : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
+LoadMonitor::Stats::Stats() : latencyAvg(0), latencyPeak(0)
 {
 }
 
 //------------------------------------------------------------------------------
 
 LoadMonitor::LoadMonitor(beast::Journal j)
-    : mCounts(0)
-    , mLatencyEvents(0)
-    , mLatencyMSAvg(0)
+    : mLatencyMSAvg(0)
     , mLatencyMSPeak(0)
     , mTargetLatencyAvg(0)
     , mTargetLatencyPk(0)

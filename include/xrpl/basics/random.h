@@ -58,7 +58,7 @@ default_prng()
 
     // The thread-specific PRNGs:
     thread_local beast::xor_shift_engine engine = [] {
-        std::uint64_t seed;
+        std::uint64_t seed = 0;
         {
             std::lock_guard const lk(m);
             std::uniform_int_distribution<std::uint64_t> distribution{1};

@@ -181,7 +181,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 }
 
 STAmount::STAmount(SField const& name, std::int64_t mantissa)
-    : STBase(name), mAsset(xrpIssue()), mValue(0), mOffset(0), mIsNegative(false)
+    : STBase(name), mAsset(xrpIssue()), mOffset(0)
 {
     set(mantissa);
 }

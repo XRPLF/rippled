@@ -45,7 +45,7 @@ public:
         JobQueue& jq_;
         JobType type_;
         std::string name_;
-        bool running_;
+        bool running_{false};
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
@@ -224,7 +224,7 @@ private:
 
     beast::Journal m_journal;
     mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob;
+    std::uint64_t m_lastJob{0};
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
@@ -233,7 +233,7 @@ private:
     JobTypeData m_invalidJobData;
 
     // The number of jobs currently in processTask()
-    int m_processCount;
+    int m_processCount{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
