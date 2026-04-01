@@ -164,11 +164,13 @@ jobs:
             have changed but the generated files were not regenerated.
 
             To fix this:
-              1. Run: cmake --build . --target setup_code_gen code_gen
-              2. Commit and push the regenerated files
+              1. Run: cmake --build . --target setup_code_gen
+              2. Run: cmake --build . --target code_gen
+              3. Commit and push the regenerated files
         run: |
           set -e
-          cmake --build . --target setup_code_gen code_gen
+          cmake --build . --target setup_code_gen
+          cmake --build . --target code_gen
           DIFF=$(git -C .. status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
           if [ -n "${DIFF}" ]; then
             echo "::error::Generated protocol files are out of date"
