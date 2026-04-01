@@ -78,7 +78,7 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            Serializer const ss{buildMultiSigningData(*st, e.acct.id())};
             auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }

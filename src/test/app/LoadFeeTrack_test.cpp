@@ -13,7 +13,7 @@ public:
     run() override
     {
         Config d;  // get a default configuration object
-        LoadFeeTrack l;
+        LoadFeeTrack const l;
         {
             Fees const fees = [&]() {
                 Fees f;

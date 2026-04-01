@@ -37,7 +37,7 @@ class AMMCalc_test : public beast::unit_test::suite
         str = boost::regex_replace(str, boost::regex("^(A|O)[(]"), "");
         boost::smatch match;
         // XXX(val))?
-        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
             if (delimited != nullptr)
@@ -65,12 +65,12 @@ class AMMCalc_test : public beast::unit_test::suite
         str = boost::regex_replace(str, boost::regex("^T[(]"), "");
         // XXX(rate))?
         boost::smatch match;
-        boost::regex rx("^([^(]+)[(]([^)]+)[)]([)])?$");
+        boost::regex const rx("^([^(]+)[(]([^)]+)[)]([)])?$");
         if (boost::regex_search(str, match, rx))
         {
             std::string const currency = match[1];
             // input is rate * 100, no fraction
-            std::uint32_t rate = 10'000'000 * std::stoi(match[2].str());
+            std::uint32_t const rate = 10'000'000 * std::stoi(match[2].str());
             // true if delimited - )
             return {{currency, rate, match[3] != ""}};
         }
@@ -310,7 +310,7 @@ class AMMCalc_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const a = arg();
-        boost::regex re(",");
+        boost::regex const re(",");
         token_iter p(a.begin(), a.end(), re, -1);
         // Token is denoted as CUR(xxx), where CUR is the currency code
         //    and xxx is the amount, for instance: XRP(100) or USD(11.5)
@@ -391,7 +391,7 @@ class AMMCalc_test : public beast::unit_test::suite
             //     10 is AMM trading fee
             else if (*p == "changespq")
             {
-                Env env(*this);
+                Env const env(*this);
                 if (auto const pool = getAmounts(++p))
                 {
                     if (auto const offer = getAmounts(p))

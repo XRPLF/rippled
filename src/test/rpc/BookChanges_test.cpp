@@ -78,7 +78,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
