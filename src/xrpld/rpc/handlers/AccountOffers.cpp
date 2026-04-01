@@ -17,7 +17,7 @@ namespace xrpl {
 void
 appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 {
-    STAmount dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
+    STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     Json::Value& obj(offers.append(Json::objectValue));
     offer->getFieldAmount(sfTakerPays).setJson(obj[jss::taker_pays]);
     offer->getFieldAmount(sfTakerGets).setJson(obj[jss::taker_gets]);

@@ -196,8 +196,8 @@ public:
     PrettyAmount
     operator()(Number v, Number::rounding_mode rounding = Number::getround()) const
     {
-        NumberRoundModeGuard mg(rounding);
-        STAmount amount{asset_, v * scale_};
+        NumberRoundModeGuard const mg(rounding);
+        STAmount const amount{asset_, v * scale_};
         return {amount, ""};
     }
 

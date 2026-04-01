@@ -33,7 +33,7 @@ public:
     void
     add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
-        Endpoint cep{ep, hops};
+        Endpoint const cep{ep, hops};
         c.insert(cep);
     }
 

@@ -39,7 +39,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 {
     SerialIter sit(makeSlice(vec));
 
-    STObject obj(sit, sfMetadata);
+    STObject const obj(sit, sfMetadata);
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
     nodes_ = obj.getFieldArray(sfAffectedNodes);
@@ -89,7 +89,7 @@ TxMeta::getAffectedAccounts() const
     // Meta#getAffectedAccounts
     for (auto const& node : nodes_)
     {
-        int index =
+        int const index =
             node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
@@ -146,7 +146,7 @@ TxMeta::getAffectedAccounts() const
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
-    uint256 index = node->key();
+    uint256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)

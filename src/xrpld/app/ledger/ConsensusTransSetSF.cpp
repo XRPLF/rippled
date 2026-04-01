@@ -36,7 +36,7 @@ ConsensusTransSetSF::gotNode(
         try
         {
             // skip prefix
-            Serializer s(nodeData.data() + 4, nodeData.size() - 4);
+            Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(

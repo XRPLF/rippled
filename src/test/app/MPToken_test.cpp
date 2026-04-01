@@ -828,7 +828,7 @@ class MPToken_test : public beast::unit_test::suite
 
             env.fund(XRP(1'000), alice);
             env.fund(XRP(1'000), bob);
-            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
+            STAmount const mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
 
             env(pay(alice, bob, mpt), ter(temDISABLED));
         }
@@ -842,7 +842,7 @@ class MPToken_test : public beast::unit_test::suite
 
             env.fund(XRP(1'000), alice);
             env.fund(XRP(1'000), carol);
-            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
+            STAmount const mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
 
             Json::Value jv;
             jv[jss::secret] = alice.name();
@@ -1458,7 +1458,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             env.fund(XRP(1'000), alice, bob);
-            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
+            STAmount const mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
             Json::Value jv;
             jv[jss::secret] = alice.name();
             jv[jss::tx_json] = pay(alice, bob, mpt);
@@ -1806,7 +1806,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");
         auto const USD = alice["USD"];
         Account const carol("carol");
-        MPTIssue issue(makeMptID(1, alice));
+        MPTIssue const issue(makeMptID(1, alice));
         STAmount mpt{issue, UINT64_C(100)};
         auto const jvb = bridge(alice, USD, alice, USD);
         for (auto const& feature : {features, features - featureMPTokensV1})
@@ -2877,7 +2877,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create(
                 {.metadata = "test", .ownerCount = 1, .mutableFlags = tmfMPTCanMutateMetadata});
 
-            std::vector<std::string> metadatas = {
+            std::vector<std::string> const metadatas = {
                 "mutate metadata",
                 "mutate metadata 2",
                 "mutate metadata 3",

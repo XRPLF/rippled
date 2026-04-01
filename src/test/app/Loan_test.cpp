@@ -87,7 +87,7 @@ protected:
         Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
-            NumberRoundModeGuard mg(Number::downward);
+            NumberRoundModeGuard const mg(Number::downward);
             auto debtLimit = coverDeposit * tenthBipsPerUnity.value() / coverRateMin.value();
 
             return debtLimit - currentDebt;
@@ -429,7 +429,7 @@ protected:
     {
         using namespace jtx;
 
-        Vault vault{env};
+        Vault const vault{env};
 
         auto const deposit = asset(params.vaultDeposit);
         auto const debtMaximumValue = asset(params.debtMax).value();
@@ -520,7 +520,7 @@ protected:
                  : std::max(broker.vaultScale(env), state.principalOutstanding.exponent())));
         BEAST_EXPECT(state.paymentInterval == 600);
         {
-            NumberRoundModeGuard mg(Number::upward);
+            NumberRoundModeGuard const mg(Number::upward);
             BEAST_EXPECT(
                 state.totalValue ==
                 roundToAsset(
@@ -1149,7 +1149,7 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -1822,7 +1822,7 @@ protected:
                           std::function<void(Account const& holder)>,
                           TER> {
                 // Freeze / lock the asset
-                std::function<void(Account const& holder)> empty;
+                std::function<void(Account const& holder)> const empty;
                 if (broker.asset.native())
                 {
                     // XRP can't be frozen
@@ -1943,7 +1943,7 @@ protected:
                          ? 0
                          : std::max(
                                broker.vaultScale(env), state.principalOutstanding.exponent())));
-                NumberRoundModeGuard mg(Number::upward);
+                NumberRoundModeGuard const mg(Number::upward);
                 auto const defaultAmount = roundToAsset(
                     broker.asset,
                     std::min(
@@ -2235,7 +2235,7 @@ protected:
                     // service fee is 2
                     auto const startingPayments = state.paymentRemaining;
                     STAmount const payoffAmount = [&]() {
-                        NumberRoundModeGuard mg(Number::upward);
+                        NumberRoundModeGuard const mg(Number::upward);
                         auto const rawPayoff =
                             startingPayments * (state.periodicPayment + broker.asset(2).value());
                         STAmount payoffAmount{broker.asset, rawPayoff};
@@ -2835,7 +2835,7 @@ protected:
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.requireAuth ? tfMPTRequireAuth : none)});
             env.close();
-            PrettyAsset mptAsset = mptt.issuanceID();
+            PrettyAsset const mptAsset = mptt.issuanceID();
             mptt.authorize({.account = lender});
             mptt.authorize({.account = borrower});
             env.close();
@@ -2962,7 +2962,7 @@ protected:
             CaseArgs{.requireAuth = true});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
-            Env env{*this, testable_amendments()};
+            Env const env{*this, testable_amendments()};
             return {
                 env.current()->fees().accountReserve(0).drops() / DROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / DROPS_PER_XRP.drops()};
@@ -3247,7 +3247,7 @@ protected:
         jtx::Account const alice{"alice"};
         jtx::Account const bella{"bella"};
         auto const msigSetup = [&](Env& env, Account const& account) {
-            Json::Value tx1 = signers(account, 2, {{alice, 1}, {bella, 1}});
+            Json::Value const tx1 = signers(account, 2, {{alice, 1}, {bella, 1}});
             env(tx1);
             env.close();
         };
@@ -3314,7 +3314,7 @@ protected:
             [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
-                Vault vault{env};
+                Vault const vault{env};
                 auto tx = vault.set({.owner = lender, .id = broker.vaultID});
                 tx[sfAssetsMaximum] = BrokerParameters::defaults().vaultDeposit;
                 env(tx);
@@ -3334,7 +3334,7 @@ protected:
             [&, this](Env& env, BrokerInfo const& broker, auto&) {
                 using namespace loan;
                 Number const principalRequest = broker.asset(1'000).value();
-                Vault vault{env};
+                Vault const vault{env};
                 auto tx = vault.set({.owner = lender, .id = broker.vaultID});
                 tx[sfAssetsMaximum] =
                     BrokerParameters::defaults().vaultDeposit + broker.asset(1).number();
@@ -3601,13 +3601,13 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        BrokerParameters brokerParams;
+        BrokerParameters const brokerParams;
         env.fund(XRP(brokerParams.vaultDeposit * 100), lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
 
@@ -3664,13 +3664,13 @@ protected:
         Account const issuer{"issuer"};
         Account const lender{"lender"};
 
-        BrokerParameters brokerParams{.debtMax = 0};
+        BrokerParameters const brokerParams{.debtMax = 0};
         env.fund(XRP(brokerParams.vaultDeposit * 100), issuer, noripple(lender));
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             BEAST_EXPECT(brokerSle))
@@ -3712,12 +3712,12 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        BrokerParameters brokerParams;
+        BrokerParameters const brokerParams;
         env.fund(XRP(brokerParams.vaultDeposit * 100), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
 
@@ -3786,9 +3786,9 @@ protected:
 
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
-        Account borrower{borrowerPass, KeyType::ed25519};
+        Account const borrower{borrowerPass, KeyType::ed25519};
         auto const lenderPass = "lender";
-        Account lender{lenderPass, KeyType::ed25519};
+        Account const lender{lenderPass, KeyType::ed25519};
 
         env.fund(XRP(1'000'000), alice, lender, borrower);
         env.close();
@@ -4169,7 +4169,8 @@ protected:
         env.fund(XRP(1'000), issuer, lender);
 
         std::int64_t constexpr issuerBalance = 10'000'000;
-        MPTTester asset({.env = env, .issuer = issuer, .holders = {lender}, .pay = issuerBalance});
+        MPTTester const asset(
+            {.env = env, .issuer = issuer, .holders = {lender}, .pay = issuerBalance});
 
         BrokerParameters const brokerParams{
             .debtMax = 200,
@@ -4319,7 +4320,7 @@ protected:
             env.fund(XRP(1'000), lender, issuer, borrower);
             env(trust(lender, IOU(10'000'000)));
             env(pay(issuer, lender, IOU(5'000'000)));
-            BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+            BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
 
             auto const loanSetFee = fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -4381,7 +4382,7 @@ protected:
             // can it happen? the signature is checked before transactor
             // executes
 
-            JTx tx = env.jt(
+            JTx const tx = env.jt(
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 sig(sfCounterpartySignature, lender),
                 loanSetFee);
@@ -4470,7 +4471,7 @@ protected:
         env(pay(issuer, borrower, mptAsset(1'000)));
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, mptAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, mptAsset, lender)};
 
         using namespace loan;
 
@@ -4573,7 +4574,7 @@ protected:
             return Account("Broker pseudo-account", brokerPseudo);
         }();
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, keylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
         auto const originalState = getCurrentState(env, broker, keylet);
         verifyLoanStatus(originalState);
 
@@ -4624,7 +4625,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -4686,7 +4687,7 @@ protected:
         env(pay(issuer, borrower, iouAsset(1'000)));
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -4768,7 +4769,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -4867,7 +4868,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
         {
             auto const coverDepositValue = broker.asset(broker.params.coverDeposit * 10).value();
             env(loanBroker::coverDeposit(lender, broker.brokerID, coverDepositValue));
@@ -5155,7 +5156,7 @@ protected:
 
             // pay all but the last payment
             {
-                NumberRoundModeGuard mg{Number::upward};
+                NumberRoundModeGuard const mg{Number::upward};
                 Number const payment = beforeState.periodicPayment * (total - 1);
                 XRPAmount const payFee{baseFee * ((total - 1) / loanPaymentsPerFeeIncrement + 1)};
                 STAmount const paymentAmount =
@@ -5259,7 +5260,7 @@ protected:
         env(pay(issuer, alice, asset(100)));
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
         env(createTx);
         env.close();
@@ -5595,7 +5596,7 @@ protected:
         env.close();
 
         PrettyAsset const asset{xrpIssue(), 1'000'000};
-        BrokerParameters brokerParams{};
+        BrokerParameters const brokerParams{};
         auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
         // Create a 3-payment loan so full-payment path is enabled after 1
@@ -5792,10 +5793,10 @@ protected:
         Env env(*this, all);
 
         // Setup: Create accounts
-        Account issuer{"issuer"};
-        Account lender{"lender"};
-        Account borrower{"borrower"};
-        Account victim{"victim"};
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Account const victim{"victim"};
 
         env.fund(XRP(1'000'000'00), issuer, lender, borrower, victim);
         env.close();
@@ -5810,7 +5811,7 @@ protected:
         env(pay(issuer, victim, asset(50000)));
         env.close();
 
-        BrokerParameters brokerParams{
+        BrokerParameters const brokerParams{
             .vaultDeposit = 10000,
             .debtMax = Number{0},
             .coverRateMin = TenthBips32{1000},
@@ -5838,8 +5839,8 @@ protected:
 
         {
             auto const vaultSle = env.le(vaultKeylet);
-            Number assetsTotal = vaultSle->at(sfAssetsTotal);
-            Number assetsAvail = vaultSle->at(sfAssetsAvailable);
+            Number const assetsTotal = vaultSle->at(sfAssetsTotal);
+            Number const assetsAvail = vaultSle->at(sfAssetsAvailable);
 
             log << "Before loan creation:" << std::endl;
             log << "  AssetsTotal: " << assetsTotal << std::endl;
@@ -5871,8 +5872,8 @@ protected:
 
         {
             auto const vaultSle = env.le(vaultKeylet);
-            Number assetsTotal = vaultSle->at(sfAssetsTotal);
-            Number assetsAvail = vaultSle->at(sfAssetsAvailable);
+            Number const assetsTotal = vaultSle->at(sfAssetsTotal);
+            Number const assetsAvail = vaultSle->at(sfAssetsAvailable);
 
             log << "After loan creation:" << std::endl;
             log << "  AssetsTotal: " << assetsTotal << std::endl;
@@ -5909,8 +5910,8 @@ protected:
         // Step 8: Verify phantom assets created
         {
             auto const vaultSle2 = env.le(vaultKeylet);
-            Number assetsTotal2 = vaultSle2->at(sfAssetsTotal);
-            Number assetsAvail2 = vaultSle2->at(sfAssetsAvailable);
+            Number const assetsTotal2 = vaultSle2->at(sfAssetsTotal);
+            Number const assetsAvail2 = vaultSle2->at(sfAssetsAvailable);
 
             log << "After default:" << std::endl;
             log << "  AssetsTotal: " << assetsTotal2 << std::endl;
@@ -6033,7 +6034,7 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
         {
@@ -6077,7 +6078,7 @@ protected:
         auto const txfee = fee(XRP(100));
 
         Env env(*this);
-        Vault vault(env);
+        Vault const vault(env);
 
         env.fund(XRP(10'000), lender, issuer, borrower, depositor);
         env.close();
@@ -6137,7 +6138,7 @@ protected:
         env.close();
 
         // Vault with XRP asset
-        Vault vault{env};
+        Vault const vault{env};
         auto [vaultCreate, vaultKeylet] = vault.create({.owner = lender, .asset = xrpIssue()});
         env(vaultCreate);
         env.close();
@@ -6239,7 +6240,7 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -6266,7 +6267,7 @@ protected:
 
         auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
             Env env(*this);
-            Vault vault(env);
+            Vault const vault(env);
 
             if (borrower == broker)
             {
@@ -6359,7 +6360,7 @@ protected:
                 borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    MPTTester mpt(
+                    MPTTester const mpt(
                         {.env = env,
                          .issuer = issuer,
                          .holders = {broker, depositor},
@@ -6403,7 +6404,7 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -6459,7 +6460,7 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
         auto const state = getCurrentState(env, broker, loanKeylet);
 
@@ -6470,7 +6471,7 @@ protected:
             tfLoanOverpayment));
         env.close();
 
-        PaymentParameters paymentParams{
+        PaymentParameters const paymentParams{
             .showStepBalances = false,
             .validateBalances = true,
         };
@@ -7077,20 +7078,20 @@ protected:
         Account const borrower("borrower");
 
         // Determine all the random parameters at once
-        AssetType assetType = static_cast<AssetType>(assetDist(engine_));
+        AssetType const assetType = static_cast<AssetType>(assetDist(engine_));
         auto const principalRequest = principalDist(engine_);
-        TenthBips16 managementFeeRate{managementFeeRateDist(engine_)};
+        TenthBips16 const managementFeeRate{managementFeeRateDist(engine_)};
         auto const serviceFee = serviceFeeDist(engine_);
         TenthBips32 interest{interestRateDist(engine_)};
         auto const payTotal = paymentTotalDist(engine_);
         auto const payInterval = paymentIntervalDist(engine_);
 
-        BrokerParameters brokerParams{
+        BrokerParameters const brokerParams{
             .vaultDeposit = principalRequest * 10,
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = managementFeeRate};
-        LoanParameters loanParams{
+        LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
             .principalRequest = principalRequest,
@@ -7108,7 +7109,7 @@ public:
     run() override
     {
         auto const numIterations = [s = arg()]() -> int {
-            int defaultNum = 5;
+            int const defaultNum = 5;
             if (s.empty())
                 return defaultNum;
             try

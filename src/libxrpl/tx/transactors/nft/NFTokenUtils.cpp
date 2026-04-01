@@ -64,7 +64,7 @@ getPageForToken(
     // A suitable page doesn't exist; we'll have to create one.
     if (!cp)
     {
-        STArray arr;
+        STArray const arr;
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
@@ -245,7 +245,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    std::shared_ptr<SLE> page =
+    std::shared_ptr<SLE> const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
             adjustOwnerCount(
                 view,
@@ -338,7 +338,7 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> page = locatePage(view, owner, nftokenID);
+    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -519,7 +519,7 @@ removeToken(
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE const> page = locatePage(view, owner, nftokenID);
+    std::shared_ptr<SLE const> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -612,7 +612,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
     std::size_t totalOffers = 0;
 
     {
-        Dir buys(view, keylet::nft_buys(nftokenID));
+        Dir const buys(view, keylet::nft_buys(nftokenID));
         for (auto iter = buys.begin(); iter != buys.end(); iter.next_page())
         {
             totalOffers += iter.page_size();
@@ -622,7 +622,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
     }
 
     {
-        Dir sells(view, keylet::nft_sells(nftokenID));
+        Dir const sells(view, keylet::nft_sells(nftokenID));
         for (auto iter = sells.begin(); iter != sells.end(); iter.next_page())
         {
             totalOffers += iter.page_size();

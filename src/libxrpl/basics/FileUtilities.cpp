@@ -26,7 +26,7 @@ getFileContents(
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    path fullPath{canonical(sourcePath, ec)};
+    path const fullPath{canonical(sourcePath, ec)};
     if (ec)
         return {};
 
