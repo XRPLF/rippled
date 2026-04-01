@@ -3673,7 +3673,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     case Sqlite: {
                         auto& db = registry_.get().getRelationalDatabase();
                         RelationalDatabase::AccountTxPageOptions const options{
-                            accountId, {minLedger, maxLedger}, marker, 0, true};
+                            accountId, {minLedger, maxLedger}, marker, 0, true, std::nullopt};
                         return db.newestAccountTxPage(options);
                     }
                     // LCOV_EXCL_START
