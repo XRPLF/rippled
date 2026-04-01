@@ -91,7 +91,9 @@ private:
     bool ssl_{
         port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
         port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
-    bool plain_;
+    bool plain_{
+        port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
+        port_.protocol.count("ws2")};
     static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
     static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
     std::chrono::milliseconds accept_delay_{INITIAL_ACCEPT_DELAY};
@@ -276,9 +278,6 @@ Door<Handler>::Door(
     , ioc_(io_context)
     , acceptor_(io_context)
     , strand_(boost::asio::make_strand(io_context))
-    , plain_(
-          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-          port_.protocol.count("ws2"))
     , backoff_timer_(io_context)
 {
     reOpen();
