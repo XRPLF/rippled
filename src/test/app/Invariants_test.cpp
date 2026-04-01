@@ -3910,13 +3910,13 @@ class Invariants_test : public beast::unit_test::suite
                     {
                         // Bad entry: sfLowLimit has xrpIssue, making
                         // isXrp = true
-                        auto sleBad = std::make_shared<SLE>(bk);
+                        auto const sleBad = std::make_shared<SLE>(bk);
                         sleBad->setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
                         sleBad->setFieldAmount(sfHighLimit, A1[bc](0));
                         ac.view().insert(sleBad);
 
                         // Good entry: proper non-XRP limits
-                        auto sleGood = std::make_shared<SLE>(gk);
+                        auto const sleGood = std::make_shared<SLE>(gk);
                         sleGood->setFieldAmount(sfLowLimit, A1[gc](0));
                         sleGood->setFieldAmount(sfHighLimit, A1[gc](0));
                         ac.view().insert(sleGood);
