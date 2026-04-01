@@ -152,7 +152,7 @@ public:
                 BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.size() == 1);
-                // Make sure we get the new object cached, not the original
+                // Make sure the caller's original pointer is unchanged
                 BEAST_EXPECT(p1.get() != p2.get());
                 BEAST_EXPECT(*p2 == "five_2");
 
