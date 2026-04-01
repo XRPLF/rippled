@@ -318,21 +318,25 @@ inline std::pair<
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     touchOrInsert(key_type const& key, SharedPointerType const& data)
 {
-    auto [it, inserted] = m_cache.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(key),
-        std::forward_as_tuple(m_clock.now(), data));
+    auto cit = m_cache.find(key);
+    bool inserted = false;
 
-    if (inserted)
+    if (cit == m_cache.end())
     {
+        inserted = true;
+        auto emplaceResult = m_cache.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(m_clock.now(), data));
+
         ++m_cache_count;
-    }
-    else
-    {
-        it->second.touch(m_clock.now());
+        cit = emplaceResult.first;
+        return {cit, inserted};
     }
 
-    return {it, inserted};
+    cit->second.touch(m_clock.now());
+
+    return {cit, inserted};
 }
 
 template <

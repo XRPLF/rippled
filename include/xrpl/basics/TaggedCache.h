@@ -13,6 +13,7 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -97,19 +98,6 @@ public:
     del(key_type const& key, bool valid);
 
 public:
-    /** Replace aliased objects with originals.
-
-        Due to concurrency it is possible for two separate objects with
-        the same content and referring to the same unique "thing" to exist.
-        These routines eliminate the duplicate and perform a replacement
-        as needed.
-
-        @param key The key corresponding to the object
-        @param data A shared pointer to the data corresponding to the object.
-
-        @return `true` If the key already existed.
-    */
-
     /** Replace the cache entry with the caller's data. */
     bool
     canonicalize_replace_cache(key_type const& key, SharedPointerType const& data);
