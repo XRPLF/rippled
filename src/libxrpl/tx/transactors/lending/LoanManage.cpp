@@ -400,10 +400,7 @@ LoanManage::doApply()
     }();
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
-    // path. The flag paths returned early from defaultLoan/impairLoan/
-    // unimpairLoan before reaching the calls. Post-amendment, we call
-    // associateAsset on all successful paths — including the flag paths that
-    // previously skipped it.
+    // path. Post-amendment, we call associateAsset on all successful paths.
     if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
