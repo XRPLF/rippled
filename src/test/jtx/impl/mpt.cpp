@@ -6,7 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <openssl/rand.h>
+#include <utility/mpt_utility.h>
 
 #include <cstdint>
 #include <string>
@@ -14,6 +14,17 @@
 namespace xrpl {
 namespace test {
 namespace jtx {
+
+static mpt_pedersen_proof_params
+makePedersenParams(PedersenProofParams const& p)
+{
+    mpt_pedersen_proof_params params{};
+    std::memcpy(params.pedersen_commitment, p.pedersenCommitment.data(), kMPT_PEDERSEN_COMMIT_SIZE);
+    params.amount = p.amt;
+    std::memcpy(params.ciphertext, p.encryptedAmt.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+    std::memcpy(params.blinding_factor, p.blindingFactor.data(), kMPT_BLINDING_FACTOR_SIZE);
+    return params;
+}
 
 void
 mptflags::operator()(Env& env) const
@@ -716,29 +727,15 @@ MPTTester::getClawbackProof(
     if (pubKeyBlob.size() != ecPubKeyLength)
         return std::nullopt;
 
-    secp256k1_pubkey c1, c2, pk;
-    auto const ctx = secp256k1Context();
-
-    if (!secp256k1_ec_pubkey_parse(ctx, &c1, ciphertextBlob.data(), ecGamalEncryptedLength))
-    {
-        return std::nullopt;
-    }
-
-    if (!secp256k1_ec_pubkey_parse(
-            ctx, &c2, ciphertextBlob.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
-    {
-        return std::nullopt;
-    }
-
-    if (!secp256k1_ec_pubkey_parse(ctx, &pk, pubKeyBlob.data(), ecPubKeyLength))
-    {
-        return std::nullopt;
-    }
-
     Buffer proof(ecEqualityProofLength);
 
-    if (secp256k1_equality_plaintext_prove(
-            ctx, proof.data(), &pk, &c2, &c1, amount, privateKey.data(), contextHash.data()) != 1)
+    if (mpt_get_clawback_proof(
+            privateKey.data(),
+            pubKeyBlob.data(),
+            contextHash.data(),
+            amount,
+            ciphertextBlob.data(),
+            proof.data()) != 0)
     {
         return std::nullopt;
     }
@@ -757,17 +754,10 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
     if (privKey->size() != ecPrivKeyLength)
         return std::nullopt;
 
-    secp256k1_pubkey pk;
-    if (secp256k1_ec_pubkey_parse(secp256k1Context(), &pk, pubKey->data(), ecPubKeyLength) != 1)
-        return std::nullopt;
-
     Buffer proof(ecSchnorrProofLength);
 
-    if (secp256k1_mpt_pok_sk_prove(
-            secp256k1Context(), proof.data(), &pk, privKey->data(), ctxHash.data()) != 1)
-    {
+    if (mpt_get_convert_proof(pubKey->data(), privKey->data(), ctxHash.data(), proof.data()) != 0)
         return std::nullopt;
-    }
 
     return proof;
 }
@@ -783,113 +773,45 @@ MPTTester::getConfidentialSendProof(
     PedersenProofParams const& amountParams,
     PedersenProofParams const& balanceParams) const
 {
+    auto const pedersenAmountParams = makePedersenParams(amountParams);
+    auto const pedersenBalanceParams = makePedersenParams(balanceParams);
     if (recipients.size() != nRecipients)
         return std::nullopt;
 
     if (blindingFactor.size() != ecBlindingFactorLength)
         return std::nullopt;
 
-    auto const senderPubKey = getPubKey(sender);
-    if (!senderPubKey)
+    auto const senderPrivKey = getPrivKey(sender);
+    if (!senderPrivKey)
         return std::nullopt;
 
-    auto const ctx = secp256k1Context();
-
-    secp256k1_pubkey c1;
-    std::vector<secp256k1_pubkey> c2_vec(nRecipients);
-    std::vector<secp256k1_pubkey> pk_vec(nRecipients);
-
-    std::vector<unsigned char> sr;
-    sr.reserve(nRecipients * ecBlindingFactorLength);
-
+    // Build mpt_confidential_participant array
+    std::vector<mpt_confidential_participant> participants(nRecipients);
     for (size_t i = 0; i < nRecipients; ++i)
     {
-        auto const& recipient = recipients[i];
-        auto const* ctData = recipient.encryptedAmount.data();
-
-        if (recipient.encryptedAmount.size() != ecGamalEncryptedTotalLength)
+        auto const& r = recipients[i];
+        if (r.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
+            r.publicKey.size() != ecPubKeyLength)
             return std::nullopt;
-
-        if (recipient.publicKey.size() != ecPubKeyLength)
-            return std::nullopt;
-
-        if (i == 0)
-        {
-            if (!secp256k1_ec_pubkey_parse(ctx, &c1, ctData, ecGamalEncryptedLength))
-                return std::nullopt;
-        }
-
-        if (!secp256k1_ec_pubkey_parse(
-                ctx, &c2_vec[i], ctData + ecGamalEncryptedLength, ecGamalEncryptedLength))
-            return std::nullopt;
-
-        if (!secp256k1_ec_pubkey_parse(ctx, &pk_vec[i], recipient.publicKey.data(), ecPubKeyLength))
-            return std::nullopt;
+        std::memcpy(participants[i].pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
+        std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
     }
 
-    size_t const sizeEquality = getEqualityProofSize(nRecipients);
-    Buffer equalityProof(sizeEquality);
+    size_t proofLen = get_confidential_send_proof_size(nRecipients);
+    Buffer proof(proofLen);
 
-    if (secp256k1_mpt_prove_equality_shared_r(
-            ctx,
-            equalityProof.data(),
+    if (mpt_get_confidential_send_proof(
+            senderPrivKey->data(),
             amount,
-            blindingFactor.data(),  // The shared 'r' witness
+            participants.data(),
             nRecipients,
-            &c1,
-            c2_vec.data(),
-            pk_vec.data(),
-            contextHash.data()) != 1)
-    {
+            blindingFactor.data(),
+            contextHash.data(),
+            &pedersenAmountParams,
+            &pedersenBalanceParams,
+            proof.data(),
+            &proofLen) != 0)
         return std::nullopt;
-    }
-
-    auto const amountLinkageProof = getAmountLinkageProof(
-        *senderPubKey,
-        Buffer(blindingFactor.data(), ecBlindingFactorLength),
-        contextHash,
-        amountParams);
-
-    auto const balanceLinkageProof =
-        getBalanceLinkageProof(sender, contextHash, *senderPubKey, balanceParams);
-
-    std::uint64_t const remainingBalance = balanceParams.amt - amount;
-
-    // Compute the blinding factor for the remaining balance: rho_rem = rho_balance - rho_amount
-    unsigned char rho_rem[32];
-    unsigned char neg_rho_m[32];
-
-    secp256k1_mpt_scalar_negate(neg_rho_m, amountParams.blindingFactor.data());
-    secp256k1_mpt_scalar_add(rho_rem, balanceParams.blindingFactor.data(), neg_rho_m);
-
-    // Generate bulletproof for the amount and remaining balance
-    Buffer const bulletproof = getBulletproof(
-        {amount, remainingBalance},
-        {amountParams.blindingFactor, Buffer(rho_rem, 32)},
-        contextHash);
-
-    OPENSSL_cleanse(neg_rho_m, 32);
-    OPENSSL_cleanse(rho_rem, 32);
-
-    auto const sizeAmountLinkage = amountLinkageProof.size();
-    auto const sizeBalanceLinkage = balanceLinkageProof.size();
-    auto const sizeBulletproof = bulletproof.size();
-
-    size_t const proofSize =
-        sizeEquality + sizeAmountLinkage + sizeBalanceLinkage + sizeBulletproof;
-    Buffer proof(proofSize);
-
-    auto ptr = proof.data();
-    std::memcpy(ptr, equalityProof.data(), sizeEquality);
-    ptr += sizeEquality;
-
-    std::memcpy(ptr, amountLinkageProof.data(), sizeAmountLinkage);
-    ptr += sizeAmountLinkage;
-
-    std::memcpy(ptr, balanceLinkageProof.data(), sizeBalanceLinkage);
-    ptr += sizeBalanceLinkage;
-
-    std::memcpy(ptr, bulletproof.data(), sizeBulletproof);
 
     return proof;
 }
@@ -912,26 +834,12 @@ MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& peder
         return buf;
     }
 
-    secp256k1_pubkey commitment;
-    auto const ctx = secp256k1Context();
+    Buffer buf(ecPedersenCommitmentLength);
 
-    // Compute PC = m*G + rho*H
-    if (secp256k1_mpt_pedersen_commit(ctx, &commitment, amount, pedersenBlindingFactor.data()) != 1)
-    {
+    if (mpt_get_pedersen_commitment(amount, pedersenBlindingFactor.data(), buf.data()) != 0)
         Throw<std::runtime_error>("Pedersen commitment generation failed");
-    }
 
-    // Serialize commitment to compressed format (33 bytes)
-    unsigned char compressedCommitment[ecPedersenCommitmentLength];
-    size_t outLen = ecPedersenCommitmentLength;
-    if (secp256k1_ec_pubkey_serialize(
-            ctx, compressedCommitment, &outLen, &commitment, SECP256K1_EC_COMPRESSED) != 1 ||
-        outLen != ecPedersenCommitmentLength)
-    {
-        Throw<std::runtime_error>("Pedersen commitment serialization failed");
-    }
-
-    return Buffer{compressedCommitment, ecPedersenCommitmentLength};
+    return buf;
 }
 
 Buffer
@@ -949,26 +857,24 @@ MPTTester::getConvertBackProof(
         return makeZeroBuffer(expectedProofLength);
 
     auto const holderPubKey = getPubKey(holder);
+    auto const holderPrivKey = getPrivKey(holder);
 
-    if (!holderPubKey)
+    if (!holderPubKey || !holderPrivKey)
         return makeZeroBuffer(expectedProofLength);
 
-    Buffer const pedersenProof =
-        getBalanceLinkageProof(holder, contextHash, *holderPubKey, pcParams);
+    auto const pedersenParams = makePedersenParams(pcParams);
+    Buffer proof(expectedProofLength);
 
-    // Generate bulletproof for the remaining balance (balance - amount)
-    // Use the same blinding factor as the one used to generate the PC_balance
-    std::uint64_t const remainingBalance = pcParams.amt - amount;
-    Buffer const bulletproof =
-        getBulletproof({remainingBalance}, {pcParams.blindingFactor}, contextHash);
+    if (mpt_get_convert_back_proof(
+            holderPrivKey->data(),
+            holderPubKey->data(),
+            contextHash.data(),
+            amount,
+            &pedersenParams,
+            proof.data()) != 0)
+        return makeZeroBuffer(expectedProofLength);
 
-    // Combine pedersen proof and bulletproof
-    Buffer combinedProof(pedersenProof.size() + bulletproof.size());
-    std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
-    std::memcpy(
-        combinedProof.data() + pedersenProof.size(), bulletproof.data(), bulletproof.size());
-
-    return combinedProof;
+    return proof;
 }
 
 std::optional<Buffer>
@@ -1825,12 +1731,10 @@ MPTTester::convertBack(MPTConvertBack const& arg)
                 *arg.account,
                 *arg.amt,
                 contextHash,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = *prevSpendingBalance,
-                    .encryptedAmt = *prevEncryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
+                {pedersenCommitment,
+                 *prevSpendingBalance,
+                 *prevEncryptedSpendingBalance,
+                 pcBlindingFactor});
         }
         jv[sfZKProof] = strHex(proof);
     }
@@ -1901,43 +1805,18 @@ MPTTester::getAmountLinkageProof(
     uint256 const& contextHash,
     PedersenProofParams const& params) const
 {
-    if (params.blindingFactor.size() != ecBlindingFactorLength ||
-        params.pedersenCommitment.size() != ecPedersenCommitmentLength ||
-        pubKey.size() != ecPubKeyLength ||
-        params.encryptedAmt.size() != ecGamalEncryptedTotalLength ||
-        blindingFactor.size() != ecBlindingFactorLength)
+    if (pubKey.size() != ecPubKeyLength || blindingFactor.size() != ecBlindingFactorLength)
         return makeZeroBuffer(ecPedersenProofLength);
 
-    secp256k1_pubkey c1, c2;
-    auto const ctx = secp256k1Context();
-    if (!secp256k1_ec_pubkey_parse(ctx, &c1, params.encryptedAmt.data(), ecGamalEncryptedLength) ||
-        !secp256k1_ec_pubkey_parse(
-            ctx, &c2, params.encryptedAmt.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
-    {
-        return Buffer();
-    }
-
-    secp256k1_pubkey pk;
-    if (secp256k1_ec_pubkey_parse(ctx, &pk, pubKey.data(), ecPubKeyLength) != 1)
-        return Buffer();
-
-    secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(
-            ctx, &pcm, params.pedersenCommitment.data(), ecPedersenCommitmentLength) != 1)
-        return Buffer();
-
+    auto const pedersenParams = makePedersenParams(params);
     Buffer proof(ecPedersenProofLength);
-    if (secp256k1_elgamal_pedersen_link_prove(
-            ctx,
-            proof.data(),
-            &c1,
-            &c2,
-            &pk,
-            &pcm,
-            params.amt,
+
+    if (mpt_get_amount_linkage_proof(
+            pubKey.data(),
             blindingFactor.data(),
-            params.blindingFactor.data(),
-            contextHash.data()) != 1)
+            contextHash.data(),
+            &pedersenParams,
+            proof.data()) != 0)
     {
         Throw<std::runtime_error>("Amount Linkage Proof generation failed");
     }
@@ -1952,47 +1831,18 @@ MPTTester::getBalanceLinkageProof(
     Buffer const& pubKey,
     PedersenProofParams const& params) const
 {
-    if (params.blindingFactor.size() != ecBlindingFactorLength ||
-        params.pedersenCommitment.size() != ecPedersenCommitmentLength ||
-        pubKey.size() != ecPubKeyLength ||
-        params.encryptedAmt.size() != ecGamalEncryptedTotalLength)
+    if (pubKey.size() != ecPubKeyLength)
         return makeZeroBuffer(ecPedersenProofLength);
-
-    secp256k1_pubkey c1, c2;
-    auto const ctx = secp256k1Context();
-    if (!secp256k1_ec_pubkey_parse(ctx, &c1, params.encryptedAmt.data(), ecGamalEncryptedLength) ||
-        !secp256k1_ec_pubkey_parse(
-            ctx, &c2, params.encryptedAmt.data() + ecGamalEncryptedLength, ecGamalEncryptedLength))
-    {
-        return makeZeroBuffer(ecPedersenProofLength);
-    }
-
-    secp256k1_pubkey pk;
-    if (secp256k1_ec_pubkey_parse(ctx, &pk, pubKey.data(), ecPubKeyLength) != 1)
-        return Buffer();
-
-    secp256k1_pubkey pcm;
-    if (secp256k1_ec_pubkey_parse(
-            ctx, &pcm, params.pedersenCommitment.data(), ecPedersenCommitmentLength) != 1)
-        return Buffer();
-
-    Buffer proof(ecPedersenProofLength);
 
     auto const privKey = getPrivKey(account);
     if (!privKey || privKey->size() != ecPrivKeyLength)
         Throw<std::runtime_error>("Failed to get Pedersen proof private key");
 
-    if (secp256k1_elgamal_pedersen_link_prove(
-            ctx,
-            proof.data(),
-            &pk,
-            &c2,
-            &c1,
-            &pcm,
-            params.amt,
-            privKey->data(),
-            params.blindingFactor.data(),
-            contextHash.data()) != 1)
+    auto const pedersenParams = makePedersenParams(params);
+    Buffer proof(ecPedersenProofLength);
+
+    if (mpt_get_balance_linkage_proof(
+            privKey->data(), pubKey.data(), contextHash.data(), &pedersenParams, proof.data()) != 0)
         Throw<std::runtime_error>("Pedersen proof generation failed");
 
     return proof;
