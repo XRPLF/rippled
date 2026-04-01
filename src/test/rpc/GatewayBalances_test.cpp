@@ -231,7 +231,7 @@ public:
         using namespace jtx;
 
         // Ensure MPT is enabled
-        FeatureBitset features = testable_amendments();
+        FeatureBitset const features = testable_amendments();
         Env env(*this, features);
 
         Account const alice{"alice"};

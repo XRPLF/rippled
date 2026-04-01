@@ -1080,9 +1080,9 @@ class Vault_test : public beast::unit_test::suite
                                 Asset const& asset,
                                 Vault& vault)> test) {
             Env env{*this, testable_amendments()};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
 
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
@@ -1245,8 +1245,8 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("IOU fail because MPT is disabled");
                 Env env{*this, (testable_amendments() - featureMPTokensV1)};
-                Account issuer{"issuer"};
-                Account owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
                 env.close();
 
@@ -1261,8 +1261,8 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase("IOU fail create frozen");
                 Env env{*this, testable_amendments()};
-                Account issuer{"issuer"};
-                Account owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
                 env.close();
                 env(fset(issuer, asfGlobalFreeze));
@@ -2949,13 +2949,13 @@ class Vault_test : public beast::unit_test::suite
         testcase("private vault");
 
         Env env{*this, testable_amendments()};
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        Account charlie{"charlie"};
-        Account pdOwner{"pdOwner"};
-        Account credIssuer1{"credIssuer1"};
-        Account credIssuer2{"credIssuer2"};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const charlie{"charlie"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer1{"credIssuer1"};
+        Account const credIssuer2{"credIssuer2"};
         std::string const credType = "credential";
         Vault const vault{env};
         env.fund(XRP(1000), issuer, owner, depositor, charlie, pdOwner, credIssuer1, credIssuer2);
@@ -3197,9 +3197,9 @@ class Vault_test : public beast::unit_test::suite
         testcase("private XRP vault");
 
         Env env{*this, testable_amendments()};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        Account alice{"charlie"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const alice{"charlie"};
         std::string const credType = "credential";
         Vault const vault{env};
         env.fund(XRP(100000), owner, depositor, alice);
