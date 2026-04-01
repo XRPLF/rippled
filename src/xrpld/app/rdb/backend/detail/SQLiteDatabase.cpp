@@ -532,18 +532,6 @@ SQLiteDatabase::SQLiteDatabase(SQLiteDatabase&& rhs) noexcept
 }
 
 bool
-SQLiteDatabase::ledgerDbHasSpace(Config const& config)
-{
-    if (existsLedger())
-    {
-        auto db = checkoutLedger();
-        return detail::dbHasSpace(*db, config, j_);
-    }
-
-    return true;
-}
-
-bool
 SQLiteDatabase::transactionDbHasSpace(Config const& config)
 {
     if (!useTxTables_)

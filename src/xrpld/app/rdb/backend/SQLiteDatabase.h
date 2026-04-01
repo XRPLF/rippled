@@ -387,15 +387,6 @@ public:
     operator=(SQLiteDatabase&&) = delete;
 
     /**
-     * @brief ledgerDbHasSpace Checks if the ledger database has available
-     *        space.
-     * @param config Config object.
-     * @return True if space is available.
-     */
-    bool
-    ledgerDbHasSpace(Config const& config);
-
-    /**
      * @brief transactionDbHasSpace Checks if the transaction database has
      *        available space.
      * @param config Config object.
@@ -446,13 +437,27 @@ private:
     }
 
     /**
-     * @brief checkoutTransaction Checks out and returns node store ledger
+     * @brief checkoutLedger Checks out and returns node store ledger
      *        database.
      * @return Session to the node store ledger database.
+     * @throws std::runtime_error if ledger database is not available.
+     *
+     * @note Callers typically guard with existsLedger() before calling
+     *       this method. The explicit null check here provides
+     *       defense-in-depth so that safety does not depend solely on
+     *       an implicit caller contract. See PR #6029 for context on
+     *       the pattern of relying on config settings instead of
+     *       validating actual objects.
      */
     auto
     checkoutLedger()
     {
+        if (!ledgerDb_)
+        {
+            constexpr auto msg = "Ledger database is not available";
+            JLOG(j_.fatal()) << msg;
+            Throw<std::runtime_error>(msg);
+        }
         return ledgerDb_->checkoutDb();
     }
 
@@ -460,10 +465,23 @@ private:
      * @brief checkoutTransaction Checks out and returns the node store
      *        transaction database.
      * @return Session to the node store transaction database.
+     * @throws std::runtime_error if transaction database is not available.
+     *
+     * @note Callers typically guard with existsTransaction() and/or
+     *       useTxTables_ before calling this method. The explicit null
+     *       check here provides defense-in-depth so that safety does
+     *       not depend solely on an implicit caller contract or config
+     *       settings. See PR #6029 for context.
      */
     auto
     checkoutTransaction()
     {
+        if (!txdb_)
+        {
+            constexpr auto msg = "Transaction database is not available";
+            JLOG(j_.fatal()) << msg;
+            Throw<std::runtime_error>(msg);
+        }
         return txdb_->checkoutDb();
     }
 };
