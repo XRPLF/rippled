@@ -22,6 +22,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -257,7 +258,12 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    if (clawbackAmount == beast::zero)
+    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // clamping to assetsAvailable, allowing more assets to be recovered
+    // than available when there was an outstanding loan. Retained for
+    // ledger replay compatibility.
+    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) &&
+        clawbackAmount == beast::zero)
     {
         auto const sharesDestroyed = accountHolds(
             view(),
@@ -275,23 +281,42 @@ VaultClawback::assetsToClawback(
     }
 
     STAmount sharesDestroyed;
-    STAmount assetsRecovered = clawbackAmount;
+    STAmount assetsRecovered;
+
     try
     {
+        if (clawbackAmount == beast::zero)
         {
-            auto const maybeShares = assetsToSharesWithdraw(
-                vault, sleShareIssuance, assetsRecovered);
-            if (!maybeShares)
+            sharesDestroyed = accountHolds(
+                view(),
+                holder,
+                share,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                j_);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed);
+            if (!maybeAssets)
                 return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            sharesDestroyed = *maybeShares;
+
+            assetsRecovered = *maybeAssets;
         }
+        else
+        {
+            {
+                auto const maybeShares = assetsToSharesWithdraw(
+                    vault, sleShareIssuance, clawbackAmount);
+                if (!maybeShares)
+                    return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                sharesDestroyed = *maybeShares;
+            }
 
-        auto const maybeAssets =
-            sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
-        if (!maybeAssets)
-            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-        assetsRecovered = *maybeAssets;
-
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleShareIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
+        }
         // Clamp to maximum.
         if (assetsRecovered > *assetsAvailable)
         {
@@ -371,7 +396,7 @@ VaultClawback::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "ripple::VaultClawback::doApply : loss and assets do balance");
 
-    AccountID holder = tx[sfHolder];
+    AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
