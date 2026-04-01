@@ -12,6 +12,27 @@ import sys
 from pathlib import Path
 
 
+def _check_pip_index() -> None:
+    """Warn if pip is configured with a non-default index (may need VPN)."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "config", "get", "global.index-url"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            index_url = result.stdout.strip()
+            if index_url and index_url != "https://pypi.org/simple":
+                print(
+                    f"WARNING: Private pip index URL detected: {index_url}\n"
+                    "You may need to connect to VPN to access this URL.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+    except Exception:
+        pass
+
+
 def ensure_venv(deps_dir: Path) -> None:
     """Ensure code generation dependencies are installed in deps_dir."""
     requirements_file = Path(__file__).parent / "requirements.txt"
@@ -22,6 +43,7 @@ def ensure_venv(deps_dir: Path) -> None:
     )
 
     if needs_setup:
+        _check_pip_index()
         print(f"Installing code generation dependencies to {deps_dir}...", flush=True)
         deps_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(
