@@ -307,7 +307,7 @@ private:
                 return rpcError(rpcINVALID_LGR_RANGE);
             }
 
-            if (auto const ledgerMaxOpt = jvParseInt(jvParams[2u]))
+            if (auto const ledgerMaxOpt = jvParseInt(jvParams[2u]); ledgerMaxOpt.has_value())
             {
                 ledgerMax = *ledgerMaxOpt;
             }
