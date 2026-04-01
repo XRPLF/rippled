@@ -3345,6 +3345,36 @@ class MPToken_test : public beast::unit_test::suite
             std::nullopt,
             "one receiver exceeds max, other zero");
 
+        // Issue 50 tokens so outstandingAmount is nonzero, then verify
+        // the third condition: outstandingAmount > maximumAmount - sendAmount - totalSendAmount
+        mptt.pay(issuer, alice, 50);
+        env.close();
+
+        // maxAmt=150, outstanding=50, so 100 more available
+        runTest(
+            R{{alice.id(), 50}, {bob.id(), 50}},
+            tesSUCCESS,
+            maxAmt,
+            "nonzero outstanding, aggregate at boundary");
+
+        runTest(
+            R{{alice.id(), 50}, {bob.id(), 51}},
+            tecPATH_DRY,
+            std::nullopt,
+            "nonzero outstanding, aggregate exceeds max");
+
+        runTest(
+            R{{alice.id(), 100}, {bob.id(), 0}},
+            tesSUCCESS,
+            maxAmt,
+            "nonzero outstanding, single send at remaining capacity");
+
+        runTest(
+            R{{alice.id(), 101}, {bob.id(), 0}},
+            tecPATH_DRY,
+            std::nullopt,
+            "nonzero outstanding, single send exceeds remaining capacity");
+
         // Pre-amendment: the stale per-iteration check allows each
         // individual send (100 <= 150) even though the aggregate (200)
         // exceeds MaximumAmount. Preserved for ledger replay.
@@ -3354,7 +3384,7 @@ class MPToken_test : public beast::unit_test::suite
             runTest(
                 R{{alice.id(), 100}, {bob.id(), 100}},
                 tesSUCCESS,
-                200,
+                250,
                 "pre-amendment allows over-send");
             env.enableFeature(fixSecurity3_1_3);
         }

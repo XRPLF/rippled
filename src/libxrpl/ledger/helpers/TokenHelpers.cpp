@@ -1164,7 +1164,7 @@ rippleSendMultiMPT(
     // For the issuer-as-sender case, track the running total to validate
     // against MaximumAmount. The read-only SLE (view.read) is not updated
     // by rippleCreditMPT, so a per-iteration SLE read would be stale.
-    // Use int64_t, not STAmount, to keep MaximumAmount comparisons in exact
+    // Use uint64_t, not STAmount, to keep MaximumAmount comparisons in exact
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
     // maxMPTokenAmount (19 digits).
