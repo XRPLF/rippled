@@ -2,11 +2,30 @@
 #
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
-#   metrics: spanmetrics connector -> Prometheus exporter
+#   metrics: OTLP + StatsD receivers + spanmetrics connector -> Prometheus exporter
+#   logs:   filelog receiver -> batch processor -> otlphttp/Loki (Phase 8)
 #
 # rippled sends traces via OTLP/HTTP to port 4318. The collector batches
-# them, forwards to Tempo, and derives RED metrics via the spanmetrics
-# connector, which Prometheus scrapes on port 8889.
+# them, forwards to Tempo, and derives RED metrics via the
+# spanmetrics connector, which Prometheus scrapes on port 8889.
+#
+# rippled sends beast::insight metrics natively via OTLP/HTTP to port 4318
+# (same endpoint as traces). The OTLP receiver feeds both the traces and
+# metrics pipelines. Metrics are exported to Prometheus alongside
+# span-derived metrics.
+#
+# The StatsD receiver accepts beast::insight metrics from xrpld nodes
+# configured with server=statsd in [insight]. It listens on UDP port 8125.
+#
+# Phase 8: The filelog receiver tails rippled's debug.log files under
+# /var/log/rippled/ (mounted from the host). A regex_parser operator
+# extracts timestamp, partition, severity, and optional trace_id/span_id
+# fields injected by Logs::format(). Parsed logs are exported to Grafana
+# Loki for log-trace correlation.
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
 
 receivers:
   otlp:
@@ -15,6 +34,34 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  # StatsD receiver — accepts beast::insight metrics from xrpld nodes
+  # configured with server=statsd in [insight]. Listens on UDP port 8125.
+  statsd:
+    endpoint: "0.0.0.0:8125"
+    aggregation_interval: 15s
+    enable_metric_type: true
+    is_monotonic_counter: true
+    timer_histogram_mapping:
+      - statsd_type: "timing"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
+      - statsd_type: "histogram"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
+  # Phase 8: Filelog receiver tails rippled debug.log files for log-trace
+  # correlation. Extracts structured fields (timestamp, partition, severity,
+  # trace_id, span_id, message) via regex. The trace_id and span_id are
+  # optional — only present when the log was emitted within an active span.
+  filelog:
+    include: [/var/log/rippled/*/debug.log]
+    operators:
+      - type: regex_parser
+        regex: '^(?P<timestamp>\S+)\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: "%Y-%b-%d %H:%M:%S.%f"
 
 processors:
   batch:
@@ -45,15 +92,28 @@ exporters:
     endpoint: tempo:4317
     tls:
       insecure: true
+  # Phase 8: Export logs to Grafana Loki via OTLP/HTTP. Loki 3.x supports
+  # native OTLP ingestion on its /otlp endpoint, replacing the removed
+  # loki exporter (dropped in otel-collector-contrib v0.147.0).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
 
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
-      receivers: [spanmetrics]
+      receivers: [otlp, spanmetrics, statsd]
+      processors: [batch]
       exporters: [prometheus]
+    # Phase 8: Log pipeline ingests rippled debug.log via filelog receiver,
+    # batches entries, and exports to Loki for log-trace correlation.
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [otlphttp/loki]
