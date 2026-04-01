@@ -102,7 +102,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, 'q');
+            std::string const ledgerHash(64, 'q');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
@@ -113,7 +113,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, '1');
+            std::string const ledgerHash(64, '1');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 

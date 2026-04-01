@@ -98,11 +98,7 @@ struct MantissaRange
     enum mantissa_scale { small, large };
 
     explicit constexpr MantissaRange(mantissa_scale scale_)
-        : max(getMax(scale_))
-        , min(computeMin(max))
-        , internalMin(getInternalMin(scale_, min))
-        , log(computeLog(min))
-        , scale(scale_)
+        : max(getMax(scale_)), internalMin(getInternalMin(scale_, min)), scale(scale_)
     {
         // Keep the error messages terse. Since this is constexpr, if any of these throw, it won't
         // compile, so there's no real need to worry about runtime exceptions here.
@@ -128,14 +124,14 @@ struct MantissaRange
     operator=(MantissaRange&&) = delete;
 
     rep max;
-    rep min;
+    rep min{computeMin(max)};
     /* Used to determine if mantissas are in range, but have fewer digits than max.
      *
      * Unlike min, internalMin is always an exact power of 10, so a mantissa in the internal
      * representation will always have a consistent number of digits.
      */
     rep internalMin;
-    int log;
+    int log{computeLog(min)};
     mantissa_scale scale;
 
 private:

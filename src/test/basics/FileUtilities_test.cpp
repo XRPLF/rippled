@@ -17,7 +17,7 @@ public:
 
         constexpr char const* expectedContents = "This file is very short. That's all we need.";
 
-        FileDirGuard file(
+        FileDirGuard const file(
             *this, "test_file", "test.txt", "This is temporary text that should get overwritten");
 
         error_code ec;

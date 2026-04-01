@@ -327,7 +327,7 @@ public:
 
         friend class Livecache;
         lists_type m_lists;
-        Histogram m_hist;
+        Histogram m_hist{};
     } hops;
 
     /** Returns `true` if the cache is empty. */

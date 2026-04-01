@@ -155,7 +155,7 @@ Number::Guard::push(T d) noexcept
 inline unsigned
 Number::Guard::pop() noexcept
 {
-    unsigned d = (digits_ & 0xF000'0000'0000'0000) >> 60;
+    unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
 }
@@ -308,11 +308,12 @@ Number::externalToInternal(rep mantissa)
     if (mantissa >= 0)
         return mantissa;
 
-    // Cast to unsigned before negating to avoid undefined behavior when
-    // mantissa == std::numeric_limits<rep>::min() (INT64_MIN). Negating
-    // INT64_MIN in signed arithmetic is UB, but casting to the unsigned
-    // internalrep first makes the operation well-defined.
-    return -static_cast<internalrep>(mantissa);
+    // If the mantissa doesn't fit within the positive range, convert to
+    // int128_t, negate that, and cast it back down to the internalrep
+    // In practice, this is only going to cover the case of
+    // std::numeric_limits<rep>::min().
+    int128_t const temp = mantissa;
+    return static_cast<internalrep>(-temp);
 }
 
 /** Breaks down the number into components, potentially de-normalizing it.
@@ -749,10 +750,10 @@ Number::operator*=(Number const& y)
     // *e = exponent
 
     auto [xn, xm, xe] = toInternal(range);
-    int xs = xn ? -1 : 1;
+    int const xs = xn ? -1 : 1;
 
     auto [yn, ym, ye] = y.toInternal(range);
-    int ys = yn ? -1 : 1;
+    int const ys = yn ? -1 : 1;
 
     auto zm = uint128_t(xm) * uint128_t(ym);
     auto ze = xe + ye;
@@ -806,10 +807,10 @@ Number::operator/=(Number const& y)
     // *e = exponent
 
     auto [np, nm, ne] = toInternal(range);
-    int ns = (np ? -1 : 1);
+    int const ns = (np ? -1 : 1);
 
     auto [dp, dm, de] = y.toInternal(range);
-    int ds = (dp ? -1 : 1);
+    int const ds = (dp ? -1 : 1);
 
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
@@ -822,7 +823,7 @@ Number::operator/=(Number const& y)
     // f can be up to 10^(38-19) = 10^19 safely
     static_assert(smallRange.log == 15);
     static_assert(largeRange.log == 18);
-    bool small = range.scale == MantissaRange::small;
+    bool const small = range.scale == MantissaRange::small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
@@ -1079,8 +1080,8 @@ Number::root(MantissaRange const& range, Number f, unsigned d)
         auto const di = static_cast<int>(d);
         auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
         {
-            int k = (e >= 0 ? e : e - (di - 1)) / di;
-            int k2 = e - (k * di);
+            int const k = (e >= 0 ? e : e - (di - 1)) / di;
+            int const k2 = e - (k * di);
             if (k2 == 0)
                 return 0;
             return di - k2;

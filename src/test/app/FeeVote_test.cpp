@@ -189,7 +189,7 @@ class FeeVote_test : public beast::unit_test::suite
         FeeSetup const defaultSetup;
         {
             // defaults
-            Section config;
+            Section const config;
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
@@ -260,7 +260,7 @@ class FeeVote_test : public beast::unit_test::suite
 
             // Test successful fee transaction with legacy fields
 
-            FeeSettingsFields fields{
+            FeeSettingsFields const fields{
                 .baseFee = 10,
                 .reserveBase = 200000,
                 .reserveIncrement = 50000,
@@ -288,7 +288,7 @@ class FeeVote_test : public beast::unit_test::suite
             // Create the next ledger to apply transaction to
             ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-            FeeSettingsFields fields{
+            FeeSettingsFields const fields{
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000}};
@@ -408,7 +408,7 @@ class FeeVote_test : public beast::unit_test::suite
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-        FeeSettingsFields fields1{
+        FeeSettingsFields const fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
             .reserveIncrementDrops = XRPAmount{50000}};
@@ -425,7 +425,7 @@ class FeeVote_test : public beast::unit_test::suite
         // Apply second fee transaction with different values
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-        FeeSettingsFields fields2{
+        FeeSettingsFields const fields2{
             .baseFeeDrops = XRPAmount{20},
             .reserveBaseDrops = XRPAmount{300000},
             .reserveIncrementDrops = XRPAmount{75000}};
@@ -487,7 +487,7 @@ class FeeVote_test : public beast::unit_test::suite
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-        FeeSettingsFields fields1{
+        FeeSettingsFields const fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
             .reserveIncrementDrops = XRPAmount{50000}};
@@ -504,7 +504,7 @@ class FeeVote_test : public beast::unit_test::suite
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
         // Apply partial update (only some fields)
-        FeeSettingsFields fields2{
+        FeeSettingsFields const fields2{
             .baseFeeDrops = XRPAmount{20}, .reserveBaseDrops = XRPAmount{200000}};
         auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
