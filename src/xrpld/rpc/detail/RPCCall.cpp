@@ -395,7 +395,7 @@ private:
                 return RPC::invalid_field_error(jss::limit);
         }
 
-        if (jvParams.size() >= 6)
+        if (jvParams.size() == 6)
             jvRequest[jss::marker] = jvParams[5u];
 
         return jvRequest;
