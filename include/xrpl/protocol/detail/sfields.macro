@@ -5,7 +5,6 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
-// clang-format off
 
 // untyped
 UNTYPED_SFIELD(sfLedgerEntry,            LEDGERENTRY, 257)
@@ -421,5 +420,3 @@ UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
 UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
 UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::sMD_Default, SField::notSigning)
-
-// clang-format on

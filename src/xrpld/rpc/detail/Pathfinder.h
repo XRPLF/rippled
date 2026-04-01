@@ -1,10 +1,10 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/LoadEvent.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 
@@ -82,10 +82,10 @@ public:
 
     struct PathRank
     {
-        std::uint64_t quality;
-        std::uint64_t length;
+        std::uint64_t quality{};
+        std::uint64_t length{};
         STAmount liquidity;
-        int index;
+        int index{};
     };
 
 private:

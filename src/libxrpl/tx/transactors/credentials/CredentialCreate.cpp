@@ -1,7 +1,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -146,14 +147,15 @@ CredentialCreate::doApply()
     }
     else
     {
+        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
+        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
         auto const page =
             view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Adding Credential to subject directory "
+                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
-        view().update(view().peek(keylet::account(subject)));
     }
 
     view().insert(sleCred);

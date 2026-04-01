@@ -22,7 +22,7 @@ public:
         explicit Entry() = default;
 
         beast::IP::Endpoint endpoint;
-        int valence;
+        int valence{};
     };
     virtual void
     save(std::vector<Entry> const& v) = 0;

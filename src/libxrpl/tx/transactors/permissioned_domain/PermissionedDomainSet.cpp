@@ -1,7 +1,9 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 //
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -98,8 +100,6 @@ PermissionedDomainSet::doApply()
         Keylet const pdKeylet =
             keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
-        if (!slePd)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));

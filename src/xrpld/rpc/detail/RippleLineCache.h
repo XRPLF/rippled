@@ -1,10 +1,10 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <cstddef>
 #include <mutex>

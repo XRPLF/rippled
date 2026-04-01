@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -62,8 +63,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth = (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bClearRequireAuth =
+        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -74,8 +76,10 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool bSetRequireDest = (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest);
-    bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+    bool const bSetRequireDest =
+        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
+    bool const bClearRequireDest =
+        ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
     {
@@ -86,8 +90,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool bSetDisallowXRP = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
-    bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+    bool const bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
+    bool const bClearDisallowXRP =
+        ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -98,9 +103,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     // TransferRate
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
-        if (uRate && (uRate < QUALITY_ONE))
+        if ((uRate != 0u) && (uRate < QUALITY_ONE))
         {
             JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
             return temBAD_TRANSFER_RATE;
@@ -117,7 +122,8 @@ AccountSet::preflight(PreflightContext const& ctx)
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if (uTickSize && ((uTickSize < Quality::minTickSize) || (uTickSize > Quality::maxTickSize)))
+        if ((uTickSize != 0u) &&
+            ((uTickSize < Quality::minTickSize) || (uTickSize > Quality::maxTickSize)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -174,7 +180,7 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     // AccountSet transaction. If any delegated account is trying to
     // update the flag on behalf of another account, it is not
     // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags & tfUniversalMask)
+    if (uSetFlag != 0 || uClearFlag != 0 || ((uTxFlags & tfUniversalMask) != 0u))
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
@@ -214,17 +220,17 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
+    if (bSetRequireAuth && ((uFlagsIn & lsfRequireAuth) == 0u))
     {
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return (ctx.flags & tapRETRY) ? TER{terOWNERS} : TER{tecOWNERS};
+            return ((ctx.flags & tapRETRY) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
         }
     }
 
@@ -235,7 +241,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     {
         if (uSetFlag == asfAllowTrustLineClawback)
         {
-            if (uFlagsIn & lsfNoFreeze)
+            if ((uFlagsIn & lsfNoFreeze) != 0u)
             {
                 JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
                 return tecNO_PERMISSION;
@@ -250,7 +256,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         else if (uSetFlag == asfNoFreeze)
         {
             // Cannot set NoFreeze if clawback is enabled
-            if (uFlagsIn & lsfAllowTrustLineClawback)
+            if ((uFlagsIn & lsfAllowTrustLineClawback) != 0u)
             {
                 JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
                 return tecNO_PERMISSION;
@@ -277,12 +283,15 @@ AccountSet::doApply()
 
     // legacy AccountSet flags
     std::uint32_t const uTxFlags{tx.getFlags()};
-    bool const bSetRequireDest{(uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
-    bool const bClearRequireDest{(uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
-    bool const bSetRequireAuth{(uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
-    bool const bClearRequireAuth{(uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
-    bool const bSetDisallowXRP{(uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
-    bool const bClearDisallowXRP{(uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
+    bool const bSetRequireDest{
+        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest)};
+    bool const bClearRequireDest{
+        ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest)};
+    bool const bSetRequireAuth{((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth)};
+    bool const bClearRequireAuth{
+        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth)};
+    bool const bSetDisallowXRP{((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP)};
+    bool const bClearDisallowXRP{((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP)};
 
     bool const sigWithMaster{[&tx, &acct = account_]() {
         auto const spk = tx.getSigningPubKey();
@@ -300,13 +309,13 @@ AccountSet::doApply()
     //
     // RequireAuth
     //
-    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
+    if (bSetRequireAuth && ((uFlagsIn & lsfRequireAuth) == 0u))
     {
         JLOG(j_.trace()) << "Set RequireAuth.";
         uFlagsOut |= lsfRequireAuth;
     }
 
-    if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
+    if (bClearRequireAuth && ((uFlagsIn & lsfRequireAuth) != 0u))
     {
         JLOG(j_.trace()) << "Clear RequireAuth.";
         uFlagsOut &= ~lsfRequireAuth;
@@ -315,13 +324,13 @@ AccountSet::doApply()
     //
     // RequireDestTag
     //
-    if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
+    if (bSetRequireDest && ((uFlagsIn & lsfRequireDestTag) == 0u))
     {
         JLOG(j_.trace()) << "Set lsfRequireDestTag.";
         uFlagsOut |= lsfRequireDestTag;
     }
 
-    if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
+    if (bClearRequireDest && ((uFlagsIn & lsfRequireDestTag) != 0u))
     {
         JLOG(j_.trace()) << "Clear lsfRequireDestTag.";
         uFlagsOut &= ~lsfRequireDestTag;
@@ -330,13 +339,13 @@ AccountSet::doApply()
     //
     // DisallowXRP
     //
-    if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
+    if (bSetDisallowXRP && ((uFlagsIn & lsfDisallowXRP) == 0u))
     {
         JLOG(j_.trace()) << "Set lsfDisallowXRP.";
         uFlagsOut |= lsfDisallowXRP;
     }
 
-    if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
+    if (bClearDisallowXRP && ((uFlagsIn & lsfDisallowXRP) != 0u))
     {
         JLOG(j_.trace()) << "Clear lsfDisallowXRP.";
         uFlagsOut &= ~lsfDisallowXRP;
@@ -345,7 +354,7 @@ AccountSet::doApply()
     //
     // DisableMaster
     //
-    if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
+    if ((uSetFlag == asfDisableMaster) && ((uFlagsIn & lsfDisableMaster) == 0u))
     {
         if (!sigWithMaster)
         {
@@ -363,7 +372,7 @@ AccountSet::doApply()
         uFlagsOut |= lsfDisableMaster;
     }
 
-    if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
+    if ((uClearFlag == asfDisableMaster) && ((uFlagsIn & lsfDisableMaster) != 0u))
     {
         JLOG(j_.trace()) << "Clear lsfDisableMaster.";
         uFlagsOut &= ~lsfDisableMaster;
@@ -388,7 +397,7 @@ AccountSet::doApply()
     //
     if (uSetFlag == asfNoFreeze)
     {
-        if (!sigWithMaster && !(uFlagsIn & lsfDisableMaster))
+        if (!sigWithMaster && ((uFlagsIn & lsfDisableMaster) == 0u))
         {
             JLOG(j_.trace()) << "Must use master key to set NoFreeze.";
             return tecNEED_MASTER_KEY;
@@ -525,7 +534,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {

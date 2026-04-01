@@ -127,8 +127,8 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
-                                             : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                                   : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
@@ -275,9 +275,7 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
         case Action::modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto

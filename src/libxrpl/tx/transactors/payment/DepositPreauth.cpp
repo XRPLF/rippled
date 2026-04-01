@@ -1,6 +1,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -17,10 +19,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -44,7 +43,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (authPresent)
+    if (authPresent != 0)
     {
         // Make sure that the passed account is valid.
         AccountID const& target(optAuth ? *optAuth : *optUnauth);

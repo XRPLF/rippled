@@ -71,6 +71,8 @@ DerivedData
 /.zed/
 
 # AI tools.
+/.agent
+/.agents
 /.augment
 /.claude
 /CLAUDE.md

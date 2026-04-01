@@ -9,7 +9,7 @@ namespace xrpl {
 bool
 doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
-    boost::filesystem::path dbPath = setup.dataDir / TxDBName;
+    boost::filesystem::path const dbPath = setup.dataDir / TxDBName;
 
     uintmax_t const dbSize = file_size(dbPath);
     XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), "ripple:doVacuumDB : file_size succeeded");
