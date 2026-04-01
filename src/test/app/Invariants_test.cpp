@@ -3886,45 +3886,36 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "legacy overwrite: NoXRPTrustLines";
         doInvariantCheck(
             Env(*this, features),
-            {{}},
-            [this](Account const& A1, Account const& A2, ApplyContext& ac) {
+            {},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
 
-                // Try currency pairs until we find one where bad < good.
-                struct Pair
-                {
-                    char const* badCcy;
-                    char const* goodCcy;
-                };
-                constexpr Pair pairs[] = {
-                    {"AAA", "ZZZ"},
-                    {"ZZZ", "AAA"},
-                    {"USD", "EUR"},
-                    {"EUR", "USD"},
-                };
-                for (auto const& [bc, gc] : pairs)
-                {
-                    auto const bk = keylet::line(A1, A2, A1[bc].currency);
-                    auto const gk = keylet::line(A1, A3, A1[gc].currency);
-                    if (bk.key < gk.key)
-                    {
-                        // Bad entry: sfLowLimit has xrpIssue, making
-                        // isXrp = true
-                        auto const sleBad = std::make_shared<SLE>(bk);
-                        sleBad->setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
-                        sleBad->setFieldAmount(sfHighLimit, A1[bc](0));
-                        ac.view().insert(sleBad);
+                // Compute ordering once, then assign "bad" (XRP issue)
+                // to the lower-sorting key and "good" (proper IOU limits)
+                // to the higher-sorting key.
+                char const* const c1 = "AAA";
+                char const* const c2 = "ZZZ";
+                auto const k1 = keylet::line(A1, A2, A1[c1].currency);
+                auto const k2 = keylet::line(A1, A3, A1[c2].currency);
 
-                        // Good entry: proper non-XRP limits
-                        auto const sleGood = std::make_shared<SLE>(gk);
-                        sleGood->setFieldAmount(sfLowLimit, A1[gc](0));
-                        sleGood->setFieldAmount(sfHighLimit, A1[gc](0));
-                        ac.view().insert(sleGood);
-                        return true;
-                    }
-                }
-                // Should not reach here.
-                return BEAST_EXPECT(false);
+                bool const k1First = k1.key < k2.key;
+                auto const& bk = k1First ? k1 : k2;
+                auto const& gk = k1First ? k2 : k1;
+                char const* const bc = k1First ? c1 : c2;
+                char const* const gc = k1First ? c2 : c1;
+
+                // Bad entry: sfLowLimit has xrpIssue, making isXrp = true
+                auto const sleBad = std::make_shared<SLE>(bk);
+                sleBad->setFieldAmount(sfLowLimit, STAmount{xrpIssue(), 0});
+                sleBad->setFieldAmount(sfHighLimit, A1[bc](0));
+                ac.view().insert(sleBad);
+
+                // Good entry: proper non-XRP limits
+                auto const sleGood = std::make_shared<SLE>(gk);
+                sleGood->setFieldAmount(sfLowLimit, A1[gc](0));
+                sleGood->setFieldAmount(sfHighLimit, A1[gc](0));
+                ac.view().insert(sleGood);
+                return true;
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
@@ -3936,7 +3927,7 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "legacy overwrite: NoDeepFreezeTrustLinesWithoutFreeze";
         doInvariantCheck(
             Env(*this, features),
-            {{}},
+            {},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
 

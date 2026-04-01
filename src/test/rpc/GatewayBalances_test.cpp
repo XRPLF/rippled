@@ -230,7 +230,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
 
-        // Ensure MPT is enabled
+        // testable_amendments() includes MPT
         FeatureBitset const features = testable_amendments();
         Env env(*this, features);
 
