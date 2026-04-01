@@ -127,7 +127,7 @@ public:
         // since some of them are templated, but not used anywhere else.
         auto make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
 
-        XRPAmount defaulted{};
+        XRPAmount const defaulted{};
         (void)defaulted;
         XRPAmount test{0};
         BEAST_EXPECT(test.drops() == 0);
@@ -230,7 +230,8 @@ public:
 
         {
             // Similar test as above, but for negative values
-            XRPAmount big(minXRP);
+            XRPAmount big(minXRP);  // NOLINT(misc-const-correctness): const breaks overflow check
+                                    // at end of this scope
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(big == mulRatio(big, maxUInt32, maxUInt32, false));
@@ -244,7 +245,7 @@ public:
 
         {
             // small amounts
-            XRPAmount tiny(1);
+            XRPAmount const tiny(1);
             // Round up should give the smallest allowable number
             BEAST_EXPECT(tiny == mulRatio(tiny, 1, maxUInt32, true));
             // rounding down should be zero
@@ -252,7 +253,7 @@ public:
             BEAST_EXPECT(beast::zero == mulRatio(tiny, maxUInt32 - 1, maxUInt32, false));
 
             // tiny negative numbers
-            XRPAmount tinyNeg(-1);
+            XRPAmount const tinyNeg(-1);
             // Round up should give zero
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, maxUInt32, true));
             BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, true));
@@ -262,21 +263,21 @@ public:
 
         {  // rounding
             {
-                XRPAmount one(1);
+                XRPAmount const one(1);
                 auto const rup = mulRatio(one, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio(one, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
-                XRPAmount big(maxXRP);
+                XRPAmount const big(maxXRP);
                 auto const rup = mulRatio(big, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio(big, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
             }
 
             {
-                XRPAmount negOne(-1);
+                XRPAmount const negOne(-1);
                 auto const rup = mulRatio(negOne, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio(negOne, maxUInt32 - 1, maxUInt32, false);
                 BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
@@ -297,7 +298,7 @@ public:
 
         {
             // underflow
-            XRPAmount bigNegative(minXRP + 10);
+            XRPAmount const bigNegative(minXRP + 10);
             BEAST_EXPECT(mulRatio(bigNegative, 2, 1, true) == minXRP);
         }
     }  // namespace xrpl

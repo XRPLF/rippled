@@ -62,7 +62,7 @@ chopUInt(int& value, int limit, std::string& input)
         return std::isdigit(c, std::locale::classic());
     });
 
-    std::string item(input.begin(), left_iter);
+    std::string const item(input.begin(), left_iter);
 
     // Must not be empty
     if (item.empty())
@@ -320,7 +320,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             {
                 XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
-                int result = left.compare(right);
+                int const result = left.compare(right);
 
                 if (result != 0)
                     return result;

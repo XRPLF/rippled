@@ -172,7 +172,7 @@ PeerImp::run()
         fail("Malformed handshake data (3)");
 
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard<std::mutex> const sl(recentLock_);
         if (closed)
             closedLedgerHash_ = *closed;
         if (previous)
@@ -411,7 +411,7 @@ PeerImp::json()
     ret[jss::protocol] = to_string(protocol_);
 
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
         if (latency_)
             ret[jss::latency] = static_cast<Json::UInt>(latency_->count());
     }
@@ -443,7 +443,7 @@ PeerImp::json()
     uint256 closedLedgerHash;
     protocol::TMStatusChange last_status;
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
         closedLedgerHash = closedLedgerHash_;
         last_status = last_status_;
     }
@@ -510,7 +510,7 @@ bool
 PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 {
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (tracking_.load() == Tracking::converged))
             return true;
@@ -523,7 +523,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 void
 PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 {
-    std::lock_guard sl(recentLock_);
+    std::lock_guard const sl(recentLock_);
 
     minSeq = minLedger_;
     maxSeq = maxLedger_;
@@ -532,7 +532,7 @@ PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
-    std::lock_guard sl(recentLock_);
+    std::lock_guard const sl(recentLock_);
     return std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end();
 }
 
@@ -541,7 +541,7 @@ PeerImp::cycleStatus()
 {
     // Operations on closedLedgerHash_ and previousLedgerHash_ must be
     // guarded by recentLock_.
-    std::lock_guard sl(recentLock_);
+    std::lock_guard const sl(recentLock_);
     previousLedgerHash_ = closedLedgerHash_;
     closedLedgerHash_.zero();
 }
@@ -549,7 +549,7 @@ PeerImp::cycleStatus()
 bool
 PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 {
-    std::lock_guard sl(recentLock_);
+    std::lock_guard const sl(recentLock_);
     return (tracking_ != Tracking::diverged) && (uMin >= minLedger_) && (uMax <= maxLedger_);
 }
 
@@ -641,7 +641,7 @@ PeerImp::onShutdown(error_code ec)
         // - stream_truncated: the tcp connection closed (no handshake) it could
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
-        bool shouldLog =
+        bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
              ec.message().find("application data after close notify") == std::string::npos);
 
@@ -746,7 +746,7 @@ PeerImp::onTimer(error_code const& ec)
         clock_type::duration duration;
 
         {
-            std::lock_guard sl(recentLock_);
+            std::lock_guard const sl(recentLock_);
             duration = clock_type::now() - trackingTime_;
         }
 
@@ -821,7 +821,7 @@ PeerImp::doAccept()
     if (auto member = app_.getCluster().member(publicKey_))
     {
         {
-            std::unique_lock lock{nameMutex_};
+            std::unique_lock const lock{nameMutex_};
             name_ = *member;
         }
         JLOG(journal_.info()) << "Cluster name: " << *member;
@@ -879,7 +879,7 @@ PeerImp::doAccept()
 std::string
 PeerImp::name() const
 {
-    std::shared_lock read_lock{nameMutex_};
+    std::shared_lock const read_lock{nameMutex_};
     return name_;
 }
 
@@ -1200,7 +1200,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
             auto const rtt =
                 std::chrono::round<std::chrono::milliseconds>(clock_type::now() - lastPingTime_);
 
-            std::lock_guard sl(recentLock_);
+            std::lock_guard const sl(recentLock_);
 
             if (latency_)
             {
@@ -1246,7 +1246,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
         }
     }
 
-    int loadSources = m->loadsources().size();
+    int const loadSources = m->loadsources().size();
     if (loadSources != 0)
     {
         Resource::Gossip gossip;
@@ -1371,7 +1371,7 @@ PeerImp::handleTransaction(
     try
     {
         auto stx = std::make_shared<STTx const>(sit);
-        uint256 txID = stx->getTransactionID();
+        uint256 const txID = stx->getTransactionID();
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1581,7 +1581,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Queue a job to process the request
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(jtLEDGER_REQ, "RcvGetLedger", [weak, m]() {
         if (auto peer = weak.lock())
             peer->processLedgerRequest(m);
@@ -1599,7 +1599,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
     }
 
     fee_.update(Resource::feeModerateBurdenPeer, "received a proof path request");
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(jtREPLAY_REQ, "RcvProofPReq", [weak, m]() {
         if (auto peer = weak.lock())
         {
@@ -1649,7 +1649,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
     }
 
     fee_.fee = Resource::feeModerateBurdenPeer;
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(jtREPLAY_REQ, "RcvReplDReq", [weak, m]() {
         if (auto peer = weak.lock())
         {
@@ -1769,7 +1769,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
     {
-        std::weak_ptr<PeerImp> weak{shared_from_this()};
+        std::weak_ptr<PeerImp> const weak{shared_from_this()};
         app_.getJobQueue().addJob(jtTXN_DATA, "RcvPeerData", [weak, ledgerHash, m]() {
             if (auto peer = weak.lock())
             {
@@ -1786,7 +1786,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
-    protocol::TMProposeSet& set = *m;
+    protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
 
@@ -1880,7 +1880,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "checkPropose", [weak, isTrusted, m, proposal]() {
             if (auto peer = weak.lock())
@@ -1897,7 +1897,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         m->set_networktime(app_.getTimeKeeper().now().time_since_epoch().count());
 
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
         if (!last_status_.has_newstatus() || m->has_newstatus())
         {
             last_status_ = *m;
@@ -1905,7 +1905,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         else
         {
             // preserve old status
-            protocol::NodeStatus status = last_status_.newstatus();
+            protocol::NodeStatus const status = last_status_.newstatus();
             last_status_ = *m;
             m->set_newstatus(status);
         }
@@ -1917,7 +1917,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard sl(recentLock_);
+            std::lock_guard const sl(recentLock_);
             if (!closedLedgerHash_.isZero())
             {
                 outOfSync = true;
@@ -1939,7 +1939,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard sl(recentLock_);
+            std::lock_guard const sl(recentLock_);
             if (peerChangedLedgers)
             {
                 closedLedgerHash_ = m->ledgerhash();
@@ -1973,7 +1973,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
     if (m->has_firstseq() && m->has_lastseq())
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
 
         minLedger_ = m->firstseq();
         maxLedger_ = m->lastseq();
@@ -2040,7 +2040,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             uint256 closedLedgerHash{};
             {
-                std::lock_guard sl(recentLock_);
+                std::lock_guard const sl(recentLock_);
                 closedLedgerHash = closedLedgerHash_;
             }
             j[jss::ledger_hash] = to_string(closedLedgerHash);
@@ -2068,7 +2068,7 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
     {
         // Extract the sequence number of the highest
         // ledger this peer has
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
 
         serverSeq = maxLedger_;
     }
@@ -2083,7 +2083,7 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
 void
 PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
-    int diff = std::max(seq1, seq2) - std::min(seq1, seq2);
+    int const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
     if (diff < Tuning::convergedLedgerLimit)
     {
@@ -2094,7 +2094,7 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
     if ((diff > Tuning::divergedLedgerLimit) && (tracking_.load() != Tracking::diverged))
     {
         // The peer's ledger sequence is way off the validation's
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
 
         tracking_ = Tracking::diverged;
         trackingTime_ = clock_type::now();
@@ -2114,7 +2114,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 
     if (m->status() == protocol::tsHAVE)
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
 
         if (std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end())
         {
@@ -2181,7 +2181,7 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::expired:
         // Future list
         case ListDisposition::pending: {
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard<std::mutex> const sl(recentLock_);
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
@@ -2204,7 +2204,7 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::known_sequence:
 #ifndef NDEBUG
         {
-            std::lock_guard<std::mutex> sl(recentLock_);
+            std::lock_guard<std::mutex> const sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
                 "xrpl::PeerImp::onValidatorListMessage : nonzero sequence "
@@ -2464,7 +2464,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         {
             std::string const name = isTrusted ? "ChkTrust" : "ChkUntrust";
 
-            std::weak_ptr<PeerImp> weak = shared_from_this();
+            std::weak_ptr<PeerImp> const weak = shared_from_this();
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, name, [weak, val, m, key]() {
                     if (auto peer = weak.lock())
@@ -2487,7 +2487,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 {
-    protocol::TMGetObjectByHash& packet = *m;
+    protocol::TMGetObjectByHash const& packet = *m;
 
     JLOG(p_journal_.trace()) << "received TMGetObjectByHash " << packet.type() << " "
                              << packet.objects_size();
@@ -2516,7 +2516,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 return;
             }
 
-            std::weak_ptr<PeerImp> weak = shared_from_this();
+            std::weak_ptr<PeerImp> const weak = shared_from_this();
             app_.getJobQueue().addJob(jtREQUESTED_TXN, "DoTxs", [weak, m]() {
                 if (auto peer = weak.lock())
                     peer->doTransactions(m);
@@ -2555,7 +2555,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 uint256 const hash{obj.hash()};
                 // VFALCO TODO Move this someplace more sensible so we dont
                 //             need to inject the NodeStore interfaces.
-                std::uint32_t seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
+                std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
                 auto nodeObject{app_.getNodeStore().fetchNodeObject(hash, seq)};
                 if (nodeObject)
                 {
@@ -2651,7 +2651,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
         return;
     }
 
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(jtMISSING_TXN, "HandleHaveTxs", [weak, m]() {
         if (auto peer = weak.lock())
             peer->handleHaveTransactions(m);
@@ -2750,7 +2750,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         fee_.update(Resource::feeInvalidData, "squelch bad pubkey");
         return;
     }
-    PublicKey key(slice);
+    PublicKey const key(slice);
 
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
@@ -2759,7 +2759,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
 
-    std::uint32_t duration = m->has_squelchduration() ? m->squelchduration() : 0;
+    std::uint32_t const duration = m->has_squelchduration() ? m->squelchduration() : 0;
     if (!m->squelch())
     {
         squelch_.removeSquelch(key);
@@ -2812,7 +2812,7 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 
     uint256 const hash{packet->ledgerhash()};
 
-    std::weak_ptr<PeerImp> weak = shared_from_this();
+    std::weak_ptr<PeerImp> const weak = shared_from_this();
     auto elapsed = UptimeClock::now();
     auto const pap = &app_;
     app_.getJobQueue().addJob(jtPACK, "MakeFetchPack", [pap, weak, packet, hash, elapsed]() {
@@ -3017,7 +3017,7 @@ PeerImp::checkPropose(
 
     if (!cluster() && !peerPos.checkSign())
     {
-        std::string desc{"Proposal fails sig check"};
+        std::string const desc{"Proposal fails sig check"};
         JLOG(p_journal_.warn()) << desc;
         charge(Resource::feeInvalidSignature, desc);
         return;
@@ -3061,7 +3061,7 @@ PeerImp::checkValidation(
 {
     if (!val->isValid())
     {
-        std::string desc{"Validation forwarded by peer is invalid"};
+        std::string const desc{"Validation forwarded by peer is invalid"};
         JLOG(p_journal_.debug()) << desc;
         charge(Resource::feeInvalidSignature, desc);
         return;
@@ -3493,7 +3493,7 @@ PeerImp::getScore(bool haveItem) const
 
     std::optional<std::chrono::milliseconds> latency;
     {
-        std::lock_guard sl(recentLock_);
+        std::lock_guard const sl(recentLock_);
         latency = latency_;
     }
 
@@ -3512,7 +3512,7 @@ PeerImp::getScore(bool haveItem) const
 bool
 PeerImp::isHighLatency() const
 {
-    std::lock_guard sl(recentLock_);
+    std::lock_guard const sl(recentLock_);
     return latency_ >= peerHighLatency;
 }
 
@@ -3520,7 +3520,7 @@ void
 PeerImp::Metrics::add_message(std::uint64_t bytes)
 {
     using namespace std::chrono_literals;
-    std::unique_lock lock{mutex_};
+    std::unique_lock const lock{mutex_};
 
     totalBytes_ += bytes;
     accumBytes_ += bytes;
@@ -3543,14 +3543,14 @@ PeerImp::Metrics::add_message(std::uint64_t bytes)
 std::uint64_t
 PeerImp::Metrics::average_bytes() const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     return rollingAvgBytes_;
 }
 
 std::uint64_t
 PeerImp::Metrics::total_bytes() const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     return totalBytes_;
 }
 

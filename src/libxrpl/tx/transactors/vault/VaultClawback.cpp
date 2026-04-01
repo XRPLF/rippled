@@ -357,7 +357,7 @@ VaultClawback::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultClawback::doApply : loss and assets do balance");
 
-    AccountID holder = tx[sfHolder];
+    AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
