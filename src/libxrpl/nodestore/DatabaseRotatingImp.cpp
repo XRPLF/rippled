@@ -33,7 +33,7 @@ DatabaseRotatingImp::rotate(
     // deleted.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
 
         archiveBackend_->setDeletePath();
         oldArchiveBackend = std::move(archiveBackend_);
@@ -50,14 +50,14 @@ DatabaseRotatingImp::rotate(
 std::string
 DatabaseRotatingImp::getName() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -65,7 +65,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return writableBackend_;
     }();
 
@@ -75,7 +75,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -85,7 +85,7 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return writableBackend_;
     }();
 
@@ -133,7 +133,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -147,7 +147,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                std::lock_guard lock(mutex_);
+                std::lock_guard const lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -167,7 +167,7 @@ void
 DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 

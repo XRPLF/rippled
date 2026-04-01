@@ -7,7 +7,7 @@ ammLPTokens(STAmount const& asset1, STAmount const& asset2, Issue const& lptIssu
 {
     // AMM invariant: sqrt(asset1 * asset2) >= LPTokensBalance
     auto const rounding = isFeatureEnabled(fixAMMv1_3) ? Number::downward : Number::getround();
-    NumberRoundModeGuard g(rounding);
+    NumberRoundModeGuard const g(rounding);
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
 }
@@ -142,7 +142,7 @@ adjustLPTokens(STAmount const& lptAMMBalance, STAmount const& lpTokens, IsDeposi
 {
     // Force rounding downward to ensure adjusted tokens are less or equal
     // to requested tokens.
-    saveNumberRoundMode rm(Number::setround(Number::rounding_mode::downward));
+    saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::downward));
     if (isDeposit == IsDeposit::Yes)
         return (lptAMMBalance + lpTokens) - lptAMMBalance;
     return (lpTokens - lptAMMBalance) + lptAMMBalance;
@@ -251,7 +251,7 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 STAmount
 multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm)
 {
-    NumberRoundModeGuard g(rm);
+    NumberRoundModeGuard const g(rm);
     auto const t = amount * frac;
     return toSTAmount(amount.issue(), t, rm);
 }
@@ -270,7 +270,7 @@ getRoundedAsset(
     auto const rm = detail::getAssetRounding(isDeposit);
     if (isDeposit == IsDeposit::Yes)
         return multiply(balance, productCb(), rm);
-    NumberRoundModeGuard g(rm);
+    NumberRoundModeGuard const g(rm);
     return toSTAmount(balance.issue(), productCb(), rm);
 }
 
@@ -304,7 +304,7 @@ getRoundedLPTokens(
         auto const rm = detail::getLPTokenRounding(isDeposit);
         if (isDeposit == IsDeposit::Yes)
         {
-            NumberRoundModeGuard g(rm);
+            NumberRoundModeGuard const g(rm);
             return toSTAmount(lptAMMBalance.issue(), productCb(), rm);
         }
         return multiply(lptAMMBalance, productCb(), rm);

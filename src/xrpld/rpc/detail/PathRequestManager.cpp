@@ -17,7 +17,7 @@ namespace xrpl {
 std::shared_ptr<RippleLineCache>
 PathRequestManager::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     auto lineCache = lineCache_.lock();
 
@@ -51,7 +51,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     // Get the ledger and cache we should be using
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
         requests = requests_;
         cache = getLineCache(inLedger, true);
     }
@@ -130,7 +130,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (remove)
             {
-                std::lock_guard sl(mLock);
+                std::lock_guard const sl(mLock);
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
@@ -175,7 +175,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         std::shared_ptr<RippleLineCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             if (requests_.empty())
                 break;
@@ -192,14 +192,14 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 bool
 PathRequestManager::requestsPending() const
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     return !requests_.empty();
 }
 
 void
 PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     // Insert after any older unserviced requests but before
     // any serviced requests

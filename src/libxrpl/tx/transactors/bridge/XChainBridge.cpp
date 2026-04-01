@@ -119,7 +119,7 @@ checkAttestationPublicKey(
         else
         {
             // regular key
-            if (std::optional<AccountID> regularKey =
+            if (std::optional<AccountID> const regularKey =
                     (*sleAttestationSigningAccount)[~sfRegularKey];
                 regularKey != accountFromPK)
             {
@@ -326,7 +326,8 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
-    XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
+    XChainClaimAttestation::MatchFields const toMatch{
+        sendingAmount, wasLockingChainSend, std::nullopt};
     return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
 }
 
@@ -418,7 +419,7 @@ transferHelper(
             auto const reserve = psb.fees().accountReserve(ownerCount);
 
             auto const availableBalance = [&]() -> STAmount {
-                STAmount const curBal = (*sleSrc)[sfBalance];
+                STAmount curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
                 // changes
@@ -638,7 +639,7 @@ finalizeClaimHelper(
                 auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
                     ? Number::rounding_mode::downward
                     : Number::getround();
-                saveNumberRoundMode _{Number::setround(round_mode)};
+                saveNumberRoundMode const _{Number::setround(round_mode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.issue());

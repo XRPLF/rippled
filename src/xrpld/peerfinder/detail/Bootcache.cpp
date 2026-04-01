@@ -10,11 +10,8 @@ namespace xrpl {
 namespace PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
-    : m_store(store)
-    , m_clock(clock)
-    , m_journal(journal)
-    , m_whenUpdate(m_clock.now())
-    , m_needsUpdate(false)
+    : m_store(store), m_clock(clock), m_journal(journal), m_whenUpdate(m_clock.now())
+
 {
 }
 

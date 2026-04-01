@@ -40,7 +40,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "close")
     {
-        InfoSubRequest::pointer request = context.infoSub->getRequest();
+        InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);
@@ -51,7 +51,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "status")
     {
-        InfoSubRequest::pointer request = context.infoSub->getRequest();
+        InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
             return rpcError(rpcNO_PF_REQUEST);

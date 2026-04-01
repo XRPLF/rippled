@@ -428,7 +428,7 @@ public:
     std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard<std::mutex> const sl(recentLock_);
 
         auto iter = publisherListSequences_.find(pubKey);
         if (iter != publisherListSequences_.end())
@@ -439,7 +439,7 @@ public:
     void
     setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard<std::mutex> const sl(recentLock_);
 
         publisherListSequences_[pubKey] = seq;
     }
