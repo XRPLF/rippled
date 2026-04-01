@@ -351,7 +351,7 @@ private:
     }
 
     // book_offers <taker_pays> <taker_gets> [<taker> [<ledger> [<limit>
-    // [<proof> [<marker>]]]]] limit: 0 = no limit proof: 0 or 1
+    // [<marker>]]]] limit: 0 = no limit
     //
     // Mnemonic: taker pays --> offer --> taker gets
     Json::Value
