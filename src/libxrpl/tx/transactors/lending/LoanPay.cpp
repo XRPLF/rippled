@@ -515,10 +515,10 @@ LoanPay::doApply()
         // something really weird happened. That should be flat out impossible.
         //
         // LCOV_EXCL_START
-        JLOG(j_.warn()) << "LoanPay: Vault assets changed unexpectedly after rounding: "  //
-                        << "Before: " << assetsTotalBefore                                //
-                        << ", After: " << assetsTotalAfter                                //
-                        << ", ValueChange: " << paymentParts->valueChange;
+        JLOG(j_.fatal()) << "LoanPay: Vault assets changed unexpectedly after rounding: "  //
+                         << "Before: " << assetsTotalBefore                                //
+                         << ", After: " << assetsTotalAfter                                //
+                         << ", ValueChange: " << paymentParts->valueChange;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -642,8 +642,12 @@ LoanPay::doApply()
               j_,
               SpendableHandling::shFULL_BALANCE);
     auto const balanceScale = [&]() {
-        // Find the maximum exponent of all the non-zero balances, before and after.
-        // This is so ugly.
+        // Find a reasonable scale to use for the balance comparisons.
+        //
+        // First find the minimum and maximum exponent of all the non-zero balances, before and
+        // after. If min and max are equal, use that value. If they are not, use "max + 1" to reduce
+        // rounding discrepancies without making the result meaningless. Cap the scale at
+        // STAmount::cMaxOffset, just in case the numbers are all very large.
         std::vector<int> exponents;
 
         for (auto const& a : {
@@ -658,6 +662,11 @@ LoanPay::doApply()
             // Exclude zeroes
             if (a != beast::zero)
                 exponents.push_back(a.exponent());
+        }
+        if (exponents.empty())
+        {
+            UNREACHABLE("xrpl::LoanPay::doApply : all zeroes");
+            return 0;
         }
         auto const [minItr, maxItr] = std::minmax_element(exponents.begin(), exponents.end());
         auto const min = *minItr;

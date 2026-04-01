@@ -1824,7 +1824,16 @@ loanMakePayment(
 
     // -------------------------------------------------------------
     // overpayment handling
-    auto const roundedAmount = roundToAsset(asset, amount, loanScale, Number::towards_zero);
+    //
+    // If the "fixSecurity3_1_3" amendment is enabled, truncate "amount",
+    // at the loan scale. If the raw value is used, the overpayment
+    // amount could be meaningless dust. Trying to process such a small
+    // amount will, at best, waste time when all the result values round
+    // to zero. At worst, it can cause logical errors with tiny amounts
+    // of interest that don't add up correctly.
+    auto const roundedAmount = view.rules().enabled(fixSecurity3_1_3)
+        ? roundToAsset(asset, amount, loanScale, Number::towards_zero)
+        : amount;
     if (paymentType == LoanPaymentType::overpayment && loan->isFlag(lsfLoanOverpayment) &&
         paymentRemainingProxy > 0 && totalPaid < roundedAmount &&
         numPayments < loanMaximumPaymentsPerTransaction)
