@@ -67,7 +67,7 @@ repos:
         language: system
         types_or: [c++, c]
         exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: true
+        pass_filenames: false # to disable batching
 
       - id: nix-fmt
         name: Format Nix files
