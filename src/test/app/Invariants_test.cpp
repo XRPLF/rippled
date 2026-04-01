@@ -2046,36 +2046,36 @@ class Invariants_test : public beast::unit_test::suite
         {
             // Initialize with a placeholder value because there's no default
             // ctor
+            auto const setupAsset =
+                [&](Account const& alice, Account const& issuer, Env& env) -> PrettyAsset {
+                switch (assetType)
+                {
+                    case Asset::IOU: {
+                        PrettyAsset const iouAsset = issuer["IOU"];
+                        env(trust(alice, iouAsset(1000)));
+                        env(pay(issuer, alice, iouAsset(1000)));
+                        env.close();
+                        return iouAsset;
+                    }
+                    case Asset::MPT: {
+                        MPTTester mptt{env, issuer, mptInitNoFund};
+                        mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+                        PrettyAsset const mptAsset = mptt.issuanceID();
+                        mptt.authorize({.account = alice});
+                        env(pay(issuer, alice, mptAsset(1000)));
+                        env.close();
+                        return mptAsset;
+                    }
+                    case Asset::XRP:
+                    default:
+                        return PrettyAsset{xrpIssue(), 1'000'000};
+                }
+            };
+
             Keylet loanBrokerKeylet = keylet::amendments();
             Preclose createLoanBroker = [&, this](
                                             Account const& alice, Account const& issuer, Env& env) {
-                PrettyAsset const asset = [&]() {
-                    switch (assetType)
-                    {
-                        case Asset::IOU: {
-                            PrettyAsset const iouAsset = issuer["IOU"];
-                            env(trust(alice, iouAsset(1000)));
-                            env(pay(issuer, alice, iouAsset(1000)));
-                            env.close();
-                            return iouAsset;
-                        }
-
-                        case Asset::MPT: {
-                            MPTTester mptt{env, issuer, mptInitNoFund};
-                            mptt.create(
-                                {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-                            PrettyAsset const mptAsset = mptt.issuanceID();
-                            mptt.authorize({.account = alice});
-                            env(pay(issuer, alice, mptAsset(1000)));
-                            env.close();
-                            return mptAsset;
-                        }
-
-                        case Asset::XRP:
-                        default:
-                            return PrettyAsset{xrpIssue(), 1'000'000};
-                    }
-                }();
+                auto const asset = setupAsset(alice, issuer, env);
                 loanBrokerKeylet = this->createLoanBroker(alice, env, asset);
                 return BEAST_EXPECT(env.le(loanBrokerKeylet));
             };
@@ -2255,32 +2255,7 @@ class Invariants_test : public beast::unit_test::suite
                 Keylet brokerKeylet = keylet::amendments();
                 Preclose createBrokerWithCover =
                     [&, this](Account const& alice, Account const& issuer, Env& env) {
-                        PrettyAsset const asset = [&]() {
-                            switch (assetType)
-                            {
-                                case Asset::IOU: {
-                                    PrettyAsset const iouAsset = issuer["IOU"];
-                                    env(trust(alice, iouAsset(1000)));
-                                    env(pay(issuer, alice, iouAsset(1000)));
-                                    env.close();
-                                    return iouAsset;
-                                }
-                                case Asset::MPT: {
-                                    MPTTester mptt{env, issuer, mptInitNoFund};
-                                    mptt.create(
-                                        {.flags =
-                                             tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-                                    PrettyAsset const mptAsset = mptt.issuanceID();
-                                    mptt.authorize({.account = alice});
-                                    env(pay(issuer, alice, mptAsset(1000)));
-                                    env.close();
-                                    return mptAsset;
-                                }
-                                case Asset::XRP:
-                                default:
-                                    return PrettyAsset{xrpIssue(), 1'000'000};
-                            }
-                        }();
+                        auto const asset = setupAsset(alice, issuer, env);
                         brokerKeylet = this->createLoanBroker(alice, env, asset);
                         if (!BEAST_EXPECT(env.le(brokerKeylet)))
                             return false;
