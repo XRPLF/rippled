@@ -51,19 +51,19 @@ public:
         AccountID const& account;
         /// Ledger sequence range to search. A value of 0 for min or max
         /// means unbounded in that direction (no constraint applied).
-        LedgerRange ledgerRange;
-        std::uint32_t offset;
-        std::uint32_t limit;
-        bool bUnlimited;
+        LedgerRange ledgerRange{};
+        std::uint32_t offset = 0;
+        std::uint32_t limit = 0;
+        bool bUnlimited{};
     };
 
     struct AccountTxPageOptions
     {
         AccountID const& account;
-        LedgerRange ledgerRange;
+        LedgerRange ledgerRange{};
         std::optional<AccountTxMarker> marker;
-        std::uint32_t limit;
-        bool bAdmin;
+        std::uint32_t limit = 0;
+        bool bAdmin = false;
     };
 
     using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
@@ -88,8 +88,8 @@ public:
     struct AccountTxResult
     {
         std::variant<AccountTxs, MetaTxsList> transactions;
-        LedgerRange ledgerRange;
-        uint32_t limit;
+        LedgerRange ledgerRange{};
+        uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
     };
 

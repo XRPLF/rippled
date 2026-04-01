@@ -36,7 +36,7 @@ env:
   BUILD_DIR: build
   # ubuntu-latest has only 2 CPUs for private repositories
   # https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for--private-repositories
-  NPROC_SUBTRACT: ${{ github.event.repository.private && '1' || '2' }}
+  NPROC_SUBTRACT: ${{ github.event.repository.visibility == 'public' && '2' || '1' }}
 
 jobs:
   build:
@@ -81,13 +81,13 @@ jobs:
           cmake --build . --target docs --parallel ${BUILD_NPROC}
 
       - name: Create documentation artifact
-        if: ${{ github.event.repository.visibility == 'public' && github.event_name == 'push' }}
+        if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: ${{ env.BUILD_DIR }}/docs/html
 
   deploy:
-    if: ${{ github.event.repository.visibility == 'public' && github.event_name == 'push' }}
+    if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     permissions:

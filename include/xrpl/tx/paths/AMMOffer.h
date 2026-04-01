@@ -37,7 +37,7 @@ private:
     // else the amounts quality
     Quality const quality_;
     // AMM offer can be consumed once at a given iteration
-    bool consumed_;
+    bool consumed_{false};
 
 public:
     AMMOffer(
