@@ -37,7 +37,7 @@ public:
             Account b(a);
             a = b;
             a = std::move(b);
-            Account c(std::move(a));
+            Account const c(std::move(a));
         }
         Account("alice");                      // NOLINT(bugprone-unused-raii)
         Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
@@ -635,9 +635,10 @@ public:
         std::uint32_t const aliceSeq = env.seq("alice");
 
         // Sign jsonNoop.
-        Json::Value jsonNoop = env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
+        Json::Value const jsonNoop =
+            env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
         // Re-sign jsonNoop.
-        JTx jt = env.jt(jsonNoop);
+        JTx const jt = env.jt(jsonNoop);
         env(jt);
     }
 
@@ -752,7 +753,7 @@ public:
             Env env{*this, missingSomeFeatures};
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -771,7 +772,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -787,7 +788,7 @@ public:
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -811,7 +812,7 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{
+            jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");

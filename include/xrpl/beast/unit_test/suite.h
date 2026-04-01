@@ -300,7 +300,7 @@ private:
     static suite**
     p_this_suite()
     {
-        static suite* pts = nullptr;
+        static suite* pts = nullptr;  // NOLINT(misc-const-correctness)
         return &pts;
     }
 

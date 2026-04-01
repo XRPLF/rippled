@@ -15,7 +15,7 @@ class SkipList_test : public beast::unit_test::suite
         jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            Config config;
+            Config const config;
             auto prev = std::make_shared<Ledger>(
                 create_genesis,
                 Rules{config.features},

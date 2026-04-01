@@ -92,7 +92,7 @@ public:
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples);
 
         if (counts_.empty())
             return T{};

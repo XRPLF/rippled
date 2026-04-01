@@ -1127,7 +1127,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
-                Json::Value nftokenId = to_string(token::getNextID(env, alice, 1));
+                Json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
@@ -1137,7 +1137,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
-                Json::Value mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
+                Json::Value const mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
                     env, tx, validateOutput, jss::mpt_issuance_id, mptIssuanceId);
