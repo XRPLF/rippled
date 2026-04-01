@@ -5026,7 +5026,7 @@ class Vault_test : public beast::unit_test::suite
                 if (!BEAST_EXPECT(vaultSle))
                     return;
 
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+                PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
@@ -5084,7 +5084,7 @@ class Vault_test : public beast::unit_test::suite
                 auto const vaultSle = env.le(vaultKeylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+                PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
@@ -5139,7 +5139,7 @@ class Vault_test : public beast::unit_test::suite
                 auto const vaultSle = env.le(vaultKeylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+                PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
@@ -5194,7 +5194,7 @@ class Vault_test : public beast::unit_test::suite
                 auto const vaultSle = env.le(vaultKeylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+                PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
@@ -5242,7 +5242,7 @@ class Vault_test : public beast::unit_test::suite
                 auto const vaultSle = env.le(vaultKeylet);
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+                PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
@@ -5347,7 +5347,7 @@ class Vault_test : public beast::unit_test::suite
             if (!vaultSle)
                 return;
 
-            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+            PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
             auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
@@ -5672,7 +5672,7 @@ class Vault_test : public beast::unit_test::suite
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
             mptt.authorize({.account = bob});
-            PrettyAsset asset = mptt.issuanceID();
+            PrettyAsset const asset = mptt.issuanceID();
             env(pay(issuer, depositor, asset(100)));
             env.close();
 
@@ -5685,7 +5685,7 @@ class Vault_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tesSUCCESS));
             env.close();
@@ -5733,11 +5733,11 @@ class Vault_test : public beast::unit_test::suite
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
-            PrettyAsset asset = mptt.issuanceID();
+            PrettyAsset const asset = mptt.issuanceID();
             env(pay(issuer, depositor, asset(100)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tesSUCCESS));
             env.close();
@@ -5752,7 +5752,7 @@ class Vault_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(vaultSle))
                 return;
             env.memoize(Account("vault", vaultSle->at(sfAccount)));
-            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+            PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Authorize bob for share MPT so he can receive escrowed shares
             auto const shareMPTID = vaultSle->at(sfShareMPTID);
@@ -5810,11 +5810,11 @@ class Vault_test : public beast::unit_test::suite
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
-            PrettyAsset asset = mptt.issuanceID();
+            PrettyAsset const asset = mptt.issuanceID();
             env(pay(issuer, depositor, asset(100)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tesSUCCESS));
             env.close();
@@ -5829,7 +5829,7 @@ class Vault_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(vaultSle))
                 return;
             env.memoize(Account("vault", vaultSle->at(sfAccount)));
-            PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
+            PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Authorize bob for share MPT so he can receive escrowed shares
             auto const shareMPTID = vaultSle->at(sfShareMPTID);
