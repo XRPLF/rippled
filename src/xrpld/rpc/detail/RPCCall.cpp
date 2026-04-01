@@ -139,7 +139,7 @@ private:
 
         if (param.isString())
         {
-            std::int32_t v;
+            std::int32_t v = 0;
             if (beast::lexicalCastChecked(v, param.asString()))
                 return v;
         }
@@ -155,7 +155,7 @@ private:
 
         if (param.isString())
         {
-            std::uint32_t v;
+            std::uint32_t v = 0;
             if (beast::lexicalCastChecked(v, param.asString()))
                 return v;
         }
@@ -463,7 +463,7 @@ private:
             std::size_t const colon = ip.find_last_of(':');
             jvRequest[jss::ip] = std::string{ip, 0, colon};
 
-            Json::Value portJson(std::string{ip, colon + 1});
+            Json::Value const portJson(std::string{ip, colon + 1});
             if (auto const port = jvParseUInt(portJson))
                 jvRequest[jss::port] = *port;
             else
