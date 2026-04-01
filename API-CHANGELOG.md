@@ -28,7 +28,7 @@ This section contains changes targeting a future version.
 
 ### Breaking Changes
 
-- `book_offers`: the `proof` parameter is removed from both the RPC and CLI versions. It did not do anything.
+- `book_offers`: the `proof` parameter has been removed from the CLI interface and is no longer processed by the server. For HTTP and WebSocket API requests, `proof` is still accepted and ignored if present, so this is not a breaking change.
 
 ### Additions
 
