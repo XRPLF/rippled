@@ -152,9 +152,14 @@ public:
                 BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.size() == 1);
-                // Make sure we get the original object
+                // Make sure we get the new object cached, not the original
                 BEAST_EXPECT(p1.get() != p2.get());
                 BEAST_EXPECT(*p2 == "five_2");
+
+                auto const p3 = c.fetch(5);
+                BEAST_EXPECT(p3 != nullptr);
+                BEAST_EXPECT(p3.get() == p2.get());
+                BEAST_EXPECT(p3.get() != p1.get());
             }
 
             ++clock;
