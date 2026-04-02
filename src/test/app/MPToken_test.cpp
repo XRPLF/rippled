@@ -3664,7 +3664,7 @@ class MPToken_test : public beast::unit_test::suite
                     issuer.id(),
                     asset,
                     receivers,
-                    env.app().getJournal("View"));
+                    env.app().journal("View"));
                 BEAST_EXPECTS(ter == expectedTer, label);
 
                 // Only verify OutstandingAmount on success — on error the
