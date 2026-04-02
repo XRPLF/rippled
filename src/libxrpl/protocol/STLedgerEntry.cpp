@@ -147,7 +147,7 @@ STLedgerEntry::thread(
     uint256& prevTxID,
     std::uint32_t& prevLedgerID)
 {
-    uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
+    uint256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
     JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 

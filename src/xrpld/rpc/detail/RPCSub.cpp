@@ -21,15 +21,15 @@ public:
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
-        Logs& logs)
+        ServiceRegistry& registry)
         : RPCSub(source)
         , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
         , mUsername(strUsername)
         , mPassword(strPassword)
-        , j_(logs.journal("RPCSub"))
-        , logs_(logs)
+        , j_(registry.getJournal("RPCSub"))
+        , logs_(registry.getLogs())
     {
         parsedURL pUrl;
 
@@ -68,7 +68,7 @@ public:
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
@@ -88,7 +88,7 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mUsername = strUsername;
     }
@@ -96,7 +96,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mPassword = strPassword;
     }
@@ -114,7 +114,7 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(mLock);
+                std::lock_guard const sl(mLock);
 
                 if (mDeque.empty())
                 {
@@ -199,7 +199,7 @@ make_RPCSub(
     std::string const& strUrl,
     std::string const& strUsername,
     std::string const& strPassword,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
@@ -208,7 +208,7 @@ make_RPCSub(
         strUrl,
         strUsername,
         strPassword,
-        logs);
+        registry);
 }
 
 }  // namespace xrpl

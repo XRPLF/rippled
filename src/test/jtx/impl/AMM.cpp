@@ -677,13 +677,13 @@ AMM::bid(BidArg const& arg)
     };
     if (arg.bidMin)
     {
-        STAmount saTokens = getBid(*arg.bidMin);
+        STAmount const saTokens = getBid(*arg.bidMin);
         saTokens.setJson(jv[jss::BidMin]);
         bidMin_ = saTokens.iou();
     }
     if (arg.bidMax)
     {
-        STAmount saTokens = getBid(*arg.bidMax);
+        STAmount const saTokens = getBid(*arg.bidMax);
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }
@@ -775,7 +775,7 @@ AMM::expectAuctionSlot(auto&& cb) const
                 // to avoid the failure.
                 auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
                 auto const slotInterval = ammAuctionTimeSlot(
-                    env_.app().timeKeeper().now().time_since_epoch().count(), auctionSlot);
+                    env_.app().getTimeKeeper().now().time_since_epoch().count(), auctionSlot);
                 auto const slotPrice = auctionSlot[sfPrice].iou();
                 auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
                 return cb(slotFee, slotInterval, slotPrice, authAccounts);

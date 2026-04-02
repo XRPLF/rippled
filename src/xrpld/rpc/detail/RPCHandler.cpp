@@ -129,7 +129,7 @@ fillHandler(JsonContext& context, Handler const*& result)
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
+    std::string const strCommand = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
 
@@ -143,7 +143,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
         return rpcNO_PERMISSION;
 
-    error_code_i res = conditionMet(handler->condition_, context);
+    error_code_i const res = conditionMet(handler->condition_, context);
     if (res != rpcSUCCESS)
     {
         return res;

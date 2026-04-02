@@ -211,8 +211,8 @@ class TransactionEntry_test : public beast::unit_test::suite
             BEAST_EXPECT(clHash["result"] == resIndex);
         };
 
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
 
         env.fund(XRP(10000), A1);
         auto fund_1_tx = to_string(env.tx()->getTransactionID());

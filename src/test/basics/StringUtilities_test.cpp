@@ -279,7 +279,7 @@ public:
         }
 
         {
-            std::string strUrl("s://" + std::string(8192, ':'));
+            std::string const strUrl("s://" + std::string(8192, ':'));
             parsedURL pUrl;
             BEAST_EXPECT(!parseUrl(pUrl, strUrl));
         }

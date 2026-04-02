@@ -27,7 +27,7 @@ public:
 
         for (bool const isAdmin : {true, false})
         {
-            for (std::string cmd : {"validators", "validator_list_sites"})
+            for (std::string const cmd : {"validators", "validator_list_sites"})
             {
                 Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
                 env.set_retries(isAdmin ? 5 : 0);
@@ -122,7 +122,7 @@ public:
             auto k2 = randomKeyPair(KeyType::ed25519).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
-            env.app().validators().setNegativeUNL(disabledKeys);
+            env.app().getValidators().setNegativeUNL(disabledKeys);
 
             auto const jrr = env.rpc("validators")[jss::result];
             auto& jrrnUnl = jrr[jss::NegativeUNL];
@@ -138,7 +138,7 @@ public:
             }
 
             disabledKeys.clear();
-            env.app().validators().setNegativeUNL(disabledKeys);
+            env.app().getValidators().setNegativeUNL(disabledKeys);
             auto const jrrUpdated = env.rpc("validators")[jss::result];
             BEAST_EXPECT(jrrUpdated[jss::NegativeUNL].isNull());
         }
@@ -154,7 +154,7 @@ public:
         };
 
         // Validator keys that will be in the published list
-        std::vector<Validator> validators = {
+        std::vector<Validator> const validators = {
             TrustedPublisherServer::randomValidator(), TrustedPublisherServer::randomValidator()};
         std::set<std::string> expectedKeys;
         for (auto const& val : validators)
@@ -192,8 +192,8 @@ public:
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
@@ -252,8 +252,8 @@ public:
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
@@ -315,17 +315,17 @@ public:
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
             hash_set<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
-            env.app().validators().updateTrusted(
+            env.app().getValidators().updateTrusted(
                 startKeys,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
-                env.app().overlay(),
+                env.app().getOverlay(),
                 env.app().getHashRouter());
 
             {
@@ -408,17 +408,17 @@ public:
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
             hash_set<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
-            env.app().validators().updateTrusted(
+            env.app().getValidators().updateTrusted(
                 startKeys,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
-                env.app().overlay(),
+                env.app().getOverlay(),
                 env.app().getHashRouter());
 
             {

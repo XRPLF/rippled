@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/InfoSub.h>
 
@@ -20,7 +20,7 @@ namespace xrpl {
 // The request issuer must maintain a strong pointer
 
 class RippleLineCache;
-class PathRequests;
+class PathRequestManager;
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID -1
@@ -43,7 +43,7 @@ public:
         Application& app,
         std::shared_ptr<InfoSub> const& subscriber,
         int id,
-        PathRequests&,
+        PathRequestManager&,
         beast::Journal journal);
 
     // ripple_path_find semantics
@@ -53,7 +53,7 @@ public:
         std::function<void(void)> const& completion,
         Resource::Consumer& consumer,
         int id,
-        PathRequests&,
+        PathRequestManager&,
         beast::Journal journal);
 
     ~PathRequest();
@@ -119,7 +119,7 @@ private:
 
     std::recursive_mutex mLock;
 
-    PathRequests& mOwner;
+    PathRequestManager& mOwner;
 
     std::weak_ptr<InfoSub> wpSubscriber;  // Who this request came from
     std::function<void(void)> fCompletion;

@@ -1,6 +1,3 @@
-#include <xrpld/app/paths/AMMLiquidity.h>
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -11,6 +8,8 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/paths/OfferStream.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -1010,7 +1009,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             return DebtDirection::issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
@@ -1172,7 +1171,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             return DebtDirection::issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);

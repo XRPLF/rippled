@@ -127,7 +127,7 @@ TransfersNotFrozen::calculateBalanceChange(
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
-        STAmount amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
+        STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 

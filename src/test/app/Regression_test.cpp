@@ -45,14 +45,18 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+            create_genesis,
+            Rules{env.app().config().features},
+            env.app().config().FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto expectedDrops = INITIAL_XRP;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
 
-        auto next = std::make_shared<Ledger>(*closed, env.app().timeKeeper().closeTime());
+        auto next = std::make_shared<Ledger>(*closed, env.app().getTimeKeeper().closeTime());
         {
             // Fund alice
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
@@ -109,7 +113,8 @@ struct Regression_test : public beast::unit_test::suite
         auto test256r1key = [&env](Account const& acct) {
             auto const baseFee = env.current()->fees().base;
             std::uint32_t const acctSeq = env.seq(acct);
-            Json::Value jsonNoop = env.json(noop(acct), fee(baseFee), seq(acctSeq), sig(acct));
+            Json::Value const jsonNoop =
+                env.json(noop(acct), fee(baseFee), seq(acctSeq), sig(acct));
             JTx jt = env.jt(jsonNoop);
             jt.fill_sig = false;
 
@@ -233,8 +238,8 @@ struct Regression_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
 
-        Account alice("alice");
-        Account bob("bob");
+        Account const alice("alice");
+        Account const bob("bob");
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
@@ -269,7 +274,7 @@ struct Regression_test : public beast::unit_test::suite
 
             if (BEAST_EXPECT(bob_index.isNonZero()) && BEAST_EXPECT(digest.has_value()))
             {
-                auto& cache = env.app().cachedSLEs();
+                auto& cache = env.app().getCachedSLEs();
                 cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
