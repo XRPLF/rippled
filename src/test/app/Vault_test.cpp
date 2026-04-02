@@ -5329,12 +5329,13 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
-    testRemoveEmptyHoldingLockedAmount(FeatureBitset features)
+    testRemoveEmptyHoldingLockedAmount()
     {
         testcase("removeEmptyHolding deletes MPToken with sfLockedAmount");
         using namespace test::jtx;
         using namespace std::literals;
 
+        auto const amendments = testable_amendments();
         auto runTest = [&](FeatureBitset f) {
             Env env{*this, f};
             auto const baseFee = env.current()->fees().base;
@@ -5421,8 +5422,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        runTest(features - fixSecurity3_1_3);
-        runTest(features | fixSecurity3_1_3);
+        runTest(amendments - fixSecurity3_1_3);
+        runTest(amendments | fixSecurity3_1_3);
     }
 
 public:
@@ -5446,8 +5447,7 @@ public:
         testVaultClawbackAssets();
         testAssetsMaximum();
         testBug6_LimitBypassWithShares();
-        testRemoveEmptyHoldingLockedAmount(
-            test::jtx::testable_amendments() | featureSingleAssetVault);
+        testRemoveEmptyHoldingLockedAmount();
     }
 };
 
