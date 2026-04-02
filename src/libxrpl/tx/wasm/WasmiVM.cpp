@@ -376,7 +376,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
             WasmValtypeVec params(makeImpParams(imp));
             WasmValtypeVec results(makeImpReturn(imp));
 
-            std::unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)> ftype(
+            std::unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)> const ftype(
                 wasm_functype_new(&params.vec_, &results.vec_), &wasm_functype_delete);
 
             params.release();
@@ -769,7 +769,7 @@ WasmiEngine::runHlp(
     ImportVec const& imports)
 {
     // currently only 1 module support, possible parallel UT run
-    std::lock_guard<decltype(m_)> lg(m_);
+    std::lock_guard<decltype(m_)> const lg(m_);
 
     if (wasmCode.empty())
         throw std::runtime_error("empty module");
@@ -866,7 +866,7 @@ WasmiEngine::checkHlp(
     ImportVec const& imports)
 {
     // currently only 1 module support, possible parallel UT run
-    std::lock_guard<decltype(m_)> lg(m_);
+    std::lock_guard<decltype(m_)> const lg(m_);
 
     // Create and instantiate the module.
     if (wasmCode.empty())
@@ -918,7 +918,7 @@ WasmiEngine::newTrap(std::string const& txt)
     if (!txt.empty())
         wasm_name_new(&msg, txt.size() + 1, txt.c_str());  // include 0
 
-    wasm_trap_t* trap = wasm_trap_new(store_.get(), &msg);
+    wasm_trap_t const* trap = wasm_trap_new(store_.get(), &msg);
 
     if (!txt.empty())
         wasm_byte_vec_delete(&msg);

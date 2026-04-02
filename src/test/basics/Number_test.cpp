@@ -1582,7 +1582,7 @@ public:
         }
         else
         {
-            NumberRoundModeGuard mg(Number::towards_zero);
+            NumberRoundModeGuard const mg(Number::towards_zero);
             test(cLarge);
         }
 

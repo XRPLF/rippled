@@ -18,8 +18,8 @@ using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
 Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    int32_t Val1 = params->data[0].of.i32;
-    int32_t Val2 = params->data[1].of.i32;
+    int32_t const Val1 = params->data[0].of.i32;
+    int32_t const Val2 = params->data[1].of.i32;
     // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
     results->data[0] = WASM_I32_VAL(Val1 + Val2);
     return nullptr;
@@ -204,12 +204,12 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this};
+        Env const env{*this};
         HostFunctions hfs(env.journal);
 
         {
             auto wasm = hexToBytes("00000000");
-            std::string funcName("mock_escrow");
+            std::string const funcName("mock_escrow");
 
             auto re = runEscrowWasm(wasm, hfs, 15, funcName, {});
             BEAST_EXPECT(!re);
@@ -217,7 +217,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             auto wasm = hexToBytes("00112233445566778899AA");
-            std::string funcName("mock_escrow");
+            std::string const funcName("mock_escrow");
 
             auto const re = preflightEscrowWasm(wasm, hfs, funcName);
             BEAST_EXPECT(!isTesSuccess(re));
@@ -503,7 +503,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto const deepWasm = hexToBytes(deepRecursionHex);
 
             TestHostFunctionsSink hfs(env);
-            std::string funcName("finish");
+            std::string const funcName("finish");
             auto re = runEscrowWasm(deepWasm, hfs, 1'000'000'000, funcName, {});
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
@@ -755,7 +755,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const startLoopWasm = hexToBytes(startLoopHex);
         TestLedgerDataProvider hfs(env);
-        ImportVec imports;
+        ImportVec const imports;
 
         auto& engine = WasmEngine::instance();
         auto checkRes = engine.check(startLoopWasm, hfs, "finish", {}, imports, env.journal);
@@ -971,6 +971,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // add 1k parameter (max that wasmi support)
         std::vector<WasmParam> params;
+        params.reserve(1000);
         for (int i = 0; i < 1000; ++i)
             params.push_back({.type = WT_I32, .of = {.i32 = 2 * i}});
 
@@ -1012,7 +1013,7 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         unsigned const RESERVED = 64;
-        std::uint8_t nop = 0x01;
+        std::uint8_t const nop = 0x01;
         std::array<std::uint8_t, 16> const codeMarker = {
             nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop};
         auto const opcReserved = hexToBytes(opcReservedHex);
