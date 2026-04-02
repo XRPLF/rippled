@@ -70,6 +70,8 @@ iteratePriceData(
             return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
+        if (!meta)
+            return;
 
         prevChain = chain;
         for (STObject const& node : meta->getFieldArray(sfAffectedNodes))
