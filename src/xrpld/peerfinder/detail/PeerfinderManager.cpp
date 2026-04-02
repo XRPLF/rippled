@@ -117,21 +117,21 @@ public:
     void
     on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_endpoints(impl, endpoints);
     }
 
     void
     on_closed(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_closed(impl);
     }
 
     void
     on_failure(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_failure(impl);
     }
 
@@ -149,21 +149,21 @@ public:
     onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint)
         override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.onConnected(impl, local_endpoint);
     }
 
     Result
     activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.activate(impl, key, reserved);
     }
 
     std::vector<Endpoint>
     redirect(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.redirect(impl);
     }
 
@@ -226,7 +226,7 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
         m_stats.activeOutboundPeers = m_logic.counts_.out_active();
     }

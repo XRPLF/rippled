@@ -76,16 +76,33 @@ public:
         @return true if a book from this issue to XRP exists
     */
     virtual bool
-    isBookToXRP(Issue const& issue, std::optional<Domain> domain = std::nullopt) = 0;
+    isBookToXRP(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
 
+    /**
+     * Process a transaction for order book tracking.
+     * @param ledger The ledger the transaction was applied to
+     * @param alTx The transaction to process
+     * @param jvObj The JSON object of the transaction
+     */
     virtual void
     processTxn(
         std::shared_ptr<ReadView const> const& ledger,
         AcceptedLedgerTx const& alTx,
         MultiApiJson const& jvObj) = 0;
 
+    /**
+     * Get the book listeners for a book.
+     * @param book The book to get the listeners for
+     * @return The book listeners for the book
+     */
     virtual BookListeners::pointer
     getBookListeners(Book const&) = 0;
+
+    /**
+     * Create a new book listeners for a book.
+     * @param book The book to create the listeners for
+     * @return The new book listeners for the book
+     */
     virtual BookListeners::pointer
     makeBookListeners(Book const&) = 0;
 };

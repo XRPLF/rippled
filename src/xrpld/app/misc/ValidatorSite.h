@@ -85,12 +85,12 @@ private:
         /// when we've gotten a temp redirect
         std::shared_ptr<Resource> activeResource;
 
-        unsigned short redirCount;
+        unsigned short redirCount{0};
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
         std::optional<Status> lastRefreshStatus;
         endpoint_type lastRequestEndpoint;
-        bool lastRequestSuccessful;
+        bool lastRequestSuccessful{false};
     };
 
     Application& app_;

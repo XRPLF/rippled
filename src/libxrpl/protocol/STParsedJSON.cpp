@@ -1093,7 +1093,7 @@ parseArray(
             auto ret = parseObject(ss.str(), objectFields, nameField, depth + 1, error);
             if (!ret)
             {
-                std::string errMsg = error["error_message"].asString();
+                std::string const errMsg = error["error_message"].asString();
                 error["error_message"] = "Error at '" + ss.str() + "'. " + errMsg;
                 return std::nullopt;
             }
