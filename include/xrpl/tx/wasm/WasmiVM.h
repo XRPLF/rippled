@@ -77,9 +77,9 @@ using WasmImporttypeVec = WasmVec<
 struct WasmiResult
 {
     WasmValVec r;
-    bool f;  // failure flag
+    bool f{false};  // failure flag
 
-    WasmiResult(unsigned N = 0) : r(N), f(false)
+    WasmiResult(unsigned N = 0) : r(N)
     {
     }
 

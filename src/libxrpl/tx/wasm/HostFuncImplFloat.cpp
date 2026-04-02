@@ -52,7 +52,7 @@ public:
         if (m == 0)
             return;
 
-        Number x(makeNumber(m, decodedExponent));
+        Number const x(makeNumber(m, decodedExponent));
         if (m != x.mantissa() || decodedExponent != x.exponent())
             return;  // not canonical
         *static_cast<Number*>(this) = x;
@@ -194,7 +194,7 @@ std::string
 floatToString(Slice const& data)
 {
     // set default mode as we don't expect it will be used here
-    detail::FloatState rm(Number::rounding_mode::to_nearest);
+    detail::FloatState const rm(Number::rounding_mode::to_nearest);
     detail::Number2 const num(data);
     if (!num)
     {
@@ -213,11 +213,11 @@ floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 num(x);
+        detail::Number2 const num(x);
         return num.toBytes();
     }
     // LCOV_EXCL_START
@@ -234,11 +234,11 @@ floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 num(x);
+        detail::Number2 const num(x);
         auto r = num.toBytes();
         return r;
     }
@@ -256,10 +256,10 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 num(mantissa, exponent);
+        detail::Number2 const num(mantissa, exponent);
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
         return num.toBytes();
@@ -277,11 +277,11 @@ floatCompareImpl(Slice const& x, Slice const& y)
     try
     {
         // set default mode as we don't expect it will be used here
-        detail::FloatState rm(Number::rounding_mode::to_nearest);
-        detail::Number2 xx(x);
+        detail::FloatState const rm(Number::rounding_mode::to_nearest);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 yy(y);
+        detail::Number2 const yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         if (xx < yy)
@@ -304,17 +304,17 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 yy(y);
+        detail::Number2 const yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 res = xx + yy;
+        detail::Number2 const res = xx + yy;
 
         return res.toBytes();
     }
@@ -332,16 +332,16 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 yy(y);
+        detail::Number2 const yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 res = xx - yy;
+        detail::Number2 const res = xx - yy;
 
         return res.toBytes();
     }
@@ -359,16 +359,16 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 yy(y);
+        detail::Number2 const yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 res = xx * yy;
+        detail::Number2 const res = xx * yy;
 
         return res.toBytes();
     }
@@ -386,16 +386,16 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 yy(y);
+        detail::Number2 const yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        detail::Number2 res = xx / yy;
+        detail::Number2 const res = xx / yy;
 
         return res.toBytes();
     }
@@ -414,15 +414,15 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
         if (n < 1)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 res(root(xx, n));
+        detail::Number2 const res(root(xx, n));
 
         return res.toBytes();
     }
@@ -443,17 +443,17 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         if ((n < 0) || (n > wasmMaxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         if (xx == Number() && (n == 0))
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-        detail::Number2 res(power(xx, n, 1));
+        detail::Number2 const res(power(xx, n, 1));
 
         return res.toBytes();
     }
@@ -471,15 +471,15 @@ floatLogImpl(Slice const& x, int32_t mode)
 {
     try
     {
-        detail::FloatState rm(mode);
+        detail::FloatState const rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 xx(x);
+        detail::Number2 const xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::Number2 res(log10(xx));
+        detail::Number2 const res(log10(xx));
 
         return res.toBytes();
     }

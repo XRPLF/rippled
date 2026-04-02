@@ -1013,7 +1013,7 @@ log10(Number const& x, int iterations)
 
     // (1 <= normalX < 10)
     // ln(x) = ln(normalX * 10^norm) = ln(normalX) + norm * ln(10)
-    int diffExp = 15 + x.exponent();
+    int const diffExp = 15 + x.exponent();
     Number const normalX = x / Number(1, diffExp);
     auto const lnX = ln(normalX, iterations) + diffExp * LN10;
     auto const lgX = lnX / LN10;
