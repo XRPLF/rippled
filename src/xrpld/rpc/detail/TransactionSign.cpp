@@ -126,7 +126,7 @@ public:
 //------------------------------------------------------------------------------
 
 static error_code_i
-acctMatchesPubKey(ReadOnlyAccountRoot const& account, PublicKey const& publicKey)
+acctMatchesPubKey(RAccountRoot const& account, PublicKey const& publicKey)
 {
     auto const publicKeyAcctID = calcAccountID(publicKey);
     bool const isMasterKey = publicKeyAcctID == account.id();
@@ -456,9 +456,9 @@ transactionPreProcessImpl(
     if (!verify && !tx_json.isMember(jss::Sequence))
         return RPC::missing_field_error("tx_json.Sequence");
 
-    std::optional<ReadOnlyAccountRoot> acctSrc;
+    std::optional<RAccountRoot> acctSrc;
     if (verify)
-        acctSrc.emplace(srcAddressID, *app.getOpenLedger().current());
+        acctSrc.emplace(srcAddressID, *app.getOpenLedger().current(), j);
 
     if (verify && acctSrc.has_value() && !acctSrc->exists())
     {

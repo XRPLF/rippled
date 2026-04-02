@@ -123,7 +123,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    WritableAccountRoot wrappedAcct(account, view);
+    WAccountRoot wrappedAcct(account, view, journal);
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -146,7 +146,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            wrappedAcct.adjustOwnerCount(-1, journal);
+            wrappedAcct.adjustOwnerCount(-1);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -191,7 +191,7 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        wrappedAcct.adjustOwnerCount(1, journal);
+        wrappedAcct.adjustOwnerCount(1);
 
         return tesSUCCESS;
     }

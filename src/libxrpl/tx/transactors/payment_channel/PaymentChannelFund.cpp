@@ -61,7 +61,7 @@ PaymentChannelFund::doApply()
         ctx_.view().update(slep);
     }
 
-    WritableAccountRoot acct(txAccount, ctx_.view());
+    WAccountRoot acct(txAccount, ctx_.view(), j_);
     if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -78,7 +78,7 @@ PaymentChannelFund::doApply()
     }
 
     // do not allow adding funds if dst does not exist
-    if (AccountID const dst = (*slep)[sfDestination]; !AccountRoot(dst, ctx_.view()))
+    if (AccountID const dst = (*slep)[sfDestination]; !AccountRoot(dst, ctx_.view(), j_))
     {
         return tecNO_DST;
     }

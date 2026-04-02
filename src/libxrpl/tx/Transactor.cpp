@@ -387,7 +387,7 @@ Transactor::payFee()
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const feePayer = ctx_.tx.getFeePayer();
-    WritableAccountRoot payerAcct(feePayer, view());
+    WAccountRoot payerAcct(feePayer, view(), j_);
     if (!payerAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -538,7 +538,7 @@ Transactor::ticketDelete(
 
     // Update the account root's TicketCount.  If the ticket count drops to
     // zero remove the (optional) field.
-    WritableAccountRoot wrappedAcct(account, view);
+    WAccountRoot wrappedAcct(account, view, j);
     if (!wrappedAcct)
     {
         // LCOV_EXCL_START
@@ -567,7 +567,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    wrappedAcct.adjustOwnerCount(-1, j);
+    wrappedAcct.adjustOwnerCount(-1);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -588,7 +588,7 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    WritableAccountRoot acct(accountID_, view());
+    WAccountRoot acct(accountID_, view(), j_);
 
     // acct must exist except for transactions
     // that allow zero account.
@@ -1006,7 +1006,7 @@ Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
-    WritableAccountRoot txnAcct(ctx_.tx.getAccountID(sfAccount), view());
+    WAccountRoot txnAcct(ctx_.tx.getAccountID(sfAccount), view(), j_);
 
     // The account should never be missing from the ledger.  But if it
     // is missing then we can't very well charge it a fee, can we?
@@ -1015,10 +1015,10 @@ Transactor::reset(XRPAmount fee)
 
     auto const feePayer = ctx_.tx.getFeePayer();
     bool const hasDelegateAcct = (feePayer != accountID_);
-    std::optional<WritableAccountRoot> delegateAcct;
+    std::optional<WAccountRoot> delegateAcct;
     if (hasDelegateAcct)
     {
-        delegateAcct.emplace(feePayer, view());
+        delegateAcct.emplace(feePayer, view(), j_);
         if (!*delegateAcct)
             return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
     }

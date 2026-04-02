@@ -107,7 +107,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelCreate::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, ctx_.view());
+    WAccountRoot wrappedOwner(accountID_, ctx_.view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -165,7 +165,7 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*wrappedOwner)[sfBalance] = (*wrappedOwner)[sfBalance] - ctx_.tx[sfAmount];
-    wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+    wrappedOwner.adjustOwnerCount(1);
     wrappedOwner.update();
 
     return tesSUCCESS;

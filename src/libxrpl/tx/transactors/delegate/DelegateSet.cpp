@@ -56,7 +56,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, ctx_.view());
+    WAccountRoot wrappedOwner(accountID_, ctx_.view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -101,7 +101,7 @@ DelegateSet::doApply()
 
     (*sle)[sfOwnerNode] = *page;
     ctx_.view().insert(sle);
-    wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+    wrappedOwner.adjustOwnerCount(1);
 
     return tesSUCCESS;
 }
@@ -124,11 +124,11 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(account, view);
+    WAccountRoot wrappedOwner(account, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
 
     view.erase(sle);
 

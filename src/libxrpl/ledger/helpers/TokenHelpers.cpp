@@ -181,7 +181,7 @@ getLineIfUsable(
         // we need to check if the associated assets have been frozen
         if (view.rules().enabled(fixFrozenLPTokenTransfer))
         {
-            auto const issuerRoot = AccountRoot(issuer, view);
+            auto const issuerRoot = AccountRoot(issuer, view, j);
             if (!issuerRoot.exists())
             {
                 return nullptr;  // LCOV_EXCL_LINE
@@ -257,8 +257,8 @@ accountHolds(
     STAmount const amount;
     if (isXRP(currency))
     {
-        AccountRoot accountRoot(account, view);
-        return {accountRoot.xrpLiquid(0, j)};
+        AccountRoot accountRoot(account, view, j);
+        return {accountRoot.xrpLiquid(0)};
     }
 
     bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
@@ -577,7 +577,7 @@ rippleCreditIOU(
             && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(AccountRoot(uSenderID, view)->isFlag(lsfDefaultRipple)) &&
+                static_cast<bool>(AccountRoot(uSenderID, view, j)->isFlag(lsfDefaultRipple)) &&
             ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
@@ -588,8 +588,8 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            WritableAccountRoot wrappedSender(uSenderID, view);
-            wrappedSender.adjustOwnerCount(-1, j);
+            WAccountRoot wrappedSender(uSenderID, view, j);
+            wrappedSender.adjustOwnerCount(-1);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -632,7 +632,7 @@ rippleCreditIOU(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
 
-    WritableAccountRoot wrappedAccount(uReceiverID, view);
+    WAccountRoot wrappedAccount(uReceiverID, view, j);
     if (!wrappedAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -690,7 +690,7 @@ rippleSendIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    WritableAccountRoot wrappedIssuer(issuer, view);
+    WAccountRoot wrappedIssuer(issuer, view, j);
     saActual = (waiveFee == WaiveTransferFee::Yes)
         ? saAmount
         : multiply(saAmount, wrappedIssuer.transferRate());
@@ -758,7 +758,7 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
-        WritableAccountRoot wrappedIssuer(issuer, view);
+        WAccountRoot wrappedIssuer(issuer, view, j);
         STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, wrappedIssuer.transferRate());
@@ -1399,8 +1399,8 @@ transferXRP(
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 
-    WritableAccountRoot acctSender(from, view);
-    WritableAccountRoot acctReceiver(to, view);
+    WAccountRoot acctSender(from, view, j);
+    WAccountRoot acctReceiver(to, view, j);
     if (!acctSender || !acctReceiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

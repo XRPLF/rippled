@@ -1951,7 +1951,7 @@ adjustOwnerCount(
     beast::Journal j)
 {
     // This function is only used for LoanBrokers, so assert that
-    // AccountRoot should use WritableAccountRoot.adjustOwnerCount instead
+    // AccountRoot should use WAccountRoot.adjustOwnerCount instead
     XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
     if (!sle)
         return;

@@ -287,7 +287,7 @@ LoanPay::doApply()
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
-    WritableAccountRoot brokerPayeeAcct(brokerPayee, view);
+    WAccountRoot brokerPayeeAcct(brokerPayee, view, j_);
     if (!sendBrokerFeeToOwner)
     {
         // If we can't send the fee to the owner, and the pseudo-account is

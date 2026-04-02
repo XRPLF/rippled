@@ -52,11 +52,11 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto wrappedOwner = WritableAccountRoot(accountID_, view());
+    auto wrappedOwner = WAccountRoot(accountID_, view(), j_);
     XRPL_ASSERT(
         wrappedOwner && wrappedOwner->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    wrappedOwner.adjustOwnerCount(-1, ctx_.journal);
+    wrappedOwner.adjustOwnerCount(-1);
     view().erase(slePd);
 
     return tesSUCCESS;

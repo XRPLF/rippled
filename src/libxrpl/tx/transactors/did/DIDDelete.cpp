@@ -38,11 +38,11 @@ DIDDelete::deleteSLE(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(owner, view);
+    WAccountRoot wrappedOwner(owner, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
     wrappedOwner.update();
 
     // Remove object from ledger

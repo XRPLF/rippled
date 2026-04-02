@@ -133,7 +133,7 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    WritableAccountRoot owner(accountID_, view());
+    WAccountRoot owner(accountID_, view(), j_);
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -142,7 +142,7 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    owner.adjustOwnerCount(2, j_);
+    owner.adjustOwnerCount(2);
     auto const ownerCount = owner->at(sfOwnerCount);
     if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;

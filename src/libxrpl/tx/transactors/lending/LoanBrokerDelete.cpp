@@ -135,7 +135,7 @@ LoanBrokerDelete::doApply()
     if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    WritableAccountRoot brokerPseudo(brokerPseudoID, view());
+    WAccountRoot brokerPseudo(brokerPseudoID, view(), j_);
     if (!brokerPseudo)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -162,13 +162,13 @@ LoanBrokerDelete::doApply()
     view().erase(broker);
 
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        wrappedOwner.adjustOwnerCount(-2, j_);
+        wrappedOwner.adjustOwnerCount(-2);
     }
 
     associateAsset(*broker, vaultAsset);

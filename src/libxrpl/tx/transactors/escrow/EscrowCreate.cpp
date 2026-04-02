@@ -496,7 +496,7 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    account_.adjustOwnerCount(1, ctx_.journal);
+    account_.adjustOwnerCount(1);
     account_.update();
     return tesSUCCESS;
 }

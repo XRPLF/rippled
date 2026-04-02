@@ -64,7 +64,7 @@ confineOwnerCount(
 
 template <typename ViewT>
 XRPAmount
-AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const
+AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
 {
     if (!this->exists())
         return beast::zero;
@@ -83,11 +83,11 @@ AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) cons
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id_)
-                    << " amount=" << amount.getFullText()
-                    << " fullBalance=" << fullBalance.getFullText()
-                    << " balance=" << balance.getFullText() << " reserve=" << reserve
-                    << " ownerCount=" << ownerCount << " ownerCountAdj=" << ownerCountAdj;
+    JLOG(this->j_.trace()) << "accountHolds:" << " account=" << to_string(id_)
+                           << " amount=" << amount.getFullText()
+                           << " fullBalance=" << fullBalance.getFullText()
+                           << " balance=" << balance.getFullText() << " reserve=" << reserve
+                           << " ownerCount=" << ownerCount << " ownerCountAdj=" << ownerCountAdj;
 
     return amount.xrp();
 }
@@ -104,14 +104,14 @@ AccountRoot<ViewT>::transferRate() const
 
 template <typename ViewT>
 void
-AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount, beast::Journal j)
+AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
     requires is_writable
 {
     XRPL_ASSERT(this->canModify(), "xrpl::adjustOwnerCount : can modify");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{this->sle_->getFieldU32(sfOwnerCount)};
     AccountID const id = (*this->sle_)[sfAccount];
-    std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
+    std::uint32_t const adjusted = confineOwnerCount(current, amount, id, this->j_);
     this->applyView().adjustOwnerCountHook(id_, current, adjusted);
     this->sle_->at(sfOwnerCount) = adjusted;
     this->update();

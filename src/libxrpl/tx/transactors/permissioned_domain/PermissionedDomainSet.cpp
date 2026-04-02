@@ -64,7 +64,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, view());
+    WAccountRoot wrappedOwner(accountID_, view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -111,7 +111,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+        wrappedOwner.adjustOwnerCount(1);
         view().insert(slePd);
     }
 

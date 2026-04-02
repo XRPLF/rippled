@@ -357,7 +357,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    ReadOnlyAccountRoot const& toWrapped,
+    RAccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag)
 {
@@ -418,7 +418,7 @@ doWithdraw(
     }
     else
     {
-        auto dst = AccountRoot(dstAcct, view);
+        auto dst = AccountRoot(dstAcct, view, j);
         if (auto err = verifyDepositPreauth(tx, view, senderAcct, dst, j))
             return err;
     }

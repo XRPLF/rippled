@@ -367,7 +367,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    WritableAccountRoot wrappedDst(uDstAccountID, view());
+    WAccountRoot wrappedDst(uDstAccountID, view(), j_);
 
     if (!wrappedDst)
     {
@@ -542,7 +542,7 @@ TrustSet::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            lowAcct.adjustOwnerCount(1, viewJ);
+            lowAcct.adjustOwnerCount(1);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -552,14 +552,14 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            lowAcct.adjustOwnerCount(-1, viewJ);
+            lowAcct.adjustOwnerCount(-1);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            highAcct.adjustOwnerCount(1, viewJ);
+            highAcct.adjustOwnerCount(1);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -569,7 +569,7 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            highAcct.adjustOwnerCount(-1, viewJ);
+            highAcct.adjustOwnerCount(-1);
             uFlagsOut &= ~lsfHighReserve;
         }
 

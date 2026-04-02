@@ -111,7 +111,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    WritableAccountRoot wrappedIssuer(accountID_, view());
+    WAccountRoot wrappedIssuer(accountID_, view(), j_);
     if (!wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -138,7 +138,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        wrappedIssuer.adjustOwnerCount(1, j_);
+        wrappedIssuer.adjustOwnerCount(1);
     }
 
     if (subject == accountID_)

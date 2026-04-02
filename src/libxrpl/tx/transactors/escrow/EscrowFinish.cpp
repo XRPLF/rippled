@@ -289,7 +289,7 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    WritableAccountRoot dest(destID, ctx_.view());
+    WAccountRoot dest(destID, ctx_.view(), j_);
     if (!dest.exists())
         return tecNO_DST;
 
@@ -373,8 +373,8 @@ EscrowFinish::doApply()
     dest.update();
 
     // Adjust source owner count
-    WritableAccountRoot wrappedAcct(account, ctx_.view());
-    wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
+    WAccountRoot wrappedAcct(account, ctx_.view(), j_);
+    wrappedAcct.adjustOwnerCount(-1);
     wrappedAcct.update();
 
     // Remove escrow from ledger

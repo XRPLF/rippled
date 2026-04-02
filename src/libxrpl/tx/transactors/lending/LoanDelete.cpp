@@ -68,7 +68,7 @@ LoanDelete::doApply()
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
-    WritableAccountRoot wrappedBorrower(borrower, view);
+    WAccountRoot wrappedBorrower(borrower, view, j_);
     if (!wrappedBorrower)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -117,7 +117,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    wrappedBorrower.adjustOwnerCount(-1, j_);
+    wrappedBorrower.adjustOwnerCount(-1);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

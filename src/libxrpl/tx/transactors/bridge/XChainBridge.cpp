@@ -407,7 +407,7 @@ transferHelper(
 
     if (amt.native())
     {
-        WritableAccountRoot acctSrc(src, psb);
+        WAccountRoot acctSrc(src, psb, j);
         XRPL_ASSERT(acctSrc, "xrpl::transferHelper : non-null source account");
         if (!acctSrc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -433,7 +433,7 @@ transferHelper(
             }
         }
 
-        WritableAccountRoot acctDst(dst, psb);
+        WAccountRoot acctDst(dst, psb, j);
         if (!acctDst)
         {
             if (canCreate == CanCreateDstPolicy::no)
@@ -694,7 +694,7 @@ finalizeClaimHelper(
         auto const cidOwner = (*sleClaimID)[sfAccount];
         {
             // Remove the claim id
-            WritableAccountRoot wrappedOwner(cidOwner, outerSb);
+            WAccountRoot wrappedOwner(cidOwner, outerSb, j);
             auto const page = (*sleClaimID)[sfOwnerNode];
             if (!outerSb.dirRemove(keylet::ownerDir(cidOwner), page, sleClaimID->key(), true))
             {
@@ -706,7 +706,7 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            wrappedOwner.adjustOwnerCount(-1, j);
+            wrappedOwner.adjustOwnerCount(-1);
         }
     }
 
@@ -1110,12 +1110,12 @@ applyCreateAccountAttestations(
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*createdSleClaimID)[sfOwnerNode] = *page;
 
-        WritableAccountRoot wrappedDoor(doorAccount, psb);
+        WAccountRoot wrappedDoor(doorAccount, psb, j);
         if (!wrappedDoor)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        wrappedDoor.adjustOwnerCount(1, j);
+        wrappedDoor.adjustOwnerCount(1);
         psb.insert(createdSleClaimID);
     }
 
@@ -1429,7 +1429,7 @@ XChainCreateBridge::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
 
-    WritableAccountRoot wrappedAcct(account, ctx_.view());
+    WAccountRoot wrappedAcct(account, ctx_.view(), j_);
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1457,7 +1457,7 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    wrappedAcct.adjustOwnerCount(1, ctx_.journal);
+    wrappedAcct.adjustOwnerCount(1);
 
     ctx_.view().insert(sleBridge);
     wrappedAcct.update();
@@ -1540,7 +1540,7 @@ BridgeModify::doApply()
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
     bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
-    if (!AccountRoot(account, ctx_.view()))
+    if (!AccountRoot(account, ctx_.view(), j_))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     STXChainBridge::ChainType const chainType =
@@ -1597,7 +1597,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (!AccountRoot(ctx.tx[sfDestination], ctx.view))
+    if (!AccountRoot(ctx.tx[sfDestination], ctx.view, ctx.j))
     {
         return tecNO_DST;
     }
@@ -1974,7 +1974,7 @@ XChainCreateClaimID::doApply()
     auto const reward = ctx_.tx[sfSignatureReward];
     auto const otherChainSrc = ctx_.tx[sfOtherChainSource];
 
-    WritableAccountRoot wrappedAcct(account, ctx_.view());
+    WAccountRoot wrappedAcct(account, ctx_.view(), j_);
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2016,7 +2016,7 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    wrappedAcct.adjustOwnerCount(1, ctx_.journal);
+    wrappedAcct.adjustOwnerCount(1);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

@@ -21,7 +21,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::variant<std::shared_ptr<SLE>, WritableAccountRoot> dest,
+    std::variant<std::shared_ptr<SLE>, WAccountRoot> dest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -35,7 +35,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::variant<std::shared_ptr<SLE>, WritableAccountRoot> dest,
+    std::variant<std::shared_ptr<SLE>, WAccountRoot> dest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -57,11 +57,11 @@ escrowUnlockApplyHelper<Issue>(
 
     if (!view.exists(trustLineKey) && createAsset)
     {
-        // For backwards compatibility: if dest is not WritableAccountRoot, return error
-        if (!std::holds_alternative<WritableAccountRoot>(dest))
+        // For backwards compatibility: if dest is not WAccountRoot, return error
+        if (!std::holds_alternative<WAccountRoot>(dest))
             return tefEXCEPTION;
 
-        auto& wrappedDest = std::get<WritableAccountRoot>(dest);
+        auto& wrappedDest = std::get<WAccountRoot>(dest);
 
         // Can the account cover the trust line's reserve?
         if (std::uint32_t const ownerCount = {wrappedDest->at(sfOwnerCount)};
@@ -169,7 +169,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::variant<std::shared_ptr<SLE>, WritableAccountRoot> dest,
+    std::variant<std::shared_ptr<SLE>, WAccountRoot> dest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -185,11 +185,11 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const issuanceKey = keylet::mptIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
     {
-        // For backwards compatibility: if dest is not WritableAccountRoot, return error
-        if (!std::holds_alternative<WritableAccountRoot>(dest))
+        // For backwards compatibility: if dest is not WAccountRoot, return error
+        if (!std::holds_alternative<WAccountRoot>(dest))
             return tefEXCEPTION;
 
-        auto& wrappedDest = std::get<WritableAccountRoot>(dest);
+        auto& wrappedDest = std::get<WAccountRoot>(dest);
 
         if (std::uint32_t const ownerCount = {wrappedDest->at(sfOwnerCount)};
             xrpBalance < view.fees().accountReserve(ownerCount + 1))
@@ -204,7 +204,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        wrappedDest.adjustOwnerCount(1, journal);
+        wrappedDest.adjustOwnerCount(1);
     }
 
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)

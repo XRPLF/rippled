@@ -51,7 +51,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
-        WritableAccountRoot wrappedAccount(account, view);
+        WAccountRoot wrappedAccount(account, view, j);
         if (!wrappedAccount)
         {
             // LCOV_EXCL_START
@@ -71,7 +71,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
         }
 
         if (isOwner)
-            wrappedAccount.adjustOwnerCount(-1, j);
+            wrappedAccount.adjustOwnerCount(-1);
 
         return tesSUCCESS;
     };
@@ -321,7 +321,7 @@ verifyDepositPreauth(
     STTx const& tx,
     ApplyView& view,
     AccountID const& src,
-    ReadOnlyAccountRoot const& dst,
+    RAccountRoot const& dst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires

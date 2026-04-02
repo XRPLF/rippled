@@ -60,7 +60,7 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (WritableAccountRoot issuer(nft::getIssuer(ctx_.tx[sfNFTokenID]), view()); issuer)
+    if (WAccountRoot issuer(nft::getIssuer(ctx_.tx[sfNFTokenID]), view(), j_); issuer)
     {
         (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
         issuer.update();

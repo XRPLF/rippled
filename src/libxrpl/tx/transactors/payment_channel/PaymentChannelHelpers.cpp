@@ -41,7 +41,7 @@ closeChannel(
     }
 
     // Transfer amount back to owner, decrement owner count
-    WritableAccountRoot wrappedOwner(src, view);
+    WAccountRoot wrappedOwner(src, view, j);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -49,7 +49,7 @@ closeChannel(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*wrappedOwner)[sfBalance] =
         (*wrappedOwner)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
     wrappedOwner.update();
 
     // Remove PayChan from ledger

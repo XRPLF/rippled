@@ -22,7 +22,7 @@ namespace xrpl {
 // Forward declarations for SLE wrappers
 template <typename ViewT>
 class AccountRoot;
-using ReadOnlyAccountRoot = AccountRoot<ReadView>;
+using RAccountRoot = AccountRoot<ReadView>;
 
 enum class SkipEntry : bool { No = false, Yes };
 
@@ -162,7 +162,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    ReadOnlyAccountRoot const& toWrapped,
+    RAccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag);
 

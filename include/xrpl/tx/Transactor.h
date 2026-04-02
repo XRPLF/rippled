@@ -115,7 +115,7 @@ protected:
     beast::Journal const j_;
 
     AccountID const accountID_;
-    WritableAccountRoot account_;
+    WAccountRoot account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
     Transactor(Transactor const&) = delete;

@@ -135,7 +135,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return {tefINTERNAL};
 
@@ -172,7 +172,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, j_);
+        wrappedOwner.adjustOwnerCount(1);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
@@ -182,7 +182,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -233,7 +233,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, j_);
+        wrappedOwner.adjustOwnerCount(1);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
@@ -267,11 +267,11 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    WritableAccountRoot wrappedOwner(account, view);
+    WAccountRoot wrappedOwner(account, view, j);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

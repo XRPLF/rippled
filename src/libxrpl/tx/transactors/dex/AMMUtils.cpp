@@ -256,7 +256,7 @@ deleteAMMAccount(Sandbox& sb, Issue const& asset, Issue const& asset2, beast::Jo
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    WritableAccountRoot ammRoot(ammAccountID, sb);
+    WAccountRoot ammRoot(ammAccountID, sb, j);
     if (!ammRoot)
     {
         // LCOV_EXCL_START

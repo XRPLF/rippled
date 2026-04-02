@@ -378,7 +378,7 @@ Payment::doApply()
                      << " dstAmount=" << dstAmount.getFullText();
 
     // Open a ledger for editing.
-    WritableAccountRoot dst(dstAccountID, view());
+    WAccountRoot dst(dstAccountID, view(), j_);
 
     if (!dst)
     {
@@ -544,7 +544,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    WritableAccountRoot srcAcct(accountID_, view());
+    WAccountRoot srcAcct(accountID_, view(), j_);
     if (!srcAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

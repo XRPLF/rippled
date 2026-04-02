@@ -33,16 +33,22 @@ class AccountRoot : public SLEBase<ViewT>
 
 public:
     /** Constructor for read-only context */
-    AccountRoot(AccountID const& id, ReadView const& view)
+    AccountRoot(
+        AccountID const& id,
+        ReadView const& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!is_writable)
-        : SLEBase<ViewT>(view.read(keylet::account(id)), view), id_(id)
+        : SLEBase<ViewT>(view.read(keylet::account(id)), view, j), id_(id)
     {
     }
 
     /** Constructor for writable context */
-    AccountRoot(AccountID const& id, ApplyView& view)
+    AccountRoot(
+        AccountID const& id,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires is_writable
-        : SLEBase<ViewT>(keylet::account(id), view), id_(id)
+        : SLEBase<ViewT>(keylet::account(id), view, j), id_(id)
     {
     }
 
@@ -58,10 +64,13 @@ public:
      *  (not yet inserted into the view).
      */
     [[nodiscard]] static AccountRoot
-    makeNew(AccountID const& id, ApplyView& view)
+    makeNew(
+        AccountID const& id,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires is_writable
     {
-        return AccountRoot(id, view, std::make_shared<SLE>(keylet::account(id)));
+        return AccountRoot(id, view, j, std::make_shared<SLE>(keylet::account(id)));
     }
 
     AccountID const&
@@ -95,7 +104,7 @@ public:
     //
     // @param ownerCountAdj positive to add to count, negative to reduce count.
     [[nodiscard]] XRPAmount
-    xrpLiquid(std::int32_t ownerCountAdj, beast::Journal j) const;
+    xrpLiquid(std::int32_t ownerCountAdj) const;
 
     /** Checks the destination and tag.
 
@@ -132,26 +141,27 @@ public:
 
     /** Adjust the owner count up or down. */
     void
-    adjustOwnerCount(std::int32_t amount, beast::Journal j)
+    adjustOwnerCount(std::int32_t amount)
         requires is_writable;
 
 private:
     // Private constructor only used by `makeNew`
-    AccountRoot(AccountID const& id, ApplyView& view, std::shared_ptr<SLE> sle)
+    AccountRoot(AccountID const& id, ApplyView& view, beast::Journal j, std::shared_ptr<SLE> sle)
         requires is_writable
-        : SLEBase<ViewT>(std::move(sle), view), id_(id)
+        : SLEBase<ViewT>(std::move(sle), view, j), id_(id)
     {
         this->insert();
     }
 };
 
 // CTAD deduction guide — bare AccountRoot(id, view) always deduces read-only.
-// For writable access, use WritableAccountRoot(id, applyView) explicitly.
+// For writable access, use WAccountRoot(id, applyView) explicitly.
 AccountRoot(AccountID const&, ReadView const&) -> AccountRoot<ReadView>;
+AccountRoot(AccountID const&, ReadView const&, beast::Journal) -> AccountRoot<ReadView>;
 
 // Backward-compatible aliases
-using ReadOnlyAccountRoot = AccountRoot<ReadView>;
-using WritableAccountRoot = AccountRoot<ApplyView>;
+using RAccountRoot = AccountRoot<ReadView>;
+using WAccountRoot = AccountRoot<ApplyView>;
 
 // Explicit instantiation declarations (definitions in .cpp)
 extern template class AccountRoot<ReadView>;

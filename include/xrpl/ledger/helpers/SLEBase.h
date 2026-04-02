@@ -35,8 +35,7 @@ public:
     static constexpr bool is_writable = WritableView<ViewT>;
 
     // SLE pointer type: mutable for writable views, const for read-only
-    using sle_ptr_type =
-        std::conditional_t<is_writable, std::shared_ptr<SLE>, std::shared_ptr<SLE const>>;
+    using sle_ptr_type = std::conditional_t<is_writable, std::shared_ptr<SLE>, SLE::const_pointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for read-only
     using view_ref_type = std::conditional_t<is_writable, ApplyView&, ReadView const&>;
@@ -67,7 +66,7 @@ public:
     }
 
     /** Returns the underlying SLE for read access */
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     sle() const
     {
         return sle_;
@@ -170,13 +169,22 @@ public:
         sle_ = std::make_shared<SLE>(key_);
     }
 
+    beast::Journal
+    journal() const
+    {
+        return j_;
+    }
+
 protected:
     SLEBase() = delete;
 
     /** Constructor for read-only context */
-    explicit SLEBase(std::shared_ptr<SLE const> sle, ReadView const& view)
+    explicit SLEBase(
+        SLE::const_pointer sle,
+        ReadView const& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires(!is_writable)
-        : view_(view), sle_(std::move(sle))
+        : view_(view), sle_(std::move(sle)), j_(j)
     {
     }
 
@@ -188,23 +196,30 @@ protected:
     template <WritableView OtherViewT>
     SLEBase(SLEBase<OtherViewT> const& other)
         requires(!is_writable)
-        : view_(other.readView()), sle_(other.sle())
+        : view_(other.readView()), sle_(other.sle()), j_(other.journal())
     {
     }
 
     /** Constructor for writable context (from existing SLE) */
-    explicit SLEBase(std::shared_ptr<SLE> sle, ApplyView& view)
+    explicit SLEBase(
+        std::shared_ptr<SLE> sle,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires is_writable
         : view_(view)
         , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
         , sle_(std::move(sle))
+        , j_(j)
     {
     }
 
     /** Constructor for writable context (peek from view by keylet) */
-    explicit SLEBase(Keylet const& key, ApplyView& view)
+    explicit SLEBase(
+        Keylet const& key,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         requires is_writable
-        : view_(view), key_(key), sle_(view_.peek(key))
+        : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
     {
     }
 
@@ -219,6 +234,7 @@ protected:
     std::conditional_t<is_writable, Keylet, Empty> key_{};
 
     sle_ptr_type sle_;
+    beast::Journal j_;
 };
 
 // Backward-compatible aliases

@@ -39,7 +39,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfLedgerFixType] == FixType::nfTokenPageLink)
     {
         AccountID const owner{ctx.tx[sfOwner]};
-        if (!AccountRoot(owner, ctx.view))
+        if (!AccountRoot(owner, ctx.view, ctx.j))
             return tecOBJECT_NOT_FOUND;
 
         return tesSUCCESS;

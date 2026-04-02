@@ -258,7 +258,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerPseudo = brokerSle->at(sfAccount);
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
-    if (auto const wrappedBorrower = AccountRoot(borrower, ctx.view); !wrappedBorrower)
+    if (auto const wrappedBorrower = AccountRoot(borrower, ctx.view, ctx.j); !wrappedBorrower)
     {
         // It may not be possible to hit this case, because it'll fail the
         // signature check with terNO_ACCOUNT.
@@ -348,7 +348,7 @@ LoanSet::doApply()
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
-    WritableAccountRoot brokerOwnerAcct(brokerOwner, view);
+    WAccountRoot brokerOwnerAcct(brokerOwner, view, j_);
     if (!brokerOwnerAcct)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -360,14 +360,14 @@ LoanSet::doApply()
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
-    WritableAccountRoot wrappedBorrower(borrower, view);
+    WAccountRoot wrappedBorrower(borrower, view, j_);
     if (!wrappedBorrower)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     auto const brokerPseudo = brokerSle->at(sfAccount);
-    WritableAccountRoot brokerPseudoAcct(brokerPseudo, view);
+    WAccountRoot brokerPseudoAcct(brokerPseudo, view, j_);
     if (!brokerPseudoAcct)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
@@ -474,7 +474,7 @@ LoanSet::doApply()
         }
     }
 
-    wrappedBorrower.adjustOwnerCount(1, j_);
+    wrappedBorrower.adjustOwnerCount(1);
     {
         auto const ownerCount = wrappedBorrower->at(sfOwnerCount);
         auto const balance =

@@ -46,8 +46,8 @@ MPTokenIssuanceDestroy::doApply()
 
     view().erase(mpt);
 
-    WritableAccountRoot acct(accountID_, view());
-    acct.adjustOwnerCount(-1, j_);
+    WAccountRoot acct(accountID_, view(), j_);
+    acct.adjustOwnerCount(-1);
 
     return tesSUCCESS;
 }

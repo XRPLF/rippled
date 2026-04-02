@@ -140,12 +140,12 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
-        WritableAccountRoot dstAcct(dst, ctx_.view());
+        WAccountRoot dstAcct(dst, ctx_.view(), j_);
         if (!dstAcct)
             return tecNO_DST;
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), txAccount, AccountRoot(dst, ctx_.view()), ctx_.journal);
+                ctx_.tx, ctx_.view(), txAccount, AccountRoot(dst, ctx_.view(), j_), ctx_.journal);
             !isTesSuccess(err))
             return err;
 

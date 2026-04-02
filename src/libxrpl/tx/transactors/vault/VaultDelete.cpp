@@ -91,7 +91,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    WritableAccountRoot pseudoAcct(pseudoID, view());
+    WAccountRoot pseudoAcct(pseudoID, view(), j_);
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -136,7 +136,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    pseudoAcct.adjustOwnerCount(-1, j_);
+    pseudoAcct.adjustOwnerCount(-1);
 
     view().erase(mpt);
 
@@ -145,7 +145,7 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    WritableAccountRoot vaultPseudo(pseudoID, view());
+    WAccountRoot vaultPseudo(pseudoID, view(), j_);
     if (!vaultPseudo || vaultPseudo->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -185,7 +185,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot owner(ownerID, view());
+    WAccountRoot owner(ownerID, view(), j_);
     if (!owner)
     {
         // LCOV_EXCL_START
@@ -195,7 +195,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    owner.adjustOwnerCount(-2, j_);
+    owner.adjustOwnerCount(-2);
 
     // Destroy the vault.
     view().erase(vault);

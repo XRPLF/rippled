@@ -44,7 +44,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    WritableAccountRoot acct(accountID_, view());
+    WAccountRoot acct(accountID_, view(), j_);
     if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

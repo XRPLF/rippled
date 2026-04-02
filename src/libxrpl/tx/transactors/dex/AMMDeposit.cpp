@@ -195,7 +195,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle =
                 ctx.view.read(keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            if (wrappedAcct.xrpLiquid(!sle, ctx.j) >= deposit)
+            if (wrappedAcct.xrpLiquid(!sle) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
                 return tecUNFUNDED_AMM;
@@ -312,7 +312,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     // We checked above but need to check again if depositing IOU only.
     if (ammLPHolds(ctx.view, *ammSle, accountID, ctx.j) == beast::zero)
     {
-        STAmount const xrpBalance = wrappedAcct.xrpLiquid(1, ctx.j);
+        STAmount const xrpBalance = wrappedAcct.xrpLiquid(1);
         // Insufficient reserve
         if (xrpBalance <= beast::zero)
         {
@@ -465,7 +465,7 @@ AMMDeposit::deposit(
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
-            if (account_.xrpLiquid(!sle, j_) >= depositAmount)
+            if (account_.xrpLiquid(!sle) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (

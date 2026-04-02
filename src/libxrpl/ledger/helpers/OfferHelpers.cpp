@@ -48,8 +48,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    WritableAccountRoot wrappedOwner(owner, view);
-    wrappedOwner.adjustOwnerCount(-1, j);
+    WAccountRoot wrappedOwner(owner, view, j);
+    wrappedOwner.adjustOwnerCount(-1);
 
     view.erase(sle);
 

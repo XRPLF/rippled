@@ -51,7 +51,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 static TER
 addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
 {
-    WritableAccountRoot wrappedAcct(owner, ctx.view());
+    WAccountRoot wrappedAcct(owner, ctx.view(), ctx.journal);
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -75,7 +75,7 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    wrappedAcct.adjustOwnerCount(1, ctx.journal);
+    wrappedAcct.adjustOwnerCount(1);
     wrappedAcct.update();
 
     return tesSUCCESS;

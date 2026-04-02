@@ -79,7 +79,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
-    WritableAccountRoot acct(args.account, view);
+    WAccountRoot acct(args.account, view, journal);
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -127,7 +127,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
     }
 
     // Update owner count.
-    acct.adjustOwnerCount(1, journal);
+    acct.adjustOwnerCount(1);
 
     return mptId;
 }

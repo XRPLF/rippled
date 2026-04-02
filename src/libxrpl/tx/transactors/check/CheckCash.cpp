@@ -250,8 +250,8 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            WritableAccountRoot wrappedSrc(srcId, psb);
-            STAmount const srcLiquid{wrappedSrc.xrpLiquid(-1, viewJ)};
+            WAccountRoot wrappedSrc(srcId, psb, j_);
+            STAmount const srcLiquid{wrappedSrc.xrpLiquid(-1)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -310,7 +310,7 @@ CheckCash::doApply()
                 //     a. this (destination) account and
                 //     b. issuing account (not sending account).
 
-                WritableAccountRoot wrappedDst(accountID_, psb);
+                WAccountRoot wrappedDst(accountID_, psb, j_);
 
                 // Can the account cover the trust line's reserve?
                 if (std::uint32_t const ownerCount = {wrappedDst->at(sfOwnerCount)};
@@ -438,8 +438,8 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    WritableAccountRoot wrappedSrc(srcId, psb);
-    wrappedSrc.adjustOwnerCount(-1, viewJ);
+    WAccountRoot wrappedSrc(srcId, psb, j_);
+    wrappedSrc.adjustOwnerCount(-1);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

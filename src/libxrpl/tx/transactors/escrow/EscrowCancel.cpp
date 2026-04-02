@@ -149,7 +149,7 @@ EscrowCancel::doApply()
         }
     }
 
-    WritableAccountRoot wrappedAcct(account, ctx_.view());
+    WAccountRoot wrappedAcct(account, ctx_.view(), j_);
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
     // Transfer amount back to the owner
@@ -195,7 +195,7 @@ EscrowCancel::doApply()
         }
     }
 
-    wrappedAcct.adjustOwnerCount(-1, ctx_.journal);
+    wrappedAcct.adjustOwnerCount(-1);
     wrappedAcct.update();
 
     // Remove escrow from ledger

@@ -195,8 +195,8 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedAcct(account, view);
-    wrappedAcct.adjustOwnerCount(removeFromOwnerCount, registry.getJournal("View"));
+    WAccountRoot wrappedAcct(account, view, j);
+    wrappedAcct.adjustOwnerCount(removeFromOwnerCount);
 
     view.erase(signers);
 
@@ -281,7 +281,7 @@ SignerListSet::replaceSignerList()
     if (TER const ter = removeSignersFromLedger(ctx_.registry, view(), accountID_, j_))
         return ter;
 
-    WritableAccountRoot wrappedAcct(accountID_, view());
+    WAccountRoot wrappedAcct(accountID_, view(), j_);
     if (!wrappedAcct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -306,7 +306,6 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
@@ -321,7 +320,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    wrappedAcct.adjustOwnerCount(addedOwnerCount, viewJ);
+    wrappedAcct.adjustOwnerCount(addedOwnerCount);
     return tesSUCCESS;
 }
 

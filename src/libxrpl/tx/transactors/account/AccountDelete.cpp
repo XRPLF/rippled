@@ -327,11 +327,11 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    WritableAccountRoot src(accountID_, view());
+    WAccountRoot src(accountID_, view(), j_);
     XRPL_ASSERT(src.exists(), "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    WritableAccountRoot dst(dstID, view());
+    WAccountRoot dst(dstID, view(), j_);
     XRPL_ASSERT(dst.exists(), "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src.exists() || !dst.exists())

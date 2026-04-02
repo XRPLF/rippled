@@ -298,7 +298,7 @@ OfferCreate::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (accountID_ != sendMax.getIssuer()))
         {
-            WritableAccountRoot wrappedAcct(sendMax.getIssuer(), psb);
+            WAccountRoot wrappedAcct(sendMax.getIssuer(), psb, j_);
             gatewayXferRate = wrappedAcct.transferRate();
             if (gatewayXferRate.value != QUALITY_ONE)
             {
@@ -735,7 +735,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tesSUCCESS, true};
     }
 
-    WritableAccountRoot wrappedCreator(accountID_, sb);
+    WAccountRoot wrappedCreator(accountID_, sb, j_);
     if (!wrappedCreator)
         return {tefINTERNAL, false};
 
@@ -776,7 +776,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    wrappedCreator.adjustOwnerCount(1, viewJ);
+    wrappedCreator.adjustOwnerCount(1);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue()) << " : "
                      << to_string(saTakerGets.issue())

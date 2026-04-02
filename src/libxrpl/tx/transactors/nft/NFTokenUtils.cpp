@@ -247,8 +247,8 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // the NFT.
     std::shared_ptr<SLE> const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
-            WritableAccountRoot wrappedOwner(owner, view);
-            wrappedOwner.adjustOwnerCount(1, beast::Journal{beast::Journal::getNullSink()});
+            WAccountRoot wrappedOwner(owner, view);
+            wrappedOwner.adjustOwnerCount(1);
         });
 
     if (!page)
@@ -406,8 +406,8 @@ removeToken(
 
         if (cnt != 0)
         {
-            WritableAccountRoot wrappedOwner(owner, view);
-            wrappedOwner.adjustOwnerCount(cnt, beast::Journal{beast::Journal::getNullSink()});
+            WAccountRoot wrappedOwner(owner, view);
+            wrappedOwner.adjustOwnerCount(cnt);
         }
 
         return tesSUCCESS;
@@ -442,8 +442,8 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            WritableAccountRoot wrappedOwner(owner, view);
-            wrappedOwner.adjustOwnerCount(-1, beast::Journal{beast::Journal::getNullSink()});
+            WAccountRoot wrappedOwner(owner, view);
+            wrappedOwner.adjustOwnerCount(-1);
 
             view.update(curr);
             view.erase(prev);
@@ -498,8 +498,8 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
-    WritableAccountRoot wrappedOwner(owner, view);
-    wrappedOwner.adjustOwnerCount(-1 * cnt, beast::Journal{beast::Journal::getNullSink()});
+    WAccountRoot wrappedOwner(owner, view);
+    wrappedOwner.adjustOwnerCount(-1 * cnt);
 
     return tesSUCCESS;
 }
@@ -642,8 +642,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
-    WritableAccountRoot wrappedOwner(owner, view);
-    wrappedOwner.adjustOwnerCount(-1, beast::Journal{beast::Journal::getNullSink()});
+    WAccountRoot wrappedOwner(owner, view);
+    wrappedOwner.adjustOwnerCount(-1);
 
     view.erase(offer);
     return true;
@@ -985,8 +985,8 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    WritableAccountRoot wrappedOwner(acctID, view);
-    wrappedOwner.adjustOwnerCount(1, j);
+    WAccountRoot wrappedOwner(acctID, view);
+    wrappedOwner.adjustOwnerCount(1);
 
     return tesSUCCESS;
 }

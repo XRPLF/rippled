@@ -187,7 +187,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast::Jo
     auto validOwner = [&](AccountID const& account) {
         // Valid range is 0-19 but the tailing slot pays MinSlotPrice
         // and doesn't refund so the check is < instead of <= to optimize.
-        return timeSlot && *timeSlot < tailingSlot && AccountRoot(account, sb);
+        return timeSlot && *timeSlot < tailingSlot && AccountRoot(account, sb, j_);
     };
 
     auto updateSlot = [&](std::uint32_t fee, Number const& minPrice, Number const& burn) -> TER {
