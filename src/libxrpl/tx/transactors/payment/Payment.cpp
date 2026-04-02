@@ -559,14 +559,15 @@ Payment::doApply()
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
 
-    // If it is delegated payment, delegated account is the payer and signer.
-    bool const signerIsPayer = (ctx_.tx.getFeePayer() == account_);
+    // In a delegated payment, the fee payer is the delegated account,
+    // not the source account (account_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
 
-    // preFeeBalance_ is the balance on the sending account BEFORE the
-    // fees were charged. We want to make sure we have enough reserve
-    // to send. Allow final spend to use reserve for fee.
+    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // were charged. If source account is the fee payer, it must also cover the fee.
+    // The final spend may use the reserve to cover fees.
     auto const minRequiredFunds =
-        signerIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
+        accountIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
 
     if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
     {
