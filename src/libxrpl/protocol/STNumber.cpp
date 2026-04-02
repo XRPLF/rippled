@@ -177,7 +177,7 @@ partsFromString(std::string const& number)
     //   6 = exponent sign
     //   7 = exponent number
 
-    bool negative = (match[1].matched && (match[1] == "-"));
+    bool const negative = (match[1].matched && (match[1] == "-"));
 
     std::uint64_t mantissa = 0;
     int exponent = 0;
@@ -241,6 +241,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(
+            // NOLINTNEXTLINE(misc-redundant-expression)
             std::numeric_limits<std::uint64_t>::max() >=
             std::numeric_limits<decltype(parts.mantissa)>::max());
     }

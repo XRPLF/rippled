@@ -1,9 +1,9 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -114,12 +114,17 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         wipe(*ledger);
-        ReadView& v = *ledger;
+        ReadView const& v = *ledger;
         succ(v, 0, std::nullopt);
         ledger->rawInsert(sle(1, 1));
         BEAST_EXPECT(v.exists(k(1)));
@@ -147,7 +152,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, std::nullopt);
@@ -180,7 +185,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.insert(sle(1));
@@ -246,7 +251,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.rawInsert(sle(1, 1));
@@ -315,7 +320,7 @@ class View_test : public beast::unit_test::suite
         using namespace std::chrono;
         {
             Env env(*this);
-            wipe(env.app().openLedger());
+            wipe(env.app().getOpenLedger());
             auto const open = env.current();
             OpenView v0(open.get());
             BEAST_EXPECT(v0.seq() != 98);
@@ -333,7 +338,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v1.seq());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
 
-                Sandbox v3(&v2);
+                Sandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == tapRETRY);
@@ -344,7 +349,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v0.seq());
                 BEAST_EXPECT(v2.parentCloseTime() == v0.parentCloseTime());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
-                PaymentSandbox v3(&v2);
+                PaymentSandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == v2.flags());
@@ -377,10 +382,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
             wipe(*ledger);
@@ -581,10 +591,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
             wipe(*ledger);
@@ -927,14 +942,18 @@ class View_test : public beast::unit_test::suite
         // erase the item, apply.
         {
             Env env(*this);
-            Config config;
+            Config const config;
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             auto const ledger =
-                std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+                std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
-            ReadView& v0 = *ledger;
+            ReadView const& v0 = *ledger;
             ApplyViewImpl v1(&v0, tapNONE);
             {
                 Sandbox v2(&v1);
@@ -947,9 +966,9 @@ class View_test : public beast::unit_test::suite
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            BEAST_EXPECT(env.app().openLedger().empty());
+            BEAST_EXPECT(env.app().getOpenLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            BEAST_EXPECT(!env.app().openLedger().empty());
+            BEAST_EXPECT(!env.app().getOpenLedger().empty());
         }
     }
 

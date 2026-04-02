@@ -215,7 +215,7 @@ public:
 
 namespace test {
 extern std::atomic<bool> envUseIPv4;
-}
+}  // namespace test
 
 template <class Runner>
 static bool
@@ -257,11 +257,11 @@ runUnitTests(
 
     if (!child && num_jobs == 1)
     {
-        multi_runner_parent parent_runner;
+        multi_runner_parent const parent_runner;
 
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
-        multi_selector pred(pattern);
+        multi_selector const pred(pattern);
         auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
         if (any_failed)
@@ -282,6 +282,7 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
+        children.reserve(num_jobs);
         for (std::size_t i = 0; i < num_jobs; ++i)
         {
             children.emplace_back(
@@ -613,7 +614,7 @@ run(int argc, char** argv)
 
     if (vm.contains("start"))
     {
-        config->START_UP = StartUpType::FRESH;
+        config->START_UP = StartUpType::Fresh;
     }
 
     if (vm.contains("import"))
@@ -624,7 +625,7 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.contains("replay"))
         {
-            config->START_UP = StartUpType::REPLAY;
+            config->START_UP = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
@@ -644,17 +645,17 @@ run(int argc, char** argv)
         }
         else
         {
-            config->START_UP = StartUpType::LOAD;
+            config->START_UP = StartUpType::Load;
         }
     }
     else if (vm.contains("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LOAD_FILE;
+        config->START_UP = StartUpType::LoadFile;
     }
     else if (vm.contains("load") || config->FAST_LOAD)
     {
-        config->START_UP = StartUpType::LOAD;
+        config->START_UP = StartUpType::Load;
     }
 
     if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
@@ -665,13 +666,13 @@ run(int argc, char** argv)
 
     if (vm.contains("net") && !config->FAST_LOAD)
     {
-        if ((config->START_UP == StartUpType::LOAD) || (config->START_UP == StartUpType::REPLAY))
+        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = StartUpType::NETWORK;
+        config->START_UP = StartUpType::Network;
     }
 
     if (vm.contains("valid"))
@@ -752,8 +753,6 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        // TODO: this comment can be removed in a future release -
-        // say 1.7 or higher
         if (config->had_trailing_comments())
         {
             JLOG(logs->journal("Application").warn())
@@ -781,7 +780,7 @@ run(int argc, char** argv)
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(app->fdRequired(), app->logs().journal("Application")))
+        if (!adjustDescriptorLimit(app->fdRequired(), app->getJournal("Application")))
             return -1;
 
         // Start the server

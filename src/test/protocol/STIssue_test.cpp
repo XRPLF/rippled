@@ -22,7 +22,7 @@ public:
         {
             issue = xrpIssue();
             issue.account = alice;
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent XRP Issue doesn't fail");
         }
         catch (...)
@@ -34,7 +34,7 @@ public:
         {
             issue = USD;
             issue.account = xrpAccount();
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent IOU Issue doesn't fail");
         }
         catch (...)
@@ -51,7 +51,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             fail("Inconsistent IOU Issue doesn't fail on serializer");
         }
         catch (...)
@@ -61,7 +61,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{xrpIssue()});
+            STIssue const stissue(sfAsset, Asset{xrpIssue()});
         }
         catch (...)
         {
@@ -70,7 +70,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{USD});
+            STIssue const stissue(sfAsset, Asset{USD});
         }
         catch (...)
         {
@@ -85,7 +85,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == USD);
         }
         catch (...)
@@ -99,7 +99,7 @@ public:
             base_uint<160> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == xrpCurrency());
         }
         catch (...)

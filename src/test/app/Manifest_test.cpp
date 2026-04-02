@@ -147,9 +147,8 @@ public:
         Serializer s;
         st.add(s);
 
-        // m is non-const so it can be moved from
-        std::string m(static_cast<char const*>(s.data()), s.size());
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(static_cast<char const*>(s.data()), s.size());
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a revocation manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
@@ -182,9 +181,8 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string m(static_cast<char const*>(s.data()),
-                      s.size());  // non-const so can be moved
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(static_cast<char const*>(s.data()), s.size());
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
@@ -251,7 +249,9 @@ public:
             {
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
-                std::vector<std::string> keys;
+                std::vector<std::string> const keys;
+                s1.reserve(inManifests.size());
+
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
@@ -603,12 +603,12 @@ public:
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain too long)
-                        std::string s(254, 'a');
+                        std::string const s(254, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain component too long)
-                        std::string s(72, 'a');
+                        std::string const s(72, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }

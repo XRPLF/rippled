@@ -1,7 +1,6 @@
-#include <xrpld/app/paths/AMMLiquidity.h>
-#include <xrpld/app/paths/AMMOffer.h>
-
 #include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
 
 namespace xrpl {
 
@@ -11,11 +10,8 @@ AMMOffer<TIn, TOut>::AMMOffer(
     TAmounts<TIn, TOut> const& amounts,
     TAmounts<TIn, TOut> const& balances,
     Quality const& quality)
-    : ammLiquidity_(ammLiquidity)
-    , amounts_(amounts)
-    , balances_(balances)
-    , quality_(quality)
-    , consumed_(false)
+    : ammLiquidity_(ammLiquidity), amounts_(amounts), balances_(balances), quality_(quality)
+
 {
 }
 

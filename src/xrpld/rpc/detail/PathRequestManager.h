@@ -1,8 +1,8 @@
 #pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/PathRequest.h>
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/rpc/detail/PathRequest.h>
+#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <atomic>
 #include <mutex>
@@ -10,11 +10,11 @@
 
 namespace xrpl {
 
-class PathRequests
+class PathRequestManager
 {
 public:
     /** A collection of all PathRequest instances. */
-    PathRequests(
+    PathRequestManager(
         Application& app,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)

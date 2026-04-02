@@ -185,7 +185,7 @@ public:
 
             if (secp256k1_ec_seckey_tweak_add(secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
-                SecretKey sk{Slice{rpk.data(), rpk.size()}};
+                SecretKey const sk{Slice{rpk.data(), rpk.size()}};
                 secure_erase(rpk.data(), rpk.size());
                 return sk;
             }
@@ -270,7 +270,7 @@ randomSecretKey()
 {
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
-    SecretKey sk(Slice{buf, sizeof(buf)});
+    SecretKey const sk(Slice{buf, sizeof(buf)});
     secure_erase(buf, sizeof(buf));
     return sk;
 }
@@ -281,7 +281,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     if (type == KeyType::ed25519)
     {
         auto key = sha512Half_s(Slice(seed.data(), seed.size()));
-        SecretKey sk{Slice{key.data(), key.size()}};
+        SecretKey const sk{Slice{key.data(), key.size()}};
         secure_erase(key.data(), key.size());
         return sk;
     }
@@ -289,7 +289,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     if (type == KeyType::secp256k1)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
-        SecretKey sk{Slice{key.data(), key.size()}};
+        SecretKey const sk{Slice{key.data(), key.size()}};
         secure_erase(key.data(), key.size());
         return sk;
     }
@@ -335,7 +335,7 @@ generateKeyPair(KeyType type, Seed const& seed)
     switch (type)
     {
         case KeyType::secp256k1: {
-            detail::Generator g(seed);
+            detail::Generator const g(seed);
             return g(0);
         }
         default:

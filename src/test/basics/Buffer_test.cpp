@@ -26,7 +26,7 @@ struct Buffer_test : beast::unit_test::suite
                                      0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c, 0xf0, 0x2c,
                                      0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
-        Buffer b0;
+        Buffer const b0;
         BEAST_EXPECT(sane(b0));
         BEAST_EXPECT(b0.empty());
 
@@ -105,7 +105,7 @@ struct Buffer_test : beast::unit_test::suite
 
             {  // Move-construct from empty buf
                 Buffer x;
-                Buffer y{std::move(x)};
+                Buffer const y{std::move(x)};
                 BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));
@@ -115,7 +115,7 @@ struct Buffer_test : beast::unit_test::suite
 
             {  // Move-construct from non-empty buf
                 Buffer x{b1};
-                Buffer y{std::move(x)};
+                Buffer const y{std::move(x)};
                 BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));

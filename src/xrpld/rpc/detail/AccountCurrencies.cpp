@@ -1,4 +1,4 @@
-#include <xrpld/app/paths/AccountCurrencies.h>
+#include <xrpld/rpc/detail/AccountCurrencies.h>
 
 namespace xrpl {
 

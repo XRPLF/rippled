@@ -22,7 +22,7 @@ struct signer
     std::optional<uint256> tag;
 
     signer(Account account_, std::uint32_t weight_ = 1, std::optional<uint256> tag_ = std::nullopt)
-        : weight(weight_), account(std::move(account_)), tag(std::move(tag_))
+        : weight(weight_), account(std::move(account_)), tag(tag_)
     {
     }
 };
