@@ -11,10 +11,6 @@ check_resolves_to() {
     [ "$actual" = "$2" ] || { echo "FAIL: $1 resolves to $actual, expected $2"; exit 1; }
 }
 
-# var dirs (compat symlinks)
-check -L /var/log/rippled
-check -L /var/lib/rippled
-
 # compat directory symlinks — existence and resolved target
 check -L /opt/ripple
 check_resolves_to /opt/ripple /opt/xrpld

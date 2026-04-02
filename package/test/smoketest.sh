@@ -6,6 +6,7 @@
 
 set -o pipefail
 set -x
+rm -f /tmp/test_failed /tmp/unittest_results
 trap 'test $? -ne 0 && touch /tmp/test_failed' EXIT
 
 install_from=$1
@@ -47,7 +48,7 @@ elif [ "${pkgtype}" = "rpm" ] ; then
         echo "No .rpm files found"
         exit 1
     fi
-    rpm -i "${rpms[@]}"
+    rpm -i "${rpms[@]}" || { echo "RPM install failed"; exit 1; }
 fi
 
 # Verify installed version

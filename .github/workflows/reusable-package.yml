@@ -36,6 +36,8 @@ env:
 jobs:
   package:
     name: ${{ inputs.pkg_type }} (${{ inputs.version }})
+    permissions:
+      contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
     container: ${{ inputs.container_image }}
     timeout-minutes: 30

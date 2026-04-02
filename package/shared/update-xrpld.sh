@@ -67,7 +67,7 @@ if [ "$can_update" = true ] ; then
   set -e
   apply_update
   systemctl daemon-reload
-  systemctl restart xrpld.service
+  systemctl restart xrpld.service || { echo "$(date -u) xrpld daemon restart FAILED"; exit 1; }
   echo "$(date -u) xrpld daemon updated."
 else
   echo "$(date -u) no updates available" >> "$UPDATELOG"

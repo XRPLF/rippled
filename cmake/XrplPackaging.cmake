@@ -11,9 +11,14 @@ if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt/xrpld")
     return()
 endif()
 
-# Generate the RPM spec from template (substitutes @xrpld_version@, @pkg_release@).
 if(NOT DEFINED pkg_release)
     set(pkg_release 1)
+endif()
+if(NOT DEFINED xrpld_version OR xrpld_version STREQUAL "")
+    message(
+        FATAL_ERROR
+        "xrpld_version must be set (e.g. -Dxrpld_version=2.4.0)"
+    )
 endif()
 configure_file(
     ${CMAKE_SOURCE_DIR}/package/rpm/xrpld.spec.in
@@ -42,7 +47,7 @@ if(DPKG_BUILDPACKAGE_EXECUTABLE)
         package-deb
         COMMAND
             ${CMAKE_SOURCE_DIR}/package/build_pkg.sh deb ${CMAKE_SOURCE_DIR}
-            ${CMAKE_BINARY_DIR} ${xrpld_version}
+            ${CMAKE_BINARY_DIR} ${xrpld_version} ${pkg_release}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Building Debian package"
         VERBATIM
@@ -74,7 +79,7 @@ foreach(PKG deb rpm)
         set(IMAGE ${RPM_TEST_IMAGE})
     endif()
 
-    # Fixture: start container
+    # This image runs systemd for full testing xrpld.service
     add_test(
         NAME ${PKG}_container_start
         COMMAND
@@ -82,12 +87,11 @@ foreach(PKG deb rpm)
             "docker rm -f xrpld_${PKG}_install_test 2>/dev/null || true && \
             docker run -d \
             --name xrpld_${PKG}_install_test \
-            --memory=45g --memory-swap=45g \
-            --privileged \
             --cgroupns host \
             --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
             --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+            --tmpfs /tmp --tmpfs /run \
+            --tmpfs /run/lock \
             ${IMAGE} \
             /usr/sbin/init"
     )
@@ -96,7 +100,6 @@ foreach(PKG deb rpm)
         PROPERTIES FIXTURES_SETUP ${PKG}_container LABELS packaging
     )
 
-    # Fixture: stop container
     # On CI: always stop. Locally: leave running on failure for diagnosis.
     add_test(
         NAME ${PKG}_container_stop
@@ -114,7 +117,6 @@ foreach(PKG deb rpm)
         PROPERTIES FIXTURES_CLEANUP ${PKG}_container LABELS packaging
     )
 
-    # Install package and run smoke test
     add_test(
         NAME ${PKG}_install
         COMMAND
@@ -130,7 +132,6 @@ foreach(PKG deb rpm)
             TIMEOUT 600
     )
 
-    # Validate install paths and compat symlinks
     add_test(
         NAME ${PKG}_install_paths
         COMMAND

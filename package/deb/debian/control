@@ -1,7 +1,7 @@
 Source: xrpld
 Section: net
 Priority: optional
-Maintainer: XRPL Foundation <contact@xrpl.org>
+Maintainer: XRPL Foundation <contact@xrplf.org>
 Rules-Requires-Root: no
 Build-Depends:
  debhelper-compat (= 13)
@@ -18,6 +18,6 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends}
 Description: XRP Ledger daemon
- xrpld is the reference implementation of the XRP Ledger protocol.
- It participates in the peer-to-peer XRP Ledger network, processes
- transactions, and maintains the ledger database.
+ Reference implementation of the XRP Ledger protocol. Participates
+ in the peer-to-peer network, processes transactions, and maintains
+ a local ledger copy.
