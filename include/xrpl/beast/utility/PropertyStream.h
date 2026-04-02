@@ -311,7 +311,7 @@ private:
     std::string const m_name;
     std::recursive_mutex lock_;
     Item item_;
-    Source* parent_;
+    Source* parent_{nullptr};
     List<Item> children_;
 
 public:

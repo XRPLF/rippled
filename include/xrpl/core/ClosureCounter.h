@@ -92,7 +92,9 @@ private:
             ++counter_;
         }
 
-        Substitute(ClosureCounter& counter, Closure&& closure)
+        Substitute(
+            ClosureCounter& counter,
+            Closure&& closure)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             : counter_(counter), closure_(std::forward<Closure>(closure))
         {
             ++counter_;

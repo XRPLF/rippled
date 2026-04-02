@@ -31,7 +31,7 @@ public:
 
 private:
     std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot;
+    bool mHaveRoot{false};
     std::unique_ptr<PeerSet> mPeerSet;
 
     void

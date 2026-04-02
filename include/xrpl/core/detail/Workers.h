@@ -183,8 +183,8 @@ private:
         std::thread thread_;
         std::mutex mutex_;
         std::condition_variable wakeup_;
-        int wakeCount_;  // how many times to un-pause
-        bool shouldExit_;
+        int wakeCount_{0};  // how many times to un-pause
+        bool shouldExit_{false};
     };
 
 private:
@@ -197,9 +197,9 @@ private:
     std::string m_threadNames;     // The name to give each thread
     std::condition_variable m_cv;  // signaled when all threads paused
     std::mutex m_mut;
-    bool m_allPaused;
+    bool m_allPaused{true};
     semaphore m_semaphore;                             // each pending task is 1 resource
-    int m_numberOfThreads;                             // how many we want active now
+    int m_numberOfThreads{0};                          // how many we want active now
     std::atomic<int> m_activeCount;                    // to know when all are paused
     std::atomic<int> m_pauseCount;                     // how many threads need to pause now
     std::atomic<int> m_runningTaskCount;               // how many calls to processTask() active

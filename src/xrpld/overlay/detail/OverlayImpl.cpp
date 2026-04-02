@@ -126,7 +126,6 @@ OverlayImpl::OverlayImpl(
               collector))
     , m_resolver(resolver)
     , next_id_(1)
-    , timer_count_(0)
     , slots_(app, *this, app.config())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),

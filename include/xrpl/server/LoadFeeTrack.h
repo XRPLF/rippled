@@ -26,10 +26,6 @@ class LoadFeeTrack final
 public:
     explicit LoadFeeTrack(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : j_(journal)
-        , localTxnLoadFee_(lftNormalFee)
-        , remoteTxnLoadFee_(lftNormalFee)
-        , clusterTxnLoadFee_(lftNormalFee)
-        , raiseCount_(0)
     {
     }
 
@@ -124,10 +120,10 @@ private:
     beast::Journal const j_;
     std::mutex mutable lock_;
 
-    std::uint32_t localTxnLoadFee_;    // Scale factor, lftNormalFee = normal fee
-    std::uint32_t remoteTxnLoadFee_;   // Scale factor, lftNormalFee = normal fee
-    std::uint32_t clusterTxnLoadFee_;  // Scale factor, lftNormalFee = normal fee
-    std::uint32_t raiseCount_;
+    std::uint32_t localTxnLoadFee_{lftNormalFee};    // Scale factor, lftNormalFee = normal fee
+    std::uint32_t remoteTxnLoadFee_{lftNormalFee};   // Scale factor, lftNormalFee = normal fee
+    std::uint32_t clusterTxnLoadFee_{lftNormalFee};  // Scale factor, lftNormalFee = normal fee
+    std::uint32_t raiseCount_{0};
 };
 
 //------------------------------------------------------------------------------

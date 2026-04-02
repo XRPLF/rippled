@@ -31,7 +31,6 @@ TransactionAcquire::TransactionAcquire(
           TX_ACQUIRE_TIMEOUT,
           {jtTXN_DATA, "TxAcq", {}},
           app.getJournal("TransactionAcquire"))
-    , mHaveRoot(false)
     , mPeerSet(std::move(peerSet))
 {
     mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());

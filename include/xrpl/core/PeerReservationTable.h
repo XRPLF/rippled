@@ -92,7 +92,7 @@ public:
 private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
-    DatabaseCon* connection_;
+    DatabaseCon* connection_{};
     std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 

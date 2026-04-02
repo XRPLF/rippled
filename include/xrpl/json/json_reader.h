@@ -103,9 +103,9 @@ private:
     public:
         explicit ErrorInfo() = default;
 
-        Token token_;
+        Token token_{};
         std::string message_;
-        Location extra_;
+        Location extra_{};
     };
 
     using Errors = std::deque<ErrorInfo>;
@@ -173,11 +173,11 @@ private:
     Nodes nodes_;
     Errors errors_;
     std::string document_;
-    Location begin_;
-    Location end_;
-    Location current_;
-    Location lastValueEnd_;
-    Value* lastValue_;
+    Location begin_{};
+    Location end_{};
+    Location current_{};
+    Location lastValueEnd_{};
+    Value* lastValue_{};
 };
 
 template <class BufferSequence>

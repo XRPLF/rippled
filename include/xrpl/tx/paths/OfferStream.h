@@ -19,11 +19,11 @@ public:
     {
     private:
         std::uint32_t const limit_;
-        std::uint32_t count_;
+        std::uint32_t count_{0};
         beast::Journal j_;
 
     public:
-        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), count_(0), j_(j)
+        StepCounter(std::uint32_t limit, beast::Journal j) : limit_(limit), j_(j)
         {
         }
 
