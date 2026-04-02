@@ -393,7 +393,7 @@ class FeeVote_test : public beast::unit_test::suite
             // Create the next ledger to apply transaction to
             ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-            FeeSettingsFields fields{
+            FeeSettingsFields const fields{
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
@@ -425,7 +425,7 @@ class FeeVote_test : public beast::unit_test::suite
             // Create the next ledger to apply transaction to
             ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
-            FeeSettingsFields fields{
+            FeeSettingsFields const fields{
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
