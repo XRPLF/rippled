@@ -333,8 +333,22 @@ requireAuth(
     if (maybeDomainID)
     {
         // An issuance with sfDomainID must always have lsfMPTRequireAuth set.
-        if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
-            return tefINTERNAL;
+        // fixSecurity3_1_3 coordinates the consensus-visible behavior change:
+        // before the fix, release nodes fall through (authorization bypass);
+        // after the fix, all nodes return tefINTERNAL. The XRPL_ASSERT in the
+        // else branch preserves crash-on-invalid-state for debug builds, which
+        // is harmless for production (release nodes ignore it).
+        if (view.rules().enabled(fixSecurity3_1_3))
+        {
+            if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
+                return tefINTERNAL;
+        }
+        else
+        {
+            XRPL_ASSERT(
+                sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+                "xrpl::requireAuth : issuance requires authorization");
+        }
 
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
@@ -377,8 +391,9 @@ enforceMPTokenAuthorization(
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!sleIssuance->isFlag(lsfMPTRequireAuth))
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    XRPL_ASSERT(
+        sleIssuance->isFlag(lsfMPTRequireAuth),
+        "xrpl::enforceMPTokenAuthorization : authorization required");
 
     if (account == sleIssuance->at(sfIssuer))
         return tefINTERNAL;  // LCOV_EXCL_LINE
