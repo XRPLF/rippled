@@ -3455,7 +3455,7 @@ class MPToken_test : public beast::unit_test::suite
                 {.issuer = credIssuer, .credType = "credential"}};
 
             Env env{*this, features};
-            env.fund(XRP(1000), alice, bob, credIssuer);
+            env.fund(XRP(1000), credIssuer);
             env.close();
 
             env(pdomain::setTx(credIssuer, credentials));
