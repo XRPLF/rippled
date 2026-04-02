@@ -84,8 +84,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
 {
     protocol::TMProofPathResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
-        !reply.has_ledgerheader() || reply.path_size() == 0 ||
-        reply.ledgerhash().size() != uint256::size() || reply.key().size() != uint256::size())
+        !reply.has_ledgerheader() || reply.path_size() == 0)
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
