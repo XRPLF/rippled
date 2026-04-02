@@ -3653,34 +3653,30 @@ class MPToken_test : public beast::unit_test::suite
 
         // Each test case creates a fresh ApplyView and calls
         // accountSendMulti from the issuer to the given receivers.
-        auto const runTest =
-            [&](MultiplePaymentDestinations const& receivers,
-                TER expectedTer,
-                std::optional<std::uint64_t> expectedOutstanding,
-                std::string const& label) {
-                ApplyViewImpl av(&*env.current(), tapNONE);
-                auto const ter = accountSendMulti(
-                    av,
-                    issuer.id(),
-                    asset,
-                    receivers,
-                    env.app().getJournal("View"));
-                BEAST_EXPECTS(ter == expectedTer, label);
+        auto const runTest = [&](MultiplePaymentDestinations const& receivers,
+                                 TER expectedTer,
+                                 std::optional<std::uint64_t>
+                                     expectedOutstanding,
+                                 std::string const& label) {
+            ApplyViewImpl av(&*env.current(), tapNONE);
+            auto const ter = accountSendMulti(
+                av, issuer.id(), asset, receivers, env.app().journal("View"));
+            BEAST_EXPECTS(ter == expectedTer, label);
 
-                // Only verify OutstandingAmount on success — on error the
-                // view may contain partial state and must be discarded.
-                if (expectedOutstanding)
-                {
-                    auto const sle =
-                        av.peek(keylet::mptIssuance(mptt.issuanceID()));
-                    if (!BEAST_EXPECT(sle))
-                        return;
-                    BEAST_EXPECTS(
-                        sle->getFieldU64(sfOutstandingAmount) ==
-                            *expectedOutstanding,
-                        label);
-                }
-            };
+            // Only verify OutstandingAmount on success — on error the
+            // view may contain partial state and must be discarded.
+            if (expectedOutstanding)
+            {
+                auto const sle =
+                    av.peek(keylet::mptIssuance(mptt.issuanceID()));
+                if (!BEAST_EXPECT(sle))
+                    return;
+                BEAST_EXPECTS(
+                    sle->getFieldU64(sfOutstandingAmount) ==
+                        *expectedOutstanding,
+                    label);
+            }
+        };
 
         using R = MultiplePaymentDestinations;
 
