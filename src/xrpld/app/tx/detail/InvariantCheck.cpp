@@ -1876,7 +1876,7 @@ ValidPermissionedDEX::visitEntry(
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) ||
              !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() > 1))
+             after->getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;
     }
 }
