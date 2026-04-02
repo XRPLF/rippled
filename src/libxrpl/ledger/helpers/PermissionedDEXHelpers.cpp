@@ -61,9 +61,12 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
+    if (sleOffer->isFlag(lsfHybrid) &&
+        (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
+         sleOffer->getFieldArray(sfAdditionalBooks).size() != 1))
     {
-        JLOG(j.error()) << "Hybrid offer " << offerID << " missing AdditionalBooks field";
+        JLOG(j.error()) << "Hybrid offer " << offerID
+                        << " missing or malformed AdditionalBooks field";
         return false;  // LCOV_EXCL_LINE
     }
 

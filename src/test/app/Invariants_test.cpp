@@ -1863,6 +1863,42 @@ class Invariants_test : public beast::unit_test::suite
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
 
+        // empty sfAdditionalBooks (size 0)
+        {
+            Env env1(*this, features);
+
+            Account const A1{"A1"};
+            Account const A2{"A2"};
+            env1.fund(XRP(1000), A1, A2);
+            env1.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            env1.close();
+
+            doInvariantCheck(
+                std::move(env1),
+                A1,
+                A2,
+                {{"hybrid offer is malformed"}},
+                [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    Keylet const offerKey = keylet::offer(A2.id(), 10);
+                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    sleOffer->setAccountID(sfAccount, A2);
+                    sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFlag(lsfHybrid);
+                    sleOffer->setFieldH256(sfDomainID, pd1);
+
+                    STArray bookArr;  // empty array, size 0
+                    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
+                    ac.view().insert(sleOffer);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttOFFER_CREATE, [&](STObject&) {}},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+
         // hybrid offer missing sfAdditionalBooks
         {
             Env env1(*this, features);
