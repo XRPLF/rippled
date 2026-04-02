@@ -93,28 +93,21 @@ TEST(AccountSet, MostFlags)
             if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
             {
                 // Good flag
-                auto aliceAccontRoot = env.getAccountRoot(alice);
-                auto aliceFlags = aliceAccontRoot.getFlags();
-
-                EXPECT_EQ(aliceFlags & asfToLsf(flag), 0);
+                EXPECT_FALSE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
 
                 EXPECT_EQ(
                     env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(flag), alice).ter,
                     tesSUCCESS);
                 env.close();
 
-                aliceAccontRoot = env.getAccountRoot(alice);
-                aliceFlags = aliceAccontRoot.getFlags();
-                EXPECT_NE(aliceFlags & asfToLsf(flag), 0);
+                EXPECT_TRUE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
 
                 EXPECT_EQ(
                     env.submit(transactions::AccountSetBuilder{alice}.setClearFlag(flag), alie).ter,
                     tesSUCCESS);
                 env.close();
 
-                aliceAccontRoot = env.getAccountRoot(alice);
-                aliceFlags = aliceAccontRoot.getFlags();
-                EXPECT_EQ(aliceFlags & asfToLsf(flag), 0);
+                EXPECT_FALSE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
 
                 std::uint32_t const now_flags = env.getAccountRoot(alice).getFlags();
                 EXPECT_EQ(now_flags, orig_flags);
@@ -194,7 +187,7 @@ TEST(AccountSet, SetNoFreeze)
     env.close();
 
     // Verify alice doesn't have NoFreeze flag
-    EXPECT_EQ(env.getAccountRoot(alice).getFlags() & asfToLsf(asfNoFreeze), 0);
+    EXPECT_FALSE(env.getAccountRoot(alice).isFlag(lsfNoFreeze));
 
     // Setting NoFreeze with regular key should fail - requires master key
     EXPECT_EQ(
@@ -209,7 +202,7 @@ TEST(AccountSet, SetNoFreeze)
     env.close();
 
     // Verify alice now has NoFreeze flag
-    EXPECT_NE(env.getAccountRoot(alice).getFlags() & asfToLsf(asfNoFreeze), 0);
+    EXPECT_TRUE(env.getAccountRoot(alice).isFlag(lsfNoFreeze));
 
     // Try to clear NoFreeze - transaction succeeds but flag remains set
     EXPECT_EQ(
@@ -218,7 +211,7 @@ TEST(AccountSet, SetNoFreeze)
     env.close();
 
     // Verify flag is still set (NoFreeze cannot be cleared once set)
-    EXPECT_NE(env.getAccountRoot(alice).getFlags() & asfToLsf(asfNoFreeze), 0);
+    EXPECT_TRUE(env.getAccountRoot(alice).isFlag(lsfNoFreeze));
 }
 
 TEST(AccountSet, Domain)
