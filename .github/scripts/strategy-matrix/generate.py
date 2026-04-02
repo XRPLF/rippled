@@ -64,7 +64,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                 if os["distro_version"] == "bookworm":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}"
@@ -197,7 +197,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # linux/amd64
         if (
             f"{os['distro_name']}-{os['distro_version']}" == "debian-bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
+            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-13"
             and build_type == "Debug"
             and architecture["platform"] == "linux/amd64"
         ):
@@ -239,7 +239,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         if os[
             "distro_version"
         ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
-            "gcc-13",
+            "gcc-15",
             "clang-20",
         ]:
             # Add ASAN + UBSAN configuration.
