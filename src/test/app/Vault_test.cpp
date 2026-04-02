@@ -5919,7 +5919,8 @@ class Vault_test : public beast::unit_test::suite
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
-                // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
+                // Depositor borrows 40 units: assetsAvailable=60,
+                // assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
                     loan::interestRate(TenthBips32(0)),
                     gracePeriod(60),
@@ -5932,7 +5933,8 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto const sle = env.le(vaultKeylet);
-                    BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(60).value());
+                    BEAST_EXPECT(
+                        sle->at(sfAssetsAvailable) == asset(60).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(100).value());
                 }
 
@@ -5949,7 +5951,8 @@ class Vault_test : public beast::unit_test::suite
                 {
                     auto const sle = env.le(vaultKeylet);
                     BEAST_EXPECT(sle != nullptr);
-                    BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(30).value());
+                    BEAST_EXPECT(
+                        sle->at(sfAssetsAvailable) == asset(30).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(70).value());
                 }
             }
@@ -5957,7 +5960,8 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(
                     "VaultClawback (asset) - " + prefix +
-                    " clawback exactly equal to available with outstanding loan");
+                    " clawback exactly equal to available with outstanding "
+                    "loan");
                 auto [vault, vaultKeylet] =
                     setupVault(asset, owner, depositor, issuer);
 
@@ -5972,7 +5976,8 @@ class Vault_test : public beast::unit_test::suite
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
-                // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
+                // Depositor borrows 40 units: assetsAvailable=60,
+                // assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
                     loan::interestRate(TenthBips32(0)),
                     gracePeriod(60),
@@ -5996,7 +6001,8 @@ class Vault_test : public beast::unit_test::suite
                 {
                     auto const sle = env.le(vaultKeylet);
                     BEAST_EXPECT(sle != nullptr);
-                    BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(0).value());
+                    BEAST_EXPECT(
+                        sle->at(sfAssetsAvailable) == asset(0).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(40).value());
                 }
             }
@@ -6019,7 +6025,8 @@ class Vault_test : public beast::unit_test::suite
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
-                // Depositor borrows all 100 units: assetsAvailable=0, assetsTotal=100
+                // Depositor borrows all 100 units: assetsAvailable=0,
+                // assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(100).value()),
                     loan::interestRate(TenthBips32(0)),
                     gracePeriod(60),
@@ -6032,7 +6039,8 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto const sle = env.le(vaultKeylet);
-                    BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(0).value());
+                    BEAST_EXPECT(
+                        sle->at(sfAssetsAvailable) == asset(0).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(100).value());
                 }
 
@@ -6062,7 +6070,8 @@ class Vault_test : public beast::unit_test::suite
                     // Nothing changed — vault and shares unchanged
                     auto const sle = env.le(vaultKeylet);
                     BEAST_EXPECT(sle != nullptr);
-                    BEAST_EXPECT(sle->at(sfAssetsAvailable) == asset(0).value());
+                    BEAST_EXPECT(
+                        sle->at(sfAssetsAvailable) == asset(0).value());
                     BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(100).value());
                     auto const sharesAfter = env.balance(depositor, shares);
                     BEAST_EXPECT(sharesAfter == sharesBefore);
@@ -6243,8 +6252,7 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 auto const sle = env.le(vaultKeylet);
-                BEAST_EXPECT(
-                    sle->at(sfAssetsTotal) == asset(40).value());
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(40).value());
             }
 
             // Clean up escrow
@@ -6339,8 +6347,7 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 auto const sle = env.le(vaultKeylet);
-                BEAST_EXPECT(
-                    sle->at(sfAssetsTotal) == asset(60).value());
+                BEAST_EXPECT(sle->at(sfAssetsTotal) == asset(60).value());
             }
         }
 
