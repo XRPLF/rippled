@@ -1015,7 +1015,7 @@ struct Credentials_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixDeleteCredentials];
+        bool const fixEnabled = features[fixSecurity3_1_3];
 
         char const credType[] = "abcde";
         Account const issuer{"issuer"};
@@ -1135,8 +1135,8 @@ struct Credentials_test : public beast::unit_test::suite
         testFlags(all);
         testRPC();
 
-        testRemoveExpiredCorruption(all - fixDeleteCredentials);
-        testRemoveExpiredCorruption(all | fixDeleteCredentials);
+        testRemoveExpiredCorruption(all - fixSecurity3_1_3);
+        testRemoveExpiredCorruption(all | fixSecurity3_1_3);
     }
 };
 
