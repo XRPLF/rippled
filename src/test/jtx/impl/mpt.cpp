@@ -299,7 +299,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
                 return env_.le(keylet::mptoken(*id_, arg.account->id())) != nullptr;
             }));
         }
-        else
+        else if (result != tecDIR_FULL)
         {
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)

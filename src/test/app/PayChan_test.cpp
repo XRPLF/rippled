@@ -274,6 +274,17 @@ struct PayChan_test : public beast::unit_test::suite
             env(create(cho, alice, XRP(1000), settleDelay, pk), ter(tesSUCCESS));
             BEAST_EXPECT(channelExists(*env.current(), chan));
         }
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const choDir = keylet::ownerDir(cho.id());
+            auto const n = getIndexCountToBump(env, choDir);
+            env(ticket::create(cho, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), choDir, adjustOwnerNode));
+
+            env(create(cho, alice, XRP(1000), settleDelay, pk), ter(tecDIR_FULL));
+            env(create(bob, cho, XRP(1000), settleDelay, pk), ter(tecDIR_FULL));
+        }
     }
 
     void

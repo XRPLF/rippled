@@ -199,13 +199,13 @@ trustCreate(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
 
     if (!lowNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
 
     auto highNode = view.dirInsert(
         keylet::ownerDir(uHighAccountID), sleRippleState->key(), describeOwnerDir(uHighAccountID));
 
     if (!highNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
 
     bool const bSetDst = saLimit.getIssuer() == uDstAccountID;
     bool const bSetHigh = bSrcHigh ^ bSetDst;

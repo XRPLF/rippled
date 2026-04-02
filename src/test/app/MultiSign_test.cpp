@@ -117,7 +117,7 @@ public:
         using namespace jtx;
         Env env{*this, features};
         Account const alice{"alice", KeyType::ed25519};
-        env.fund(XRP(1000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // Add alice as a multisigner for herself.  Should fail.
@@ -179,6 +179,13 @@ public:
             ter(temMALFORMED));
         env.close();
         env.require(owners(alice, 0));
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n2 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n2));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+        env(signers(alice, 1, {{bogie, 1}, {demon, 1}}), ter(tecDIR_FULL));
     }
 
     void

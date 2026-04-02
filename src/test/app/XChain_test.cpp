@@ -487,6 +487,17 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         XEnv(*this)
             .disableFeature(featureXChainBridge)
             .tx(create_bridge(mcAlice, jvb), ter(temDISABLED));
+
+        {
+            XEnv xenv(*this, true);
+            using namespace ::xrpl::test::jtx::directory;
+            auto const masterDir = keylet::ownerDir(Account::master.id());
+            auto const n = getIndexCountToBump(xenv.env_, masterDir);
+            xenv.tx(ticket::create(Account::master, n));
+            BEAST_EXPECT(bumpLastPage(xenv.env_, maximumPageIndex(xenv.env_), masterDir, adjustOwnerNode));
+
+            xenv.tx(create_bridge(Account::master, jvb), ter(tecDIR_FULL));
+        }
     }
 
     void
@@ -1234,6 +1245,20 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             .close()
             .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice), ter(temDISABLED))
             .close();
+
+        {
+            XEnv xenv(*this, true);
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(scAlice.id());
+            auto const n = getIndexCountToBump(xenv.env_, aliceDir);
+            xenv.tx(ticket::create(scAlice, n));
+            BEAST_EXPECT(bumpLastPage(xenv.env_, maximumPageIndex(xenv.env_), aliceDir, adjustOwnerNode));
+
+            xenv
+                .tx(create_bridge(Account::master, jvb))
+                .tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice), ter(tecDIR_FULL))
+                .close();
+        }
     }
 
     void
@@ -1835,6 +1860,56 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
 
                 BEAST_EXPECT(!scEnv.caClaimID(jvb, 3));    // claim id 3 deleted
                 BEAST_EXPECT(scEnv.claimCount(jvb) == 3);  // claim count now 3
+            }
+
+            // {
+            //     Balance door(scEnv, Account::master);
+
+            //     using namespace ::xrpl::test::jtx::directory;
+            //     auto const masterDir = keylet::ownerDir(Account::master.id());
+            //     auto const n = getIndexCountToBump(scEnv.env_, masterDir);
+            //     scEnv.tx(ticket::create(Account::master, n));
+            //     BEAST_EXPECT(bumpLastPage(scEnv.env_, maximumPageIndex(scEnv.env_), masterDir, adjustOwnerNode));
+
+            //     scEnv.multiTx(att_create_acct_vec(2, amt, scuBob, 1)).close();
+
+            // }
+        }
+
+        {
+            XEnv mcEnv(*this);
+            XEnv scEnv(*this, true);
+            auto const amt = XRP(1000);
+            auto const amt_plus_reward = amt + reward;
+
+            {
+                Balance door(mcEnv, mcDoor);
+                Balance carol(mcEnv, mcCarol);
+
+                mcEnv.tx(create_bridge(mcDoor, jvb, reward, XRP(20)))
+                    .close()
+                    .tx(sidechain_xchain_account_create(mcAlice, jvb, scuAlice, amt, reward))
+                    .tx(sidechain_xchain_account_create(mcBob, jvb, scuBob, amt, reward))
+                    .tx(sidechain_xchain_account_create(mcCarol, jvb, scuCarol, amt, reward))
+                    .close();
+
+                BEAST_EXPECT(
+                    door.diff() == (multiply(amt_plus_reward, STAmount(3), xrpIssue()) - tx_fee));
+                BEAST_EXPECT(carol.diff() == -(amt + reward + tx_fee));
+            }
+
+            scEnv.tx(create_bridge(Account::master, jvb, reward, XRP(20)))
+                .tx(jtx::signers(Account::master, quorum, signers))
+                .close();
+
+            {
+                using namespace ::xrpl::test::jtx::directory;
+                auto const masterDir = keylet::ownerDir(Account::master.id());
+                auto const n = getIndexCountToBump(scEnv.env_, masterDir);
+                scEnv.tx(ticket::create(Account::master, n));
+                BEAST_EXPECT(bumpLastPage(scEnv.env_, maximumPageIndex(scEnv.env_), masterDir, adjustOwnerNode));
+
+                scEnv.multiTx(att_create_acct_vec(1, amt, scuAlice, 2), ter(tecDIR_FULL)).close();
             }
         }
 

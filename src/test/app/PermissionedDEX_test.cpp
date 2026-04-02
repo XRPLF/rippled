@@ -971,6 +971,17 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(offer(bob, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID));
             env.close();
             BEAST_EXPECT(checkOffer(env, bob, offerSeq, XRP(10), USD(10), lsfHybrid, true));
+
+            // hybrid offer not created if book directory is full
+            using namespace ::xrpl::test::jtx::directory;
+            Book book{Issue(XRP), Issue(USD), std::nullopt};
+            auto const bobDir = keylet::quality(keylet::book(book), getRate(USD(10), XRP(10)));
+            auto const n = getIndexCountToBump(env, bobDir);
+            for (auto i = 0; i < n; ++i)
+                env(offer(bob, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(offer(bob, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID), ter(tecDIR_FULL));
         }
 
         // apply - domain offer can cross with hybrid

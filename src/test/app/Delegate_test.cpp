@@ -193,6 +193,15 @@ class Delegate_test : public beast::unit_test::suite
             env(delegate::set(gw, alice, {"SetFee"}), ter(temMALFORMED));
             env(delegate::set(gw, alice, {"Batch"}), ter(temMALFORMED));
         }
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(alice.id());
+            auto const n = getIndexCountToBump(env, aliceDir);
+            env(ticket::create(alice, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+            env(delegate::set(alice, bob, {"Payment"}), ter(tecDIR_FULL));
+        }
     }
 
     void

@@ -7,6 +7,37 @@ namespace xrpl::test::jtx {
 /** Directory operations. */
 namespace directory {
 
+std::size_t
+getIndexCountToBump(Env& env, Keylet directory)
+{
+    std::size_t toAdd = 0;
+    env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
+        Sandbox sb(&view, tapNONE);
+
+        // Find the root page
+        auto sleRoot = sb.peek(directory);
+        if (!sleRoot)
+        {
+            toAdd += 64;
+            return false;
+        }
+
+        auto const lastIndex0 = sleRoot->getFieldU64(sfIndexPrevious);
+        auto slePage0 = sb.peek(keylet::page(directory, lastIndex0));
+        if (!slePage0)
+        {
+            return false;
+        }
+        auto indexes0 = slePage0->getFieldV256(sfIndexes);
+        if (lastIndex0 == 0)
+            toAdd += 32;
+        if (indexes0.size() < 32)
+            toAdd += 32 - indexes0.size();
+        return false;
+    });
+    return toAdd;
+}
+
 auto
 bumpLastPage(
     Env& env,

@@ -512,6 +512,25 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(env.ownerCount(alice) == 1);
     }
 
+    void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+        Account const alice("alice");
+        Env env(*this, features);
+        env.fund(XRP(10000), alice);
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n));
+        env.close();
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        pdomain::Credentials credentials{{alice, "first credential"}};
+        env(pdomain::setTx(alice, credentials), ter(tecDIR_FULL));
+    }
+
 public:
     void
     run() override
@@ -526,6 +545,8 @@ public:
         testDelete(withFix_);
         testAccountReserve(withFeature_);
         testAccountReserve(withFix_);
+        testDirectoryFull(withFeature_);
+        testDirectoryFull(withFix_);
     }
 };
 

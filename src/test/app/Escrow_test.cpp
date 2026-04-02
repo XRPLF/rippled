@@ -1561,6 +1561,72 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env(*this, features);
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+        auto const GBP = gw["GBP"];
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+
+        env.trust(USD(10000), alice);
+        env.close();
+
+        env(pay(gw, alice, USD(10000)));
+
+        std::uint32_t const noopSeq{env.seq(alice) + 1};
+        env.close();
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n1 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n1));
+        env.close();
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+        env(escrow::create(alice, bob, USD(1000)),
+            escrow::finish_time(env.now() + 1h),
+            ter(tecDIR_FULL));
+
+        env(trust(alice, EUR(10000)), ter(tecDIR_FULL));
+        env.close();
+
+        env(noop(alice), ticket::use(noopSeq));
+
+        auto const bobDir = keylet::ownerDir(bob.id());
+        auto const n2 = getIndexCountToBump(env, bobDir);
+        env(ticket::create(bob, n2));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+        env(escrow::create(alice, bob, USD(1000)),
+            escrow::finish_time(env.now() + 1h),
+            ter(tecDIR_FULL));
+        env.close();
+
+        // add issuer somehow
+        env(noop(alice), ticket::use(noopSeq + 1));
+        auto const gwDir = keylet::ownerDir(gw.id());
+        auto const n3 = getIndexCountToBump(env, gwDir);
+        env(ticket::create(gw, n3));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), gwDir, adjustOwnerNode));
+
+        env(escrow::create(alice, bob, USD(1000)),
+            escrow::finish_time(env.now() + 1h),
+            ter(tecDIR_FULL));
+        env(trust(alice, GBP(10000)), ter(tecDIR_FULL));
+        env.close();
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnablement(features);
@@ -1583,6 +1649,7 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
+        testDirectoryFull(all);
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
         testTags(all - fixIncludeKeyletFields);

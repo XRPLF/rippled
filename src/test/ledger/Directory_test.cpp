@@ -486,8 +486,9 @@ struct Directory_test : public beast::unit_test::suite
 
             auto const [lastPage, full] = setup(env);
 
-            // Populate root page and last page
-            for (int i = 0; i < 63; ++i)
+            auto const aliceDir = keylet::ownerDir(alice.id());
+            auto const n = directory::getIndexCountToBump(env, aliceDir);
+            for (int i = 0; i < n; ++i)
                 env(credentials::create(alice, alice, std::to_string(i)));
             env.close();
 
@@ -495,12 +496,12 @@ struct Directory_test : public beast::unit_test::suite
             // there is no transaction type to express what bumpLastPage does.
 
             // Bump position of last page from 1 to highest possible
-            auto const res = directory::bumpLastPage(
+            BEAST_EXPECT(directory::bumpLastPage(
                 env,
                 lastPage,
-                keylet::ownerDir(alice.id()),
-                [lastPage, this](ApplyView& view, uint256 key, std::uint64_t page) {
-                    auto sle = view.peek({ltCREDENTIAL, key});
+                aliceDir,
+                [lastPage, this](ApplyView& view, uint256 const& key, std::uint64_t page) {
+                    auto const sle = view.peek({ltCREDENTIAL, key});
                     if (!BEAST_EXPECT(sle))
                         return false;
 
@@ -509,18 +510,14 @@ struct Directory_test : public beast::unit_test::suite
                     // sfSubjectNode is not set in self-issued credentials
                     view.update(sle);
                     return true;
-                });
-            BEAST_EXPECT(res);
-
-            // Create one more credential
-            env(credentials::create(alice, alice, std::to_string(63)));
+                }));
 
             // Not enough space for another object if full
             auto const expected = full ? ter{tecDIR_FULL} : ter{tesSUCCESS};
             env(credentials::create(alice, alice, "foo"), expected);
 
             // Destroy all objects in directory
-            for (int i = 0; i < 64; ++i)
+            for (int i = 0; i < n; ++i)
                 env(credentials::deleteCred(alice, alice, alice, std::to_string(i)));
 
             if (!full)

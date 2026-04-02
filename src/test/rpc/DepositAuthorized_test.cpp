@@ -51,9 +51,11 @@ public:
         Account const alice{"alice"};
         Account const becky{"becky"};
         Account const carol{"carol"};
+        Account const bob("bob");
 
         Env env(*this);
         env.fund(XRP(1000), alice, becky, carol);
+        env.fund(XRP(10000), bob);
         env.close();
 
         // becky is authorized to deposit to herself.
@@ -97,9 +99,20 @@ public:
                 depositAuthArgs(becky, alice, "current").toStyledString()),
             true);
 
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(deposit::auth(bob, alice), ter(tecDIR_FULL));
+        }
+
         // becky creates a deposit authorization for alice.
         env(deposit::auth(becky, alice));
         env.close();
+
 
         // alice is now authorized to deposit to becky.
         validateDepositAuthResult(
@@ -291,9 +304,11 @@ public:
         Account const becky{"becky"};
         Account const diana{"diana"};
         Account const carol{"carol"};
+        Account const bob("bob");
 
         Env env(*this);
         env.fund(XRP(1000), alice, becky, carol, diana);
+        env.fund(XRP(10000), bob);
         env.close();
 
         // carol recognize alice
@@ -306,6 +321,16 @@ public:
         // becky sets the DepositAuth flag in the current ledger.
         env(fset(becky, asfDepositAuth));
         env.close();
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(deposit::authCredentials(bob, {{carol, credType}}), ter(tecDIR_FULL));
+        }
 
         // becky authorize any account recognized by carol to make a payment
         env(deposit::authCredentials(becky, {{carol, credType}}));

@@ -329,6 +329,19 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.account = bob, .id = id, .err = tecOBJECT_NOT_FOUND});
         }
 
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(alice.id());
+            auto const n = getIndexCountToBump(env, aliceDir);
+            env(ticket::create(alice, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+            env(mptAlice.createJV({.issuer = alice, .ownerCount = 1}), ter(tecDIR_FULL));
+        }
+
         // Test bad scenarios without allowlisting in MPTokenAuthorize
         // (preclaim)
         {

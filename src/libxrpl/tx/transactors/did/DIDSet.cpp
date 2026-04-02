@@ -72,7 +72,7 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
         auto page =
             ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
         if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
         (*sle)[sfOwnerNode] = *page;
     }
     adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);

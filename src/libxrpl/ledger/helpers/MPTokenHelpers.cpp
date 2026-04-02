@@ -765,7 +765,7 @@ createMPToken(
         view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
 
     if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
 
     auto mptoken = std::make_shared<SLE>(mptokenKey);
     (*mptoken)[sfAccount] = account;

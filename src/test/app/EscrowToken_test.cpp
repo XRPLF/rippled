@@ -2656,6 +2656,46 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
+        // tecDir_FULL: bob submits; directory full
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(10'000), bob);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const MPT = mptGw["MPT"];
+            env(pay(gw, alice, MPT(10'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, MPT(10)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecDIR_FULL));
+            env.close();
+        }
+
         // tecNO_PERMISSION: carol submits; finish MPT not created
         {
             Env env{*this, features};

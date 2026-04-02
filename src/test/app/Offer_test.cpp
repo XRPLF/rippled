@@ -707,6 +707,61 @@ public:
         }
     }
 
+    void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+        auto const GBP = gw["GBP"];
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        env(rate(gw, 1.005));
+
+        env.trust(USD(10000), alice);
+        env.trust(EUR(10000), alice);
+        env.close();
+        env(pay(gw, alice, USD(10000)));
+        env(pay(gw, alice, EUR(10000)));
+
+        std::uint32_t const noopSeq{env.seq(alice) + 1};
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n1 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n1 + 32));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        auto rate = getRate(EUR(50), USD(50));
+        env(offer(alice, USD(50), EUR(50)), ter(tecDIR_FULL));
+
+        env.close();
+
+        Book const book{USD.issue(), EUR.issue(), {}};
+        auto dir = keylet::quality(keylet::book(book), rate);
+        auto const n2 = getIndexCountToBump(env, dir);
+        for (auto i = 0; i < static_cast<int>(n2); ++i)
+        {
+            env(offer(alice, USD(50), EUR(50)), ticket::use(noopSeq + i + 1));
+            env.close();
+        }
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), dir, adjustOwnerNode));
+
+        env(offer(alice, USD(50), EUR(50)), ticket::use(noopSeq), ter(tecDIR_FULL));
+
+        // test for hybrid as well
+    }
+
     // Helper function that returns the Offers on an account.
     static std::vector<std::shared_ptr<SLE const>>
     offersOnAccount(jtx::Env& env, jtx::Account const& account)
@@ -5066,6 +5121,7 @@ public:
     void
     testAll(FeatureBitset features)
     {
+        testDirectoryFull(features);
         testCanceledOffer(features);
         testRmFundedOffer(features);
         testTinyPayment(features);

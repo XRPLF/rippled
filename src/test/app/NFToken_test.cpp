@@ -786,11 +786,36 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // We don't care whether the offer is fully funded until the offer is
         // accepted.  Success at last!
-        env(token::createOffer(buyer, nftAlice0ID, gwAUD(1000)),
+        env(token::createOffer(buyer, nftAlice0ID, gwAUD(10)),
             token::owner(alice),
             ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 2);
+
+        {
+            env(pay(env.master, buyer, XRP(10000)));
+            env.close();
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const nftDir = keylet::nft_buys(nftAlice0ID);
+            auto const n1 = getIndexCountToBump(env, nftDir);
+            for (auto i=1; i<=n1; ++i)
+                env(token::createOffer(buyer, nftAlice0ID, gwAUD(i)), token::owner(alice));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), nftDir, adjustOwnerNode));
+
+            env(token::createOffer(buyer, nftAlice0ID, gwAUD(1)),
+                token::owner(alice),
+                ter(tecDIR_FULL));
+
+            auto const buyerDir = keylet::ownerDir(buyer.id());
+            auto const n = getIndexCountToBump(env, buyerDir);
+            env(ticket::create(buyer, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), buyerDir, adjustOwnerNode));
+
+            env(token::createOffer(buyer, nftAlice0ID, gwAUD(1)),
+                token::owner(alice),
+                ter(tecDIR_FULL));
+        }
     }
 
     void

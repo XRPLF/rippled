@@ -23,6 +23,13 @@ enum Error {
     AdjustmentError
 };
 
+/// Returns the number of directory entries that must be created so that the
+/// last page of the given directory is full and the directory has at least two
+/// pages. Call this before bumpLastPage to determine how many objects (e.g.
+/// tickets) to create.
+std::size_t
+getIndexCountToBump(Env& env, Keylet directory);
+
 /// Move the position of the last page in the user's directory on open ledger to
 /// newLastPage. Requirements:
 /// - directory must have at least two pages (root and one more)

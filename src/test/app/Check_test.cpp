@@ -272,7 +272,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{XRP(5000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
         env.close();
 
@@ -440,6 +440,36 @@ class Check_test : public beast::unit_test::suite
 
         env(check::create(cheri, bob, USD(50)));
         env.close();
+    }
+
+    void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+
+        using namespace test::jtx;
+        using namespace ::xrpl::test::jtx::directory;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const bobDir = keylet::ownerDir(bob.id());
+        auto const n1 = getIndexCountToBump(env, bobDir);
+        env(ticket::create(bob, n1));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+        env(check::create(alice, bob, XRP(1)), ter(tecDIR_FULL));
+
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n2 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n2));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        env(check::create(alice, bob, XRP(1)), ter(tecDIR_FULL));
     }
 
     void
@@ -2435,6 +2465,7 @@ class Check_test : public beast::unit_test::suite
         testCreateValid(features);
         testCreateDisallowIncoming(features);
         testCreateInvalid(features);
+        testDirectoryFull(features);
         testCashXRP(features);
         testCashIOU(features);
         testCashXferFee(features);

@@ -96,7 +96,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
+            return Unexpected(tecDIR_FULL);
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
