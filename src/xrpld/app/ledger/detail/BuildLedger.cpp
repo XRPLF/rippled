@@ -1,10 +1,10 @@
 #include <xrpld/app/ledger/BuildLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/apply.h>
 
@@ -138,11 +138,11 @@ applyTransactions(
         count += changes;
 
         // A non-retry pass made no changes
-        if (!changes && !certainRetry)
+        if ((changes == 0) && !certainRetry)
             break;
 
         // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
             certainRetry = false;
     }
 

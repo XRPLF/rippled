@@ -102,7 +102,7 @@ doAccountInfo(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> lsFlags{
         {{"defaultRipple", lsfDefaultRipple},
@@ -290,9 +290,9 @@ doAccountInfo(RPC::JsonContext& context)
                     jvQueueTx.append(std::move(jvTx));
                 }
 
-                if (seqCount)
+                if (seqCount != 0u)
                     jvQueueData[jss::sequence_count] = seqCount;
-                if (ticketCount)
+                if (ticketCount != 0u)
                     jvQueueData[jss::ticket_count] = ticketCount;
                 if (lowestSeq)
                     jvQueueData[jss::lowest_sequence] = *lowestSeq;

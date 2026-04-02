@@ -41,7 +41,7 @@ WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId) const
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName) const
 {
-    auto const& table = ctx_.registry.getAmendmentTable();
+    auto const& table = ctx_.registry.get().getAmendmentTable();
     auto const amendment = table.find(std::string(amendmentName));
     return ctx_.view().rules().enabled(amendment);
 }

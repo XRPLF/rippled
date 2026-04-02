@@ -214,6 +214,78 @@ public:
     }
 
     /**
+     * @brief Get sfExtensionComputeLimit (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getExtensionComputeLimit() const
+    {
+        if (hasExtensionComputeLimit())
+            return this->sle_->at(sfExtensionComputeLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfExtensionComputeLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasExtensionComputeLimit() const
+    {
+        return this->sle_->isFieldPresent(sfExtensionComputeLimit);
+    }
+
+    /**
+     * @brief Get sfExtensionSizeLimit (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getExtensionSizeLimit() const
+    {
+        if (hasExtensionSizeLimit())
+            return this->sle_->at(sfExtensionSizeLimit);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfExtensionSizeLimit is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasExtensionSizeLimit() const
+    {
+        return this->sle_->isFieldPresent(sfExtensionSizeLimit);
+    }
+
+    /**
+     * @brief Get sfGasPrice (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getGasPrice() const
+    {
+        if (hasGasPrice())
+            return this->sle_->at(sfGasPrice);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfGasPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasGasPrice() const
+    {
+        return this->sle_->isFieldPresent(sfGasPrice);
+    }
+
+    /**
      * @brief Get sfPreviousTxnID (soeOPTIONAL)
      * @return The field value, or std::nullopt if not present.
      */
@@ -370,6 +442,39 @@ public:
     setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
         object_[sfReserveIncrementDrops] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfExtensionComputeLimit (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setExtensionComputeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfExtensionComputeLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfExtensionSizeLimit (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setExtensionSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfExtensionSizeLimit] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfGasPrice (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    FeeSettingsBuilder&
+    setGasPrice(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfGasPrice] = value;
         return *this;
     }
 

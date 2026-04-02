@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -14,7 +13,7 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
     , pathSearchMax_(config.pathSearchMax)
     , standalone_(config.standalone)
     , seq_(0)
-    , j_(registry.journal("OrderBookDB"))
+    , j_(registry.getJournal("OrderBookDB"))
 {
 }
 
@@ -27,7 +26,7 @@ make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config)
 void
 OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 {
-    if (!standalone_ && registry_.getOPs().isNeedNetworkLedger())
+    if (!standalone_ && registry_.get().getOPs().isNeedNetworkLedger())
     {
         JLOG(j_.warn()) << "Eliding full order book update: no ledger";
         return;
@@ -57,8 +56,10 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         }
         else
         {
-            registry_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() {
+            // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
+            // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
+            registry_.get().getJobQueue().addJob(
+                jtUPDATE_PF, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
                     update(ledger);
                 });
         }
@@ -96,7 +97,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     {
         for (auto& sle : ledger->sles)
         {
-            if (registry_.isStopping())
+            if (registry_.get().isStopping())
             {
                 JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
@@ -161,22 +162,22 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
         allBooks_.swap(allBooks);
         xrpBooks_.swap(xrpBooks);
         domainBooks_.swap(domainBooks);
         xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
-    registry_.getLedgerMaster().newOrderBookDB();
+    registry_.get().getLedgerMaster().newOrderBookDB();
 }
 
 void
 OrderBookDBImpl::addOrderBook(Book const& book)
 {
-    bool toXRP = isXRP(book.out);
+    bool const toXRP = isXRP(book.out);
 
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     if (book.domain)
     {
@@ -204,7 +205,7 @@ OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> 
     std::vector<Book> ret;
 
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         auto getBooks = [&](auto const& container, auto const& key) {
             if (auto it = container.find(key); it != container.end())
@@ -233,7 +234,7 @@ OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> 
 int
 OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     if (!domain)
     {
@@ -250,9 +251,9 @@ OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& d
 }
 
 bool
-OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
+OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> const& domain)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     if (domain)
         return xrpDomainBooks_.contains({issue, *domain});
     return xrpBooks_.contains(issue);
@@ -261,7 +262,7 @@ OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
 BookListeners::pointer
 OrderBookDBImpl::makeBookListeners(Book const& book)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     auto ret = getBookListeners(book);
 
     if (!ret)
@@ -282,7 +283,7 @@ BookListeners::pointer
 OrderBookDBImpl::getBookListeners(Book const& book)
 {
     BookListeners::pointer ret;
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     auto it0 = mListeners.find(book);
     if (it0 != mListeners.end())
@@ -299,7 +300,7 @@ OrderBookDBImpl::processTxn(
     AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     // For this particular transaction, maintain the set of unique
     // subscriptions that have already published it.  This prevents sending

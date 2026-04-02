@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -91,9 +90,9 @@ Payment::preflight(PreflightContext const& ctx)
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
-    bool const limitQuality = txFlags & tfLimitQuality;
-    bool const defaultPathsAllowed = !(txFlags & tfNoRippleDirect);
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
+    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
     bool const hasPaths = tx.isFieldPresent(sfPaths);
     bool const hasMax = tx.isFieldPresent(sfSendMax);
 
@@ -269,7 +268,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx.tx[~sfSendMax];
 
@@ -314,7 +313,9 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if ((sleDst->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if (
+        ((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -363,9 +364,9 @@ Payment::doApply()
 
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx_.tx.getFlags();
-    bool const partialPaymentAllowed = txFlags & tfPartialPayment;
-    bool const limitQuality = txFlags & tfLimitQuality;
-    bool const defaultPathsAllowed = !(txFlags & tfNoRippleDirect);
+    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
+    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -433,7 +434,7 @@ Payment::doApply()
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.tx[~sfDomainID],
-                ctx_.registry.logs(),
+                ctx_.registry,
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
             //             on the TER. But always applying *should*
@@ -558,18 +559,23 @@ Payment::doApply()
     // This is the total reserve in drops.
     auto const reserve = view().fees().accountReserve(ownerCount);
 
-    // preFeeBalance_ is the balance on the sending account BEFORE the
-    // fees were charged. We want to make sure we have enough reserve
-    // to send. Allow final spend to use reserve for fee.
-    auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
+    // In a delegated payment, the fee payer is the delegated account,
+    // not the source account (account_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
 
-    if (preFeeBalance_ < dstAmount.xrp() + mmm)
+    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // were charged. If source account is the fee payer, it must also cover the fee.
+    // The final spend may use the reserve to cover fees.
+    auto const minRequiredFunds =
+        accountIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
+
+    if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
         JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
-                         << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
-                         << ")";
+                         << " / " << to_string(dstAmount.xrp() + minRequiredFunds) << " ("
+                         << to_string(reserve) << ")";
 
         return tecUNFUNDED_PAYMENT;
     }
@@ -619,7 +625,7 @@ Payment::doApply()
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent))
+    if ((sleDst->getFlags() & lsfPasswordSpent) != 0u)
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;

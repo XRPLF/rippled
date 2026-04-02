@@ -291,7 +291,7 @@ private:
             env_.require(owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
-            for (auto it : holders_)
+            for (auto const& it : holders_)
                 env_.require(owners(it.second, *arg.holderCount));
         }
         return err;

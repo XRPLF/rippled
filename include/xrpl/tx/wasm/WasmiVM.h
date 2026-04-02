@@ -77,9 +77,9 @@ using WasmImporttypeVec = WasmVec<
 struct WasmiResult
 {
     WasmValVec r;
-    bool f;  // failure flag
+    bool f{false};  // failure flag
 
-    WasmiResult(unsigned N = 0) : r(N), f(false)
+    WasmiResult(unsigned N = 0) : r(N)
     {
     }
 
@@ -182,11 +182,11 @@ public:
     addInstance(StorePtr& s, WasmExternVec const& imports);
 
     std::int64_t
-    getGas();
+    getGas() const;
 
 private:
     WasmExternVec
-    buildImports(StorePtr& s, ImportVec const& imports);
+    buildImports(StorePtr& s, ImportVec const& imports) const;
 };
 
 class WasmiEngine
@@ -273,7 +273,7 @@ private:
     FuncInfo
     getFunc(std::string_view funcName) const;
 
-    std::vector<wasm_val_t>
+    static std::vector<wasm_val_t>
     convertParams(std::vector<WasmParam> const& params);
 
     static int

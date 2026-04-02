@@ -112,11 +112,12 @@ sizedItems
     {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
     {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
+// clang-format on
 
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr->bool {
+    []() constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : sizedItems)
@@ -130,7 +131,6 @@ static_assert(
         return true;
     }(),
     "Mismatch between sized item enum & array indices");
-// clang-format on
 
 //
 // TODO: Check permissions on config file before using it.
@@ -204,13 +204,13 @@ getSingleSection(
 {
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (pmtEntries && pmtEntries->size() == 1)
+    if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
         return true;
     }
 
-    if (pmtEntries)
+    if (pmtEntries != nullptr)
     {
         JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
                        << pmtEntries->size() << " lines.";
@@ -390,10 +390,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
 
-    Section ledgerTxTablesSection = section("ledger_tx_tables");
+    Section const ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
 
-    Section& nodeDbSection{section(ConfigSection::nodeDatabase())};
+    Section const& nodeDbSection{section(ConfigSection::nodeDatabase())};
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
@@ -415,7 +415,7 @@ checkZeroPorts(Config const& config)
         if (optResult)
         {
             auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
-            if (!port)
+            if (port == 0u)
             {
                 std::stringstream ss;
                 ss << "Invalid value '" << *optResult << "' for key 'port' in [" << name << "]";
@@ -471,7 +471,7 @@ Config::loadFromString(std::string const& fileContents)
                 if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
-                std::string result = std::regex_replace(line, e, " $1");
+                std::string const result = std::regex_replace(line, e, " $1");
                 // sanity check the result of the replace, should be same length
                 // as input
                 if (result.size() == line.size())
@@ -487,7 +487,7 @@ Config::loadFromString(std::string const& fileContents)
         std::string dbPath;
         if (getSingleSection(secConfig, "database_path", dbPath, j_))
         {
-            boost::filesystem::path p(dbPath);
+            boost::filesystem::path const p(dbPath);
             legacy("database_path", boost::filesystem::absolute(p).string());
         }
     }
@@ -890,7 +890,7 @@ Config::loadFromString(std::string const& fileContents)
                                       ", must be: [0-9]+ [minutes|hours|days|weeks]");
         }
 
-        std::uint32_t duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
+        std::uint32_t const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
 
         if (boost::iequals(match[2], "minutes"))
         {
@@ -999,30 +999,30 @@ Config::loadFromString(std::string const& fileContents)
 
             auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
 
-            if (entries)
+            if (entries != nullptr)
                 section(SECTION_VALIDATORS).append(*entries);
 
             auto valKeyEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
 
-            if (valKeyEntries)
+            if (valKeyEntries != nullptr)
                 section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
 
             auto valSiteEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
 
-            if (valSiteEntries)
+            if (valSiteEntries != nullptr)
                 section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
 
             auto valListKeys = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
 
-            if (valListKeys)
+            if (valListKeys != nullptr)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
             auto valListThreshold = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
 
-            if (valListThreshold)
+            if (valListThreshold != nullptr)
                 section(SECTION_VALIDATOR_LIST_THRESHOLD).append(*valListThreshold);
 
-            if (!entries && !valKeyEntries && !valListKeys)
+            if ((entries == nullptr) && (valKeyEntries == nullptr) && (valListKeys == nullptr))
             {
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -1232,7 +1232,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"journal_mode\"");
             }
-            bool higherRisk =
+            bool const higherRisk =
                 boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(journal_mode, "delete") ||
@@ -1256,7 +1256,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"synchronous\"");
             }
-            bool higherRisk = boost::iequals(synchronous, "off");
+            bool const higherRisk = boost::iequals(synchronous, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
@@ -1277,7 +1277,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"temp_store\"");
             }
-            bool higherRisk = boost::iequals(temp_store, "memory");
+            bool const higherRisk = boost::iequals(temp_store, "memory");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(temp_store, "default") ||
                 boost::iequals(temp_store, "file"))
@@ -1321,7 +1321,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         if (page_size < 512 || page_size > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
-        if (page_size & (page_size - 1))
+        if ((page_size & (page_size - 1)) != 0)
             Throw<std::runtime_error>("Invalid page_size. Must be a power of 2.");
     }
 

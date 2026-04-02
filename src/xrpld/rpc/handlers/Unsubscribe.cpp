@@ -28,7 +28,7 @@ doUnsubscribe(RPC::JsonContext& context)
         if (context.role != Role::ADMIN)
             return rpcError(rpcNO_PERMISSION);
 
-        std::string strUrl = context.params[jss::url].asString();
+        std::string const strUrl = context.params[jss::url].asString();
         ispSub = context.netOps.findRpcSub(strUrl);
         if (!ispSub)
             return jvResult;
@@ -49,7 +49,7 @@ doUnsubscribe(RPC::JsonContext& context)
             if (!it.isString())
                 return rpcError(rpcSTREAM_MALFORMED);
 
-            std::string streamName = it.asString();
+            std::string const streamName = it.asString();
             if (streamName == "server")
             {
                 context.netOps.unsubServer(ispSub->getSeq());

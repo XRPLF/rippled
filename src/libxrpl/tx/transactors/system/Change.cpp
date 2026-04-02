@@ -156,7 +156,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -214,7 +214,7 @@ Change::applyAmendment()
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
 
-        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.warn()) << "Unsupported amendment " << amendment << " received a majority.";
         }
@@ -225,13 +225,13 @@ Change::applyAmendment()
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
-        ctx_.registry.getAmendmentTable().enable(amendment);
+        ctx_.registry.get().getAmendmentTable().enable(amendment);
 
-        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.error()) << "Unsupported amendment " << amendment
                              << " activated: server blocked.";
-            ctx_.registry.getOPs().setAmendmentBlocked();
+            ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
     }
 
@@ -312,7 +312,7 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
+    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling) != 0u;
     auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
     if (seq != view().seq())
     {

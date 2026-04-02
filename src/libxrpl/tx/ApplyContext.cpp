@@ -45,7 +45,7 @@ ApplyContext::apply(TER ter)
         view_->setWasmReturnCode(*wasmReturnCode_);
     }
     view_->setGasUsed(gasUsed_);
-    return view_->apply(base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
+    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & tapDRY_RUN) != 0u, journal);
 }
 
 std::size_t
@@ -103,7 +103,7 @@ ApplyContext::checkInvariantsHelper(
         // short-circuits). While the logic is still correct, the log
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
-        std::array<bool, sizeof...(Is)> finalizers{
+        std::array<bool, sizeof...(Is)> const finalizers{
             {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
 
         // call each check's finalizer to see that it passes

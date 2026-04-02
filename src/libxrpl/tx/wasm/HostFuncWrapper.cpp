@@ -21,19 +21,19 @@ setData(
     uint8_t const* src,
     int32_t srcSize)
 {
-    if (!srcSize)
+    if (srcSize == 0)
         return 0;  // LCOV_EXCL_LINE
 
-    if (dst < 0 || dstSize < 0 || !src || srcSize < 0)
+    if (dst < 0 || dstSize < 0 || (src == nullptr) || srcSize < 0)
         return HfErrorToInt(HostFunctionError::INVALID_PARAMS);
 
     if (srcSize > maxWasmDataLength)
         return HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    auto const memory = runtime ? runtime->getMem() : wmem();
+    auto const memory = (runtime != nullptr) ? runtime->getMem() : wmem();
 
     // LCOV_EXCL_START
-    if (!memory.s)
+    if (memory.s == 0u)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
     if ((int64_t)dst + dstSize > memory.s)
@@ -76,11 +76,15 @@ getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     T x;
-    uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
+    uintptr_t const p = reinterpret_cast<uintptr_t>(r->data());
     if (p & (alignof(T) - 1))  // unaligned
+    {
         memcpy(&x, r->data(), sizeof(T));
+    }
     else
+    {
         x = *reinterpret_cast<T const*>(r->data());
+    }
     x = adjustWasmEndianess(x);
 
     return x;
@@ -324,7 +328,7 @@ static inline HostFunctions*
 getHF(void* env)
 {
     auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);
+    HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
     return hf;
 }
 
@@ -332,12 +336,12 @@ static inline Expected<std::int64_t, wasm_trap_t*>
 checkGas(void* env)
 {
     auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);
+    HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
 
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    if (!runtime)
+    if (runtime == nullptr)
     {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(
+        wasm_trap_t const* trap = reinterpret_cast<wasm_trap_t*>(
             WasmEngine::instance().newTrap("hf no runtime"));  // LCOV_EXCL_LINE
         return Unexpected(trap);                               // LCOV_EXCL_LINE
     }
@@ -348,14 +352,14 @@ checkGas(void* env)
 
     if (runtime->setGas(x) < 0)
     {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(
+        wasm_trap_t const* trap = reinterpret_cast<wasm_trap_t*>(
             WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
         return Unexpected(trap);                               // LCOV_EXCL_LINE
     }
 
     if (gas < impFunc.gas)
     {
-        wasm_trap_t* trap =
+        wasm_trap_t const* trap =
             reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
         return Unexpected(trap);
     }
@@ -371,7 +375,7 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return g.error();  // LCOV_EXCL_LINE
     auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
+    int const index = 0;
 
     return returnResult(runtime, params, results, hf->getLedgerSqn(), index);
 }
@@ -383,7 +387,7 @@ getParentLedgerTime_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t
         return g.error();  // LCOV_EXCL_LINE
     auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
+    int const index = 0;
 
     return returnResult(runtime, params, results, hf->getParentLedgerTime(), index);
 }
@@ -395,7 +399,7 @@ getParentLedgerHash_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t
         return g.error();  // LCOV_EXCL_LINE
     auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
+    int const index = 0;
 
     return returnResult(runtime, params, results, hf->getParentLedgerHash(), index);
 }
@@ -407,7 +411,7 @@ getBaseFee_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         return g.error();  // LCOV_EXCL_LINE
     auto* hf = getHF(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
+    int const index = 0;
 
     return returnResult(runtime, params, results, hf->getBaseFee(), index);
 }
@@ -1405,7 +1409,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex), index);
+    return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex != 0), index);
 }
 
 wasm_trap_t*
@@ -1814,11 +1818,11 @@ testGetDataIncrement()
     wasm_val_t values[4];
 
     std::array<std::uint8_t, 128> buffer = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-    MockInstanceWrapper runtime(wmem{buffer.data(), buffer.size()});
+    MockInstanceWrapper const runtime(wmem{buffer.data(), buffer.size()});
 
     {
         // test int32_t
-        wasm_val_vec_t params = {1, &values[0]};
+        wasm_val_vec_t const params = {1, &values[0]};
 
         values[0] = WASM_I32_VAL(42);
 
@@ -1830,7 +1834,7 @@ testGetDataIncrement()
 
     {
         // test int64_t
-        wasm_val_vec_t params = {1, &values[0]};
+        wasm_val_vec_t const params = {1, &values[0]};
 
         values[0] = WASM_I64_VAL(1234);
 
@@ -1842,7 +1846,7 @@ testGetDataIncrement()
 
     {
         // test SFieldCRef
-        wasm_val_vec_t params = {1, &values[0]};
+        wasm_val_vec_t const params = {1, &values[0]};
 
         values[0] = WASM_I32_VAL(sfAccount.fieldCode);
 
@@ -1854,7 +1858,7 @@ testGetDataIncrement()
 
     {
         // test Slice
-        wasm_val_vec_t params = {2, &values[0]};
+        wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(3);
@@ -1867,7 +1871,7 @@ testGetDataIncrement()
 
     {
         // test string
-        wasm_val_vec_t params = {2, &values[0]};
+        wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(5);
@@ -1885,7 +1889,7 @@ testGetDataIncrement()
         AccountID const id(
             calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("alice")).first));
 
-        wasm_val_vec_t params = {2, &values[0]};
+        wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(id.bytes);
@@ -1901,7 +1905,7 @@ testGetDataIncrement()
         // test uint256
 
         Hash h1 = sha512Half(Slice(buffer.data(), 8));
-        wasm_val_vec_t params = {2, &values[0]};
+        wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(h1.bytes);
@@ -1917,7 +1921,7 @@ testGetDataIncrement()
         // test Currency
 
         Currency const c = xrpCurrency();
-        wasm_val_vec_t params = {2, &values[0]};
+        wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
         values[1] = WASM_I32_VAL(c.bytes);

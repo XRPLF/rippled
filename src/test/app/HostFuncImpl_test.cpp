@@ -95,7 +95,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto const result = hfs.getLedgerSqn();
         if (BEAST_EXPECT(result.has_value()))
@@ -114,11 +114,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             OpenView ov{*env.current()};
             ApplyContext ac = createApplyContext(env, ov);
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
             auto const result = hfs.getParentLedgerTime();
             if (BEAST_EXPECT(result.has_value()))
+            {
                 BEAST_EXPECT(
                     result.value() == env.current()->parentCloseTime().time_since_epoch().count());
+            }
         }
     }
 
@@ -133,7 +135,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
 
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto const result = hfs.getParentLedgerHash();
         if (BEAST_EXPECT(result.has_value()))
@@ -151,7 +153,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
 
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto const result = hfs.getBaseFee();
         if (BEAST_EXPECT(result.has_value()))
@@ -168,7 +170,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Use featureTokenEscrow for testing
         auto const amendmentId = featureTokenEscrow;
@@ -189,7 +191,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Test with a fake amendment id (all zeros)
-        uint256 fakeId;
+        uint256 const fakeId;
         {
             auto const result = hfs.isAmendmentEnabled(fakeId);
             BEAST_EXPECT(result.has_value());
@@ -197,7 +199,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Test with a fake amendment name
-        std::string fakeName = "FakeAmendment";
+        std::string const fakeName = "FakeAmendment";
         {
             auto const result = hfs.isAmendmentEnabled(fakeName);
             BEAST_EXPECT(result.has_value());
@@ -278,7 +280,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
 
         {
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
             auto const account = hfs.getTxField(sfAccount);
             BEAST_EXPECT(account && std::ranges::equal(*account, env.master.id()));
 
@@ -301,9 +303,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto const credentialIds = hfs.getTxField(sfCredentialIDs);
             if (BEAST_EXPECT(!credentialIds.has_value()))
+            {
                 BEAST_EXPECTS(
                     credentialIds.error() == HostFunctionError::NOT_LEAF_FIELD,
                     std::to_string(HfErrorToInt(credentialIds.error())));
+            }
 
             auto const nonField = hfs.getTxField(sfInvalid);
             if (BEAST_EXPECT(!nonField.has_value()))
@@ -322,10 +326,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, iouAsset.issue()});
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
 
             auto const asset = hfs.getTxField(sfAsset);
-            std::vector<std::uint8_t> expectedAsset(20, 0);
+            std::vector<std::uint8_t> const expectedAsset(20, 0);
             BEAST_EXPECT(asset && *asset == expectedAsset);
 
             auto const asset2 = hfs.getTxField(sfAsset2);
@@ -341,7 +345,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, MPTIssue{mptId}});
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
 
             auto const asset = hfs.getTxField(sfAsset);
             if (BEAST_EXPECT(asset.has_value()))
@@ -363,7 +367,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldU8(sfAssetScale, expectedScale);
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
 
             auto const actualScale = hfs.getTxField(sfAssetScale);
             if (BEAST_EXPECT(actualScale.has_value()))
@@ -393,7 +397,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const escrowKeylet = keylet::escrow(env.master, env.seq(env.master) - 1);
         BEAST_EXPECT(env.le(escrowKeylet));
 
-        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+        WasmHostFunctionsImpl const hfs(ac, escrowKeylet);
 
         // Should return the Account field from the escrow ledger object
         auto const account = hfs.getCurrentLedgerObjField(sfAccount);
@@ -421,7 +425,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl hfs2(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs2(ac, dummyEscrow);
             auto const account = hfs2.getCurrentLedgerObjField(sfAccount);
             if (BEAST_EXPECT(!account.has_value()))
             {
@@ -520,14 +524,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // Locator is a sequence of int32_t codes:
             // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode, 0, sfMemoData.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
 
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
             {
-                std::string memoData(result.value().begin(), result.value().end());
+                std::string const memoData(result.value().begin(), result.value().end());
                 BEAST_EXPECT(memoData == "hello");
             }
         }
@@ -535,14 +539,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // Locator for sfCredentialIDs[0]
             std::vector<int32_t> locatorVec = {sfCredentialIDs.fieldCode, 0};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
 
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
             {
-                std::string credIdResult(result.value().begin(), result.value().end());
+                std::string const credIdResult(result.value().begin(), result.value().end());
                 BEAST_EXPECT(strHex(credIdResult) == credIdHex);
             }
         }
@@ -550,7 +554,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             // can use the nested locator for base fields too
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
 
@@ -566,7 +570,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // unaligned locator
             std::vector<uint8_t> locatorVec(sizeof(int32_t) + 1);
             memcpy(locatorVec.data() + 1, &sfAccount.fieldCode, sizeof(int32_t));
-            Slice locator(reinterpret_cast<uint8_t const*>(locatorVec.data() + 1), sizeof(int32_t));
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data() + 1), sizeof(int32_t));
 
             auto const account = hfs.getTxNestedField(locator);
             if (BEAST_EXPECTS(
@@ -578,14 +583,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError) {
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
         // Locator for non-existent base field
         expectError(
@@ -681,7 +688,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // Locator for malformed locator (not multiple of 4)
         {
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-            Slice malformedLocator(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
+            Slice const malformedLocator(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
             auto const malformedResult = hfs.getTxNestedField(malformedLocator);
             BEAST_EXPECT(
                 !malformedResult.has_value() &&
@@ -712,7 +719,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for base field
         std::vector<int32_t> baseLocator = {sfSignerQuorum.fieldCode};
-        Slice baseLocatorSlice(
+        Slice const baseLocatorSlice(
             reinterpret_cast<uint8_t const*>(baseLocator.data()),
             baseLocator.size() * sizeof(int32_t));
         auto const signerQuorum = hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
@@ -724,14 +731,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError) {
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
         // Locator for non-existent base field
         expectError(
@@ -747,7 +756,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             HostFunctionError::LOCATOR_MALFORMED);
 
         // Locator for empty locator
-        Slice emptyLocator(nullptr, 0);
+        Slice const emptyLocator(nullptr, 0);
         auto const emptyResult = hfs.getCurrentLedgerObjNestedField(emptyLocator);
         BEAST_EXPECT(
             !emptyResult.has_value() &&
@@ -755,7 +764,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for malformed locator (not multiple of 4)
         std::vector<int32_t> malformedLocatorVec = {sfMemos.fieldCode};
-        Slice malformedLocator(reinterpret_cast<uint8_t const*>(malformedLocatorVec.data()), 3);
+        Slice const malformedLocator(
+            reinterpret_cast<uint8_t const*>(malformedLocatorVec.data()), 3);
         auto const malformedResult = hfs.getCurrentLedgerObjNestedField(malformedLocator);
         BEAST_EXPECT(
             !malformedResult.has_value() &&
@@ -763,16 +773,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
             std::vector<int32_t> const locatorVec = {sfAccount.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedField(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
                     std::to_string(static_cast<int>(result.error())));
+            }
         }
     }
 
@@ -804,7 +816,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             std::vector<int32_t> const locatorVec = {
                 sfSignerEntries.fieldCode, 0, sfAccount.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
 
@@ -873,9 +885,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedField(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Error: base field not found
@@ -951,7 +965,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
 
         // Transaction with an array field
-        STTx stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+        STTx const stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
             obj.setAccountID(sfAccount, env.master.id());
             STArray memos;
             {
@@ -972,7 +986,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         ApplyContext ac = createApplyContext(env, ov, stx);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Should return 1 for sfMemos
         auto const memosLen = hfs.getTxArrayLen(sfMemos);
@@ -1012,7 +1026,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const signerKeylet = keylet::signers(env.master.id());
-        WasmHostFunctionsImpl hfs(ac, signerKeylet);
+        WasmHostFunctionsImpl const hfs(ac, signerKeylet);
 
         auto const entriesLen = hfs.getCurrentLedgerObjArrayLen(sfSignerEntries);
         if (BEAST_EXPECT(entriesLen.has_value()))
@@ -1029,7 +1043,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
             auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
             if (BEAST_EXPECT(!len.has_value()))
                 BEAST_EXPECT(len.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
@@ -1062,8 +1076,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const arrLen = hfs.getLedgerObjArrayLen(1, sfSignerEntries);
             if (BEAST_EXPECT(arrLen.has_value()))
+            {
                 // Should return 2 for sfSignerEntries
                 BEAST_EXPECT(arrLen.value() == 2);
+            }
         }
         {
             auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
@@ -1102,7 +1118,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         Env env{*this};
         OpenView ov{*env.current()};
 
-        STTx stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+        STTx const stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
             STArray memos;
             STObject memoObj(sfMemo);
             memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
@@ -1123,15 +1139,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Locator for sfMemos
         {
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const arrLen = hfs.getTxNestedArrayLen(locator);
@@ -1173,15 +1191,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Locator for sfSignerEntries
         {
             std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-            Slice locator(
+            Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
@@ -1196,16 +1216,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
             Slice const locator(
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
                     std::to_string(static_cast<int>(result.error())));
+            }
         }
     }
 
@@ -1233,7 +1255,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Locator for sfSignerEntries
         std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-        Slice locator(
+        Slice const locator(
             reinterpret_cast<uint8_t const*>(locatorVec.data()),
             locatorVec.size() * sizeof(int32_t));
         auto const arrLen = hfs.getLedgerObjNestedArrayLen(1, locator);
@@ -1249,9 +1271,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getLedgerObjNestedArrayLen(slot, locator);
             if (BEAST_EXPECT(!result.has_value()))
+            {
                 BEAST_EXPECTS(
                     result.error() == expectedError,
                     std::to_string(static_cast<int>(result.error())));
+            }
         };
 
         // Error: non-array field
@@ -1271,7 +1295,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         expectError({}, HostFunctionError::LOCATOR_MALFORMED);
 
         // Error: locator malformed (not multiple of 4)
-        Slice malformedLocator(reinterpret_cast<uint8_t const*>(locator.data()), 3);
+        Slice const malformedLocator(reinterpret_cast<uint8_t const*>(locator.data()), 3);
         auto const malformed = hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
         BEAST_EXPECT(
             !malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
@@ -1322,7 +1346,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Generate a keypair and sign a message
         auto const kp = generateKeyPair(KeyType::secp256k1, randomSeed());
@@ -1403,7 +1427,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         std::string data = "hello world";
         auto const result = hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
@@ -1425,7 +1449,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto compareKeylet = [](std::vector<uint8_t> const& bytes, Keylet const& kl) {
             return std::ranges::equal(bytes, kl.key);
@@ -1527,7 +1551,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(escrowKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        Currency usd = to_currency("USD");
+        Currency const usd = to_currency("USD");
         COMPARE_KEYLET(lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
         COMPARE_KEYLET_FAIL(
             lineKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), usd);
@@ -1617,7 +1641,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(alice, env.seq(alice));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Should succeed for valid NFT
         {
@@ -1672,7 +1696,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         // Should succeed for valid NFT id
         {
@@ -1706,7 +1730,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto const result = hfs.getNFTTaxon(nftId);
         if (BEAST_EXPECT(result.has_value()))
@@ -1730,7 +1754,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.getNFTFlags(nftId);
@@ -1763,7 +1787,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.getNFTTransferFee(nftId);
@@ -1797,7 +1821,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.getNFTSerial(nftId);
@@ -1823,13 +1847,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kTrace};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "test trace";
+            std::string const msg = "test trace";
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
             auto const result = hfs.trace(msg, slice, false);
@@ -1859,13 +1883,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kError};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "test trace";
+            std::string const msg = "test trace";
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
             auto const result = hfs.trace(msg, slice, false);
@@ -1885,14 +1909,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kTrace};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace number";
-            int64_t num = 123456789;
+            std::string const msg = "trace number";
+            int64_t const num = 123456789;
             auto const result = hfs.traceNum(msg, num);
             if (BEAST_EXPECT(result.has_value()))
             {
@@ -1908,14 +1932,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kError};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace number";
-            int64_t num = 123456789;
+            std::string const msg = "trace number";
+            int64_t const num = 123456789;
             auto const result = hfs.traceNum(msg, num);
             BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
@@ -1933,13 +1957,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kTrace};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace account";
+            std::string const msg = "trace account";
             auto const result = hfs.traceAccount(msg, env.master.id());
             if (BEAST_EXPECT(result.has_value()))
             {
@@ -1955,12 +1979,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kError};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-            std::string msg = "trace account";
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            std::string const msg = "trace account";
             auto const result = hfs.traceAccount(msg, env.master.id());
             BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
@@ -1978,14 +2002,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kTrace};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace amount";
-            STAmount amount = XRP(12345);
+            std::string const msg = "trace amount";
+            STAmount const amount = XRP(12345);
             {
                 auto const result = hfs.traceAmount(msg, amount);
                 if (BEAST_EXPECT(result.has_value()))
@@ -2001,7 +2025,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Account const alice("alice");
             env.fund(XRP(1000), alice);
             env.close();
-            STAmount iouAmount = env.master["USD"](100);
+            STAmount const iouAmount = env.master["USD"](100);
             {
                 auto const result = hfs.traceAmount(msg, iouAmount);
                 if (BEAST_EXPECT(result.has_value()))
@@ -2011,8 +2035,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // MPT amount
             {
                 auto const mptId = makeMptID(42, env.master.id());
-                Asset mptAsset = Asset(mptId);
-                STAmount mptAmount(mptAsset, 123456);
+                Asset const mptAsset = Asset(mptId);
+                STAmount const mptAmount(mptAsset, 123456);
                 auto const result = hfs.traceAmount(msg, mptAmount);
                 if (BEAST_EXPECT(result.has_value()))
                     BEAST_EXPECT(*result == 0);
@@ -2024,14 +2048,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kError};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace amount";
-            STAmount amount = XRP(12345);
+            std::string const msg = "trace amount";
+            STAmount const amount = XRP(12345);
             auto const result = hfs.traceAmount(msg, amount);
             BEAST_EXPECT(result && *result == 0);
             auto const messages = sink.messages().str();
@@ -2076,9 +2100,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace float";
+            std::string const msg = "trace float";
 
             {
                 auto const result = hfs.traceFloat(msg, makeSlice(invalid));
@@ -2096,13 +2120,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             Env env(*this);
             OpenView ov{*env.current()};
             test::StreamSink sink{beast::severities::kError};
-            beast::Journal jlog{sink};
+            beast::Journal const jlog{sink};
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
-            std::string msg = "trace float";
+            std::string const msg = "trace float";
 
             auto const result = hfs.traceFloat(msg, makeSlice(invalid));
             BEAST_EXPECT(result && *result == 0);
@@ -2121,7 +2145,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), -1);
@@ -2161,7 +2185,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
@@ -2197,7 +2221,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatSet(1, 0, -1);
@@ -2269,7 +2293,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatCompare(Slice(), Slice());
@@ -2323,7 +2347,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatAdd(Slice(), Slice(), -1);
@@ -2370,7 +2394,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatSubtract(Slice(), Slice(), -1);
@@ -2419,7 +2443,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatMultiply(Slice(), Slice(), -1);
@@ -2472,7 +2496,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatDivide(Slice(), Slice(), -1);
@@ -2529,7 +2553,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatRoot(Slice(), 2, -1);
@@ -2598,7 +2622,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatPower(Slice(), 2, -1);
@@ -2676,7 +2700,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         {
             auto const result = hfs.floatLog(Slice(), -1);
@@ -2779,7 +2803,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
 
         auto const y = hfs.floatSet(20, 0, 0);
         if (!BEAST_EXPECT(y))
