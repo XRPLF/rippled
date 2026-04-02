@@ -182,23 +182,6 @@ AccountRoot<ViewT>::isPseudoAccount(std::set<SField const*> const& pseudoFieldFi
             }) > 0;
 }
 
-[[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter)
-{
-    auto const& fields = getPseudoAccountFields();
-
-    // Intentionally use defensive coding here because it's cheap and makes the
-    // semantics of true return value clean.
-    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::count_if(
-            fields.begin(), fields.end(), [&sleAcct, &pseudoFieldFilter](SField const* sf) -> bool {
-                return sleAcct->isFieldPresent(*sf) &&
-                    (pseudoFieldFilter.empty() || pseudoFieldFilter.contains(sf));
-            }) > 0;
-}
-
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {

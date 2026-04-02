@@ -659,6 +659,19 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 
 //------------------------------------------------------------------------------
 
+[[nodiscard]] static bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
+{
+    auto const& fields = getPseudoAccountFields();
+
+    // Intentionally use defensive coding here because it's cheap and makes the
+    // semantics of true return value clean.
+    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
+        std::count_if(fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
+            return sleAcct->isFieldPresent(*sf);
+        }) > 0;
+}
+
 void
 ValidNewAccountRoot::visitEntry(
     bool,

@@ -184,19 +184,6 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
-/** Returns true if and only if sleAcct is a pseudo-account or specific
-    pseudo-accounts in pseudoFieldFilter.
-
-    Returns false if sleAcct is:
-    - NOT a pseudo-account OR
-    - NOT a ltACCOUNT_ROOT OR
-    - null pointer
-*/
-[[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter = {});
-
 /**
  * Create pseudo-account, storing pseudoOwnerKey into ownerField.
  *
