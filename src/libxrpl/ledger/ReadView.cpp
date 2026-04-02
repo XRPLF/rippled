@@ -58,7 +58,7 @@ makeRulesGivenLedger(
     std::unordered_set<uint256, beast::uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
-    std::optional digest = ledger.digest(k.key);
+    std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
         auto const sle = ledger.read(k);

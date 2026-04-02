@@ -26,7 +26,7 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    if (auto const flagField = ctx.tx[~sfFlags]; flagField && *flagField)
+    if (auto const flagField = ctx.tx[~sfFlags]; flagField && (*flagField != 0u))
     {
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
@@ -144,7 +144,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(

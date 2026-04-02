@@ -27,7 +27,7 @@ protected:
     bool good_;
 
 public:
-    Number2(Slice const& data) : Number(), good_(false)
+    Number2(Slice const& data) : good_(false)
     {
         if (data.size() != encodedFloatSize)
             return;
@@ -39,7 +39,7 @@ public:
         }
 
         uint64_t const v = SerialIter(data).get64();
-        if (!(v & STAmount::cIssuedCurrency))
+        if ((v & STAmount::cIssuedCurrency) == 0u)
             return;
 
         int32_t const e = static_cast<int32_t>((v >> encodedMantissaBits) & 0xFFull);
@@ -47,9 +47,9 @@ public:
         if (decodedExponent < wasmMinExponent || decodedExponent > wasmMaxExponent)
             return;
 
-        int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
+        int64_t const neg = ((v & STAmount::cPositive) != 0u) ? 1 : -1;
         int64_t const m = neg * static_cast<int64_t>(v & ((1ull << encodedMantissaBits) - 1));
-        if (!m)
+        if (m == 0)
             return;
 
         Number x(makeNumber(m, decodedExponent));
@@ -120,20 +120,24 @@ public:
         v |= STAmount::cIssuedCurrency;
 
         uint64_t const absM = std::abs(m);
-        if (!absM)
+        if (absM == 0u)
         {
             return floatNull;
         }
-        else if (absM > maxEncodedMantissa)
+        if (absM > maxEncodedMantissa)
         {
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
         v |= absM;
 
         if (e > wasmMaxExponent)
+        {
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-        else if (e < wasmMinExponent)
+        }
+        if (e < wasmMinExponent)
+        {
             return floatNull;
+        }
         uint64_t const normExp = e - wasmMinExponent + 1;  //+97
         v |= normExp << encodedMantissaBits;
 
@@ -160,10 +164,9 @@ struct FloatState
 {
     Number::rounding_mode oldMode_;
     MantissaRange::mantissa_scale oldScale_;
-    bool good_;
+    bool good_{false};
 
-    FloatState(int32_t mode)
-        : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale()), good_(false)
+    FloatState(int32_t mode) : oldMode_(Number::getround()), oldScale_(Number::getMantissaScale())
     {
         if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
@@ -281,7 +284,11 @@ floatCompareImpl(Slice const& x, Slice const& y)
         detail::Number2 yy(y);
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        return xx < yy ? 2 : (xx == yy ? 0 : 1);
+        if (xx < yy)
+            return 2;
+        if (xx == yy)
+            return 0;
+        return 1;
     }
     // LCOV_EXCL_START
     catch (...)
@@ -443,7 +450,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         detail::Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        if (xx == Number() && !n)
+        if (xx == Number() && (n == 0))
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
         detail::Number2 res(power(xx, n, 1));

@@ -16,7 +16,7 @@ Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
     std::string& reason,
     Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
+    : mTransaction(stx), mApp(app), j_(app.getJournal("Ledger"))
 {
     try
     {
@@ -133,7 +133,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
     Json::Value ret(mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
-    if (ret.isObject() && mLedgerIndex)
+    if (ret.isObject() && (mLedgerIndex != 0u))
     {
         if (!(options & JsonOptions::disable_API_prior_V2))
         {

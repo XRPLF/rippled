@@ -37,6 +37,9 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
+    auto const extensionComputeLimitValue = canonical_UINT32();
+    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasPriceValue = canonical_UINT32();
 
     SetFeeBuilder builder{
         accountValue,
@@ -53,6 +56,9 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     builder.setBaseFeeDrops(baseFeeDropsValue);
     builder.setReserveBaseDrops(reserveBaseDropsValue);
     builder.setReserveIncrementDrops(reserveIncrementDropsValue);
+    builder.setExtensionComputeLimit(extensionComputeLimitValue);
+    builder.setExtensionSizeLimit(extensionSizeLimitValue);
+    builder.setGasPrice(gasPriceValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -134,6 +140,30 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasReserveIncrementDrops());
     }
 
+    {
+        auto const& expected = extensionComputeLimitValue;
+        auto const actualOpt = tx.getExtensionComputeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionComputeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfExtensionComputeLimit");
+        EXPECT_TRUE(tx.hasExtensionComputeLimit());
+    }
+
+    {
+        auto const& expected = extensionSizeLimitValue;
+        auto const actualOpt = tx.getExtensionSizeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionSizeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfExtensionSizeLimit");
+        EXPECT_TRUE(tx.hasExtensionSizeLimit());
+    }
+
+    {
+        auto const& expected = gasPriceValue;
+        auto const actualOpt = tx.getGasPrice();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGasPrice should be present";
+        expectEqualField(expected, *actualOpt, "sfGasPrice");
+        EXPECT_TRUE(tx.hasGasPrice());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -158,6 +188,9 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     auto const baseFeeDropsValue = canonical_AMOUNT();
     auto const reserveBaseDropsValue = canonical_AMOUNT();
     auto const reserveIncrementDropsValue = canonical_AMOUNT();
+    auto const extensionComputeLimitValue = canonical_UINT32();
+    auto const extensionSizeLimitValue = canonical_UINT32();
+    auto const gasPriceValue = canonical_UINT32();
 
     // Build an initial transaction
     SetFeeBuilder initialBuilder{
@@ -174,6 +207,9 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     initialBuilder.setBaseFeeDrops(baseFeeDropsValue);
     initialBuilder.setReserveBaseDrops(reserveBaseDropsValue);
     initialBuilder.setReserveIncrementDrops(reserveIncrementDropsValue);
+    initialBuilder.setExtensionComputeLimit(extensionComputeLimitValue);
+    initialBuilder.setExtensionSizeLimit(extensionSizeLimitValue);
+    initialBuilder.setGasPrice(gasPriceValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -248,6 +284,27 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfReserveIncrementDrops");
     }
 
+    {
+        auto const& expected = extensionComputeLimitValue;
+        auto const actualOpt = rebuiltTx.getExtensionComputeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionComputeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfExtensionComputeLimit");
+    }
+
+    {
+        auto const& expected = extensionSizeLimitValue;
+        auto const actualOpt = rebuiltTx.getExtensionSizeLimit();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfExtensionSizeLimit should be present";
+        expectEqualField(expected, *actualOpt, "sfExtensionSizeLimit");
+    }
+
+    {
+        auto const& expected = gasPriceValue;
+        auto const actualOpt = rebuiltTx.getGasPrice();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfGasPrice should be present";
+        expectEqualField(expected, *actualOpt, "sfGasPrice");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -319,6 +376,12 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getReserveBaseDrops().has_value());
     EXPECT_FALSE(tx.hasReserveIncrementDrops());
     EXPECT_FALSE(tx.getReserveIncrementDrops().has_value());
+    EXPECT_FALSE(tx.hasExtensionComputeLimit());
+    EXPECT_FALSE(tx.getExtensionComputeLimit().has_value());
+    EXPECT_FALSE(tx.hasExtensionSizeLimit());
+    EXPECT_FALSE(tx.getExtensionSizeLimit().has_value());
+    EXPECT_FALSE(tx.hasGasPrice());
+    EXPECT_FALSE(tx.getGasPrice().has_value());
 }
 
 }

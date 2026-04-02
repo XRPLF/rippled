@@ -69,7 +69,7 @@ forEachItem(
         for (auto const& key : sle->getFieldV256(sfIndexes))
             f(view.read(keylet::child(key)));
         auto const next = sle->getFieldU64(sfIndexNext);
-        if (!next)
+        if (next == 0u)
             return;
         pos = keylet::page(root, next);
     }

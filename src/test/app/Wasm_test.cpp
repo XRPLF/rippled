@@ -25,7 +25,7 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
-std::vector<uint8_t> const
+std::vector<uint8_t>
 hexToBytes(std::string const& hex)
 {
     auto const ws = boost::algorithm::unhex(hex);
@@ -62,7 +62,7 @@ uleb128(IT&& it)
 
     do
     {
-        if (shift > sizeof(std::uint64_t) * 8 - 7)
+        if (shift > (sizeof(std::uint64_t) * 8) - 7)
             return {0, 0};
         byte = *it++;
         val |= (byte & 0x7F) << shift;
@@ -100,7 +100,7 @@ getSection(Bytes const& module, std::uint8_t n)
             return {0, 0};
 
         auto [sz, cnt] = uleb128(module.cbegin() + pos);
-        if (!cnt)
+        if (cnt == 0u)
             return {0, 0};
         if (pos + cnt + sz > module.size())
             return {0, 0};
@@ -123,10 +123,8 @@ runFinishFunction(std::string const& code)
     {
         return std::optional<int32_t>(re->result);
     }
-    else
-    {
-        return std::nullopt;
-    }
+
+    return std::nullopt;
 }
 
 struct Wasm_test : public beast::unit_test::suite

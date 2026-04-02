@@ -20,8 +20,8 @@ static FeeLevel64
 getFeeLevelPaid(ReadView const& view, STTx const& tx)
 {
     auto const [baseFee, effectiveFeePaid] = [&view, &tx]() {
-        XRPAmount baseFee = calculateBaseFee(view, tx);
-        XRPAmount feePaid = tx[sfFee].xrp();
+        XRPAmount const baseFee = calculateBaseFee(view, tx);
+        XRPAmount const feePaid = tx[sfFee].xrp();
 
         // If baseFee is 0 then the cost of a basic transaction is free, but we
         // need the effective fee level to be non-zero.
@@ -121,7 +121,7 @@ TxQ::FeeMetrics::update(
         txnsExpected_ = std::min(next, maximumTxnCount_.value_or(next));
     }
 
-    if (!size)
+    if (size == 0)
     {
         escalationMultiplier_ = setup.minimumEscalationMultiplier;
     }
@@ -172,7 +172,7 @@ sumOfFirstSquares(std::size_t xIn)
 
     // We expect that size_t == std::uint64_t but, just in case, guarantee
     // we lose no bits.
-    std::uint64_t x{xIn};
+    std::uint64_t const x{xIn};
 
     // If x is anywhere on the order of 2^^21, it's going
     // to completely dominate the computation and is likely
@@ -185,16 +185,16 @@ sumOfFirstSquares(std::size_t xIn)
 }
 
 // Unit tests for sumOfSquares()
-static_assert(sumOfFirstSquares(1).first == true);
+static_assert(sumOfFirstSquares(1).first);
 static_assert(sumOfFirstSquares(1).second == 1);
 
-static_assert(sumOfFirstSquares(2).first == true);
+static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first == true, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
 static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
 
-static_assert(sumOfFirstSquares(0x200000).first == false, "");
+static_assert(!sumOfFirstSquares(0x200000).first, "");
 static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
 
 }  // namespace detail
@@ -257,7 +257,6 @@ TxQ::MaybeTx::MaybeTx(
     , account(txn_->getAccountID(sfAccount))
     , lastValid(getLastLedgerSequence(*txn_))
     , seqProxy(txn_->getSeqProxy())
-    , retriesRemaining(retriesAllowed)
     , flags(flags_)
     , pfResult(pfResult_)
 {
@@ -268,7 +267,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
@@ -308,10 +307,11 @@ TxQ::MaybeTx&
 TxQ::TxQAccount::add(MaybeTx&& txn)
 {
     auto const seqProx = txn.seqProxy;
+    [[maybe_unused]] auto const* txnPtr = &txn;
 
     auto result = transactions.emplace(seqProx, std::move(txn));
     XRPL_ASSERT(result.second, "xrpl::TxQ::TxQAccount::add : emplace succeeded");
-    XRPL_ASSERT(&result.first->second != &txn, "xrpl::TxQ::TxQAccount::add : transaction moved");
+    XRPL_ASSERT(&result.first->second != txnPtr, "xrpl::TxQ::TxQAccount::add : transaction moved");
 
     return result.first->second;
 }
@@ -357,7 +357,7 @@ TxQ::canBeHeld(
     // queue yet, but should be added in the future.
     // tapFAIL_HARD transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
-        (flags & tapFAIL_HARD))
+        ((flags & tapFAIL_HARD) != 0u))
         return telCAN_NOT_QUEUE;
 
     {
@@ -690,7 +690,7 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
@@ -735,7 +735,7 @@ TxQ::apply(
         return {terPRE_TICKET, false};
     }
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
     AccountMap::iterator accountIter = byAccount_.find(account);
@@ -1286,7 +1286,7 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
@@ -1365,7 +1365,7 @@ TxQ::accept(Application& app, OpenView& view)
 
     auto ledgerChanged = false;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
@@ -1529,7 +1529,7 @@ TxQ::accept(Application& app, OpenView& view)
 SeqProxy
 TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
 }
 
@@ -1591,7 +1591,7 @@ TxQ::getRequiredFeeLevel(
     OpenView& view,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
-    std::lock_guard<std::mutex> const& lock) const
+    std::lock_guard<std::mutex> const& lock)
 {
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
@@ -1620,7 +1620,7 @@ TxQ::tryDirectApply(
         return {};
 
     FeeLevel64 const requiredFeeLevel = [this, &view, flags]() {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return getRequiredFeeLevel(view, flags, feeMetrics_.getSnapshot(), lock);
     }();
 
@@ -1644,9 +1644,9 @@ TxQ::tryDirectApply(
         {
             // If the applied transaction replaced a transaction in the
             // queue then remove the replaced transaction.
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
-            AccountMap::iterator accountIter = byAccount_.find(account);
+            AccountMap::iterator const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
             {
                 TxQAccount& txQAcct = accountIter->second;
@@ -1693,7 +1693,7 @@ TxQ::getMetrics(OpenView const& view) const
 {
     Metrics result;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
 
@@ -1714,7 +1714,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
 {
     auto const account = (*tx)[sfAccount];
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
     auto const baseFee = calculateBaseFee(view, *tx);
@@ -1736,7 +1736,7 @@ TxQ::getAccountTxs(AccountID const& account) const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     AccountMap::const_iterator const accountIter{byAccount_.find(account)};
 
@@ -1756,7 +1756,7 @@ TxQ::getTxs() const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     result.reserve(byFee_.size());
 
@@ -1769,7 +1769,7 @@ TxQ::getTxs() const
 Json::Value
 TxQ::doRPC(Application& app) const
 {
-    auto const view = app.openLedger().current();
+    auto const view = app.getOpenLedger().current();
     if (!view)
     {
         BOOST_ASSERT(false);

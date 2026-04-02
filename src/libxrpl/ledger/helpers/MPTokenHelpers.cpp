@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 //
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -11,21 +12,6 @@
 #include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
-
-// Forward declarations for functions that remain in View.h/cpp
-bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptShare,
-    int depth);
-
-[[nodiscard]] TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node = sfOwnerNode);
 
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
@@ -83,7 +69,7 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
+        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
 
     return parityRate;
 }
@@ -149,7 +135,7 @@ authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if (flags & tfMPTUnauthorize)
+        if ((flags & tfMPTUnauthorize) != 0)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
@@ -229,7 +215,7 @@ authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if (flags & tfMPTUnauthorize)
+    if ((flags & tfMPTUnauthorize) != 0)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
@@ -490,7 +476,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};

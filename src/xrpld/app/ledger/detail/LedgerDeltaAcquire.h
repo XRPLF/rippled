@@ -1,11 +1,11 @@
 #pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <map>
 

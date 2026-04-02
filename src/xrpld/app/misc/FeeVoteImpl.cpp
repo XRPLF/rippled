@@ -1,7 +1,8 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/FeeVote.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/st.h>
 
@@ -305,7 +306,7 @@ FeeVoteImpl::doVoting(
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
                               << baseReserve.first << "/" << incReserve.first;
 
-        STTx feeTx(ttFEE, [=, &rules](auto& obj) {
+        STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
@@ -323,7 +324,7 @@ FeeVoteImpl::doVoting(
                     baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
                     incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = Config::FEE_UNITS_DEPRECATED;
+                obj[sfReferenceFeeUnits] = FEE_UNITS_DEPRECATED;
             }
             if (rules.enabled(featureSmartEscrow))
             {
@@ -333,7 +334,7 @@ FeeVoteImpl::doVoting(
             }
         });
 
-        uint256 txID = feeTx.getTransactionID();
+        uint256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

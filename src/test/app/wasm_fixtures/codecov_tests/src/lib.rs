@@ -7,6 +7,7 @@ use core::panic;
 use xrpl_std::core::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
 use xrpl_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_std::core::locator::Locator;
+use xrpl_std::core::types::blob::DEFAULT_BLOB_SIZE;
 use xrpl_std::core::types::issue::Issue;
 use xrpl_std::core::types::issue::XrpIssue;
 use xrpl_std::core::types::keylets;
@@ -15,6 +16,7 @@ use xrpl_std::host;
 use xrpl_std::host::error_codes;
 use xrpl_std::host::trace::{trace, trace_num as trace_number};
 use xrpl_std::sfield;
+use xrpl_std::types::XRPL_CONTRACT_DATA_SIZE;
 
 mod host_bindings_loose;
 include!("host_bindings_loose.rs");
@@ -340,7 +342,7 @@ pub extern "C" fn finish() -> i32 {
         error_codes::INVALID_PARAMS,
         "get_tx_nested_array_len_neg_len",
     );
-    let long_len = 4 * 1024 + 1;
+    let long_len = DEFAULT_BLOB_SIZE + 1;
     check_result(
         unsafe {
             host_bindings_loose::get_tx_nested_array_len(locator.as_ptr() as i32, long_len as i32)
@@ -705,8 +707,9 @@ pub extern "C" fn finish() -> i32 {
         error_codes::DATA_FIELD_TOO_LARGE,
         "get_ledger_obj_nested_array_len_too_big_slice",
     );
+    let too_big_data_len = XRPL_CONTRACT_DATA_SIZE + 1;
     check_result(
-        unsafe { host::update_data(locator.as_ptr(), long_len) },
+        unsafe { host::update_data(locator.as_ptr(), too_big_data_len) },
         error_codes::DATA_FIELD_TOO_LARGE,
         "update_data_too_big_slice",
     );

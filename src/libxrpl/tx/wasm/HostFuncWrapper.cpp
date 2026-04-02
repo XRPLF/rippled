@@ -21,19 +21,19 @@ setData(
     uint8_t const* src,
     int32_t srcSize)
 {
-    if (!srcSize)
+    if (srcSize == 0)
         return 0;  // LCOV_EXCL_LINE
 
-    if (dst < 0 || dstSize < 0 || !src || srcSize < 0)
+    if (dst < 0 || dstSize < 0 || (src == nullptr) || srcSize < 0)
         return HfErrorToInt(HostFunctionError::INVALID_PARAMS);
 
     if (srcSize > maxWasmDataLength)
         return HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    auto const memory = runtime ? runtime->getMem() : wmem();
+    auto const memory = (runtime != nullptr) ? runtime->getMem() : wmem();
 
     // LCOV_EXCL_START
-    if (!memory.s)
+    if (memory.s == 0u)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
     if ((int64_t)dst + dstSize > memory.s)
@@ -78,9 +78,13 @@ getDataUnsigned(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     T x;
     uintptr_t p = reinterpret_cast<uintptr_t>(r->data());
     if (p & (alignof(T) - 1))  // unaligned
+    {
         memcpy(&x, r->data(), sizeof(T));
+    }
     else
+    {
         x = *reinterpret_cast<T const*>(r->data());
+    }
     x = adjustWasmEndianess(x);
 
     return x;
@@ -335,7 +339,7 @@ checkGas(void* env)
     HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);
 
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    if (!runtime)
+    if (runtime == nullptr)
     {
         wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(
             WasmEngine::instance().newTrap("hf no runtime"));  // LCOV_EXCL_LINE
@@ -1405,7 +1409,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex), index);
+    return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex != 0), index);
 }
 
 wasm_trap_t*

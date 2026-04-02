@@ -23,7 +23,7 @@ class JobQueue_test : public beast::unit_test::suite
                 jQueue.addJob(jtCLIENT, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
 
             // Wait for the Job to run.
-            while (jobRan == false)
+            while (!jobRan)
                 ;
         }
         {

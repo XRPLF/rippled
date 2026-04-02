@@ -15,10 +15,6 @@ TimeoutCounter::TimeoutCounter(
     : app_(app)
     , journal_(journal)
     , hash_(hash)
-    , timeouts_(0)
-    , complete_(false)
-    , failed_(false)
-    , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOContext())
@@ -96,7 +92,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         failed_ = true;
