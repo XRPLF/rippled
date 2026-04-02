@@ -214,7 +214,13 @@ public:
         auto accountId = obj[sfAccount];
         // Only set sequence if not using a ticket (ticket sets sequence to 0)
         if (!obj.isFieldPresent(sfTicketSequence))
+        {
             builder.setSequence(getAccountRoot(accountId).getSequence());
+        }
+        else
+        {
+            builder.setSequence(0);
+        }
         builder.setFee(XRPAmount(10));
         return submit(builder.build(signer.pk(), signer.sk()).getSTTx());
     }
