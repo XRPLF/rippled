@@ -357,7 +357,7 @@ requireAuth(
         {
             // Post-fixSecurity3_1_3: Return a proper error code instead of asserting.
             if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
-                return tefINTERNAL;
+                return tefINTERNAL;  // LCOV_EXCL_LINE
         }
         else
         {
