@@ -108,7 +108,7 @@ isFrozen(
     if (isXRP(currency))
         return false;
     auto const issuerRoot = AccountRoot(issuer, view);
-    if (issuerRoot.exists() && issuerRoot->isFlag(lsfGlobalFreeze))
+    if (issuerRoot.isGlobalFrozen())
         return true;
     if (issuer != account)
     {
