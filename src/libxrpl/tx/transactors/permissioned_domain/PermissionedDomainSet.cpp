@@ -121,7 +121,7 @@ PermissionedDomainSet::doApply()
         auto const page =
             view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
         if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.

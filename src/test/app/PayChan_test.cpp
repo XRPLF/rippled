@@ -7,6 +7,7 @@
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/ter.h>
@@ -316,6 +317,17 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const chan = channel(cho, alice, env.seq(cho));
             env(create(cho, alice, XRP(1000), settleDelay, pk), Ter(tesSUCCESS));
             BEAST_EXPECT(channelExists(*env.current(), chan));
+        }
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const choDir = keylet::ownerDir(cho.id());
+            auto const n = getIndexCountToBump(env, choDir);
+            env(ticket::create(cho, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), choDir, adjustOwnerNode));
+
+            env(create(cho, alice, XRP(1000), settleDelay, pk), Ter(tecDIR_FULL));
+            env(create(bob, cho, XRP(1000), settleDelay, pk), Ter(tecDIR_FULL));
         }
     }
 

@@ -6,6 +6,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
@@ -30,6 +31,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -752,6 +754,59 @@ public:
                 Balance(carol, usdOffer2),
                 Owners(carol, 2));
         }
+    }
+
+    void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const gbp = gw["GBP"];
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+
+        env(rate(gw, 1.005));
+
+        env.trust(usd(10000), alice);
+        env.trust(eur(10000), alice);
+        env.close();
+        env(pay(gw, alice, usd(10000)));
+        env(pay(gw, alice, eur(10000)));
+
+        std::uint32_t const noopSeq{env.seq(alice) + 1};
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n1 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n1 + 32));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        auto rate = getRate(eur(50), usd(50));
+        env(offer(alice, usd(50), eur(50)), Ter(tecDIR_FULL));
+
+        env.close();
+
+        Book const book{usd.issue(), eur.issue(), {}};
+        auto dir = keylet::quality(keylet::kBook(book), rate);
+        auto const n2 = getIndexCountToBump(env, dir);
+        for (auto i = 0; i < static_cast<int>(n2); ++i)
+        {
+            env(offer(alice, usd(50), eur(50)), ticket::Use(noopSeq + i + 1));
+            env.close();
+        }
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), dir, adjustOwnerNode));
+
+        env(offer(alice, usd(50), eur(50)), ticket::Use(noopSeq), Ter(tecDIR_FULL));
     }
 
     // Helper function that returns the Offers on an account.
@@ -5113,6 +5168,7 @@ public:
     void
     testAll(FeatureBitset features)
     {
+        testDirectoryFull(features);
         testCanceledOffer(features);
         testRmFundedOffer(features);
         testTinyPayment(features);

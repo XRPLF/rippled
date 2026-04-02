@@ -5,8 +5,10 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/did.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/beast/unit_test/suite.h>
@@ -355,6 +357,29 @@ struct DID_test : public beast::unit_test::Suite
     }
 
     void
+    testDirectoryFull(FeatureBitset features)
+    {
+        testcase("Directory full");
+
+        using namespace jtx;
+        using namespace ::xrpl::test::jtx::directory;
+
+        Account const alice{"alice"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n1 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n1));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        env(did::setValid(alice), Ter(tecDIR_FULL));
+        env.close();
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -366,6 +391,7 @@ struct DID_test : public beast::unit_test::Suite
         testDeleteInvalid(all);
         testSetValidInitial(all);
         testSetModify(all);
+        testDirectoryFull(all);
 
         testEnabled(all - emptyDID);
         testAccountReserve(all - emptyDID);

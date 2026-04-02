@@ -9,6 +9,7 @@
 #include <test/jtx/credentials.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/deposit.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
@@ -23,6 +24,7 @@
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -399,6 +401,19 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.authorize({.holder = bob, .id = id, .err = tecOBJECT_NOT_FOUND});
 
             mptAlice.authorize({.account = bob, .id = id, .err = tecOBJECT_NOT_FOUND});
+        }
+
+        {
+            Env env{*this, features};
+            MPTTester const mptAlice(env, alice, {.holders = {bob}});
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(alice.id());
+            auto const n = getIndexCountToBump(env, aliceDir);
+            env(ticket::create(alice, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+            env(mptAlice.createJV({.issuer = alice, .ownerCount = 1}), Ter(tecDIR_FULL));
         }
 
         // Test bad scenarios without allowlisting in MPTokenAuthorize

@@ -7,6 +7,7 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/did.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -20,6 +21,7 @@
 #include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
@@ -238,6 +240,15 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, alice, {"UNLModify"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"SetFee"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"Batch"}), Ter(temMALFORMED));
+        }
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(alice.id());
+            auto const n = getIndexCountToBump(env, aliceDir);
+            env(ticket::create(alice, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+            env(delegate::set(alice, bob, {"Payment"}), Ter(tecDIR_FULL));
         }
     }
 

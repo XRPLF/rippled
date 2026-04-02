@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <tuple>
 #include <utility>
@@ -343,7 +344,7 @@ SignerListSet::replaceSignerList()
                      << (page ? "success" : "failure");
 
     if (!page)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
 
     signerList->setFieldU64(sfOwnerNode, *page);
 

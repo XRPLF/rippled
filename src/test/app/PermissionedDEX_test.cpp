@@ -6,6 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/domain.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
@@ -992,6 +993,20 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env(offer(bob_, XRP(10), USD(10)), Txflags(tfHybrid), Domain(domainID));
             env.close();
             BEAST_EXPECT(checkOffer(env, bob_, offerSeq, XRP(10), USD(10), lsfHybrid, true));
+
+            // hybrid offer not created if book directory is full
+            using namespace ::xrpl::test::jtx::directory;
+            Book const book{Issue(XRP), Issue(USD), std::nullopt};
+            auto const bobDir = keylet::quality(keylet::kBook(book), getRate(USD(10), XRP(10)));
+            auto const n = getIndexCountToBump(env, bobDir);
+            for (auto i = 0; i < n; ++i)
+                env(offer(bob_, XRP(10), USD(10)), Txflags(tfHybrid), Domain(domainID));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(offer(bob_, XRP(10), USD(10)),
+                Txflags(tfHybrid),
+                Domain(domainID),
+                Ter(tecDIR_FULL));
         }
 
         // apply - domain offer can cross with hybrid

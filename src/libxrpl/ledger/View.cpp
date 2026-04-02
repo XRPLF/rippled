@@ -341,7 +341,7 @@ dirLink(
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
     object->setFieldU64(node, *page);
     return tesSUCCESS;
 }
