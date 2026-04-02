@@ -77,7 +77,15 @@ XRP(Number const& xrp)
 /**
  * @brief Convert AccountSet flag (asf) to LedgerState flag (lsf).
  * @param asf The AccountSet flag value.
- * @return The corresponding LedgerState flag, or 0 if unknown.
+ * @return The corresponding LedgerState flag.
+ * @throws std::runtime_error if the flag is not supported.
+ *
+ * Supported flags:
+ *   asfRequireDest, asfRequireAuth, asfDisallowXRP, asfDisableMaster,
+ *   asfNoFreeze, asfGlobalFreeze, asfDefaultRipple, asfDepositAuth,
+ *   asfAllowTrustLineClawback, asfDisallowIncomingCheck,
+ *   asfDisallowIncomingNFTokenOffer, asfDisallowIncomingPayChan,
+ *   asfDisallowIncomingTrustline, asfAllowTrustLineLocking
  */
 constexpr std::uint32_t
 asfToLsf(std::uint32_t asf)
