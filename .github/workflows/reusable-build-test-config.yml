@@ -199,7 +199,7 @@ jobs:
           fi
 
       - name: Upload the binary (Linux)
-        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && runner.os == 'Linux' }}
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: xrpld-${{ inputs.config_name }}

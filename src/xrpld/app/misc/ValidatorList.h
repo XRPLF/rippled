@@ -157,7 +157,7 @@ class ValidatorList
 
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
-        std::size_t sequence;
+        std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;
@@ -173,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status;
+        PublisherStatus status = PublisherStatus::unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
@@ -223,7 +223,7 @@ class ValidatorList
     hash_set<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
-    std::size_t listThreshold_;
+    std::size_t listThreshold_{1};
 
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
