@@ -274,7 +274,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
         if (!seen.emplace(*account, *documentID).second)
             continue;
 
-
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
             auto const& series = node.getFieldArray(sfPriceDataSeries);

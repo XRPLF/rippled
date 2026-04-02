@@ -314,7 +314,11 @@ public:
             BEAST_EXPECT(ret[jss::time] == 946695000);
         }
 
-        // Duplicate oracle entries should be deduplicated
+        // Duplicate oracle entries should be deduplicated.
+        // Use two distinct prices so the dataset has multiple entries
+        // with different lastUpdateTime values. Without dedup, the
+        // duplicated oracle would insert each entry twice, inflating
+        // the size from 2 to 4.
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
@@ -322,32 +326,30 @@ public:
             Account const owner{"owner"};
             env.fund(XRP(1'000), owner);
             Oracle oracle(
-                env,
-                {.owner = owner,
-                 .series = {{"XRP", "USD", 740, 1}},
-                 .fee = baseFee});
+                env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+
+            // Update the oracle with a different price to create a
+            // second data point in the history
+            oracle.set(UpdateArg{.series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
 
             // Query with the oracle listed once
             OraclesData single = {{owner, oracle.documentID()}};
-            auto const retSingle =
-                Oracle::aggregatePrice(env, "XRP", "USD", single);
+            auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
 
             // Query with the same oracle listed twice
-            OraclesData duplicated = {
-                {owner, oracle.documentID()},
-                {owner, oracle.documentID()}};
-            auto const retDup =
-                Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
+            OraclesData duplicated = {{owner, oracle.documentID()}, {owner, oracle.documentID()}};
+            auto const retDup = Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
 
             // Results should be identical - duplicates must not be
             // double-counted
             BEAST_EXPECT(
-                retSingle[jss::entire_set][jss::mean] ==
-                retDup[jss::entire_set][jss::mean]);
+                retSingle[jss::entire_set][jss::size] == retDup[jss::entire_set][jss::size]);
+            BEAST_EXPECT(retDup[jss::entire_set][jss::size].asUInt() == 2);
             BEAST_EXPECT(
-                retSingle[jss::entire_set][jss::size] ==
-                retDup[jss::entire_set][jss::size]);
-            BEAST_EXPECT(retDup[jss::entire_set][jss::size].asUInt() == 1);
+                retSingle[jss::entire_set][jss::mean] == retDup[jss::entire_set][jss::mean]);
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::standard_deviation] ==
+                retDup[jss::entire_set][jss::standard_deviation]);
             BEAST_EXPECT(retSingle[jss::median] == retDup[jss::median]);
         }
     }
