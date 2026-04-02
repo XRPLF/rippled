@@ -152,11 +152,11 @@ private:
     clock_type::time_point mLastAction;
 
     std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
+    bool mHaveHeader{false};
+    bool mHaveState{false};
+    bool mHaveTransactions{false};
+    bool mSignaled{false};
+    bool mByHash{true};
     std::uint32_t mSeq;
     Reason const mReason;
 
@@ -168,7 +168,7 @@ private:
     std::mutex mReceivedDataLock;
     std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         mReceivedData;
-    bool mReceiveDispatched;
+    bool mReceiveDispatched{false};
     std::unique_ptr<PeerSet> mPeerSet;
 };
 

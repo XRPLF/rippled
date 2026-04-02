@@ -95,11 +95,6 @@ setCurrentThreadNameImpl(std::string_view name)
     {
         std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size()
                   << ") exceeds maximum of " << maxThreadNameLength << " characters on Linux.\n";
-
-        XRPL_ASSERT(
-            false,
-            "beast::detail::setCurrentThreadNameImpl : Thread name exceeds "
-            "maximum length for Linux");
     }
 #endif
 }

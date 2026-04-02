@@ -26,8 +26,8 @@ class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::addi
 private:
     using mantissa_type = std::int64_t;
     using exponent_type = int;
-    mantissa_type mantissa_;
-    exponent_type exponent_;
+    mantissa_type mantissa_{};
+    exponent_type exponent_{};
 
     /** Adjusts the mantissa and exponent to the proper range.
 

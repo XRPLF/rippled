@@ -56,8 +56,10 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
         }
         else
         {
+            // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
+            // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
             registry_.get().getJobQueue().addJob(
-                jtUPDATE_PF, "OBUpd" + std::to_string(ledger->seq()), [this, ledger]() {
+                jtUPDATE_PF, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
                     update(ledger);
                 });
         }
