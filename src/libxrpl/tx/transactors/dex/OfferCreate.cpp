@@ -79,8 +79,8 @@ OfferCreate::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    STAmount saTakerPays = tx[sfTakerPays];
-    STAmount saTakerGets = tx[sfTakerGets];
+    STAmount const saTakerPays = tx[sfTakerPays];
+    STAmount const saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet(saTakerPays) || !isLegalNet(saTakerGets))
         return temBAD_AMOUNT;
@@ -144,7 +144,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uAccountSequence = acctCreator->getFieldU32(sfSequence);
 
-    auto viewJ = ctx.registry.journal("View");
+    auto viewJ = ctx.registry.get().getJournal("View");
     AccountRoot wrappedPays(uPaysIssuerID, ctx.view);
     AccountRoot wrappedGets(uGetsIssuerID, ctx.view);
 
@@ -505,7 +505,7 @@ OfferCreate::applyHybrid(
     bookArr.push_back(std::move(bookInfo));
 
     if (!bookExists)
-        ctx_.registry.getOrderBookDB().addOrderBook(book);
+        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
 
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
@@ -539,7 +539,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // end up on the books.
     auto uRate = getRate(saTakerGets, saTakerPays);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
 
     TER result = tesSUCCESS;
 
@@ -740,7 +740,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve = sb.fees().accountReserve(wrappedCreator->getFieldU32(sfOwnerCount) + 1);
+        XRPAmount const reserve =
+            sb.fees().accountReserve(wrappedCreator->getFieldU32(sfOwnerCount) + 1);
 
         if (preFeeBalance_ < reserve)
         {
@@ -849,7 +850,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     sb.insert(sleOffer);
 
     if (!bookExisted)
-        ctx_.registry.getOrderBookDB().addOrderBook(book);
+        ctx_.registry.get().getOrderBookDB().addOrderBook(book);
 
     JLOG(j_.debug()) << "final result: success";
 

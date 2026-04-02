@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -110,7 +109,7 @@ PaymentChannelClaim::doApply()
         auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
+            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (txAccount != src && txAccount != dst)
@@ -171,7 +170,7 @@ PaymentChannelClaim::doApply()
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
+            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
 
         auto const settleExpiration =
             ctx_.view().header().parentCloseTime.time_since_epoch().count() +

@@ -275,8 +275,8 @@ trustDelete(
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
+    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
@@ -330,7 +330,7 @@ updateTrustLine(
         && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
         && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(wrappedAcct->getFlags() & lsfDefaultRipple) &&
+            static_cast<bool>(wrappedAcct->isFlag(lsfDefaultRipple)) &&
         ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
@@ -374,7 +374,7 @@ issueIOU(
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = issue.account > account;
+    bool const bSenderHigh = issue.account > account;
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
@@ -428,7 +428,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -468,7 +468,7 @@ redeemIOU(
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = account > issue.account;
+    bool const bSenderHigh = account > issue.account;
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
@@ -539,7 +539,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     auto const issuerAccount = AccountRoot(issue.account, view);
-    if (issuerAccount.exists() && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
+    if (issuerAccount.exists() && ((issuerAccount->isFlag(lsfRequireAuth)) != 0u))
     {
         if (trustLine)
         {

@@ -249,7 +249,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
         {
-            SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
+            SLE::pointer const sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
             if (!sleRippleState)
             {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -284,7 +284,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& accountID_, beast:
         Book const book{issueIn, issueOut, std::nullopt};
         auto const dir = keylet::quality(keylet::book(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
-            ctx_.registry.getOrderBookDB().addOrderBook(book);
+            ctx_.registry.get().getOrderBookDB().addOrderBook(book);
     };
     addOrderBook(amount.issue(), amount2.issue(), getRate(amount2, amount));
     addOrderBook(amount2.issue(), amount.issue(), getRate(amount, amount2));

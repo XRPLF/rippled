@@ -1,8 +1,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/PathRequests.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -16,9 +15,9 @@ namespace xrpl {
     Get the correct ledger to use.
 */
 std::shared_ptr<RippleLineCache>
-PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
+PathRequestManager::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     auto lineCache = lineCache_.lock();
 
@@ -37,13 +36,13 @@ PathRequests::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
         lineCache_ = lineCache =
-            std::make_shared<RippleLineCache>(ledger, app_.journal("RippleLineCache"));
+            std::make_shared<RippleLineCache>(ledger, app_.getJournal("RippleLineCache"));
     }
     return lineCache;
 }
 
 void
-PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
+PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
     auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
@@ -52,7 +51,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     // Get the ledger and cache we should be using
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
         requests = requests_;
         cache = getLineCache(inLedger, true);
     }
@@ -131,7 +130,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
             if (remove)
             {
-                std::lock_guard sl(mLock);
+                std::lock_guard const sl(mLock);
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
@@ -176,7 +175,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         std::shared_ptr<RippleLineCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             if (requests_.empty())
                 break;
@@ -191,16 +190,16 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 }
 
 bool
-PathRequests::requestsPending() const
+PathRequestManager::requestsPending() const
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     return !requests_.empty();
 }
 
 void
-PathRequests::insertPathRequest(PathRequest::pointer const& req)
+PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
 
     // Insert after any older unserviced requests but before
     // any serviced requests
@@ -216,7 +215,7 @@ PathRequests::insertPathRequest(PathRequest::pointer const& req)
 
 // Make a new-style path_find request
 Json::Value
-PathRequests::makePathRequest(
+PathRequestManager::makePathRequest(
     std::shared_ptr<InfoSub> const& subscriber,
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
@@ -236,7 +235,7 @@ PathRequests::makePathRequest(
 
 // Make an old-style ripple_path_find request
 Json::Value
-PathRequests::makeLegacyPathRequest(
+PathRequestManager::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function<void(void)> completion,
     Resource::Consumer& consumer,
@@ -269,12 +268,12 @@ PathRequests::makeLegacyPathRequest(
 }
 
 Json::Value
-PathRequests::doLegacyPathRequest(
+PathRequestManager::doLegacyPathRequest(
     Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
-    auto cache = std::make_shared<RippleLineCache>(inLedger, app_.journal("RippleLineCache"));
+    auto cache = std::make_shared<RippleLineCache>(inLedger, app_.getJournal("RippleLineCache"));
 
     auto req =
         std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);

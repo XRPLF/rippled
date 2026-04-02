@@ -107,7 +107,7 @@ public:
 
         // test error on no account
         {
-            Json::Value params;
+            Json::Value const params;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'account'.");
         }
@@ -488,7 +488,7 @@ public:
             params[jss::type] = jss::nft_page;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(!resp.isMember(jss::marker));
-            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            Json::Value const& aobjs = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(aobjs.size() == 2);
         }
         // test stepped one-at-a-time with limit=1, resume from prev marker
@@ -1276,7 +1276,7 @@ public:
         // valid, because when dirIndex = 0, we will use root key to find
         // dir.
         {
-            std::string s = "0," + entryIndex;
+            std::string const s = "0," + entryIndex;
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;

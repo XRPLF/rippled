@@ -140,7 +140,7 @@ doAMMInfo(RPC::JsonContext& context)
             issue2 = (*amm)[sfAsset2].get<Issue>();
         }
 
-        return ValuesFromContextParams{accountID, *issue1, *issue2, std::move(amm)};
+        return ValuesFromContextParams{accountID, *issue1, *issue2, amm};
     };
 
     auto const r = getValuesFromContextParams();

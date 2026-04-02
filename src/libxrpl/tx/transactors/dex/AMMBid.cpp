@@ -55,7 +55,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         }
         if (ctx.rules.enabled(fixAMMv1_3))
         {
-            AccountID account = ctx.tx[sfAccount];
+            AccountID const account = ctx.tx[sfAccount];
             std::set<AccountID> unique;
             for (auto const& obj : authAccounts)
             {

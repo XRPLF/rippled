@@ -33,7 +33,7 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -52,7 +52,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE

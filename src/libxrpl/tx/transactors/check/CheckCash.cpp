@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -233,7 +232,7 @@ CheckCash::doApply()
     //
     // If it is not a check to self (as should be the case), then there's
     // work to do...
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
     if (srcId != accountID_)
@@ -327,28 +326,26 @@ CheckCash::doApply()
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
 
-                // clang-format off
                 if (TER const ter = trustCreate(
-                        psb,                            // payment sandbox
-                        destLow,                        // is dest low?
-                        issuer,                         // source
-                        accountID_,                       // destination
-                        trustLineKey.key,               // ledger index
-                        wrappedDst,                         // Account to add to
-                        false,                          // authorize account
-                        (wrappedDst->getFlags() & lsfDefaultRipple) == 0,
-                        false,                          // freeze trust line
-                        false,                          // deep freeze trust line
-                        initialBalance,                 // zero initial balance
-                        Issue(currency, accountID_),      // limit of zero
-                        0,                              // quality in
-                        0,                              // quality out
-                        viewJ);                         // journal
+                        psb,               // payment sandbox
+                        destLow,           // is dest low?
+                        issuer,            // source
+                        accountID_,        // destination
+                        trustLineKey.key,  // ledger index
+                        wrappedDst,        // Account to add to
+                        false,             // authorize account
+                        !wrappedDst->isFlag(lsfDefaultRipple),
+                        false,                        // freeze trust line
+                        false,                        // deep freeze trust line
+                        initialBalance,               // zero initial balance
+                        Issue(currency, accountID_),  // limit of zero
+                        0,                            // quality in
+                        0,                            // quality out
+                        viewJ);                       // journal
                     !isTesSuccess(ter))
                 {
                     return ter;
                 }
-                // clang-format on
 
                 wrappedDst.update();
 
@@ -369,7 +366,7 @@ CheckCash::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+            scope_exit const fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                 if (auto const sleTrustLine = psb.peek(trustLineKey))
                     sleTrustLine->at(tweakedLimit) = savedLimit;
             });

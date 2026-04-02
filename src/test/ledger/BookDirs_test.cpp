@@ -19,7 +19,7 @@ struct BookDirs_test : public beast::unit_test::suite
         env.close();
 
         {
-            Book book(xrpIssue(), USD.issue(), std::nullopt);
+            Book const book(xrpIssue(), USD.issue(), std::nullopt);
             {
                 auto d = BookDirs(*env.current(), book);
                 BEAST_EXPECT(std::begin(d) == std::end(d));

@@ -5,7 +5,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -33,7 +32,7 @@ doSubscribe(RPC::JsonContext& context)
         if (context.role != Role::ADMIN)
             return rpcError(rpcNO_PERMISSION);
 
-        std::string strUrl = context.params[jss::url].asString();
+        std::string const strUrl = context.params[jss::url].asString();
         std::string strUsername = context.params.isMember(jss::url_username)
             ? context.params[jss::url_username].asString()
             : "";
@@ -62,7 +61,7 @@ doSubscribe(RPC::JsonContext& context)
                     strUrl,
                     strUsername,
                     strPassword,
-                    context.app.logs());
+                    context.app);
                 ispSub =
                     context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
             }
@@ -107,7 +106,7 @@ doSubscribe(RPC::JsonContext& context)
             if (!it.isString())
                 return rpcError(rpcSTREAM_MALFORMED);
 
-            std::string streamName = it.asString();
+            std::string const streamName = it.asString();
             if (streamName == "server")
             {
                 context.netOps.subServer(ispSub, jvResult, context.role == Role::ADMIN);

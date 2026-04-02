@@ -59,7 +59,7 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
         return TokenCodecErrc::inputTooSmall;
     }
 
-    std::uint64_t carry;
+    std::uint64_t carry = 0;
     std::tie(a[0], carry) = carrying_add(a[0], b);
 
     for (auto& v : a.subspan(1))
@@ -162,7 +162,7 @@ b58_10_to_b58_be(std::uint64_t input)
     int i = 0;
     while (input > 0)
     {
-        std::uint64_t rem;
+        std::uint64_t rem = 0;
         std::tie(input, rem) = div_rem(input, 58);
         result[resultSize - 1 - i] = rem;
         i += 1;

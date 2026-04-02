@@ -324,7 +324,8 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
-    XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
+    XChainClaimAttestation::MatchFields const toMatch{
+        sendingAmount, wasLockingChainSend, std::nullopt};
     return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
 }
 
@@ -636,7 +637,7 @@ finalizeClaimHelper(
                 auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
                     ? Number::rounding_mode::downward
                     : Number::getround();
-                saveNumberRoundMode _{Number::setround(round_mode)};
+                saveNumberRoundMode const _{Number::setround(round_mode)};
 
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.issue());

@@ -242,7 +242,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (seq == (ledger.seq() - 1))
         return ledger.header().parentHash;
 
-    if (int diff = ledger.seq() - seq; diff <= 256)
+    if (int const diff = ledger.seq() - seq; diff <= 256)
     {
         // Within 256...
         auto const hashIndex = ledger.read(keylet::skip());
@@ -433,8 +433,7 @@ doWithdraw(
             j) < amount)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "
-                           "broker cover assets.";
+        JLOG(j.error()) << "doWithdraw: negative balance of broker cover assets.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }

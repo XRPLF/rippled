@@ -5,7 +5,7 @@ namespace xrpl {
 void
 initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
-    DBConfig m_sociConfig(config, "peerfinder");
+    DBConfig const m_sociConfig(config, "peerfinder");
     m_sociConfig.open(session);
 
     JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString() << "'";

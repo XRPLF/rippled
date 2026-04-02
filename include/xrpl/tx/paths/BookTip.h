@@ -16,7 +16,7 @@ class BookTip
 {
 private:
     ApplyView& view_;
-    bool m_valid;
+    bool m_valid{false};
     uint256 m_book;
     uint256 m_end;
     uint256 m_dir;

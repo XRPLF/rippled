@@ -1504,7 +1504,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
 
-        std::optional<NetClock::time_point> cancelAfter;
+        std::optional<NetClock::time_point> const cancelAfter;
 
         {
             auto const chan = to_string(channel(alice, bob, env.seq(alice)));

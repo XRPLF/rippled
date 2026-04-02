@@ -12,8 +12,6 @@ namespace xrpl {
 Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation)
 {
-    std::pair<std::vector<SignerEntry>, NotTEC> s;
-
     if (!obj.isFieldPresent(sfSignerEntries))
     {
         JLOG(journal.trace()) << "Malformed " << annotation << ": Need signer entry array.";

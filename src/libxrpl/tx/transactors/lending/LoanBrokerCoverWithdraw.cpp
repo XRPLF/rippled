@@ -119,7 +119,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const minimumCover = [&]() {
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),

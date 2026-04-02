@@ -1,8 +1,8 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/ledger/ReadView.h>
@@ -89,7 +89,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    Json::Value dummy;
+    Json::Value dummy;  // NOLINT(misc-const-correctness)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
@@ -108,7 +108,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result["problems"] = Json::arrayValue);
 
-    bool bDefaultRipple = (acct->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
+    bool const bDefaultRipple = (acct->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
     if ((static_cast<int>(bDefaultRipple) & static_cast<int>(!roleGateway)) != 0)
     {
@@ -152,9 +152,10 @@ doNoRippleCheck(RPC::JsonContext& context)
                 }
                 if (needFix)
                 {
-                    AccountID peer =
+                    AccountID const peer =
                         ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit).getIssuer();
-                    STAmount peerLimit = ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
+                    STAmount const peerLimit =
+                        ownedItem->getFieldAmount(bLow ? sfHighLimit : sfLowLimit);
                     problem += to_string(peerLimit.getCurrency());
                     problem += " line to ";
                     problem += to_string(peerLimit.getIssuer());

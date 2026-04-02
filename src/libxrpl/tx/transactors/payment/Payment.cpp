@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -432,7 +431,7 @@ Payment::doApply()
                 accountID_,
                 ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.tx[~sfDomainID],
-                ctx_.registry.logs(),
+                ctx_.registry,
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
             //             on the TER. But always applying *should*

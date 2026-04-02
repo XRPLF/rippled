@@ -61,7 +61,7 @@ Env::AppBundle::AppBundle(
         config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
     owned = make_Application(std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(thresh);
+    app->getLogs().threshold(thresh);
     if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
@@ -512,7 +512,7 @@ Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success success([&]() {
+    scope_success const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -561,7 +561,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().getNetworkIDService().getNetworkID();
+        uint32_t const networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }
@@ -637,14 +637,14 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    auto response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+    auto response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
 
     for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
     {
         JLOG(journal.error()) << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+        response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
     }
 
     return response.second;

@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -168,7 +167,7 @@ removeSignersFromLedger(
     auto const signerListKeylet = keylet::signers(account);
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -197,7 +196,7 @@ removeSignersFromLedger(
     }
 
     WritableAccountRoot wrappedAcct(account, view);
-    wrappedAcct.adjustOwnerCount(removeFromOwnerCount, registry.journal("View"));
+    wrappedAcct.adjustOwnerCount(removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
 
@@ -290,7 +289,7 @@ SignerListSet::replaceSignerList()
     std::uint32_t const oldOwnerCount{(*wrappedAcct)[sfOwnerCount]};
 
     constexpr int addedOwnerCount = 1;
-    std::uint32_t flags{lsfOneOwnerCount};
+    std::uint32_t const flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
 
@@ -307,7 +306,7 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
