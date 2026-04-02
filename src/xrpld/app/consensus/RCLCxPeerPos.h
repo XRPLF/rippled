@@ -40,7 +40,7 @@ public:
         PublicKey const& publicKey,
         Slice const& signature,
         uint256 const& suppress,
-        Proposal&& proposal);
+        Proposal const& proposal);  // trivially copyable
 
     //! Verify the signing hash of the proposal
     bool

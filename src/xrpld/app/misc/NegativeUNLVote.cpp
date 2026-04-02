@@ -90,7 +90,7 @@ NegativeUNLVote::addTx(
     NegativeUNLModify modify,
     std::shared_ptr<SHAMap> const& initialSet)
 {
-    STTx negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
+    STTx const negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, modify == ToDisable ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, vp.slice());
@@ -118,7 +118,7 @@ NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const&
 {
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::bytes <= uint256::bytes);
-    NodeID randomPad = NodeID::fromVoid(randomPadData.data());
+    NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)
     {
@@ -285,7 +285,7 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     for (auto const& n : nowTrusted)
     {
         if (!newValidators_.contains(n))
@@ -299,7 +299,7 @@ NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrust
 void
 NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto i = newValidators_.begin();
     while (i != newValidators_.end())
     {

@@ -131,7 +131,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
                 obj[jss::nft_serial] = nft::getSerial(nftokenID);
-                if (std::uint16_t xferFee = {nft::getTransferFee(nftokenID)})
+                if (std::uint16_t const xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
             }
 

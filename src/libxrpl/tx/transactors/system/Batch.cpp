@@ -123,7 +123,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     // LCOV_EXCL_STOP
 
-    XRPAmount signerFees = signerCount * view.fees().base;
+    XRPAmount const signerFees = signerCount * view.fees().base;
 
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)

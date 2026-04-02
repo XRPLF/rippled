@@ -67,7 +67,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source const* source(root.find_one(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -82,7 +82,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source const* source(root.find_path(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -97,7 +97,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source const* source(root.find_one_deep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)

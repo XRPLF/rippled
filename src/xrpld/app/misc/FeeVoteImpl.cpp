@@ -255,7 +255,7 @@ FeeVoteImpl::doVoting(
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
                               << baseReserve.first << "/" << incReserve.first;
 
-        STTx feeTx(ttFEE, [=, &rules](auto& obj) {
+        STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
@@ -277,7 +277,7 @@ FeeVoteImpl::doVoting(
             }
         });
 
-        uint256 txID = feeTx.getTransactionID();
+        uint256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

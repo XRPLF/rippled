@@ -44,7 +44,7 @@ private:
 
         async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
 
-        ~async_op();
+        virtual ~async_op();
 
         void
         stop() override;
@@ -108,7 +108,7 @@ template <class Handler>
 Checker<Protocol>::async_op<Handler>::async_op(
     Checker& owner,
     boost::asio::io_context& io_context,
-    Handler&& handler)
+    Handler&& handler)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     : checker_(owner), socket_(io_context), handler_(std::forward<Handler>(handler))
 {
 }
@@ -154,7 +154,7 @@ template <class Protocol>
 void
 Checker<Protocol>::stop()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     if (!stop_)
     {
         stop_ = true;
@@ -180,7 +180,7 @@ Checker<Protocol>::async_connect(beast::IP::Endpoint const& endpoint, Handler&& 
     auto const op =
         std::make_shared<async_op<Handler>>(*this, io_context_, std::forward<Handler>(handler));
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         list_.push_back(*op);
     }
     op->socket_.async_connect(
@@ -192,7 +192,7 @@ template <class Protocol>
 void
 Checker<Protocol>::remove(basic_async_op& op)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.erase(list_.iterator_to(op));
     if (list_.size() == 0)
         cond_.notify_all();

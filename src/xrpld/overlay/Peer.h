@@ -11,7 +11,7 @@ namespace xrpl {
 
 namespace Resource {
 class Charge;
-}
+}  // namespace Resource
 
 enum class ProtocolFeature {
     ValidatorListPropagation,

@@ -20,7 +20,7 @@ doOwnerInfo(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account);
     }
 
-    std::string strIdent = context.params.isMember(jss::account)
+    std::string const strIdent = context.params.isMember(jss::account)
         ? context.params[jss::account].asString()
         : context.params[jss::ident].asString();
     Json::Value ret;

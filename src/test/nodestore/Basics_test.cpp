@@ -38,7 +38,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            EncodedBlob encoded(batch[i]);
+            EncodedBlob const encoded(batch[i]);
 
             DecodedBlob decoded(encoded.getKey(), encoded.getData(), encoded.getSize());
 
