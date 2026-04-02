@@ -31,7 +31,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Try to create a vault
             PrettyAsset const asset{xrpIssue(), 1'000'000};
-            Vault vault{env};
+            Vault const vault{env};
             auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx, ter(goodVault ? ter(tesSUCCESS) : ter(temDISABLED)));
             env.close();
@@ -493,14 +493,14 @@ class LoanBroker_test : public beast::unit_test::suite
         // MPT. That'll require three corresponding SAVs.
         Env env(*this, all);
 
-        Account issuer{"issuer"};
+        Account const issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
         Account alice{"alice"};
         // Evan will attempt to be naughty
         Account evan{"evan"};
         // Bystander doesn't have anything to do with the SAV or Broker, or any
         // of the relevant tokens
-        Account bystander{"bystander"};
+        Account const bystander{"bystander"};
         Vault vault{env};
 
         // Fund the accounts and trust lines with the same amount so that tests
@@ -807,7 +807,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Env env(*this);
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice);
         env.close();
@@ -1070,7 +1070,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(jtx, ter(temINVALID));
 
             // holder == beast::zero
-            STAmount bad(Issue{USD.currency, beast::zero}, 100);
+            STAmount const bad(Issue{USD.currency, beast::zero}, 100);
             jtx.jv[sfAmount] = bad.getJson();
             jtx.stx = env.ust(jtx);
             Serializer s;
@@ -1091,7 +1091,7 @@ class LoanBroker_test : public beast::unit_test::suite
         // MPTCanClawback is not set
         testLoanBroker(
             [&](Env& env, Account const& issuer, Account const& alice) -> MPT {
-                MPTTester mpt({.env = env, .issuer = issuer, .holders = {alice}});
+                MPTTester const mpt({.env = env, .issuer = issuer, .holders = {alice}});
                 return mpt;
             },
             CoverClawback);
@@ -1171,7 +1171,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Create a Vault owned by alice with an XRP asset
         PrettyAsset const asset{xrpIssue(), 1};
-        Vault vault{env};
+        Vault const vault{env};
         auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
         env(createTx);
         env.close();
@@ -1193,7 +1193,7 @@ class LoanBroker_test : public beast::unit_test::suite
         // vault SLE
         OpenView ov{*env.current()};
         test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
+        beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
 
         if (auto sleBroker = ac.view().peek(keylet::loanbroker(brokerKeylet.key)))
@@ -1207,7 +1207,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Invoke preclaim against the mutated (ApplyView) view; triggers
         // nullptr deref
-        PreclaimContext pctx{env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
+        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 
@@ -1326,7 +1326,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Env env(*this);
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice);
         env.close();
@@ -1348,7 +1348,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env(tx);
         env.close();
         auto const le = env.le(vaultKeylet);
-        VaultInfo vaultInfo = [&]() {
+        VaultInfo const vaultInfo = [&]() {
             if (BEAST_EXPECT(le))
                 return VaultInfo{asset, vaultKeylet.key, le->at(sfAccount)};
             return VaultInfo{asset, {}, {}};
@@ -1438,7 +1438,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             auto const [token, deposit, err] = getToken(env);
 
-            Vault vault(env);
+            Vault const vault(env);
             auto const [tx, keylet] = vault.create({.owner = broker, .asset = token.asset()});
             env(tx);
             env.close();
@@ -1466,7 +1466,7 @@ class LoanBroker_test : public beast::unit_test::suite
             std::optional<std::uint64_t>,  // max amount
             std::uint64_t,                 // deposit amount
             TER>>                          // expected error
-            mptTests = {
+            const mptTests = {
                 // issuer can issue up to 2'000 tokens
                 {2'000, 4'000, 1'000, tesSUCCESS},
                 // issuer can issue 500 tokens (250 VaultDeposit +
@@ -1509,7 +1509,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env.fund(XRP(20'000), issuer, lender, borrower);
         auto const IOU = issuer["IOU"];
 
-        Vault vault{env};
+        Vault const vault{env};
         auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = IOU.asset()});
         env(tx);
         env.close();
@@ -1597,7 +1597,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(pay(issuer, broker, token(2'000)));
             env.close();
 
-            Vault vault(env);
+            Vault const vault(env);
             auto const [tx, keylet] = vault.create({.owner = broker, .asset = token.asset()});
             env(tx);
             env.close();
@@ -1718,7 +1718,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             auto const& token = *maybeToken;
 
-            Vault vault(env);
+            Vault const vault(env);
             auto const [tx, keylet] = vault.create({.owner = broker, .asset = token.asset()});
             env(tx);
             env.close();

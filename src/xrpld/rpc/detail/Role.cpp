@@ -224,7 +224,7 @@ extractIpAddrFromField(std::string_view field)
 
     // If there's a port appended to the IP address, strip that by
     // terminating at the colon.
-    if (std::size_t colon = ret.find(':'); colon != std::string_view::npos)
+    if (std::size_t const colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
     return ret;
@@ -256,7 +256,7 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos =
+            std::size_t const pos =
                 std::string_view(found, it->value().end() - found).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;

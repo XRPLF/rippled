@@ -28,7 +28,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous = context.app.peerReservations().erase(nodeId);
+    auto const previous = context.app.getPeerReservations().erase(nodeId);
 
     Json::Value result{Json::objectValue};
     if (previous)

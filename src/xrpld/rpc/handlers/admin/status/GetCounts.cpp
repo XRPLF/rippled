@@ -71,7 +71,7 @@ getCountsJson(Application& app, int minObjectCount)
             ret[jss::dbKBTransaction] = dbKB;
 
         {
-            std::size_t c = app.getOPs().getLocalTxCount();
+            std::size_t const c = app.getOPs().getLocalTxCount();
             if (c > 0)
                 ret[jss::local_txs] = static_cast<Json::UInt>(c);
         }
@@ -80,7 +80,7 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
     ret[jss::historical_perminute] = static_cast<int>(app.getInboundLedgers().fetchRate());
-    ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
+    ret[jss::SLE_hit_rate] = app.getCachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();

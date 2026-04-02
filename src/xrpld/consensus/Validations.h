@@ -422,7 +422,7 @@ private:
 
         checkAcquired(lock);
 
-        std::pair<Seq, ID> valPair{val.seq(), val.ledgerID()};
+        std::pair<Seq, ID> const valPair{val.seq(), val.ledgerID()};
         auto it = acquiring_.find(valPair);
         if (it != acquiring_.end())
         {
@@ -479,7 +479,7 @@ private:
     void
     current(std::lock_guard<Mutex> const& lock, Pre&& pre, F&& f)
     {
-        NetClock::time_point t = adaptor_.now();
+        NetClock::time_point const t = adaptor_.now();
         pre(current_.size());
         auto it = current_.begin();
         while (it != current_.end())
@@ -569,7 +569,7 @@ public:
     bool
     canValidateSeq(Seq const s)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return localSeqEnforcer_(byLedger_.clock().now(), s, parms_);
     }
 
@@ -588,7 +588,7 @@ public:
             return ValStatus::stale;
 
         {
-            std::lock_guard lock{mutex_};
+            std::lock_guard const lock{mutex_};
 
             // Check that validation sequence is greater than any non-expired
             // validations sequence from that validator; if it's not, perform
@@ -645,7 +645,7 @@ public:
             if (!inserted)
             {
                 // Replace existing only if this one is newer
-                Validation& oldVal = it->second;
+                Validation const& oldVal = it->second;
                 if (val.signTime() > oldVal.signTime())
                 {
                     std::pair<Seq, ID> old(oldVal.seq(), oldVal.ledgerID());
@@ -674,7 +674,7 @@ public:
     void
     setSeqToKeep(Seq const& low, Seq const& high)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         XRPL_ASSERT(low < high, "xrpl::Validations::setSeqToKeep : valid inputs");
         toKeep_ = {low, high};
     }
@@ -689,7 +689,7 @@ public:
     {
         auto const start = std::chrono::steady_clock::now();
         {
-            std::lock_guard lock{mutex_};
+            std::lock_guard const lock{mutex_};
             if (toKeep_)
             {
                 // We only need to refresh the keep range when it's just about
@@ -746,7 +746,7 @@ public:
     void
     trustChanged(hash_set<NodeID> const& added, hash_set<NodeID> const& removed)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
 
         for (auto& [nodeId, validation] : current_)
         {
@@ -782,7 +782,7 @@ public:
     Json::Value
     getJsonTrie() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return trie_.getJson();
     }
 
@@ -801,7 +801,7 @@ public:
     std::optional<std::pair<Seq, ID>>
     getPreferred(Ledger const& curr)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         std::optional<SpanTip<Ledger>> preferred = withTrie(lock, [this](LedgerTrie<Ledger>& trie) {
             return trie.getPreferred(localSeqEnforcer_.largest());
         });
@@ -913,7 +913,7 @@ public:
     std::size_t
     getNodesAfter(Ledger const& ledger, ID const& ledgerID)
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
 
         // Use trie if ledger is the right one
         if (ledger.id() == ledgerID)
@@ -936,7 +936,7 @@ public:
     currentTrusted()
     {
         std::vector<WrappedValidationType> ret;
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
@@ -955,7 +955,7 @@ public:
     getCurrentNodeIDs() -> hash_set<NodeID>
     {
         hash_set<NodeID> ret;
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         current(
             lock,
             [&](std::size_t numValidations) { ret.reserve(numValidations); },
@@ -973,7 +973,7 @@ public:
     numTrustedForLedger(ID const& ledgerID)
     {
         std::size_t count = 0;
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -995,7 +995,7 @@ public:
     getTrustedForLedger(ID const& ledgerID, Seq const& seq)
     {
         std::vector<WrappedValidationType> res;
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -1018,7 +1018,7 @@ public:
     fees(ID const& ledgerID, std::uint32_t baseFee)
     {
         std::vector<std::uint32_t> res;
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         byLedger(
             lock,
             ledgerID,
@@ -1041,7 +1041,7 @@ public:
     void
     flush()
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         current_.clear();
     }
 
@@ -1084,28 +1084,28 @@ public:
     std::size_t
     sizeOfCurrentCache() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return current_.size();
     }
 
     std::size_t
     sizeOfSeqEnforcersCache() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return seqEnforcers_.size();
     }
 
     std::size_t
     sizeOfByLedgerCache() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return byLedger_.size();
     }
 
     std::size_t
     sizeOfBySequenceCache() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return bySequence_.size();
     }
 };

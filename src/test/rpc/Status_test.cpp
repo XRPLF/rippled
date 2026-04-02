@@ -136,7 +136,8 @@ private:
         expect(m == message, m + " != " + message);
 
         auto d = error[jss::data];
-        size_t s1 = d.size(), s2 = messages.size();
+        size_t const s1 = d.size();
+        size_t const s2 = messages.size();
         expect(
             s1 == s2,
             prefix + "Data sizes differ " + std::to_string(s1) + " != " + std::to_string(s2));

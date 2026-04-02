@@ -116,7 +116,7 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 

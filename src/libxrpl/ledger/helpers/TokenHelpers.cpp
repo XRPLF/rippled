@@ -161,7 +161,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto sle = view.read(keylet::line(account, issuer, currency));
 
     if (!sle)
     {
@@ -253,7 +253,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    STAmount amount;
+    STAmount const amount;
     if (isXRP(currency))
     {
         return {xrpLiquid(view, account, 0, j)};
@@ -570,17 +570,18 @@ rippleCreditIOU(
             // Sender balance was positive.
             && saBalance <= beast::zero
             // Sender is zero or negative.
-            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
                 static_cast<bool>(
                     view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
-            !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
+            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
             // Sender quality in is 0.
-            && !sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            &&
+            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
@@ -592,7 +593,7 @@ rippleCreditIOU(
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
             // Receiver reserve is clear.
         }
 
@@ -725,7 +726,7 @@ rippleSendMultiIOU(
     for (auto const& r : receivers)
     {
         auto const& receiverID = r.first;
-        STAmount amount{issue, r.second};
+        STAmount const amount{issue, r.second};
 
         /* If we aren't sending anything or if the sender is the same as the
          * receiver then we don't need to do anything.
@@ -751,7 +752,7 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
-        STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
+        STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, transferRate(view, issuer));
         actual += actualSend;
@@ -822,9 +823,9 @@ accountSendIOU(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer sender =
+    SLE::pointer const sender =
         uSenderID != beast::zero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
-    SLE::pointer receiver =
+    SLE::pointer const receiver =
         uReceiverID != beast::zero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
 
     if (auto stream = j.trace())
@@ -920,7 +921,7 @@ accountSendMultiIOU(
      * ensure that transfers are balanced.
      */
 
-    SLE::pointer sender =
+    SLE::pointer const sender =
         senderID != beast::zero ? view.peek(keylet::account(senderID)) : SLE::pointer();
 
     if (auto stream = j.trace())
@@ -939,7 +940,7 @@ accountSendMultiIOU(
     for (auto const& r : receivers)
     {
         auto const& receiverID = r.first;
-        STAmount amount{issue, r.second};
+        STAmount const amount{issue, r.second};
 
         if (amount < beast::zero)
         {
@@ -952,7 +953,7 @@ accountSendMultiIOU(
         if (!amount || (senderID == receiverID))
             continue;
 
-        SLE::pointer receiver =
+        SLE::pointer const receiver =
             receiverID != beast::zero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
 
         if (auto stream = j.trace())
@@ -1154,63 +1155,93 @@ rippleSendMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    // Safe to get MPT since rippleSendMultiMPT is only called by
-    // accountSendMultiMPT
     auto const& issuer = mptIssue.getIssuer();
 
     auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID()));
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
-    // These may diverge
+    // For the issuer-as-sender case, track the running total to validate
+    // against MaximumAmount. The read-only SLE (view.read) is not updated
+    // by rippleCreditMPT, so a per-iteration SLE read would be stale.
+    // Use uint64_t, not STAmount, to keep MaximumAmount comparisons in exact
+    // integer arithmetic. STAmount implicitly converts to Number, whose
+    // small-scale mantissa (~16 digits) can lose precision for values near
+    // maxMPTokenAmount (19 digits).
+    std::uint64_t totalSendAmount{0};
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+    std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
+
+    // actual accumulates the total cost to the sender (includes transfer
+    // fees for third-party transit sends). takeFromSender accumulates only
+    // the transit portion that is debited to the issuer in bulk after the
+    // loop. They diverge when there are transfer fees.
     STAmount takeFromSender{mptIssue};
     actual = takeFromSender;
 
-    for (auto const& r : receivers)
+    for (auto const& [receiverID, amt] : receivers)
     {
-        auto const& receiverID = r.first;
-        STAmount amount{mptIssue, r.second};
+        STAmount const amount{mptIssue, amt};
 
         if (amount < beast::zero)
-        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
 
-        /* If we aren't sending anything or if the sender is the same as the
-         * receiver then we don't need to do anything.
-         */
-        if (!amount || (senderID == receiverID))
+        if (!amount || senderID == receiverID)
             continue;
 
         if (senderID == issuer || receiverID == issuer)
         {
-            // if sender is issuer, check that the new OutstandingAmount will
-            // not exceed MaximumAmount
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
                     takeFromSender == beast::zero,
                     "xrpl::rippleSendMultiMPT",
                     "sender == issuer, takeFromSender == zero");
-                auto const sendAmount = amount.mpt().value();
-                auto const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-                if (sendAmount > maximumAmount ||
-                    sle->getFieldU64(sfOutstandingAmount) > maximumAmount - sendAmount)
-                    return tecPATH_DRY;
+
+                std::uint64_t const sendAmount = amount.mpt().value();
+
+                if (view.rules().enabled(fixSecurity3_1_3))
+                {
+                    // Post-fixSecurity3_1_3: aggregate MaximumAmount
+                    // check. WARNING: the order of conditions is
+                    // critical — each guards the subtraction in the
+                    // next against unsigned underflow. Do not reorder.
+                    bool const exceedsMaximumAmount =
+                        // This send alone exceeds the max cap
+                        sendAmount > maximumAmount ||
+                        // The aggregate of all sends exceeds the max cap
+                        totalSendAmount > maximumAmount - sendAmount ||
+                        // Outstanding + aggregate exceeds the max cap
+                        outstandingAmount > maximumAmount - sendAmount - totalSendAmount;
+
+                    if (exceedsMaximumAmount)
+                        return tecPATH_DRY;
+                    totalSendAmount += sendAmount;
+                }
+                else
+                {
+                    // Pre-fixSecurity3_1_3: per-iteration MaximumAmount
+                    // check. Reads sfOutstandingAmount from a stale
+                    // view.read() snapshot — incorrect for multi-destination
+                    // sends but retained for ledger replay compatibility.
+                    if (sendAmount > maximumAmount ||
+                        outstandingAmount > maximumAmount - sendAmount)
+                        return tecPATH_DRY;
+                }
             }
 
             // Direct send: redeeming MPTs and/or sending own MPTs.
             if (auto const ter = rippleCreditMPT(view, senderID, receiverID, amount, j))
                 return ter;
             actual += amount;
-            // Do not add amount to takeFromSender, because rippleCreditMPT took
-            // it
+            // Do not add amount to takeFromSender, because rippleCreditMPT
+            // took it.
 
             continue;
         }
 
         // Sending 3rd party MPTs: transit.
-        STAmount actualSend = (waiveFee == WaiveTransferFee::Yes)
+        STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
         actual += actualSend;

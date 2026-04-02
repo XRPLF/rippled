@@ -93,7 +93,7 @@ public:
         // Offers for the good quality path
         env(offer(carol, BTC(1), USD(100)));
 
-        PathSet paths(Path(XRP, USD), Path(USD));
+        PathSet const paths(Path(XRP, USD), Path(USD));
 
         env(pay(alice, bob, USD(100)),
             json(paths.json()),
@@ -419,7 +419,7 @@ public:
         auto const EUR = gw["EUR"];
 
         auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
-            STAmount amt(
+            STAmount const amt(
                 iou.issue(),
                 /*mantissa*/ 1,
                 /*exponent*/ -81);
@@ -863,7 +863,7 @@ public:
 
             auto const aliceOffers = offersOnAccount(env, alice);
             BEAST_EXPECT(aliceOffers.size() == 1);
-            for (auto offerPtr : aliceOffers)
+            for (auto const& offerPtr : aliceOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == XRP(2000));
@@ -878,7 +878,7 @@ public:
 
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            for (auto offerPtr : bobOffers)
+            for (auto const& offerPtr : bobOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == USD(1000));
@@ -927,7 +927,7 @@ public:
 
             auto const bobOffers = offersOnAccount(env, "bob");
             BEAST_EXPECT(bobOffers.size() == 1);
-            for (auto offerPtr : bobOffers)
+            for (auto const& offerPtr : bobOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == USD(499.5));

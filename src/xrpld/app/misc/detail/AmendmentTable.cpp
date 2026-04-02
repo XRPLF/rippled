@@ -632,7 +632,7 @@ AmendmentTableImpl::get(uint256 const& amendmentHash, std::lock_guard<std::mutex
 uint256
 AmendmentTableImpl::find(std::string const& name) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     for (auto const& e : amendmentMap_)
     {
@@ -659,7 +659,7 @@ AmendmentTableImpl::persistVote(
 bool
 AmendmentTableImpl::veto(uint256 const& amendment)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     AmendmentState& s = add(amendment, lock);
 
     if (s.vote != AmendmentVote::up)
@@ -672,7 +672,7 @@ AmendmentTableImpl::veto(uint256 const& amendment)
 bool
 AmendmentTableImpl::unVeto(uint256 const& amendment)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     AmendmentState* const s = get(amendment, lock);
 
     if ((s == nullptr) || s->vote != AmendmentVote::down)
@@ -685,7 +685,7 @@ AmendmentTableImpl::unVeto(uint256 const& amendment)
 bool
 AmendmentTableImpl::enable(uint256 const& amendment)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     AmendmentState& s = add(amendment, lock);
 
     if (s.enabled)
@@ -705,7 +705,7 @@ AmendmentTableImpl::enable(uint256 const& amendment)
 bool
 AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
     return (s != nullptr) && s->enabled;
 }
@@ -713,7 +713,7 @@ AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 bool
 AmendmentTableImpl::isSupported(uint256 const& amendment) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     AmendmentState const* s = get(amendment, lock);
     return (s != nullptr) && s->supported;
 }
@@ -721,14 +721,14 @@ AmendmentTableImpl::isSupported(uint256 const& amendment) const
 bool
 AmendmentTableImpl::hasUnsupportedEnabled() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return unsupportedEnabled_;
 }
 
 std::optional<NetClock::time_point>
 AmendmentTableImpl::firstUnsupportedExpected() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return firstUnsupportedExpected_;
 }
 
@@ -740,7 +740,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
     std::vector<uint256> amendments;
 
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         amendments.reserve(amendmentMap_.size());
         for (auto const& e : amendmentMap_)
         {
@@ -778,7 +778,7 @@ AmendmentTableImpl::doVoting(
                      << enabledAmendments.size() << ", " << majorityAmendments.size() << ", "
                      << valSet.size();
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // Keep a record of the votes we received.
     previousTrustedVotes_.recordVotes(rules, valSet, closeTime, j_, lock);
@@ -860,7 +860,7 @@ AmendmentTableImpl::doVoting(
 bool
 AmendmentTableImpl::needValidatedLedger(LedgerIndex ledgerSeq) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // Is there a ledger in which an amendment could have been enabled
     // between these two ledger sequences?
@@ -877,7 +877,7 @@ AmendmentTableImpl::doValidatedLedger(
     for (auto& e : enabled)
         enable(e);
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // Remember the ledger sequence of this update.
     lastUpdateSeq_ = ledgerSeq;
@@ -888,7 +888,7 @@ AmendmentTableImpl::doValidatedLedger(
     firstUnsupportedExpected_.reset();
     for (auto const& [hash, time] : majority)
     {
-        AmendmentState& s = add(hash, lock);
+        AmendmentState const& s = add(hash, lock);
 
         if (s.enabled)
             continue;
@@ -908,7 +908,7 @@ AmendmentTableImpl::doValidatedLedger(
 void
 AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     previousTrustedVotes_.trustChanged(allTrusted, lock);
 }
 
@@ -956,7 +956,7 @@ AmendmentTableImpl::getJson(bool isAdmin) const
 {
     Json::Value ret(Json::objectValue);
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         for (auto const& e : amendmentMap_)
         {
             injectJson(
@@ -972,7 +972,7 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
     Json::Value ret = Json::objectValue;
 
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
         if (a != nullptr)
         {

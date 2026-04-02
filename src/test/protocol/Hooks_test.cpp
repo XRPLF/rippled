@@ -23,7 +23,7 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> fields_to_test = {
+        std::vector<std::reference_wrapper<SField const>> const fields_to_test = {
             sfHookResult,
             sfHookStateChangeCount,
             sfHookEmitCount,
@@ -116,7 +116,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_UINT256: {
-                    uint256 u = uint256::fromVoid(
+                    uint256 const u = uint256::fromVoid(
                         "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
                         "EFDEADBEEF");
                     dummy.setFieldH256(f, u);
@@ -126,7 +126,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_VL: {
-                    std::vector<uint8_t> v{1, 2, 3};
+                    std::vector<uint8_t> const v{1, 2, 3};
                     dummy.setFieldVL(f, v);
                     BEAST_EXPECT(dummy.getFieldVL(f) == v);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -135,7 +135,8 @@ class Hooks_test : public beast::unit_test::suite
 
                 case STI_ACCOUNT: {
                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                    AccountID id = *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    AccountID const id =
+                        *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
