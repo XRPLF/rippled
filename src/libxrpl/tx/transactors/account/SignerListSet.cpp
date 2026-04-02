@@ -307,11 +307,7 @@ SignerListSet::replaceSignerList()
     writeSignersToSLE(signerList, flags);
 
     // Add the signer list to the account's directory.
-    auto const page =
-        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
-
-    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
-                     << (page ? "success" : "failure");
+    << (page ? "success" : "failure");
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE

@@ -98,16 +98,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
     }
 
     // deserialize the header
-    LedgerHeader info;
-    try
-    {
-        info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    }
-    catch (std::exception const&)
-    {
-        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header";
-        return false;
-    }
+    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
     uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
@@ -201,23 +192,13 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse const& reply = *msg;
-    if (reply.has_error() || !reply.has_ledgerheader() || !reply.has_ledgerhash() ||
-        reply.ledgerhash().size() != uint256::size())
+    if (reply.has_error() || !reply.has_ledgerheader())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
     }
 
-    LedgerHeader info;
-    try
-    {
-        info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    }
-    catch (std::exception const&)
-    {
-        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header";
-        return false;
-    }
+    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
     uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
