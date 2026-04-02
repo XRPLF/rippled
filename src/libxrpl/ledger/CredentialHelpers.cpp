@@ -38,7 +38,7 @@ checkExpired(
     return now > exp;
 }
 
-bool
+static Expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.info().parentCloseTime;
@@ -55,7 +55,9 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
             JLOG(j.trace())
                 << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            deleteSLE(view, sleCred, j);
+            auto const err = deleteSLE(view, sleCred, j);
+            if (view.rules().enabled(fixSecurity3_1_3) && !isTesSuccess(err))
+                return Unexpected(err);
             foundExpired = true;
         }
     }
@@ -343,7 +345,10 @@ verifyValidDomain(
             credentials.push_back(keyletCredential.key);
     }
 
-    bool const foundExpired = credentials::removeExpired(view, credentials, j);
+    auto const foundExpired = credentials::removeExpired(view, credentials, j);
+    if (!foundExpired)
+        return foundExpired.error();
+
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
@@ -354,7 +359,7 @@ verifyValidDomain(
             return tesSUCCESS;
     }
 
-    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+    return *foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER
@@ -374,9 +379,15 @@ verifyDepositPreauth(
 
     bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
 
-    if (credentialsPresent &&
-        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
-        return tecEXPIRED;
+    if (credentialsPresent)
+    {
+        auto const foundExpired = credentials::removeExpired(
+            view, tx.getFieldV256(sfCredentialIDs), j);
+        if (!foundExpired)
+            return foundExpired.error();
+        if (*foundExpired)
+            return tecEXPIRED;
+    }
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
     {
