@@ -91,7 +91,8 @@ TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const vaultAsset = ctx.tx[sfAsset];
-    auto const account = ctx.tx[sfAccount];
+    auto const& account = ctx.tx[sfAccount];
+    auto const issuer = AccountRoot(vaultAsset.getIssuer(), ctx.view);
 
     if (auto const ter = canAddHolding(ctx.view, vaultAsset))
         return ter;
@@ -101,7 +102,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     // impossible to clawback (should the need arise)
     if (!vaultAsset.native())
     {
-        if (isPseudoAccount(ctx.view, vaultAsset.getIssuer()))
+        if (issuer.isPseudoAccount())
             return tecWRONG_ASSET;
     }
 

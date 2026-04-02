@@ -197,19 +197,6 @@ isPseudoAccount(
     std::shared_ptr<SLE const> sleAcct,
     std::set<SField const*> const& pseudoFieldFilter = {});
 
-/** Convenience overload that reads the account from the view. */
-[[nodiscard]] inline bool
-isPseudoAccount(
-    ReadView const& view,
-    AccountID const& accountId,
-    std::set<SField const*> const& pseudoFieldFilter = {})
-{
-    AccountRoot<ReadView> const acct(accountId, view);
-    if (!acct)
-        return false;
-    return acct.isPseudoAccount(pseudoFieldFilter);
-}
-
 /**
  * Create pseudo-account, storing pseudoOwnerKey into ownerField.
  *

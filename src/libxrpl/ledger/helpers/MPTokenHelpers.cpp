@@ -351,7 +351,8 @@ requireAuth(
     if (featureSAVEnabled)
     {
         // Implicitly authorize Vault and LoanBroker pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+        AccountRoot const accountRoot(account, view);
+        if (accountRoot.isPseudoAccount({&sfVaultID, &sfLoanBrokerID}))
             return tesSUCCESS;
     }
 
