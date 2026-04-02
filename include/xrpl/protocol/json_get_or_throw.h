@@ -112,7 +112,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
     {
         auto const s = inner.asString();
         // parse as hex
-        std::uint64_t val;
+        std::uint64_t val = 0;
 
         auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), val, 16);
 

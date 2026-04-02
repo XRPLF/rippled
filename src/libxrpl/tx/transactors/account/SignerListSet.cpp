@@ -167,7 +167,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -299,7 +299,7 @@ SignerListSet::replaceSignerList()
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
     constexpr int addedOwnerCount = 1;
-    std::uint32_t flags{lsfOneOwnerCount};
+    std::uint32_t const flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
 
@@ -314,7 +314,7 @@ SignerListSet::replaceSignerList()
     view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.getJournal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
@@ -339,7 +339,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

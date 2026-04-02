@@ -25,7 +25,7 @@
 
 namespace sqlite_api {
 struct sqlite3;
-}
+}  // namespace sqlite_api
 
 namespace xrpl {
 

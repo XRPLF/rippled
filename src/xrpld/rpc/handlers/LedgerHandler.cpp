@@ -21,7 +21,7 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
+    bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
     if (!needsLedger)
         return Status::OK;
@@ -113,9 +113,9 @@ std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
     auto begin = std::chrono::system_clock::now();
-    org::xrpl::rpc::v1::GetLedgerRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerResponse response;
-    grpc::Status status = grpc::Status::OK;
+    grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
     if (auto status = RPC::ledgerFromRequest(ledger, context))
@@ -147,11 +147,11 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 if (request.expand())
                 {
                     auto txn = response.mutable_transactions_list()->add_transactions();
-                    Serializer sTxn = i.first->getSerializer();
+                    Serializer const sTxn = i.first->getSerializer();
                     txn->set_transaction_blob(sTxn.data(), sTxn.getLength());
                     if (i.second)
                     {
-                        Serializer sMeta = i.second->getSerializer();
+                        Serializer const sMeta = i.second->getSerializer();
                         txn->set_metadata_blob(sMeta.data(), sMeta.getLength());
                     }
                 }
@@ -173,30 +173,32 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     if (request.get_objects())
     {
-        std::shared_ptr<ReadView const> parent =
+        std::shared_ptr<ReadView const> const parent =
             context.app.getLedgerMaster().getLedgerBySeq(ledger->seq() - 1);
 
-        std::shared_ptr<Ledger const> base = std::dynamic_pointer_cast<Ledger const>(parent);
+        std::shared_ptr<Ledger const> const base = std::dynamic_pointer_cast<Ledger const>(parent);
         if (!base)
         {
-            grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "parent ledger not validated"};
+            grpc::Status const errorStatus{
+                grpc::StatusCode::NOT_FOUND, "parent ledger not validated"};
             return {response, errorStatus};
         }
 
-        std::shared_ptr<Ledger const> desired = std::dynamic_pointer_cast<Ledger const>(ledger);
+        std::shared_ptr<Ledger const> const desired =
+            std::dynamic_pointer_cast<Ledger const>(ledger);
         if (!desired)
         {
-            grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "ledger not validated"};
+            grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "ledger not validated"};
             return {response, errorStatus};
         }
         SHAMap::Delta differences;
 
-        int maxDifferences = std::numeric_limits<int>::max();
+        int const maxDifferences = std::numeric_limits<int>::max();
 
-        bool res = base->stateMap().compare(desired->stateMap(), differences, maxDifferences);
+        bool const res = base->stateMap().compare(desired->stateMap(), differences, maxDifferences);
         if (!res)
         {
-            grpc::Status errorStatus{
+            grpc::Status const errorStatus{
                 grpc::StatusCode::RESOURCE_EXHAUSTED,
                 "too many differences between specified ledgers"};
             return {response, errorStatus};

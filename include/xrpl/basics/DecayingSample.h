@@ -95,7 +95,7 @@ class DecayWindow
 public:
     using time_point = typename Clock::time_point;
 
-    explicit DecayWindow(time_point now) : value_(0), when_(now)
+    explicit DecayWindow(time_point now) : when_(now)
     {
     }
 
@@ -127,7 +127,7 @@ private:
         when_ = now;
     }
 
-    double value_;
+    double value_{0};
     time_point when_;
 };
 

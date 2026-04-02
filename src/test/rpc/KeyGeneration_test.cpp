@@ -98,7 +98,7 @@ public:
             params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
-        std::string seed = result[jss::master_seed].asString();
+        std::string const seed = result[jss::master_seed].asString();
 
         result = walletPropose(params);
 

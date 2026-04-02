@@ -645,7 +645,7 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
+                beast::temp_dir const tempDir;
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
@@ -672,7 +672,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const default_args =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"

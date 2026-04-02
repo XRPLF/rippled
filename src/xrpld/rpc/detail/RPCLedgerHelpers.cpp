@@ -166,7 +166,7 @@ ledgerFromSpecifier(
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-    LedgerCase ledgerCase = specifier.ledger_case();
+    LedgerCase const ledgerCase = specifier.ledger_case();
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
