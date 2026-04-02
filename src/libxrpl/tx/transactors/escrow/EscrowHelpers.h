@@ -227,4 +227,15 @@ escrowUnlockApplyHelper<MPTIssue>(
         journal);
 }
 
+template <class T>
+static uint32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    // First 500 bytes included in the normal reserve
+    // Each additional 500 bytes requires an additional reserve
+    return 1 + (finishFunction->size() / 500);
+}
+
 }  // namespace xrpl

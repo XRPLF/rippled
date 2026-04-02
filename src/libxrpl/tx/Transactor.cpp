@@ -1254,7 +1254,8 @@ Transactor::operator()()
         }
 
         if (result == tecWASM_REJECTED)
-            modifyWasmDataFields(view(), modifiedWasmObjects, ctx_.registry.journal("View"));
+            modifyWasmDataFields(
+                view(), modifiedWasmObjects, ctx_.registry.get().getJournal("View"));
 
         applied = isTecClaim(result);
     }

@@ -27,6 +27,8 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
+    auto const finishFunctionValue = canonical_VL();
+    auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
@@ -49,6 +51,8 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
+    builder.setFinishFunction(finishFunctionValue);
+    builder.setData(dataValue);
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setDestinationNode(destinationNodeValue);
@@ -133,6 +137,22 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = finishFunctionValue;
+        auto const actualOpt = entry.getFinishFunction();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfFinishFunction");
+        EXPECT_TRUE(entry.hasFinishFunction());
+    }
+
+    {
+        auto const& expected = dataValue;
+        auto const actualOpt = entry.getData();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfData");
+        EXPECT_TRUE(entry.hasData());
+    }
+
+    {
         auto const& expected = sourceTagValue;
         auto const actualOpt = entry.getSourceTag();
         ASSERT_TRUE(actualOpt.has_value());
@@ -192,6 +212,8 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
+    auto const finishFunctionValue = canonical_VL();
+    auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
@@ -210,6 +232,8 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     sle->at(sfCondition) = conditionValue;
     sle->at(sfCancelAfter) = cancelAfterValue;
     sle->at(sfFinishAfter) = finishAfterValue;
+    sle->at(sfFinishFunction) = finishFunctionValue;
+    sle->at(sfData) = dataValue;
     sle->at(sfSourceTag) = sourceTagValue;
     sle->at(sfDestinationTag) = destinationTagValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
@@ -338,6 +362,32 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfFinishAfter");
         expectEqualField(expected, *fromBuilderOpt, "sfFinishAfter");
+    }
+
+    {
+        auto const& expected = finishFunctionValue;
+
+        auto const fromSleOpt = entryFromSle.getFinishFunction();
+        auto const fromBuilderOpt = entryFromBuilder.getFinishFunction();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfFinishFunction");
+        expectEqualField(expected, *fromBuilderOpt, "sfFinishFunction");
+    }
+
+    {
+        auto const& expected = dataValue;
+
+        auto const fromSleOpt = entryFromSle.getData();
+        auto const fromBuilderOpt = entryFromBuilder.getData();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfData");
+        expectEqualField(expected, *fromBuilderOpt, "sfData");
     }
 
     {
@@ -477,6 +527,10 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCancelAfter().has_value());
     EXPECT_FALSE(entry.hasFinishAfter());
     EXPECT_FALSE(entry.getFinishAfter().has_value());
+    EXPECT_FALSE(entry.hasFinishFunction());
+    EXPECT_FALSE(entry.getFinishFunction().has_value());
+    EXPECT_FALSE(entry.hasData());
+    EXPECT_FALSE(entry.getData().has_value());
     EXPECT_FALSE(entry.hasSourceTag());
     EXPECT_FALSE(entry.getSourceTag().has_value());
     EXPECT_FALSE(entry.hasDestinationTag());

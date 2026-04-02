@@ -34,6 +34,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     auto const fulfillmentValue = canonical_VL();
     auto const conditionValue = canonical_VL();
     auto const credentialIDsValue = canonical_VECTOR256();
+    auto const computationAllowanceValue = canonical_UINT32();
 
     EscrowFinishBuilder builder{
         accountValue,
@@ -47,6 +48,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     builder.setFulfillment(fulfillmentValue);
     builder.setCondition(conditionValue);
     builder.setCredentialIDs(credentialIDsValue);
+    builder.setComputationAllowance(computationAllowanceValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -100,6 +102,14 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasCredentialIDs());
     }
 
+    {
+        auto const& expected = computationAllowanceValue;
+        auto const actualOpt = tx.getComputationAllowance();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfComputationAllowance should be present";
+        expectEqualField(expected, *actualOpt, "sfComputationAllowance");
+        EXPECT_TRUE(tx.hasComputationAllowance());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -121,6 +131,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     auto const fulfillmentValue = canonical_VL();
     auto const conditionValue = canonical_VL();
     auto const credentialIDsValue = canonical_VECTOR256();
+    auto const computationAllowanceValue = canonical_UINT32();
 
     // Build an initial transaction
     EscrowFinishBuilder initialBuilder{
@@ -134,6 +145,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     initialBuilder.setFulfillment(fulfillmentValue);
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
+    initialBuilder.setComputationAllowance(computationAllowanceValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -183,6 +195,13 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getCredentialIDs();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
+    }
+
+    {
+        auto const& expected = computationAllowanceValue;
+        auto const actualOpt = rebuiltTx.getComputationAllowance();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfComputationAllowance should be present";
+        expectEqualField(expected, *actualOpt, "sfComputationAllowance");
     }
 
 }
@@ -250,6 +269,8 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCondition().has_value());
     EXPECT_FALSE(tx.hasCredentialIDs());
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
+    EXPECT_FALSE(tx.hasComputationAllowance());
+    EXPECT_FALSE(tx.getComputationAllowance().has_value());
 }
 
 }

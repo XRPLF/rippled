@@ -3,7 +3,6 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/protocol/Fees.h>
 
 #include <boost/asio.hpp>

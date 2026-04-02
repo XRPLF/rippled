@@ -175,6 +175,54 @@ public:
     }
 
     /**
+     * @brief Get sfFinishFunction (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getFinishFunction() const
+    {
+        if (hasFinishFunction())
+            return this->sle_->at(sfFinishFunction);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfFinishFunction is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasFinishFunction() const
+    {
+        return this->sle_->isFieldPresent(sfFinishFunction);
+    }
+
+    /**
+     * @brief Get sfData (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getData() const
+    {
+        if (hasData())
+            return this->sle_->at(sfData);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfData is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasData() const
+    {
+        return this->sle_->isFieldPresent(sfData);
+    }
+
+    /**
      * @brief Get sfSourceTag (soeOPTIONAL)
      * @return The field value, or std::nullopt if not present.
      */
@@ -448,6 +496,28 @@ public:
     setFinishAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfFinishAfter] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfFinishFunction (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setFinishFunction(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfFinishFunction] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfData (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowBuilder&
+    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfData] = value;
         return *this;
     }
 

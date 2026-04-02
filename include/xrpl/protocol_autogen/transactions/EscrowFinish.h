@@ -146,6 +146,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfCredentialIDs);
     }
+
+    /**
+     * @brief Get sfComputationAllowance (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getComputationAllowance() const
+    {
+        if (hasComputationAllowance())
+        {
+            return this->tx_->at(sfComputationAllowance);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfComputationAllowance is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasComputationAllowance() const
+    {
+        return this->tx_->isFieldPresent(sfComputationAllowance);
+    }
 };
 
 /**
@@ -244,6 +270,17 @@ public:
     setCredentialIDs(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
     {
         object_[sfCredentialIDs] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfComputationAllowance (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    EscrowFinishBuilder&
+    setComputationAllowance(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfComputationAllowance] = value;
         return *this;
     }
 

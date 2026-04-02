@@ -14,6 +14,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+#include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 
 #include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
 
@@ -74,7 +76,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
     {
-        auto const fees(ctx.registry.getFees());
+        auto const fees(ctx.registry.get().getFees());
         if (fees.extensionComputeLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";

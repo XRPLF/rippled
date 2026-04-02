@@ -30,11 +30,13 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const destinationValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const destinationTagValue = canonical_UINT32();
+    auto const finishFunctionValue = canonical_VL();
+    auto const dataValue = canonical_VL();
 
     EscrowCreateBuilder builder{
         accountValue,
@@ -45,10 +47,12 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setDestinationTag(destinationTagValue);
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
-    builder.setDestinationTag(destinationTagValue);
+    builder.setFinishFunction(finishFunctionValue);
+    builder.setData(dataValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -79,6 +83,14 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
 
     // Verify optional fields
     {
+        auto const& expected = destinationTagValue;
+        auto const actualOpt = tx.getDestinationTag();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
+        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+        EXPECT_TRUE(tx.hasDestinationTag());
+    }
+
+    {
         auto const& expected = conditionValue;
         auto const actualOpt = tx.getCondition();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCondition should be present";
@@ -103,11 +115,19 @@ TEST(TransactionsEscrowCreateTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = destinationTagValue;
-        auto const actualOpt = tx.getDestinationTag();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
-        expectEqualField(expected, *actualOpt, "sfDestinationTag");
-        EXPECT_TRUE(tx.hasDestinationTag());
+        auto const& expected = finishFunctionValue;
+        auto const actualOpt = tx.getFinishFunction();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFinishFunction should be present";
+        expectEqualField(expected, *actualOpt, "sfFinishFunction");
+        EXPECT_TRUE(tx.hasFinishFunction());
+    }
+
+    {
+        auto const& expected = dataValue;
+        auto const actualOpt = tx.getData();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
+        expectEqualField(expected, *actualOpt, "sfData");
+        EXPECT_TRUE(tx.hasData());
     }
 
 }
@@ -127,11 +147,13 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const destinationValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const amountValue = canonical_AMOUNT();
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const destinationTagValue = canonical_UINT32();
+    auto const finishFunctionValue = canonical_VL();
+    auto const dataValue = canonical_VL();
 
     // Build an initial transaction
     EscrowCreateBuilder initialBuilder{
@@ -142,10 +164,12 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setCondition(conditionValue);
     initialBuilder.setCancelAfter(cancelAfterValue);
     initialBuilder.setFinishAfter(finishAfterValue);
-    initialBuilder.setDestinationTag(destinationTagValue);
+    initialBuilder.setFinishFunction(finishFunctionValue);
+    initialBuilder.setData(dataValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -177,6 +201,13 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
 
     // Verify optional fields
     {
+        auto const& expected = destinationTagValue;
+        auto const actualOpt = rebuiltTx.getDestinationTag();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
+        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+    }
+
+    {
         auto const& expected = conditionValue;
         auto const actualOpt = rebuiltTx.getCondition();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCondition should be present";
@@ -198,10 +229,17 @@ TEST(TransactionsEscrowCreateTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = destinationTagValue;
-        auto const actualOpt = rebuiltTx.getDestinationTag();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
-        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+        auto const& expected = finishFunctionValue;
+        auto const actualOpt = rebuiltTx.getFinishFunction();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFinishFunction should be present";
+        expectEqualField(expected, *actualOpt, "sfFinishFunction");
+    }
+
+    {
+        auto const& expected = dataValue;
+        auto const actualOpt = rebuiltTx.getData();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
+        expectEqualField(expected, *actualOpt, "sfData");
     }
 
 }
@@ -263,14 +301,18 @@ TEST(TransactionsEscrowCreateTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasDestinationTag());
+    EXPECT_FALSE(tx.getDestinationTag().has_value());
     EXPECT_FALSE(tx.hasCondition());
     EXPECT_FALSE(tx.getCondition().has_value());
     EXPECT_FALSE(tx.hasCancelAfter());
     EXPECT_FALSE(tx.getCancelAfter().has_value());
     EXPECT_FALSE(tx.hasFinishAfter());
     EXPECT_FALSE(tx.getFinishAfter().has_value());
-    EXPECT_FALSE(tx.hasDestinationTag());
-    EXPECT_FALSE(tx.getDestinationTag().has_value());
+    EXPECT_FALSE(tx.hasFinishFunction());
+    EXPECT_FALSE(tx.getFinishFunction().has_value());
+    EXPECT_FALSE(tx.hasData());
+    EXPECT_FALSE(tx.getData().has_value());
 }
 
 }
