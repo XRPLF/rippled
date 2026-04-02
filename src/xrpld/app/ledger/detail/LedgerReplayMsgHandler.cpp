@@ -84,7 +84,8 @@ LedgerReplayMsgHandler::processProofPathResponse(
 {
     protocol::TMProofPathResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
-        !reply.has_ledgerheader() || reply.path_size() == 0)
+        !reply.has_ledgerheader() || reply.path_size() == 0 ||
+        reply.ledgerhash().size() != uint256::size() || reply.key().size() != uint256::size())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
@@ -97,7 +98,16 @@ LedgerReplayMsgHandler::processProofPathResponse(
     }
 
     // deserialize the header
-    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
+    LedgerHeader info;
+    try
+    {
+        info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
+    }
+    catch (std::exception const&)
+    {
+        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header";
+        return false;
+    }
     uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
@@ -191,13 +201,23 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse const& reply = *msg;
-    if (reply.has_error() || !reply.has_ledgerheader())
+    if (reply.has_error() || !reply.has_ledgerheader() || !reply.has_ledgerhash() ||
+        reply.ledgerhash().size() != uint256::size())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
     }
 
-    auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
+    LedgerHeader info;
+    try
+    {
+        info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
+    }
+    catch (std::exception const&)
+    {
+        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header";
+        return false;
+    }
     uint256 const replyHash(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {

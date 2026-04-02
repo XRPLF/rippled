@@ -1288,6 +1288,102 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     }
 
     void
+    testMalformedProofPathResponse()
+    {
+        testcase("Malformed ProofPath response");
+        LedgerServer server(*this, {1});
+        auto const l = server.ledgerMaster.getClosedLedger();
+
+        // Build a valid reply first
+        auto request = std::make_shared<protocol::TMProofPathRequest>();
+        request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
+        request->set_type(protocol::TMLedgerMapType::lmACCOUNT_STATE);
+        request->set_key(keylet::skip().key.data(), keylet::skip().key.size());
+        auto goodReply = std::make_shared<protocol::TMProofPathResponse>(
+            server.msgHandler.processProofPathRequest(request));
+        BEAST_EXPECT(!goodReply->has_error());
+        BEAST_EXPECT(server.msgHandler.processProofPathResponse(goodReply));
+
+        {
+            // BUG-G001: truncated ledger header should not crash
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->set_ledgerheader("short");  // too short to deserialize
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+        {
+            // BUG-G001: empty ledger header
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->set_ledgerheader("");
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+        {
+            // BUG-G002: missing ledgerhash field
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->clear_ledgerhash();
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+        {
+            // BUG-G002: undersized ledgerhash
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->set_ledgerhash("tooshort");
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+        {
+            // BUG-G002: undersized key
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->set_key("tooshort");
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+        {
+            // BUG-G002: missing key field
+            auto reply = std::make_shared<protocol::TMProofPathResponse>(*goodReply);
+            reply->clear_key();
+            BEAST_EXPECT(!server.msgHandler.processProofPathResponse(reply));
+        }
+    }
+
+    void
+    testMalformedReplayDeltaResponse()
+    {
+        testcase("Malformed ReplayDelta response");
+        LedgerServer server(*this, {1});
+        auto const l = server.ledgerMaster.getClosedLedger();
+
+        // Build a valid reply first
+        auto request = std::make_shared<protocol::TMReplayDeltaRequest>();
+        request->set_ledgerhash(l->header().hash.data(), l->header().hash.size());
+        auto goodReply = std::make_shared<protocol::TMReplayDeltaResponse>(
+            server.msgHandler.processReplayDeltaRequest(request));
+        BEAST_EXPECT(!goodReply->has_error());
+        BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(goodReply));
+
+        {
+            // BUG-G001: truncated ledger header should not crash
+            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(*goodReply);
+            reply->set_ledgerheader("short");
+            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+        }
+        {
+            // BUG-G001: empty ledger header
+            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(*goodReply);
+            reply->set_ledgerheader("");
+            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+        }
+        {
+            // BUG-G002: missing ledgerhash field
+            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(*goodReply);
+            reply->clear_ledgerhash();
+            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+        }
+        {
+            // BUG-G002: undersized ledgerhash
+            auto reply = std::make_shared<protocol::TMReplayDeltaResponse>(*goodReply);
+            reply->set_ledgerhash("tooshort");
+            BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(reply));
+        }
+    }
+
+    void
     testLedgerReplayOverlap()
     {
         testcase("Overlap tasks");
@@ -1379,6 +1475,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         testStop();
         testSkipListBadReply();
         testLedgerDeltaBadReply();
+        testMalformedProofPathResponse();
+        testMalformedReplayDeltaResponse();
         testLedgerReplayOverlap();
     }
 };
