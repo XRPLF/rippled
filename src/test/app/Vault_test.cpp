@@ -5423,7 +5423,7 @@ class Vault_test : public beast::unit_test::suite
         };
 
         runTest(amendments - fixSecurity3_1_3);
-        runTest(amendments | fixSecurity3_1_3);
+        runTest(amendments);
     }
 
 public:
