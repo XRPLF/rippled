@@ -332,19 +332,19 @@ requireAuth(
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     if (maybeDomainID)
     {
-        // An issuance with sfDomainID must always have lsfMPTRequireAuth set.
-        // fixSecurity3_1_3 coordinates the consensus-visible behavior change:
-        // before the fix, release nodes fall through (authorization bypass);
-        // after the fix, all nodes return tefINTERNAL. The XRPL_ASSERT in the
-        // else branch preserves crash-on-invalid-state for debug builds, which
-        // is harmless for production (release nodes ignore it).
+        // Defensive check: An issuance with sfDomainID must strictly enforce lsfMPTRequireAuth.
+        // While preclaim checks prevent clearing this flag when sfDomainID is set, we verify here
+        // to guard against potential logic regressions in the future changes.
         if (view.rules().enabled(fixSecurity3_1_3))
         {
+            // Post-fixSecurity3_1_3: Return a proper error code instead of asserting.
             if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
                 return tefINTERNAL;
         }
         else
         {
+            // Pre-fixSecurity3_1_3: Fault via assertion in Debug mode;
+            // potentially fall through in Release mode.
             XRPL_ASSERT(
                 sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
                 "xrpl::requireAuth : issuance requires authorization");
