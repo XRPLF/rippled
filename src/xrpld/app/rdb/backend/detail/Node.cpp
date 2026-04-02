@@ -1131,35 +1131,39 @@ accountTxPage(
                 auto const& filter = options.delegate.value();
                 auto const& contextAccount = options.account;
 
-                if (filter.type == DelegateType::Delegatee)
+                switch (filter.type)
                 {
-                    // Case: account_tx(A) delegatee(C)
-                    // We want TXs where Context(A) is the Owner, but Signer is
-                    // NOT A (it's C)
-                    bool isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+                    case DelegateType::Actor: {
+                        // Case: account_tx(A) delegatee(C)
+                        // We want TXs where Context(A) is the Owner, but Signer is
+                        // NOT A (it's C)
+                        bool isDelegated =
+                            (txOwner == contextAccount) && (txSigner != contextAccount);
 
-                    if (isDelegated)
-                    {
-                        if (filter.counterparty)
-                            keep = (txSigner == *filter.counterparty);
-                        else
-                            keep = true;
+                        if (isDelegated)
+                        {
+                            if (filter.counterparty)
+                                keep = (txSigner == *filter.counterparty);
+                            else
+                                keep = true;
+                        }
+                        break;
                     }
-                }
-                else if (filter.type == DelegateType::Delegator)
-                {
-                    // Case: account_tx(C) delegator(A)
-                    // We want TXs where Context(C) is the Signer, but Owner is
-                    // NOT C (it's A)
-                    bool isActingAsDelegate =
-                        (txSigner == contextAccount) && (txOwner != contextAccount);
 
-                    if (isActingAsDelegate)
-                    {
-                        if (filter.counterparty)
-                            keep = (txOwner == *filter.counterparty);
-                        else
-                            keep = true;
+                    case DelegateType::Authorizer: {
+                        // Case: account_tx(C) delegator(A)
+                        // We want TXs where Context(C) is the Signer, but Owner is
+                        // NOT C (it's A)
+                        bool isActingAsDelegate =
+                            (txSigner == contextAccount) && (txOwner != contextAccount);
+
+                        if (isActingAsDelegate)
+                        {
+                            if (filter.counterparty)
+                                keep = (txOwner == *filter.counterparty);
+                            else
+                                keep = true;
+                        }
                     }
                 }
 

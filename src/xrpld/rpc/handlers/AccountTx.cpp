@@ -22,6 +22,42 @@
 
 namespace xrpl {
 
+Expected<DelegateFilter, Json::Value>
+DelegateFilter::create(Json::Value const& delegateNode)
+{
+    if (!delegateNode.isObject() || !delegateNode.isMember(jss::delegate_filter))
+        return Unexpected(RPC::invalid_field_error("delegate"));
+
+    DelegateFilter filter;
+
+    if (!delegateNode[jss::delegate_filter].isString())
+        return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
+
+    auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
+
+    if (delegateFilterStr == "actor")
+        filter.type = DelegateType::Actor;
+    else if (delegateFilterStr == "authorizer")
+        filter.type = DelegateType::Authorizer;
+    else
+        return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
+
+    if (delegateNode.isMember(jss::counterparty))
+    {
+        if (!delegateNode[jss::counterparty].isString())
+            return Unexpected(RPC::invalid_field_error(jss::counterparty));
+
+        auto const counterparty =
+            parseBase58<AccountID>(delegateNode[jss::counterparty].asString());
+        if (!counterparty)
+            return Unexpected(rpcError(rpcACT_MALFORMED));
+
+        filter.counterparty = *counterparty;
+    }
+
+    return filter;
+}
+
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
 using TxnDataBinary = RelationalDatabase::txnMetaLedgerType;
@@ -436,39 +472,10 @@ doAccountTxJson(RPC::JsonContext& context)
 
     if (params.isMember("delegate"))
     {
-        auto const& delegateNode = params["delegate"];
-
-        if (!delegateNode.isObject() || !delegateNode.isMember(jss::delegate_filter))
-            return RPC::invalid_field_error("delegate");
-
-        DelegateFilter filter;
-
-        if (!delegateNode[jss::delegate_filter].isString())
-            return RPC::invalid_field_error(jss::delegate_filter);
-
-        auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
-
-        if (delegateFilterStr == "delegatee")
-            filter.type = DelegateType::Delegatee;
-        else if (delegateFilterStr == "delegator")
-            filter.type = DelegateType::Delegator;
+        if (auto const filter = DelegateFilter::create(params["delegate"]); filter.has_value())
+            args.delegate = *filter;
         else
-            return RPC::invalid_field_error(jss::delegate_filter);
-
-        if (delegateNode.isMember(jss::counterparty))
-        {
-            if (!delegateNode[jss::counterparty].isString())
-                return RPC::invalid_field_error(jss::counterparty);
-
-            auto const counterparty =
-                parseBase58<AccountID>(delegateNode[jss::counterparty].asString());
-            if (!counterparty)
-                return rpcError(rpcACT_MALFORMED);
-
-            filter.counterparty = *counterparty;
-        }
-
-        args.delegate = filter;
+            return filter.error();
     }
 
     auto res = doAccountTxHelp(context, args);

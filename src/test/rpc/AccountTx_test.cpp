@@ -911,14 +911,14 @@ class AccountTx_test : public beast::unit_test::suite
         // Filter: Delegatee. Expects TX #2 (Signed by Bob)
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
         // Filter: Delegatee + Counterparty Bob. Expects TX #2.
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             p["counterparty"] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
@@ -926,7 +926,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Filter: Delegatee + Counterparty Carol. Expects 0.
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             p["counterparty"] = carol.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
         }
@@ -935,14 +935,14 @@ class AccountTx_test : public beast::unit_test::suite
         // (Bob signed it, but Alice is the owner).
         {
             Json::Value p;
-            p["delegate_filter"] = "delegator";
+            p["delegate_filter"] = "authorizer";
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
         // Filter: Delegator + Counterparty Alice. Expects TX #2.
         {
             Json::Value p;
-            p["delegate_filter"] = "delegator";
+            p["delegate_filter"] = "authorizer";
             p["counterparty"] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
@@ -951,7 +951,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Expect: None (Alice is Owner, not Carol)
         {
             Json::Value p;
-            p["delegate_filter"] = "delegator";
+            p["delegate_filter"] = "authorizer";
             p["counterparty"] = carol.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
@@ -960,7 +960,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Expect: None. Bob did not employ a delegatee for his own TXs (TX C).
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
@@ -993,7 +993,7 @@ class AccountTx_test : public beast::unit_test::suite
         // "counterparty" is not a string
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             p["counterparty"] = 123;
             checkError(p, "invalidParams");
         }
@@ -1001,7 +1001,7 @@ class AccountTx_test : public beast::unit_test::suite
         // "counterparty" is malformed base58
         {
             Json::Value p;
-            p["delegate_filter"] = "delegatee";
+            p["delegate_filter"] = "actor";
             p["counterparty"] = "not_an_account";
             checkError(p, "actMalformed");
         }

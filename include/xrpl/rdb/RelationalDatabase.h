@@ -1,8 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/LedgerShortcut.h>
@@ -31,12 +33,17 @@ struct LedgerRange
 };
 
 enum class DelegateType {
-    Delegatee,  // This account sent txs on behalf of others
-    Delegator   // This account had txs sent on its behalf by others
+    Actor,      // This account sent txs on behalf of others
+    Authorizer  // This account Authorized another account to have txns sent on its behalf
 };
 
 struct DelegateFilter
 {
+    // Parses a "delegate" JSON node into a DelegateFilter.
+    // Returns an error Json::Value if the node is malformed.
+    static Expected<DelegateFilter, Json::Value>
+    create(Json::Value const& delegateNode);
+
     DelegateType type;
     std::optional<AccountID> counterparty;
 };
