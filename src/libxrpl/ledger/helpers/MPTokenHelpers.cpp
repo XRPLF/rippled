@@ -332,9 +332,10 @@ requireAuth(
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     if (maybeDomainID)
     {
-        XRPL_ASSERT(
-            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
-            "xrpl::requireAuth : issuance requires authorization");
+        // An issuance with sfDomainID must always have lsfMPTRequireAuth set.
+        if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
+            return tefINTERNAL;
+
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
         if (isTesSuccess(ter))
@@ -376,9 +377,8 @@ enforceMPTokenAuthorization(
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT(
-        sleIssuance->isFlag(lsfMPTRequireAuth),
-        "xrpl::enforceMPTokenAuthorization : authorization required");
+    if (!sleIssuance->isFlag(lsfMPTRequireAuth))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (account == sleIssuance->at(sfIssuer))
         return tefINTERNAL;  // LCOV_EXCL_LINE
