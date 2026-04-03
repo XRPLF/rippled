@@ -130,7 +130,7 @@ jobs:
             --target "${CMAKE_TARGET}"
 
       - name: Upload rippled artifact (Linux)
-        if: ${{ github.repository_owner == 'XRPLF' && runner.os == 'Linux' }}
+        if: ${{ github.repository == 'XRPLF/rippled' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         env:
           BUILD_DIR: ${{ inputs.build_dir }}
@@ -201,7 +201,7 @@ jobs:
             --target coverage
 
       - name: Upload coverage report
-        if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
+        if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.ENABLED_COVERAGE == 'true' }}
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           disable_search: true
