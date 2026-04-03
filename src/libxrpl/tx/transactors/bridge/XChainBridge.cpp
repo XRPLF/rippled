@@ -118,7 +118,7 @@ checkAttestationPublicKey(
         else
         {
             // regular key
-            if (std::optional<AccountID> regularKey = acctSigner->at(~sfRegularKey);
+            if (std::optional<AccountID> const regularKey = acctSigner->at(~sfRegularKey);
                 regularKey != accountFromPK)
             {
                 if (!regularKey)

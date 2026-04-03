@@ -4270,8 +4270,8 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    AccountRoot issuerOut(book.out.account, view);
-    AccountRoot issuerIn(book.in.account, view);
+    AccountRoot const issuerOut(book.out.account, view);
+    AccountRoot const issuerIn(book.in.account, view);
     bool const bGlobalFreeze = issuerOut.isGlobalFrozen() || issuerIn.isGlobalFrozen();
 
     bool bDone = false;

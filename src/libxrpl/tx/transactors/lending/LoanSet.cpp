@@ -367,7 +367,7 @@ LoanSet::doApply()
     }
 
     auto const brokerPseudo = brokerSle->at(sfAccount);
-    WAccountRoot brokerPseudoAcct(brokerPseudo, view, j_);
+    WAccountRoot const brokerPseudoAcct(brokerPseudo, view, j_);
     if (!brokerPseudoAcct)
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE

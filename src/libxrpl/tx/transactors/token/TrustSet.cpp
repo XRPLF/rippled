@@ -367,7 +367,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    WAccountRoot wrappedDst(uDstAccountID, view(), j_);
+    WAccountRoot const wrappedDst(uDstAccountID, view(), j_);
 
     if (!wrappedDst)
     {
@@ -378,7 +378,8 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(accountID_);
 
-    SLE::pointer sleRippleState = view().peek(keylet::line(accountID_, uDstAccountID, currency));
+    SLE::pointer const sleRippleState =
+        view().peek(keylet::line(accountID_, uDstAccountID, currency));
 
     if (sleRippleState)
     {

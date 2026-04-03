@@ -86,7 +86,7 @@ TicketCreate::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
-        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
+        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);

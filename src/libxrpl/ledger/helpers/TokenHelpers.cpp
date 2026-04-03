@@ -39,7 +39,7 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                AccountRoot issuer(issue.getIssuer(), view);
+                AccountRoot const issuer(issue.getIssuer(), view);
                 return issuer.isGlobalFrozen();
             }
             else
@@ -257,7 +257,7 @@ accountHolds(
     STAmount const amount;
     if (isXRP(currency))
     {
-        AccountRoot accountRoot(account, view, j);
+        AccountRoot const accountRoot(account, view, j);
         return {accountRoot.xrpLiquid(0)};
     }
 
@@ -404,7 +404,7 @@ transferRate(ReadView const& view, STAmount const& amount)
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                AccountRoot issuer(issue.getIssuer(), view);
+                AccountRoot const issuer(issue.getIssuer(), view);
                 return issuer.transferRate();
             }
             else
@@ -690,7 +690,7 @@ rippleSendIOU(
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
-    WAccountRoot wrappedIssuer(issuer, view, j);
+    WAccountRoot const wrappedIssuer(issuer, view, j);
     saActual = (waiveFee == WaiveTransferFee::Yes)
         ? saAmount
         : multiply(saAmount, wrappedIssuer.transferRate());
@@ -758,7 +758,7 @@ rippleSendMultiIOU(
 
         // Calculate the amount to transfer accounting
         // for any transfer fees if the fee is not waived:
-        WAccountRoot wrappedIssuer(issuer, view, j);
+        WAccountRoot const wrappedIssuer(issuer, view, j);
         STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
             : multiply(amount, wrappedIssuer.transferRate());

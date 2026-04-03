@@ -250,7 +250,7 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            WAccountRoot wrappedSrc(srcId, psb, j_);
+            WAccountRoot const wrappedSrc(srcId, psb, j_);
             STAmount const srcLiquid{wrappedSrc.xrpLiquid(-1)};
 
             // Now, how much do they need in order to be successful?

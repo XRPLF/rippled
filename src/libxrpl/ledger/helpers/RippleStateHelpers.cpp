@@ -606,7 +606,7 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    WAccountRoot wrappedIssuer(issuerId, view, journal);
+    WAccountRoot const wrappedIssuer(issuerId, view, journal);
     if (wrappedIssuer.isGlobalFrozen())
         return tecFROZEN;  // LCOV_EXCL_LINE
 

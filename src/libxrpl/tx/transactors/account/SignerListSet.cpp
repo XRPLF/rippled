@@ -307,12 +307,12 @@ SignerListSet::replaceSignerList()
     writeSignersToSLE(signerList, flags);
 
     // Add the signer list to the account's directory.
-    << (page ? "success" : "failure");
+    << (keylet::page ? "success" : "failure");
 
-    if (!page)
+    if (!keylet::page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    signerList->setFieldU64(sfOwnerNode, *page);
+    signerList->setFieldU64(sfOwnerNode, *keylet::page);
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
