@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_MANAGER_H_INCLUDED
-#define XRPL_RESOURCE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -61,11 +60,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(
-    beast::insight::Collector::ptr const& collector,
-    beast::Journal journal);
+make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

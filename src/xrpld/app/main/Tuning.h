@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MAIN_TUNING_H_INCLUDED
-#define XRPL_APP_MAIN_TUNING_H_INCLUDED
+#pragma once
 
 #include <chrono>
 
@@ -11,5 +10,3 @@ constexpr std::chrono::seconds fullBelowExpiration = std::chrono::minutes{10};
 constexpr std::size_t maxPoppedTransactions = 10;
 
 }  // namespace xrpl
-
-#endif

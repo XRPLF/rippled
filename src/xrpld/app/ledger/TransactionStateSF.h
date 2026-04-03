@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONSTATESF_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
@@ -13,8 +12,7 @@ namespace xrpl {
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
-        : db_(db), fp_(fp)
+    TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp) : db_(db), fp_(fp)
     {
     }
 
@@ -35,5 +33,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

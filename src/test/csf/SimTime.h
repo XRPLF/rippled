@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_SIMTIME_H_INCLUDED
-#define XRPL_TEST_CSF_SIMTIME_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/manual_clock.h>
 
@@ -20,5 +19,3 @@ using SimTime = typename SimClock::time_point;
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

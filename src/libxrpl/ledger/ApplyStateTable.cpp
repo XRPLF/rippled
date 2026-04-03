@@ -65,11 +65,7 @@ ApplyStateTable::visit(
         switch (item.second.first)
         {
             case Action::erase:
-                func(
-                    item.first,
-                    true,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+                func(item.first, true, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
             case Action::insert:
@@ -77,11 +73,7 @@ ApplyStateTable::visit(
                 break;
 
             case Action::modify:
-                func(
-                    item.first,
-                    false,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+                func(item.first, false, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
             default:
@@ -119,7 +111,7 @@ ApplyStateTable::apply(
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
@@ -139,9 +131,8 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode
-                ? curNode->getFieldU16(sfLedgerEntryType)
-                : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                                   : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
@@ -162,21 +153,18 @@ ApplyStateTable::apply(
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_DeleteFinal))
+                    if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_DeleteFinal))
                         finals.emplace_back(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(finals));
             }
             else if (type == &sfModifiedNode)
             {
@@ -185,10 +173,11 @@ ApplyStateTable::apply(
                     "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // thread transaction to node
-                                      // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -200,21 +189,18 @@ ApplyStateTable::apply(
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_ChangeNew))
+                    if (obj.getFName().shouldMeta(SField::sMD_Always | SField::sMD_ChangeNew))
                         finals.emplace_back(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(finals));
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
@@ -224,8 +210,7 @@ ApplyStateTable::apply(
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // always thread to self
+                if (curNode->isThreadedType(to.rules()))  // always thread to self
                     threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
@@ -233,14 +218,12 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(
-                            SField::sMD_Create | SField::sMD_Always))
+                        obj.getFName().shouldMeta(SField::sMD_Create | SField::sMD_Always))
                         news.emplace_back(obj);
                 }
 
                 if (!news.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(news));
+                    meta.getAffectedNode(item.first).emplace_back(std::move(news));
             }
             else
             {
@@ -296,9 +279,7 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
         case Action::modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto
@@ -421,9 +402,7 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     using namespace std;
     auto const result = items_.emplace(
-        piecewise_construct,
-        forward_as_tuple(sle->key()),
-        forward_as_tuple(Action::erase, sle));
+        piecewise_construct, forward_as_tuple(sle->key()), forward_as_tuple(Action::erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
@@ -538,7 +517,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
@@ -568,19 +547,13 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 }
 
 std::shared_ptr<SLE>
-ApplyStateTable::getForMod(
-    ReadView const& base,
-    key_type const& key,
-    Mods& mods,
-    beast::Journal j)
+ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
     {
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            XRPL_ASSERT(
-                miter->second,
-                "xrpl::ApplyStateTable::getForMod : non-null result");
+            XRPL_ASSERT(miter->second, "xrpl::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -637,8 +610,7 @@ ApplyStateTable::threadTx(
     }
     // threadItem only applied to AccountRoot
     XRPL_ASSERT(
-        sle->isThreadedType(base.rules()),
-        "xrpl::ApplyStateTable::threadTx : SLE is threaded");
+        sle->isThreadedType(base.rules()), "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 

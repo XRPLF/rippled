@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BACKEND_H_INCLUDED
-#define XRPL_NODESTORE_BACKEND_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Types.h>
 
@@ -65,8 +64,7 @@ public:
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
     {
         Throw<std::runtime_error>(
-            "Deterministic appType/uid/salt not supported by backend " +
-            getName());
+            "Deterministic appType/uid/salt not supported by backend " + getName());
     }
 
     /** Close the backend.
@@ -79,16 +77,16 @@ public:
         If the object is not found or an error is encountered, the
         result will indicate the condition.
         @note This will be called concurrently.
-        @param key A pointer to the key data.
+        @param hash The hash of the object.
         @param pObject [out] The created object if successful.
         @return The result of the operation.
     */
     virtual Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
 
     /** Fetch a batch synchronously. */
     virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) = 0;
+    fetchBatch(std::vector<uint256> const& hashes) = 0;
 
     /** Store a single object.
         Depending on the implementation this may happen immediately
@@ -144,5 +142,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

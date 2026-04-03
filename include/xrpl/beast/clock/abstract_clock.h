@@ -1,5 +1,4 @@
-#ifndef BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
-#define BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
+#pragma once
 
 namespace beast {
 
@@ -89,5 +88,3 @@ get_abstract_clock()
 }
 
 }  // namespace beast
-
-#endif

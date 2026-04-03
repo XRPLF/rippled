@@ -2,8 +2,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_RESULTS_HPP
-#define BEAST_UNIT_TEST_RESULTS_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
@@ -24,8 +23,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string const& reason_)
-            : pass(pass_), reason(reason_)
+        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
         {
         }
 
@@ -37,10 +35,10 @@ private:
     class tests_t : public detail::const_container<std::vector<test>>
     {
     private:
-        std::size_t failed_;
+        std::size_t failed_{0};
 
     public:
-        tests_t() : failed_(0)
+        tests_t()
         {
         }
 
@@ -169,12 +167,12 @@ public:
 class results : public detail::const_container<std::vector<suite_results>>
 {
 private:
-    std::size_t m_cases;
-    std::size_t total_;
-    std::size_t failed_;
+    std::size_t m_cases{0};
+    std::size_t total_{0};
+    std::size_t failed_{0};
 
 public:
-    results() : m_cases(0), total_(0), failed_(0)
+    results()
     {
     }
 
@@ -223,5 +221,3 @@ public:
 
 }  // namespace unit_test
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef BEAST_TYPE_NAME_H_INCLUDED
-#define BEAST_TYPE_NAME_H_INCLUDED
+#pragma once
 
 #include <cstdlib>
 #include <string>
@@ -41,5 +40,3 @@ type_name()
 }
 
 }  // namespace beast
-
-#endif

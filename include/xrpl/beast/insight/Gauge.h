@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_GAUGE_H_INCLUDED
-#define BEAST_INSIGHT_GAUGE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/GaugeImpl.h>
 
@@ -124,5 +123,3 @@ private:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

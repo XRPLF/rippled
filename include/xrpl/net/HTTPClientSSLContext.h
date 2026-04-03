@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
-#define XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -21,8 +20,7 @@ public:
         std::string const& sslVerifyFile,
         bool sslVerify,
         beast::Journal j,
-        boost::asio::ssl::context_base::method method =
-            boost::asio::ssl::context::sslv23)
+        boost::asio::ssl::context_base::method method = boost::asio::ssl::context::sslv23)
         : ssl_context_{method}, j_(j), verify_{sslVerify}
     {
         boost::system::error_code ec;
@@ -33,8 +31,7 @@ public:
 
             if (ec && sslVerifyDir.empty())
                 Throw<std::runtime_error>(boost::str(
-                    boost::format("Failed to set_default_verify_paths: %s") %
-                    ec.message()));
+                    boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
         }
         else
         {
@@ -46,9 +43,8 @@ public:
             ssl_context_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
-                Throw<std::runtime_error>(boost::str(
-                    boost::format("Failed to add verify path: %s") %
-                    ec.message()));
+                Throw<std::runtime_error>(
+                    boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
         }
     }
 
@@ -79,23 +75,15 @@ public:
     template <
         class T,
         class = std::enable_if_t<
-            std::is_same<
-                T,
-                boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::
-                value ||
-            std::is_same<
-                T,
-                boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::
-                value>>
+            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
+            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
     boost::system::error_code
     preConnectVerify(T& strm, std::string const& host)
     {
         boost::system::error_code ec;
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
         {
-            ec.assign(
-                static_cast<int>(::ERR_get_error()),
-                boost::asio::error::get_ssl_category());
+            ec.assign(static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
         }
         else if (!sslVerify())
         {
@@ -107,14 +95,8 @@ public:
     template <
         class T,
         class = std::enable_if_t<
-            std::is_same<
-                T,
-                boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::
-                value ||
-            std::is_same<
-                T,
-                boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::
-                value>>
+            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
+            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.
@@ -134,11 +116,7 @@ public:
             {
                 strm.set_verify_callback(
                     std::bind(
-                        &rfc6125_verify,
-                        host,
-                        std::placeholders::_1,
-                        std::placeholders::_2,
-                        j_),
+                        &rfc6125_verify, host, std::placeholders::_1, std::placeholders::_2, j_),
                     ec);
             }
         }
@@ -177,5 +155,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

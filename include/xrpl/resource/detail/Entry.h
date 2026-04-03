@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_ENTRY_H_INCLUDED
-#define XRPL_RESOURCE_ENTRY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>
@@ -23,11 +22,7 @@ struct Entry : public beast::List<Entry>::Node
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0)
-        , local_balance(now)
-        , remote_balance(0)
-        , lastWarningTime()
-        , whenExpires()
+        : refcount(0), local_balance(now), remote_balance(0), lastWarningTime(), whenExpires()
     {
     }
 
@@ -67,7 +62,7 @@ struct Entry : public beast::List<Entry>::Node
     std::optional<PublicKey> publicKey;
 
     // Back pointer to the map key (bit of a hack here)
-    Key const* key;
+    Key const* key{};
 
     // Number of Consumer references
     int refcount;
@@ -94,5 +89,3 @@ operator<<(std::ostream& os, Entry const& v)
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

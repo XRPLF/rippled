@@ -26,8 +26,7 @@
  * version is updated.
  */
 
-#ifndef XRPL_CORE_SEMAPHORE_H_INCLUDED
-#define XRPL_CORE_SEMAPHORE_H_INCLUDED
+#pragma once
 
 #include <condition_variable>
 #include <mutex>
@@ -56,7 +55,7 @@ public:
     void
     notify()
     {
-        std::lock_guard lock{m_mutex};
+        std::lock_guard const lock{m_mutex};
         ++m_count;
         m_cond.notify_one();
     }
@@ -88,5 +87,3 @@ public:
 using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
 
 }  // namespace xrpl
-
-#endif

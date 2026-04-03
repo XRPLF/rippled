@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_SIG_H_INCLUDED
-#define XRPL_TEST_JTX_SIG_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -45,8 +44,7 @@ public:
     {
     }
 
-    explicit sig(SField const& subField, Account const& account)
-        : sig(&subField, account)
+    explicit sig(SField const& subField, Account const& account) : sig(&subField, account)
     {
     }
 
@@ -61,5 +59,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

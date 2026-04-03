@@ -1,5 +1,6 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
+
+#include <xrpl/ledger/Ledger.h>
 
 namespace xrpl {
 
@@ -20,9 +21,7 @@ LedgerReplay::LedgerReplay(
     std::shared_ptr<Ledger const> parent,
     std::shared_ptr<Ledger const> replay,
     std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns)
-    : parent_{std::move(parent)}
-    , replay_{std::move(replay)}
-    , orderedTxns_{std::move(orderedTxns)}
+    : parent_{std::move(parent)}, replay_{std::move(replay)}, orderedTxns_{std::move(orderedTxns)}
 {
 }
 

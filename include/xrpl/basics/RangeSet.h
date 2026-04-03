@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_RANGESET_H_INCLUDED
-#define XRPL_BASICS_RANGESET_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/LexicalCast.h>
 
@@ -173,5 +172,3 @@ prevMissing(RangeSet<T> const& rs, T t, T minVal = 0)
 }
 
 }  // namespace xrpl
-
-#endif

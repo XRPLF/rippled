@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
-#define XRPL_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 
@@ -60,6 +59,8 @@ public:
     virtual void
     cancel();
 
+    virtual ~TimeoutCounter() = default;
+
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
@@ -76,8 +77,6 @@ protected:
         std::chrono::milliseconds timeoutInterval,
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
-
-    virtual ~TimeoutCounter() = default;
 
     /** Schedule a call to queueJob() after mTimerInterval. */
     void
@@ -110,11 +109,11 @@ protected:
     /** The hash of the object (in practice, always a ledger) we are trying to
      * fetch. */
     uint256 const hash_;
-    int timeouts_;
-    bool complete_;
-    bool failed_;
+    int timeouts_{0};
+    bool complete_{false};
+    bool failed_{false};
     /** Whether forward progress has been made. */
-    bool progress_;
+    bool progress_{false};
     /** The minimum time to wait between calls to execute(). */
     std::chrono::milliseconds timerInterval_;
 
@@ -131,5 +130,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

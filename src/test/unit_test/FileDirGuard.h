@@ -1,5 +1,4 @@
-#ifndef TEST_UNIT_TEST_DIRGUARD_H
-#define TEST_UNIT_TEST_DIRGUARD_H
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
@@ -33,8 +32,8 @@ protected:
         if (is_directory(toRm) && is_empty(toRm))
             remove(toRm);
         else
-            test_.log << "Expected " << toRm.string()
-                      << " to be an empty existing directory." << std::endl;
+            test_.log << "Expected " << toRm.string() << " to be an empty existing directory."
+                      << std::endl;
     }
 
 public:
@@ -57,8 +56,7 @@ public:
         {
             // Cannot run the test. Someone created a file where we want to
             // put our directory
-            Throw<std::runtime_error>(
-                "Cannot create directory: " + subDir_.string());
+            Throw<std::runtime_error>("Cannot create directory: " + subDir_.string());
         }
     }
 
@@ -102,8 +100,7 @@ public:
         std::string const& contents,
         bool useCounter = true,
         bool create = true)
-        : DirGuard(test, subDir, useCounter)
-        , file_(file.is_absolute() ? file : subdir() / file)
+        : DirGuard(test, subDir, useCounter), file_(file.is_absolute() ? file : subdir() / file)
     {
         if (!exists(file_))
         {
@@ -116,8 +113,7 @@ public:
         }
         else
         {
-            Throw<std::runtime_error>(
-                "Refusing to overwrite existing file: " + file_.string());
+            Throw<std::runtime_error>("Refusing to overwrite existing file: " + file_.string());
         }
     }
 
@@ -133,8 +129,8 @@ public:
             else
             {
                 if (created_)
-                    test_.log << "Expected " << file_.string()
-                              << " to be an existing file." << std::endl;
+                    test_.log << "Expected " << file_.string() << " to be an existing file."
+                              << std::endl;
             }
         }
         catch (std::exception& e)
@@ -159,5 +155,3 @@ public:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif  // TEST_UNIT_TEST_DIRGUARD_H

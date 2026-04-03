@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
@@ -108,8 +89,7 @@ doContractInfo(RPC::JsonContext& context)
         RPC::inject_error(rpcUNKNOWN, result);
     }
 
-    auto const sourceSle =
-        ledger->read(keylet::contractSource(contractSle->at(sfContractHash)));
+    auto const sourceSle = ledger->read(keylet::contractSource(contractSle->at(sfContractHash)));
     if (!sourceSle)
     {
         result[jss::contract_account] = toBase58(caID);
@@ -123,23 +103,21 @@ doContractInfo(RPC::JsonContext& context)
     // lambda to format the functions response:
     // name: <string>
     // params: [<flag>: <string>, <type>: <string>, <name>: <string>]
-    auto formatFunctions = [](Json::Value& jv,
-                              std::shared_ptr<SLE const> const& slePtr) {
+    auto formatFunctions = [](Json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
         if (slePtr && slePtr->isFieldPresent(sfFunctions))
         {
             auto const& functions = slePtr->getFieldArray(sfFunctions);
             for (auto const& function : functions)
             {
                 Json::Value jvFunction(Json::objectValue);
-                jvFunction[jss::name] =
-                    strHex(function.getFieldVL(sfFunctionName));
+                jvFunction[jss::name] = strHex(function.getFieldVL(sfFunctionName));
                 Json::Value jvParams(Json::arrayValue);
                 for (auto const& param : function.getFieldArray(sfParameters))
                 {
                     Json::Value jvParam(Json::objectValue);
                     jvParam[jss::flags] = param.getFieldU32(sfParameterFlag);
-                    jvParam[jss::type] = param.getFieldDataType(sfParameterType)
-                                             .getInnerTypeString();
+                    jvParam[jss::type] =
+                        param.getFieldDataType(sfParameterType).getInnerTypeString();
                     jvParams.append(jvParam);
                 }
                 jvFunction[jss::params] = std::move(jvParams);
@@ -172,10 +150,9 @@ doContractInfo(RPC::JsonContext& context)
         auto const accountID = id.value();
         if (ledger->exists(keylet::account(accountID)))
         {
-            if (auto dataSle =
-                    ledger->read(keylet::contractData(accountID, caID)))
-                result[jss::user_data] = dataSle->getFieldJson(sfContractJson)
-                                             .getJson(JsonOptions::none);
+            if (auto dataSle = ledger->read(keylet::contractData(accountID, caID)))
+                result[jss::user_data] =
+                    dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::none);
         }
     }
 

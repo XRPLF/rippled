@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_KEY_H_INCLUDED
-#define XRPL_RESOURCE_KEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -48,5 +47,3 @@ struct Key
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
-#define XRPL_APP_TX_TRANSACTIONMETA_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STArray.h>
@@ -84,7 +83,7 @@ public:
             deliveredAmount_ = obj.getFieldAmount(sfDeliveredAmount);
 
         if (obj.isFieldPresent(sfParentBatchID))
-            parentBatchId_ = obj.getFieldH256(sfParentBatchID);
+            parentBatchID_ = obj.getFieldH256(sfParentBatchID);
 
         if (obj.isFieldPresent(sfGasUsed))
             gasUsed_ = obj.getFieldU32(sfGasUsed);
@@ -108,7 +107,7 @@ public:
     void
     setParentBatchID(std::optional<uint256> const& id)
     {
-        parentBatchId_ = id;
+        parentBatchID_ = id;
     }
 
     void
@@ -142,7 +141,7 @@ private:
     int result_;
 
     std::optional<STAmount> deliveredAmount_;
-    std::optional<uint256> parentBatchId_;
+    std::optional<uint256> parentBatchID_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
 
@@ -150,5 +149,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

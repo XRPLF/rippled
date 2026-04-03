@@ -57,8 +57,8 @@ public:
 OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
-    , monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          initialBufferSize)}
     , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
     , header_{rhs.header_}
@@ -72,8 +72,8 @@ OpenView::OpenView(
     ReadView const* base,
     Rules const& rules,
     std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
     , header_(base->header())
@@ -88,8 +88,8 @@ OpenView::OpenView(
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , header_(base->header())
@@ -165,8 +165,7 @@ OpenView::slesEnd() const -> std::unique_ptr<sles_type::iter_base>
 }
 
 auto
-OpenView::slesUpperBound(uint256 const& key) const
-    -> std::unique_ptr<sles_type::iter_base>
+OpenView::slesUpperBound(uint256 const& key) const -> std::unique_ptr<sles_type::iter_base>
 {
     return items_.slesUpperBound(*base_, key);
 }
@@ -186,7 +185,7 @@ OpenView::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
-    return txs_.find(key) != txs_.end();
+    return txs_.contains(key);
 }
 
 auto
@@ -199,10 +198,13 @@ OpenView::txRead(key_type const& key) const -> tx_type
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
     if (item.meta)
-        sto = std::make_shared<STObject const>(
-            SerialIter{item.meta->slice()}, sfMetadata);
+    {
+        sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
+    }
     else
+    {
         sto = nullptr;
+    }
     return {std::move(stx), std::move(sto)};
 }
 
@@ -243,9 +245,7 @@ OpenView::rawTxInsert(
     std::shared_ptr<Serializer const> const& metaData)
 {
     auto const result = txs_.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(key),
-        std::forward_as_tuple(txn, metaData));
+        std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
         LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }

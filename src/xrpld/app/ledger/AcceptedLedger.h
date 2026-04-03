@@ -1,7 +1,8 @@
-#ifndef XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/AcceptedLedgerTx.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AcceptedLedgerTx.h>
 
 namespace xrpl {
 
@@ -24,9 +25,7 @@ namespace xrpl {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(
-        std::shared_ptr<ReadView const> const& ledger,
-        Application& app);
+    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
 
     std::shared_ptr<ReadView const> const&
     getLedger() const
@@ -58,5 +57,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

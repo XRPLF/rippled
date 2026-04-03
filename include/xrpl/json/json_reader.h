@@ -1,7 +1,4 @@
-#ifndef XRPL_JSON_JSON_READER_H_INCLUDED
-#define XRPL_JSON_JSON_READER_H_INCLUDED
-
-#define CPPTL_JSON_READER_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -68,7 +65,7 @@ public:
      * error occurred during parsing.
      */
     std::string
-    getFormatedErrorMessages() const;
+    getFormattedErrorMessages() const;
 
     static constexpr unsigned nest_limit{25};
 
@@ -106,9 +103,9 @@ private:
     public:
         explicit ErrorInfo() = default;
 
-        Token token_;
+        Token token_{};
         std::string message_;
-        Location extra_;
+        Location extra_{};
     };
 
     using Errors = std::deque<ErrorInfo>;
@@ -146,11 +143,7 @@ private:
     bool
     decodeDouble(Token& token);
     bool
-    decodeUnicodeCodePoint(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
     decodeUnicodeEscapeSequence(
         Token& token,
@@ -162,10 +155,7 @@ private:
     bool
     recoverFromError(TokenType skipUntilToken);
     bool
-    addErrorAndRecover(
-        std::string const& message,
-        Token& token,
-        TokenType skipUntilToken);
+    addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken);
     void
     skipUntilSpace();
     Value&
@@ -183,11 +173,11 @@ private:
     Nodes nodes_;
     Errors errors_;
     std::string document_;
-    Location begin_;
-    Location end_;
-    Location current_;
-    Location lastValueEnd_;
-    Value* lastValue_;
+    Location begin_{};
+    Location end_{};
+    Location current_{};
+    Location lastValueEnd_{};
+    Value* lastValue_{};
 };
 
 template <class BufferSequence>
@@ -230,5 +220,3 @@ std::istream&
 operator>>(std::istream&, Value&);
 
 }  // namespace Json
-
-#endif  // CPPTL_JSON_READER_H_INCLUDED

@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PORT_H_INCLUDED
-#define XRPL_SERVER_PORT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -20,7 +19,7 @@ namespace boost {
 namespace asio {
 namespace ssl {
 class context;
-}
+}  // namespace ssl
 }  // namespace asio
 }  // namespace boost
 
@@ -55,7 +54,7 @@ struct Port
     int limit = 0;
 
     // Websocket disconnects if send queue exceeds this limit
-    std::uint16_t ws_queue_limit;
+    std::uint16_t ws_queue_limit{};
 
     // Returns `true` if any websocket protocols are specified
     bool
@@ -91,7 +90,7 @@ struct ParsedPort
     std::string ssl_ciphers;
     boost::beast::websocket::permessage_deflate pmd_options;
     int limit = 0;
-    std::uint16_t ws_queue_limit;
+    std::uint16_t ws_queue_limit{};
 
     std::optional<boost::asio::ip::address> ip;
     std::optional<std::uint16_t> port;
@@ -105,5 +104,3 @@ void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_MAKE_MANAGER_H_INCLUDED
-#define XRPL_PEERFINDER_MAKE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
@@ -21,5 +20,3 @@ make_Manager(
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

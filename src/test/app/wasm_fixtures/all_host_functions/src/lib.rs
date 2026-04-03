@@ -97,22 +97,27 @@ fn test_ledger_header_functions() -> i32 {
     let _ = trace("--- Category 1: Ledger Header Functions ---");
 
     // Test 1.1: get_ledger_sqn() - should return current ledger sequence number
-    let sqn_result = unsafe { host::get_ledger_sqn() };
+    let mut sqn_buffer = [0u8; 4];
+    let sqn_result = unsafe { host::get_ledger_sqn(sqn_buffer.as_mut_ptr(), sqn_buffer.len()) };
 
     if sqn_result <= 0 {
         let _ = trace_num("ERROR: get_ledger_sqn failed:", sqn_result as i64);
         return -101; // Ledger sequence number test failed
     }
-    let _ = trace_num("Ledger sequence number:", sqn_result as i64);
+    let ledger_sqn = u32::from_be_bytes(sqn_buffer);
+    let _ = trace_num("Ledger sequence number:", ledger_sqn as i64);
 
     // Test 1.2: get_parent_ledger_time() - should return parent ledger timestamp
-    let time_result = unsafe { host::get_parent_ledger_time() };
+    let mut time_buffer = [0u8; 4];
+    let time_result =
+        unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
     if time_result <= 0 {
         let _ = trace_num("ERROR: get_parent_ledger_time failed:", time_result as i64);
         return -102; // Parent ledger time test failed
     }
-    let _ = trace_num("Parent ledger time:", time_result as i64);
+    let parent_ledger_time = u32::from_be_bytes(time_buffer);
+    let _ = trace_num("Parent ledger time:", parent_ledger_time as i64);
 
     // Test 1.3: get_parent_ledger_hash() - should return parent ledger hash (32 bytes)
     let mut hash_buffer = [0u8; 32];
@@ -616,11 +621,14 @@ fn test_keylet_generation_functions() -> i32 {
 
     // Test 5.3: escrow_keylet() - Generate keylet for escrow
     let mut escrow_keylet_buffer = [0u8; 32];
+    let sequence_number: i32 = 1000;
+    let sequence_number_bytes = sequence_number.to_be_bytes();
     let escrow_keylet_result = unsafe {
         host::escrow_keylet(
             account_id.0.as_ptr(),
             account_id.0.len(),
-            1000, // Sequence number
+            sequence_number_bytes.as_ptr(),
+            sequence_number_bytes.len(),
             escrow_keylet_buffer.as_mut_ptr(),
             escrow_keylet_buffer.len(),
         )
@@ -634,11 +642,14 @@ fn test_keylet_generation_functions() -> i32 {
 
     // Test 5.4: oracle_keylet() - Generate keylet for oracle
     let mut oracle_keylet_buffer = [0u8; 32];
+    let document_id: i32 = 42;
+    let document_id_bytes = document_id.to_be_bytes();
     let oracle_keylet_result = unsafe {
         host::oracle_keylet(
             account_id.0.as_ptr(),
             account_id.0.len(),
-            42, // Document ID
+            document_id_bytes.as_ptr(),
+            document_id_bytes.len(),
             oracle_keylet_buffer.as_mut_ptr(),
             oracle_keylet_buffer.len(),
         )

@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SField.h>
@@ -117,8 +98,7 @@ struct STData_test : public beast::unit_test::suite
             IOUAmount iou_amount(5000);
             Issue const usd(
                 Currency(0x5553440000000000),
-                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn")
-                    .value());
+                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value());
             STAmount amount_iou(iou_amount, usd);
             STData data_amount_iou(sf, amount_iou);
             BEAST_EXPECT(data_amount_iou.getFieldAmount() == amount_iou);
@@ -255,8 +235,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // VL (Variable Length)
-            Blob original_blob =
-                strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value();
+            Blob original_blob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value();
             STData data_vl(sf, original_blob);
 
             Serializer s;
@@ -280,10 +259,8 @@ struct STData_test : public beast::unit_test::suite
             SerialIter sit(s.slice());
             STData deserialized_account(sit, sf);
 
-            BEAST_EXPECT(
-                deserialized_account.getAccountID() == original_account);
-            BEAST_EXPECT(
-                deserialized_account.getInnerTypeString() == "ACCOUNT");
+            BEAST_EXPECT(deserialized_account.getAccountID() == original_account);
+            BEAST_EXPECT(deserialized_account.getInnerTypeString() == "ACCOUNT");
         }
 
         {
@@ -297,8 +274,7 @@ struct STData_test : public beast::unit_test::suite
             SerialIter sit(s.slice());
             STData deserialized_amount(sit, sf);
 
-            BEAST_EXPECT(
-                deserialized_amount.getFieldAmount() == original_amount);
+            BEAST_EXPECT(deserialized_amount.getFieldAmount() == original_amount);
             BEAST_EXPECT(deserialized_amount.getInnerTypeString() == "AMOUNT");
         }
 
@@ -390,8 +366,7 @@ struct STData_test : public beast::unit_test::suite
 
         {
             // VL (Variable Length) - Blob
-            Blob val_blob =
-                strUnHex("0102030405060708090A0B0C0D0E0F10").value();
+            Blob val_blob = strUnHex("0102030405060708090A0B0C0D0E0F10").value();
             data.setFieldVL(val_blob);
             BEAST_EXPECT(data.getFieldVL() == val_blob);
             BEAST_EXPECT(data.getInnerTypeString() == "VL");
@@ -482,9 +457,7 @@ struct STData_test : public beast::unit_test::suite
             STData data_u128(sf, val_u128);
             Json::Value json_u128 = data_u128.getJson(JsonOptions::none);
             BEAST_EXPECT(json_u128[jss::type].asString() == "UINT128");
-            BEAST_EXPECT(
-                json_u128[jss::value].asString() ==
-                "00000000000000000000000000000001");
+            BEAST_EXPECT(json_u128[jss::value].asString() == "00000000000000000000000000000001");
         }
 
         {
@@ -494,8 +467,7 @@ struct STData_test : public beast::unit_test::suite
             Json::Value json_u160 = data_u160.getJson(JsonOptions::none);
             BEAST_EXPECT(json_u160[jss::type].asString() == "UINT160");
             BEAST_EXPECT(
-                json_u160[jss::value].asString() ==
-                "0000000000000000000000000000000000000001");
+                json_u160[jss::value].asString() == "0000000000000000000000000000000000000001");
         }
 
         {
@@ -536,9 +508,7 @@ struct STData_test : public beast::unit_test::suite
             STData data_account(sf, account);
             Json::Value json_account = data_account.getJson(JsonOptions::none);
             BEAST_EXPECT(json_account[jss::type].asString() == "ACCOUNT");
-            BEAST_EXPECT(
-                json_account[jss::value].asString() ==
-                "rrrrrrrrrrrrrLveWzSkxhcH3hGw6");
+            BEAST_EXPECT(json_account[jss::value].asString() == "rrrrrrrrrrrrrLveWzSkxhcH3hGw6");
         }
 
         {
@@ -634,8 +604,7 @@ struct STData_test : public beast::unit_test::suite
             json_u160[jss::value] = "0000000000000000000000000000000000000001";
             STData data_u160 = dataFromJson(sf, json_u160);
             uint160 expected;
-            bool ok =
-                expected.parseHex("0000000000000000000000000000000000000001");
+            bool ok = expected.parseHex("0000000000000000000000000000000000000001");
             BEAST_EXPECT(ok);
             BEAST_EXPECT(data_u160.getFieldH160() == expected);
             BEAST_EXPECT(data_u160.getInnerTypeString() == "UINT160");
@@ -645,12 +614,10 @@ struct STData_test : public beast::unit_test::suite
             // UINT192
             Json::Value json_u192(Json::objectValue);
             json_u192[jss::type] = "UINT192";
-            json_u192[jss::value] =
-                "000000000000000000000000000000000000000000000001";
+            json_u192[jss::value] = "000000000000000000000000000000000000000000000001";
             STData data_u192 = dataFromJson(sf, json_u192);
             uint192 expected;
-            bool ok = expected.parseHex(
-                "000000000000000000000000000000000000000000000001");
+            bool ok = expected.parseHex("000000000000000000000000000000000000000000000001");
             BEAST_EXPECT(ok);
             BEAST_EXPECT(data_u192.getFieldH192() == expected);
             BEAST_EXPECT(data_u192.getInnerTypeString() == "UINT192");
@@ -693,8 +660,7 @@ struct STData_test : public beast::unit_test::suite
 
             STData data_account = dataFromJson(sf, json_account);
             AccountID expected_account =
-                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn")
-                    .value();
+                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value();
             BEAST_EXPECT(data_account.getAccountID() == expected_account);
             BEAST_EXPECT(data_account.getInnerTypeString() == "ACCOUNT");
         }

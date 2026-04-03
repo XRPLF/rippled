@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_ENCODEDBLOB_H_INCLUDED
-#define XRPL_NODESTORE_ENCODEDBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -36,7 +35,7 @@ namespace NodeStore {
 class EncodedBlob
 {
     /** The 32-byte key of the serialized object. */
-    std::array<std::uint8_t, 32> key_;
+    std::array<std::uint8_t, 32> key_{};
 
     /** A pre-allocated buffer for the serialized object.
 
@@ -44,10 +43,8 @@ class EncodedBlob
          1024 more bytes. The precise size is calculated automatically
          at compile time so as to avoid wasting space on padding bytes.
      */
-    std::array<
-        std::uint8_t,
-        boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))>
-        payload_;
+    std::array<std::uint8_t, boost::alignment::align_up(9 + 1024, alignof(std::uint32_t))>
+        payload_{};
 
     /** The size of the serialized data. */
     std::uint32_t size_;
@@ -62,19 +59,14 @@ class EncodedBlob
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            XRPL_ASSERT(
-                obj,
-                "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
+            XRPL_ASSERT(obj, "xrpl::NodeStore::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
-                throw std::runtime_error(
-                    "EncodedBlob: unseated std::shared_ptr used.");
+                throw std::runtime_error("EncodedBlob: unseated std::shared_ptr used.");
 
             return obj->getData().size() + 9;
         }())
-        , ptr_(
-              (size_ <= payload_.size()) ? payload_.data()
-                                         : new std::uint8_t[size_])
+        , ptr_((size_ <= payload_.size()) ? payload_.data() : new std::uint8_t[size_])
     {
         std::fill_n(ptr_, 8, std::uint8_t{0});
         ptr_[8] = static_cast<std::uint8_t>(obj->getType());
@@ -115,5 +107,3 @@ public:
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

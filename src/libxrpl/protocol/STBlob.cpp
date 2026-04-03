@@ -11,8 +11,7 @@
 
 namespace xrpl {
 
-STBlob::STBlob(SerialIter& st, SField const& name)
-    : STBase(name), value_(st.getVLBuffer())
+STBlob::STBlob(SerialIter& st, SField const& name) : STBase(name), value_(st.getVLBuffer())
 {
 }
 
@@ -45,8 +44,7 @@ STBlob::add(Serializer& s) const
 {
     XRPL_ASSERT(getFName().isBinary(), "xrpl::STBlob::add : field is binary");
     XRPL_ASSERT(
-        (getFName().fieldType == STI_VL) ||
-            (getFName().fieldType == STI_ACCOUNT),
+        (getFName().fieldType == STI_VL) || (getFName().fieldType == STI_ACCOUNT),
         "xrpl::STBlob::add : valid field type");
     s.addVL(value_.data(), value_.size());
 }
@@ -55,7 +53,7 @@ bool
 STBlob::isEquivalent(STBase const& t) const
 {
     STBlob const* v = dynamic_cast<STBlob const*>(&t);
-    return v && (value_ == v->value_);
+    return (v != nullptr) && (value_ == v->value_);
 }
 
 bool

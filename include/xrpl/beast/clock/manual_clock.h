@@ -1,5 +1,4 @@
-#ifndef BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
-#define BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -29,8 +28,7 @@ private:
     time_point now_;
 
 public:
-    explicit manual_clock(time_point const& now = time_point(duration(0)))
-        : now_(now)
+    explicit manual_clock(time_point const& now = time_point(duration(0))) : now_(now)
     {
     }
 
@@ -79,5 +77,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

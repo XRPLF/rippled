@@ -1,7 +1,8 @@
-#ifndef XRPL_PROTOCOL_TXFORMATS_H_INCLUDED
-#define XRPL_PROTOCOL_TXFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
+
+#include <vector>
 
 namespace xrpl {
 
@@ -74,8 +75,9 @@ private:
 public:
     static TxFormats const&
     getInstance();
+
+    static std::vector<SOElement> const&
+    getCommonFields();
 };
 
 }  // namespace xrpl
-
-#endif

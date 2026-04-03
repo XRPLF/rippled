@@ -3,8 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef XRPL_BASICS_BASE_UINT_H_INCLUDED
-#define XRPL_BASICS_BASE_UINT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
@@ -65,13 +64,9 @@ struct is_contiguous_container<Slice> : std::true_type
 template <std::size_t Bits, class Tag = void>
 class base_uint
 {
-    static_assert(
-        (Bits % 32) == 0,
-        "The length of a base_uint in bits must be a multiple of 32.");
+    static_assert((Bits % 32) == 0, "The length of a base_uint in bits must be a multiple of 32.");
 
-    static_assert(
-        Bits >= 64,
-        "The length of a base_uint in bits must be at least 64.");
+    static_assert(Bits >= 64, "The length of a base_uint in bits must be at least 64.");
 
     static constexpr std::size_t WIDTH = Bits / 32;
 
@@ -182,9 +177,7 @@ private:
     {
         // Local lambda that converts a single hex char to four bits and
         // ORs those bits into a uint32_t.
-        auto hexCharToUInt = [](char c,
-                                std::uint32_t shift,
-                                std::uint32_t& accum) -> ParseResult {
+        auto hexCharToUInt = [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
             std::uint32_t nibble = 0xFFu;
             if (c < '0' || c > 'f')
                 return ParseResult::badChar;
@@ -219,7 +212,7 @@ private:
         while (in != sv.end())
         {
             std::uint32_t accum = {};
-            for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
+            for (std::uint32_t const shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::okay)
@@ -342,11 +335,13 @@ public:
     operator=(std::uint64_t uHost)
     {
         *this = beast::zero;
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
             unsigned u[2];
             std::uint64_t ul;
         };
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
         data_[WIDTH - 2] = u[0];
@@ -387,8 +382,7 @@ public:
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            data_[i] = boost::endian::native_to_big(
-                boost::endian::big_to_native(data_[i]) + 1);
+            data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) + 1);
             if (data_[i] != 0)
                 break;
         }
@@ -412,8 +406,7 @@ public:
         for (int i = WIDTH - 1; i >= 0; --i)
         {
             auto prev = data_[i];
-            data_[i] = boost::endian::native_to_big(
-                boost::endian::big_to_native(data_[i]) - 1);
+            data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -453,11 +446,10 @@ public:
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+            std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
 
-            data_[i] =
-                boost::endian::native_to_big(static_cast<std::uint32_t>(n));
+            data_[i] = boost::endian::native_to_big(static_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 
@@ -557,8 +549,7 @@ operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
     if (ret.first == lhs.cend())
         return std::strong_ordering::equivalent;
 
-    return (*ret.first > *ret.second) ? std::strong_ordering::greater
-                                      : std::strong_ordering::less;
+    return (*ret.first > *ret.second) ? std::strong_ordering::greater : std::strong_ordering::less;
 }
 
 template <std::size_t Bits, typename Tag>
@@ -617,9 +608,7 @@ template <std::size_t Bits, class Tag>
 inline std::string
 to_short_string(base_uint<Bits, Tag> const& a)
 {
-    static_assert(
-        base_uint<Bits, Tag>::bytes > 4,
-        "For 4 bytes or less, use a native type");
+    static_assert(base_uint<Bits, Tag>::bytes > 4, "For 4 bytes or less, use a native type");
     return strHex(a.cbegin(), a.cbegin() + 4) + "...";
 }
 
@@ -634,7 +623,7 @@ template <>
 inline std::size_t
 extract(uint256 const& key)
 {
-    std::size_t result;
+    std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
     // (will optimize to equivalent code)
     std::memcpy(&result, key.data(), sizeof(std::size_t));
@@ -653,12 +642,9 @@ static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 namespace beast {
 
 template <std::size_t Bits, class Tag>
-struct is_uniquely_represented<xrpl::base_uint<Bits, Tag>>
-    : public std::true_type
+struct is_uniquely_represented<xrpl::base_uint<Bits, Tag>> : public std::true_type
 {
     explicit is_uniquely_represented() = default;
 };
 
 }  // namespace beast
-
-#endif

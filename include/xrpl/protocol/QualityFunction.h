@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
-#define XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -38,10 +37,7 @@ public:
     };
     QualityFunction(Quality const& quality, CLOBLikeTag);
     template <typename TIn, typename TOut>
-    QualityFunction(
-        TAmounts<TIn, TOut> const& amounts,
-        std::uint32_t tfee,
-        AMMTag);
+    QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag);
 
     /** Combines QF with the next step QF
      */
@@ -84,5 +80,3 @@ QualityFunction::QualityFunction(
 }
 
 }  // namespace xrpl
-
-#endif  // XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED

@@ -35,8 +35,7 @@ public:
     {
     private:
         boost::asio::io_context io_context_;
-        std::optional<boost::asio::executor_work_guard<
-            boost::asio::io_context::executor_type>>
+        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
             work_;
         std::thread thread_;
 
@@ -73,8 +72,7 @@ public:
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override
+        write(beast::severities::Severity level, std::string const& text) override
         {
             if (level < threshold())
                 return;
@@ -83,8 +81,7 @@ public:
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override
+        writeAlways(beast::severities::Severity level, std::string const& text) override
         {
             suite_.log << text << std::endl;
         }
@@ -94,39 +91,43 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            std::unique_ptr<stream_type>&& bundle,
-            http_request_type&& request,
+            std::unique_ptr<stream_type> const& bundle,
+            http_request_type const& request,
             boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            http_request_type&& request,
+            http_request_type const& request,
             boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
             if (beast::rfc2616::is_keep_alive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void
@@ -199,8 +200,7 @@ public:
             {
                 std::string got;
                 got.resize(n);
-                boost::asio::buffer_copy(
-                    boost::asio::buffer(&got[0], n), b.data());
+                boost::asio::buffer_copy(boost::asio::buffer(&got[0], n), b.data());
                 return BEAST_EXPECT(got == match);
             }
         }
@@ -236,7 +236,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -272,7 +272,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
     }
 
     void
@@ -282,12 +282,11 @@ public:
         TestSink sink{*this};
         TestThread thread;
         sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        beast::Journal const journal{sink};
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
-        serverPort.back().ip =
-            boost::asio::ip::make_address(getEnvLocalhostAddr()),
+        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
@@ -304,26 +303,26 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                std::unique_ptr<stream_type>&& bundle,
-                http_request_type&& request,
+                std::unique_ptr<stream_type> const& bundle,
+                http_request_type const& request,
                 boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                http_request_type&& request,
+                http_request_type const& request,
                 boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
@@ -361,8 +360,7 @@ public:
             TestThread thread;
             auto s = make_Server(h, thread.get_io_context(), journal);
             std::vector<Port> serverPort(1);
-            serverPort.back().ip =
-                boost::asio::ip::make_address(getEnvLocalhostAddr()),
+            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports(serverPort);
@@ -379,7 +377,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -387,11 +385,10 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -400,11 +397,10 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -415,11 +411,10 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [port_rpc]") ==
-            std::string::npos);
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -428,11 +423,10 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [server]") !=
-            std::string::npos);
+            messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -443,58 +437,47 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Missing 'protocol' in [port_rpc]") !=
-            std::string::npos);
+        BEAST_EXPECT(messages.find("Missing 'protocol' in [port_rpc]") != std::string::npos);
 
-        except(
-            [&]  // this creates a standard test config without the server
-                 // section
-            {
-                Env env{
-                    *this,
-                    envconfig([](std::unique_ptr<Config> cfg) {
-                        cfg = std::make_unique<Config>();
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "type", "memory");
-                        cfg->overwrite(
-                            ConfigSection::nodeDatabase(), "path", "main");
-                        cfg->deprecatedClearSection(
-                            ConfigSection::importNodeDatabase());
-                        cfg->legacy("database_path", "");
-                        cfg->setupControl(true, true, true);
-                        (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_peer"].set("port", "8080");
-                        (*cfg)["port_peer"].set("protocol", "peer");
-                        (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_rpc"].set("port", "8081");
-                        (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                        (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
-                        (*cfg)["port_ws"].set("port", "8082");
-                        (*cfg)["port_ws"].set("protocol", "ws");
-                        (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
-                        return cfg;
-                    }),
-                    std::make_unique<CaptureLogs>(&messages)};
-            });
-        BEAST_EXPECT(
-            messages.find("Required section [server] is missing") !=
-            std::string::npos);
+        except([&]  // this creates a standard test config without the server
+                    // section
+               {
+                   Env const env{
+                       *this,
+                       envconfig([](std::unique_ptr<Config> cfg) {
+                           cfg = std::make_unique<Config>();
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
+                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
+                           cfg->legacy("database_path", "");
+                           cfg->setupControl(true, true, true);
+                           (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_peer"].set("port", "8080");
+                           (*cfg)["port_peer"].set("protocol", "peer");
+                           (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_rpc"].set("port", "8081");
+                           (*cfg)["port_rpc"].set("protocol", "http,ws2");
+                           (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
+                           (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
+                           (*cfg)["port_ws"].set("port", "8082");
+                           (*cfg)["port_ws"].set("protocol", "ws");
+                           (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
+                           return cfg;
+                       }),
+                       std::make_unique<CaptureLogs>(&messages)};
+               });
+        BEAST_EXPECT(messages.find("Required section [server] is missing") != std::string::npos);
 
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(
-                               ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(
-                               ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(
-                               ConfigSection::importNodeDatabase());
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
+                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
+                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
                            cfg->legacy("database_path", "");
                            cfg->setupControl(true, true, true);
                            (*cfg)["server"].append("port_peer");
@@ -504,8 +487,7 @@ public:
                        }),
                        std::make_unique<CaptureLogs>(&messages)};
                });
-        BEAST_EXPECT(
-            messages.find("Missing section: [port_peer]") != std::string::npos);
+        BEAST_EXPECT(messages.find("Missing section: [port_peer]") != std::string::npos);
     }
 
     void

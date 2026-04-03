@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STTX_H_INCLUDED
-#define XRPL_PROTOCOL_STTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
@@ -16,7 +15,7 @@
 
 namespace xrpl {
 
-enum TxnSql : char {
+enum class TxnSql : char {
     txnSqlNew = 'N',
     txnSqlConflict = 'C',
     txnSqlHeld = 'H',
@@ -84,6 +83,9 @@ public:
     std::uint32_t
     getSeqValue() const;
 
+    AccountID
+    getFeePayer() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
@@ -100,8 +102,7 @@ public:
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget =
-            {});
+        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
 
     /** Check the signature.
         @param rules The current ledger rules.
@@ -118,14 +119,13 @@ public:
     getMetaSQLInsertReplaceHeader();
 
     std::string
-    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-        const;
+    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
 
     std::string
     getMetaSQL(
         Serializer rawTxn,
         std::uint32_t inLedger,
-        char status,
+        TxnSql status,
         std::string const& escapedMetaData) const;
 
     std::vector<uint256> const&
@@ -179,7 +179,8 @@ sterilize(STTx const& stx);
 bool
 isPseudoTx(STObject const& tx);
 
-inline STTx::STTx(SerialIter&& sit) : STTx(sit)
+inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    : STTx(sit)
 {
 }
 
@@ -202,5 +203,3 @@ STTx::getTransactionID() const
 }
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
-#define BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
+#pragma once
 
 #include <chrono>
 
@@ -33,5 +32,3 @@ public:
 };
 
 }  // namespace beast
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_AMMTEST_H_INCLUDED
-#define XRPL_TEST_JTX_AMMTEST_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -21,7 +20,11 @@ struct TestAMMArg
     std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
     std::uint16_t tfee = 0;
     std::optional<jtx::ter> ter = std::nullopt;
-    std::vector<FeatureBitset> features = {testable_amendments()};
+    std::vector<FeatureBitset> features = {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+
     bool noLog = false;
 };
 
@@ -66,32 +69,38 @@ protected:
 public:
     AMMTestBase();
 
+    static FeatureBitset
+    testable_amendments()
+    {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        return jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol;
+    }
+
 protected:
     /** testAMM() funds 30,000XRP and 30,000IOU
      * for each non-XRP asset to Alice and Carol
      */
     void
     testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::vector<FeatureBitset> const& features = {testable_amendments()});
 
     void
-    testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-        TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase
 {
 protected:
-    XRPAmount
-    reserve(jtx::Env& env, std::uint32_t count) const;
+    static XRPAmount
+    reserve(jtx::Env& env, std::uint32_t count);
 
-    XRPAmount
-    ammCrtFee(jtx::Env& env) const;
+    static XRPAmount
+    ammCrtFee(jtx::Env& env);
 
     /* Path_test */
     /************************************************/
@@ -118,7 +127,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -149,5 +158,3 @@ protected:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_AMMTEST_H_INCLUDED

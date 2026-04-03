@@ -13,8 +13,7 @@
 namespace xrpl {
 namespace Resource {
 
-Consumer::Consumer(Logic& logic, Entry& entry)
-    : m_logic(&logic), m_entry(&entry)
+Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
 }
 
@@ -22,10 +21,9 @@ Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
 {
 }
 
-Consumer::Consumer(Consumer const& other)
-    : m_logic(other.m_logic), m_entry(nullptr)
+Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(nullptr)
 {
-    if (m_logic && other.m_entry)
+    if ((m_logic != nullptr) && (other.m_entry != nullptr))
     {
         m_entry = other.m_entry;
         m_logic->acquire(*m_entry);
@@ -34,22 +32,25 @@ Consumer::Consumer(Consumer const& other)
 
 Consumer::~Consumer()
 {
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 }
 
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
+    if (this == &other)
+        return *this;
+
     // remove old ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
 
     // add new ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->acquire(*m_entry);
 
     return *this;
@@ -67,7 +68,7 @@ Consumer::to_string() const
 bool
 Consumer::isUnlimited() const
 {
-    if (m_entry)
+    if (m_entry != nullptr)
         return m_entry->isUnlimited();
 
     return false;
@@ -77,7 +78,7 @@ Disposition
 Consumer::disposition() const
 {
     Disposition d = ok;
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         d = m_logic->charge(*m_entry, Charge(0));
 
     return d;
@@ -88,7 +89,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 {
     Disposition d = ok;
 
-    if (m_logic && m_entry && !m_entry->isUnlimited())
+    if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
         d = m_logic->charge(*m_entry, what, context);
 
     return d;
@@ -104,8 +105,7 @@ Consumer::warn()
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    XRPL_ASSERT(
-        m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {

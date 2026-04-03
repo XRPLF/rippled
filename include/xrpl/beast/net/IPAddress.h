@@ -1,5 +1,4 @@
-#ifndef BEAST_NET_IPADDRESS_H_INCLUDED
-#define BEAST_NET_IPADDRESS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -96,5 +95,3 @@ struct hash<::beast::IP::Address>
     }
 };
 }  // namespace boost
-
-#endif

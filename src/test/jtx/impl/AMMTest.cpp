@@ -82,22 +82,17 @@ AMMTestBase::AMMTestBase()
 
 void
 AMMTestBase::testAMM(
-    std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+    std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
     std::optional<std::pair<STAmount, STAmount>> const& pool,
     std::uint16_t tfee,
     std::optional<jtx::ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
-    testAMM(
-        std::move(cb),
-        TestAMMArg{
-            .pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
+    testAMM(cb, TestAMMArg{.pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
 }
 
 void
-AMMTestBase::testAMM(
-    std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-    TestAMMArg const& arg)
+AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg)
 {
     using namespace jtx;
 
@@ -105,14 +100,18 @@ AMMTestBase::testAMM(
 
     for (auto const& features : arg.features)
     {
+        // Use small Number mantissas for the life of this test.
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
         Env env{
             *this,
-            features,
+            features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
-        auto const [asset1, asset2] =
-            arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
-        auto tofund = [&](STAmount const& a) -> STAmount {
+        auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
+        auto toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
                 auto const defXRP = XRP(30000);
@@ -120,42 +119,43 @@ AMMTestBase::testAMM(
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.issue(), 30000};
+            auto defIOU = STAmount{a.issue(), 30000};
             if (a <= defIOU)
                 return defIOU;
             return a + STAmount{a.issue(), 1000};
         };
-        auto const toFund1 = tofund(asset1);
-        auto const toFund2 = tofund(asset2);
+        auto const toFund1 = toFund(asset1);
+        auto const toFund2 = toFund(asset2);
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
         if (!asset1.native() && !asset2.native())
+        {
             fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
+        {
             fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        }
         else if (asset2.native())
+        {
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        }
 
         AMM ammAlice(
-            env,
-            alice,
-            asset1,
-            asset2,
-            CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
-        if (BEAST_EXPECT(
-                ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
+            env, alice, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
+        if (BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
 }
 
 XRPAmount
-AMMTest::reserve(jtx::Env& env, std::uint32_t count) const
+AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count);
 }
 
 XRPAmount
-AMMTest::ammCrtFee(jtx::Env& env) const
+AMMTest::ammCrtFee(jtx::Env& env)
 {
     return env.current()->fees().increment;
 }
@@ -242,8 +242,7 @@ AMMTest::find_paths(
     std::optional<STAmount> const& saSendMax,
     std::optional<Currency> const& saSrcCurrency)
 {
-    Json::Value result = find_paths_request(
-        env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
+    Json::Value result = find_paths_request(env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
     BEAST_EXPECT(!result.isMember(jss::error));
 
     STAmount da;
@@ -270,6 +269,7 @@ AMMTest::find_paths(
                 Json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 paths = po.object->getFieldPathSet(sfPaths);
             }
         }

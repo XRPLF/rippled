@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVAR_H_INCLUDED
-#define XRPL_PROTOCOL_STVAR_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -26,26 +25,20 @@ extern nonPresentObject_t nonPresentObject;
 
 // Concept to constrain STVar constructors, which
 // instantiate ST* types from SerializedTypeID
-// clang-format off
 template <typename... Args>
 concept ValidConstructSTArgs =
-    (std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SField>> ||
-     std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SerialIter, SField>>);
-// clang-format on
+    (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>> ||
+     std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>);
 
 // "variant" that can hold any type of serialized object
 // and includes a small-object allocation optimization.
 class STVar
 {
 private:
-    // The largest "small object" we can accomodate
+    // The largest "small object" we can accommodate
     static std::size_t constexpr max_size = 72;
 
-    std::aligned_storage<max_size>::type d_;
+    std::aligned_storage<max_size>::type d_ = {};
     STBase* p_ = nullptr;
 
 public:
@@ -57,7 +50,7 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)
+    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
         p_ = t.move(max_size, &d_);
     }
@@ -163,5 +156,3 @@ operator!=(STVar const& lhs, STVar const& rhs)
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef BEAST_RANDOM_XOR_SHIFT_ENGINE_H_INCLUDED
-#define BEAST_RANDOM_XOR_SHIFT_ENGINE_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <limits>
@@ -38,7 +37,7 @@ public:
     }
 
 private:
-    result_type s_[2];
+    result_type s_[2]{};
 
     static result_type
     murmurhash3(result_type x);
@@ -95,5 +94,3 @@ xor_shift_engine<_>::murmurhash3(result_type x) -> result_type
 using xor_shift_engine = detail::xor_shift_engine<>;
 
 }  // namespace beast
-
-#endif

@@ -1,10 +1,14 @@
-#ifndef XRPL_PROTOCOL_FEES_H_INCLUDED
-#define XRPL_PROTOCOL_FEES_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace xrpl {
 
+// Deprecated constant for backwards compatibility with pre-XRPFees amendment.
+// This was the reference fee units used in the old fee calculation.
+inline constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
+
+// Number of micro-drops in one drop.
 constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
 
 /** Reflects the fee settings for a particular ledger.
@@ -14,18 +18,33 @@ constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
 */
 struct Fees
 {
-    XRPAmount base{0};       // Reference tx cost (drops)
-    XRPAmount reserve{0};    // Reserve base (drops)
-    XRPAmount increment{0};  // Reserve increment (drops)
-    std::uint32_t extensionComputeLimit{
-        0};  // Extension compute limit (instructions)
-    std::uint32_t extensionSizeLimit{0};  // Extension size limit (bytes)
-    std::uint32_t gasPrice{0};            // price of WASM gas (micro-drops)
+    /** @brief Cost of a reference transaction in drops. */
+    XRPAmount base{0};
+
+    /** @brief Minimum XRP an account must hold to exist on the ledger. */
+    XRPAmount reserve{0};
+
+    /** @brief Additional XRP reserve required per owned ledger object. */
+    XRPAmount increment{0};
+
+    /** @brief Compute limit for Feature Extensions (instructions). */
+    std::uint32_t extensionComputeLimit{0};
+
+    /** @brief Size limit for Feature Extensions (bytes). */
+    std::uint32_t extensionSizeLimit{0};
+
+    /** @brief Price of WASM gas (micro-drops). */
+    std::uint32_t gasPrice{0};
 
     explicit Fees() = default;
     Fees(Fees const&) = default;
     Fees&
     operator=(Fees const&) = default;
+
+    Fees(XRPAmount base_, XRPAmount reserve_, XRPAmount increment_)
+        : base(base_), reserve(reserve_), increment(increment_)
+    {
+    }
 
     /** Returns the account reserve given the owner count, in drops.
 
@@ -40,5 +59,3 @@ struct Fees
 };
 
 }  // namespace xrpl
-
-#endif

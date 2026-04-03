@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEWBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -40,9 +39,7 @@ public:
     exists(Keylet const& k) const override;
 
     std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const override;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
@@ -107,5 +104,3 @@ protected:
 
 }  // namespace detail
 }  // namespace xrpl
-
-#endif

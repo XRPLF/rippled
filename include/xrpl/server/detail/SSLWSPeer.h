@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SSLWSPEER_H_INCLUDED
-#define XRPL_SERVER_SSLWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
@@ -68,5 +67,3 @@ SSLWSPeer<Handler>::SSLWSPeer(
 }
 
 }  // namespace xrpl
-
-#endif

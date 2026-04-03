@@ -75,7 +75,7 @@ static std::string
 sliceToHex(Slice const& slice)
 {
     std::string s;
-    if (slice[0] & 0x80)
+    if ((slice[0] & 0x80) != 0)
     {
         s.reserve(2 * (slice.size() + 2));
         s = "0x00";
@@ -109,16 +109,14 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 =
-        boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-            264,
-            264,
-            boost::multiprecision::signed_magnitude,
-            boost::multiprecision::unchecked,
-            void>>;
+    using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+        264,
+        264,
+        boost::multiprecision::signed_magnitude,
+        boost::multiprecision::unchecked,
+        void>>;
 
-    static uint264 const G(
-        "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    static uint264 const G("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -132,11 +130,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 R(sliceToHex(*r));
+    uint264 const R(sliceToHex(*r));
     if (R >= G)
         return std::nullopt;
 
-    uint264 S(sliceToHex(*s));
+    uint264 const S(sliceToHex(*s));
     if (S >= G)
         return std::nullopt;
 
@@ -173,9 +171,11 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < size_)
+    {
         LogicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
+    }
 
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
@@ -227,8 +227,7 @@ verifyDigest(
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
 
     secp256k1_pubkey pubkey_imp;
@@ -249,8 +248,7 @@ verifyDigest(
     if (*canonicality != ECDSACanonicality::fullyCanonical)
     {
         secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(
-                secp256k1Context(), &sig_norm, &sig_imp) != 1)
+        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sig_norm, &sig_imp) != 1)
             return false;
         return secp256k1_ecdsa_verify(
                    secp256k1Context(),
@@ -274,7 +272,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         {
             return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        else if (*type == KeyType::ed25519)
+        if (*type == KeyType::ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;
@@ -283,9 +281,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // byte to distinguish them from secp256k1 keys
             // so when verifying the signature, we need to
             // first strip that prefix.
-            return ed25519_sign_open(
-                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==
-                0;
+            return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
     }
     return false;

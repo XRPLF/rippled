@@ -28,10 +28,7 @@ public:
     }
 
     void
-    test_peel_leading_slash(
-        std::string s,
-        std::string const& expected,
-        bool should_be_found)
+    test_peel_leading_slash(std::string s, std::string const& expected, bool should_be_found)
     {
         try
         {
@@ -70,7 +67,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source const* source(root.find_one(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -85,7 +82,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source const* source(root.find_path(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -100,7 +97,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source const* source(root.find_one_deep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -111,11 +108,7 @@ public:
     }
 
     void
-    test_find(
-        Source& root,
-        std::string path,
-        Source* expected,
-        bool expected_star)
+    test_find(Source& root, std::string path, Source* expected, bool expected_star)
     {
         try
         {

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_LEDGERHEADER_H_INCLUDED
-#define XRPL_PROTOCOL_LEDGERHEADER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -73,6 +72,8 @@ deserializeHeader(Slice data, bool hasHash = false);
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-}  // namespace xrpl
+/** Calculate the hash of a ledger header. */
+uint256
+calculateLedgerHash(LedgerHeader const& info);
 
-#endif
+}  // namespace xrpl

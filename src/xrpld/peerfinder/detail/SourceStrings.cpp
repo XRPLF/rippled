@@ -26,8 +26,7 @@ public:
         results.addresses.reserve(m_strings.size());
         for (int i = 0; i < m_strings.size(); ++i)
         {
-            beast::IP::Endpoint ep(
-                beast::IP::Endpoint::from_string(m_strings[i]));
+            beast::IP::Endpoint ep(beast::IP::Endpoint::from_string(m_strings[i]));
             if (is_unspecified(ep))
                 ep = beast::IP::Endpoint::from_string(m_strings[i]);
             if (!is_unspecified(ep))

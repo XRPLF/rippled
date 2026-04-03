@@ -1,25 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Indexes.h>
@@ -68,8 +50,7 @@ struct STJson_test : public beast::unit_test::suite
         auto retrieved = json.getObjectField("foo");
         BEAST_EXPECT(retrieved.has_value());
         BEAST_EXPECT((*retrieved)->getSType() == STI_UINT32);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*retrieved)->value() == 12345);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*retrieved)->value() == 12345);
 
         // Test non-existent key
         auto missing = json.getObjectField("bar");
@@ -85,9 +66,7 @@ struct STJson_test : public beast::unit_test::suite
         STJson json(std::move(map));
         BEAST_EXPECT(json.isObject());
         BEAST_EXPECT(json.getMap().size() == 1);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt16>(json.getMap().at("bar"))
-                ->value() == 42);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt16>(json.getMap().at("bar"))->value() == 42);
     }
 
     void
@@ -105,8 +84,7 @@ struct STJson_test : public beast::unit_test::suite
 
         auto elem0 = json.getArrayElement(0);
         BEAST_EXPECT(elem0.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*elem0)->value() == 100);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*elem0)->value() == 100);
     }
 
     void
@@ -143,11 +121,9 @@ struct STJson_test : public beast::unit_test::suite
         BEAST_EXPECT(std::dynamic_pointer_cast<STUInt8>(*elem1)->value() == 20);
 
         // Test set (replace)
-        json.setArrayElement(
-            1, std::make_shared<STUInt8>(sfCloseResolution, 25));
+        json.setArrayElement(1, std::make_shared<STUInt8>(sfCloseResolution, 25));
         auto elem1Updated = json.getArrayElement(1);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt8>(*elem1Updated)->value() == 25);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt8>(*elem1Updated)->value() == 25);
 
         // Test out of bounds
         auto missing = json.getArrayElement(10);
@@ -176,8 +152,7 @@ struct STJson_test : public beast::unit_test::suite
         // Check value at index 5
         auto elem5 = json.getArrayElement(5);
         BEAST_EXPECT(elem5.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*elem5)->value() == 999);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*elem5)->value() == 999);
     }
 
     void
@@ -187,10 +162,8 @@ struct STJson_test : public beast::unit_test::suite
         STJson json(STJson::Array{});
 
         // Set field in array element (auto-creates object)
-        json.setArrayElementField(
-            0, "name", std::make_shared<STUInt32>(sfNetworkID, 42));
-        json.setArrayElementField(
-            0, "value", std::make_shared<STUInt32>(sfNetworkID, 100));
+        json.setArrayElementField(0, "name", std::make_shared<STUInt32>(sfNetworkID, 42));
+        json.setArrayElementField(0, "value", std::make_shared<STUInt32>(sfNetworkID, 100));
 
         // Get fields
         auto name = json.getArrayElementField(0, "name");
@@ -199,12 +172,10 @@ struct STJson_test : public beast::unit_test::suite
 
         auto value = json.getArrayElementField(0, "value");
         BEAST_EXPECT(value.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*value)->value() == 100);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*value)->value() == 100);
 
         // Set field at higher index (auto-resize)
-        json.setArrayElementField(
-            3, "test", std::make_shared<STUInt8>(sfCloseResolution, 99));
+        json.setArrayElementField(3, "test", std::make_shared<STUInt8>(sfCloseResolution, 99));
         BEAST_EXPECT(json.arraySize() == 4);
 
         auto test = json.getArrayElementField(3, "test");
@@ -218,10 +189,8 @@ struct STJson_test : public beast::unit_test::suite
         testcase("Nested object field operations");
         STJson json;
 
-        json.setNestedObjectField(
-            "user", "id", std::make_shared<STUInt32>(sfNetworkID, 123));
-        json.setNestedObjectField(
-            "user", "name", std::make_shared<STUInt32>(sfNetworkID, 456));
+        json.setNestedObjectField("user", "id", std::make_shared<STUInt32>(sfNetworkID, 123));
+        json.setNestedObjectField("user", "name", std::make_shared<STUInt32>(sfNetworkID, 456));
 
         auto id = json.getNestedObjectField("user", "id");
         BEAST_EXPECT(id.has_value());
@@ -229,8 +198,7 @@ struct STJson_test : public beast::unit_test::suite
 
         auto name = json.getNestedObjectField("user", "name");
         BEAST_EXPECT(name.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*name)->value() == 456);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*name)->value() == 456);
 
         // Test non-existent nested key
         auto missing = json.getNestedObjectField("user", "age");
@@ -244,31 +212,24 @@ struct STJson_test : public beast::unit_test::suite
         STJson json;
 
         // Set entire elements in nested array
-        json.setNestedArrayElement(
-            "items", 0, std::make_shared<STUInt32>(sfNetworkID, 10));
-        json.setNestedArrayElement(
-            "items", 1, std::make_shared<STUInt32>(sfNetworkID, 20));
-        json.setNestedArrayElement(
-            "items", 2, std::make_shared<STUInt32>(sfNetworkID, 30));
+        json.setNestedArrayElement("items", 0, std::make_shared<STUInt32>(sfNetworkID, 10));
+        json.setNestedArrayElement("items", 1, std::make_shared<STUInt32>(sfNetworkID, 20));
+        json.setNestedArrayElement("items", 2, std::make_shared<STUInt32>(sfNetworkID, 30));
 
         // Get elements
         auto item0 = json.getNestedArrayElement("items", 0);
         BEAST_EXPECT(item0.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*item0)->value() == 10);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*item0)->value() == 10);
 
         auto item2 = json.getNestedArrayElement("items", 2);
         BEAST_EXPECT(item2.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*item2)->value() == 30);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*item2)->value() == 30);
 
         // Auto-resize test
-        json.setNestedArrayElement(
-            "items", 5, std::make_shared<STUInt32>(sfNetworkID, 60));
+        json.setNestedArrayElement("items", 5, std::make_shared<STUInt32>(sfNetworkID, 60));
         auto item5 = json.getNestedArrayElement("items", 5);
         BEAST_EXPECT(item5.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*item5)->value() == 60);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*item5)->value() == 60);
     }
 
     void
@@ -290,13 +251,11 @@ struct STJson_test : public beast::unit_test::suite
         // Get fields
         auto user0id = json.getNestedArrayElementField("users", 0, "id");
         BEAST_EXPECT(user0id.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*user0id)->value() == 100);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*user0id)->value() == 100);
 
         auto user1name = json.getNestedArrayElementField("users", 1, "name");
         BEAST_EXPECT(user1name.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*user1name)->value() == 201);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*user1name)->value() == 201);
 
         // Test missing field
         auto missing = json.getNestedArrayElementField("users", 0, "age");
@@ -312,8 +271,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json;
             auto nested = std::make_shared<STJson>();
-            nested->setObjectField(
-                "x", std::make_shared<STUInt32>(sfNetworkID, 42));
+            nested->setObjectField("x", std::make_shared<STUInt32>(sfNetworkID, 42));
 
             try
             {
@@ -331,8 +289,7 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             auto nested1 = std::make_shared<STJson>();
             auto nested2 = std::make_shared<STJson>();
-            nested2->setObjectField(
-                "x", std::make_shared<STUInt32>(sfNetworkID, 42));
+            nested2->setObjectField("x", std::make_shared<STUInt32>(sfNetworkID, 42));
             nested1->setObjectField("nested", nested2);
 
             try
@@ -350,8 +307,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json(STJson::Array{});
             auto elem = std::make_shared<STJson>();
-            elem->setObjectField(
-                "x", std::make_shared<STUInt32>(sfNetworkID, 42));
+            elem->setObjectField("x", std::make_shared<STUInt32>(sfNetworkID, 42));
 
             try
             {
@@ -368,8 +324,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json(STJson::Array{});
             auto innerArray = std::make_shared<STJson>(STJson::Array{});
-            innerArray->pushArrayElement(
-                std::make_shared<STUInt32>(sfNetworkID, 42));
+            innerArray->pushArrayElement(std::make_shared<STUInt32>(sfNetworkID, 42));
 
             try
             {
@@ -403,8 +358,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json;
             auto nested = std::make_shared<STJson>();
-            nested->setObjectField(
-                "x", std::make_shared<STUInt32>(sfNetworkID, 42));
+            nested->setObjectField("x", std::make_shared<STUInt32>(sfNetworkID, 42));
 
             try
             {
@@ -423,10 +377,8 @@ struct STJson_test : public beast::unit_test::suite
     {
         testcase("add() and fromBlob() for objects");
         STJson json;
-        json.setObjectField(
-            "a", std::make_shared<STUInt8>(sfCloseResolution, 7));
-        json.setObjectField(
-            "b", std::make_shared<STUInt32>(sfNetworkID, 123456));
+        json.setObjectField("a", std::make_shared<STUInt8>(sfCloseResolution, 7));
+        json.setObjectField("b", std::make_shared<STUInt32>(sfNetworkID, 123456));
 
         Serializer s;
         json.add(s);
@@ -442,8 +394,7 @@ struct STJson_test : public beast::unit_test::suite
 
         auto b = parsed->getObjectField("b");
         BEAST_EXPECT(b.has_value());
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*b)->value() == 123456);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*b)->value() == 123456);
     }
 
     void
@@ -468,12 +419,10 @@ struct STJson_test : public beast::unit_test::suite
         BEAST_EXPECT(std::dynamic_pointer_cast<STUInt8>(*elem0)->value() == 10);
 
         auto elem1 = parsed->getArrayElement(1);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*elem1)->value() == 20);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*elem1)->value() == 20);
 
         auto elem2 = parsed->getArrayElement(2);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt64>(*elem2)->value() == 30);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt64>(*elem2)->value() == 30);
     }
 
     void
@@ -481,8 +430,7 @@ struct STJson_test : public beast::unit_test::suite
     {
         testcase("fromSerialIter()");
         STJson json;
-        json.setObjectField(
-            "x", std::make_shared<STUInt8>(sfCloseResolution, 99));
+        json.setObjectField("x", std::make_shared<STUInt8>(sfCloseResolution, 99));
         Serializer s;
         json.add(s);
 
@@ -501,8 +449,7 @@ struct STJson_test : public beast::unit_test::suite
     {
         testcase("Constructor from SField");
         STJson json;
-        json.setObjectField(
-            "x", std::make_shared<STUInt8>(sfCloseResolution, 99));
+        json.setObjectField("x", std::make_shared<STUInt8>(sfCloseResolution, 99));
         Serializer s;
         json.add(s);
 
@@ -521,14 +468,15 @@ struct STJson_test : public beast::unit_test::suite
     {
         testcase("getJson() for objects");
         STJson json;
-        json.setObjectField(
-            "foo", std::make_shared<STUInt16>(sfTransactionType, 65535));
+        json.setObjectField("foo", std::make_shared<STUInt16>(sfTransactionType, 65535));
         json.setObjectField("bar", nullptr);  // test null value
+        json.setNestedObjectField("meta", "version", std::make_shared<STUInt32>(sfNetworkID, 2));
 
         Json::Value jv = json.getJson(JsonOptions::none);
         BEAST_EXPECT(jv.isObject());
-        BEAST_EXPECT(jv["foo"].asUInt() == 65535);
-        BEAST_EXPECT(jv["bar"].isNull());
+        BEAST_EXPECT(jv[strHex(std::string{"foo"})].asUInt() == 65535);
+        BEAST_EXPECT(jv[strHex(std::string{"bar"})].isNull());
+        BEAST_EXPECT(jv[strHex(std::string{"meta"})][strHex(std::string{"version"})].asUInt() == 2);
     }
 
     void
@@ -558,8 +506,7 @@ struct STJson_test : public beast::unit_test::suite
         SerialIter sit(s.peekData().data(), s.peekData().size());
         auto value = STJson::makeValueFromVLWithType(sit);
         BEAST_EXPECT(value->getSType() == STI_UINT32);
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(value)->value() == 0xDEADBEEF);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(value)->value() == 0xDEADBEEF);
     }
 
     void
@@ -586,8 +533,7 @@ struct STJson_test : public beast::unit_test::suite
         // Serialize and deserialize
         Serializer s;
         json.add(s);
-        auto parsed =
-            STJson::fromBlob(s.peekData().data(), s.peekData().size());
+        auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
 
         // Verify structure
         BEAST_EXPECT(parsed->isObject());
@@ -596,16 +542,13 @@ struct STJson_test : public beast::unit_test::suite
         BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*id)->value() == 1);
 
         auto version = parsed->getNestedObjectField("metadata", "version");
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*version)->value() == 2);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*version)->value() == 2);
 
         auto user0name = parsed->getNestedArrayElementField("users", 0, "name");
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*user0name)->value() == 100);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*user0name)->value() == 100);
 
         auto user1name = parsed->getNestedArrayElementField("users", 1, "name");
-        BEAST_EXPECT(
-            std::dynamic_pointer_cast<STUInt32>(*user1name)->value() == 101);
+        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*user1name)->value() == 101);
     }
 
     void
@@ -616,60 +559,47 @@ struct STJson_test : public beast::unit_test::suite
         // STI_UINT8
         {
             STJson json;
-            json.setObjectField(
-                "u8", std::make_shared<STUInt8>(sfCloseResolution, 200));
+            json.setObjectField("u8", std::make_shared<STUInt8>(sfCloseResolution, 200));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u8 = parsed->getObjectField("u8");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt8>(*u8)->value() == 200);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STUInt8>(*u8)->value() == 200);
         }
 
         // STI_UINT16
         {
             STJson json;
-            json.setObjectField(
-                "u16", std::make_shared<STUInt16>(sfSignerWeight, 4242));
+            json.setObjectField("u16", std::make_shared<STUInt16>(sfSignerWeight, 4242));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u16 = parsed->getObjectField("u16");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt16>(*u16)->value() == 4242);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STUInt16>(*u16)->value() == 4242);
         }
 
         // STI_UINT32
         {
             STJson json;
-            json.setObjectField(
-                "u32", std::make_shared<STUInt32>(sfNetworkID, 0xABCDEF01));
+            json.setObjectField("u32", std::make_shared<STUInt32>(sfNetworkID, 0xABCDEF01));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u32 = parsed->getObjectField("u32");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt32>(*u32)->value() ==
-                0xABCDEF01);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STUInt32>(*u32)->value() == 0xABCDEF01);
         }
 
         // STI_UINT64
         {
             STJson json;
             json.setObjectField(
-                "u64",
-                std::make_shared<STUInt64>(sfIndexNext, 0x123456789ABCDEF0ull));
+                "u64", std::make_shared<STUInt64>(sfIndexNext, 0x123456789ABCDEF0ull));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u64 = parsed->getObjectField("u64");
             BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt64>(*u64)->value() ==
-                0x123456789ABCDEF0ull);
+                std::dynamic_pointer_cast<STUInt64>(*u64)->value() == 0x123456789ABCDEF0ull);
         }
 
         // STI_UINT160
@@ -678,15 +608,12 @@ struct STJson_test : public beast::unit_test::suite
             uint160 val;
             val.data()[0] = 0x01;
             val.data()[19] = 0xFF;
-            json.setObjectField(
-                "u160", std::make_shared<STUInt160>(sfTakerPaysCurrency, val));
+            json.setObjectField("u160", std::make_shared<STUInt160>(sfTakerPaysCurrency, val));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u160 = parsed->getObjectField("u160");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt160>(*u160)->value() == val);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STUInt160>(*u160)->value() == val);
         }
 
         // STI_UINT256
@@ -695,15 +622,12 @@ struct STJson_test : public beast::unit_test::suite
             uint256 val;
             val.data()[0] = 0xAA;
             val.data()[31] = 0xBB;
-            json.setObjectField(
-                "u256", std::make_shared<STUInt256>(sfLedgerHash, val));
+            json.setObjectField("u256", std::make_shared<STUInt256>(sfLedgerHash, val));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto u256 = parsed->getObjectField("u256");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STUInt256>(*u256)->value() == val);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STUInt256>(*u256)->value() == val);
         }
 
         // STI_AMOUNT
@@ -714,8 +638,7 @@ struct STJson_test : public beast::unit_test::suite
             json.setObjectField("amount", std::make_shared<STAmount>(xrp));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto amount = parsed->getObjectField("amount");
             auto parsedAmt = std::dynamic_pointer_cast<STAmount>(*amount);
             BEAST_EXPECT(parsedAmt->mantissa() == 123456789u);
@@ -727,19 +650,14 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             std::vector<uint8_t> blobData = {0xDE, 0xAD, 0xBE, 0xEF};
             json.setObjectField(
-                "blob",
-                std::make_shared<STBlob>(
-                    sfPublicKey, blobData.data(), blobData.size()));
+                "blob", std::make_shared<STBlob>(sfPublicKey, blobData.data(), blobData.size()));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto blob = parsed->getObjectField("blob");
             auto parsedBlob = std::dynamic_pointer_cast<STBlob>(*blob);
             BEAST_EXPECT(parsedBlob->size() == blobData.size());
-            BEAST_EXPECT(
-                std::memcmp(
-                    parsedBlob->data(), blobData.data(), blobData.size()) == 0);
+            BEAST_EXPECT(std::memcmp(parsedBlob->data(), blobData.data(), blobData.size()) == 0);
         }
 
         // STI_ACCOUNT
@@ -747,12 +665,10 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             // Use a known AccountID (20 bytes)
             AccountID acct = AccountID{};
-            json.setObjectField(
-                "acct", std::make_shared<STAccount>(sfAccount, acct));
+            json.setObjectField("acct", std::make_shared<STAccount>(sfAccount, acct));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto account = parsed->getObjectField("acct");
             auto parsedAcct = std::dynamic_pointer_cast<STAccount>(*account);
             BEAST_EXPECT(parsedAcct->value() == acct);
@@ -764,12 +680,10 @@ struct STJson_test : public beast::unit_test::suite
             Currency cur;
             cur.data()[0] = 0xAA;
             cur.data()[19] = 0xBB;
-            json.setObjectField(
-                "currency", std::make_shared<STCurrency>(sfGeneric, cur));
+            json.setObjectField("currency", std::make_shared<STCurrency>(sfGeneric, cur));
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto currency = parsed->getObjectField("currency");
             auto parsedCur = std::dynamic_pointer_cast<STCurrency>(*currency);
             BEAST_EXPECT(parsedCur->value() == cur);
@@ -787,14 +701,11 @@ struct STJson_test : public beast::unit_test::suite
             Serializer s;
             json.add(s);
 
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             auto nested = parsed->getObjectField("nested");
             auto parsedNested = std::dynamic_pointer_cast<STJson>(*nested);
             auto amount = parsedNested->getObjectField("amount");
-            BEAST_EXPECT(
-                std::dynamic_pointer_cast<STAmount>(*amount)->mantissa() ==
-                123456789u);
+            BEAST_EXPECT(std::dynamic_pointer_cast<STAmount>(*amount)->mantissa() == 123456789u);
         }
     }
 
@@ -808,8 +719,7 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             BEAST_EXPECT(parsed->isObject());
             BEAST_EXPECT(parsed->getMap().empty());
         }
@@ -819,8 +729,7 @@ struct STJson_test : public beast::unit_test::suite
             STJson json(STJson::Array{});
             Serializer s;
             json.add(s);
-            auto parsed =
-                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
             BEAST_EXPECT(parsed->isArray());
             BEAST_EXPECT(parsed->arraySize() == 0);
         }

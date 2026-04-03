@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_H_INCLUDED
-#define XRPL_TEST_JTX_H_INCLUDED
+#pragma once
 
 // Convenience header that includes everything
 
@@ -53,7 +52,6 @@
 #include <test/jtx/tag.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/testline.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -61,5 +59,3 @@
 #include <test/jtx/utility.h>
 
 #include <xrpl/json/to_string.h>
-
-#endif

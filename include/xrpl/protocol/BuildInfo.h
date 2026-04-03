@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_BUILDINFO_H_INCLUDED
-#define XRPL_PROTOCOL_BUILDINFO_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -50,7 +49,7 @@ getFullVersionString();
     @return the encoded version in a 64-bit integer
 */
 std::uint64_t
-encodeSoftwareVersion(char const* const versionStr);
+encodeSoftwareVersion(std::string_view versionStr);
 
 /** Returns this server's version packed in a 64-bit integer. */
 std::uint64_t
@@ -80,5 +79,3 @@ isNewerVersion(std::uint64_t version);
 }  // namespace BuildInfo
 
 }  // namespace xrpl
-
-#endif

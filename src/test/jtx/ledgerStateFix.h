@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
-#define XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -21,5 +20,3 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

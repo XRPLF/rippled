@@ -21,37 +21,46 @@ public:
         std::string const& strUrl,
         std::string const& strUsername,
         std::string const& strPassword,
-        Logs& logs)
+        ServiceRegistry& registry)
         : RPCSub(source)
         , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
-        , mSSL(false)
         , mUsername(strUsername)
         , mPassword(strPassword)
-        , mSending(false)
-        , j_(logs.journal("RPCSub"))
-        , logs_(logs)
+        , j_(registry.getJournal("RPCSub"))
+        , logs_(registry.getLogs())
     {
         parsedURL pUrl;
 
         if (!parseUrl(pUrl, strUrl))
+        {
             Throw<std::runtime_error>("Failed to parse url.");
+        }
         else if (pUrl.scheme == "https")
+        {
             mSSL = true;
+        }
         else if (pUrl.scheme != "http")
+        {
             Throw<std::runtime_error>("Only http and https is supported.");
+        }
 
         mSeq = 1;
 
         mIp = pUrl.domain;
-        mPort = (!pUrl.port) ? (mSSL ? 443 : 80) : *pUrl.port;
+        if (!pUrl.port)
+        {
+            mPort = mSSL ? 443 : 80;
+        }
+        else
+        {
+            mPort = *pUrl.port;
+        }
         mPath = pUrl.path;
 
-        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp
-                        << " port=" << mPort
-                        << " ssl= " << (mSSL ? "yes" : "no") << " path='"
-                        << mPath << "'";
+        JLOG(j_.info()) << "RPCCall::fromNetwork sub: ip=" << mIp << " port=" << mPort
+                        << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
     }
 
     ~RPCSubImp() = default;
@@ -59,7 +68,7 @@ public:
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
@@ -71,17 +80,15 @@ public:
             // Start a sending thread.
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
-            mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
-                    sendThread();
-                });
+            mSending =
+                m_jobQueue.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mUsername = strUsername;
     }
@@ -89,7 +96,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard sl(mLock);
+        std::lock_guard const sl(mLock);
 
         mPassword = strPassword;
     }
@@ -101,13 +108,13 @@ private:
     sendThread()
     {
         Json::Value jvEvent;
-        bool bSend;
+        bool bSend = false;
 
         do
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(mLock);
+                std::lock_guard const sl(mLock);
 
                 if (mDeque.empty())
                 {
@@ -150,8 +157,7 @@ private:
                 }
                 catch (std::exception const& e)
                 {
-                    JLOG(j_.info())
-                        << "RPCCall::fromNetwork exception: " << e.what();
+                    JLOG(j_.info()) << "RPCCall::fromNetwork exception: " << e.what();
                 }
             }
         } while (bSend);
@@ -164,14 +170,14 @@ private:
     std::string mUrl;
     std::string mIp;
     std::uint16_t mPort;
-    bool mSSL;
+    bool mSSL{false};
     std::string mUsername;
     std::string mPassword;
     std::string mPath;
 
     int mSeq;  // Next id to allocate.
 
-    bool mSending;  // Sending threead is active.
+    bool mSending{false};  // Sending thread is active.
 
     std::deque<std::pair<int, Json::Value>> mDeque;
 
@@ -193,7 +199,7 @@ make_RPCSub(
     std::string const& strUrl,
     std::string const& strUsername,
     std::string const& strPassword,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
@@ -202,7 +208,7 @@ make_RPCSub(
         strUrl,
         strUsername,
         strPassword,
-        logs);
+        registry);
 }
 
 }  // namespace xrpl

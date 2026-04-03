@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
-#define XRPL_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -171,7 +170,7 @@ struct XChainBridgeObjects
     std::vector<signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
-    std::uint32_t const quorum;
+    std::uint32_t const quorum{UT_XCHAIN_DEFAULT_QUORUM};
 
     STAmount const reward;                 // 1 xrp
     STAmount const split_reward_quorum;    // 250,000 drops
@@ -228,15 +227,10 @@ struct XChainBridgeObjects
         std::optional<STAmount> const& minAccountCreate = std::nullopt)
     {
         return bridge_create(
-            acc,
-            bridge == Json::nullValue ? jvb : bridge,
-            _reward,
-            minAccountCreate);
+            acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
     }
 };
 
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

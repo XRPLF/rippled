@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_DIGEST_H_INCLUDED
-#define XRPL_PROTOCOL_DIGEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/crypto/secure_erase.h>
@@ -41,7 +40,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[96];
+    char ctx_[96]{};
 };
 
 /** SHA-512 digest
@@ -64,7 +63,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[216];
+    char ctx_[216]{};
 };
 
 /** SHA-256 digest
@@ -87,7 +86,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[112];
+    char ctx_[112]{};
 };
 
 //------------------------------------------------------------------------------
@@ -227,5 +226,3 @@ sha512Half_s(Args const&... args)
 }
 
 }  // namespace xrpl
-
-#endif

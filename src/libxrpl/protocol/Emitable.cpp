@@ -1,23 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Emitable to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this emitable notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Emitable.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/jss.h>
@@ -30,8 +12,7 @@ Emitable::Emitable()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(                                                         \
-    tag, value, name, delegatable, amendment, permissions, emitable, fields) \
+#define TRANSACTION(tag, value, name, delegatable, amendment, permissions, emitable, fields) \
     {value, emitable},
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -98,8 +79,7 @@ Emitable::getEmitableName(std::uint32_t const value) const
 
     // not a granular emitable, check if it maps to a transaction type
     auto const txType = emitableToTxType(value);
-    if (auto const* item = TxFormats::getInstance().findByType(txType);
-        item != nullptr)
+    if (auto const* item = TxFormats::getInstance().findByType(txType); item != nullptr)
         return item->getName();
 
     return std::nullopt;
@@ -138,8 +118,7 @@ Emitable::getGranularTxType(GranularEmitableType const& gpType) const
 bool
 Emitable::isEmitable(std::uint32_t const& emitableValue) const
 {
-    auto const granularEmitable =
-        getGranularName(static_cast<GranularEmitableType>(emitableValue));
+    auto const granularEmitable = getGranularName(static_cast<GranularEmitableType>(emitableValue));
     if (granularEmitable)
         // granular emitables are always allowed to be delegated
         return true;

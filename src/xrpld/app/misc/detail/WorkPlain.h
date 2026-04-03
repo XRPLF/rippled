@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
-#define XRPL_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
@@ -8,8 +7,7 @@ namespace xrpl {
 namespace detail {
 
 // Work over TCP/IP
-class WorkPlain : public WorkBase<WorkPlain>,
-                  public std::enable_shared_from_this<WorkPlain>
+class WorkPlain : public WorkBase<WorkPlain>, public std::enable_shared_from_this<WorkPlain>
 {
     friend class WorkBase<WorkPlain>;
 
@@ -37,7 +35,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-WorkPlain::WorkPlain(
+inline WorkPlain::WorkPlain(
     std::string const& host,
     std::string const& path,
     std::string const& port,
@@ -49,7 +47,7 @@ WorkPlain::WorkPlain(
 {
 }
 
-void
+inline void
 WorkPlain::onConnect(error_code const& ec)
 {
     if (ec)
@@ -61,5 +59,3 @@ WorkPlain::onConnect(error_code const& ec)
 }  // namespace detail
 
 }  // namespace xrpl
-
-#endif

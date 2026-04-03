@@ -1,25 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx.h>
-
-#include <xrpld/app/wasm/ContractHostFuncImpl.h>
 
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -30,6 +9,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/wasm/ContractHostFuncImpl.h>
 
 namespace xrpl {
 namespace test {
@@ -41,13 +21,7 @@ createApplyContext(
     STTx const& tx = STTx(ttCONTRACT_CALL, [](STObject&) {}))
 {
     ApplyContext ac{
-        env.app(),
-        ov,
-        tx,
-        tesSUCCESS,
-        env.current()->fees().base,
-        tapNONE,
-        env.journal};
+        env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, env.journal};
     return ac;
 }
 
@@ -68,9 +42,8 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
 
         uint256 const& txId = uint256{2};
 
-        auto const nextSequence = ac.view()
-                                      .read(keylet::account(contract.id()))
-                                      ->getFieldU32(sfSequence);
+        auto const nextSequence =
+            ac.view().read(keylet::account(contract.id()))->getFieldU32(sfSequence);
 
         auto const k = keylet::contract(contractHash, otxn, 0);
         return ContractContext{
@@ -101,9 +74,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
 
     // Helper function to create STJson::Value from different types
     STJson::Value
-    createJsonValue(
-        SerializedTypeID type,
-        std::function<void(Serializer&)> addData)
+    createJsonValue(SerializedTypeID type, std::function<void(Serializer&)> addData)
     {
         Serializer s;
         s.add8(static_cast<uint8_t>(type));
@@ -146,8 +117,8 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             ParameterValueVec{STData(sfParameterValue, uint32_t{0xFFFFFFFF})});
 
         // UINT64
-        contractCtx.instanceParameters.push_back(ParameterValueVec{
-            STData(sfParameterValue, uint64_t{0x8000000000000000})});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{STData(sfParameterValue, uint64_t{0x8000000000000000})});
 
         // UINT128
         contractCtx.instanceParameters.push_back(
@@ -166,8 +137,8 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             ParameterValueVec{STData(sfParameterValue, uint256{1})});
 
         // VL (Variable Length)
-        contractCtx.instanceParameters.push_back(ParameterValueVec{
-            STData(sfParameterValue, Blob{0x01, 0x02, 0x03, 0x04, 0x05})});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{STData(sfParameterValue, Blob{0x01, 0x02, 0x03, 0x04, 0x05})});
 
         // ACCOUNT
         contractCtx.instanceParameters.push_back(
@@ -178,9 +149,9 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             ParameterValueVec{STData(sfParameterValue, STAmount{100000})});
 
         // AMOUNT (IOU)
-        contractCtx.instanceParameters.push_back(ParameterValueVec{STData(
-            sfParameterValue,
-            STAmount{Issue{Currency{1}, AccountID{2}}, 1000})});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{
+                STData(sfParameterValue, STAmount{Issue{Currency{1}, AccountID{2}}, 1000})});
 
         // AMOUNT (MPT)
         MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
@@ -188,19 +159,19 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             ParameterValueVec{STData(sfParameterValue, STAmount{mpt, 1000})});
 
         // NUMBER
-        contractCtx.instanceParameters.push_back(ParameterValueVec{
-            STData(sfParameterValue, numberFromJson(sfNumber, "42.5"))});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{STData(sfParameterValue, numberFromJson(sfNumber, "42.5"))});
 
         // ISSUE
         // STIssue{sfAsset2, MPTIssue{mptId}
         auto const iouAsset = env.master["USD"];
-        contractCtx.instanceParameters.push_back(ParameterValueVec{
-            STData(sfParameterValue, STIssue{sfAsset, iouAsset.issue()})});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{STData(sfParameterValue, STIssue{sfAsset, iouAsset.issue()})});
 
         // CURRENCY
-        contractCtx.instanceParameters.push_back(ParameterValueVec{STData(
-            sfParameterValue,
-            STCurrency{sfBaseAsset, iouAsset.issue().currency})});
+        contractCtx.instanceParameters.push_back(
+            ParameterValueVec{
+                STData(sfParameterValue, STCurrency{sfBaseAsset, iouAsset.issue().currency})});
 
         ContractHostFunctionsImpl cfs(contractCtx);
 
@@ -400,8 +371,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(16, STI_UINT32);
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(
-                    result.error() == HostFunctionError::INDEX_OUT_OF_BOUNDS);
+                BEAST_EXPECT(result.error() == HostFunctionError::INDEX_OUT_OF_BOUNDS);
         }
 
         // Test type mismatch
@@ -409,8 +379,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(0, STI_UINT64);  // Index 0 is UINT8
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(
-                    result.error() == HostFunctionError::INVALID_PARAMS);
+                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
         }
 
         // Test unsupported types
@@ -418,8 +387,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto result = cfs.instanceParam(2, STI_PATHSET);
             BEAST_EXPECT(!result.has_value());
             if (!result.has_value())
-                BEAST_EXPECT(
-                    result.error() == HostFunctionError::INVALID_PARAMS);
+                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
         }
     }
 
@@ -494,8 +462,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
 
         // Test setDataObjectField - numeric value (UINT32)
         {
-            auto value =
-                createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(30); });
+            auto value = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(30); });
 
             auto setResult = cfs.setDataObjectField(alice.id(), "age", value);
             BEAST_EXPECT(!setResult.has_value());
@@ -512,8 +479,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 s.add8(1);  // true
             });
 
-            auto setResult =
-                cfs.setDataObjectField(alice.id(), "verified", value);
+            auto setResult = cfs.setDataObjectField(alice.id(), "verified", value);
             BEAST_EXPECT(!setResult.has_value());
             if (!setResult.has_value())
                 BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
@@ -527,22 +493,17 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             auto getResult = cfs.getDataObjectField(alice.id(), "nonexistent");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(
-                    getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
         }
 
         // Test updating existing key
         {
-            auto value1 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(100); });
-            auto setResult1 =
-                cfs.setDataObjectField(bob.id(), "balance", value1);
+            auto value1 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(100); });
+            auto setResult1 = cfs.setDataObjectField(bob.id(), "balance", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
-            auto value2 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(200); });
-            auto setResult2 =
-                cfs.setDataObjectField(bob.id(), "balance", value2);
+            auto value2 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(200); });
+            auto setResult2 = cfs.setDataObjectField(bob.id(), "balance", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
             auto getResult = cfs.getDataObjectField(bob.id(), "balance");
@@ -555,22 +516,18 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 Blob data = {'v', 'a', 'l', 'u', 'e', '1'};
                 s.addVL(data);
             });
-            auto setResult1 =
-                cfs.setDataObjectField(alice.id(), "field1", value1);
+            auto setResult1 = cfs.setDataObjectField(alice.id(), "field1", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
             auto value2 = createJsonValue(STI_VL, [](Serializer& s) {
                 Blob data = {'v', 'a', 'l', 'u', 'e', '2'};
                 s.addVL(data);
             });
-            auto setResult2 =
-                cfs.setDataObjectField(alice.id(), "field2", value2);
+            auto setResult2 = cfs.setDataObjectField(alice.id(), "field2", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
-            auto value3 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(123); });
-            auto setResult3 =
-                cfs.setDataObjectField(alice.id(), "field3", value3);
+            auto value3 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(123); });
+            auto setResult3 = cfs.setDataObjectField(alice.id(), "field3", value3);
             BEAST_EXPECT(!setResult3.has_value());
 
             // Verify all keys exist
@@ -613,8 +570,8 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 s.addVL(data);
             });
 
-            auto setResult = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "firstName", value);
+            auto setResult =
+                cfs.setDataNestedObjectField(alice.id(), "profile", "firstName", value);
             BEAST_EXPECT(!setResult.has_value());
             if (!setResult.has_value())
                 BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
@@ -624,27 +581,22 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 Blob data = {'S', 'm', 'i', 't', 'h'};
                 s.addVL(data);
             });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "lastName", value2);
+            auto setResult2 =
+                cfs.setDataNestedObjectField(alice.id(), "profile", "lastName", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
-            auto value3 =
-                createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(25); });
-            auto setResult3 = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "age", value3);
+            auto value3 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(25); });
+            auto setResult3 = cfs.setDataNestedObjectField(alice.id(), "profile", "age", value3);
             BEAST_EXPECT(!setResult3.has_value());
 
             // Retrieve nested fields
-            auto getResult1 = cfs.getDataNestedObjectField(
-                alice.id(), "profile", "firstName");
+            auto getResult1 = cfs.getDataNestedObjectField(alice.id(), "profile", "firstName");
             BEAST_EXPECT(getResult1.has_value());
 
-            auto getResult2 =
-                cfs.getDataNestedObjectField(alice.id(), "profile", "lastName");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "lastName");
             BEAST_EXPECT(getResult2.has_value());
 
-            auto getResult3 =
-                cfs.getDataNestedObjectField(alice.id(), "profile", "age");
+            auto getResult3 = cfs.getDataNestedObjectField(alice.id(), "profile", "age");
             BEAST_EXPECT(getResult3.has_value());
         }
 
@@ -654,72 +606,59 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 Blob data = {'d', 'a', 'r', 'k'};
                 s.addVL(data);
             });
-            auto setResult1 = cfs.setDataNestedObjectField(
-                alice.id(), "settings", "theme", value1);
+            auto setResult1 = cfs.setDataNestedObjectField(alice.id(), "settings", "theme", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
             auto value2 = createJsonValue(STI_UINT8, [](Serializer& s) {
                 s.add8(1);  // true
             });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                alice.id(), "settings", "notifications", value2);
+            auto setResult2 =
+                cfs.setDataNestedObjectField(alice.id(), "settings", "notifications", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
             auto value3 = createJsonValue(STI_VL, [](Serializer& s) {
                 Blob data = {'e', 'n'};
                 s.addVL(data);
             });
-            auto setResult3 = cfs.setDataNestedObjectField(
-                alice.id(), "preferences", "language", value3);
+            auto setResult3 =
+                cfs.setDataNestedObjectField(alice.id(), "preferences", "language", value3);
             BEAST_EXPECT(!setResult3.has_value());
 
             // Verify nested data retrieval
-            auto getResult1 =
-                cfs.getDataNestedObjectField(alice.id(), "settings", "theme");
+            auto getResult1 = cfs.getDataNestedObjectField(alice.id(), "settings", "theme");
             BEAST_EXPECT(getResult1.has_value());
 
-            auto getResult2 = cfs.getDataNestedObjectField(
-                alice.id(), "settings", "notifications");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "settings", "notifications");
             BEAST_EXPECT(getResult2.has_value());
 
-            auto getResult3 = cfs.getDataNestedObjectField(
-                alice.id(), "preferences", "language");
+            auto getResult3 = cfs.getDataNestedObjectField(alice.id(), "preferences", "language");
             BEAST_EXPECT(getResult3.has_value());
         }
 
         // Test getting non-existent nested key
         {
-            auto getResult =
-                cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
+            auto getResult = cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(
-                    getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
 
-            auto getResult2 = cfs.getDataNestedObjectField(
-                alice.id(), "profile", "nonexistent");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "nonexistent");
             BEAST_EXPECT(!getResult2.has_value());
             if (!getResult2.has_value())
-                BEAST_EXPECT(
-                    getResult2.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult2.error() == HostFunctionError::INVALID_FIELD);
         }
 
         // Test updating existing nested key
         {
-            auto value1 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(100); });
-            auto setResult1 = cfs.setDataNestedObjectField(
-                bob.id(), "stats", "score", value1);
+            auto value1 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(100); });
+            auto setResult1 = cfs.setDataNestedObjectField(bob.id(), "stats", "score", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
-            auto value2 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(150); });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                bob.id(), "stats", "score", value2);
+            auto value2 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(150); });
+            auto setResult2 = cfs.setDataNestedObjectField(bob.id(), "stats", "score", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
-            auto getResult =
-                cfs.getDataNestedObjectField(bob.id(), "stats", "score");
+            auto getResult = cfs.getDataNestedObjectField(bob.id(), "stats", "score");
             BEAST_EXPECT(getResult.has_value());
         }
     }
@@ -752,8 +691,8 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 s.addVL(data);
             });
 
-            auto setResult = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "firstName", value);
+            auto setResult =
+                cfs.setDataNestedObjectField(alice.id(), "profile", "firstName", value);
             BEAST_EXPECT(!setResult.has_value());
             if (!setResult.has_value())
                 BEAST_EXPECT(setResult.error() == HostFunctionError::INTERNAL);
@@ -763,27 +702,22 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 Blob data = {'S', 'm', 'i', 't', 'h'};
                 s.addVL(data);
             });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "lastName", value2);
+            auto setResult2 =
+                cfs.setDataNestedObjectField(alice.id(), "profile", "lastName", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
-            auto value3 =
-                createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(25); });
-            auto setResult3 = cfs.setDataNestedObjectField(
-                alice.id(), "profile", "age", value3);
+            auto value3 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(25); });
+            auto setResult3 = cfs.setDataNestedObjectField(alice.id(), "profile", "age", value3);
             BEAST_EXPECT(!setResult3.has_value());
 
             // Retrieve nested fields
-            auto getResult1 = cfs.getDataNestedObjectField(
-                alice.id(), "profile", "firstName");
+            auto getResult1 = cfs.getDataNestedObjectField(alice.id(), "profile", "firstName");
             BEAST_EXPECT(getResult1.has_value());
 
-            auto getResult2 =
-                cfs.getDataNestedObjectField(alice.id(), "profile", "lastName");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "lastName");
             BEAST_EXPECT(getResult2.has_value());
 
-            auto getResult3 =
-                cfs.getDataNestedObjectField(alice.id(), "profile", "age");
+            auto getResult3 = cfs.getDataNestedObjectField(alice.id(), "profile", "age");
             BEAST_EXPECT(getResult3.has_value());
         }
 
@@ -793,72 +727,59 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 Blob data = {'d', 'a', 'r', 'k'};
                 s.addVL(data);
             });
-            auto setResult1 = cfs.setDataNestedObjectField(
-                alice.id(), "settings", "theme", value1);
+            auto setResult1 = cfs.setDataNestedObjectField(alice.id(), "settings", "theme", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
             auto value2 = createJsonValue(STI_UINT8, [](Serializer& s) {
                 s.add8(1);  // true
             });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                alice.id(), "settings", "notifications", value2);
+            auto setResult2 =
+                cfs.setDataNestedObjectField(alice.id(), "settings", "notifications", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
             auto value3 = createJsonValue(STI_VL, [](Serializer& s) {
                 Blob data = {'e', 'n'};
                 s.addVL(data);
             });
-            auto setResult3 = cfs.setDataNestedObjectField(
-                alice.id(), "preferences", "language", value3);
+            auto setResult3 =
+                cfs.setDataNestedObjectField(alice.id(), "preferences", "language", value3);
             BEAST_EXPECT(!setResult3.has_value());
 
             // Verify nested data retrieval
-            auto getResult1 =
-                cfs.getDataNestedObjectField(alice.id(), "settings", "theme");
+            auto getResult1 = cfs.getDataNestedObjectField(alice.id(), "settings", "theme");
             BEAST_EXPECT(getResult1.has_value());
 
-            auto getResult2 = cfs.getDataNestedObjectField(
-                alice.id(), "settings", "notifications");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "settings", "notifications");
             BEAST_EXPECT(getResult2.has_value());
 
-            auto getResult3 = cfs.getDataNestedObjectField(
-                alice.id(), "preferences", "language");
+            auto getResult3 = cfs.getDataNestedObjectField(alice.id(), "preferences", "language");
             BEAST_EXPECT(getResult3.has_value());
         }
 
         // Test getting non-existent nested key
         {
-            auto getResult =
-                cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
+            auto getResult = cfs.getDataNestedObjectField(alice.id(), "nonexistent", "key");
             BEAST_EXPECT(!getResult.has_value());
             if (!getResult.has_value())
-                BEAST_EXPECT(
-                    getResult.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult.error() == HostFunctionError::INVALID_FIELD);
 
-            auto getResult2 = cfs.getDataNestedObjectField(
-                alice.id(), "profile", "nonexistent");
+            auto getResult2 = cfs.getDataNestedObjectField(alice.id(), "profile", "nonexistent");
             BEAST_EXPECT(!getResult2.has_value());
             if (!getResult2.has_value())
-                BEAST_EXPECT(
-                    getResult2.error() == HostFunctionError::INVALID_FIELD);
+                BEAST_EXPECT(getResult2.error() == HostFunctionError::INVALID_FIELD);
         }
 
         // Test updating existing nested key
         {
-            auto value1 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(100); });
-            auto setResult1 = cfs.setDataNestedObjectField(
-                bob.id(), "stats", "score", value1);
+            auto value1 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(100); });
+            auto setResult1 = cfs.setDataNestedObjectField(bob.id(), "stats", "score", value1);
             BEAST_EXPECT(!setResult1.has_value());
 
-            auto value2 = createJsonValue(
-                STI_UINT32, [](Serializer& s) { s.add32(150); });
-            auto setResult2 = cfs.setDataNestedObjectField(
-                bob.id(), "stats", "score", value2);
+            auto value2 = createJsonValue(STI_UINT32, [](Serializer& s) { s.add32(150); });
+            auto setResult2 = cfs.setDataNestedObjectField(bob.id(), "stats", "score", value2);
             BEAST_EXPECT(!setResult2.has_value());
 
-            auto getResult =
-                cfs.getDataNestedObjectField(bob.id(), "stats", "score");
+            auto getResult = cfs.getDataNestedObjectField(bob.id(), "stats", "score");
             BEAST_EXPECT(getResult.has_value());
         }
     }
@@ -922,8 +843,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(contractCtx.built_txns.size() == 2);
 
                 auto& txn = contractCtx.built_txns[1];
-                BEAST_EXPECT(
-                    txn.getFieldU16(sfTransactionType) == ttACCOUNT_SET);
+                BEAST_EXPECT(txn.getFieldU16(sfTransactionType) == ttACCOUNT_SET);
                 BEAST_EXPECT(txn.getFieldU32(sfSequence) == 2);
                 BEAST_EXPECT(contractCtx.result.nextSequence == 3);
             }
@@ -1075,8 +995,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 STAmount limit{EUR.issue(), 10000};
                 Serializer s;
                 limit.add(s);
-                auto result =
-                    cfs.addTxnField(trustIndex, sfLimitAmount, s.slice());
+                auto result = cfs.addTxnField(trustIndex, sfLimitAmount, s.slice());
                 BEAST_EXPECT(result.has_value());
                 if (result.has_value())
                 {
@@ -1092,8 +1011,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 uint32_t quality = 1000000;
                 Serializer s;
                 s.add32(quality);
-                auto result =
-                    cfs.addTxnField(trustIndex, sfQualityIn, s.slice());
+                auto result = cfs.addTxnField(trustIndex, sfQualityIn, s.slice());
                 BEAST_EXPECT(result.has_value());
                 if (result.has_value())
                 {
@@ -1114,8 +1032,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
 
             // Test adding Domain (Blob/VL)
             {
-                Blob domain = {
-                    'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', 'c', 'o', 'm'};
+                Blob domain = {'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', 'c', 'o', 'm'};
                 Serializer s;
                 s.addVL(domain);
                 auto result = cfs.addTxnField(accSetIndex, sfDomain, s.slice());
@@ -1134,8 +1051,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 uint32_t fee = 500;
                 Serializer s;
                 s.add32(fee);
-                auto result =
-                    cfs.addTxnField(accSetIndex, sfTransferRate, s.slice());
+                auto result = cfs.addTxnField(accSetIndex, sfTransferRate, s.slice());
                 BEAST_EXPECT(result.has_value());
                 if (result.has_value())
                 {
@@ -1151,8 +1067,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                 uint32_t flag = 8;  // asfRequireAuth
                 Serializer s;
                 s.add32(flag);
-                auto result =
-                    cfs.addTxnField(accSetIndex, sfSetFlag, s.slice());
+                auto result = cfs.addTxnField(accSetIndex, sfSetFlag, s.slice());
                 BEAST_EXPECT(result.has_value());
                 if (result.has_value())
                 {
@@ -1235,18 +1150,16 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
             Blob destBuf;
             destBuf.reserve(1 + destAccount.size());
             destBuf.push_back(0x14);  // Type prefix for AccountID
-            destBuf.insert(
-                destBuf.end(), destAccount.begin(), destAccount.end());
-            auto destResult = cfs.addTxnField(
-                txIndex, sfDestination, Slice{destBuf.data(), destBuf.size()});
+            destBuf.insert(destBuf.end(), destAccount.begin(), destAccount.end());
+            auto destResult =
+                cfs.addTxnField(txIndex, sfDestination, Slice{destBuf.data(), destBuf.size()});
             BEAST_EXPECT(destResult.has_value());
 
             // Add Amount field
             STAmount amount{XRP(100)};
             Serializer amtSerializer;
             amount.add(amtSerializer);
-            auto amtResult =
-                cfs.addTxnField(txIndex, sfAmount, amtSerializer.slice());
+            auto amtResult = cfs.addTxnField(txIndex, sfAmount, amtSerializer.slice());
             BEAST_EXPECT(amtResult.has_value());
 
             // Emit the transaction

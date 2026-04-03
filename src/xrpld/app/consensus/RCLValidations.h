@@ -1,9 +1,8 @@
-#ifndef XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
-#define XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>
@@ -148,9 +147,7 @@ public:
 
     RCLValidatedLedger(MakeGenesis);
 
-    RCLValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        beast::Journal j);
+    RCLValidatedLedger(std::shared_ptr<Ledger const> const& ledger, beast::Journal j);
 
     /// The sequence (index) of the ledger
     Seq
@@ -239,5 +236,3 @@ handleNewValidation(
     std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl
-
-#endif

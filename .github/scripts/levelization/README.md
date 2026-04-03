@@ -70,7 +70,7 @@ that `test` code should _never_ be included in `xrpl` or `xrpld` code.)
 
 ## Validation
 
-The [levelization](generate.sh) script takes no parameters,
+The [levelization](generate.py) script takes no parameters,
 reads no environment variables, and can be run from any directory,
 as long as it is in the expected location in the rippled repo.
 It can be run at any time from within a checked out repo, and will
@@ -81,10 +81,10 @@ It generates many files of [results](results):
 
 - `rawincludes.txt`: The raw dump of the `#includes`
 - `paths.txt`: A second dump grouping the source module
-  to the destination module, deduped, and with frequency counts.
+  to the destination module, de-duped, and with frequency counts.
 - `includes/`: A directory where each file represents a module and
   contains a list of modules and counts that the module _includes_.
-- `includedby/`: Similar to `includes/`, but the other way around. Each
+- `included_by/`: Similar to `includes/`, but the other way around. Each
   file represents a module and contains a list of modules and counts
   that _include_ the module.
 - [`loops.txt`](results/loops.txt): A list of direct loops detected
@@ -104,7 +104,7 @@ It generates many files of [results](results):
   Github Actions workflow to test that levelization loops haven't
   changed. Unfortunately, if changes are detected, it can't tell if
   they are improvements or not, so if you have resolved any issues or
-  done anything else to improve levelization, run `levelization.sh`,
+  done anything else to improve levelization, run `generate.py`,
   and commit the updated results.
 
 The `loops.txt` and `ordering.txt` files relate the modules
@@ -128,7 +128,7 @@ The committed files hide the detailed values intentionally, to
 prevent false alarms and merging issues, and because it's easy to
 get those details locally.
 
-1. Run `levelization.sh`
+1. Run `generate.py`
 2. Grep the modules in `paths.txt`.
    - For example, if a cycle is found `A ~= B`, simply `grep -w
 A .github/scripts/levelization/results/paths.txt | grep -w B`

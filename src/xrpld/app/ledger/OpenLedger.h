@@ -1,8 +1,5 @@
-#ifndef XRPL_APP_LEDGER_OPENLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_OPENLEDGER_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
@@ -10,6 +7,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
@@ -213,8 +212,7 @@ OpenLedger::apply(
         }
         catch (std::exception const& e)
         {
-            JLOG(j.error())
-                << "OpenLedger::apply: Caught exception: " << e.what();
+            JLOG(j.error()) << "OpenLedger::apply: Caught exception: " << e.what();
         }
     }
     bool retry = true;
@@ -246,8 +244,7 @@ OpenLedger::apply(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        retries.empty() || !retry, "xrpl::OpenLedger::apply : valid retries");
+    XRPL_ASSERT(retries.empty() || !retry, "xrpl::OpenLedger::apply : valid retries");
 }
 
 //------------------------------------------------------------------------------
@@ -267,5 +264,3 @@ std::string
 debugTostr(std::shared_ptr<ReadView const> const& view);
 
 }  // namespace xrpl
-
-#endif

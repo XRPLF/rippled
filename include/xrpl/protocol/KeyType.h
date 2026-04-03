@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_KEYTYPE_H_INCLUDED
-#define XRPL_PROTOCOL_KEYTYPE_H_INCLUDED
+#pragma once
 
 #include <optional>
 #include <string>
@@ -43,5 +42,3 @@ operator<<(Stream& s, KeyType type)
 }
 
 }  // namespace xrpl
-
-#endif

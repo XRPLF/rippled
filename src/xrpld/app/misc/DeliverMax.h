@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_MISC_DELIVERMAX_H_INCLUDED
-#define XRPL_APP_MISC_DELIVERMAX_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/TxFormats.h>
 
 namespace Json {
 class Value;
-}
+}  // namespace Json
 
 namespace xrpl {
 
@@ -27,5 +26,3 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SEED_H_INCLUDED
-#define XRPL_PROTOCOL_SEED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -14,7 +13,7 @@ namespace xrpl {
 class Seed
 {
 private:
-    std::array<uint8_t, 16> buf_;
+    std::array<uint8_t, 16> buf_{};
 
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;
@@ -118,5 +117,3 @@ toBase58(Seed const& seed)
 }
 
 }  // namespace xrpl
-
-#endif

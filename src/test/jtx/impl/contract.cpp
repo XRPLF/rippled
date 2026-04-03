@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/contract.h>
 #include <test/jtx/utility.h>
 
@@ -78,10 +59,7 @@ modify(
 }
 
 Json::Value
-modify(
-    jtx::Account const& account,
-    jtx::Account const& contractAccount,
-    jtx::Account const& owner)
+modify(jtx::Account const& account, jtx::Account const& contractAccount, jtx::Account const& owner)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::ContractModify;
@@ -127,10 +105,7 @@ userDelete(jtx::Account const& account, jtx::Account const& contractAccount)
 }
 
 Json::Value
-addCallParam(
-    std::uint32_t const& flags,
-    std::string const& name,
-    std::string const& typeName)
+addCallParam(std::uint32_t const& flags, std::string const& name, std::string const& typeName)
 {
     Json::Value param = Json::Value(Json::objectValue);
     param[sfParameter][sfParameterFlag] = flags;
@@ -148,8 +123,7 @@ add_function::operator()(Env&, JTx& jt) const
     function[sfFunction][sfFunctionName] = strHex(name_);
     for (auto const& [p_flags, p_name, p_type] : call_params_)
     {
-        function[sfFunction][sfParameters].append(
-            addCallParam(p_flags, p_name, p_type));
+        function[sfFunction][sfParameters].append(addCallParam(p_flags, p_name, p_type));
     }
 }
 

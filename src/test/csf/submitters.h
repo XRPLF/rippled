@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_SUBMITTERS_H_INCLUDED
-#define XRPL_TEST_CSF_SUBMITTERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Peer.h>
 #include <test/csf/Scheduler.h>
@@ -103,12 +102,9 @@ makeSubmitter(
     Scheduler& s,
     Generator& g)
 {
-    return Submitter<Distribution, Generator, Selector>(
-        dist, start, end, sel, s, g);
+    return Submitter<Distribution, Generator, Selector>(dist, start, end, sel, s, g);
 }
 
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

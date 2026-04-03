@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_OFFER_H_INCLUDED
-#define XRPL_TEST_JTX_OFFER_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
@@ -25,5 +24,3 @@ offer_cancel(Account const& account, std::uint32_t offerSeq);
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

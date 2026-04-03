@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
@@ -59,23 +40,18 @@ class Contract_test : public beast::unit_test::suite
     }
 
     void
-    validateClosedLedger(
-        jtx::Env& env,
-        std::vector<TestLedgerData> const& ledgerResults)
+    validateClosedLedger(jtx::Env& env, std::vector<TestLedgerData> const& ledgerResults)
     {
         auto const jrr = getLastLedger(env);
-        auto const transactions =
-            jrr[jss::result][jss::ledger][jss::transactions];
+        auto const transactions = jrr[jss::result][jss::ledger][jss::transactions];
         BEAST_EXPECT(transactions.size() == ledgerResults.size());
         for (TestLedgerData const& ledgerResult : ledgerResults)
         {
             auto const txn = getTxByIndex(jrr, ledgerResult.index);
             BEAST_EXPECT(txn.isMember(jss::metaData));
             Json::Value const meta = txn[jss::metaData];
-            BEAST_EXPECT(
-                txn[sfTransactionType.jsonName] == ledgerResult.txType);
-            BEAST_EXPECT(
-                meta[sfTransactionResult.jsonName] == ledgerResult.result);
+            BEAST_EXPECT(txn[sfTransactionType.jsonName] == ledgerResult.txType);
+            BEAST_EXPECT(meta[sfTransactionResult.jsonName] == ledgerResult.result);
         }
     }
 
@@ -111,14 +87,11 @@ class Contract_test : public beast::unit_test::suite
     uint256
     getContractHash(Blob const& wasmBytes)
     {
-        return xrpl::sha512Half_s(
-            xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        return xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
     }
 
     void
-    validateFunctions(
-        std::shared_ptr<SLE const> const& sle,
-        Json::Value const& functions)
+    validateFunctions(std::shared_ptr<SLE const> const& sle, Json::Value const& functions)
     {
         auto const stored = sle->getFieldArray(sfFunctions);
         BEAST_EXPECT(stored.size() == functions.size());
@@ -130,9 +103,7 @@ class Contract_test : public beast::unit_test::suite
             // Compare function name.
             BEAST_EXPECT(sIPV.isMember("FunctionName"));
             BEAST_EXPECT(eIPV.isMember("FunctionName"));
-            BEAST_EXPECT(
-                sIPV["FunctionName"].asString() ==
-                eIPV["FunctionName"].asString());
+            BEAST_EXPECT(sIPV["FunctionName"].asString() == eIPV["FunctionName"].asString());
 
             // Compare parameters if present.
             if (eIPV.isMember("Parameters"))
@@ -140,8 +111,7 @@ class Contract_test : public beast::unit_test::suite
                 BEAST_EXPECT(sIPV.isMember("Parameters"));
                 BEAST_EXPECT(sIPV["Parameters"].isArray());
                 BEAST_EXPECT(eIPV["Parameters"].isArray());
-                BEAST_EXPECT(
-                    sIPV["Parameters"].size() == eIPV["Parameters"].size());
+                BEAST_EXPECT(sIPV["Parameters"].size() == eIPV["Parameters"].size());
 
                 for (std::size_t j = 0; j < sIPV["Parameters"].size(); ++j)
                 {
@@ -153,8 +123,7 @@ class Contract_test : public beast::unit_test::suite
                     {
                         BEAST_EXPECT(eParam.isMember("ParameterFlag"));
                         BEAST_EXPECT(
-                            sParam["ParameterFlag"].asUInt() ==
-                            eParam["ParameterFlag"].asUInt());
+                            sParam["ParameterFlag"].asUInt() == eParam["ParameterFlag"].asUInt());
                     }
 
                     // Compare ParameterName if present.
@@ -197,9 +166,7 @@ class Contract_test : public beast::unit_test::suite
             // Compare flag if present.
             BEAST_EXPECT(sIPV.isMember("ParameterFlag"));
             BEAST_EXPECT(eIPV.isMember("ParameterFlag"));
-            BEAST_EXPECT(
-                sIPV["ParameterFlag"].asUInt() ==
-                eIPV["ParameterFlag"].asUInt());
+            BEAST_EXPECT(sIPV["ParameterFlag"].asUInt() == eIPV["ParameterFlag"].asUInt());
 
             // Compare ParameterValue contents (name/type/value) when present.
             BEAST_EXPECT(sIPV.isMember("ParameterValue"));
@@ -209,13 +176,11 @@ class Contract_test : public beast::unit_test::suite
 
             if (ePV.isMember("name"))
                 BEAST_EXPECT(
-                    sPV.isMember("name") &&
-                    sPV["name"].asString() == ePV["name"].asString());
+                    sPV.isMember("name") && sPV["name"].asString() == ePV["name"].asString());
 
             if (ePV.isMember("type"))
                 BEAST_EXPECT(
-                    sPV.isMember("type") &&
-                    sPV["type"].asString() == ePV["type"].asString());
+                    sPV.isMember("type") && sPV["type"].asString() == ePV["type"].asString());
 
             if (ePV.isMember("value"))
             {
@@ -244,9 +209,7 @@ class Contract_test : public beast::unit_test::suite
             // Compare flag if present.
             BEAST_EXPECT(sIPV.isMember("ParameterFlag"));
             BEAST_EXPECT(eIPV.isMember("ParameterFlag"));
-            BEAST_EXPECT(
-                sIPV["ParameterFlag"].asUInt() ==
-                eIPV["ParameterFlag"].asUInt());
+            BEAST_EXPECT(sIPV["ParameterFlag"].asUInt() == eIPV["ParameterFlag"].asUInt());
 
             // Compare ParameterValue contents (name/type/value) when present.
             BEAST_EXPECT(sIPV.isMember("ParameterValue"));
@@ -256,8 +219,7 @@ class Contract_test : public beast::unit_test::suite
 
             if (ePV.isMember("type"))
                 BEAST_EXPECT(
-                    sPV.isMember("type") &&
-                    sPV["type"].asString() == ePV["type"].asString());
+                    sPV.isMember("type") && sPV["type"].asString() == ePV["type"].asString());
 
             if (ePV.isMember("value"))
             {
@@ -310,8 +272,7 @@ class Contract_test : public beast::unit_test::suite
         Json::Value const& functions,
         std::optional<Json::Value> const& instanceParams = std::nullopt)
     {
-        auto const [id, sle] =
-            contractSourceKeyAndSle(*env.current(), contractHash);
+        auto const [id, sle] = contractSourceKeyAndSle(*env.current(), contractHash);
         BEAST_EXPECT(sle);
         BEAST_EXPECT(sle->getFieldVL(sfContractCode) == wasmBytes);
         BEAST_EXPECT(sle->getFieldH256(sfContractHash) == contractHash);
@@ -347,18 +308,13 @@ class Contract_test : public beast::unit_test::suite
         //     uint256(jt.jv[sfContractHash]));
         // }
 
-        auto const wasmBytes =
-            strUnHex(jt.jv[sfContractCode.jsonName].asString());
+        auto const wasmBytes = strUnHex(jt.jv[sfContractCode.jsonName].asString());
         // std::cout << "WASM Size: " << wasmBytes->size() << std::endl;
-        uint256 const contractHash = xrpl::sha512Half_s(
-            xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
-        auto const accountID =
-            parseBase58<AccountID>(jt.jv[sfAccount].asString());
+        uint256 const contractHash =
+            xrpl::sha512Half_s(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
+        auto const accountID = parseBase58<AccountID>(jt.jv[sfAccount].asString());
         auto const [contractKey, sle] = contractKeyAndSle(
-            *env.current(),
-            contractHash,
-            *accountID,
-            jt.jv[sfSequence.jsonName].asUInt());
+            *env.current(), contractHash, *accountID, jt.jv[sfSequence.jsonName].asUInt());
         jtx::Account const contractAccount{
             "Contract pseudo-account", sle->getAccountID(sfContractAccount)};
         return std::make_tuple(contractAccount, contractHash, jt.jv);
@@ -575,13 +531,11 @@ class Contract_test : public beast::unit_test::suite
             jv[sfFunctions.jsonName] = Json::arrayValue;
 
             Json::Value func;
-            func[sfFunction.jsonName][sfFunctionName.jsonName] =
-                strHex(std::string("test"));
+            func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             func[sfFunction.jsonName][sfParameters.jsonName] = Json::arrayValue;
 
             Json::Value param;
-            param[sfParameter.jsonName][sfParameterType.jsonName]["type"] =
-                "UINT8";
+            param[sfParameter.jsonName][sfParameterType.jsonName]["type"] = "UINT8";
             func[sfFunction.jsonName][sfParameters.jsonName].append(param);
 
             jv[sfFunctions.jsonName].append(func);
@@ -604,8 +558,7 @@ class Contract_test : public beast::unit_test::suite
             jv[sfFunctions.jsonName] = Json::arrayValue;
 
             Json::Value func;
-            func[sfFunction.jsonName][sfFunctionName.jsonName] =
-                strHex(std::string("test"));
+            func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             func[sfFunction.jsonName][sfParameters.jsonName] = Json::arrayValue;
 
             Json::Value param;
@@ -626,8 +579,7 @@ class Contract_test : public beast::unit_test::suite
             env.close();
 
             env(contract::create(alice, BaseContractWasm),
-                contract::add_function(
-                    "test", {{0xFF000000, "param", "UINT8"}}),  // Invalid flag
+                contract::add_function("test", {{0xFF000000, "param", "UINT8"}}),  // Invalid flag
                 ter(temINVALID_FLAG));
         }
 
@@ -646,11 +598,9 @@ class Contract_test : public beast::unit_test::suite
             jv[sfContractCode.jsonName] = BaseContractWasm;
             jv[sfFunctions.jsonName] = Json::arrayValue;
             Json::Value func;
-            func[sfFunction.jsonName][sfFunctionName.jsonName] =
-                strHex(std::string("test"));
+            func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             jv[sfFunctions.jsonName].append(func);
-            jv[sfInstanceParameters.jsonName] =
-                Json::arrayValue;  // Empty array
+            jv[sfInstanceParameters.jsonName] = Json::arrayValue;  // Empty array
 
             env(jv, ter(temARRAY_EMPTY));
         }
@@ -716,11 +666,9 @@ class Contract_test : public beast::unit_test::suite
             jv[sfContractCode.jsonName] = BaseContractWasm;
             jv[sfFunctions.jsonName] = Json::arrayValue;
             Json::Value func;
-            func[sfFunction.jsonName][sfFunctionName.jsonName] =
-                strHex(std::string("test"));
+            func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
             jv[sfFunctions.jsonName].append(func);
-            jv[sfInstanceParameterValues.jsonName] =
-                Json::arrayValue;  // Empty array
+            jv[sfInstanceParameterValues.jsonName] = Json::arrayValue;  // Empty array
 
             env(jv, ter(temARRAY_EMPTY));
         }
@@ -959,8 +907,7 @@ class Contract_test : public beast::unit_test::suite
 
             // Second create with same code (install)
             env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(
-                    0, "uint8", "UINT8", 2),  // Different value
+                contract::add_instance_param(0, "uint8", "UINT8", 2),  // Different value
                 contract::add_function("base", {}),
                 fee(XRP(200)),
                 ter(tesSUCCESS));
@@ -1042,9 +989,7 @@ class Contract_test : public beast::unit_test::suite
             auto const wasmBytes = strUnHex(Base2ContractWasm);
             uint256 const contractHash = getContractHash(*wasmBytes);
 
-            env(contract::create(alice, contractHash),
-                fee(XRP(200)),
-                ter(temMALFORMED));
+            env(contract::create(alice, contractHash), fee(XRP(200)), ter(temMALFORMED));
         }
 
         // tesSUCCESS: ContractCode with InstanceParameters for first
@@ -1058,8 +1003,7 @@ class Contract_test : public beast::unit_test::suite
 
             env(contract::create(alice, Base2ContractWasm),
                 contract::add_instance_param(0, "uint8", "UINT8", 255),
-                contract::add_instance_param(
-                    tfSendAmount, "amount", "AMOUNT", XRP(100)),
+                contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(100)),
                 contract::add_function("base", {}),
                 fee(XRP(200)),
                 ter(tesSUCCESS));
@@ -1252,8 +1196,8 @@ class Contract_test : public beast::unit_test::suite
 
             // new contract source exists
             auto const wasmBytes = strUnHex(Base2ContractWasm);
-            uint256 const newContractHash = xrpl::sha512Half_s(
-                xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
+            uint256 const newContractHash =
+                xrpl::sha512Half_s(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
             auto const [contractKey, contractSle] =
                 contractSourceKeyAndSle(*env.current(), newContractHash);
             BEAST_EXPECT(contractSle);
@@ -1354,8 +1298,7 @@ class Contract_test : public beast::unit_test::suite
                 fee(XRP(200)));
 
             // Modify contract
-            auto jt = env.jt(
-                contract::modify(alice, contractAccount, bob), fee(XRP(200)));
+            auto jt = env.jt(contract::modify(alice, contractAccount, bob), fee(XRP(200)));
             env(jt, ter(tesSUCCESS));
             env.close();
 
@@ -1456,16 +1399,14 @@ class Contract_test : public beast::unit_test::suite
             // Ensure ContractSource still exists
             auto const contractSourceKey = keylet::contractSource(contractHash);
             BEAST_EXPECT(env.le(contractSourceKey));
-            BEAST_EXPECT(
-                env.le(contractSourceKey)->getFieldU64(sfReferenceCount) == 1);
+            BEAST_EXPECT(env.le(contractSourceKey)->getFieldU64(sfReferenceCount) == 1);
 
             // Pseudo Account of second instance still exists
             auto const pseudoAccountKey2 = keylet::account(contractAccount2);
             BEAST_EXPECT(env.le(pseudoAccountKey2));
 
             // Ensure second contract instance still exists
-            auto const contractKey2 =
-                keylet::contract(contractHash2, alice, seq2);
+            auto const contractKey2 = keylet::contract(contractHash2, alice, seq2);
             BEAST_EXPECT(env.le(contractKey2));
         }
     }
@@ -1485,8 +1426,7 @@ class Contract_test : public beast::unit_test::suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::userDelete(alice, BaseContractWasm),
-                ter(temDISABLED));
+            env(contract::userDelete(alice, BaseContractWasm), ter(temDISABLED));
         }
     }
 
@@ -1494,10 +1434,8 @@ class Contract_test : public beast::unit_test::suite
     loadContractWasmStr(std::string const& contract_name = "")
     {
         std::string const& dir = "e2e-tests";
-        std::string name =
-            "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir +
-            "/" + contract_name + "/target/wasm32v1-none/release/" +
-            contract_name + ".wasm";
+        std::string name = "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir + "/" +
+            contract_name + "/target/wasm32v1-none/release/" + contract_name + ".wasm";
         if (!boost::filesystem::exists(name))
         {
             std::cout << "File does not exist: " << name << "\n";
@@ -1514,8 +1452,7 @@ class Contract_test : public beast::unit_test::suite
 
         // Read the file into a vector
         std::vector<char> buffer(
-            (std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>());
+            (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         // Check if the buffer is empty
         if (buffer.empty())
@@ -1541,13 +1478,12 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        // std::string wasmHex = loadContractWasmStr("contract_data");
+        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, contractDataWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_simple_create", {}),
             contract::add_function("object_simple_update", {}),
             fee(XRP(2000)));
@@ -1577,13 +1513,12 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        // std::string wasmHex = loadContractWasmStr("contract_data");
+        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, contractDataWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_nested_create", {}),
             contract::add_function("object_nested_update", {}),
             fee(XRP(2000)));
@@ -1613,13 +1548,12 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        // std::string wasmHex = loadContractWasmStr("contract_data");
+        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, contractDataWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_with_arrays_create", {}),
             contract::add_function("object_with_arrays_update", {}),
             fee(XRP(2000)));
@@ -1649,25 +1583,22 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        // std::string wasmHex = loadContractWasmStr("contract_data");
+        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, contractDataWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("object_with_nested_arrays_create", {}),
             contract::add_function("object_with_nested_arrays_update", {}),
             fee(XRP(2000)));
 
-        env(contract::call(
-                alice, contractAccount, "object_with_nested_arrays_create"),
+        env(contract::call(alice, contractAccount, "object_with_nested_arrays_create"),
             escrow::comp_allowance(1'000'000),
             ter(tesSUCCESS));
         env.close();
 
-        env(contract::call(
-                alice, contractAccount, "object_with_nested_arrays_update"),
+        env(contract::call(alice, contractAccount, "object_with_nested_arrays_update"),
             escrow::comp_allowance(1'000'000),
             ter(tesSUCCESS));
         env.close();
@@ -1700,27 +1631,14 @@ class Contract_test : public beast::unit_test::suite
                 contract::add_instance_param(0, "uint8", "UINT8", 255),
                 contract::add_instance_param(0, "uint16", "UINT16", 65535),
                 contract::add_instance_param(
-                    0,
-                    "uint32",
-                    "UINT32",
-                    static_cast<std::uint32_t>(4294967295)),
+                    0, "uint32", "UINT32", static_cast<std::uint32_t>(4294967295)),
+                contract::add_instance_param(0, "uint64", "UINT64", "FFFFFFFFFFFFFFFF"),
                 contract::add_instance_param(
-                    0, "uint64", "UINT64", "FFFFFFFFFFFFFFFF"),
+                    0, "uint128", "UINT128", "00000000000000000000000000000001"),
                 contract::add_instance_param(
-                    0,
-                    "uint128",
-                    "UINT128",
-                    "00000000000000000000000000000001"),
+                    0, "uint160", "UINT160", "0000000000000000000000000000000000000001"),
                 contract::add_instance_param(
-                    0,
-                    "uint160",
-                    "UINT160",
-                    "0000000000000000000000000000000000000001"),
-                contract::add_instance_param(
-                    0,
-                    "uint192",
-                    "UINT192",
-                    "000000000000000000000000000000000000000000000001"),
+                    0, "uint192", "UINT192", "000000000000000000000000000000000000000000000001"),
                 contract::add_instance_param(
                     0,
                     "uint256",
@@ -1755,18 +1673,11 @@ class Contract_test : public beast::unit_test::suite
                 tesSUCCESS,
                 contract::create(alice, wasmHex),
                 contract::add_instance_param(0, "vl", "VL", "DEADBEEF"),
+                contract::add_instance_param(0, "account", "ACCOUNT", alice.human()),
                 contract::add_instance_param(
-                    0, "account", "ACCOUNT", alice.human()),
+                    0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::none)),
                 contract::add_instance_param(
-                    0,
-                    "amountXRP",
-                    "AMOUNT",
-                    XRP(1).value().getJson(JsonOptions::none)),
-                contract::add_instance_param(
-                    0,
-                    "amountIOU",
-                    "AMOUNT",
-                    USD(1.2).value().getJson(JsonOptions::none)),
+                    0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::none)),
                 contract::add_instance_param(0, "number", "NUMBER", "1.2"),
                 contract::add_function("instance_params_other", {}),
                 fee(XRP(200)));
@@ -1808,8 +1719,7 @@ class Contract_test : public beast::unit_test::suite
             env,
             tesSUCCESS,
             contract::create(alice, wasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "amount", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(2000)),
             contract::add_instance_param(0, "uint8", "UINT8", 1),
             contract::add_function(
                 "function_params_uint",
@@ -1849,21 +1759,13 @@ class Contract_test : public beast::unit_test::suite
             escrow::comp_allowance(1000000),
             contract::add_param(0, "uint8", "UINT8", 255),
             contract::add_param(0, "uint16", "UINT16", 65535),
-            contract::add_param(
-                0, "uint32", "UINT32", static_cast<std::uint32_t>(4294967295)),
+            contract::add_param(0, "uint32", "UINT32", static_cast<std::uint32_t>(4294967295)),
             contract::add_param(0, "uint64", "UINT64", "FFFFFFFFFFFFFFFF"),
+            contract::add_param(0, "uint128", "UINT128", "00000000000000000000000000000001"),
             contract::add_param(
-                0, "uint128", "UINT128", "00000000000000000000000000000001"),
+                0, "uint160", "UINT160", "0000000000000000000000000000000000000001"),
             contract::add_param(
-                0,
-                "uint160",
-                "UINT160",
-                "0000000000000000000000000000000000000001"),
-            contract::add_param(
-                0,
-                "uint192",
-                "UINT192",
-                "000000000000000000000000000000000000000000000001"),
+                0, "uint192", "UINT192", "000000000000000000000000000000000000000000000001"),
             contract::add_param(
                 0,
                 "uint256",
@@ -1877,15 +1779,9 @@ class Contract_test : public beast::unit_test::suite
             contract::add_param(0, "vl", "VL", "DEADBEEF"),
             contract::add_param(0, "account", "ACCOUNT", alice.human()),
             contract::add_param(
-                0,
-                "amountXRP",
-                "AMOUNT",
-                XRP(1).value().getJson(JsonOptions::none)),
+                0, "amountXRP", "AMOUNT", XRP(1).value().getJson(JsonOptions::none)),
             contract::add_param(
-                0,
-                "amountIOU",
-                "AMOUNT",
-                USD(1.2).value().getJson(JsonOptions::none)),
+                0, "amountIOU", "AMOUNT", USD(1.2).value().getJson(JsonOptions::none)),
             contract::add_param(0, "number", "NUMBER", "1.2"),
             // contract::add_param(0, "issue", "ISSUE",
             // to_json(USD(1).value().issue())), contract::add_param(0,
@@ -1908,13 +1804,12 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        // std::string emitTxWasmHex = loadContractWasmStr("emit_txn");
+        std::string emitTxWasmHex = loadContractWasmStr("emit_txn");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, emitTxWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "value", "AMOUNT", XRP(2000)),
             contract::add_function("emit", {}),
             fee(XRP(200)));
 
@@ -1960,21 +1855,19 @@ class Contract_test : public beast::unit_test::suite
             auto jv = wsc->invoke("subscribe", stream);
             if (wsc->version() == 2)
             {
-                BEAST_EXPECT(
-                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                BEAST_EXPECT(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::status] == "success");
         }
 
+        std::string eventsWasmHex = loadContractWasmStr("events");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
             contract::create(alice, eventsWasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "amount", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(2000)),
             contract::add_function("events", {}),
             fee(XRP(200)));
 
@@ -1997,8 +1890,7 @@ class Contract_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::contract_account] = contractAccount.human();
             params[jss::account] = alice.human();
-            auto const jrr =
-                env.rpc("json", "contract_info", to_string(params));
+            auto const jrr = env.rpc("json", "contract_info", to_string(params));
             std::cout << jrr << std::endl;
         }
 
@@ -2008,15 +1900,11 @@ class Contract_test : public beast::unit_test::suite
             // std::cout << "Event: " << data << std::endl;
             BEAST_EXPECT(data["amount"] == "192");
             BEAST_EXPECT(data["currency"] == "USD");
-            BEAST_EXPECT(
-                data["destination"] == "r99mpXDsCPybsGs9XzGJmuxa8gWLTn8aCz");
+            BEAST_EXPECT(data["destination"] == "r99mpXDsCPybsGs9XzGJmuxa8gWLTn8aCz");
             BEAST_EXPECT(data["uint128"] == "00000000000000000000000000000000");
             BEAST_EXPECT(data["uint16"] == 16);
-            BEAST_EXPECT(
-                data["uint160"] == "0000000000000000000000000000000000000000");
-            BEAST_EXPECT(
-                data["uint192"] ==
-                "000000000000000000000000000000000000000000000000");
+            BEAST_EXPECT(data["uint160"] == "0000000000000000000000000000000000000000");
+            BEAST_EXPECT(data["uint192"] == "000000000000000000000000000000000000000000000000");
             BEAST_EXPECT(
                 data["uint256"] ==
                 "00000000000000000000000000000000000000000000000000000000000000"
@@ -2025,18 +1913,15 @@ class Contract_test : public beast::unit_test::suite
             BEAST_EXPECT(data["uint64"] == "40");
             BEAST_EXPECT(data["uint8"] == 8);
             BEAST_EXPECT(data["vl"] == "48656C6C6F2C20576F726C6421");
-            return jv[jss::type] == "contractEvent" &&
-                jv[jss::name] == "event1";
+            return jv[jss::type] == "contractEvent" && jv[jss::name] == "event1";
         }));
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", stream);
         if (wsc->version() == 2)
         {
-            BEAST_EXPECT(
-                jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(
-                jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
@@ -2063,8 +1948,7 @@ class Contract_test : public beast::unit_test::suite
             env,
             tesSUCCESS,
             contract::create(alice, wasmHex),
-            contract::add_instance_param(
-                tfSendAmount, "amount", "AMOUNT", XRP(2000)),
+            contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(2000)),
             contract::add_instance_param(0, "uint8", "UINT8", 1),
             contract::add_function(
                 "easymode",

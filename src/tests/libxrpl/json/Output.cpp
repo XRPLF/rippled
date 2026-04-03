@@ -2,31 +2,29 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_writer.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <string>
 
 using namespace xrpl;
 using namespace Json;
 
-TEST_SUITE_BEGIN("JsonOutput");
-
 static void
 checkOutput(std::string const& valueDesc)
 {
     std::string output;
     Json::Value value;
-    REQUIRE(Json::Reader().parse(valueDesc, value));
+    ASSERT_TRUE(Json::Reader().parse(valueDesc, value));
     auto out = stringOutput(output);
     outputJson(value, out);
 
     auto expected = Json::FastWriter().write(value);
-    CHECK(output == expected);
-    CHECK(output == valueDesc);
-    CHECK(output == jsonAsString(value));
+    EXPECT_EQ(output, expected);
+    EXPECT_EQ(output, valueDesc);
+    EXPECT_EQ(output, jsonAsString(value));
 }
 
-TEST_CASE("output cases")
+TEST(JsonOutput, output_cases)
 {
     checkOutput("{}");
     checkOutput("[]");
@@ -36,5 +34,3 @@ TEST_CASE("output cases")
     checkOutput("[[]]");
     checkOutput(R"({"array":[{"12":23},{},null,false,0.5]})");
 }
-
-TEST_SUITE_END();

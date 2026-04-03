@@ -1,5 +1,4 @@
-#ifndef XRPL_JSON_JSON_ERRORS_H_INCLUDED
-#define XRPL_JSON_JSON_ERRORS_H_INCLUDED
+#pragma once
 
 #include <stdexcept>
 
@@ -11,5 +10,3 @@ struct error : std::runtime_error
 };
 
 }  // namespace Json
-
-#endif  // JSON_FORWARDS_H_INCLUDED

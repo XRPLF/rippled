@@ -1,36 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/misc/DeleteUtils.h>
-#include <xrpld/app/tx/detail/ContractDelete.h>
-#include <xrpld/app/tx/detail/DID.h>
-#include <xrpld/app/tx/detail/DelegateSet.h>
-#include <xrpld/app/tx/detail/DeleteAccount.h>
-#include <xrpld/app/tx/detail/DeleteOracle.h>
-#include <xrpld/app/tx/detail/DepositPreauth.h>
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/app/tx/detail/SetSignerList.h>
 
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenUtils.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/transactors/account/SignerListSet.h>
+#include <xrpl/tx/transactors/contract/ContractDelete.h>
+#include <xrpl/tx/transactors/delegate/DelegateSet.h>
+#include <xrpl/tx/transactors/did/DIDDelete.h>
+#include <xrpl/tx/transactors/oracle/OracleDelete.h>
+#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <unordered_set>
 
@@ -39,7 +20,7 @@ namespace xrpl {
 // Local function definitions that provides signature compatibility.
 TER
 offerDelete(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -51,19 +32,19 @@ offerDelete(
 
 TER
 removeSignersFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return SetSignerList::removeFromLedger(app, view, account, j);
+    return SignerListSet::removeFromLedger(registry, view, account, j);
 }
 
 TER
 removeTicketFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -75,7 +56,7 @@ removeTicketFromLedger(
 
 TER
 removeDepositPreauthFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const&,
     uint256 const& delIndex,
@@ -87,7 +68,7 @@ removeDepositPreauthFromLedger(
 
 TER
 removeNFTokenOfferFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -102,7 +83,7 @@ removeNFTokenOfferFromLedger(
 
 TER
 removeDIDFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -114,19 +95,19 @@ removeDIDFromLedger(
 
 TER
 removeOracleFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const&,
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DeleteOracle::deleteOracle(view, sleDel, account, j);
+    return OracleDelete::deleteOracle(view, sleDel, account, j);
 }
 
 TER
 removeCredentialFromLedger(
-    Application&,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const&,
     uint256 const&,
@@ -138,7 +119,7 @@ removeCredentialFromLedger(
 
 TER
 removeDelegateFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -150,7 +131,7 @@ removeDelegateFromLedger(
 
 TER
 removeContractFromLedger(
-    Application& app,
+    ServiceRegistry& registry,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -210,8 +191,7 @@ deletePreclaim(
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
-    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
-        !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
         return err;
 
     // if credentials then postpone auth check to doApply, to check for expired
@@ -221,8 +201,7 @@ deletePreclaim(
         // Check whether the destination account requires deposit authorization.
         if (destSle->getFlags() & lsfDepositAuth)
         {
-            if (!ctx.view.exists(keylet::depositPreauth(dest, account)) &&
-                !isPseudoAccount)
+            if (!ctx.view.exists(keylet::depositPreauth(dest, account)) && !isPseudoAccount)
                 return tecNO_PERMISSION;
         }
     }
@@ -242,9 +221,8 @@ deletePreclaim(
         Keylet const first = keylet::nftpage_min(account);
         Keylet const last = keylet::nftpage_max(account);
 
-        auto const cp = ctx.view.read(Keylet(
-            ltNFTOKEN_PAGE,
-            ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+        auto const cp = ctx.view.read(
+            Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
         if (cp)
             return tecHAS_OBLIGATIONS;
     }
@@ -269,8 +247,8 @@ deletePreclaim(
     // their account and mints a NFToken, it is possible that the
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
-    if ((*srcSle)[~sfFirstNFTokenSequence].value_or(0) +
-            (*srcSle)[~sfMintedNFTokens].value_or(0) + seqDelta >
+    if ((*srcSle)[~sfFirstNFTokenSequence].value_or(0) + (*srcSle)[~sfMintedNFTokens].value_or(0) +
+            seqDelta >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -286,8 +264,7 @@ deletePreclaim(
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
-    if (!cdirFirst(
-            ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
+    if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
     std::int32_t deletableDirEntryCount{0};
@@ -299,15 +276,12 @@ deletePreclaim(
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
-            JLOG(ctx.j.fatal())
-                << "DeleteAccount: directory node in ledger " << ctx.view.seq()
-                << " has index to object that is missing: "
-                << to_string(dirEntry);
+            JLOG(ctx.j.fatal()) << "DeleteAccount: directory node in ledger " << ctx.view.seq()
+                                << " has index to object that is missing: " << to_string(dirEntry);
             return tefBAD_LEDGER;
         }
 
-        LedgerEntryType const nodeType{
-            safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (!nonObligationDeleter(nodeType))
             return tecHAS_OBLIGATIONS;
@@ -317,8 +291,7 @@ deletePreclaim(
         if (++deletableDirEntryCount > maxDeletableDirEntries)
             return tefTOO_BIG;
 
-    } while (cdirNext(
-        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
+    } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
     return tesSUCCESS;
 }
@@ -335,23 +308,20 @@ deleteDoApply(
     beast::Journal j = applyCtx.journal;
 
     auto srcSle = view.peek(keylet::account(account));
-    XRPL_ASSERT(
-        srcSle, "xrpl::DeleteAccount::doApply : non-null source account");
+    XRPL_ASSERT(srcSle, "xrpl::DeleteAccount::doApply : non-null source account");
 
     if (!srcSle)
         return tefBAD_LEDGER;
 
     auto destSle = view.peek(keylet::account(dest));
-    XRPL_ASSERT(
-        destSle, "xrpl::DeleteAccount::doApply : non-null destination account");
+    XRPL_ASSERT(destSle, "xrpl::DeleteAccount::doApply : non-null destination account");
 
     if (!destSle)
         return tefBAD_LEDGER;
 
     if (tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err =
-                verifyDepositPreauth(tx, view, account, dest, destSle, j);
+        if (auto err = verifyDepositPreauth(tx, view, account, dest, destSle, j);
             !isTesSuccess(err))
             return err;
     }
@@ -365,8 +335,7 @@ deleteDoApply(
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{
-                    deleter(applyCtx.app, view, account, dirEntry, sleItem, j)};
+                TER const result{deleter(applyCtx.registry, view, account, dirEntry, sleItem, j)};
 
                 return {result, SkipEntry::No};
             }
@@ -397,8 +366,7 @@ deleteDoApply(
     // delete it.
     if (view.exists(ownerDirKeylet) && !view.emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j.error()) << "DeleteAccount cannot delete root dir node of "
-                        << toBase58(account);
+        JLOG(j.error()) << "DeleteAccount cannot delete root dir node of " << toBase58(account);
         return tecHAS_OBLIGATIONS;
     }
 

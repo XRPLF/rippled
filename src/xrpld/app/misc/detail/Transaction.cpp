@@ -1,14 +1,14 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/CTID.h>
 
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -16,7 +16,7 @@ Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
     std::string& reason,
     Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
+    : mTransaction(stx), mApp(app), j_(app.getJournal("Ledger"))
 {
     try
     {
@@ -53,26 +53,26 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
+    auto const c = (status) ? safe_cast<TxnSql>((*status)[0]) : TxnSql::txnSqlUnknown;
 
-    switch (c)
+    switch (static_cast<TxnSql>(c))
     {
-        case txnSqlNew:
+        case TxnSql::txnSqlNew:
             return NEW;
-        case txnSqlConflict:
+        case TxnSql::txnSqlConflict:
             return CONFLICTED;
-        case txnSqlHeld:
+        case TxnSql::txnSqlHeld:
             return HELD;
-        case txnSqlValidated:
+        case TxnSql::txnSqlValidated:
             return COMMITTED;
-        case txnSqlIncluded:
+        case TxnSql::txnSqlIncluded:
             return INCLUDED;
+        default:
+            XRPL_ASSERT(
+                c == TxnSql::txnSqlUnknown,
+                "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    XRPL_ASSERT(
-        c == txnSqlUnknown,
-        "xrpl::Transaction::sqlTransactionStatus : unknown transaction "
-        "status");
     return INVALID;
 }
 
@@ -83,8 +83,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
-    std::uint32_t const inLedger =
-        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+    std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);
@@ -96,17 +95,13 @@ Transaction::transactionFromSQL(
     return tr;
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
     return load(id, app, std::nullopt, ec);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -118,23 +113,16 @@ Transaction::load(
     return load(id, app, op{range}, ec);
 }
 
-std::variant<
-    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearched>
+std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
 Transaction::load(
     uint256 const& id,
     Application& app,
     std::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
-    auto const db = dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
+    auto& db = app.getRelationalDatabase();
 
-    if (!db)
-    {
-        Throw<std::runtime_error>("Failed to get relational database");
-    }
-
-    return db->getTransaction(id, range, ec);
+    return db.getTransaction(id, range, ec);
 }
 
 // options 1 to include the date of the transaction
@@ -142,11 +130,10 @@ Json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(
-        mTransaction->getJson(options & ~JsonOptions::include_date, binary));
+    Json::Value ret(mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
-    if (ret.isObject() && mLedgerIndex)
+    if (ret.isObject() && (mLedgerIndex != 0u))
     {
         if (!(options & JsonOptions::disable_API_prior_V2))
         {
@@ -173,8 +160,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
 
         if (mTxnSeq && netID)
         {
-            std::optional<std::string> const ctid =
-                RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
+            std::optional<std::string> const ctid = RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
             if (ctid)
                 ret[jss::ctid] = *ctid;
         }

@@ -1,9 +1,7 @@
-#ifndef XRPL_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
-#define XRPL_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -34,20 +32,17 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t negativeUNLLowWaterMark =
-        FLAG_LEDGER_INTERVAL * 50 / 100;
+    static constexpr size_t negativeUNLLowWaterMark = FLAG_LEDGER_INTERVAL * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t negativeUNLHighWaterMark =
-        FLAG_LEDGER_INTERVAL * 80 / 100;
+    static constexpr size_t negativeUNLHighWaterMark = FLAG_LEDGER_INTERVAL * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t negativeUNLMinLocalValsToVote =
-        FLAG_LEDGER_INTERVAL * 90 / 100;
+    static constexpr size_t negativeUNLMinLocalValsToVote = FLAG_LEDGER_INTERVAL * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
@@ -144,7 +139,7 @@ private:
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
-    NodeID
+    static NodeID
     choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
@@ -176,7 +171,7 @@ private:
      * @param scoreTable the score table
      * @return the candidates to disable and the candidates to re-enable
      */
-    Candidates const
+    Candidates
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,
@@ -195,5 +190,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
-#define XRPL_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
+#pragma once
 
 #include <system_error>
 
@@ -16,7 +15,7 @@ enum class TokenCodecErrc {
     overflowAdd,
     unknown,
 };
-}
+}  // namespace xrpl
 
 namespace std {
 template <>
@@ -70,7 +69,7 @@ public:
 inline xrpl::detail::TokenCodecErrcCategory const&
 TokenCodecErrcCategory()
 {
-    static xrpl::detail::TokenCodecErrcCategory c;
+    static xrpl::detail::TokenCodecErrcCategory const c;
     return c;
 }
 
@@ -80,4 +79,3 @@ make_error_code(xrpl::TokenCodecErrc e)
     return {static_cast<int>(e), TokenCodecErrcCategory()};
 }
 }  // namespace xrpl
-#endif  // TOKEN_ERRORS_H_

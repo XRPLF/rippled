@@ -1,22 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -73,8 +55,7 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
     if (type == JsonType::Array)
     {
         Array array;
-        while (sit.getBytesLeft() > 0 &&
-               (initialBytesLeft - sit.getBytesLeft()) < length)
+        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
         {
             auto valueVL = sit.getVL();
             if (!valueVL.empty())
@@ -93,8 +74,7 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
     else  // JsonType::Object
     {
         Map map;
-        while (sit.getBytesLeft() > 0 &&
-               (initialBytesLeft - sit.getBytesLeft()) < length)
+        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
         {
             auto [key, value] = parsePair(sit);
             map.emplace(std::move(key), std::move(value));
@@ -191,8 +171,7 @@ void
 STJson::setObjectField(Key const& key, Value const& value)
 {
     if (!isObject())
-        Throw<std::runtime_error>(
-            "STJson::setObjectField called on non-object");
+        Throw<std::runtime_error>("STJson::setObjectField called on non-object");
     validateDepth(value, 0);
     std::get<Map>(data_)[key] = value;
 }
@@ -227,8 +206,7 @@ STJson::fromSerialIter(SerialIter& sit)
     if (type == JsonType::Array)
     {
         Array array;
-        while (sit.getBytesLeft() > 0 &&
-               (initialBytesLeft - sit.getBytesLeft()) < length)
+        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
         {
             auto valueVL = sit.getVL();
             if (!valueVL.empty())
@@ -252,8 +230,7 @@ STJson::fromSerialIter(SerialIter& sit)
     else  // JsonType::Object
     {
         Map map;
-        while (sit.getBytesLeft() > 0 &&
-               (initialBytesLeft - sit.getBytesLeft()) < length)
+        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
         {
             auto [key, value] = parsePair(sit);
             map.emplace(std::move(key), std::move(value));
@@ -271,8 +248,7 @@ std::pair<STJson::Key, STJson::Value>
 STJson::parsePair(SerialIter& sit)
 {
     auto keyBlob = sit.getVL();
-    std::string key(
-        reinterpret_cast<char const*>(keyBlob.data()), keyBlob.size());
+    std::string key(reinterpret_cast<char const*>(keyBlob.data()), keyBlob.size());
     auto valueVL = sit.getVL();
     if (valueVL.empty())
         return {std::move(key), nullptr};
@@ -289,8 +265,7 @@ STJson::parseArray(SerialIter& sit, int length)
     Array array;
     int initialBytesLeft = sit.getBytesLeft();
 
-    while (sit.getBytesLeft() > 0 &&
-           (initialBytesLeft - sit.getBytesLeft()) < length)
+    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
         auto valueVL = sit.getVL();
         if (!valueVL.empty())
@@ -332,11 +307,9 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
         case STI_UINT128:
             return std::make_shared<STUInt128>(sfEmailHash, sit.get128());
         case STI_UINT160:
-            return std::make_shared<STUInt160>(
-                sfTakerPaysCurrency, sit.get160());
+            return std::make_shared<STUInt160>(sfTakerPaysCurrency, sit.get160());
         case STI_UINT192:
-            return std::make_shared<STUInt192>(
-                sfMPTokenIssuanceID, sit.get192());
+            return std::make_shared<STUInt192>(sfMPTokenIssuanceID, sit.get192());
         case STI_UINT256:
             return std::make_shared<STUInt256>(sfLedgerHash, sit.get256());
         case STI_VL: {
@@ -363,8 +336,7 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
             // Unknown type, treat as blob
             {
                 auto blob = sit.getSlice(sit.getBytesLeft());
-                return std::make_shared<STBlob>(
-                    sfData, blob.data(), blob.size());
+                return std::make_shared<STBlob>(sfData, blob.data(), blob.size());
             }
     }
 }
@@ -383,14 +355,10 @@ STJson::getObjectField(Key const& key) const
 }
 
 void
-STJson::setNestedObjectField(
-    Key const& key,
-    Key const& nestedKey,
-    Value const& value)
+STJson::setNestedObjectField(Key const& key, Key const& nestedKey, Value const& value)
 {
     if (!isObject())
-        Throw<std::runtime_error>(
-            "STJson::setNestedObjectField called on non-object");
+        Throw<std::runtime_error>("STJson::setNestedObjectField called on non-object");
 
     validateDepth(value, 1);  // We're at depth 1 (nested)
 
@@ -452,8 +420,7 @@ void
 STJson::pushArrayElement(Value const& value)
 {
     if (!isArray())
-        Throw<std::runtime_error>(
-            "STJson::pushArrayElement called on non-array");
+        Throw<std::runtime_error>("STJson::pushArrayElement called on non-array");
     validateDepth(value, 0);
     std::get<Array>(data_).push_back(value);
 }
@@ -475,8 +442,7 @@ void
 STJson::setArrayElement(size_t index, Value const& value)
 {
     if (!isArray())
-        Throw<std::runtime_error>(
-            "STJson::setArrayElement called on non-array");
+        Throw<std::runtime_error>("STJson::setArrayElement called on non-array");
     validateDepth(value, 0);
 
     auto& array = std::get<Array>(data_);
@@ -491,8 +457,7 @@ void
 STJson::setArrayElementField(size_t index, Key const& key, Value const& value)
 {
     if (!isArray())
-        Throw<std::runtime_error>(
-            "STJson::setArrayElementField called on non-array");
+        Throw<std::runtime_error>("STJson::setArrayElementField called on non-array");
 
     validateDepth(value, 1);  // We're at depth 1 (inside array element)
 
@@ -551,8 +516,7 @@ void
 STJson::setNestedArrayElement(Key const& key, size_t index, Value const& value)
 {
     if (!isObject())
-        Throw<std::runtime_error>(
-            "STJson::setNestedArrayElement called on non-object");
+        Throw<std::runtime_error>("STJson::setNestedArrayElement called on non-object");
 
     validateDepth(value, 1);  // We're at depth 1 (nested array)
 
@@ -594,8 +558,7 @@ STJson::setNestedArrayElementField(
     Value const& value)
 {
     if (!isObject())
-        Throw<std::runtime_error>(
-            "STJson::setNestedArrayElementField called on non-object");
+        Throw<std::runtime_error>("STJson::setNestedArrayElementField called on non-object");
 
     validateDepth(value, 1);  // We're at depth 1 (nested array element field -
                               // still counts as depth 1)
@@ -649,10 +612,7 @@ STJson::getNestedArrayElement(Key const& key, size_t index) const
 }
 
 std::optional<STJson::Value>
-STJson::getNestedArrayElementField(
-    Key const& key,
-    size_t index,
-    Key const& nestedKey) const
+STJson::getNestedArrayElementField(Key const& key, size_t index, Key const& nestedKey) const
 {
     if (!isObject())
         return std::nullopt;
@@ -740,10 +700,11 @@ STJson::getJson(JsonOptions options) const
         auto const& map = std::get<Map>(data_);
         for (auto const& [key, value] : map)
         {
+            auto const hexKey = strHex(key);
             if (value)
-                obj[key] = value->getJson(options);
+                obj[hexKey] = value->getJson(options);
             else
-                obj[key] = Json::nullValue;
+                obj[hexKey] = Json::nullValue;
         }
         return obj;
     }

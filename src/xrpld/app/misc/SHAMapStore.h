@@ -1,8 +1,6 @@
-#ifndef XRPL_APP_MISC_SHAMAPSTORE_H_INCLUDED
-#define XRPL_APP_MISC_SHAMAPSTORE_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Manager.h>
 
 #include <optional>
@@ -84,10 +82,5 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(
-    Application& app,
-    NodeStore::Scheduler& scheduler,
-    beast::Journal journal);
+make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 }  // namespace xrpl
-
-#endif

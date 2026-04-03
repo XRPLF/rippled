@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_SOURCE_H_INCLUDED
-#define XRPL_PEERFINDER_SOURCE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
@@ -46,5 +45,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

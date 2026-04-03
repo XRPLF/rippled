@@ -50,9 +50,7 @@ const_iterator::operator==(const_iterator const& other) const
 const_iterator::reference
 const_iterator::operator*() const
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator* : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -61,9 +59,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator++ : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -77,9 +73,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    XRPL_ASSERT(
-        index_ != beast::zero,
-        "xrpl::const_iterator::operator++(int) : nonzero index");
+    XRPL_ASSERT(index_ != beast::zero, "xrpl::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

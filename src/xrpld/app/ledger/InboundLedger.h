@@ -1,12 +1,11 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <mutex>
 #include <set>
@@ -75,12 +74,9 @@ public:
     init(ScopedLockType& collectionLock);
 
     bool
-    gotData(
-        std::weak_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData> const&);
+    gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t =
-        std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     /** Return a Json::objectValue. */
     Json::Value
@@ -105,9 +101,7 @@ private:
     enum class TriggerReason { added, reply, timeout };
 
     void
-    filterNodes(
-        std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
-        TriggerReason reason);
+    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
 
     void
     trigger(std::shared_ptr<Peer> const&, TriggerReason);
@@ -158,11 +152,11 @@ private:
     clock_type::time_point mLastAction;
 
     std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
+    bool mHaveHeader{false};
+    bool mHaveState{false};
+    bool mHaveTransactions{false};
+    bool mSignaled{false};
+    bool mByHash{true};
     std::uint32_t mSeq;
     Reason const mReason;
 
@@ -172,13 +166,10 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<
-        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
+    std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         mReceivedData;
-    bool mReceiveDispatched;
+    bool mReceiveDispatched{false};
     std::unique_ptr<PeerSet> mPeerSet;
 };
 
 }  // namespace xrpl
-
-#endif

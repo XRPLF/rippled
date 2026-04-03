@@ -4,10 +4,7 @@ namespace xrpl {
 namespace NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback)
-    , m_scheduler(scheduler)
-    , mWriteLoad(0)
-    , mWritePending(false)
+    : m_callback(callback), m_scheduler(scheduler)
 {
     mWriteSet.reserve(batchWritePreallocationSize);
 }
@@ -40,7 +37,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad()
 {
-    std::lock_guard sl(mWriteMutex);
+    std::lock_guard const sl(mWriteMutex);
 
     return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
@@ -61,12 +58,11 @@ BatchWriter::writeBatch()
         set.reserve(batchWritePreallocationSize);
 
         {
-            std::lock_guard sl(mWriteMutex);
+            std::lock_guard const sl(mWriteMutex);
 
             mWriteSet.swap(set);
             XRPL_ASSERT(
-                mWriteSet.empty(),
-                "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
+                mWriteSet.empty(), "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
             mWriteLoad = set.size();
 
             if (set.empty())
@@ -79,7 +75,7 @@ BatchWriter::writeBatch()
             }
         }
 
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = set.size();
         auto const before = std::chrono::steady_clock::now();
 

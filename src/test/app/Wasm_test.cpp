@@ -4,7 +4,9 @@
 
 #include <test/app/TestHostFunctions.h>
 
-#include <xrpld/app/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
+
+#include <source_location>
 
 namespace xrpl {
 namespace test {
@@ -16,15 +18,132 @@ using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
 Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    int32_t Val1 = params->data[0].of.i32;
-    int32_t Val2 = params->data[1].of.i32;
+    int32_t const Val1 = params->data[0].of.i32;
+    int32_t const Val2 = params->data[1].of.i32;
     // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
     results->data[0] = WASM_I32_VAL(Val1 + Val2);
     return nullptr;
 }
 
+std::vector<uint8_t>
+hexToBytes(std::string const& hex)
+{
+    auto const ws = boost::algorithm::unhex(hex);
+    return Bytes(ws.begin(), ws.end());
+}
+
+template <class IT, class T>
+unsigned
+uleb128(IT& it, T val)
+{
+    unsigned count = 0;
+    do
+    {
+        std::uint8_t byte = val & 0x7f;
+        val >>= 7;
+        if (val)
+            byte |= 0x80;
+        *it++ = byte;
+        ++count;
+    } while (val != 0);
+
+    return count;
+}
+
+template <class IT>
+std::pair<std::uint64_t, unsigned>
+uleb128(IT&& it)
+{
+    static_assert(sizeof(*it) == 1, "invalid iterator type");
+    std::uint64_t val = 0;
+    std::uint64_t byte = 0;
+    unsigned shift = 0;
+    unsigned count = 0;
+
+    do
+    {
+        if (shift > (sizeof(std::uint64_t) * 8) - 7)
+            return {0, 0};
+        byte = *it++;
+        val |= (byte & 0x7F) << shift;
+        shift += 7;
+        ++count;
+    } while (byte >= 0x80);
+
+    return {val, count};
+}
+
+std::pair<unsigned, unsigned>
+getSection(Bytes const& module, std::uint8_t n)
+{
+    static std::uint8_t const hdr[] = {0x00, 0x61, 0x73, 0x6D};
+    static std::uint8_t const ver[] = {0x01, 0x00, 0x00, 0x00};
+    static std::uint8_t const lastSec = 12;
+
+    // sections:
+    // 0: "Custom", 1: "Type", 2: "Import", 3: "Function", 4: "Table", 5: "Memory", 6: "Global",
+    // 7: "Export", 8: "Start", 9: "Element", 10: "Code", 11: "Data", 12: "DataCount"
+
+    if (module.size() < sizeof(hdr) + sizeof(ver) + 2)
+        return {0, 0};
+    if (memcmp(module.data(), hdr, sizeof(hdr)) != 0)
+        return {0, 0};
+    if (memcmp(module.data() + sizeof(hdr), ver, sizeof(ver)) != 0)
+        return {0, 0};
+
+    unsigned pos = sizeof(hdr) + sizeof(ver);  // sections start
+    for (; pos < module.size();)
+    {
+        auto const start = pos;
+        std::uint8_t const byte = module[pos++];
+        if (byte > lastSec)
+            return {0, 0};
+
+        auto [sz, cnt] = uleb128(module.cbegin() + pos);
+        if (cnt == 0u)
+            return {0, 0};
+        if (pos + cnt + sz > module.size())
+            return {0, 0};
+        pos += cnt + sz;
+
+        if (byte == n)
+            return {start, pos};
+    }
+    return {0, 0};
+}
+
+std::optional<int32_t>
+runFinishFunction(std::string const& code)
+{
+    auto& engine = WasmEngine::instance();
+    auto const wasm = hexToBytes(code);
+    HostFunctions hfs;
+    auto const re = engine.run(wasm, hfs, 10'000'000, "finish");
+    if (re.has_value())
+    {
+        return std::optional<int32_t>(re->result);
+    }
+
+    return std::nullopt;
+}
+
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    checkResult(
+        Expected<WasmResult<int32_t>, TER> re,
+        int32_t expectedResult,
+        int64_t expectedCost,
+        std::source_location const location = std::source_location::current())
+    {
+        auto const lineStr = " (" + std::to_string(location.line()) + ")";
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
+        {
+            BEAST_EXPECTS(re->result == expectedResult, std::to_string(re->result) + lineStr);
+            BEAST_EXPECTS(re->cost == expectedCost, std::to_string(re->cost) + lineStr);
+        }
+    }
+
     void
     testGetDataHelperFunctions()
     {
@@ -67,19 +186,15 @@ struct Wasm_test : public beast::unit_test::suite
         // clang-format on
         auto& vm = WasmEngine::instance();
 
+        HostFunctions hfs;
         ImportVec imports;
-        WasmImpFunc<Add_proto>(
-            imports, "func-add", reinterpret_cast<void*>(&Add));
+        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&Add), &hfs);
 
-        auto re = vm.run(wasm, "addTwo", wasmParams(1234, 5678), imports);
+        auto re = vm.run(wasm, hfs, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
 
         // if (res) printf("invokeAdd get the result: %d\n", res.value());
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 6'912, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 3, std::to_string(re->cost));
-        }
+        checkResult(re, 6'912, 59);
     }
 
     void
@@ -89,24 +204,20 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this};
+        Env const env{*this};
         HostFunctions hfs(env.journal);
 
         {
-            auto wasmHex = "00000000";
-            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-            std::string funcName("mock_escrow");
+            auto wasm = hexToBytes("00000000");
+            std::string const funcName("mock_escrow");
 
-            auto re = runEscrowWasm(wasm, hfs, funcName, {}, 15);
+            auto re = runEscrowWasm(wasm, hfs, 15, funcName, {});
             BEAST_EXPECT(!re);
         }
 
         {
-            auto wasmHex = "00112233445566778899AA";
-            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-            std::string funcName("mock_escrow");
+            auto wasm = hexToBytes("00112233445566778899AA");
+            std::string const funcName("mock_escrow");
 
             auto const re = preflightEscrowWasm(wasm, hfs, funcName);
             BEAST_EXPECT(!isTesSuccess(re));
@@ -117,7 +228,7 @@ struct Wasm_test : public beast::unit_test::suite
             // pub fn bad() -> bool {
             //     unsafe { host_lib::getLedgerSqn() >= 5 }
             // }
-            auto const badWasmHex =
+            auto const badWasm = hexToBytes(
                 "0061736d010000000105016000017f02190108686f73745f6c69620c6765"
                 "744c656467657253716e00000302010005030100100611027f00418080c0"
                 "000b7f00418080c0000b072b04066d656d6f727902000362616400010a5f"
@@ -127,12 +238,9 @@ struct Wasm_test : public beast::unit_test::suite
                 "2e31202834656231363132353020323032352d30332d31352900490f7461"
                 "726765745f6665617475726573042b0f6d757461626c652d676c6f62616c"
                 "732b087369676e2d6578742b0f7265666572656e63652d74797065732b0a"
-                "6d756c746976616c7565";
-            auto wasmStr = boost::algorithm::unhex(std::string(badWasmHex));
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+                "6d756c746976616c7565");
 
-            auto const re =
-                preflightEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME);
+            auto const re = preflightEscrowWasm(badWasm, hfs, ESCROW_FUNCTION_NAME);
             BEAST_EXPECT(!isTesSuccess(re));
         }
     }
@@ -142,45 +250,93 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm get ledger sequence");
 
-        auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto ledgerSqnWasm = hexToBytes(ledgerSqnWasmHex);
 
         using namespace test::jtx;
 
         Env env{*this};
-        TestLedgerDataProvider hf(env);
-
+        TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hf, 33);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re = engine.run(
-            wasm,
-            ESCROW_FUNCTION_NAME,
-            {},
-            imports,
-            &hf,
-            1'000'000,
-            env.journal);
+            ledgerSqnWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 0, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 38, std::to_string(re->cost));
-        }
+        checkResult(re, 0, 440);
 
         env.close();
         env.close();
 
-        // empty module - run the same instance
+        // empty module, throwing exception
+        re = engine.run({}, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
+        BEAST_EXPECT(!re);
+        env.close();
+    }
+
+    void
+    testImpExp()
+    {
+        testcase("Wasm import/export functions");
+
+        auto impExpWasm = hexToBytes(impExpHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestLedgerDataProvider hfs(env);
+        ImportVec imports;
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "get_parent_ledger_hash", &hfs, 60);
+        auto& engine = WasmEngine::instance();
+
+        // Test exp_func1() - should return 1
+        auto re = engine.run(impExpWasm, hfs, 1'000'000, "exp_func1", {}, imports, env.journal);
+        checkResult(re, 1, 30);
+
+        // Test exp_func2(5) - should return 2 * 5 = 10
         re = engine.run(
-            {}, ESCROW_FUNCTION_NAME, {}, imports, &hf, 1'000'000, env.journal);
+            impExpWasm, hfs, 1'000'000, "exp_func2", wasmParams(5), imports, env.journal);
+        checkResult(re, 10, 52);
 
-        if (BEAST_EXPECT(re.has_value()))
+        // Test test_imports() - should call get_ledger_sqn and get_parent_ledger_hash
+        re = engine.run(impExpWasm, hfs, 1'000'000, "test_imports", {}, imports, env.journal);
+        // Should return the ledger sequence number (3 by default in test env)
+        checkResult(re, 3, 294);
+
+        // Test corrupted import/export sections - invert each byte and expect failure
+        testcase("Wasm import/export section corruption");
         {
-            BEAST_EXPECTS(re->result == 5, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 76, std::to_string(re->cost));
+            // Import section(#2): bytes [26, 79) - 53 bytes
+            // Export section(#7): bytes [90, 141) - 51 bytes
+            auto [importStart, importEnd] = getSection(impExpWasm, 2);
+            auto [exportStart, exportEnd] = getSection(impExpWasm, 7);
+
+            BEAST_EXPECTS(importStart == 26, std::to_string(importStart));
+            BEAST_EXPECTS(importEnd == 79, std::to_string(importEnd));
+            BEAST_EXPECTS(exportStart == 90, std::to_string(exportStart));
+            BEAST_EXPECTS(exportEnd == 141, std::to_string(exportEnd));
+
+            auto testInv = [&](unsigned i) {
+                auto corruptedWasm = impExpWasm;
+                corruptedWasm[i] = ~corruptedWasm[i];  // Invert byte
+
+                // Try to run any function - should fail due to corruption
+                auto result = engine.run(
+                    corruptedWasm, hfs, 1'000'000, "exp_func1", {}, imports, env.journal);
+                BEAST_EXPECT(!result);
+            };
+
+            // Test each byte in import section
+            for (unsigned i = importStart; i < importEnd; ++i)
+                testInv(i);
+
+            // Test each byte in export section
+            for (unsigned i = exportStart; i < exportEnd; ++i)
+                testInv(i);
         }
+
+        env.close();
     }
 
     void
@@ -188,61 +344,13 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm fibo");
 
-        auto const ws = boost::algorithm::unhex(fibWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
+        auto const fibWasm = hexToBytes(fibWasmHex);
         auto& engine = WasmEngine::instance();
+        HostFunctions hfs;
 
-        auto const re = engine.run(wasm, "fib", wasmParams(10));
+        auto const re = engine.run(fibWasm, hfs, 10'000'000, "fib", wasmParams(10));
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 55, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 696, std::to_string(re->cost));
-        }
-    }
-
-    void
-    testWasmSha()
-    {
-        testcase("Wasm sha");
-
-        auto const ws = boost::algorithm::unhex(sha512PureWasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        auto const re =
-            engine.run(wasm, "sha512_process", wasmParams(sha512PureWasmHex));
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 34'432, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 145'573, std::to_string(re->cost));
-        }
-    }
-
-    void
-    testWasmB58()
-    {
-        testcase("Wasm base58");
-        auto const ws = boost::algorithm::unhex(b58WasmHex);
-        Bytes const wasm(ws.begin(), ws.end());
-        auto& engine = WasmEngine::instance();
-
-        Bytes outb;
-        outb.resize(1024);
-
-        auto const minsz = std::min(
-            static_cast<std::uint32_t>(512),
-            static_cast<std::uint32_t>(b58WasmHex.size()));
-        auto const s = std::string_view(b58WasmHex.c_str(), minsz);
-
-        auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECTS(re->result == 700, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 2'701'528, std::to_string(re->cost));
-        }
+        checkResult(re, 55, 1'137);
     }
 
     void
@@ -254,31 +362,19 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            ImportVec imp = createWasmImport(hfs);
+            auto imp = createWasmImport(hfs);
             for (auto& i : imp)
                 i.second.gas = 0;
 
             auto re = engine.run(
-                wasm,
-                ESCROW_FUNCTION_NAME,
-                {},
-                imp,
-                &hfs,
-                1'000'000,
-                env.journal);
+                allHostFuncWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
 
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 842, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 27'080);
 
             env.close();
         }
@@ -290,52 +386,37 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            ImportVec const imp = createWasmImport(hfs);
+            auto const imp = createWasmImport(hfs);
 
             auto re = engine.run(
-                wasm,
-                ESCROW_FUNCTION_NAME,
-                {},
-                imp,
-                &hfs,
-                1'000'000,
-                env.journal);
+                allHostFuncWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
 
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 39'602, std::to_string(re->cost));
-            }
+            checkResult(re, 1, 65'840);
 
             env.close();
         }
 
         // not enough gas
         {
-            std::string const wasmHex = allHostFunctionsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const allHostFuncWasm = hexToBytes(allHostFunctionsWasmHex);
 
             auto& engine = WasmEngine::instance();
 
             TestHostFunctions hfs(env, 0);
-            ImportVec const imp = createWasmImport(hfs);
+            auto const imp = createWasmImport(hfs);
 
-            auto re = engine.run(
-                wasm, ESCROW_FUNCTION_NAME, {}, imp, &hfs, 200, env.journal);
+            auto re =
+                engine.run(allHostFuncWasm, hfs, 200, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
 
             if (BEAST_EXPECT(!re))
             {
                 BEAST_EXPECTS(
-                    re.error() == tecFAILED_PROCESSING,
-                    std::to_string(TERtoInt(re.error())));
+                    re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
             }
 
             env.close();
@@ -347,93 +428,89 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("escrow wasm devnet test");
 
-        std::string const wasmStr =
-            boost::algorithm::unhex(allHostFunctionsWasmHex);
-        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        auto const allHFWasm = hexToBytes(allHostFunctionsWasmHex);
 
         using namespace test::jtx;
         Env env{*this};
         {
-            TestHostFunctions nfs(env, 0);
-            auto re =
-                runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 39'602, std::to_string(re->cost));
-            }
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            checkResult(re, 1, 65'840);
+        }
+
+        {
+            // Invalid gas limit (0) should be rejected (boundary condition)
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(allHFWasm, hfs, -1, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re.has_value());
+            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+        }
+
+        {
+            // Invalid gas limit (-1) should be rejected
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(allHFWasm, hfs, 0, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re.has_value());
+            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
         }
 
         {
             // max<int64_t>() gas
-            TestHostFunctions nfs(env, 0);
-            auto re = runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, -1);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 39'602, std::to_string(re->cost));
-            }
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(
+                allHFWasm, hfs, std::numeric_limits<int64_t>::max(), ESCROW_FUNCTION_NAME, {});
+            checkResult(re, 1, 65'840);
         }
 
         {  // fail because trying to access nonexistent field
-            struct BadTestHostFunctions : public TestHostFunctions
+            struct FieldNotFoundHostFunctions : public TestHostFunctions
             {
-                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                explicit FieldNotFoundHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
                 Expected<Bytes, HostFunctionError>
-                getTxField(SField const& fname) override
+                getTxField(SField const& fname) const override
                 {
                     return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
                 }
             };
-            BadTestHostFunctions nfs(env);
-            auto re =
-                runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 5'012, std::to_string(re->cost));
-            }
+
+            FieldNotFoundHostFunctions hfs(env);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
-            struct BadTestHostFunctions : public TestHostFunctions
+            struct OversizedFieldHostFunctions : public TestHostFunctions
             {
-                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                explicit OversizedFieldHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
                 Expected<Bytes, HostFunctionError>
-                getTxField(SField const& fname) override
+                getTxField(SField const& fname) const override
                 {
                     return Bytes((128 + 1) * 64 * 1024, 1);
                 }
             };
-            BadTestHostFunctions nfs(env);
-            auto re =
-                runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 5'012, std::to_string(re->cost));
-            }
+
+            OversizedFieldHostFunctions hfs(env);
+            auto re = runEscrowWasm(allHFWasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because recursion too deep
 
-            auto const wasmStr = boost::algorithm::unhex(deepRecursionHex);
-            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+            auto const deepWasm = hexToBytes(deepRecursionHex);
 
-            TestHostFunctionsSink nfs(env);
-            std::string funcName("finish");
-            auto re = runEscrowWasm(wasm, nfs, funcName, {}, 1'000'000'000);
+            TestHostFunctionsSink hfs(env);
+            std::string const funcName("finish");
+            auto re = runEscrowWasm(deepWasm, hfs, 1'000'000'000, funcName, {});
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
 
-            auto const& sink = nfs.getSink();
-            auto countSubstr = [](std::string const& str,
-                                  std::string const& substr) {
+            auto const& sink = hfs.getSink();
+            auto countSubstr = [](std::string const& str, std::string const& substr) {
                 std::size_t pos = 0;
                 int occurrences = 0;
                 while ((pos = str.find(substr, pos)) != std::string::npos)
@@ -445,79 +522,63 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             auto const s = sink.messages().str();
-            BEAST_EXPECT(
-                countSubstr(s, "WASMI Error: failure to call func") == 1);
+            BEAST_EXPECT(countSubstr(s, "WASMI Error: failure to call func") == 1);
             BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
+        }
+
+        {  // infinite loop
+            auto const infiniteLoopWasm = hexToBytes(infiniteLoopWasmHex);
+            std::string const funcName("loop");
+            TestHostFunctions hfs(env, 0);
+
+            // infinite loop should be caught and fail
+            auto const re = runEscrowWasm(infiniteLoopWasm, hfs, 1'000'000, funcName, {});
+            if (BEAST_EXPECT(!re.has_value()))
+            {
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+            }
         }
 
         {
             // expected import not provided
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
-            TestLedgerDataProvider ledgerDataProvider(env);
-
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
+            TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(
-                imports, getLedgerSqn, "get_ledger_sqn2", &ledgerDataProvider);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
 
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm,
-                ESCROW_FUNCTION_NAME,
-                {},
-                imports,
-                &ledgerDataProvider,
-                1'000'000,
-                env.journal);
+                lgrSqnWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
 
             BEAST_EXPECT(!re);
         }
 
         {
             // bad import format
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
-            TestLedgerDataProvider ledgerDataProvider(env);
-
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
+            TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(
-                imports, getLedgerSqn, "get_ledger_sqn", &ledgerDataProvider);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
             imports[0].first = nullptr;
 
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(
-                wasm,
-                ESCROW_FUNCTION_NAME,
-                {},
-                imports,
-                &ledgerDataProvider,
-                1'000'000,
-                env.journal);
+                lgrSqnWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
 
             BEAST_EXPECT(!re);
         }
 
         {
             // bad function name
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
-            Bytes wasm(wasmStr.begin(), wasmStr.end());
-            TestLedgerDataProvider ledgerDataProvider(env);
-
+            auto const lgrSqnWasm = hexToBytes(ledgerSqnWasmHex);
+            TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(
-                imports, getLedgerSqn, "get_ledger_sqn", &ledgerDataProvider);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
 
             auto& engine = WasmEngine::instance();
-            auto re = engine.run(
-                wasm,
-                "func1",
-                {},
-                imports,
-                &ledgerDataProvider,
-                1'000'000,
-                env.journal);
+            auto re = engine.run(lgrSqnWasm, hfs, 1'000'000, "func1", {}, imports, env.journal);
 
             BEAST_EXPECT(!re);
         }
@@ -534,127 +595,20 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = floatTestsWasmHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const floatTestWasm = hexToBytes(floatTestsWasmHex);
 
-            TestHostFunctions hf(env, 0);
-            auto re = runEscrowWasm(wasm, hf, funcName, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 97'356, std::to_string(re->cost));
-            }
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
+            checkResult(re, 1, 110'699);
             env.close();
         }
 
         {
-            std::string const wasmHex = float0Hex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+            auto const float0Wasm = hexToBytes(float0Hex);
 
-            TestHostFunctions hf(env, 0);
-            auto re = runEscrowWasm(wasm, hf, funcName, {}, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 2'054, std::to_string(re->cost));
-            }
-            env.close();
-        }
-    }
-
-    void
-    perfTest()
-    {
-        testcase("Perf test host functions");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        // std::string const funcName("test");
-        auto const& wasmHex = hfPerfTest;
-        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
-
-        // std::string const credType = "abcde";
-        // std::string const credType2 = "fghijk";
-        // std::string const credType3 = "0123456";
-        // char const uri[] = "uri";
-
-        Account const alan{"alan"};
-        Account const bob{"bob"};
-        Account const issuer{"issuer"};
-
-        {
-            Env env(*this);
-            // Env env(*this, envconfig(), {}, nullptr,
-            // beast::severities::kTrace);
-            env.fund(XRP(5000), alan, bob, issuer);
-            env.close();
-
-            // // create escrow
-            // auto const seq = env.seq(alan);
-            // auto const k = keylet::escrow(alan, seq);
-            // // auto const allowance = 3'600;
-            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
-            // XRPAmount txnFees = env.current()->fees().base + 1000;
-            // env(escrowCreate,
-            //     escrow::finish_function(wasmHex),
-            //     escrow::finish_time(env.now() + 11s),
-            //     escrow::cancel_time(env.now() + 100s),
-            //     escrow::data("1000000000"),  // 1000 XRP in drops
-            //     memodata("memo1234567"),
-            //     memodata("2memo1234567"),
-            //     fee(txnFees));
-
-            // // create depositPreauth
-            // auto const k = keylet::depositPreauth(
-            //     bob,
-            //     {{issuer.id(), makeSlice(credType)},
-            //      {issuer.id(), makeSlice(credType2)},
-            //      {issuer.id(), makeSlice(credType3)}});
-            // env(deposit::authCredentials(
-            //     bob,
-            //     {{issuer, credType},
-            //      {issuer, credType2},
-            //      {issuer, credType3}}));
-
-            // create nft
-            [[maybe_unused]] uint256 const nft0{
-                token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            auto const k = keylet::nftoffer(alan, 0);
-            [[maybe_unused]] uint256 const nft1{
-                token::getNextID(env, alan, 0u)};
-
-            env(token::mint(alan, 0u),
-                token::uri(
-                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
-            [[maybe_unused]] uint256 const nft2{
-                token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            env.close();
-
-            PerfHostFunctions nfs(env, k, env.tx());
-
-            auto re = runEscrowWasm(wasm, nfs, ESCROW_FUNCTION_NAME);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result);
-                std::cout << "Res: " << re->result << " cost: " << re->cost
-                          << std::endl;
-            }
-
-            // env(escrow::finish(alan, alan, seq),
-            //     escrow::comp_allowance(allowance),
-            //     fee(txnFees),
-            //     ter(tesSUCCESS));
-
+            TestHostFunctions hfs(env, 0);
+            auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
+            checkResult(re, 1, 4'259);
             env.close();
         }
     }
@@ -668,18 +622,13 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 292'345;
-        auto re = runEscrowWasm(wasm, hfs, ESCROW_FUNCTION_NAME, {}, allowance);
+        auto const allowance = 340'524;
+        auto re = runEscrowWasm(codecovWasm, hfs, allowance, ESCROW_FUNCTION_NAME, {});
 
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECTS(re->cost == allowance, std::to_string(re->cost));
-        }
+        checkResult(re, 1, allowance);
     }
 
     void
@@ -690,14 +639,13 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
-        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        auto disabledFloatWasm = hexToBytes(disabledFloatHex);
         std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);
 
         {
             // f32 set constant, opcode disabled exception
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
@@ -706,12 +654,860 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             // f32 add, can't create module exception
-            wasm[0x117] = 0x92;
-            auto const re = runEscrowWasm(wasm, hfs, funcName, {}, 1'000'000);
+            disabledFloatWasm[0x117] = 0x92;
+            auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
                 BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
             }
+        }
+    }
+
+    void
+    testWasmMemory()
+    {
+        testcase("Wasm additional memory limit tests");
+        BEAST_EXPECT(runFinishFunction(memoryPointerAtLimitHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryPointerOverLimitHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(memoryOffsetOverLimitHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(memoryEndOfWordOverLimitHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0To1PageHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow1To0PageHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryLastByteOf8MBHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow1MoreThan8MBHex).value() == -1);
+        BEAST_EXPECT(runFinishFunction(memoryGrow0MoreThan8MBHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(memoryInit1MoreThan8MBHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(memoryNegativeAddressHex).has_value() == false);
+    }
+
+    void
+    testWasmTable()
+    {
+        testcase("Wasm table limit tests");
+        BEAST_EXPECT(runFinishFunction(table64ElementsHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(table65ElementsHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table2TablesHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(table0ElementsHex).value() == 1);
+        BEAST_EXPECT(runFinishFunction(tableUintMaxHex).has_value() == false);
+    }
+
+    void
+    testWasmProposal()
+    {
+        testcase("Wasm disabled proposal tests");
+        BEAST_EXPECT(runFinishFunction(proposalMutableGlobalHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalGcStructNewHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalMultiValueHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalSignExtHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalFloatToIntHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalBulkMemoryHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalRefTypesHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalTailCallHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalExtendedConstHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalMultiMemoryHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalCustomPageSizesHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalMemory64Hex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(proposalWideArithmeticHex).has_value() == false);
+    }
+
+    void
+    testWasmTrap()
+    {
+        testcase("Wasm trap tests");
+        BEAST_EXPECT(runFinishFunction(trapDivideBy0Hex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapIntOverflowHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapUnreachableHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapNullCallHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(trapFuncSigMismatchHex).has_value() == false);
+    }
+
+    void
+    testWasmWasi()
+    {
+        testcase("Wasm Wasi tests");
+        BEAST_EXPECT(runFinishFunction(wasiGetTimeHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(wasiPrintHex).has_value() == false);
+    }
+
+    void
+    testWasmSectionCorruption()
+    {
+        testcase("Wasm Section Corruption tests");
+        BEAST_EXPECT(runFinishFunction(badMagicNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(badVersionNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(lyingHeaderHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(neverEndingNumberHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(vectorLieHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(sectionOrderingHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(ghostPayloadHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(junkAfterSectionHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(invalidSectionIdHex).has_value() == false);
+        BEAST_EXPECT(runFinishFunction(localVariableBombHex).has_value() == false);
+    }
+
+    void
+    testStartFunctionLoop()
+    {
+        testcase("infinite loop in start function");
+
+        using namespace test::jtx;
+        Env env(*this);
+
+        auto const startLoopWasm = hexToBytes(startLoopHex);
+        TestLedgerDataProvider hfs(env);
+        ImportVec const imports;
+
+        auto& engine = WasmEngine::instance();
+        auto checkRes = engine.check(startLoopWasm, hfs, "finish", {}, imports, env.journal);
+        BEAST_EXPECTS(checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
+
+        auto re = engine.run(
+            startLoopWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imports, env.journal);
+        BEAST_EXPECTS(re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
+    }
+
+    void
+    testBadAlign()
+    {
+        testcase("Wasm Bad Align");
+
+        // bad_align.c
+        auto const badAlignWasm = hexToBytes(badAlignWasmHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestHostFunctions hfs(env, 0);
+        auto imports = createWasmImport(hfs);
+
+        {  // Calls float_from_uint with bad alignment.
+           // Can be checked through codecov
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(badAlignWasm, hfs, 1'000'000, "test", {}, imports, env.journal);
+            if (BEAST_EXPECTS(re, transToken(re.error())))
+            {
+                BEAST_EXPECTS(re->result == 0x684f7941, std::to_string(re->result));
+            }
+        }
+
+        env.close();
+    }
+
+    void
+    testReturnType()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        TestHostFunctions hfs(env, 0);
+
+        testcase("Wasm invalid return type");
+
+        // return int64.
+        {  // (module
+            //   (memory (export "memory") 1)
+            //   (func (export "finish") (result i64)
+            //     i64.const 0x100000000))
+            auto const wasmHex =
+                "0061736d010000000105016000017e030201000503010001"
+                "071302066d656d6f727902000666696e69736800000a0a01"
+                "08004280808080100b";
+            auto const wasm = hexToBytes(wasmHex);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re);
+        }
+
+        // return void. wasmi return execution error
+        {  //(module
+           //  (type (;0;) (func))
+           //  (func (;0;) (type 0)
+           //   return)
+           //  (memory (;0;) 1)
+           //  (export "memory" (memory 0))
+           //  (export "finish" (func 0)))
+            auto const wasmHex =
+                "0061736d01000000010401600000030201000503010001071302066d656d6f"
+                "727902000666696e69736800000a050103000f0b";
+            auto const wasm = hexToBytes(wasmHex);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re);
+        }
+
+        // return i32, i32. wasmi doesn't create module
+        {  //(module
+           //  (memory (export "memory") 1)
+           //  (func (export "finish") (result i32 i32)
+           //   i32.const 0x10000000
+           //   i32.const 0x100000FF))
+            auto const wasmHex =
+                "0061736d010000000106016000027f7f030201000503010001071302066d65"
+                "6d6f727902000666696e69736800000a10010e0041808080800141ff818080"
+                "010b";
+            auto const wasm = hexToBytes(wasmHex);
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, ESCROW_FUNCTION_NAME, {});
+            BEAST_EXPECT(!re);
+        }
+    }
+
+    void
+    testParameterType()
+    {
+        using namespace test::jtx;
+        Env env(*this);
+        TestHostFunctions hfs(env, 0);
+
+        testcase("Wasm invalid params");
+
+        // (module
+        //   (memory (export "memory") 1)
+        //   (func $test1 (export "test1") (param i32) (result i32)
+        //     i32.const 1000)
+        //   (func $test2 (export "test2") (param i32 i32) (result i32)
+        //     i32.const 1001))
+        auto const wasmHex =
+            "0061736d01000000010c0260017f017f60027f7f017f03030200010503010001071a03066d656d6f727902"
+            "00057465737431000005746573743200010a0d02050041e8070b050041e9070b";
+        auto const wasm = hexToBytes(wasmHex);
+
+        // good params, module is working properly
+        {
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, "test2", wasmParams(2, 10));
+            BEAST_EXPECT(re && re->result == 1001 && re->cost == 37);
+        }
+
+        // no params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, "test1", {});
+            BEAST_EXPECT(!re);
+        }
+
+        // more params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, "test1", wasmParams(0, 1));
+            BEAST_EXPECT(!re);
+        }
+
+        // less params
+        {
+            auto const re = runEscrowWasm(wasm, hfs, 100'000, "test2", wasmParams(1));
+            BEAST_EXPECT(!re);
+        }
+
+        // invalid type
+        {
+            auto const re =
+                runEscrowWasm(wasm, hfs, 100'000, "test1", wasmParams(std::int64_t(15)));
+            BEAST_EXPECT(!re);
+        }
+    }
+
+    void
+    testSwapBytes()
+    {
+        testcase("Wasm swap bytes");
+
+        uint64_t const SWAP_DATAU64 = 0x123456789abcdeffull;
+        uint64_t const REVERSE_SWAP_DATAU64 = 0xffdebc9a78563412ull;
+        int64_t const SWAP_DATAI64 = 0x123456789abcdeffll;
+        int64_t const REVERSE_SWAP_DATAI64 = 0xffdebc9a78563412ll;
+
+        uint32_t const SWAP_DATAU32 = 0x12789aff;
+        uint32_t const REVERSE_SWAP_DATAU32 = 0xff9a7812;
+        int32_t const SWAP_DATAI32 = 0x12789aff;
+        int32_t const REVERSE_SWAP_DATAI32 = 0xff9a7812;
+
+        uint16_t const SWAP_DATAU16 = 0x12ff;
+        uint16_t const REVERSE_SWAP_DATAU16 = 0xff12;
+        int16_t const SWAP_DATAI16 = 0x12ff;
+        int16_t const REVERSE_SWAP_DATAI16 = 0xff12;
+
+        uint64_t b1 = SWAP_DATAU64;
+        int64_t b2 = SWAP_DATAI64;
+        b1 = adjustWasmEndianessHlp(b1);
+        b2 = adjustWasmEndianessHlp(b2);
+        BEAST_EXPECT(b1 == REVERSE_SWAP_DATAU64);
+        BEAST_EXPECT(b2 == REVERSE_SWAP_DATAI64);
+        b1 = adjustWasmEndianessHlp(b1);
+        b2 = adjustWasmEndianessHlp(b2);
+        BEAST_EXPECT(b1 == SWAP_DATAU64);
+        BEAST_EXPECT(b2 == SWAP_DATAI64);
+
+        uint32_t b3 = SWAP_DATAU32;
+        int32_t b4 = SWAP_DATAI32;
+        b3 = adjustWasmEndianessHlp(b3);
+        b4 = adjustWasmEndianessHlp(b4);
+        BEAST_EXPECT(b3 == REVERSE_SWAP_DATAU32);
+        BEAST_EXPECT(b4 == REVERSE_SWAP_DATAI32);
+        b3 = adjustWasmEndianessHlp(b3);
+        b4 = adjustWasmEndianessHlp(b4);
+        BEAST_EXPECT(b3 == SWAP_DATAU32);
+        BEAST_EXPECT(b4 == SWAP_DATAI32);
+
+        uint16_t b5 = SWAP_DATAU16;
+        int16_t b6 = SWAP_DATAI16;
+        b5 = adjustWasmEndianessHlp(b5);
+        b6 = adjustWasmEndianessHlp(b6);
+        BEAST_EXPECT(b5 == REVERSE_SWAP_DATAU16);
+        BEAST_EXPECT(b6 == REVERSE_SWAP_DATAI16);
+        b5 = adjustWasmEndianessHlp(b5);
+        b6 = adjustWasmEndianessHlp(b6);
+        BEAST_EXPECT(b5 == SWAP_DATAU16);
+        BEAST_EXPECT(b6 == SWAP_DATAI16);
+    }
+
+    void
+    testManyParams()
+    {
+        testcase("Wasm Many params");
+
+        auto const params1k = hexToBytes(thousandParamsHex);
+        auto const params1k1 = hexToBytes(thousand1ParamsHex);
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestHostFunctions hfs(env, 0);
+        auto imports = createWasmImport(hfs);
+
+        // add 1k parameter (max that wasmi support)
+        std::vector<WasmParam> params;
+        params.reserve(1000);
+        for (int i = 0; i < 1000; ++i)
+            params.push_back({.type = WT_I32, .of = {.i32 = 2 * i}});
+
+        auto& engine = WasmEngine::instance();
+        {
+            auto re = engine.run(params1k, hfs, 1'000'000, "test", params, imports, env.journal);
+            BEAST_EXPECT(re && re->result == 999000);
+        }
+
+        // add 1 more parameter, module can't be created now
+        params.push_back({.type = WT_I32, .of = {.i32 = 2 * 1000}});
+        {
+            auto re = engine.run(params1k1, hfs, 1'000'000, "test", params, imports, env.journal);
+            BEAST_EXPECT(!re);
+        }
+
+        // function that create 10k local variables
+        auto const locals10k = hexToBytes(locals10kHex);
+        {
+            auto re = engine.run(
+                locals10k, hfs, 1'000'000, "test", wasmParams(0, 1), imports, env.journal);
+            BEAST_EXPECT(re && re->result == 890'489'442);
+        }
+
+        // module has 5k functions
+        auto const functions5k = hexToBytes(functions5kHex);
+        {
+            auto re = engine.run(
+                functions5k, hfs, 1'000'000, "test0001", wasmParams(2, 3), imports, env.journal);
+            BEAST_EXPECT(re && re->result == 5);
+        }
+
+        env.close();
+    }
+
+    void
+    testOpcodes()
+    {
+        using namespace test::jtx;
+
+        unsigned const RESERVED = 64;
+        std::uint8_t const nop = 0x01;
+        std::array<std::uint8_t, 16> const codeMarker = {
+            nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop, nop};
+        auto const opcReserved = hexToBytes(opcReservedHex);
+
+        Env env{*this};
+        auto& engine = WasmEngine::instance();
+
+        TestHostFunctions hfs(env, 0);
+        auto imports = createWasmImport(hfs);
+        env.close();
+
+        {
+            auto run = [&](std::vector<uint8_t> const& code,
+                           bool good = false,
+                           int64_t cost = -1,
+                           std::source_location const location = std::source_location::current()) {
+                auto const lineStr = " (" + std::to_string(location.line()) + ")";
+                auto re =
+                    engine.run(code, hfs, 1'000'000, "all_instructions", {}, imports, env.journal);
+                if (BEAST_EXPECTS(re.has_value() == good, transToken(re.error()) + lineStr) && good)
+                    BEAST_EXPECTS(re->cost == cost, std::to_string(re->cost) + lineStr);
+            };
+
+            // 1 byte instruction
+            auto test = [&](std::uint8_t start,
+                            std::uint8_t finish,
+                            bool good = false,
+                            int64_t cost = -1,
+                            std::source_location const location = std::source_location::current()) {
+                auto const lineStr = " (" + std::to_string(location.line()) + ")";
+                auto code = opcReserved;
+                auto codeRange = std::ranges::search(code, codeMarker);
+                if (!BEAST_EXPECTS(!codeRange.empty(), lineStr))
+                    return;
+
+                auto it = codeRange.begin();
+                for (std::uint16_t i = start; i <= finish; ++i)
+                {
+                    *it = i;
+                    run(code, good, cost, location);
+                }
+            };
+
+            // 2 bytes instruction
+            auto test2 = [&](std::uint8_t major,
+                             std::uint16_t start,
+                             std::uint16_t finish,
+                             bool good = false,
+                             int64_t cost = -1,
+                             std::source_location const location =
+                                 std::source_location::current()) {
+                auto const lineStr = " (" + std::to_string(location.line()) + ")";
+                auto code = opcReserved;
+                auto codeRange = std::ranges::search(code, codeMarker);
+                if (!BEAST_EXPECTS(!codeRange.empty(), lineStr))
+                    return;
+
+                auto it = codeRange.begin();
+                *it++ = major;
+                for (std::uint16_t i = start; i <= finish; ++i)
+                {
+                    auto it2 = it;
+                    uleb128(it2, i);
+                    run(code, good, cost, location);
+                }
+            };
+
+            // multibytes instructions
+            auto testMB = [&](std::vector<std::uint8_t> const& codeSnap,
+                              bool good = false,
+                              int64_t cost = -1,
+                              std::source_location const location =
+                                  std::source_location::current()) {
+                auto const lineStr = " (" + std::to_string(location.line()) + ")";
+                auto code = opcReserved;
+                auto codeRange = std::ranges::search(code, codeMarker);
+                if (!BEAST_EXPECTS(!codeRange.empty(), lineStr))
+                    return;
+
+                if (!BEAST_EXPECTS(codeSnap.size() < RESERVED, lineStr))
+                    return;
+                auto it = codeRange.begin();
+                for (auto x : codeSnap)
+                    *it++ = x;
+                run(code, good, cost, location);
+            };
+
+            // normal run
+            testcase("Wasm reserved opcodes main");
+            test(nop, nop, true, 534);
+
+            // reserved main
+            test(0x06, 0x0A);
+            test(0x12, 0x19);
+            test(0x25, 0x27);
+            test(0xC0, 0xFA);
+            test(0xFF, 0xFF);
+
+            // reserved gc, string
+            testcase("Wasm reserved opcodes gc");
+            test2(0xFB, 0x00, 0xBF);  // not supported by compiler
+
+            // reserved FC
+            testcase("Wasm reserved opcodes FC");
+            test2(0xFC, 0x00, 0x07);  // floats, disabled
+            test2(0xFC, 0x12, 0x1F);
+
+            // reserved SIMD
+            testcase("Wasm reserved opcodes SIMD");
+            test2(0xFD, 0x9A, 0x9A);
+            test2(0xFD, 0xA2, 0xA2);
+            test2(0xFD, 0xA5, 0xA6);
+            test2(0xFD, 0xAF, 0xB0);
+            test2(0xFD, 0xB2, 0xB4);
+            test2(0xFD, 0xB8, 0xB8);
+            test2(0xFD, 0xC2, 0xC2);
+            test2(0xFD, 0xC5, 0xC6);
+            test2(0xFD, 0xCF, 0xD0);
+            test2(0xFD, 0xD2, 0xD4);
+            test2(0xFD, 0xE2, 0xE2);
+            test2(0xFD, 0xEE, 0xEE);
+            test2(0xFD, 0x115, 0x12F);
+
+            testcase("Wasm opcodes THREADS");
+            test2(0xFE, 0x00, 0x4F);  // not supported by compiler
+
+            // FC mem instructions
+            testMB({0x41, 0x00, 0x41, 0x00, 0x41, 0x04, 0xFC, 0x08, 0x00, 0x00});  // memory.init
+            testMB({0xFC, 0x09, 0x00});                                            // data.drop
+            testMB({0x41, 0x00, 0x41, 0x00, 0x41, 0x00, 0xFC, 0x0A, 0x00, 0x00});  // memory.copy
+            testMB({0x41, 0x00, 0x41, 0x00, 0x41, 0x00, 0xFC, 0x0B, 0x00});        // memory.fill
+            testMB({0x41, 0x00, 0x41, 0x00, 0x41, 0x00, 0xFC, 0x0C, 0x00, 0x00});  // table.init
+            testMB({0xFC, 0x0D, 0x00});                                            // elem.drop
+            testMB({0x41, 0x00, 0x41, 0x00, 0x41, 0x00, 0xFC, 0x0E, 0x00, 0x00});  // table.copy
+            testMB({0xD2, 0x00, 0x41, 0x00, 0xFC, 0x0F, 0x00, 0x1A});              // table.grow
+            testMB({0x1A, 0xFC, 0x10, 0x00, 0x1A});                                // table.size
+            testMB({0x41, 0x00, 0xD2, 0x00, 0x41, 0x00, 0xFC, 0x11, 0x00});        // table.fill
+
+            testcase("Wasm opcodes SIMD");
+            // clang-format off
+
+            // generated by auggie
+            // SIMD instructions
+            testMB({0x41, 0x00, 0xFD, 0x00, 0x04, 0x00, 0x1A});  // v128.load
+            testMB({0x41, 0x00, 0xFD, 0x01, 0x03, 0x00, 0x1A});  // v128.load8x8_s
+            testMB({0x41, 0x00, 0xFD, 0x02, 0x03, 0x00, 0x1A});  // v128.load8x8_u
+            testMB({0x41, 0x00, 0xFD, 0x03, 0x03, 0x00, 0x1A});  // v128.load16x4_s
+            testMB({0x41, 0x00, 0xFD, 0x04, 0x03, 0x00, 0x1A});  // v128.load16x4_u
+            testMB({0x41, 0x00, 0xFD, 0x05, 0x03, 0x00, 0x1A});  // v128.load32x2_s
+            testMB({0x41, 0x00, 0xFD, 0x06, 0x03, 0x00, 0x1A});  // v128.load32x2_u
+            testMB({0x41, 0x00, 0xFD, 0x07, 0x00, 0x00, 0x1A});  // v128.load8_splat
+            testMB({0x41, 0x00, 0xFD, 0x08, 0x01, 0x00, 0x1A});  // v128.load16_splat
+            testMB({0x41, 0x00, 0xFD, 0x09, 0x02, 0x00, 0x1A});  // v128.load32_splat
+            testMB({0x41, 0x00, 0xFD, 0x0A, 0x03, 0x00, 0x1A});  // v128.load64_splat
+            testMB({0x41, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0B, 0x04, 0x00});  // v128.store
+            testMB({0xFD, 0x0C, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00,
+                 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x1A});  // v128.const
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0D, 0x00, 0x01, 0x02, 0x03,
+                    0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x1A});  // i8x16.shuffle
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0E, 0x1A});  // i8x16.swizzle
+            testMB({0x41, 0x2A, 0xFD, 0x0F, 0x1A});                                                  // i8x16.splat
+            testMB({0x41, 0x2A, 0xFD, 0x10, 0x1A});                                                  // i16x8.splat
+            testMB({0x41, 0x2A, 0xFD, 0x11, 0x1A});                                                  // i32x4.splat
+            testMB({0x42, 0x2A, 0xFD, 0x12, 0x1A});                                                  // i64x2.splat
+
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x15, 0x00, 0x1A});  // i8x16.extract_lane_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x16, 0x00, 0x1A});  // i8x16.extract_lane_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x2A, 0xFD, 0x17, 0x00, 0x1A});  // i8x16.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x18, 0x00, 0x1A});  // i16x8.extract_lane_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x19, 0x00, 0x1A});  // i16x8.extract_lane_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x2A, 0xFD, 0x1A, 0x00, 0x1A});  // i16x8.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x1B, 0x00, 0x1A});  // i32x4.extract_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x2A, 0xFD, 0x1C, 0x00, 0x1A});  // i32x4.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x1D, 0x00, 0x1A});  // i64x2.extract_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x42, 0x2A, 0xFD, 0x1E, 0x00, 0x1A});  // i64x2.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x1F, 0x00, 0x1A});  // f32x4.extract_lane
+            testMB(
+                {0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                 0x00, 0x00, 0x00, 0x00, 0x43, 0x00, 0x00, 0x80, 0x3F, 0xFD, 0x20, 0x00, 0x1A});  // f32x4.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x21, 0x00, 0x1A});  // f64x2.extract_lane
+            testMB(
+                {0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                 0x00, 0x00, 0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x3F, 0xFD, 0x22, 0x00, 0x1A});  // f64x2.replace_lane
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x23, 0x1A});  // i8x16.eq
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x24, 0x1A});  // i8x16.ne
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x25, 0x1A});  // i8x16.lt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x26, 0x1A});  // i8x16.lt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x27, 0x1A});  // i8x16.gt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x28, 0x1A});  // i8x16.gt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x29, 0x1A});  // i8x16.le_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2A, 0x1A});  // i8x16.le_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2B, 0x1A});  // i8x16.ge_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2C, 0x1A});  // i8x16.ge_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2D, 0x1A});  // i16x8.eq
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2E, 0x1A});  // i16x8.ne
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x2F, 0x1A});  // i16x8.lt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x30, 0x1A});  // i16x8.lt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x31, 0x1A});  // i16x8.gt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x32, 0x1A});  // i16x8.gt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x33, 0x1A});  // i16x8.le_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x34, 0x1A});  // i16x8.le_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x35, 0x1A});  // i16x8.ge_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x36, 0x1A});  // i16x8.ge_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x37, 0x1A});  // i32x4.eq
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x38, 0x1A});  // i32x4.ne
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x39, 0x1A});  // i32x4.lt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3A, 0x1A});  // i32x4.lt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3B, 0x1A});  // i32x4.gt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3C, 0x1A});  // i32x4.gt_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3D, 0x1A});  // i32x4.le_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3E, 0x1A});  // i32x4.le_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x3F, 0x1A});  // i32x4.ge_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x40, 0x1A});  // i32x4.ge_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x4D, 0x1A});  // v128.not
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x4E, 0x1A});  // v128.and
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x4F, 0x1A});  // v128.andnot
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x50, 0x1A});  // v128.or
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x51, 0x1A});  // v128.xor
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x52, 0x1A});  // v128.bitselect
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x53, 0x1A});  // v128.any_true
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x60, 0x1A});  // i8x16.abs
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x61, 0x1A});  // i8x16.neg
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x62, 0x1A});  // i8x16.popcnt
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x63, 0x1A});  // i8x16.all_true
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x64, 0x1A});  // i8x16.bitmask
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x6B, 0x1A});  // i8x16.shl
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x6C, 0x1A});  // i8x16.shr_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x6D, 0x1A});  // i8x16.shr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x6E, 0x1A});  // i8x16.add
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x6F, 0x1A});  // i8x16.add_sat_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x70, 0x1A});  // i8x16.add_sat_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x71, 0x1A});  // i8x16.sub
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x72, 0x1A});  // i8x16.sub_sat_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x73, 0x1A});  // i8x16.sub_sat_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x76, 0x1A});  // i8x16.min_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x77, 0x1A});  // i8x16.min_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x78, 0x1A});  // i8x16.max_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x79, 0x1A});  // i8x16.max_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x7B, 0x1A});  // i8x16.avgr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x80, 0x01, 0x1A});  // i16x8.abs
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x81, 0x01, 0x1A});  // i16x8.neg
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x83, 0x01, 0x1A});  // i16x8.all_true
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x84, 0x01, 0x1A});  // i16x8.bitmask
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x8B, 0x01, 0x1A});  // i16x8.shl
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x8C, 0x01, 0x1A});  // i16x8.shr_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0x8D, 0x01, 0x1A});  // i16x8.shr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x8E, 0x01, 0x1A});  // i16x8.add
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x8F, 0x01, 0x1A});  // i16x8.add_sat_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x90, 0x01, 0x1A});  // i16x8.add_sat_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x91, 0x01, 0x1A});  // i16x8.sub
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x92, 0x01, 0x1A});  // i16x8.sub_sat_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x93, 0x01, 0x1A});  // i16x8.sub_sat_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x95, 0x01, 0x1A});  // i16x8.mul
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x96, 0x01, 0x1A});  // i16x8.min_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x97, 0x01, 0x1A});  // i16x8.min_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x98, 0x01, 0x1A});  // i16x8.max_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x99, 0x01, 0x1A});  // i16x8.max_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0x9B, 0x01, 0x1A});  // i16x8.avgr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xA0, 0x01, 0x1A});  // i32x4.abs
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xA1, 0x01, 0x1A});  // i32x4.neg
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xA3, 0x01, 0x1A});  // i32x4.all_true
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xA4, 0x01, 0x1A});  // i32x4.bitmask
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xAB, 0x01, 0x1A});  // i32x4.shl
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xAC, 0x01, 0x1A});  // i32x4.shr_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xAD, 0x01, 0x1A});  // i32x4.shr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xAE, 0x01, 0x1A});  // i32x4.add
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB1, 0x01, 0x1A});  // i32x4.sub
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB5, 0x01, 0x1A});  // i32x4.mul
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB6, 0x01, 0x1A});  // i32x4.min_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB7, 0x01, 0x1A});  // i32x4.min_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB8, 0x01, 0x1A});  // i32x4.max_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xB9, 0x01, 0x1A});  // i32x4.max_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xBA, 0x01, 0x1A});  // i32x4.dot_i16x8_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xC0, 0x01, 0x1A});  // i64x2.abs
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xC1, 0x01, 0x1A});  // i64x2.neg
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xC3, 0x01, 0x1A});  // i64x2.all_true
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xC4, 0x01, 0x1A});  // i64x2.bitmask
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xCB, 0x01, 0x1A});  // i64x2.shl
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xCC, 0x01, 0x1A});  // i64x2.shr_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x01, 0xFD, 0xCD, 0x01, 0x1A});  // i64x2.shr_u
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xCE, 0x01, 0x1A});  // i64x2.add
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD1, 0x01, 0x1A});  // i64x2.sub
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD5, 0x01, 0x1A});  // i64x2.mul
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD6, 0x01, 0x1A});  // i64x2.eq
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD7, 0x01, 0x1A});  // i64x2.ne
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD8, 0x01, 0x1A});  // i64x2.lt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xD9, 0x01, 0x1A});  // i64x2.gt_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xDA, 0x01, 0x1A});  // i64x2.le_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xDB, 0x01, 0x1A});  // i64x2.ge_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xF8, 0x01, 0x1A});  // i32x4.trunc_sat_f32x4_s
+            testMB({0xFD, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFD, 0xF9, 0x01, 0x1A});  // i32x4.trunc_sat_f32x4_u
+
+            // clang-format on
         }
     }
 
@@ -724,10 +1520,9 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmLib();
         testBadWasm();
         testWasmLedgerSqn();
+        testImpExp();
 
         testWasmFib();
-        testWasmSha();
-        testWasmB58();
 
         testHFCost();
         testEscrowWasmDN();
@@ -736,7 +1531,21 @@ struct Wasm_test : public beast::unit_test::suite
         testCodecovWasm();
         testDisabledFloat();
 
-        // perfTest();
+        testWasmMemory();
+        testWasmTable();
+        testWasmProposal();
+        testWasmTrap();
+        testWasmWasi();
+        testWasmSectionCorruption();
+
+        testStartFunctionLoop();
+        testBadAlign();
+        testReturnType();
+        testSwapBytes();
+        testManyParams();
+        testParameterType();
+
+        testOpcodes();
     }
 };
 

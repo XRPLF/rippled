@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_JTX_H_INCLUDED
-#define XRPL_TEST_JTX_JTX_H_INCLUDED
+#pragma once
 
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
@@ -28,8 +27,7 @@ struct JTx
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
     std::optional<std::pair<error_code_i, std::string>> rpcCode = std::nullopt;
-    std::optional<std::pair<std::string, std::optional<std::string>>>
-        rpcException = std::nullopt;
+    std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
@@ -40,9 +38,6 @@ struct JTx
     // Functions that sign something else after the mainSigners, such as
     // sfCounterpartySignature
     std::vector<std::function<void(Env&, JTx&)>> postSigners;
-    // Metadata about the unit test itself
-    // The line where the JTx was constructed
-    std::optional<int> testLine = std::nullopt;
 
     JTx() = default;
     JTx(JTx const&) = default;
@@ -160,5 +155,3 @@ private:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

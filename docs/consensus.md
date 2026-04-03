@@ -189,7 +189,7 @@ validations. It checks this on every call to `timerEntry`.
 - _Wrong Ledger_ indicates the node is not working on the correct prior ledger
   and does not have it available. It requests that ledger from the network, but
   continues to work towards consensus this round while waiting. If it had been
-  _proposing_, it will send a special "bowout" proposal to its peers to indicate
+  _proposing_, it will send a special "bow-out" proposal to its peers to indicate
   its change in mode for the rest of this round. For the duration of the round,
   it defers to peer positions for determining the consensus outcome as if it
   were just _observing_.
@@ -515,7 +515,7 @@ are excerpts of the generic consensus implementation and of helper types that wi
 interact with the concrete implementing class.
 
 ```{.cpp}
-// Represents a transction under dispute this round
+// Represents a transaction under dispute this round
 template <class Tx_t, class NodeID_t> class DisputedTx;
 
 // Represents how the node participates in Consensus this round

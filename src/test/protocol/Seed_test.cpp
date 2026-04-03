@@ -14,11 +14,7 @@ class Seed_test : public beast::unit_test::suite
     static bool
     equal(Seed const& lhs, Seed const& rhs)
     {
-        return std::equal(
-            lhs.data(),
-            lhs.data() + lhs.size(),
-            rhs.data(),
-            rhs.data() + rhs.size());
+        return std::equal(lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
     }
 
 public:
@@ -54,7 +50,7 @@ public:
         auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
         BEAST_EXPECT(static_cast<bool>(seed2));
-        BEAST_EXPECT(equal(seed1, *seed2));
+        BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         return toBase58(seed1);
     }
 
@@ -62,15 +58,10 @@ public:
     testPassphrase()
     {
         testcase("generation from passphrase");
+        BEAST_EXPECT(testPassphrase("masterpassphrase") == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
+        BEAST_EXPECT(testPassphrase("Non-Random Passphrase") == "snMKnVku798EnBwUfxeSD8953sLYA");
         BEAST_EXPECT(
-            testPassphrase("masterpassphrase") ==
-            "snoPBrXtMeMyMHUVTgbuqAfg1SUTb");
-        BEAST_EXPECT(
-            testPassphrase("Non-Random Passphrase") ==
-            "snMKnVku798EnBwUfxeSD8953sLYA");
-        BEAST_EXPECT(
-            testPassphrase("cookies excitement hand public") ==
-            "sspUXGrmjQhq6mgc24jiRuevZiwKT");
+            testPassphrase("cookies excitement hand public") == "sspUXGrmjQhq6mgc24jiRuevZiwKT");
     }
 
     void
@@ -102,7 +93,7 @@ public:
             auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
             BEAST_EXPECT(static_cast<bool>(seed2));
-            BEAST_EXPECT(equal(seed1, *seed2));
+            BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
@@ -115,10 +106,9 @@ public:
         {
             testcase("Node keypair generation & signing (secp256k1)");
 
-            auto const secretKey = generateSecretKey(
-                KeyType::secp256k1, generateSeed("masterpassphrase"));
-            auto const publicKey =
-                derivePublicKey(KeyType::secp256k1, secretKey);
+            auto const secretKey =
+                generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
 
             BEAST_EXPECT(
                 toBase58(TokenType::NodePublic, publicKey) ==
@@ -127,11 +117,10 @@ public:
                 toBase58(TokenType::NodePrivate, secretKey) ==
                 "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(
-                to_string(calcNodeID(publicKey)) ==
-                "7E59C17D50F5959C7B158FEC95C8F815BF653DC8");
+                to_string(calcNodeID(publicKey)) == "7E59C17D50F5959C7B158FEC95C8F815BF653DC8");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -141,8 +130,7 @@ public:
             {
                 auto const otherPublicKey = derivePublicKey(
                     KeyType::secp256k1,
-                    generateSecretKey(
-                        KeyType::secp256k1, generateSeed("otherpassphrase")));
+                    generateSecretKey(KeyType::secp256k1, generateSeed("otherpassphrase")));
 
                 BEAST_EXPECT(!verify(otherPublicKey, makeSlice(message1), sig));
             }
@@ -160,8 +148,8 @@ public:
         {
             testcase("Node keypair generation & signing (ed25519)");
 
-            auto const secretKey = generateSecretKey(
-                KeyType::ed25519, generateSeed("masterpassphrase"));
+            auto const secretKey =
+                generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase"));
             auto const publicKey = derivePublicKey(KeyType::ed25519, secretKey);
 
             BEAST_EXPECT(
@@ -171,11 +159,10 @@ public:
                 toBase58(TokenType::NodePrivate, secretKey) ==
                 "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(
-                to_string(calcNodeID(publicKey)) ==
-                "AA066C988C712815CC37AF71472B7CBBBD4E2A0A");
+                to_string(calcNodeID(publicKey)) == "AA066C988C712815CC37AF71472B7CBBBD4E2A0A");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -185,8 +172,7 @@ public:
             {
                 auto const otherPublicKey = derivePublicKey(
                     KeyType::ed25519,
-                    generateSecretKey(
-                        KeyType::ed25519, generateSeed("otherpassphrase")));
+                    generateSecretKey(KeyType::ed25519, generateSeed("otherpassphrase")));
 
                 BEAST_EXPECT(!verify(otherPublicKey, makeSlice(message1), sig));
             }
@@ -204,12 +190,10 @@ public:
         {
             testcase("Account keypair generation & signing (secp256k1)");
 
-            auto const [pk, sk] = generateKeyPair(
-                KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const [pk, sk] =
+                generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
 
-            BEAST_EXPECT(
-                toBase58(calcAccountID(pk)) ==
-                "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
+            BEAST_EXPECT(toBase58(calcAccountID(pk)) == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
             BEAST_EXPECT(
                 toBase58(TokenType::AccountPublic, pk) ==
                 "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw");
@@ -218,7 +202,7 @@ public:
                 "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -226,11 +210,10 @@ public:
 
             // Verify with incorrect public key
             {
-                auto const otherKeyPair = generateKeyPair(
-                    KeyType::secp256k1, generateSeed("otherpassphrase"));
+                auto const otherKeyPair =
+                    generateKeyPair(KeyType::secp256k1, generateSeed("otherpassphrase"));
 
-                BEAST_EXPECT(
-                    !verify(otherKeyPair.first, makeSlice(message1), sig));
+                BEAST_EXPECT(!verify(otherKeyPair.first, makeSlice(message1), sig));
             }
 
             // Correct public key but wrong signature
@@ -246,12 +229,10 @@ public:
         {
             testcase("Account keypair generation & signing (ed25519)");
 
-            auto const [pk, sk] = generateKeyPair(
-                KeyType::ed25519, generateSeed("masterpassphrase"));
+            auto const [pk, sk] =
+                generateKeyPair(KeyType::ed25519, generateSeed("masterpassphrase"));
 
-            BEAST_EXPECT(
-                to_string(calcAccountID(pk)) ==
-                "rGWrZyQqhTp9Xu7G5Pkayo7bXjH4k4QYpf");
+            BEAST_EXPECT(to_string(calcAccountID(pk)) == "rGWrZyQqhTp9Xu7G5Pkayo7bXjH4k4QYpf");
             BEAST_EXPECT(
                 toBase58(TokenType::AccountPublic, pk) ==
                 "aKGheSBjmCsKJVuLNKRAKpZXT6wpk2FCuEZAXJupXgdAxX5THCqR");
@@ -260,7 +241,7 @@ public:
                 "pwDQjwEhbUBmPuEjFpEG75bFhv2obkCB7NxQsfFxM7xGHBMVPu9");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -268,11 +249,10 @@ public:
 
             // Verify with incorrect public key
             {
-                auto const otherKeyPair = generateKeyPair(
-                    KeyType::ed25519, generateSeed("otherpassphrase"));
+                auto const otherKeyPair =
+                    generateKeyPair(KeyType::ed25519, generateSeed("otherpassphrase"));
 
-                BEAST_EXPECT(
-                    !verify(otherKeyPair.first, makeSlice(message1), sig));
+                BEAST_EXPECT(!verify(otherKeyPair.first, makeSlice(message1), sig));
             }
 
             // Correct public key but wrong signature
@@ -292,39 +272,29 @@ public:
         testcase("Parsing");
 
         // account IDs and node and account public and private
-        // keys should not be parseable as seeds.
+        // keys should not be parsable as seeds.
 
         auto const node1 = randomKeyPair(KeyType::secp256k1);
 
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(TokenType::NodePublic, node1.first)));
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(TokenType::NodePrivate, node1.second)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::NodePublic, node1.first)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::NodePrivate, node1.second)));
 
         auto const node2 = randomKeyPair(KeyType::ed25519);
 
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(TokenType::NodePublic, node2.first)));
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(TokenType::NodePrivate, node2.second)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::NodePublic, node2.first)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::NodePrivate, node2.second)));
 
         auto const account1 = generateKeyPair(KeyType::secp256k1, randomSeed());
 
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(calcAccountID(account1.first))));
-        BEAST_EXPECT(!parseGenericSeed(
-            toBase58(TokenType::AccountPublic, account1.first)));
-        BEAST_EXPECT(!parseGenericSeed(
-            toBase58(TokenType::AccountSecret, account1.second)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(calcAccountID(account1.first))));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::AccountPublic, account1.first)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::AccountSecret, account1.second)));
 
         auto const account2 = generateKeyPair(KeyType::ed25519, randomSeed());
 
-        BEAST_EXPECT(
-            !parseGenericSeed(toBase58(calcAccountID(account2.first))));
-        BEAST_EXPECT(!parseGenericSeed(
-            toBase58(TokenType::AccountPublic, account2.first)));
-        BEAST_EXPECT(!parseGenericSeed(
-            toBase58(TokenType::AccountSecret, account2.second)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(calcAccountID(account2.first))));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::AccountPublic, account2.first)));
+        BEAST_EXPECT(!parseGenericSeed(toBase58(TokenType::AccountSecret, account2.second)));
     }
 
     void

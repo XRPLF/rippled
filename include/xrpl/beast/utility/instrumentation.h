@@ -1,5 +1,4 @@
-#ifndef BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
-#define BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
+#pragma once
 
 #include <cassert>
 
@@ -16,7 +15,7 @@
 #define ALWAYS_OR_UNREACHABLE(cond, message) assert((message) && (cond))
 #define SOMETIMES(cond, message, ...)
 #define REACHABLE(message, ...)
-#define UNREACHABLE(message, ...) assert((message) && false)
+#define UNREACHABLE(message, ...) assert((message) && false)  // NOLINT(misc-static-assert)
 #endif
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
@@ -52,5 +51,3 @@
 // instrumentation macros - its name describes the condition which was _not_
 // meant to happen, while name in other macros describes the condition that is
 // meant to happen (e.g. as in "assert that this happens").
-
-#endif

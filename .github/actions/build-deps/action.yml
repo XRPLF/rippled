@@ -18,6 +18,10 @@ inputs:
     description: "The logging verbosity."
     required: false
     default: "verbose"
+  sanitizers:
+    description: "The sanitizers to enable."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -29,9 +33,11 @@ runs:
         BUILD_OPTION: ${{ inputs.force_build == 'true' && '*' || 'missing' }}
         BUILD_TYPE: ${{ inputs.build_type }}
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
+        SANITIZERS: ${{ inputs.sanitizers }}
       run: |
         echo 'Installing dependencies.'
         conan install \
+          --profile ci \
           --build="${BUILD_OPTION}" \
           --options:host='&:tests=True' \
           --options:host='&:xrpld=True' \

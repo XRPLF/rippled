@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_STRINGUTILITIES_H_INCLUDED
-#define XRPL_BASICS_STRINGUTILITIES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/strHex.h>
@@ -31,7 +30,7 @@ template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const unxtab = []() {
+    static constexpr std::array<int, 256> const digitLookupTable = []() {
         std::array<int, 256> t{};
 
         for (auto& x : t)
@@ -57,7 +56,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = unxtab[*iter++];
+        int c = digitLookupTable[*iter++];
 
         if (c < 0)
             return {};
@@ -67,12 +66,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int cHigh = unxtab[*iter++];
+        int const cHigh = digitLookupTable[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int cLow = unxtab[*iter++];
+        int const cLow = digitLookupTable[*iter++];
 
         if (cLow < 0)
             return {};
@@ -109,8 +108,8 @@ struct parsedURL
     bool
     operator==(parsedURL const& other) const
     {
-        return scheme == other.scheme && domain == other.domain &&
-            port == other.port && path == other.path;
+        return scheme == other.scheme && domain == other.domain && port == other.port &&
+            path == other.path;
     }
 };
 
@@ -133,5 +132,3 @@ bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
 }  // namespace xrpl
-
-#endif

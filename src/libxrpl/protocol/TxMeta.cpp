@@ -21,18 +21,14 @@
 namespace xrpl {
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : transactionID_(txid)
-    , ledgerSeq_(ledger)
-    , nodes_(obj.getFieldArray(sfAffectedNodes))
+    : transactionID_(txid), ledgerSeq_(ledger), nodes_(obj.getFieldArray(sfAffectedNodes))
 {
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
 
-    auto affectedNodes =
-        dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    XRPL_ASSERT(
-        affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes)
+    auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
+    XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
+    if (affectedNodes != nullptr)
         nodes_ = *affectedNodes;
 
     setAdditionalFields(obj);
@@ -43,7 +39,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 {
     SerialIter sit(makeSlice(vec));
 
-    STObject obj(sit, sfMetadata);
+    STObject const obj(sit, sfMetadata);
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
     nodes_ = obj.getFieldArray(sfAffectedNodes);
@@ -62,10 +58,7 @@ TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
 }
 
 void
-TxMeta::setAffectedNode(
-    uint256 const& node,
-    SField const& type,
-    std::uint16_t nodeType)
+TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
     for (auto& n : nodes_)
@@ -81,9 +74,7 @@ TxMeta::setAffectedNode(
     nodes_.push_back(STObject(type));
     STObject& obj = nodes_.back();
 
-    XRPL_ASSERT(
-        obj.getFName() == type,
-        "xrpl::TxMeta::setAffectedNode : field type match");
+    XRPL_ASSERT(obj.getFName() == type, "xrpl::TxMeta::setAffectedNode : field type match");
     obj.setFieldH256(sfLedgerIndex, node);
     obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
@@ -98,33 +89,26 @@ TxMeta::getAffectedAccounts() const
     // Meta#getAffectedAccounts
     for (auto const& node : nodes_)
     {
-        int index = node.getFieldIndex(
-            (node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+        int const index =
+            node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
-            auto const* inner =
-                dynamic_cast<STObject const*>(&node.peekAtIndex(index));
-            XRPL_ASSERT(
-                inner,
-                "xrpl::getAffectedAccounts : STObject type cast succeeded");
-            if (inner)
+            auto const* inner = dynamic_cast<STObject const*>(&node.peekAtIndex(index));
+            XRPL_ASSERT(inner, "xrpl::getAffectedAccounts : STObject type cast succeeded");
+            if (inner != nullptr)
             {
                 for (auto const& field : *inner)
                 {
                     if (auto sa = dynamic_cast<STAccount const*>(&field))
                     {
-                        XRPL_ASSERT(
-                            !sa->isDefault(),
-                            "xrpl::getAffectedAccounts : account is set");
+                        XRPL_ASSERT(!sa->isDefault(), "xrpl::getAffectedAccounts : account is set");
                         if (!sa->isDefault())
                             list.insert(sa->value());
                     }
                     else if (
-                        (field.getFName() == sfLowLimit) ||
-                        (field.getFName() == sfHighLimit) ||
-                        (field.getFName() == sfTakerPays) ||
-                        (field.getFName() == sfTakerGets))
+                        (field.getFName() == sfLowLimit) || (field.getFName() == sfHighLimit) ||
+                        (field.getFName() == sfTakerPays) || (field.getFName() == sfTakerGets))
                     {
                         auto lim = dynamic_cast<STAmount const*>(&field);
                         XRPL_ASSERT(
@@ -142,8 +126,7 @@ TxMeta::getAffectedAccounts() const
                     }
                     else if (field.getFName() == sfMPTokenIssuanceID)
                     {
-                        auto mptID =
-                            dynamic_cast<STBitString<192> const*>(&field);
+                        auto mptID = dynamic_cast<STBitString<192> const*>(&field);
                         if (mptID != nullptr)
                         {
                             auto issuer = MPTIssue(mptID->value()).getIssuer();
@@ -163,7 +146,7 @@ TxMeta::getAffectedAccounts() const
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
-    uint256 index = node->key();
+    uint256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)
@@ -173,8 +156,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(
-        obj.getFName() == type,
-        "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
+        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -209,6 +191,12 @@ TxMeta::getAsObject() const
 
     if (parentBatchId_.has_value())
         metaData.setFieldH256(sfParentBatchID, *parentBatchId_);
+
+    if (gasUsed_.has_value())
+        metaData.setFieldU32(sfGasUsed, *gasUsed_);
+
+    if (wasmReturnCode_.has_value())
+        metaData.setFieldI32(sfWasmReturnCode, *wasmReturnCode_);
 
     if (gasUsed_.has_value())
         metaData.setFieldU32(sfGasUsed, *gasUsed_);

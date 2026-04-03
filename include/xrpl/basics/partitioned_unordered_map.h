@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
-#define XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
+#pragma once
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -51,8 +50,7 @@ public:
     using const_reference = value_type const&;
     using pointer = value_type*;
     using const_pointer = value_type const*;
-    using map_type = std::
-        unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
+    using map_type = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
     using partition_map_type = std::vector<map_type>;
 
     struct iterator
@@ -113,8 +111,7 @@ public:
         friend bool
         operator==(iterator const& lhs, iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ &&
-                lhs.mit_ == rhs.mit_;
+            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
         }
 
         friend bool
@@ -190,8 +187,7 @@ public:
         friend bool
         operator==(const_iterator const& lhs, const_iterator const& rhs)
         {
-            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ &&
-                lhs.mit_ == rhs.mit_;
+            return lhs.map_ == rhs.map_ && lhs.ait_ == rhs.ait_ && lhs.mit_ == rhs.mit_;
         }
 
         friend bool
@@ -231,14 +227,11 @@ private:
     }
 
 public:
-    partitioned_unordered_map(
-        std::optional<std::size_t> partitions = std::nullopt)
+    partitioned_unordered_map(std::optional<std::size_t> partitions = std::nullopt)
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ = partitions && *partitions
-            ? *partitions
-            : std::thread::hardware_concurrency();
+        partitions_ = partitions && *partitions ? *partitions : std::thread::hardware_concurrency();
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
@@ -338,9 +331,7 @@ public:
         iterator it(&map_);
         it.ait_ = it.map_->begin() + partitioner(key);
         auto [eit, inserted] = it.ait_->emplace(
-            std::piecewise_construct,
-            std::forward<T>(keyTuple),
-            std::forward<U>(valueTuple));
+            std::piecewise_construct, std::forward<T>(keyTuple), std::forward<U>(valueTuple));
         it.mit_ = eit;
         return {it, inserted};
     }
@@ -351,8 +342,7 @@ public:
     {
         iterator it(&map_);
         it.ait_ = it.map_->begin() + partitioner(key);
-        auto [eit, inserted] =
-            it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
+        auto [eit, inserted] = it.ait_->emplace(std::forward<T>(key), std::forward<U>(val));
         it.mit_ = eit;
         return {it, inserted};
     }
@@ -402,5 +392,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H

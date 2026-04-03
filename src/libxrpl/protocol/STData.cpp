@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -37,9 +18,8 @@
 namespace xrpl {
 
 template <typename U, typename S>
-constexpr std::
-    enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
-    to_unsigned(S value)
+constexpr std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
+to_unsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -47,9 +27,8 @@ constexpr std::
 }
 
 template <typename U1, typename U2>
-constexpr std::
-    enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
-    to_unsigned(U2 value)
+constexpr std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
+to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -57,8 +36,7 @@ constexpr std::
 }
 
 // TODO
-STData::STData(SField const& n)
-    : STBase(n), inner_type_(STI_NOTPRESENT), data_(STBase{})
+STData::STData(SField const& n) : STBase(n), inner_type_(STI_NOTPRESENT), data_(STBase{})
 {
 }
 
@@ -79,25 +57,19 @@ STData::STData(SField const& n, std::uint16_t v)
 }
 
 STData::STData(SField const& n, std::uint32_t v)
-    : STBase(n)
-    , inner_type_(STI_UINT32)
-    , data_(detail::STVar(detail::defaultObject, sfNetworkID))
+    : STBase(n), inner_type_(STI_UINT32), data_(detail::STVar(detail::defaultObject, sfNetworkID))
 {
     setFieldUsingSetValue<STUInt32>(v);
 }
 
 STData::STData(SField const& n, std::uint64_t v)
-    : STBase(n)
-    , inner_type_(STI_UINT64)
-    , data_(detail::STVar(detail::defaultObject, sfIndexNext))
+    : STBase(n), inner_type_(STI_UINT64), data_(detail::STVar(detail::defaultObject, sfIndexNext))
 {
     setFieldUsingSetValue<STUInt64>(v);
 }
 
 STData::STData(SField const& n, uint128 const& v)
-    : STBase(n)
-    , inner_type_(STI_UINT128)
-    , data_(detail::STVar(detail::defaultObject, sfEmailHash))
+    : STBase(n), inner_type_(STI_UINT128), data_(detail::STVar(detail::defaultObject, sfEmailHash))
 {
     setFieldUsingSetValue<STUInt128>(v);
 }
@@ -119,71 +91,54 @@ STData::STData(SField const& n, uint192 const& v)
 }
 
 STData::STData(SField const& n, uint256 const& v)
-    : STBase(n)
-    , inner_type_(STI_UINT256)
-    , data_(detail::STVar(detail::defaultObject, sfLedgerHash))
+    : STBase(n), inner_type_(STI_UINT256), data_(detail::STVar(detail::defaultObject, sfLedgerHash))
 {
     setFieldUsingSetValue<STUInt256>(v);
 }
 
 STData::STData(SField const& n, Blob const& v)
-    : STBase(n)
-    , inner_type_(STI_VL)
-    , data_(detail::STVar(detail::defaultObject, sfURI))
+    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::defaultObject, sfURI))
 {
     setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
 }
 
 STData::STData(SField const& n, Slice const& v)
-    : STBase(n)
-    , inner_type_(STI_VL)
-    , data_(detail::STVar(detail::defaultObject, sfURI))
+    : STBase(n), inner_type_(STI_VL), data_(detail::STVar(detail::defaultObject, sfURI))
 {
     setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
 }
 
 STData::STData(SField const& n, STAmount const& v)
-    : STBase(n)
-    , inner_type_(STI_AMOUNT)
-    , data_(detail::STVar(detail::defaultObject, sfAmount))
+    : STBase(n), inner_type_(STI_AMOUNT), data_(detail::STVar(detail::defaultObject, sfAmount))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, AccountID const& v)
-    : STBase(n)
-    , inner_type_(STI_ACCOUNT)
-    , data_(detail::STVar(detail::defaultObject, sfAccount))
+    : STBase(n), inner_type_(STI_ACCOUNT), data_(detail::STVar(detail::defaultObject, sfAccount))
 {
     setFieldUsingSetValue<STAccount>(v);
 }
 
 STData::STData(SField const& n, STIssue const& v)
-    : STBase(n)
-    , inner_type_(STI_ISSUE)
-    , data_(detail::STVar(detail::defaultObject, sfAsset))
+    : STBase(n), inner_type_(STI_ISSUE), data_(detail::STVar(detail::defaultObject, sfAsset))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, STCurrency const& v)
-    : STBase(n)
-    , inner_type_(STI_CURRENCY)
-    , data_(detail::STVar(detail::defaultObject, sfBaseAsset))
+    : STBase(n), inner_type_(STI_CURRENCY), data_(detail::STVar(detail::defaultObject, sfBaseAsset))
 {
     setFieldUsingAssignment(v);
 }
 
 STData::STData(SField const& n, STNumber const& v)
-    : STBase(n)
-    , inner_type_(STI_NUMBER)
-    , data_(detail::STVar(detail::defaultObject, sfNumber))
+    : STBase(n), inner_type_(STI_NUMBER), data_(detail::STVar(detail::defaultObject, sfNumber))
 {
     setFieldUsingAssignment(v);
 }
 
-STData::STData(SerialIter& sit, SField const& name)
-    : STBase(name), data_(STBase{})
+STData::STData(SerialIter& sit, SField const& name) : STBase(name), data_(STBase{})
 {
     std::uint16_t stype = SerializedTypeID(sit.get16());
     inner_type_ = stype;
@@ -413,8 +368,8 @@ bool
 STData::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STData const*>(&t);
-    return tPtr && (default_ == tPtr->default_) &&
-        (inner_type_ == tPtr->inner_type_) && (data_ == tPtr->data_);
+    return tPtr && (default_ == tPtr->default_) && (inner_type_ == tPtr->inner_type_) &&
+        (data_ == tPtr->data_);
 }
 
 bool
@@ -483,8 +438,7 @@ std::string
 STData::getText() const
 {
     std::string inner_type_str = getInnerTypeString();
-    return "STData{InnerType: " + inner_type_str +
-        ", Data: " + data_.get().getText() + "}";
+    return "STData{InnerType: " + inner_type_str + ", Data: " + data_.get().getText() + "}";
 }
 
 Json::Value
@@ -753,9 +707,7 @@ dataFromJson(SField const& field, Json::Value const& v)
         {
             if (value.isString())
             {
-                STData data(
-                    field,
-                    beast::lexicalCastThrow<std::uint32_t>(value.asString()));
+                STData data(field, beast::lexicalCastThrow<std::uint32_t>(value.asString()));
                 return data;
             }
             else if (value.isInt())
@@ -791,11 +743,8 @@ dataFromJson(SField const& field, Json::Value const& v)
                 bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
 
                 // if the field is amount, serialize as base 10
-                auto [p, ec] = std::from_chars(
-                    str.data(),
-                    str.data() + str.size(),
-                    val,
-                    useBase10 ? 10 : 16);
+                auto [p, ec] =
+                    std::from_chars(str.data(), str.data() + str.size(), val, useBase10 ? 10 : 16);
 
                 if (ec != std::errc() || (p != str.data() + str.size()))
                     Throw<std::invalid_argument>("STData: invalid UINT64 data");

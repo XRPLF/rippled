@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STDATA_H_INCLUDED
-#define RIPPLE_PROTOCOL_STDATA_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/protocol/SField.h>
@@ -96,9 +76,12 @@ public:
 
     void
     setFieldU8(unsigned char);
-    void setFieldU16(std::uint16_t);
-    void setFieldU32(std::uint32_t);
-    void setFieldU64(std::uint64_t);
+    void
+    setFieldU16(std::uint16_t);
+    void
+    setFieldU32(std::uint32_t);
+    void
+    setFieldU64(std::uint64_t);
     void
     setFieldH128(uint128 const&);
     void
@@ -166,8 +149,8 @@ private:
     // by value.
     template <
         typename T,
-        typename V = typename std::remove_cv<typename std::remove_reference<
-            decltype(std::declval<T>().value())>::type>::type>
+        typename V = typename std::remove_cv<
+            typename std::remove_reference<decltype(std::declval<T>().value())>::type>::type>
     V
     getFieldByValue() const;
 
@@ -304,5 +287,3 @@ STData
 dataFromJson(SField const& field, Json::Value const& value);
 
 }  // namespace xrpl
-
-#endif

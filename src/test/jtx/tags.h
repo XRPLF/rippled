@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_TAGS_H_INCLUDED
-#define XRPL_TEST_JTX_TAGS_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace test {
@@ -44,5 +43,3 @@ static increment_t const increment;
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

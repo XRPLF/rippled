@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_ABSTRACTCLIENT_H_INCLUDED
-#define XRPL_TEST_ABSTRACTCLIENT_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 
@@ -41,5 +40,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

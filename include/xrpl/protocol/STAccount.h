@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STACCOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_STACCOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/AccountID.h>
@@ -25,7 +24,7 @@ public:
     STAccount();
 
     STAccount(SField const& n);
-    STAccount(SField const& n, Buffer&& v);
+    STAccount(SField const& n, Buffer const& v);
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 
@@ -113,5 +112,3 @@ operator<(AccountID const& lhs, STAccount const& rhs)
 }
 
 }  // namespace xrpl
-
-#endif

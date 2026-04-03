@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/Transaction.h>
 
@@ -27,9 +26,7 @@ public:
     std::shared_ptr<Transaction>
     fetch_from_cache(uint256 const&);
 
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
     fetch(uint256 const&, error_code_i& ec);
 
     /**
@@ -41,13 +38,8 @@ public:
      *         the all ledgers in the provided range were present in
      *         the database while the search was conducted.
      */
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    fetch(
-        uint256 const&,
-        ClosedInterval<uint32_t> const& range,
-        error_code_i& ec);
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, error_code_i& ec);
 
     std::shared_ptr<STTx const>
     fetch(
@@ -78,5 +70,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

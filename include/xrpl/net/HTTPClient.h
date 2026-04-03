@@ -1,5 +1,4 @@
-#ifndef XRPL_NET_HTTPCLIENT_H_INCLUDED
-#define XRPL_NET_HTTPCLIENT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -29,6 +28,18 @@ public:
         std::string const& sslVerifyFile,
         bool sslVerify,
         beast::Journal j);
+
+    /** Destroys the global SSL context created by initializeSSLContext().
+     *
+     *  This releases the underlying boost::asio::ssl::context and any
+     *  associated OpenSSL resources. Must not be called while any
+     *  HTTPClient requests are in flight.
+     *
+     *  @note Currently only called from tests during teardown. In production,
+     *        the SSL context lives for the lifetime of the process.
+     */
+    static void
+    cleanupSSLContext();
 
     static void
     get(bool bSSL,
@@ -64,8 +75,7 @@ public:
         boost::asio::io_context& io_context,
         std::string strSite,
         unsigned short const port,
-        std::function<
-            void(boost::asio::streambuf& sb, std::string const& strHost)> build,
+        std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
         std::function<bool(
@@ -76,5 +86,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

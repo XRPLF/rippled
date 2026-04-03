@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_HARDENED_HASH_H_INCLUDED
-#define XRPL_BASICS_HARDENED_HASH_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
@@ -33,7 +32,7 @@ make_seed_pair() noexcept
         // state_t& operator=(state_t const&) = delete;
     };
     static state_t state;
-    std::lock_guard lock(state.mutex);
+    std::lock_guard const lock(state.mutex);
     return {state.dist(state.gen), state.dist(state.gen)};
 }
 
@@ -93,5 +92,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

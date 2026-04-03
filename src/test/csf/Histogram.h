@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
-#define XRPL_TEST_CSF_HISTOGRAM_H_INCLUDED
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -26,7 +25,7 @@ template <class T, class Compare = std::less<T>>
 class Histogram
 {
     // TODO: Consider logarithmic bins around expected median if this becomes
-    // unscaleable
+    // unscalable
     std::map<T, std::size_t, Compare> counts_;
     std::size_t samples = 0;
 
@@ -93,7 +92,7 @@ public:
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples);
 
         if (counts_.empty())
             return T{};
@@ -112,5 +111,3 @@ public:
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

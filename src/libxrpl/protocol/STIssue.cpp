@@ -38,20 +38,19 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         // - 160 bits MPT issuer account
         // - 160 bits black hole account
         // - 32 bits sequence
-        AccountID account = static_cast<AccountID>(sit.get160());
+        AccountID const account = static_cast<AccountID>(sit.get160());
         // MPT
         if (noAccount() == account)
         {
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
-            static_assert(
-                MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
+            static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
             memcpy(mptID.data(), &sequence, sizeof(sequence));
             memcpy(
                 mptID.data() + sizeof(sequence),
                 currencyOrAccount.data(),
                 sizeof(currencyOrAccount));
-            MPTIssue issue{mptID};
+            MPTIssue const issue{mptID};
             asset_ = issue;
         }
         else
@@ -60,8 +59,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
             issue.currency = currencyOrAccount;
             issue.account = account;
             if (!isConsistent(issue))
-                Throw<std::runtime_error>(
-                    "invalid issue: currency and account native mismatch");
+                Throw<std::runtime_error>("invalid issue: currency and account native mismatch");
             asset_ = issue;
         }
     }
@@ -102,7 +100,7 @@ STIssue::add(Serializer& s) const
         auto const& issue = asset_.get<MPTIssue>();
         s.addBitString(issue.getIssuer());
         s.addBitString(noAccount());
-        std::uint32_t sequence;
+        std::uint32_t sequence = 0;
         memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
         s.add32(sequence);
     }
@@ -112,7 +110,7 @@ bool
 STIssue::isEquivalent(STBase const& t) const
 {
     STIssue const* v = dynamic_cast<STIssue const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

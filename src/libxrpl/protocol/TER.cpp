@@ -10,9 +10,7 @@
 
 namespace xrpl {
 
-std::unordered_map<
-    TERUnderlyingType,
-    std::pair<char const* const, char const* const>> const&
+std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
 transResults()
 {
     // clang-format off
@@ -205,6 +203,7 @@ transResults()
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_WASM,                  "Malformed: Provided WASM code is invalid."),
+        MAKE_ERROR(temTEMP_DISABLED,             "The transaction requires logic that is currently temporarily disabled."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -270,9 +269,8 @@ transCode(std::string const& token)
     static auto const results = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
-        auto tRange = boost::adaptors::transform(range, [](auto const& r) {
-            return std::make_pair(r.second.first, r.first);
-        });
+        auto tRange = boost::adaptors::transform(
+            range, [](auto const& r) { return std::make_pair(r.second.first, r.first); });
         std::unordered_map<std::string, TERUnderlyingType> const byToken(
             tRange.begin(), tRange.end());
         return byToken;

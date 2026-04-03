@@ -29,9 +29,10 @@ ConnectAttempt::ConnectAttempt(
     , strand_(boost::asio::make_strand(io_context))
     , timer_(io_context)
     , stepTimer_(io_context)
-    , stream_ptr_(std::make_unique<stream_type>(
-          socket_type(std::forward<boost::asio::io_context&>(io_context)),
-          *context))
+    , stream_ptr_(
+          std::make_unique<stream_type>(
+              socket_type(std::forward<boost::asio::io_context&>(io_context)),
+              *context))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
     , slot_(slot)
@@ -50,8 +51,10 @@ void
 ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
-            strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
+    {
+        boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
+        return;
+    }
 
     if (!socket_.is_open())
         return;
@@ -65,8 +68,10 @@ void
 ConnectAttempt::run()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
-            strand_, std::bind(&ConnectAttempt::run, shared_from_this()));
+    {
+        boost::asio::post(strand_, std::bind(&ConnectAttempt::run, shared_from_this()));
+        return;
+    }
 
     JLOG(journal_.debug()) << "run: connecting to " << remote_endpoint_;
 
@@ -79,10 +84,7 @@ ConnectAttempt::run()
         remote_endpoint_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &ConnectAttempt::onConnect,
-                shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
 }
 
 //------------------------------------------------------------------------------
@@ -91,8 +93,7 @@ void
 ConnectAttempt::shutdown()
 {
     XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "xrpl::ConnectAttempt::shutdown: strand in this thread");
+        strand_.running_in_this_thread(), "xrpl::ConnectAttempt::shutdown: strand in this thread");
 
     if (!socket_.is_open())
         return;
@@ -117,16 +118,13 @@ ConnectAttempt::tryAsyncShutdown()
         return;
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
-    if (currentStep_ != ConnectionStep::TcpConnect &&
-        currentStep_ != ConnectionStep::TlsHandshake)
+    if (currentStep_ != ConnectionStep::TcpConnect && currentStep_ != ConnectionStep::TlsHandshake)
     {
         setTimer(ConnectionStep::ShutdownStarted);
-        return stream_.async_shutdown(bind_executor(
+        stream_.async_shutdown(bind_executor(
             strand_,
-            std::bind(
-                &ConnectAttempt::onShutdown,
-                shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
+        return;
     }
 
     close();
@@ -145,11 +143,9 @@ ConnectAttempt::onShutdown(error_code ec)
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
         // - application data after close notify: benign SSL shutdown condition
-        bool shouldLog =
-            (ec != boost::asio::error::eof &&
-             ec != boost::asio::error::operation_aborted &&
-             ec.message().find("application data after close notify") ==
-                 std::string::npos);
+        bool const shouldLog =
+            (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
+             ec.message().find("application data after close notify") == std::string::npos);
 
         if (shouldLog)
         {
@@ -164,15 +160,14 @@ void
 ConnectAttempt::close()
 {
     XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "xrpl::ConnectAttempt::close : strand in this thread");
+        strand_.running_in_this_thread(), "xrpl::ConnectAttempt::close : strand in this thread");
     if (!socket_.is_open())
         return;
 
     cancelTimer();
 
     error_code ec;
-    socket_.close(ec);
+    socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 }
 
 void
@@ -200,17 +195,17 @@ ConnectAttempt::setTimer(ConnectionStep step)
         try
         {
             timer_.expires_after(connectTimeout);
-            timer_.async_wait(boost::asio::bind_executor(
-                strand_,
-                std::bind(
-                    &ConnectAttempt::onTimer,
-                    shared_from_this(),
-                    std::placeholders::_1)));
+            timer_.async_wait(
+                boost::asio::bind_executor(
+                    strand_,
+                    std::bind(
+                        &ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
         }
         catch (std::exception const& ex)
         {
             JLOG(journal_.error()) << "setTimer (global): " << ex.what();
-            return close();
+            close();
+            return;
         }
     }
 
@@ -242,21 +237,19 @@ ConnectAttempt::setTimer(ConnectionStep step)
 
         // call to expires_after cancels previous timer
         stepTimer_.expires_after(stepTimeout);
-        stepTimer_.async_wait(boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &ConnectAttempt::onTimer,
-                shared_from_this(),
-                std::placeholders::_1)));
+        stepTimer_.async_wait(
+            boost::asio::bind_executor(
+                strand_,
+                std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
 
         JLOG(journal_.trace()) << "setTimer: " << stepToString(step)
                                << " timeout=" << stepTimeout.count() << "s";
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error())
-            << "setTimer (step " << stepToString(step) << "): " << ex.what();
-        return close();
+        JLOG(journal_.error()) << "setTimer (step " << stepToString(step) << "): " << ex.what();
+        close();
+        return;
     }
 }
 
@@ -268,7 +261,7 @@ ConnectAttempt::cancelTimer()
         timer_.cancel();
         stepTimer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }
@@ -288,23 +281,22 @@ ConnectAttempt::onTimer(error_code ec)
 
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
-        return close();
+        close();
+        return;
     }
 
     // Determine which timer expired by checking their expiry times
     auto const now = std::chrono::steady_clock::now();
-    bool globalExpired = (timer_.expiry() <= now);
-    bool stepExpired = (stepTimer_.expiry() <= now);
+    bool const globalExpired = (timer_.expiry() <= now);
+    bool const stepExpired = (stepTimer_.expiry() <= now);
 
     if (globalExpired)
     {
-        JLOG(journal_.debug())
-            << "onTimer: Global timeout; step: " << stepToString(currentStep_);
+        JLOG(journal_.debug()) << "onTimer: Global timeout; step: " << stepToString(currentStep_);
     }
     else if (stepExpired)
     {
-        JLOG(journal_.debug())
-            << "onTimer: Step timeout; step: " << stepToString(currentStep_);
+        JLOG(journal_.debug()) << "onTimer: Step timeout; step: " << stepToString(currentStep_);
     }
     else
     {
@@ -322,9 +314,13 @@ ConnectAttempt::onConnect(error_code ec)
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return tryAsyncShutdown();
+        {
+            tryAsyncShutdown();
+            return;
+        }
 
-        return fail("onConnect", ec);
+        fail("onConnect", ec);
+        return;
     }
 
     if (!socket_.is_open())
@@ -333,10 +329,16 @@ ConnectAttempt::onConnect(error_code ec)
     // check if connection has really been established
     socket_.local_endpoint(ec);
     if (ec)
-        return fail("onConnect", ec);
+    {
+        fail("onConnect", ec);
+        return;
+    }
 
     if (shutdown_)
-        return tryAsyncShutdown();
+    {
+        tryAsyncShutdown();
+        return;
+    }
 
     ioPending_ = true;
 
@@ -347,10 +349,7 @@ ConnectAttempt::onConnect(error_code ec)
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &ConnectAttempt::onHandshake,
-                shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -361,25 +360,38 @@ ConnectAttempt::onHandshake(error_code ec)
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return tryAsyncShutdown();
+        {
+            tryAsyncShutdown();
+            return;
+        }
 
-        return fail("onHandshake", ec);
+        fail("onHandshake", ec);
+        return;
     }
 
     auto const local_endpoint = socket_.local_endpoint(ec);
     if (ec)
-        return fail("onHandshake", ec);
+    {
+        fail("onHandshake", ec);
+        return;
+    }
 
     setTimer(ConnectionStep::HttpWrite);
 
     // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
-        return fail("Self connection");
+    {
+        fail("Self connection");
+        return;
+    }
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return shutdown();  // makeSharedValue logs
+    {
+        shutdown();
+        return;  // makeSharedValue logs
+    }
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
@@ -397,7 +409,10 @@ ConnectAttempt::onHandshake(error_code ec)
         app_);
 
     if (shutdown_)
-        return tryAsyncShutdown();
+    {
+        tryAsyncShutdown();
+        return;
+    }
 
     ioPending_ = true;
 
@@ -406,10 +421,7 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &ConnectAttempt::onWrite,
-                shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -420,13 +432,20 @@ ConnectAttempt::onWrite(error_code ec)
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return tryAsyncShutdown();
+        {
+            tryAsyncShutdown();
+            return;
+        }
 
-        return fail("onWrite", ec);
+        fail("onWrite", ec);
+        return;
     }
 
     if (shutdown_)
-        return tryAsyncShutdown();
+    {
+        tryAsyncShutdown();
+        return;
+    }
 
     ioPending_ = true;
 
@@ -438,10 +457,7 @@ ConnectAttempt::onWrite(error_code ec)
         response_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &ConnectAttempt::onRead,
-                shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -456,17 +472,25 @@ ConnectAttempt::onRead(error_code ec)
         if (ec == boost::asio::error::eof)
         {
             JLOG(journal_.debug()) << "EOF";
-            return shutdown();
+            shutdown();
+            return;
         }
 
         if (ec == boost::asio::error::operation_aborted)
-            return tryAsyncShutdown();
+        {
+            tryAsyncShutdown();
+            return;
+        }
 
-        return fail("onRead", ec);
+        fail("onRead", ec);
+        return;
     }
 
     if (shutdown_)
-        return tryAsyncShutdown();
+    {
+        tryAsyncShutdown();
+        return;
+    }
 
     processResponse();
 }
@@ -480,13 +504,12 @@ ConnectAttempt::processResponse()
     {
         // A peer may respond with service_unavailable and a list of alternative
         // peers to connect to, a differing status code is unexpected
-        if (response_.result() !=
-            boost::beast::http::status::service_unavailable)
+        if (response_.result() != boost::beast::http::status::service_unavailable)
         {
-            JLOG(journal_.warn())
-                << "Unable to upgrade to peer protocol: " << response_.result()
-                << " (" << response_.reason() << ")";
-            return shutdown();
+            JLOG(journal_.warn()) << "Unable to upgrade to peer protocol: " << response_.result()
+                                  << " (" << response_.reason() << ")";
+            shutdown();
+            return;
         }
 
         // Parse response body to determine if this is a redirect or other
@@ -494,31 +517,34 @@ ConnectAttempt::processResponse()
         std::string responseBody;
         responseBody.reserve(boost::asio::buffer_size(response_.body().data()));
         for (auto const buffer : response_.body().data())
+        {
             responseBody.append(
-                static_cast<char const*>(buffer.data()),
-                boost::asio::buffer_size(buffer));
+                static_cast<char const*>(buffer.data()), boost::asio::buffer_size(buffer));
+        }
 
         Json::Value json;
         Json::Reader reader;
         auto const isValidJson = reader.parse(responseBody, json);
 
         // Check if this is a redirect response (contains peer-ips field)
-        auto const isRedirect =
-            isValidJson && json.isObject() && json.isMember("peer-ips");
+        auto const isRedirect = isValidJson && json.isObject() && json.isMember("peer-ips");
 
         if (!isRedirect)
         {
-            JLOG(journal_.warn())
-                << "processResponse: " << remote_endpoint_
-                << " failed to upgrade to peer protocol: " << response_.result()
-                << " (" << response_.reason() << ")";
+            JLOG(journal_.warn()) << "processResponse: " << remote_endpoint_
+                                  << " failed to upgrade to peer protocol: " << response_.result()
+                                  << " (" << response_.reason() << ")";
 
-            return shutdown();
+            shutdown();
+            return;
         }
 
         Json::Value const& peerIps = json["peer-ips"];
         if (!peerIps.isArray())
-            return fail("processResponse: invalid peer-ips format");
+        {
+            fail("processResponse: invalid peer-ips format");
+            return;
+        }
 
         // Extract and validate peer endpoints
         std::vector<boost::asio::ip::tcp::endpoint> redirectEndpoints;
@@ -538,7 +564,8 @@ ConnectAttempt::processResponse()
         // Notify PeerFinder about the redirect redirectEndpoints may be empty
         overlay_.peerFinder().onRedirects(remote_endpoint_, redirectEndpoints);
 
-        return fail("processResponse: failed to connect to peer: redirected");
+        fail("processResponse: failed to connect to peer: redirected");
+        return;
     }
 
     // Just because our peer selected a particular protocol version doesn't
@@ -552,13 +579,18 @@ ConnectAttempt::processResponse()
             negotiatedProtocol = pvs[0];
 
         if (!negotiatedProtocol)
-            return fail(
-                "processResponse: Unable to negotiate protocol version");
+        {
+            fail("processResponse: Unable to negotiate protocol version");
+            return;
+        }
     }
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return shutdown();  // makeSharedValue logs
+    {
+        shutdown();
+        return;  // makeSharedValue logs
+    }
 
     try
     {
@@ -572,32 +604,32 @@ ConnectAttempt::processResponse()
 
         usage_.setPublicKey(publicKey);
 
-        JLOG(journal_.debug())
-            << "Protocol: " << to_string(*negotiatedProtocol);
-        JLOG(journal_.info())
-            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
+        JLOG(journal_.debug()) << "Protocol: " << to_string(*negotiatedProtocol);
+        JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
-        auto const member = app_.cluster().member(publicKey);
+        auto const member = app_.getCluster().member(publicKey);
         if (member)
         {
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result = overlay_.peerFinder().activate(
-            slot_, publicKey, member.has_value());
+        auto const result = overlay_.peerFinder().activate(slot_, publicKey, member.has_value());
         if (result != PeerFinder::Result::success)
         {
             std::stringstream ss;
-            ss << "Outbound Connect Attempt " << remote_endpoint_ << " "
-               << to_string(result);
-            return fail(ss.str());
+            ss << "Outbound Connect Attempt " << remote_endpoint_ << " " << to_string(result);
+            fail(ss.str());
+            return;
         }
 
         if (!socket_.is_open())
             return;
 
         if (shutdown_)
-            return tryAsyncShutdown();
+        {
+            tryAsyncShutdown();
+            return;
+        }
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
@@ -615,7 +647,8 @@ ConnectAttempt::processResponse()
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("Handshake failure (") + e.what() + ")");
+        fail(std::string("Handshake failure (") + e.what() + ")");
+        return;
     }
 }
 

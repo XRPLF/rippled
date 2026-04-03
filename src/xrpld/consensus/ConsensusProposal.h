@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -183,9 +182,8 @@ public:
     render() const
     {
         std::stringstream ss;
-        ss << "proposal: previous_ledger: " << previousLedger_
-           << " proposal_seq: " << proposeSeq_ << " position: " << position_
-           << " close_time: " << to_string(closeTime_)
+        ss << "proposal: previous_ledger: " << previousLedger_ << " proposal_seq: " << proposeSeq_
+           << " position: " << position_ << " close_time: " << to_string(closeTime_)
            << " now: " << to_string(time_) << " is_bow_out:" << isBowOut()
            << " node_id: " << nodeID_;
         return ss.str();
@@ -206,8 +204,7 @@ public:
             ret[jss::propose_seq] = proposeSeq();
         }
 
-        ret[jss::close_time] =
-            to_string(closeTime().time_since_epoch().count());
+        ret[jss::close_time] = to_string(closeTime().time_since_epoch().count());
 
         return ret;
     }
@@ -263,4 +260,3 @@ operator==(
         a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
 }
 }  // namespace xrpl
-#endif

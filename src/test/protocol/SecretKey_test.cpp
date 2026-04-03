@@ -1,3 +1,5 @@
+#include <test/unit_test/utils.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
@@ -41,28 +43,26 @@ public:
             0x62, 0x36, 0x9C, 0x11, 0xD8, 0xBF, 0x87, 0x7E, 0xDA, 0x23, 0x87,
             0x78, 0xE7, 0xA3, 0x1F, 0xF0, 0xAA, 0xC5, 0xD0, 0xDB, 0xCF, 0x37};
 
-        std::array<std::uint8_t, 32> const skData{
-            0xAA, 0x92, 0x14, 0x17, 0xE7, 0xE5, 0xC2, 0x99, 0xDA, 0x4E, 0xEC,
-            0x16, 0xD1, 0xCA, 0xA9, 0x2F, 0x19, 0xB1, 0x9F, 0x2A, 0x68, 0x51,
-            0x1F, 0x68, 0xEC, 0x73, 0xBB, 0xB2, 0xF5, 0x23, 0x6F, 0x3D};
+        std::array<std::uint8_t, 32> const skData{0xAA, 0x92, 0x14, 0x17, 0xE7, 0xE5, 0xC2, 0x99,
+                                                  0xDA, 0x4E, 0xEC, 0x16, 0xD1, 0xCA, 0xA9, 0x2F,
+                                                  0x19, 0xB1, 0x9F, 0x2A, 0x68, 0x51, 0x1F, 0x68,
+                                                  0xEC, 0x73, 0xBB, 0xB2, 0xF5, 0x23, 0x6F, 0x3D};
 
         std::array<std::uint8_t, 71> const sig{
-            0x30, 0x45, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34,
-            0xBA, 0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D,
-            0x1F, 0xB8, 0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3,
-            0x60, 0xF2, 0x46, 0x60, 0x02, 0x20, 0x50, 0x87, 0x39, 0xDB, 0x0A,
-            0x2E, 0xF8, 0x16, 0x76, 0xE3, 0x9F, 0x45, 0x9C, 0x8B, 0xBB, 0x07,
-            0xA0, 0x9C, 0x3E, 0x9F, 0x9B, 0xEB, 0x69, 0x62, 0x94, 0xD5, 0x24,
-            0xD4, 0x79, 0xD6, 0x27, 0x40};
+            0x30, 0x45, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA,
+            0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8,
+            0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46,
+            0x60, 0x02, 0x20, 0x50, 0x87, 0x39, 0xDB, 0x0A, 0x2E, 0xF8, 0x16, 0x76,
+            0xE3, 0x9F, 0x45, 0x9C, 0x8B, 0xBB, 0x07, 0xA0, 0x9C, 0x3E, 0x9F, 0x9B,
+            0xEB, 0x69, 0x62, 0x94, 0xD5, 0x24, 0xD4, 0x79, 0xD6, 0x27, 0x40};
 
         std::array<std::uint8_t, 72> const non{
-            0x30, 0x46, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34,
-            0xBA, 0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D,
-            0x1F, 0xB8, 0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3,
-            0x60, 0xF2, 0x46, 0x60, 0x02, 0x21, 0x00, 0xAF, 0x78, 0xC6, 0x24,
-            0xF5, 0xD1, 0x07, 0xE9, 0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44,
-            0xF7, 0x1A, 0x12, 0x9E, 0x47, 0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD,
-            0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01};
+            0x30, 0x46, 0x02, 0x21, 0x00, 0xB4, 0x9D, 0x07, 0xF0, 0xE9, 0x34, 0xBA,
+            0x46, 0x8C, 0x0E, 0xFC, 0x78, 0x11, 0x77, 0x91, 0x40, 0x8D, 0x1F, 0xB8,
+            0xB6, 0x3A, 0x64, 0x92, 0xAD, 0x39, 0x5A, 0xC2, 0xF3, 0x60, 0xF2, 0x46,
+            0x60, 0x02, 0x21, 0x00, 0xAF, 0x78, 0xC6, 0x24, 0xF5, 0xD1, 0x07, 0xE9,
+            0x89, 0x1C, 0x60, 0xBA, 0x63, 0x74, 0x44, 0xF7, 0x1A, 0x12, 0x9E, 0x47,
+            0x13, 0x5D, 0x36, 0xD9, 0x2A, 0xFD, 0x39, 0xB8, 0x56, 0x60, 0x1A, 0x01};
 
         auto const digest = uint256::fromVoid(digestData.data());
 
@@ -72,12 +72,16 @@ public:
         {
             auto const canonicality = ecdsaCanonicality(makeSlice(sig));
             BEAST_EXPECT(canonicality);
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*canonicality == ECDSACanonicality::fullyCanonical);
         }
 
         {
             auto const canonicality = ecdsaCanonicality(makeSlice(non));
             BEAST_EXPECT(canonicality);
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*canonicality != ECDSACanonicality::fullyCanonical);
         }
 
@@ -97,6 +101,8 @@ public:
             auto const [pk, sk] = randomKeyPair(KeyType::secp256k1);
 
             BEAST_EXPECT(pk == derivePublicKey(KeyType::secp256k1, sk));
+
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(*publicKeyType(pk) == KeyType::secp256k1);
 
             for (std::size_t j = 0; j < 32; j++)
@@ -106,7 +112,7 @@ public:
 
                 auto sig = signDigest(pk, sk, digest);
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verifyDigest(pk, digest, sig, true));
 
                 // Wrong digest:
@@ -135,7 +141,7 @@ public:
             auto const [pk, sk] = randomKeyPair(type);
 
             BEAST_EXPECT(pk == derivePublicKey(type, sk));
-            BEAST_EXPECT(*publicKeyType(pk) == type);
+            BEAST_EXPECT(*publicKeyType(pk) == type);  // NOLINT(bugprone-unchecked-optional-access)
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -144,7 +150,7 @@ public:
 
                 auto sig = sign(pk, sk, makeSlice(data));
 
-                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(!sig.empty());
                 BEAST_EXPECT(verify(pk, makeSlice(data), sig));
 
                 // Construct wrong data:
@@ -178,34 +184,30 @@ public:
 
         // Ensure that parsing some well-known secret keys works
         {
-            auto const sk1 = generateSecretKey(
-                KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const sk1 =
+                generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey>(
-                TokenType::NodePrivate,
-                "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
+                TokenType::NodePrivate, "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         {
-            auto const sk1 = generateSecretKey(
-                KeyType::ed25519, generateSeed("masterpassphrase"));
+            auto const sk1 = generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase"));
 
             auto const sk2 = parseBase58<SecretKey>(
-                TokenType::NodePrivate,
-                "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
+                TokenType::NodePrivate, "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(sk1 == *sk2);
+            BEAST_EXPECT(test::equal(sk1, *sk2));  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Try converting short, long and malformed data
         BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, ""));
         BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, " "));
-        BEAST_EXPECT(!parseBase58<SecretKey>(
-            TokenType::NodePrivate, "!35gty9mhju8nfjl"));
+        BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, "!35gty9mhju8nfjl"));
 
         auto const good = toBase58(TokenType::NodePrivate, randomSecretKey());
 
@@ -214,13 +216,12 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {
                 s.erase(r(s) % s.size(), 1);
-                BEAST_EXPECT(
-                    !parseBase58<SecretKey>(TokenType::NodePrivate, s));
+                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
             }
         }
 
@@ -239,8 +240,7 @@ public:
             {
                 auto s = good;
                 s[i % s.size()] = c;
-                BEAST_EXPECT(
-                    !parseBase58<SecretKey>(TokenType::NodePrivate, s));
+                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
             }
         }
 
@@ -251,8 +251,7 @@ public:
             for (auto c : std::string("ansrJqtv7"))
             {
                 s[0] = c;
-                BEAST_EXPECT(
-                    !parseBase58<SecretKey>(TokenType::NodePrivate, s));
+                BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
             }
         }
 
@@ -270,21 +269,21 @@ public:
             BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<SecretKey>(TokenType::NodePrivate, si);
-            BEAST_EXPECT(ski && keys[i] == *ski);
+            BEAST_EXPECT(ski && test::equal(keys[i], *ski));
 
             for (std::size_t j = i; j != keys.size(); ++j)
             {
-                BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
+                BEAST_EXPECT(test::equal(keys[i], keys[j]) == (i == j));
 
                 auto const sj = toBase58(TokenType::NodePrivate, keys[j]);
 
                 BEAST_EXPECT((si == sj) == (i == j));
 
-                auto const skj =
-                    parseBase58<SecretKey>(TokenType::NodePrivate, sj);
-                BEAST_EXPECT(skj && keys[j] == *skj);
+                auto const skj = parseBase58<SecretKey>(TokenType::NodePrivate, sj);
+                BEAST_EXPECT(skj && test::equal(keys[j], *skj));
 
-                BEAST_EXPECT((*ski == *skj) == (i == j));
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                BEAST_EXPECT(test::equal(*ski, *skj) == (i == j));
             }
         }
     }
@@ -299,12 +298,12 @@ public:
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp =
-                generateKeyPair(KeyType::secp256k1, Seed{makeSlice(test.seed)});
+            auto kp = generateKeyPair(KeyType::secp256k1, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
-            BEAST_EXPECT(calcAccountID(kp.first) == *id);
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
+            BEAST_EXPECT(
+                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
@@ -318,12 +317,12 @@ public:
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp =
-                generateKeyPair(KeyType::ed25519, Seed{makeSlice(test.seed)});
+            auto kp = generateKeyPair(KeyType::ed25519, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
-            BEAST_EXPECT(kp.second == SecretKey{makeSlice(test.seckey)});
-            BEAST_EXPECT(calcAccountID(kp.first) == *id);
+            BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
+            BEAST_EXPECT(
+                calcAccountID(kp.first) == *id);  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 

@@ -106,7 +106,7 @@ tuned heuristics. The fields are as follows:
   precision as an implementation defined percentage of `maxPeers` subject to
   an implementation defined floor. An instance of the PeerFinder rounds the
   fractional part up or down using a uniform random number generated at
-  program startup. This allows the outdegree of the overlay network to be
+  program startup. This allows the out-degree of the overlay network to be
   controlled with fractional precision, ensuring that all inbound network
   connection slots are not consumed (which would make it difficult for new
   participants to enter the network).
@@ -138,7 +138,7 @@ connection test on that neighbor by initiating an outgoing connection to the
 remote IP address as seen on the connection combined with the port advertised
 in the Endpoint message. If the test fails, then the peer considers its neighbor
 firewalled (intentionally or due to misconfiguration) and not forward neighbor
-endpoint in Endpoint messages. This prevents poor quality unconnectible
+endpoint in Endpoint messages. This prevents poor quality un-connectable
 addresses from landing in the caches. If the incoming connection test passes,
 then the peer fills in the Endpoint message with the remote address as seen on
 the connection before storing it in its cache and forwarding it to other peers.
@@ -150,7 +150,7 @@ it no longer has available inbound slots, its address will shortly after stop
 being handed out by other peers. Livecache entries are very likely to result
 in both a successful connection establishment and the acquisition of an active
 outbound slot. Compare this with Bootcache addresses, which are very likely to
-be connectible but unlikely to have an open slot.
+be connectable but unlikely to have an open slot.
 
 Because entries in the Livecache are ephemeral, they are not persisted across
 launches in the database. The Livecache is continually updated and expired as
@@ -186,7 +186,7 @@ since they will have moved towards the core of the overlay over their high
 uptime. When a connected server is full it will return a handful of new
 addresses from its Livecache and gracefully close the connection. Addresses
 from the Livecache are highly likely to have inbound connection slots and be
-connectible.
+connectable.
 
 For security, all information that contributes to the ranking of Bootcache
 entries is observed locally. PeerFinder never trusts external sources of information.
@@ -257,7 +257,7 @@ Slot properties may be combined and are not mutually exclusive.
 - **Superpeer** (forthcoming)
 
   A superpeer slot is a connection to a peer which can accept incoming
-  connections, meets certain resource availaibility requirements (such as
+  connections, meets certain resource availability requirements (such as
   bandwidth, CPU, and storage capacity), and operates full duplex in the
   overlay. Connections which are not superpeers are by definition leaves. A
   leaf slot is a connection to a peer which does not route overlay messages to
@@ -321,7 +321,7 @@ stage remains active while:
 
 PeerFinder makes its best effort to exhaust addresses in the Livecache before
 moving on to the Bootcache, because Livecache addresses are highly likely
-to be connectible (since they are known to have been online within the last
+to be connectable (since they are known to have been online within the last
 minute), and highly likely to have an open slot for an incoming connection
 (because peers only advertise themselves in the Livecache when they have
 open slots).
@@ -334,7 +334,7 @@ desired. The stage remains active while:
 
 - There are addresses in the cache that have not been tried recently.
 
-Entries in the Bootcache are ranked, with highly connectible addresses preferred
+Entries in the Bootcache are ranked, with highly connectable addresses preferred
 over others. Connection attempts to Bootcache addresses are very likely to
 succeed but unlikely to produce an active connection since the peers likely do
 not have open slots. Before the remote peer closes the connection it will send

@@ -26,11 +26,7 @@ sign(
 }
 
 bool
-verify(
-    STObject const& st,
-    HashPrefix const& prefix,
-    PublicKey const& pk,
-    SF_VL const& sigField)
+verify(STObject const& st, HashPrefix const& prefix, PublicKey const& pk, SF_VL const& sigField)
 {
     auto const sig = get(st, sigField);
     if (!sig)
@@ -38,8 +34,7 @@ verify(
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
-    return verify(
-        pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
+    return verify(pk, Slice(ss.data(), ss.size()), Slice(sig->data(), sig->size()));
 }
 
 // Questions regarding buildMultiSigningData:

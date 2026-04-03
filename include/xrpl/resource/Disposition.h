@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_DISPOSITION_H_INCLUDED
-#define XRPL_RESOURCE_DISPOSITION_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace Resource {
@@ -20,5 +19,3 @@ enum Disposition {
 
 }  // namespace Resource
 }  // namespace xrpl
-
-#endif

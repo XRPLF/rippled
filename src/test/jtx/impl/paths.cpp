@@ -1,6 +1,6 @@
 #include <test/jtx/paths.h>
 
-#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/protocol/jss.h>
 
@@ -30,8 +30,7 @@ paths::operator()(Env& env, JTx& jt) const
     }
 
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(
-            env.current(), env.app().journal("RippleLineCache")),
+        std::make_shared<RippleLineCache>(env.current(), env.app().getJournal("RippleLineCache")),
         from,
         to,
         in_.currency,

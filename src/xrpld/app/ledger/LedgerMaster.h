@@ -1,19 +1,19 @@
-#ifndef XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerHolder.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
+#include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/messages.h>
@@ -89,10 +89,7 @@ public:
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
     void
-    setFullLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool isSynchronous,
-        bool isCurrent);
+    setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
     /** Check the sequence number and parent close time of a
         ledger against our clock and last validated ledger to
@@ -338,8 +335,7 @@ private:
     int mPathFindThread{0};  // Pathfinder jobs dispatched
     bool mPathFindNewRequest{false};
 
-    std::atomic_flag mGotFetchPackThread =
-        ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
     std::atomic<std::uint32_t> mPubLedgerClose{0};
     std::atomic<LedgerIndex> mPubLedgerSeq{0};
@@ -373,14 +369,10 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , validatedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -395,12 +387,10 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
         m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }
 };
 
 }  // namespace xrpl
-
-#endif

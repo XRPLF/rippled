@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STVALIDATION_H_INCLUDED
-#define XRPL_PROTOCOL_STVALIDATION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -54,10 +53,7 @@ public:
         @note Throws if the object is not valid
     */
     template <class LookupNodeID>
-    STValidation(
-        SerialIter& sit,
-        LookupNodeID&& lookupNodeID,
-        bool checkSignature);
+    STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
 
     /** Construct, sign and trust a new STValidation issued by this node.
 
@@ -130,10 +126,9 @@ public:
            << " consensus_hash: " << getConsensusHash()
            << " sign_time: " << to_string(getSignTime())
            << " seen_time: " << to_string(getSeenTime())
-           << " signer_public_key: " << getSignerPublic()
-           << " node_id: " << getNodeID() << " is_valid: " << isValid()
-           << " is_full: " << isFull() << " is_trusted: " << isTrusted()
-           << " signing_hash: " << getSigningHash()
+           << " signer_public_key: " << getSignerPublic() << " node_id: " << getNodeID()
+           << " is_valid: " << isValid() << " is_full: " << isFull()
+           << " is_trusted: " << isTrusted() << " signing_hash: " << getSigningHash()
            << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
         return ss.str();
     }
@@ -151,10 +146,7 @@ private:
 };
 
 template <class LookupNodeID>
-STValidation::STValidation(
-    SerialIter& sit,
-    LookupNodeID&& lookupNodeID,
-    bool checkSignature)
+STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature)
     : STObject(validationFormat(), sit, sfValidation)
     , signingPubKey_([this]() {
         auto const spk = getFieldVL(sfSigningPubKey);
@@ -173,9 +165,7 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    XRPL_ASSERT(
-        nodeID_.isNonZero(),
-        "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
+    XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -222,9 +212,7 @@ STValidation::STValidation(
     for (auto const& e : validationFormat())
     {
         if (e.style() == soeREQUIRED && !isFieldPresent(e.sField()))
-            LogicError(
-                "Required field '" + e.sField().getName() +
-                "' missing from validation.");
+            LogicError("Required field '" + e.sField().getName() + "' missing from validation.");
     }
 
     // We just signed this, so it should be valid.
@@ -268,5 +256,3 @@ STValidation::setSeen(NetClock::time_point s)
 }
 
 }  // namespace xrpl
-
-#endif

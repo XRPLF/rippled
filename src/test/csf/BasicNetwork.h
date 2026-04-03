@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_BASICNETWORK_H_INCLUDED
-#define XRPL_TEST_CSF_BASICNETWORK_H_INCLUDED
+#pragma once
 
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
@@ -116,10 +115,7 @@ public:
         @return `true` if a new connection was established
     */
     bool
-    connect(
-        Peer const& from,
-        Peer const& to,
-        duration const& delay = std::chrono::seconds{0});
+    connect(Peer const& from, Peer const& to, duration const& delay = std::chrono::seconds{0});
 
     /** Break a link.
 
@@ -184,10 +180,7 @@ BasicNetwork<Peer>::BasicNetwork(Scheduler& s) : scheduler(s)
 
 template <class Peer>
 inline bool
-BasicNetwork<Peer>::connect(
-    Peer const& from,
-    Peer const& to,
-    duration const& delay)
+BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, duration const& delay)
 {
     if (to == from)
         return false;
@@ -206,7 +199,7 @@ BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
     if (!links_.disconnect(peer1, peer2))
         return false;
-    bool r = links_.disconnect(peer2, peer1);
+    bool const r = links_.disconnect(peer2, peer1);
     (void)r;
     assert(r);
     return true;
@@ -221,19 +214,16 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     if (!link)
         return;
     time_point const sent = scheduler.now();
-    scheduler.in(
-        link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
-            // only process if still connected and connection was
-            // not broken since the message was sent
-            if (auto l = links_.edge(from, to); l && l->established <= sent)
-            {
-                f();
-            }
-        });
+    scheduler.in(link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
+        // only process if still connected and connection was
+        // not broken since the message was sent
+        if (auto l = links_.edge(from, to); l && l->established <= sent)
+        {
+            f();
+        }
+    });
 }
 
 }  // namespace csf
 }  // namespace test
 }  // namespace xrpl
-
-#endif

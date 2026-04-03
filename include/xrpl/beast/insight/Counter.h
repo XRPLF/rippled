@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
-#define BEAST_INSIGHT_COUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/CounterImpl.h>
 
@@ -94,5 +93,3 @@ private:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

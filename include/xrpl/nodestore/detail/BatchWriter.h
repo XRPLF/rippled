@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
-#define XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
@@ -72,12 +71,10 @@ private:
     Scheduler& m_scheduler;
     LockType mWriteMutex;
     CondvarType mWriteCondition;
-    int mWriteLoad;
-    bool mWritePending;
+    int mWriteLoad{0};
+    bool mWritePending{false};
     Batch mWriteSet;
 };
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

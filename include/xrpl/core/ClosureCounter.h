@@ -1,5 +1,4 @@
-#ifndef XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
-#define XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
@@ -57,7 +56,7 @@ private:
         // a lock.  This removes a small timing window that occurs if the
         // waiting thread is handling a spurious wakeup when closureCount_
         // drops to zero.
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
 
         // Update closureCount_.  Notify if stopping and closureCount_ == 0.
         if ((--closureCount_ == 0) && waitForClosures_)
@@ -76,27 +75,26 @@ private:
         std::remove_reference_t<Closure> closure_;
 
         static_assert(
-            std::is_same<decltype(closure_(std::declval<Args_t>()...)), Ret_t>::
-                value,
+            std::is_same<decltype(closure_(std::declval<Args_t>()...)), Ret_t>::value,
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
         Substitute() = delete;
 
-        Substitute(Substitute const& rhs)
-            : counter_(rhs.counter_), closure_(rhs.closure_)
+        Substitute(Substitute const& rhs) : counter_(rhs.counter_), closure_(rhs.closure_)
         {
             ++counter_;
         }
 
-        Substitute(Substitute&& rhs) noexcept(
-            std::is_nothrow_move_constructible<Closure>::value)
+        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible<Closure>::value)
             : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;
         }
 
-        Substitute(ClosureCounter& counter, Closure&& closure)
+        Substitute(
+            ClosureCounter& counter,
+            Closure&& closure)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             : counter_(counter), closure_(std::forward<Closure>(closure))
         {
             ++counter_;
@@ -150,13 +148,11 @@ public:
         waitForClosures_ = true;
         if (closureCount_ > 0)
         {
-            if (!allClosuresDoneCond_.wait_for(
-                    lock, wait, [this] { return closureCount_ == 0; }))
+            if (!allClosuresDoneCond_.wait_for(lock, wait, [this] { return closureCount_ == 0; }))
             {
                 if (auto stream = j.error())
                     stream << name << " waiting for ClosureCounter::join().";
-                allClosuresDoneCond_.wait(
-                    lock, [this] { return closureCount_ == 0; });
+                allClosuresDoneCond_.wait(lock, [this] { return closureCount_ == 0; });
             }
         }
     }
@@ -174,7 +170,7 @@ public:
     {
         std::optional<Substitute<Closure>> ret;
 
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         if (!waitForClosures_)
             ret.emplace(*this, std::forward<Closure>(closure));
 
@@ -197,11 +193,9 @@ public:
     bool
     joined() const
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         return waitForClosures_;
     }
 };
 
 }  // namespace xrpl
-
-#endif  // XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED

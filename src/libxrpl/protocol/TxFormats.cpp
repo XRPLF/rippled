@@ -3,14 +3,14 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-#include <initializer_list>
+#include <vector>
 
 namespace xrpl {
 
-TxFormats::TxFormats()
+std::vector<SOElement> const&
+TxFormats::getCommonFields()
 {
-    // Fields shared by all txFormats:
-    static std::initializer_list<SOElement> const commonFields{
+    static auto const commonFields = std::vector<SOElement>{
         {sfTransactionType, soeREQUIRED},
         {sfFlags, soeOPTIONAL},
         {sfSourceTag, soeOPTIONAL},
@@ -29,16 +29,19 @@ TxFormats::TxFormats()
         {sfNetworkID, soeOPTIONAL},
         {sfDelegate, soeOPTIONAL},
     };
+    return commonFields;
+}
 
+TxFormats::TxFormats()
+{
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(                                                        \
-    tag, value, name, delegatable, amendment, privileges, emitable, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, emitable, fields) \
+    add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>
 

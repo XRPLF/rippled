@@ -1,33 +1,25 @@
-#ifndef XRPL_CORE_COROINL_H_INCLUDED
-#define XRPL_CORE_COROINL_H_INCLUDED
-
-#include <xrpl/basics/ByteUtilities.h>
+#pragma once
 
 namespace xrpl {
 
 template <class F>
-JobQueue::Coro::Coro(
-    Coro_create_t,
-    JobQueue& jq,
-    JobType type,
-    std::string const& name,
-    F&& f)
+JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
     : jq_(jq)
     , type_(type)
     , name_(name)
-    , running_(false)
     , coro_(
+          // Stack size of 1MB wasn't sufficient for deep calls. ASAN tests flagged the issue. Hence
+          // increasing the size to 1.5MB.
+          boost::context::protected_fixedsize_stack(1536 * 1024),
           [this, fn = std::forward<F>(f)](
-              boost::coroutines::asymmetric_coroutine<void>::push_type&
-                  do_yield) {
+              boost::coroutines2::asymmetric_coroutine<void>::push_type& do_yield) {
               yield_ = &do_yield;
               yield();
               fn(shared_from_this());
 #ifndef NDEBUG
               finished_ = true;
 #endif
-          },
-          boost::coroutines::attributes(megabytes(1)))
+          })
 {
 }
 
@@ -57,8 +49,7 @@ JobQueue::Coro::post()
     }
 
     // sp keeps 'this' alive
-    if (jq_.addJob(
-            type_, name_, [this, sp = shared_from_this()]() { resume(); }))
+    if (jq_.addJob(type_, name_, [this, sp = shared_from_this()]() { resume(); }))
     {
         return true;
     }
@@ -78,15 +69,24 @@ JobQueue::Coro::resume()
         running_ = true;
     }
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lk(jq_.m_mutex);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(
-        static_cast<bool>(coro_), "xrpl::JobQueue::Coro::resume : is runnable");
-    coro_();
+    // A late resume() can arrive after the coroutine has already completed.
+    // This is an expected (if rare) outcome of the race condition documented
+    // in JobQueue.h:354-377 where post() schedules a resume job before the
+    // coroutine yields — the mutex serializes access, but by the time this
+    // resume() acquires the lock the coroutine may have already run to
+    // completion. Calling operator() on a completed boost::coroutine2 is
+    // undefined behavior, so we must check and skip invoking the coroutine
+    // body if it has already completed.
+    if (coro_)
+    {
+        coro_();
+    }
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
     std::lock_guard lk(mutex_run_);
@@ -129,5 +129,3 @@ JobQueue::Coro::join()
 }
 
 }  // namespace xrpl
-
-#endif

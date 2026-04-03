@@ -25,7 +25,7 @@ std::map<char, char const*> jsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-static size_t const jsonEscapeLength = 2;
+size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
 char const closeBrace = '}';
@@ -36,7 +36,7 @@ char const openBrace = '{';
 char const openBracket = '[';
 char const quote = '"';
 
-static auto const integralFloatsBecomeInts = false;
+auto const integralFloatsBecomeInts = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -80,7 +80,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
         stack_.push(Collection());
         stack_.top().type = ct;
@@ -134,15 +134,16 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(
-                false,
-                "Not an " +
-                    ((type == array ? "array: " : "object: ") + message));
+            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
+        {
             stack_.top().isFirst = false;
+        }
         else
+        {
             output_({&comma, 1});
+        }
     }
 
     void
@@ -151,7 +152,7 @@ public:
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
-        check(tags.find(tag) == tags.end(), "Already seen tag " + tag);
+        check(!tags.contains(tag), "Already seen tag " + tag);
         tags.insert(tag);
 #endif
 
@@ -193,13 +194,13 @@ public:
     }
 
 private:
-    // JSON collections are either arrrays, or objects.
+    // JSON collections are either arrays, or objects.
     struct Collection
     {
         explicit Collection() = default;
 
         /** What type of collection are we in? */
-        Writer::CollectionType type;
+        Writer::CollectionType type = Writer::CollectionType::array;
 
         /** Is this the first entry in a collection?
          *  If false, we have to emit a , before we write the next entry. */

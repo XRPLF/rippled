@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_REQUEST_H_INCLUDED
-#define XRPL_RPC_REQUEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
@@ -52,5 +51,3 @@ private:
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

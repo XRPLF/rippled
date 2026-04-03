@@ -77,8 +77,7 @@ public:
             if (wsc->version() == 2)
             {
                 expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(
-                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
@@ -98,9 +97,7 @@ public:
                 auto c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
-                expect(
-                    hwBalance[0u][jss::value] == "5000" &&
-                    hwBalance[1u][jss::value] == "5000");
+                expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
             }
 
             {
@@ -165,8 +162,7 @@ public:
             expect(jv[jss::status] == "error");
 
             auto response = jv[jss::result];
-            auto const error =
-                apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
+            auto const error = apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
         });
     }
@@ -185,8 +181,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(
-            USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -229,6 +224,45 @@ public:
     }
 
     void
+    testGWBWithMPT()
+    {
+        testcase("Gateway Balances with MPT Escrow");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        // Ensure MPT is enabled
+        FeatureBitset const features = testable_amendments() | featureMPTokensV1;
+        Env env(*this, features);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // Create MPT issuance (Alice) with Escrow capability
+        MPTTester mpt(env, alice, {.holders = {bob}, .fund = false});
+        mpt.create({.flags = tfMPTCanEscrow});
+
+        // Authorize Bob and fund him
+        mpt.authorize({.account = bob, .holderCount = 1});
+        mpt.pay(alice, bob, 1000);
+
+        // Bob creates an escrow of MPT to Alice.
+        auto const MPT = mpt["MPT"];
+        env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
+        env.close();
+
+        // Query gateway_balances for Bob.
+        auto wsc = makeWSClient(env.app().config());
+        Json::Value qry;
+        qry[jss::account] = bob.human();
+
+        auto jv = wsc->invoke("gateway_balances", qry);
+        expect(jv[jss::status] == "success");
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -238,7 +272,7 @@ public:
             testGWB(feature);
             testGWBApiVersions(feature);
         }
-
+        testGWBWithMPT();
         testGWBOverflow();
     }
 };

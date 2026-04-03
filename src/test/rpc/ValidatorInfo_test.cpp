@@ -25,8 +25,7 @@ public:
         {
             Env env(*this);
             auto const info = env.rpc("validator_info");
-            BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "not a validator");
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "not a validator");
         }
     }
 
@@ -47,32 +46,18 @@ public:
 
         using namespace jtx;
         std::vector<std::string> const tokenBlob = {
-            "    "
-            "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT"
-            "\n",
-            " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFua"
-            "WZl "
-            "    \n",
-            "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZD"
-            "eE"
-            "\n",
-            "\t "
-            "hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG"
-            "\t  "
-            "\t\n",
-            "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2"
-            "\n",
-            "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1"
-            "\n",
-            "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj"
-            "\n",
-            "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ=="
-            "\n"};
+            "    eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
+            " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl     \n",
+            "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n",
+            "\t hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\t  \t\n",
+            "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n",
+            "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n",
+            "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n",
+            "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n",
+        };
 
-        std::string const master_key =
-            "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
-        std::string const ephemeral_key =
-            "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
+        std::string const master_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+        std::string const ephemeral_key = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
         std::string const manifest =
             "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/"
             "vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQI"
@@ -90,8 +75,7 @@ public:
             BEAST_EXPECT(info[jss::result][jss::seq] == 1);
             BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);
             BEAST_EXPECT(info[jss::result][jss::manifest] == manifest);
-            BEAST_EXPECT(
-                info[jss::result][jss::ephemeral_key] == ephemeral_key);
+            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeral_key);
         }
     }
 

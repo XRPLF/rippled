@@ -1,11 +1,12 @@
 #include <xrpld/app/ledger/BuildLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
-#include <xrpld/app/tx/apply.h>
+#include <xrpld/app/main/Application.h>
 
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -38,8 +39,7 @@ buildLedgerImpl(
 
     {
         OpenView accum(&*built);
-        XRPL_ASSERT(
-            !accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
+        XRPL_ASSERT(!accum.open(), "xrpl::buildLedgerImpl : valid ledger state");
         applyTxs(accum, built);
         accum.apply(*built);
     }
@@ -51,15 +51,13 @@ buildLedgerImpl(
 
         int const asf = built->stateMap().flushDirty(hotACCOUNT_NODE);
         int const tmf = built->txMap().flushDirty(hotTRANSACTION_NODE);
-        JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf
-                        << " transaction nodes";
+        JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < XRP_LEDGER_EARLIEST_FEES ||
-            built->read(keylet::fees()),
+        built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
@@ -91,8 +89,8 @@ applyTransactions(
     // Attempt to apply all of the retriable transactions
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
-        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
-                        << " begins (" << txns.size() << " transactions)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " begins ("
+                        << txns.size() << " transactions)";
         int changes = 0;
 
         auto it = txns.begin();
@@ -109,8 +107,7 @@ applyTransactions(
                     continue;
                 }
 
-                switch (applyTransaction(
-                    app, view, *it->second, certainRetry, tapNONE, j))
+                switch (applyTransaction(app, view, *it->second, certainRetry, tapNONE, j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -128,33 +125,30 @@ applyTransactions(
             }
             catch (std::exception const& ex)
             {
-                JLOG(j.warn())
-                    << "Transaction " << txid << " throws: " << ex.what();
+                JLOG(j.warn()) << "Transaction " << txid << " throws: " << ex.what();
                 failed.insert(txid);
                 it = txns.erase(it);
             }
         }
 
-        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
-                        << " completed (" << changes << " changes)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass << " completed ("
+                        << changes << " changes)";
 
         // Accumulate changes.
         count += changes;
 
         // A non-retry pass made no changes
-        if (!changes && !certainRetry)
+        if ((changes == 0) && !certainRetry)
             break;
 
         // Stop retriable passes
-        if (!changes || (pass >= LEDGER_RETRY_PASSES))
+        if ((changes == 0) || (pass >= LEDGER_RETRY_PASSES))
             certainRetry = false;
     }
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        txns.empty() || !certainRetry,
-        "xrpl::applyTransactions : retry transactions");
+    XRPL_ASSERT(txns.empty() || !certainRetry, "xrpl::applyTransactions : retry transactions");
     return count;
 }
 
@@ -182,24 +176,21 @@ buildLedger(
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
-            JLOG(j.debug())
-                << "Attempting to apply " << txns.size() << " transactions";
+            JLOG(j.debug()) << "Attempting to apply " << txns.size() << " transactions";
 
-            auto const applied =
-                applyTransactions(app, built, txns, failedTxns, accum, j);
+            auto const applied = applyTransactions(app, built, txns, failedTxns, accum, j);
 
             if (!txns.empty() || !failedTxns.empty())
-                JLOG(j.debug())
-                    << "Applied " << applied << " transactions; "
-                    << failedTxns.size() << " failed and " << txns.size()
-                    << " will be retried. "
-                    << "Total transactions in ledger (including Inner Batch): "
-                    << accum.txCount();
+            {
+                JLOG(j.debug()) << "Applied " << applied << " transactions; " << failedTxns.size()
+                                << " failed and " << txns.size() << " will be retried. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
+            }
             else
-                JLOG(j.debug())
-                    << "Applied " << applied << " transactions. "
-                    << "Total transactions in ledger (including Inner Batch): "
-                    << accum.txCount();
+                JLOG(j.debug()) << "Applied " << applied << " transactions. "
+                                << "Total transactions in ledger (including Inner Batch): "
+                                << accum.txCount();
         });
 }
 

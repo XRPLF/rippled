@@ -16,9 +16,7 @@ namespace xrpl {
 AccountID const&
 Asset::getIssuer() const
 {
-    return std::visit(
-        [&](auto&& issue) -> AccountID const& { return issue.getIssuer(); },
-        issue_);
+    return std::visit([&](auto&& issue) -> AccountID const& { return issue.getIssuer(); }, issue_);
 }
 
 std::string
@@ -42,8 +40,7 @@ Asset::operator()(Number const& number) const
 std::string
 to_string(Asset const& asset)
 {
-    return std::visit(
-        [&](auto const& issue) { return to_string(issue); }, asset.value());
+    return std::visit([&](auto const& issue) { return to_string(issue); }, asset.value());
 }
 
 bool
@@ -58,8 +55,7 @@ Asset
 assetFromJson(Json::Value const& v)
 {
     if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
-        Throw<std::runtime_error>(
-            "assetFromJson must contain currency or mpt_issuance_id");
+        Throw<std::runtime_error>("assetFromJson must contain currency or mpt_issuance_id");
 
     if (v.isMember(jss::currency))
         return issueFromJson(v);

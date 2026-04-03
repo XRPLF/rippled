@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
-#define XRPL_LEDGER_CACHEDVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/CachedSLEs.h>
@@ -26,8 +25,7 @@ public:
     CachedViewImpl&
     operator=(CachedViewImpl const&) = delete;
 
-    CachedViewImpl(DigestAwareReadView const* base, CachedSLEs& cache)
-        : base_(*base), cache_(cache)
+    CachedViewImpl(DigestAwareReadView const* base, CachedSLEs& cache) : base_(*base), cache_(cache)
     {
     }
 
@@ -66,9 +64,7 @@ public:
     }
 
     std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const override
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override
     {
         return base_.succ(key, last);
     }
@@ -165,5 +161,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Peer.h>
 
@@ -58,10 +57,7 @@ public:
      * or constructed by ourself during consensus.
      */
     virtual void
-    giveSet(
-        uint256 const& setHash,
-        std::shared_ptr<SHAMap> const& set,
-        bool acquired) = 0;
+    giveSet(uint256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
 
     /** Informs the container if a new consensus round
      */
@@ -79,5 +75,3 @@ make_InboundTransactions(
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);
 
 }  // namespace xrpl
-
-#endif

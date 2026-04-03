@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
-#define BEAST_INSIGHT_EVENT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/EventImpl.h>
 
@@ -61,5 +60,3 @@ private:
 
 }  // namespace insight
 }  // namespace beast
-
-#endif

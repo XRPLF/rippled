@@ -1,8 +1,6 @@
-#ifndef XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
-#define XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
-
+#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
 
 #include <memory>
@@ -43,5 +41,3 @@ std::unique_ptr<LocalTxs>
 make_LocalTxs();
 
 }  // namespace xrpl
-
-#endif

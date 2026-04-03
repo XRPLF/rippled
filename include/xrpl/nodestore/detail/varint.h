@@ -1,5 +1,4 @@
-#ifndef BEAST_NUDB_VARINT_H_INCLUDED
-#define BEAST_NUDB_VARINT_H_INCLUDED
+#pragma once
 
 #include <nudb/detail/stream.hpp>
 
@@ -83,6 +82,7 @@ template <class = void>
 std::size_t
 write_varint(void* p0, std::size_t v)
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {
@@ -119,5 +119,3 @@ write(nudb::detail::ostream& os, std::size_t t)
 
 }  // namespace NodeStore
 }  // namespace xrpl
-
-#endif

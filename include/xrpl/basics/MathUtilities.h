@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_MATHUTILITIES_H_INCLUDED
-#define XRPL_BASICS_MATHUTILITIES_H_INCLUDED
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -45,5 +44,3 @@ static_assert(calculatePercent(50'000'001, 100'000'000) == 51);
 static_assert(calculatePercent(99'999'999, 100'000'000) == 100);
 
 }  // namespace xrpl
-
-#endif

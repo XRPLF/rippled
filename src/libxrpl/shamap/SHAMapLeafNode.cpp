@@ -2,9 +2,7 @@
 
 namespace xrpl {
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid)
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
     XRPL_ASSERT(
@@ -53,13 +51,21 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
     auto const type = getType();
 
     if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    {
         ret += ",txn\n";
+    }
     else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    {
         ret += ",txn+md\n";
+    }
     else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    {
         ret += ",as\n";
+    }
     else
+    {
         ret += ",leaf\n";
+    }
 
     ret += "  Tag=";
     ret += to_string(item_->key());
@@ -73,8 +79,7 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    XRPL_ASSERT(
-        hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
+    XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
     XRPL_ASSERT(item_, "xrpl::SHAMapLeafNode::invariants : non-null item");
 }
 

@@ -4,10 +4,7 @@
 
 namespace xrpl {
 
-LoadEvent::LoadEvent(
-    LoadMonitor& monitor,
-    std::string const& name,
-    bool shouldStart)
+LoadEvent::LoadEvent(LoadMonitor& monitor, std::string const& name, bool shouldStart)
     : monitor_(monitor)
     , running_(shouldStart)
     , name_(name)

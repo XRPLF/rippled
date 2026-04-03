@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
-#define XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
+#pragma once
 
 #include <atomic>
 
@@ -24,10 +23,8 @@ public:
 private:
     static std::atomic<int> inProgress;
 
-    bool m_isOk;
+    bool m_isOk{false};
 };
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

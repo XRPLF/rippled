@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_REQUIRE_H_INCLUDED
-#define XRPL_TEST_JTX_REQUIRE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/requires.h>
 
@@ -64,5 +63,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

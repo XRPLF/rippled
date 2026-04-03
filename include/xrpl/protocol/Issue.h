@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_ISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -37,6 +36,9 @@ public:
     bool
     native() const;
 
+    bool
+    integral() const;
+
     friend constexpr std::weak_ordering
     operator<=>(Issue const& lhs, Issue const& rhs);
 };
@@ -69,8 +71,7 @@ hash_append(Hasher& h, Issue const& r)
 [[nodiscard]] inline constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
-    return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+    return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 
@@ -95,7 +96,7 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue issue{xrpCurrency(), xrpAccount()};
+    static Issue const issue{xrpCurrency(), xrpAccount()};
     return issue;
 }
 
@@ -103,7 +104,7 @@ xrpIssue()
 inline Issue const&
 noIssue()
 {
-    static Issue issue{noCurrency(), noAccount()};
+    static Issue const issue{noCurrency(), noAccount()};
     return issue;
 }
 
@@ -114,5 +115,3 @@ isXRP(Issue const& issue)
 }
 
 }  // namespace xrpl
-
-#endif

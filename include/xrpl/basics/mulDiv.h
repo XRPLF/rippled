@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_MULDIV_H_INCLUDED
-#define XRPL_BASICS_MULDIV_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <limits>
@@ -22,5 +21,3 @@ std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
 
 }  // namespace xrpl
-
-#endif

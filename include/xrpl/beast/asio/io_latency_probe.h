@@ -1,5 +1,4 @@
-#ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
-#define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -24,19 +23,15 @@ private:
 
     std::recursive_mutex m_mutex;
     std::condition_variable_any m_cond;
-    std::size_t m_count;
+    std::size_t m_count{1};
     duration const m_period;
     boost::asio::io_context& m_ios;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
-    bool m_cancel;
+    bool m_cancel{false};
 
 public:
     io_latency_probe(duration const& period, boost::asio::io_context& ios)
-        : m_count(1)
-        , m_period(period)
-        , m_ios(ios)
-        , m_timer(m_ios)
-        , m_cancel(false)
+        : m_period(period), m_ios(ios), m_timer(m_ios)
     {
     }
 
@@ -88,13 +83,11 @@ public:
     void
     sample_one(Handler&& handler)
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), false, this));
+            m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -105,13 +98,11 @@ public:
     void
     sample(Handler&& handler)
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         if (m_cancel)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
-            m_ios,
-            sample_op<Handler>(
-                std::forward<Handler>(handler), Clock::now(), true, this));
+            m_ios, sample_op<Handler>(std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
@@ -131,14 +122,14 @@ private:
     void
     addref()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         ++m_count;
     }
 
     void
     release()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         if (--m_count == 0)
             m_cond.notify_all();
     }
@@ -156,10 +147,7 @@ private:
             time_point const& start,
             bool repeat,
             io_latency_probe* probe)
-            : m_handler(handler)
-            , m_start(start)
-            , m_repeat(repeat)
-            , m_probe(probe)
+            : m_handler(handler), m_start(start), m_repeat(repeat), m_probe(probe)
         {
             XRPL_ASSERT(
                 m_probe,
@@ -204,7 +192,7 @@ private:
             m_handler(elapsed);
 
             {
-                std::lock_guard lock(m_probe->m_mutex);
+                std::lock_guard const lock(m_probe->m_mutex);
                 if (m_probe->m_cancel)
                     return;
             }
@@ -214,8 +202,7 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(
-                    now + m_probe->m_period - 2 * elapsed);
+                typename Clock::time_point const when(now + m_probe->m_period - 2 * elapsed);
 
                 if (when <= now)
                 {
@@ -223,8 +210,7 @@ private:
                     // period so don't bother with a timer.
                     //
                     boost::asio::post(
-                        m_probe->m_ios,
-                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                        m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
                 else
                 {
@@ -242,12 +228,9 @@ private:
                 return;
             typename Clock::time_point const now(Clock::now());
             boost::asio::post(
-                m_probe->m_ios,
-                sample_op<Handler>(m_handler, now, m_repeat, m_probe));
+                m_probe->m_ios, sample_op<Handler>(m_handler, now, m_repeat, m_probe));
         }
     };
 };
 
 }  // namespace beast
-
-#endif

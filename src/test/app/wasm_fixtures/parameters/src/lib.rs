@@ -4,25 +4,23 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use xrpl_wasm_std::host::trace::{DataRepr, trace, trace_data, trace_num, trace_float};
-use xrpl_wasm_std::host::{instance_param, function_param};
-use xrpl_wasm_std::core::params::function::{get_function_param};
-use xrpl_wasm_std::core::params::instance::{get_instance_param};
+use xrpl_wasm_std::core::params::function::get_function_param;
+use xrpl_wasm_std::core::params::instance::get_instance_param;
 use xrpl_wasm_std::core::type_codes::{
-    STI_UINT8, STI_UINT16, STI_UINT32, STI_UINT64, STI_UINT128,
-    STI_UINT160, STI_UINT192, STI_UINT256, STI_AMOUNT, STI_VL, STI_ACCOUNT,
-    STI_OBJECT, STI_ARRAY, STI_CURRENCY, STI_NUMBER
+    STI_ACCOUNT, STI_AMOUNT, STI_ARRAY, STI_CURRENCY, STI_NUMBER, STI_OBJECT, STI_UINT128,
+    STI_UINT16, STI_UINT160, STI_UINT192, STI_UINT256, STI_UINT32, STI_UINT64, STI_UINT8, STI_VL,
 };
-use xrpl_wasm_std::core::types::amount::opaque_float::OpaqueFloat;
-use xrpl_wasm_std::core::types::number::Number;
 use xrpl_wasm_std::core::types::account_id::AccountID;
-use xrpl_wasm_std::core::types::amount::token_amount::TokenAmount;
-use xrpl_wasm_std::host::{FLOAT_ROUNDING_MODES_TO_NEAREST, float_add, float_set};
+use xrpl_wasm_std::core::types::amount::opaque_float::OpaqueFloat;
 use xrpl_wasm_std::core::types::amount::opaque_float::{FLOAT_NEGATIVE_ONE, FLOAT_ONE};
+use xrpl_wasm_std::core::types::amount::token_amount::TokenAmount;
+use xrpl_wasm_std::core::types::hash_256::Hash256;
+use xrpl_wasm_std::core::types::number::Number;
 use xrpl_wasm_std::core::types::uint_160::UInt160;
 use xrpl_wasm_std::core::types::uint_192::UInt192;
-use xrpl_wasm_std::core::types::hash_256::Hash256;
-
+use xrpl_wasm_std::host::trace::{trace, trace_data, trace_float, trace_num, DataRepr};
+use xrpl_wasm_std::host::{float_add, float_set, FLOAT_ROUNDING_MODES_TO_NEAREST};
+use xrpl_wasm_std::host::{function_param, instance_param};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn function_params() -> i32 {
@@ -113,7 +111,12 @@ pub extern "C" fn function_params() -> i32 {
     let _ = trace_data("UINT128 Hex:", &buf, DataRepr::AsHex);
 
     // TODO: replace with require
-    if buf != [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01] {
+    if buf
+        != [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01,
+        ]
+    {
         let _ = trace("UINT128 Parameter Error: Invalid Value");
         return -1;
     }
@@ -132,7 +135,8 @@ pub extern "C" fn function_params() -> i32 {
 
     // TODO: replace with require
     let expected190: [u8; 20] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected190 {
         let _ = trace("UINT160 Parameter Error: Invalid Value");
@@ -153,7 +157,8 @@ pub extern "C" fn function_params() -> i32 {
 
     // TODO: replace with require
     let expected192: [u8; 24] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected192 {
         let _ = trace("UINT192 Parameter Error: Invalid Value");
@@ -174,10 +179,9 @@ pub extern "C" fn function_params() -> i32 {
 
     // TODO: replace with require
     let expected256: [u8; 32] = [
-        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0,
-        0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F, 0xC8,
-        0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10,
-        0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90, 0x2C, 0x25
+        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0, 0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F,
+        0xC8, 0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10, 0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90,
+        0x2C, 0x25,
     ];
     if *buf != expected256 {
         let _ = trace("UINT256 Parameter Error: Invalid Value");
@@ -204,9 +208,8 @@ pub extern "C" fn function_params() -> i32 {
 
     // TODO: replace with require
     let expectedAccount: [u8; 20] = [
-        0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91,
-        0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F, 0x89,
-        0x4F, 0x83, 0x2B, 0x3D
+        0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91, 0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F,
+        0x89, 0x4F, 0x83, 0x2B, 0x3D,
     ];
     if account_id.0 != expectedAccount {
         let _ = trace("ACCOUNT Parameter Error: Invalid Value");
@@ -255,7 +258,11 @@ pub extern "C" fn function_params() -> i32 {
         }
     };
     let (iou_amount, iou_issuer, iou_currency) = match &iou_token {
-        TokenAmount::IOU { amount, issuer, currency_code } => {
+        TokenAmount::IOU {
+            amount,
+            issuer,
+            currency_code,
+        } => {
             // trace amount hex
             let _ = trace_data("AMOUNT Value (IOU):", &amount.0, DataRepr::AsHex);
             let _ = trace_float("AMOUNT Value (IOU) - Original:", &amount.0);
@@ -278,7 +285,11 @@ pub extern "C" fn function_params() -> i32 {
 
             if result == 8 {
                 // trace hex of the new amount
-                let _ = trace_data("AMOUNT Value (IOU) - After adding 1:", &new_amount, DataRepr::AsHex);
+                let _ = trace_data(
+                    "AMOUNT Value (IOU) - After adding 1:",
+                    &new_amount,
+                    DataRepr::AsHex,
+                );
                 let _ = trace_float("AMOUNT Value (IOU) - After adding 1:", &new_amount);
 
                 // Create a new TokenAmount with the updated amount
@@ -290,9 +301,11 @@ pub extern "C" fn function_params() -> i32 {
 
                 // You now have the updated token amount in `updated_token`
                 // and the raw float bytes in `new_amount`
-
             } else {
-                let _ = trace_num("Error adding FLOAT_ONE to IOU amount, result:", result as i64);
+                let _ = trace_num(
+                    "Error adding FLOAT_ONE to IOU amount, result:",
+                    result as i64,
+                );
             }
 
             (Some(*amount), Some(*issuer), Some(*currency_code))
@@ -333,8 +346,7 @@ pub extern "C" fn function_params() -> i32 {
 
     // TODO: replace with require
     let expectedNumber: [u8; 12] = [
-        0x00, 0x04, 0x43, 0x64, 0xC5, 0xBB, 0x00, 0x00,
-        0xFF, 0xFF, 0xFF, 0xF1
+        0x00, 0x04, 0x43, 0x64, 0xC5, 0xBB, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xF1,
     ];
     if buf != expectedNumber {
         let _ = trace("NUMBER Parameter Error: Invalid Value");
@@ -342,7 +354,7 @@ pub extern "C" fn function_params() -> i32 {
     }
 
     // // Parse Number to get mantissa and exponent
-    // let stnumber = Number::from(&buf).unwrap();
+    // let stnum = Number::from(&buf).unwrap();
     let _ = trace_num("NUMBER Mantissa:", number.mantissa);
     let _ = trace_num("NUMBER Exponent:", number.exponent as i64);
 
@@ -353,13 +365,17 @@ pub extern "C" fn function_params() -> i32 {
             number.mantissa,
             opaque_float_buf.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST
+            FLOAT_ROUNDING_MODES_TO_NEAREST,
         )
     };
 
     let opaque = OpaqueFloat::from(opaque_float_buf);
     let _ = trace_float("NUMBER as OpaqueFloat:", &opaque.0);
-    let _ = trace_data("NUMBER OpaqueFloat Hex:", &opaque_float_buf, DataRepr::AsHex);
+    let _ = trace_data(
+        "NUMBER OpaqueFloat Hex:",
+        &opaque_float_buf,
+        DataRepr::AsHex,
+    );
 
     // AMOUNT (MPT)
     // ISSUE (XRP)
@@ -459,7 +475,12 @@ pub extern "C" fn instance_params() -> i32 {
     let _ = trace_data("UINT128 Hex:", &buf, DataRepr::AsHex);
 
     // TODO: replace with require
-    if buf != [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01] {
+    if buf
+        != [
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01,
+        ]
+    {
         let _ = trace("UINT128 Parameter Error: Invalid Value");
         return -1;
     }
@@ -478,7 +499,8 @@ pub extern "C" fn instance_params() -> i32 {
 
     // TODO: replace with require
     let expected190: [u8; 20] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected190 {
         let _ = trace("UINT160 Parameter Error: Invalid Value");
@@ -499,7 +521,8 @@ pub extern "C" fn instance_params() -> i32 {
 
     // TODO: replace with require
     let expected192: [u8; 24] = [
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
     ];
     if *buf != expected192 {
         let _ = trace("UINT192 Parameter Error: Invalid Value");
@@ -520,10 +543,9 @@ pub extern "C" fn instance_params() -> i32 {
 
     // TODO: replace with require
     let expected256: [u8; 32] = [
-        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0,
-        0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F, 0xC8,
-        0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10,
-        0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90, 0x2C, 0x25
+        0xD9, 0x55, 0xDA, 0xC2, 0xE7, 0x75, 0x19, 0xF0, 0x5A, 0xD1, 0x51, 0xA5, 0xD3, 0xC9, 0x9F,
+        0xC8, 0x12, 0x5F, 0xB3, 0x9D, 0x58, 0xFF, 0x9F, 0x10, 0x6F, 0x1A, 0xCA, 0x44, 0x91, 0x90,
+        0x2C, 0x25,
     ];
     if *buf != expected256 {
         let _ = trace("UINT256 Parameter Error: Invalid Value");
@@ -550,9 +572,8 @@ pub extern "C" fn instance_params() -> i32 {
 
     // TODO: replace with require
     let expectedAccount: [u8; 20] = [
-        0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91,
-        0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F, 0x89,
-        0x4F, 0x83, 0x2B, 0x3D
+        0xAE, 0x12, 0x3A, 0x85, 0x56, 0xF3, 0xCF, 0x91, 0x15, 0x47, 0x11, 0x37, 0x6A, 0xFB, 0x0F,
+        0x89, 0x4F, 0x83, 0x2B, 0x3D,
     ];
     if account_id.0 != expectedAccount {
         let _ = trace("ACCOUNT Parameter Error: Invalid Value");
@@ -601,7 +622,11 @@ pub extern "C" fn instance_params() -> i32 {
         }
     };
     let (iou_amount, iou_issuer, iou_currency) = match &iou_token {
-        TokenAmount::IOU { amount, issuer, currency_code } => {
+        TokenAmount::IOU {
+            amount,
+            issuer,
+            currency_code,
+        } => {
             // trace amount hex
             let _ = trace_data("AMOUNT Value (IOU):", &amount.0, DataRepr::AsHex);
             let _ = trace_float("AMOUNT Value (IOU) - Original:", &amount.0);
@@ -624,7 +649,11 @@ pub extern "C" fn instance_params() -> i32 {
 
             if result == 8 {
                 // trace hex of the new amount
-                let _ = trace_data("AMOUNT Value (IOU) - After adding 1:", &new_amount, DataRepr::AsHex);
+                let _ = trace_data(
+                    "AMOUNT Value (IOU) - After adding 1:",
+                    &new_amount,
+                    DataRepr::AsHex,
+                );
                 let _ = trace_float("AMOUNT Value (IOU) - After adding 1:", &new_amount);
 
                 // Create a new TokenAmount with the updated amount
@@ -636,9 +665,11 @@ pub extern "C" fn instance_params() -> i32 {
 
                 // You now have the updated token amount in `updated_token`
                 // and the raw float bytes in `new_amount`
-
             } else {
-                let _ = trace_num("Error adding FLOAT_ONE to IOU amount, result:", result as i64);
+                let _ = trace_num(
+                    "Error adding FLOAT_ONE to IOU amount, result:",
+                    result as i64,
+                );
             }
 
             (Some(*amount), Some(*issuer), Some(*currency_code))
@@ -679,8 +710,7 @@ pub extern "C" fn instance_params() -> i32 {
 
     // TODO: replace with require
     let expectedNumber: [u8; 12] = [
-        0x00, 0x04, 0x43, 0x64, 0xC5, 0xBB, 0x00, 0x00,
-        0xFF, 0xFF, 0xFF, 0xF1
+        0x00, 0x04, 0x43, 0x64, 0xC5, 0xBB, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xF1,
     ];
     if buf != expectedNumber {
         let _ = trace("NUMBER Parameter Error: Invalid Value");
@@ -688,7 +718,7 @@ pub extern "C" fn instance_params() -> i32 {
     }
 
     // // Parse Number to get mantissa and exponent
-    // let stnumber = Number::from(&buf).unwrap();
+    // let stnum = Number::from(&buf).unwrap();
     let _ = trace_num("NUMBER Mantissa:", number.mantissa);
     let _ = trace_num("NUMBER Exponent:", number.exponent as i64);
 
@@ -699,13 +729,17 @@ pub extern "C" fn instance_params() -> i32 {
             number.mantissa,
             opaque_float_buf.as_mut_ptr(),
             8,
-            FLOAT_ROUNDING_MODES_TO_NEAREST
+            FLOAT_ROUNDING_MODES_TO_NEAREST,
         )
     };
 
     let opaque = OpaqueFloat::from(opaque_float_buf);
     let _ = trace_float("NUMBER as OpaqueFloat:", &opaque.0);
-    let _ = trace_data("NUMBER OpaqueFloat Hex:", &opaque_float_buf, DataRepr::AsHex);
+    let _ = trace_data(
+        "NUMBER OpaqueFloat Hex:",
+        &opaque_float_buf,
+        DataRepr::AsHex,
+    );
 
     // AMOUNT (MPT)
     // ISSUE (XRP)

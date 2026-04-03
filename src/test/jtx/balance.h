@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_BALANCE_H_INCLUDED
-#define XRPL_TEST_JTX_BALANCE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
@@ -24,8 +23,7 @@ private:
     STAmount const value_;
 
 public:
-    balance(Account const& account, none_t)
-        : none_(true), account_(account), value_(XRP)
+    balance(Account const& account, none_t) : none_(true), account_(account), value_(XRP)
     {
     }
 
@@ -46,5 +44,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

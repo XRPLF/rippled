@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PEER_H_INCLUDED
-#define XRPL_OVERLAY_PEER_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Message.h>
 
@@ -12,7 +11,7 @@ namespace xrpl {
 
 namespace Resource {
 class Charge;
-}
+}  // namespace Resource
 
 enum class ProtocolFeature {
     ValidatorListPropagation,
@@ -120,5 +119,3 @@ public:
 };
 
 }  // namespace xrpl
-
-#endif

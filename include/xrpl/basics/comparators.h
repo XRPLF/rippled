@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_COMPARATORS_H_INCLUDED
-#define XRPL_BASICS_COMPARATORS_H_INCLUDED
+#pragma once
 
 #include <functional>
 
@@ -53,5 +52,3 @@ using equal_to = std::equal_to<T>;
 #endif
 
 }  // namespace xrpl
-
-#endif

@@ -205,9 +205,7 @@ make_error(error_code_i code, std::string const& message)
 bool
 contains_error(Json::Value const& json)
 {
-    if (json.isObject() && json.isMember(jss::error))
-        return true;
-    return false;
+    return json.isObject() && json.isMember(jss::error);
 }
 
 int
@@ -221,9 +219,7 @@ error_code_http_status(error_code_i code)
 std::string
 rpcErrorString(Json::Value const& jv)
 {
-    XRPL_ASSERT(
-        RPC::contains_error(jv),
-        "xrpl::RPC::rpcErrorString : input contains an error");
+    XRPL_ASSERT(RPC::contains_error(jv), "xrpl::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

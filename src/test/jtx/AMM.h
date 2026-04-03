@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_AMM_H_INCLUDED
-#define XRPL_TEST_JTX_AMM_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -327,8 +326,7 @@ public:
     }
 
     IOUAmount
-    getLPTokensBalance(
-        std::optional<AccountID> const& account = std::nullopt) const;
+    getLPTokensBalance(std::optional<AccountID> const& account = std::nullopt) const;
 
     friend std::ostream&
     operator<<(std::ostream& s, AMM const& amm)
@@ -351,9 +349,7 @@ public:
     }
 
     void
-    ammDelete(
-        AccountID const& deleter,
-        std::optional<ter> const& ter = std::nullopt);
+    ammDelete(AccountID const& deleter, std::optional<ter> const& ter = std::nullopt);
 
     void
     setClose(bool close)
@@ -368,9 +364,7 @@ public:
     }
 
     void
-    setTokens(
-        Json::Value& jv,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
+    setTokens(Json::Value& jv, std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
 
 private:
     AccountID
@@ -424,10 +418,7 @@ private:
 
 namespace amm {
 Json::Value
-trust(
-    AccountID const& account,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
+trust(AccountID const& account, STAmount const& amount, std::uint32_t flags = 0);
 Json::Value
 pay(Account const& account, AccountID const& to, STAmount const& amount);
 
@@ -443,5 +434,3 @@ ammClawback(
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif  // XRPL_TEST_JTX_AMM_H_INCLUDED

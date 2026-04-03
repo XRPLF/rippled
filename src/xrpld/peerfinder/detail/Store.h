@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_STORE_H_INCLUDED
-#define XRPL_PEERFINDER_STORE_H_INCLUDED
+#pragma once
 
 namespace xrpl {
 namespace PeerFinder {
@@ -23,7 +22,7 @@ public:
         explicit Entry() = default;
 
         beast::IP::Endpoint endpoint;
-        int valence;
+        int valence{};
     };
     virtual void
     save(std::vector<Entry> const& v) = 0;
@@ -31,5 +30,3 @@ public:
 
 }  // namespace PeerFinder
 }  // namespace xrpl
-
-#endif

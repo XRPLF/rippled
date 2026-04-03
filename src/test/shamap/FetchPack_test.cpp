@@ -36,8 +36,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter(Map& map, beast::Journal journal)
-            : mMap(map), mJournal(journal)
+        TestFilter(Map& map, beast::Journal journal) : mMap(map), mJournal(journal)
         {
         }
 
@@ -46,7 +45,7 @@ public:
             bool fromFilter,
             SHAMapHash const& nodeHash,
             std::uint32_t ledgerSeq,
-            Blob&& nodeData,
+            Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             SHAMapNodeType type) const override
         {
         }
@@ -54,7 +53,7 @@ public:
         std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator it = mMap.find(nodeHash);
+            Map::iterator const it = mMap.find(nodeHash);
             if (it == mMap.end())
             {
                 JLOG(mJournal.fatal()) << "Test filter missing node";
@@ -67,7 +66,7 @@ public:
         beast::Journal mJournal;
     };
 
-    boost::intrusive_ptr<Item>
+    static boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;
@@ -76,13 +75,12 @@ public:
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
-    void
+    static void
     add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while (n--)
+        while ((n--) != 0u)
         {
-            auto const result(t.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
+            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
             (void)result;
         }
@@ -102,7 +100,7 @@ public:
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);
-        std::shared_ptr<Table> t1(std::make_shared<Table>(SHAMapType::FREE, f));
+        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
 
         pass();
 

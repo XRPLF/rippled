@@ -1,11 +1,10 @@
-#ifndef XRPL_RPC_CONTEXT_H_INCLUDED
-#define XRPL_RPC_CONTEXT_H_INCLUDED
+#pragma once
 
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/server/InfoSub.h>
 
 namespace xrpl {
 
@@ -54,5 +53,3 @@ struct GRPCContext : public Context
 
 }  // namespace RPC
 }  // namespace xrpl
-
-#endif

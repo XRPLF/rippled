@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_ST_H_INCLUDED
-#define XRPL_PROTOCOL_ST_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -8,7 +7,12 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
@@ -17,5 +21,3 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/STVector256.h>
-
-#endif

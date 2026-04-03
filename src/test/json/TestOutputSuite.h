@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
-#define XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
@@ -35,5 +34,3 @@ protected:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

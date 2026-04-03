@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_CONTRACT_H_INCLUDED
-#define RIPPLE_TEST_JTX_CONTRACT_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -61,10 +41,7 @@ modify(
     uint256 const& contractHash);
 
 Json::Value
-modify(
-    jtx::Account const& account,
-    jtx::Account const& contractAccount,
-    jtx::Account const& owner);
+modify(jtx::Account const& account, jtx::Account const& contractAccount, jtx::Account const& owner);
 
 Json::Value
 del(jtx::Account const& account, jtx::Account const& contractAccount);
@@ -83,14 +60,12 @@ class add_function
 {
 private:
     std::string const name_;
-    std::vector<std::tuple<std::uint32_t, std::string, std::string>>
-        call_params_;
+    std::vector<std::tuple<std::uint32_t, std::string, std::string>> call_params_;
 
 public:
     explicit add_function(
         std::string const& name,
-        std::vector<std::tuple<std::uint32_t, std::string, std::string>>
-            call_params)
+        std::vector<std::tuple<std::uint32_t, std::string, std::string>> call_params)
         : name_{name}, call_params_{std::move(call_params)}
     {
     }
@@ -127,30 +102,23 @@ public:
             // Add instance Parameters
             if (!jtx.jv.isMember(sfInstanceParameters.fieldName))
             {
-                jtx.jv[sfInstanceParameters.fieldName] =
-                    Json::Value(Json::arrayValue);
+                jtx.jv[sfInstanceParameters.fieldName] = Json::Value(Json::arrayValue);
             }
             Json::Value param = Json::Value(Json::objectValue);
-            param[sfInstanceParameter.fieldName][sfParameterFlag.fieldName] =
-                flags_;
-            param[sfInstanceParameter.fieldName][sfParameterType.fieldName]
-                 [jss::type] = type_;
+            param[sfInstanceParameter.fieldName][sfParameterFlag.fieldName] = flags_;
+            param[sfInstanceParameter.fieldName][sfParameterType.fieldName][jss::type] = type_;
             jtx.jv[sfInstanceParameters.fieldName].append(param);
         }
 
         // Add instance Parameter Values
         if (!jtx.jv.isMember(sfInstanceParameterValues.fieldName))
         {
-            jtx.jv[sfInstanceParameterValues.fieldName] =
-                Json::Value(Json::arrayValue);
+            jtx.jv[sfInstanceParameterValues.fieldName] = Json::Value(Json::arrayValue);
         }
         Json::Value param = Json::Value(Json::objectValue);
-        param[sfInstanceParameterValue.fieldName][sfParameterFlag.fieldName] =
-            flags_;
-        param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName]
-             [jss::type] = type_;
-        param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName]
-             [jss::value] = value_;
+        param[sfInstanceParameterValue.fieldName][sfParameterFlag.fieldName] = flags_;
+        param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName][jss::type] = type_;
+        param[sfInstanceParameterValue.fieldName][sfParameterValue.fieldName][jss::value] = value_;
         jtx.jv[sfInstanceParameterValues.fieldName].append(param);
     }
 };
@@ -194,5 +162,3 @@ public:
 
 }  // namespace test
 }  // namespace xrpl
-
-#endif

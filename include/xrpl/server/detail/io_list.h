@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_IO_LIST_H_INCLUDED
-#define XRPL_SERVER_IO_LIST_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 
@@ -166,7 +165,7 @@ io_list::work::destroy()
         return;
     std::function<void(void)> f;
     {
-        std::lock_guard lock(ios_->m_);
+        std::lock_guard const lock(ios_->m_);
         ios_->map_.erase(this);
         if (--ios_->n_ == 0 && ios_->closed_)
         {
@@ -190,14 +189,13 @@ template <class T, class... Args>
 std::shared_ptr<T>
 io_list::emplace(Args&&... args)
 {
-    static_assert(
-        std::is_base_of<work, T>::value, "T must derive from io_list::work");
+    static_assert(std::is_base_of<work, T>::value, "T must derive from io_list::work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
     decltype(sp) dead;
 
-    std::lock_guard lock(m_);
+    std::lock_guard const lock(m_);
     if (!closed_)
     {
         ++n_;
@@ -244,5 +242,3 @@ io_list::join()
 }
 
 }  // namespace xrpl
-
-#endif

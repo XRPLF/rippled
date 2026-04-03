@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_FEATURE_H_INCLUDED
-#define XRPL_PROTOCOL_FEATURE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 
@@ -64,6 +63,49 @@
  */
 
 namespace xrpl {
+
+// Feature names must not exceed this length (in characters, excluding the null terminator).
+static constexpr std::size_t maxFeatureNameSize = 63;
+// Reserve this exact feature-name length (in characters/bytes, excluding the null terminator)
+// so that a 32-byte uint256 (for example, in WASM or other interop contexts) can be used
+// as a compact, fixed-size feature selector without conflicting with human-readable names.
+static constexpr std::size_t reservedFeatureNameSize = 32;
+
+// Both validFeatureNameSize and validFeatureName are consteval functions that can be used in
+// static_asserts to validate feature names at compile time. They are only used inside
+// enforceValidFeatureName in Feature.cpp, but are exposed here for testing. The expected
+// parameter `auto fn` is a constexpr lambda which returns a const char*, making it available
+// for compile-time evaluation. Read more in https://accu.org/journals/overload/30/172/wu/
+consteval auto
+validFeatureNameSize(auto fn) -> bool
+{
+    constexpr char const* n = fn();
+    // Note, std::strlen is not constexpr, we need to implement our own here.
+    constexpr std::size_t N = [](auto n) {
+        std::size_t ret = 0;
+        for (auto ptr = n; *ptr != '\0'; ret++, ++ptr)
+            ;
+        return ret;
+    }(n);
+    return N != reservedFeatureNameSize &&  //
+        N <= maxFeatureNameSize;
+}
+
+consteval auto
+validFeatureName(auto fn) -> bool
+{
+    constexpr char const* n = fn();
+    // Prevent the use of visually confusable characters and enforce that feature names
+    // are always valid ASCII. This is needed because C++ allows Unicode identifiers.
+    // Characters below 0x20 are nonprintable control characters, and characters with the 0x80 bit
+    // set are non-ASCII (e.g. UTF-8 encoding of Unicode), so both are disallowed.
+    for (auto ptr = n; *ptr != '\0'; ++ptr)
+    {
+        if (*ptr & 0x80 || *ptr < 0x20)
+            return false;
+    }
+    return true;
+}
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
@@ -175,9 +217,7 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        XRPL_ASSERT(
-            b.count() == count(),
-            "xrpl::FeatureBitset::FeatureBitset(base) : count match");
+        XRPL_ASSERT(b.count() == count(), "xrpl::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
@@ -257,8 +297,7 @@ public:
     friend FeatureBitset
     operator&(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) & static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) & static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
@@ -276,8 +315,7 @@ public:
     friend FeatureBitset
     operator|(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
@@ -295,14 +333,13 @@ public:
     friend FeatureBitset
     operator^(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{
-            static_cast<base const&>(lhs) ^ static_cast<base const&>(rhs)};
+        return FeatureBitset{static_cast<base const&>(lhs) ^ static_cast<base const&>(rhs)};
     }
 
     friend FeatureBitset
     operator^(FeatureBitset const& lhs, uint256 const& rhs)
     {
-        return lhs ^ FeatureBitset { rhs };
+        return lhs ^ FeatureBitset{rhs};
     }
 
     friend FeatureBitset
@@ -366,5 +403,3 @@ foreachFeature(FeatureBitset bs, F&& f)
 #pragma pop_macro("XRPL_FEATURE")
 
 }  // namespace xrpl
-
-#endif

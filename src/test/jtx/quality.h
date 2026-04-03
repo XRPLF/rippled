@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_QUALITY_H_INCLUDED
-#define XRPL_TEST_JTX_QUALITY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -26,7 +25,7 @@ public:
 class qualityInPercent
 {
 private:
-    std::uint32_t qIn_;
+    std::uint32_t qIn_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
     explicit qualityInPercent(double percent);
@@ -54,7 +53,7 @@ public:
 class qualityOutPercent
 {
 private:
-    std::uint32_t qOut_;
+    std::uint32_t qOut_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
     explicit qualityOutPercent(double percent);
@@ -66,5 +65,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

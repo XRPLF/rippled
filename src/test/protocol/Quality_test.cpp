@@ -16,9 +16,7 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed<Integer>::value>* = 0)
     {
         static_assert(std::is_integral<Integer>::value, "");
         return STAmount(integer, false);
@@ -26,9 +24,7 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
     {
         static_assert(std::is_integral<Integer>::value, "");
         if (integer < 0)
@@ -45,13 +41,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_in(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceil_in(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto expect_result(amounts(in_expected, out_expected));
         auto actual_result(q.ceil_in(amounts(in, out), amount(limit)));
@@ -61,13 +51,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_out(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceil_out(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto const expect_result(amounts(in_expected, out_expected));
         auto const actual_result(q.ceil_out(amounts(in, out), amount(limit)));
@@ -82,7 +66,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_in(
                 q,
@@ -111,7 +95,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_in(
                 q,
@@ -140,7 +124,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_in(
                 q,
@@ -175,7 +159,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_out(
                 q,
@@ -204,7 +188,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_out(
                 q,
@@ -233,7 +217,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_out(
                 q,
@@ -267,12 +251,11 @@ public:
         testcase("raw");
 
         {
-            Quality q(0x5d048191fb9130daull);  // 126836389.7680090
+            Quality const q(0x5d048191fb9130daull);  // 126836389.7680090
             Amounts const value(
-                amount(349469768),               // 349.469768 XRP
-                raw(2755280000000000ull, -15));  // 2.75528
-            STAmount const limit(
-                raw(4131113916555555, -16));  // .4131113916555555
+                amount(349469768),                             // 349.469768 XRP
+                raw(2755280000000000ull, -15));                // 2.75528
+            STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
             Amounts const result(q.ceil_out(value, limit));
             BEAST_EXPECT(result.in != beast::zero);
         }
@@ -283,7 +266,7 @@ public:
     {
         testcase("round");
 
-        Quality q(0x59148191fb913522ull);  // 57719.63525051682
+        Quality const q(0x59148191fb913522ull);  // 57719.63525051682
         BEAST_EXPECT(q.round(3).rate().getText() == "57800");
         BEAST_EXPECT(q.round(4).rate().getText() == "57720");
         BEAST_EXPECT(q.round(5).rate().getText() == "57720");
@@ -366,8 +349,7 @@ public:
     {
         testcase("operations");
 
-        Quality const q11(
-            Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
+        Quality const q11(Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
 
         Quality qa(q11);
         Quality qb(q11);

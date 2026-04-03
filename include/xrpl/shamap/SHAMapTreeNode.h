@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -56,9 +55,7 @@ protected:
     {
     }
 
-    explicit SHAMapTreeNode(
-        std::uint32_t cowid,
-        SHAMapHash const& hash) noexcept
+    explicit SHAMapTreeNode(std::uint32_t cowid, SHAMapHash const& hash) noexcept
         : hash_(hash), cowid_(cowid)
     {
     }
@@ -171,5 +168,3 @@ private:
 };
 
 }  // namespace xrpl
-
-#endif

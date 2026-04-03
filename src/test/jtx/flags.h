@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_FLAGS_H_INCLUDED
-#define XRPL_TEST_JTX_FLAGS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -13,7 +12,7 @@ namespace detail {
 class flags_helper
 {
 protected:
-    std::uint32_t mask_;
+    std::uint32_t mask_{0};
 
 private:
     void
@@ -80,7 +79,7 @@ private:
 
 protected:
     template <class... Args>
-    flags_helper(Args... args) : mask_(0)
+    flags_helper(Args... args)
     {
         set_args(args...);
     }
@@ -112,8 +111,7 @@ private:
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -129,8 +127,7 @@ private:
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -141,5 +138,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl
-
-#endif

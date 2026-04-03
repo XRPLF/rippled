@@ -1,5 +1,4 @@
-#ifndef XRPL_UNITY_ROCKSDB_H_INCLUDED
-#define XRPL_UNITY_ROCKSDB_H_INCLUDED
+#pragma once
 
 #if XRPL_ROCKSDB_AVAILABLE
 // #include <rocksdb2/port/port_posix.h>
@@ -26,7 +25,5 @@
 #include <rocksdb/types.h>
 #include <rocksdb/universal_compaction.h>
 #include <rocksdb/write_batch.h>
-
-#endif
 
 #endif

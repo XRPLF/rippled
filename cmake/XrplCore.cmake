@@ -10,63 +10,67 @@ include(target_protobuf_sources)
 # so we just build them as a separate library.
 add_library(xrpl.libpb)
 set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
-target_protobuf_sources(xrpl.libpb xrpl/proto
-  LANGUAGE cpp
-  IMPORT_DIRS include/xrpl/proto
-  PROTOS include/xrpl/proto/xrpl.proto
+target_protobuf_sources(
+    xrpl.libpb
+    xrpl/proto
+    LANGUAGE cpp
+    IMPORT_DIRS include/xrpl/proto
+    PROTOS include/xrpl/proto/xrpl.proto
 )
 
 file(GLOB_RECURSE protos "include/xrpl/proto/org/*.proto")
-target_protobuf_sources(xrpl.libpb xrpl/proto
-  LANGUAGE cpp
-  IMPORT_DIRS include/xrpl/proto
-  PROTOS "${protos}"
+target_protobuf_sources(
+    xrpl.libpb
+    xrpl/proto
+    LANGUAGE cpp
+    IMPORT_DIRS include/xrpl/proto
+    PROTOS "${protos}"
 )
-target_protobuf_sources(xrpl.libpb xrpl/proto
-  LANGUAGE grpc
-  IMPORT_DIRS include/xrpl/proto
-  PROTOS "${protos}"
-  PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
-  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
-)
-
-target_compile_options(xrpl.libpb
-  PUBLIC
-    $<$<BOOL:${MSVC}>:-wd4996>
-    $<$<BOOL:${XCODE}>:
-      --system-header-prefix="google/protobuf"
-      -Wno-deprecated-dynamic-exception-spec
-    >
-  PRIVATE
-    $<$<BOOL:${MSVC}>:-wd4065>
-    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+target_protobuf_sources(
+    xrpl.libpb
+    xrpl/proto
+    LANGUAGE grpc
+    IMPORT_DIRS include/xrpl/proto
+    PROTOS "${protos}"
+    PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+    GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
 )
 
-target_link_libraries(xrpl.libpb
-  PUBLIC
-    protobuf::libprotobuf
-    gRPC::grpc++
+target_compile_options(
+    xrpl.libpb
+    PUBLIC
+        $<$<BOOL:${is_msvc}>:-wd4996>
+        $<$<BOOL:${is_xcode}>:
+        --system-header-prefix="google/protobuf"
+        -Wno-deprecated-dynamic-exception-spec
+        >
+    PRIVATE
+        $<$<BOOL:${is_msvc}>:-wd4065>
+        $<$<NOT:$<BOOL:${is_msvc}>>:-Wno-deprecated-declarations>
 )
+
+target_link_libraries(xrpl.libpb PUBLIC protobuf::libprotobuf gRPC::grpc++)
 
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 
-target_link_libraries(xrpl.imports.main
-  INTERFACE
-    absl::random_random
-    date::date
-    ed25519::ed25519
-    LibArchive::LibArchive
-    OpenSSL::Crypto
-    Xrpl::boost
-    Xrpl::libs
-    Xrpl::opts
-    Xrpl::syslibs
-    secp256k1::secp256k1
-    wasmi::wasmi
-    xrpl.libpb
-    xxHash::xxhash
-    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
+target_link_libraries(
+    xrpl.imports.main
+    INTERFACE
+        absl::random_random
+        date::date
+        ed25519::ed25519
+        LibArchive::LibArchive
+        OpenSSL::Crypto
+        Xrpl::boost
+        Xrpl::libs
+        Xrpl::opts
+        Xrpl::syslibs
+        secp256k1::secp256k1
+        wasmi::wasmi
+        xrpl.libpb
+        xxHash::xxhash
+        $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
 include(add_module)
@@ -75,6 +79,16 @@ include(target_link_modules)
 # Level 01
 add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
+
+include(GitInfo)
+add_module(xrpl git)
+target_compile_definitions(
+    xrpl.libxrpl.git
+    PRIVATE
+        GIT_COMMIT_HASH="${GIT_COMMIT_HASH}"
+        GIT_BUILD_BRANCH="${GIT_BUILD_BRANCH}"
+)
+target_link_libraries(xrpl.libxrpl.git PUBLIC xrpl.imports.main)
 
 # Level 02
 add_module(xrpl basics)
@@ -89,80 +103,140 @@ target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 
 # Level 04
 add_module(xrpl protocol)
-target_link_libraries(xrpl.libxrpl.protocol PUBLIC
-  xrpl.libxrpl.crypto
-  xrpl.libxrpl.json
+target_link_libraries(
+    xrpl.libxrpl.protocol
+    PUBLIC xrpl.libxrpl.crypto xrpl.libxrpl.git xrpl.libxrpl.json
 )
 
 # Level 05
-add_module(xrpl core)
-target_link_libraries(xrpl.libxrpl.core PUBLIC
-  xrpl.libxrpl.basics
-  xrpl.libxrpl.json
-  xrpl.libxrpl.protocol
+## Set up code generation for protocol_autogen module
+include(XrplProtocolAutogen)
+# Must call setup_protocol_autogen before add_module so that:
+# 1. Stale generated files are cleared before GLOB runs
+# 2. Output file list is known for custom commands
+setup_protocol_autogen()
+
+add_module(xrpl protocol_autogen)
+target_link_libraries(
+    xrpl.libxrpl.protocol_autogen
+    PUBLIC xrpl.libxrpl.protocol
 )
+
+# Ensure code generation runs before compiling protocol_autogen
+if(TARGET protocol_autogen_generate)
+    add_dependencies(xrpl.libxrpl.protocol_autogen protocol_autogen_generate)
+endif()
 
 # Level 06
-add_module(xrpl resource)
-target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
-
-# Level 07
-add_module(xrpl net)
-target_link_libraries(xrpl.libxrpl.net PUBLIC
-  xrpl.libxrpl.basics
-  xrpl.libxrpl.json
-  xrpl.libxrpl.protocol
-  xrpl.libxrpl.resource
-)
-
-add_module(xrpl server)
-target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
-
-add_module(xrpl nodestore)
-target_link_libraries(xrpl.libxrpl.nodestore PUBLIC
+add_module(xrpl core)
+target_link_libraries(
+    xrpl.libxrpl.core
+    PUBLIC
         xrpl.libxrpl.basics
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
+)
+
+# Level 07
+add_module(xrpl resource)
+target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
+
+# Level 08
+add_module(xrpl net)
+target_link_libraries(
+    xrpl.libxrpl.net
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.resource
+)
+
+add_module(xrpl nodestore)
+target_link_libraries(
+    xrpl.libxrpl.nodestore
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
 )
 
 add_module(xrpl shamap)
-target_link_libraries(xrpl.libxrpl.shamap PUBLIC
+target_link_libraries(
+    xrpl.libxrpl.shamap
+    PUBLIC
         xrpl.libxrpl.basics
         xrpl.libxrpl.crypto
         xrpl.libxrpl.protocol
         xrpl.libxrpl.nodestore
 )
 
-add_module(xrpl ledger)
-target_link_libraries(xrpl.libxrpl.ledger PUBLIC
-  xrpl.libxrpl.basics
-  xrpl.libxrpl.json
-  xrpl.libxrpl.protocol
+add_module(xrpl rdb)
+target_link_libraries(
+    xrpl.libxrpl.rdb
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.core
 )
+
+add_module(xrpl server)
+target_link_libraries(
+    xrpl.libxrpl.server
+    PUBLIC
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.core
+        xrpl.libxrpl.rdb
+        xrpl.libxrpl.resource
+)
+
+add_module(xrpl conditions)
+target_link_libraries(xrpl.libxrpl.conditions PUBLIC xrpl.libxrpl.server)
+
+add_module(xrpl ledger)
+target_link_libraries(
+    xrpl.libxrpl.ledger
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
+        xrpl.libxrpl.rdb
+        xrpl.libxrpl.server
+        xrpl.libxrpl.shamap
+        xrpl.libxrpl.conditions
+)
+
+add_module(xrpl tx)
+target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 
 add_library(xrpl::libxrpl ALIAS xrpl.libxrpl)
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/*.cpp"
+file(
+    GLOB_RECURSE sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/*.cpp"
 )
 target_sources(xrpl.libxrpl PRIVATE ${sources})
 
-target_link_modules(xrpl PUBLIC
-  basics
-  beast
-  core
-  crypto
-  json
-  protocol
-  resource
-  server
-  nodestore
-  shamap
-  net
-  ledger
+target_link_modules(
+    xrpl
+    PUBLIC
+    basics
+    beast
+    conditions
+    core
+    crypto
+    git
+    json
+    ledger
+    net
+    nodestore
+    protocol
+    protocol_autogen
+    rdb
+    resource
+    server
+    shamap
+    tx
 )
 
 # All headers in libxrpl are in modules.
@@ -175,62 +249,50 @@ target_link_modules(xrpl PUBLIC
 #     $<INSTALL_INTERFACE:include>)
 
 if(xrpld)
-  add_executable(xrpld)
-  if(tests)
-    target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
-    target_compile_definitions(xrpld PRIVATE
-                                       UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
+    add_executable(xrpld)
+    if(tests)
+        target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
+        target_compile_definitions(
+            xrpld
+            PRIVATE UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
+        )
+    endif()
+    target_include_directories(
+        xrpld
+        PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     )
-  endif()
-  target_include_directories(xrpld
-    PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-  )
 
-  file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
-  )
-  target_sources(xrpld PRIVATE ${sources})
-
-  if(tests)
-    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-      "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
+    file(
+        GLOB_RECURSE sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
     )
     target_sources(xrpld PRIVATE ${sources})
-  endif()
 
-  target_link_libraries(xrpld
-    Xrpl::boost
-    Xrpl::opts
-    Xrpl::libs
-    xrpl.libxrpl
-  )
-  exclude_if_included(xrpld)
-  # define a macro for tests that might need to
-  # be exluded or run differently in CI environment
-  if(is_ci)
-    target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
-  endif ()
+    if(tests)
+        file(
+            GLOB_RECURSE sources
+            CONFIGURE_DEPENDS
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
+        )
+        target_sources(xrpld PRIVATE ${sources})
+    endif()
 
-  if(voidstar)
-    target_compile_options(xrpld
-      PRIVATE
-        -fsanitize-coverage=trace-pc-guard
-    )
-    # xrpld requires access to antithesis-sdk-cpp implementation file
-    # antithesis_instrumentation.h, which is not exported as INTERFACE
-    target_include_directories(xrpld
-      PRIVATE
-        ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
-    )
-  endif()
+    target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+    exclude_if_included(xrpld)
+    # define a macro for tests that might need to
+    # be excluded or run differently in CI environment
+    if(is_ci)
+        target_compile_definitions(xrpld PRIVATE XRPL_RUNNING_IN_CI)
+    endif()
 
-  # any files that don't play well with unity should be added here
-  if(tests)
-    set_source_files_properties(
-      # these two seem to produce conflicts in beast teardown template methods
-      src/test/rpc/ValidatorRPC_test.cpp
-      src/test/ledger/Invariants_test.cpp
-      PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
-  endif()
+    if(voidstar)
+        target_compile_options(xrpld PRIVATE -fsanitize-coverage=trace-pc-guard)
+        # xrpld requires access to antithesis-sdk-cpp implementation file
+        # antithesis_instrumentation.h, which is not exported as INTERFACE
+        target_include_directories(
+            xrpld
+            PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+        )
+    endif()
 endif()

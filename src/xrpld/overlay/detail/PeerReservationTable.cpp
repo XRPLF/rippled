@@ -1,10 +1,9 @@
-#include <xrpld/app/rdb/RelationalDatabase.h>
-#include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/overlay/PeerReservationTable.h>
-
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
@@ -31,7 +30,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
     std::vector<PeerReservation> list;
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         list.reserve(table_.size());
         std::copy(table_.begin(), table_.end(), std::back_inserter(list));
     }
@@ -48,7 +47,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     connection_ = &connection;
     auto db = connection.checkoutDb();
@@ -63,7 +62,7 @@ PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto hint = table_.find(reservation);
     if (hint != table_.end())
@@ -97,7 +96,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto const it = table_.find({nodeId});
     if (it != table_.end())

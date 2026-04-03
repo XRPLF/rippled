@@ -1,6 +1,5 @@
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 namespace xrpl {
 namespace test {
@@ -26,14 +25,20 @@ class LedgerTiming_test : public beast::unit_test::suite
                 std::uint32_t round = 0;
                 do
                 {
-                    nextCloseResolution = getNextLedgerTimeResolution(
-                        closeResolution, previousAgree, ++round);
+                    nextCloseResolution =
+                        getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
+                    {
                         ++res.decrease;
+                    }
                     else if (nextCloseResolution > closeResolution)
+                    {
                         ++res.increase;
+                    }
                     else
+                    {
                         ++res.equal;
+                    }
                     std::swap(nextCloseResolution, closeResolution);
                 } while (round < rounds);
                 return res;
@@ -61,7 +66,7 @@ class LedgerTiming_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         // A closeTime equal to the epoch is not modified
         using tp = NetClock::time_point;
-        tp def;
+        tp const def;
         BEAST_EXPECT(def == roundCloseTime(def, 30s));
 
         // Otherwise, the closeTime is rounded to the nearest

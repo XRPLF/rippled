@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusProposal.h>
 
@@ -41,7 +40,7 @@ public:
         PublicKey const& publicKey,
         Slice const& signature,
         uint256 const& suppress,
-        Proposal&& proposal);
+        Proposal const& proposal);  // trivially copyable
 
     //! Verify the signing hash of the proposal
     bool
@@ -129,5 +128,3 @@ proposalUniqueId(
     Slice const& signature);
 
 }  // namespace xrpl
-
-#endif
