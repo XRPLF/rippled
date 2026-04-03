@@ -2262,10 +2262,6 @@ buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmDataLength)
-    {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
 
     auto const txnType = getDataInt32(rt, params, index);
     if (!txnType)
@@ -2314,10 +2310,6 @@ emitBuiltTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     auto* hf = getHF(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmDataLength)
-    {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
 
     auto const txnIndex = getDataInt32(rt, params, index);
     if (!txnIndex)
