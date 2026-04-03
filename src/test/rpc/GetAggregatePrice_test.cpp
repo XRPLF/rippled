@@ -315,29 +315,33 @@ public:
         }
 
         // Duplicate oracle entries should be deduplicated.
-        // Use two distinct prices so the dataset has multiple entries
-        // with different lastUpdateTime values. Without dedup, the
-        // duplicated oracle would insert each entry twice, inflating
-        // the size from 2 to 4.
+        // Two separate oracles with different prices give size=2.
+        // Listing the first oracle twice in the query must not
+        // inflate the size to 3.
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
-            Account const owner{"owner"};
-            env.fund(XRP(1'000), owner);
-            Oracle oracle(
-                env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+            Account const owner1{"owner1"};
+            Account const owner2{"owner2"};
+            env.fund(XRP(1'000), owner1);
+            env.fund(XRP(1'000), owner2);
+            Oracle oracle1(
+                env, {.owner = owner1, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+            Oracle oracle2(
+                env, {.owner = owner2, .series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
 
-            // Update the oracle with a different price to create a
-            // second data point in the history
-            oracle.set(UpdateArg{.series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
-
-            // Query with the oracle listed once
-            OraclesData single = {{owner, oracle.documentID()}};
+            // Query with both oracles listed once
+            OraclesData single = {
+                {owner1, oracle1.documentID()},
+                {owner2, oracle2.documentID()}};
             auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
 
-            // Query with the same oracle listed twice
-            OraclesData duplicated = {{owner, oracle.documentID()}, {owner, oracle.documentID()}};
+            // Query with oracle1 listed twice
+            OraclesData duplicated = {
+                {owner1, oracle1.documentID()},
+                {owner1, oracle1.documentID()},
+                {owner2, oracle2.documentID()}};
             auto const retDup = Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
 
             // Results should be identical - duplicates must not be
