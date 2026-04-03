@@ -143,7 +143,7 @@ public:
 
         Serializer msg;
         msg.add64(v);
-        auto const data = msg.getData();
+        auto data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
         std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent()

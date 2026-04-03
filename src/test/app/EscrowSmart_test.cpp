@@ -176,7 +176,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->START_UP = StartUpType::FRESH;
+                cfg->START_UP = StartUpType::Fresh;
                 return cfg;
             }),
             features);
@@ -375,7 +375,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             // transaction processing This is necessary because the config
             // cannot be updated in the middle of a test, and we cannot easily
             // create a Smart Escrow while the compute limit is set to 0
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto sle = std::make_shared<SLE>(keylet);
 
                 sle->setAccountID(sfAccount, alice.id());
