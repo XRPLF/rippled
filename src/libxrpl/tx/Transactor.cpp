@@ -1160,7 +1160,9 @@ Transactor::processPersistentChanges(TER result, XRPAmount& fee, bool& applied)
                 break;
             // LCOV_EXCL_START
             default:
-                UNREACHABLE("xrpl::Transactor::operator() : unexpected type");
+                UNREACHABLE(
+                    "xrpl::Transactor::processPersistentChanges() : "
+                    "unexpected type");
                 break;
                 // LCOV_EXCL_STOP
         }
