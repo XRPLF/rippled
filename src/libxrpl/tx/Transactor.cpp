@@ -19,8 +19,8 @@
 #include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
-#include <algorithm>
 #include <map>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -1084,15 +1084,15 @@ Transactor::processPersistentChanges(TER result, XRPAmount& fee, bool& applied)
     // Build a list of ledger entry types to collect, based on the
     // result code. Only deleted objects of these types will be
     // re-applied after the context is reset.
-    std::vector<LedgerEntryType> typesToCollect;
+    std::unordered_set<LedgerEntryType> typesToCollect;
     if ((result == tecOVERSIZE) || (result == tecKILLED))
-        typesToCollect.push_back(ltOFFER);
+        typesToCollect.insert(ltOFFER);
     if (result == tecINCOMPLETE)
-        typesToCollect.push_back(ltRIPPLE_STATE);
+        typesToCollect.insert(ltRIPPLE_STATE);
     if (result == tecEXPIRED)
     {
-        typesToCollect.push_back(ltNFTOKEN_OFFER);
-        typesToCollect.push_back(ltCREDENTIAL);
+        typesToCollect.insert(ltNFTOKEN_OFFER);
+        typesToCollect.insert(ltCREDENTIAL);
     }
 
     std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
@@ -1112,7 +1112,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount& fee, bool& applied)
                 if (before && after)
                 {
                     auto const type = before->getType();
-                    if (std::ranges::find(typesToCollect, type) != typesToCollect.end())
+                    if (typesToCollect.contains(type))
                     {
                         // For offers, only collect unfunded removals
                         // (where TakerPays is unchanged)
