@@ -307,12 +307,16 @@ SignerListSet::replaceSignerList()
     writeSignersToSLE(signerList, flags);
 
     // Add the signer list to the account's directory.
-    << (keylet::page ? "success" : "failure");
+    auto const page =
+        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
 
-    if (!keylet::page)
+    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
+                     << (page ? "success" : "failure");
+
+    if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    signerList->setFieldU64(sfOwnerNode, *keylet::page);
+    signerList->setFieldU64(sfOwnerNode, *page);
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
