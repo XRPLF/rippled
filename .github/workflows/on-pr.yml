@@ -115,7 +115,8 @@ jobs:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
+    # Only run when committing to a PR that targets a release branch or master.
+    if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && (startsWith(github.base_ref, 'release') || github.base_ref == 'master') }}
     uses: ./.github/workflows/reusable-notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
