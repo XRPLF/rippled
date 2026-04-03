@@ -14,7 +14,7 @@ getIntBytes(STBase const* obj)
 {
     static_assert(std::is_integral<T>::value, "Only integral types");
 
-    auto const& num(static_cast<STInteger<T> const*>(obj));
+    auto const& num(static_cast<STInteger<T> const*>(obj));  // NOLINT
     T const data = adjustWasmEndianess(num->value());
     auto const* b = reinterpret_cast<uint8_t const*>(&data);
     auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
@@ -42,13 +42,13 @@ getAnyFieldData(STBase const* obj)
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
 
         case STI_ACCOUNT: {
-            auto const* account(dynamic_cast<STAccount const*>(obj));
+            auto const* account(static_cast<STAccount const*>(obj));  // NOLINT
             auto const& data = account->value();
             return Bytes{data.begin(), data.end()};
         }
 
         case STI_ISSUE: {
-            auto const* issue(dynamic_cast<STIssue const*>(obj));
+            auto const* issue(static_cast<STIssue const*>(obj));  // NOLINT
             Asset const& asset(issue->value());
             // XRP and IOU will be processed by serializer
             if (asset.holds<MPTIssue>())
@@ -61,7 +61,7 @@ getAnyFieldData(STBase const* obj)
         }
 
         case STI_VL: {
-            auto const* vl(dynamic_cast<STBlob const*>(obj));
+            auto const* vl(static_cast<STBlob const*>(obj));  // NOLINT
             auto const& data = vl->value();
             return Bytes{data.begin(), data.end()};
         }
@@ -84,7 +84,7 @@ getAnyFieldData(STBase const* obj)
             // LCOV_EXCL_STOP
 
         case STI_UINT256: {
-            auto const* uint256Obj(dynamic_cast<STUInt256 const*>(obj));
+            auto const* uint256Obj(static_cast<STUInt256 const*>(obj));  // NOLINT
             auto const& data = uint256Obj->value();
             return Bytes{data.begin(), data.end()};
         }
@@ -165,14 +165,14 @@ locateField(STObject const& obj, Slice const& locator)
 
         if (STI_ARRAY == field->getSType())
         {
-            auto const* arr = dynamic_cast<STArray const*>(field);
+            auto const* arr = static_cast<STArray const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, arr->size()))
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
             field = &(arr->operator[](sfieldCode));
         }
         else if (STI_OBJECT == field->getSType())
         {
-            auto const* o = dynamic_cast<STObject const*>(field);
+            auto const* o = static_cast<STObject const*>(field);  // NOLINT
 
             auto const it = knownSFields.find(sfieldCode);
             if (it == knownSFields.end())
@@ -183,7 +183,7 @@ locateField(STObject const& obj, Slice const& locator)
         }
         else if (STI_VECTOR256 == field->getSType())
         {
-            auto const* v = dynamic_cast<STVector256 const*>(field);
+            auto const* v = static_cast<STVector256 const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, v->size()))
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
             return FieldValue(&(v->operator[](sfieldCode)));
@@ -206,9 +206,9 @@ getArrayLen(FieldValue const& variantField)
     if (STBase const* const* field = std::get_if<STBase const*>(&variantField))
     {
         if ((*field)->getSType() == STI_VECTOR256)
-            return dynamic_cast<STVector256 const*>(*field)->size();
+            return static_cast<STVector256 const*>(*field)->size();  // NOLINT
         if ((*field)->getSType() == STI_ARRAY)
-            return dynamic_cast<STArray const*>(*field)->size();
+            return static_cast<STArray const*>(*field)->size();  // NOLINT
     }
     // uint256 is not an array so that variant should still return NO_ARRAY
 
