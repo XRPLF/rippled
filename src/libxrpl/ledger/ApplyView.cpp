@@ -32,11 +32,11 @@ createRoot(
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 {
-    std::uint64_t page = start->getFieldU64(sfIndexPrevious);
+    std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
 
     auto node = start;
 
-    if (page)
+    if (page != 0u)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)

@@ -132,7 +132,7 @@ checkConsensusReached(
         CLOG(clog) << "agreeing and total adjusted: " << agreeing << ',' << total << ". ";
     }
 
-    std::size_t currentPercentage = (agreeing * 100) / total;
+    std::size_t const currentPercentage = (agreeing * 100) / total;
 
     CLOG(clog) << "currentPercentage: " << currentPercentage;
     bool const ret = currentPercentage >= minConsensusPct;

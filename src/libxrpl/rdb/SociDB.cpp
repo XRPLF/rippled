@@ -93,12 +93,12 @@ open(soci::session& s, std::string const& beName, std::string const& connectionS
 static sqlite_api::sqlite3*
 getConnection(soci::session& s)
 {
-    sqlite_api::sqlite3* result = nullptr;
+    sqlite_api::sqlite3* result = nullptr;  // NOLINT(misc-const-correctness)
     auto be = s.get_backend();
     if (auto b = dynamic_cast<soci::sqlite3_session_backend*>(be))
         result = b->conn_;
 
-    if (!result)
+    if (result == nullptr)
         Throw<std::logic_error>("Didn't get a database connection.");
 
     return result;
@@ -107,7 +107,7 @@ getConnection(soci::session& s)
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
-    if (!getConnection(s))
+    if (getConnection(s) == nullptr)
         Throw<std::logic_error>("No connection found.");
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
@@ -187,8 +187,11 @@ public:
         std::uintptr_t id,
         std::weak_ptr<soci::session> session,
         JobQueue& q,
-        Logs& logs)
-        : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
+        ServiceRegistry& registry)
+        : id_(id)
+        , session_(std::move(session))
+        , jobQueue_(q)
+        , j_(registry.getJournal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
@@ -219,7 +222,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -239,7 +242,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             running_ = false;
         }
     }
@@ -249,11 +252,12 @@ public:
     {
         auto [conn, keepAlive] = getConnection();
         (void)keepAlive;
-        if (!conn)
+        if (conn == nullptr)
             return;
 
         int log = 0, ckpt = 0;
-        int ret = sqlite3_wal_checkpoint_v2(conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        int const ret =
+            sqlite3_wal_checkpoint_v2(conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
         auto fname = sqlite3_db_filename(conn, "main");
         if (ret != SQLITE_OK)
@@ -266,7 +270,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         running_ = false;
     }
 
@@ -307,9 +311,9 @@ makeCheckpointer(
     std::uintptr_t id,
     std::weak_ptr<soci::session> session,
     JobQueue& queue,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
-    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
+    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, registry);
 }
 
 }  // namespace xrpl

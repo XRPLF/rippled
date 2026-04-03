@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -194,7 +195,7 @@ public:
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
         {
-            std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
+            std::string const domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
             BEAST_EXPECT(domain2.length() == len);
 
@@ -372,7 +373,7 @@ public:
         //
         // Two out-of-bound values are currently in the ledger (March 2020)
         // They are 4.0 and 4.294967295.  So those are the values we test.
-        for (double transferRate : {4.0, 4.294967295})
+        for (double const transferRate : {4.0, 4.294967295})
         {
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
@@ -402,7 +403,7 @@ public:
             // Note that we're bypassing almost all of the ledger's safety
             // checks with this modify() call.  If you call close() between
             // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
                 // Get the account root we want to hijack.
                 auto const sle = view.read(keylet::account(gw.id()));
                 if (!sle)
@@ -551,7 +552,7 @@ public:
         auto stx = std::make_shared<STTx>(*jtx.stx);
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);

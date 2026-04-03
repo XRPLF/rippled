@@ -28,7 +28,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env(trust(env.master, alice["USD"](100)), ter(tecNO_DST));
     }
@@ -40,9 +40,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -112,8 +112,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), alice, bob);
         env.close();
@@ -156,9 +156,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         Env env{*this, features};
         auto wsc = test::makeWSClient(env.app().config());
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -229,9 +229,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -276,9 +276,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -319,11 +319,11 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account amazon{"amazon"};
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const gw{"gateway"};
+        Account const amazon{"amazon"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
 
         env.fund(XRP(10000), gw, amazon, alice, bob, carol);
         env.close();
@@ -379,7 +379,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account alice{"alice"};
+        Account const alice{"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
         env.fund(XRP(10000), alice);

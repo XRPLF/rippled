@@ -76,7 +76,8 @@ public:
     bool
     checkExpectedCounters() const
     {
-        return !numExpectedAvailable_ && !numExpectedNotSet_ && !numExpectedSetUnavailable_;
+        return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&
+            (numExpectedSetUnavailable_ == 0);
     }
 
     // Check if the transaction has `delivered_amount` in the metaData as
@@ -89,7 +90,7 @@ public:
         if (t[jss::TransactionType].asString() != jss::Payment)
             return true;
 
-        bool isSet = metaData.isMember(jss::delivered_amount);
+        bool const isSet = metaData.isMember(jss::delivered_amount);
         bool isSetUnavailable = false;
         bool isSetAvailable = false;
         if (isSet)

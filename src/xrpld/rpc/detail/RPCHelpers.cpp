@@ -1,8 +1,8 @@
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
@@ -100,7 +100,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
         return std::nullopt;
 
     auto const& jvLimit = context.params[jss::limit];
-    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+    if (!jvLimit.isUInt() && (!jvLimit.isInt() || jvLimit.asInt() < 0))
         return RPC::expected_field_error(jss::limit, "unsigned integer");
 
     limit = jvLimit.asUInt();

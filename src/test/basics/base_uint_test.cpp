@@ -120,7 +120,7 @@ struct base_uint_test : beast::unit_test::suite
         // used to verify set insertion (hashing required)
         std::unordered_set<test96, hardened_hash<>> uset;
 
-        Blob raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+        Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
         BEAST_EXPECT(test96::bytes == raw.size());
 
         test96 u{raw};
@@ -144,7 +144,7 @@ struct base_uint_test : beast::unit_test::suite
         // back into another base_uint (w) for comparison with the original
         nonhash<96> h{};
         hash_append(h, u);
-        test96 w{std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
+        test96 const w{std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
         BEAST_EXPECT(w == u);
 
         test96 v{~u};
@@ -200,7 +200,7 @@ struct base_uint_test : beast::unit_test::suite
         zp1++;
         test96 zm1{z};
         zm1--;
-        test96 x{zm1 ^ zp1};
+        test96 const x{zm1 ^ zp1};
         uset.insert(x);
         BEAST_EXPECTS(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE", to_string(x));
         BEAST_EXPECTS(to_short_string(x) == "FFFFFFFF...", to_short_string(x));
@@ -285,8 +285,8 @@ struct base_uint_test : beast::unit_test::suite
                 {
                     // Try to prevent constant evaluation.
                     std::vector<char> str(23, '7');
-                    std::string_view sView(str.data(), str.size());
-                    [[maybe_unused]] test96 t96(sView);
+                    std::string_view const sView(str.data(), str.size());
+                    [[maybe_unused]] test96 const t96(sView);
                 }
                 catch (std::invalid_argument const& e)
                 {
@@ -303,8 +303,8 @@ struct base_uint_test : beast::unit_test::suite
                     // Try to prevent constant evaluation.
                     std::vector<char> str(23, '7');
                     str.push_back('G');
-                    std::string_view sView(str.data(), str.size());
-                    [[maybe_unused]] test96 t96(sView);
+                    std::string_view const sView(str.data(), str.size());
+                    [[maybe_unused]] test96 const t96(sView);
                 }
                 catch (std::range_error const& e)
                 {

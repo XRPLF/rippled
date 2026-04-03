@@ -42,20 +42,14 @@ public:
             // Empty string
             check("", "");
 
-            // clang-format off
-            check(
-                "RTXP/1.1,RTXP/1.2,RTXP/1.3,XRPL/2.1,XRPL/2.0,/XRPL/3.0",
-                "XRPL/2.0,XRPL/2.1");
-            check(
-                "RTXP/0.9,RTXP/1.01,XRPL/0.3,XRPL/2.01,websocket",
-                "");
+            check("RTXP/1.1,RTXP/1.2,RTXP/1.3,XRPL/2.1,XRPL/2.0,/XRPL/3.0", "XRPL/2.0,XRPL/2.1");
+            check("RTXP/0.9,RTXP/1.01,XRPL/0.3,XRPL/2.01,websocket", "");
             check(
                 "XRPL/2.0,XRPL/2.0,XRPL/19.4,XRPL/7.89,XRPL/XRPL/3.0,XRPL/2.01",
                 "XRPL/2.0,XRPL/7.89,XRPL/19.4");
             check(
                 "XRPL/2.0,XRPL/3.0,XRPL/4,XRPL/,XRPL,OPT XRPL/2.2,XRPL/5.67",
                 "XRPL/2.0,XRPL/3.0,XRPL/5.67");
-            // clang-format on
         }
 
         {

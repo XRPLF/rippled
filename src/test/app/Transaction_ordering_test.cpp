@@ -95,14 +95,16 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
+        static constexpr auto kSIZE = 5;
 
         std::vector<JTx> tx;
-        for (auto i = 0; i < 5; ++i)
+        tx.reserve(kSIZE);
+        for (auto i = 0; i < kSIZE; ++i)
         {
             tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
         }
 
-        for (auto i = 1; i < 5; ++i)
+        for (auto i = 1; i < kSIZE; ++i)
         {
             env(tx[i], ter(terPRE_SEQ));
             BEAST_EXPECT(env.seq(alice) == aliceSequence);
@@ -110,11 +112,11 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         env(tx[0]);
         env.app().getJobQueue().rendezvous();
-        BEAST_EXPECT(env.seq(alice) == aliceSequence + 5);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + kSIZE);
 
         env.close();
 
-        for (auto i = 0; i < 5; ++i)
+        for (auto i = 0; i < kSIZE; ++i)
         {
             auto const result = env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
             BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");

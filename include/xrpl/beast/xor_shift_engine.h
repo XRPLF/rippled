@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    result_type s_[2];
+    result_type s_[2]{};
 
     static result_type
     murmurhash3(result_type x);

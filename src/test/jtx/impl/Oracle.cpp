@@ -12,7 +12,7 @@ namespace test {
 namespace jtx {
 namespace oracle {
 
-Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env), documentID_{}
+Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 {
     // LastUpdateTime is checked to be in range
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.
@@ -258,7 +258,7 @@ Oracle::set(UpdateArg const& arg)
             return s;
         assert(s.size() <= 20);
         // anything else must be 160-bit hex string
-        return strHex(s).append(40 - s.size() * 2, '0');
+        return strHex(s).append(40 - (s.size() * 2), '0');
     };
     for (auto const& data : arg.series)
     {

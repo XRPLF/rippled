@@ -54,7 +54,7 @@ Throw(Args&&... args)
 
     E e(std::forward<Args>(args)...);
     LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());
-    throw e;
+    throw std::move(e);
 }
 
 /** Called when faulty logic causes a broken invariant. */
