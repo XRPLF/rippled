@@ -99,7 +99,7 @@ doNoRippleCheck(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
     AccountRoot const acct(accountID, *ledger);
     if (!acct)
         return rpcError(rpcACT_NOT_FOUND);
