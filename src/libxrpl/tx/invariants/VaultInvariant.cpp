@@ -616,16 +616,10 @@ ValidVault::finalize(
                 }
 
                 // Get the coarsest scale to round calculations to
-                DeltaInfo totalDelta{
-                    afterVault.assetsTotal - beforeVault.assetsTotal,
-                    std::max(
-                        scale(afterVault.assetsTotal, vaultAsset),
-                        scale(beforeVault.assetsTotal, vaultAsset))};
-                DeltaInfo availableDelta{
-                    afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                    std::max(
-                        scale(afterVault.assetsAvailable, vaultAsset),
-                        scale(beforeVault.assetsAvailable, vaultAsset))};
+                auto const totalDelta = DeltaInfo::makeDelta(
+                    afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset);
+                auto const availableDelta = DeltaInfo::makeDelta(
+                    afterVault.assetsAvailable, beforeVault.assetsAvailable, vaultAsset);
                 auto const minScale = computeCoarsestScale({
                     *maybeVaultDeltaAssets,
                     totalDelta,
@@ -778,16 +772,10 @@ ValidVault::finalize(
                 }
 
                 // Get the most coarse scale to round calculations to
-                auto const totalDelta = DeltaInfo{
-                    afterVault.assetsTotal - beforeVault.assetsTotal,
-                    std::max(
-                        scale(afterVault.assetsTotal, vaultAsset),
-                        scale(beforeVault.assetsTotal, vaultAsset))};
-                auto const availableDelta = DeltaInfo{
-                    afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                    std::max(
-                        scale(afterVault.assetsAvailable, vaultAsset),
-                        scale(beforeVault.assetsAvailable, vaultAsset))};
+                auto const totalDelta = DeltaInfo::makeDelta(
+                    afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset);
+                auto const availableDelta = DeltaInfo::makeDelta(
+                    afterVault.assetsAvailable, beforeVault.assetsAvailable, vaultAsset);
                 auto const minScale =
                     computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
 
@@ -940,16 +928,10 @@ ValidVault::finalize(
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
                 if (maybeVaultDeltaAssets)
                 {
-                    auto const totalDelta = DeltaInfo{
-                        afterVault.assetsTotal - beforeVault.assetsTotal,
-                        std::max(
-                            scale(afterVault.assetsTotal, vaultAsset),
-                            scale(beforeVault.assetsTotal, vaultAsset))};
-                    auto const availableDelta = DeltaInfo{
-                        afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                        std::max(
-                            scale(afterVault.assetsAvailable, vaultAsset),
-                            scale(beforeVault.assetsAvailable, vaultAsset))};
+                    auto const totalDelta = DeltaInfo::makeDelta(
+                        afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset);
+                    auto const availableDelta = DeltaInfo::makeDelta(
+                        afterVault.assetsAvailable, beforeVault.assetsAvailable, vaultAsset);
                     auto const minScale =
                         computeCoarsestScale({*maybeVaultDeltaAssets, totalDelta, availableDelta});
                     auto const vaultDeltaAssets =
@@ -1051,6 +1033,12 @@ ValidVault::finalize(
     }
 
     return true;
+}
+
+[[nodiscard]] ValidVault::DeltaInfo
+ValidVault::DeltaInfo::makeDelta(Number const& after, Number const& before, Asset const& asset)
+{
+    return {after - before, std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
 }
 
 [[nodiscard]] std::int32_t

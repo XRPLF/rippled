@@ -66,6 +66,10 @@ public:
     {
         Number delta = numZero;
         std::optional<int> scale;
+
+        // Compute the delta between two Numbers, taking the coarsest scale
+        [[nodiscard]] static DeltaInfo
+        makeDelta(Number const& after, Number const& before, Asset const& asset);
     };
 
 private:
