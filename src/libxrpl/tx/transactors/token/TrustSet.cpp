@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -319,7 +318,7 @@ TrustSet::doApply()
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
     Currency const currency(saLimitAmount.getCurrency());
-    AccountID uDstAccountID(saLimitAmount.getIssuer());
+    AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
@@ -351,7 +350,7 @@ TrustSet::doApply()
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::zero) : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
+    std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
@@ -367,9 +366,9 @@ TrustSet::doApply()
     bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -380,7 +379,8 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState = view().peek(keylet::line(account_, uDstAccountID, currency));
+    SLE::pointer const sleRippleState =
+        view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -626,7 +626,7 @@ TrustSet::doApply()
     else
     {
         // Zero balance in currency.
-        STAmount saBalance(Issue{currency, noAccount()});
+        STAmount const saBalance(Issue{currency, noAccount()});
 
         auto const k = keylet::line(account_, uDstAccountID, currency);
 

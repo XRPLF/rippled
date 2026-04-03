@@ -38,7 +38,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         // - 160 bits MPT issuer account
         // - 160 bits black hole account
         // - 32 bits sequence
-        AccountID account = static_cast<AccountID>(sit.get160());
+        AccountID const account = static_cast<AccountID>(sit.get160());
         // MPT
         if (noAccount() == account)
         {
@@ -50,7 +50,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
                 mptID.data() + sizeof(sequence),
                 currencyOrAccount.data(),
                 sizeof(currencyOrAccount));
-            MPTIssue issue{mptID};
+            MPTIssue const issue{mptID};
             asset_ = issue;
         }
         else

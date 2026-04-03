@@ -28,7 +28,7 @@ struct Zero
 
 namespace {
 static constexpr Zero zero{};
-}
+}  // namespace
 
 /** Default implementation of signum calls the method on the class. */
 template <typename T>

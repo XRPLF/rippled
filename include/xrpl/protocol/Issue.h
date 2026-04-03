@@ -96,7 +96,7 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue issue{xrpCurrency(), xrpAccount()};
+    static Issue const issue{xrpCurrency(), xrpAccount()};
     return issue;
 }
 
@@ -104,7 +104,7 @@ xrpIssue()
 inline Issue const&
 noIssue()
 {
-    static Issue issue{noCurrency(), noAccount()};
+    static Issue const issue{noCurrency(), noAccount()};
     return issue;
 }
 

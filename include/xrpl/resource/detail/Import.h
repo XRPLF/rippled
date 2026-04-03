@@ -13,7 +13,7 @@ struct Import
     {
         explicit Item() = default;
 
-        int balance;
+        int balance{};
         Consumer consumer;
     };
 

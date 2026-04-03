@@ -63,8 +63,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth = ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bClearRequireAuth =
+        ((uTxFlags & tfOptionalAuth) != 0u) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -75,8 +76,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool bSetRequireDest = ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
-    bool bClearRequireDest =
+    bool const bSetRequireDest =
+        ((uTxFlags & tfRequireDestTag) != 0u) || (uSetFlag == asfRequireDest);
+    bool const bClearRequireDest =
         ((uTxFlags & tfOptionalDestTag) != 0u) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
@@ -88,8 +90,9 @@ AccountSet::preflight(PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
-    bool bClearDisallowXRP = ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
+    bool const bSetDisallowXRP = ((uTxFlags & tfDisallowXRP) != 0u) || (uSetFlag == asfDisallowXRP);
+    bool const bClearDisallowXRP =
+        ((uTxFlags & tfAllowXRP) != 0u) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -100,7 +103,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     // TransferRate
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
         if ((uRate != 0u) && (uRate < QUALITY_ONE))
         {
@@ -217,7 +220,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
+    bool const bSetRequireAuth = ((uTxFlags & tfRequireAuth) != 0u) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
@@ -531,7 +534,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {

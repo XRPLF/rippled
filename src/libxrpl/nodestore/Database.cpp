@@ -122,7 +122,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard lock(readLock_);
+        std::lock_guard const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -158,7 +158,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard lock(readLock_);
+    std::lock_guard const lock(readLock_);
 
     if (!isStopping())
     {
@@ -238,7 +238,7 @@ Database::getCountsJson(Json::Value& obj)
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
-        std::unique_lock<std::mutex> lock(readLock_);
+        std::unique_lock<std::mutex> const lock(readLock_);
         obj["read_queue"] = static_cast<Json::UInt>(read_.size());
     }
 

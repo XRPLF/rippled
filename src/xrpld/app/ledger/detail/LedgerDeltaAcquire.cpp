@@ -21,7 +21,7 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
           {jtREPLAY_TASK, "LedReplDelta", LedgerReplayParameters::MAX_QUEUED_TASKS},
-          app.journal("LedgerReplayDelta"))
+          app.getJournal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
     , peerSet_(std::move(peerSet))
@@ -124,7 +124,8 @@ LedgerDeltaAcquire::processData(
     if (info.seq == ledgerSeq_)
     {
         // create a temporary ledger for building a LedgerReplay object later
-        replayTemp_ = std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
+        Rules const rules{app_.config().features};
+        replayTemp_ = std::make_shared<Ledger>(info, rules, app_.getNodeFamily());
         if (replayTemp_)
         {
             complete_ = true;
@@ -177,7 +178,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         parent->header().hash == replayTemp_->header().parentHash,
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
-    LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
+    LedgerReplay const replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
     if (fullLedger_ && fullLedger_->header().hash == hash_)
     {

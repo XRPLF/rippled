@@ -224,7 +224,7 @@ public:
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {
-            std::int16_t j = static_cast<std::int16_t>(i);
+            std::int16_t const j = static_cast<std::int16_t>(i);
 
             auto actual = std::to_string(j);
 

@@ -62,7 +62,7 @@ struct Entry : public beast::List<Entry>::Node
     std::optional<PublicKey> publicKey;
 
     // Back pointer to the map key (bit of a hack here)
-    Key const* key;
+    Key const* key{};
 
     // Number of Consumer references
     int refcount;

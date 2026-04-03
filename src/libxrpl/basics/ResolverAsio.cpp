@@ -152,7 +152,7 @@ public:
     void
     asyncHandlersComplete()
     {
-        std::unique_lock<std::mutex> lk{m_mut};
+        std::unique_lock<std::mutex> const lk{m_mut};
         m_asyncHandlersCompleted = true;
         m_cv.notify_all();
     }
@@ -172,7 +172,7 @@ public:
         if (m_stopped.exchange(false))
         {
             {
-                std::lock_guard lk{m_mut};
+                std::lock_guard const lk{m_mut};
                 m_asyncHandlersCompleted = false;
             }
             addReference();
@@ -327,7 +327,7 @@ public:
             return;
 
         std::string const name(m_work.front().names.back());
-        HandlerType handler(m_work.front().handler);
+        HandlerType const handler(m_work.front().handler);
 
         m_work.front().names.pop_back();
 
