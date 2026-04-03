@@ -149,7 +149,9 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn())
             << "Requested overpayment on a loan that doesn't allow it";
-        return temINVALID_FLAG;
+        return ctx.view.rules().enabled(fixSecurity3_1_3)
+            ? TER{tecNO_PERMISSION}
+            : temINVALID_FLAG;
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
