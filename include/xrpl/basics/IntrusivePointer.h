@@ -84,7 +84,8 @@ public:
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedIntrusive(SharedIntrusive<TT>&& rhs);
+    SharedIntrusive(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     SharedIntrusive&
     operator=(SharedIntrusive const& rhs);
@@ -106,7 +107,8 @@ public:
     template <class TT>
         requires std::convertible_to<TT*, T*>
     SharedIntrusive&
-    operator=(SharedIntrusive<TT>&& rhs);
+    operator=(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     /** Adopt the raw pointer. The strong reference may or may not be
         incremented, depending on the TAdoptTag
@@ -314,7 +316,8 @@ public:
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedWeakUnion(SharedIntrusive<TT>&& rhs);
+    SharedWeakUnion(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     SharedWeakUnion&
     operator=(SharedWeakUnion const& rhs);
@@ -327,7 +330,8 @@ public:
     template <class TT>
         requires std::convertible_to<TT*, T*>
     SharedWeakUnion&
-    operator=(SharedIntrusive<TT>&& rhs);
+    operator=(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     ~SharedWeakUnion();
 

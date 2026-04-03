@@ -50,7 +50,7 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)
+    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
         p_ = t.move(max_size, &d_);
     }

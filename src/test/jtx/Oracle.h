@@ -99,7 +99,7 @@ private:
     static inline std::uint32_t fee = 0;
     Env& env_;
     AccountID owner_;
-    std::uint32_t documentID_;
+    std::uint32_t documentID_{};
 
 private:
     void

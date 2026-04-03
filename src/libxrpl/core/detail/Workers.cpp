@@ -12,9 +12,7 @@ Workers::Workers(
     : m_callback(callback)
     , perfLog_(perfLog)
     , m_threadNames(threadNames)
-    , m_allPaused(true)
     , m_semaphore(0)
-    , m_numberOfThreads(0)
     , m_activeCount(0)
     , m_pauseCount(0)
     , m_runningTaskCount(0)
@@ -138,11 +136,8 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 //------------------------------------------------------------------------------
 
 Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
-    : m_workers{workers}
-    , threadName_{threadName}
-    , instance_{instance}
-    , wakeCount_{0}
-    , shouldExit_{false}
+    : m_workers{workers}, threadName_{threadName}, instance_{instance}
+
 {
     thread_ = std::thread{&Workers::Worker::run, this};
 }

@@ -554,7 +554,7 @@ private:
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::init;
 
     // Time it took for the last consensus round to converge
-    std::chrono::milliseconds prevRoundTime_;
+    std::chrono::milliseconds prevRoundTime_{};
 
     //-------------------------------------------------------------------------
     // Network time measurements of consensus progress

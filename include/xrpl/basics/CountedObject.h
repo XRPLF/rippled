@@ -34,7 +34,7 @@ public:
         {
             // Insert ourselves at the front of the lock-free linked list
             CountedObjects& instance = CountedObjects::getInstance();
-            Counter* head;
+            Counter* head = nullptr;
 
             do
             {

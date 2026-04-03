@@ -1,6 +1,6 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/ErrorCodes.h>

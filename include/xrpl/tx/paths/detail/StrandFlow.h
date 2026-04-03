@@ -27,7 +27,7 @@ namespace xrpl {
 template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    bool success;                                  ///< Strand succeeded
+    bool success = false;                          ///< Strand succeeded
     TInAmt in = beast::zero;                       ///< Currency amount in
     TOutAmt out = beast::zero;                     ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
@@ -61,7 +61,7 @@ struct StrandResult
     }
 
     StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+        : ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
     {
     }
 };
