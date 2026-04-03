@@ -764,7 +764,9 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 //------------------------------------------------------------------------------
 
 void
-populateAugmentedSubmitFields(Json::Value& jvResult, std::shared_ptr<Transaction> const& transaction)
+populateAugmentedSubmitFields(
+    Json::Value& jvResult,
+    std::shared_ptr<Transaction> const& transaction)
 {
     auto const submitResult = transaction->getSubmitResult();
 
@@ -776,10 +778,13 @@ populateAugmentedSubmitFields(Json::Value& jvResult, std::shared_ptr<Transaction
 
     if (auto currentLedgerState = transaction->getCurrentLedgerState())
     {
-        jvResult[jss::account_sequence_next] = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
-        jvResult[jss::account_sequence_available] = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
+        jvResult[jss::account_sequence_next] =
+            safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
+        jvResult[jss::account_sequence_available] =
+            safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
         jvResult[jss::open_ledger_cost] = to_string(currentLedgerState->minFeeRequired);
-        jvResult[jss::validated_ledger_index] = safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
+        jvResult[jss::validated_ledger_index] =
+            safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
     }
 }
 

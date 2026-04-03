@@ -26,7 +26,9 @@ namespace RPC {
     @param transaction The transaction containing the submit result and state
 */
 void
-populateAugmentedSubmitFields(Json::Value& jvResult, std::shared_ptr<Transaction> const& transaction);
+populateAugmentedSubmitFields(
+    Json::Value& jvResult,
+    std::shared_ptr<Transaction> const& transaction);
 
 Json::Value
 getCurrentNetworkFee(
