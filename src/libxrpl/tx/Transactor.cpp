@@ -363,6 +363,13 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
+    // NOTE: Because preclaim evaluates against a static readview, it
+    // does not reflect fee deductions from other transactions paid by
+    // the same account within the current ledger.
+    // As a result, if an account's balance is over-committed across multiple
+    // transactions, this check may pass optimistically.
+    // The fee shortfall will be handled by the Transactor::reset mechanism,
+    // which caps the fee to the remaining actual balance.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
