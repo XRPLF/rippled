@@ -1072,7 +1072,7 @@ Transactor::trapTransaction(uint256 txHash) const
 }
 
 void
-Transactor::processPersistentChanges(TER result, XRPAmount& fee, bool& applied)
+Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
 {
     JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
