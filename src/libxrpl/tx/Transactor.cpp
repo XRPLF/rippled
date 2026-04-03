@@ -34,7 +34,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.registry.getNetworkIDService().getNetworkID();
+        uint32_t const nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -211,7 +211,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
-    auto const sigValid = checkValidity(ctx.registry.getHashRouter(), ctx.tx, ctx.rules);
+    auto const sigValid = checkValidity(ctx.registry.get().getHashRouter(), ctx.tx, ctx.rules);
     if (sigValid.first == Validity::SigBad)
     {  // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -363,6 +363,13 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
+    // NOTE: Because preclaim evaluates against a static readview, it
+    // does not reflect fee deductions from other transactions paid by
+    // the same account within the current ledger.
+    // As a result, if an account's balance is over-committed across multiple
+    // transactions, this check may pass optimistically.
+    // The fee shortfall will be handled by the Transactor::reset mechanism,
+    // which caps the fee to the remaining actual balance.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
@@ -777,7 +784,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1073,15 +1080,15 @@ Transactor::operator()()
     //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
+    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
         Serializer ser;
         ctx_.tx.add(ser);
         SerialIter sit(ser.slice());
-        STTx s2(sit);
+        STTx const s2(sit);
 
         if (!s2.isEquivalent(ctx_.tx))
         {
@@ -1095,7 +1102,8 @@ Transactor::operator()()
     }
 #endif
 
-    if (auto const& trap = ctx_.registry.getTrapTxID(); trap && *trap == ctx_.tx.getTransactionID())
+    if (auto const& trap = ctx_.registry.get().getTrapTxID();
+        trap && *trap == ctx_.tx.getTransactionID())
     {
         trapTransaction(*trap);
     }
@@ -1198,23 +1206,25 @@ Transactor::operator()()
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
         {
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.getJournal("View"));
+            removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecEXPIRED)
         {
             removeExpiredNFTokenOffers(
-                view(), expiredNFTokenOffers, ctx_.registry.getJournal("View"));
+                view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecINCOMPLETE)
         {
-            removeDeletedTrustLines(view(), removedTrustLines, ctx_.registry.getJournal("View"));
+            removeDeletedTrustLines(
+                view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecEXPIRED)
         {
-            removeExpiredCredentials(view(), expiredCredentials, ctx_.registry.getJournal("View"));
+            removeExpiredCredentials(
+                view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
         }
 
         applied = isTecClaim(result);

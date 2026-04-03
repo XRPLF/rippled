@@ -82,10 +82,10 @@ public:
 
     struct PathRank
     {
-        std::uint64_t quality;
-        std::uint64_t length;
+        std::uint64_t quality{};
+        std::uint64_t length{};
         STAmount liquidity;
-        int index;
+        int index{};
     };
 
 private:

@@ -36,7 +36,7 @@ env:
   BUILD_DIR: build
   # ubuntu-latest has only 2 CPUs for private repositories
   # https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for--private-repositories
-  NPROC_SUBTRACT: ${{ github.event.repository.private && '1' || '2' }}
+  NPROC_SUBTRACT: ${{ github.event.repository.visibility == 'public' && '2' || '1' }}
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2bbc2dc1abeec7bfaa886804ab86871ac201764e
+        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
         with:
           enable_ccache: false
 
@@ -81,13 +81,13 @@ jobs:
           cmake --build . --target docs --parallel ${BUILD_NPROC}
 
       - name: Create documentation artifact
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: ${{ env.BUILD_DIR }}/docs/html
 
   deploy:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ (github.repository_owner == 'XRPLF' || github.event.repository.visibility == 'public') && github.event_name == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -99,4 +99,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
