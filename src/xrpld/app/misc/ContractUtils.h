@@ -67,10 +67,7 @@ NotTEC
 preflightInstanceParameters(STTx const& tx, beast::Journal j);
 
 bool
-validateParameterMapping(
-    STArray const& params,
-    STArray const& values,
-    beast::Journal j);
+validateParameterMapping(STArray const& params, STArray const& values, beast::Journal j);
 
 NotTEC
 preflightInstanceParameterValues(STTx const& tx, beast::Journal j);

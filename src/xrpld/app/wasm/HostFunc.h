@@ -89,9 +89,7 @@ struct HostFunctions
 {
     beast::Journal j_;
 
-    HostFunctions(
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : j_(j)
+    HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
     {
     }
 
@@ -246,10 +244,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    checkSignature(
-        Slice const& message,
-        Slice const& signature,
-        Slice const& pubkey)
+    checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -279,10 +274,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Slice const& credentialType)
+    credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -312,10 +304,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    lineKeylet(
-        AccountID const& account1,
-        AccountID const& account2,
-        Currency const& currency)
+    lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -351,10 +340,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    paychanKeylet(
-        AccountID const& account,
-        AccountID const& destination,
-        std::uint32_t seq)
+    paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -543,10 +529,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getDataArrayElementField(
-        AccountID const& account,
-        size_t index,
-        std::string_view const& key)
+    getDataArrayElementField(AccountID const& account, size_t index, std::string_view const& key)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -608,10 +591,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    addTxnField(
-        std::uint32_t const& index,
-        SField const& field,
-        Slice const& data)
+    addTxnField(std::uint32_t const& index, SField const& field, Slice const& data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

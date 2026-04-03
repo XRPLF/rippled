@@ -35,18 +35,15 @@ namespace xrpl {
 XRPAmount
 ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    XRPAmount const maxAmount{
-        std::numeric_limits<XRPAmount::value_type>::max()};
+    XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
     XRPAmount createFee{0};
 
     if (tx.isFieldPresent(sfCreateCode))
-        createFee = XRPAmount{
-            contract::contractCreateFee(tx.getFieldVL(sfCreateCode).size())};
+        createFee = XRPAmount{contract::contractCreateFee(tx.getFieldVL(sfCreateCode).size())};
 
     if (createFee > maxAmount - view.fees().increment)
     {
-        JLOG(debugLog().trace())
-            << "ContractCreate: Create fee overflow detected.";
+        JLOG(debugLog().trace()) << "ContractCreate: Create fee overflow detected.";
         return XRPAmount{INITIAL_XRP};
     }
 
@@ -55,8 +52,7 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto baseFee = Transactor::calculateBaseFee(view, tx);
     if (baseFee > maxAmount - createFee)
     {
-        JLOG(debugLog().trace())
-            << "ContractCreate: Total fee overflow detected.";
+        JLOG(debugLog().trace()) << "ContractCreate: Total fee overflow detected.";
         return XRPAmount{INITIAL_XRP};
     }
 
@@ -73,54 +69,42 @@ ContractCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if ((flags & (tfCodeImmutable | tfABIImmutable | tfImmutable)) >
-        tfImmutable)
+    if ((flags & (tfCodeImmutable | tfABIImmutable | tfImmutable)) > tfImmutable)
     {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: Cannot set more than one immutability flag.";
+        JLOG(ctx.j.trace()) << "ContractCreate: Cannot set more than one immutability flag.";
         return temINVALID_FLAG;
     }
 
-    if (!ctx.tx.isFieldPresent(sfContractCode) &&
-        !ctx.tx.isFieldPresent(sfContractHash))
+    if (!ctx.tx.isFieldPresent(sfContractCode) && !ctx.tx.isFieldPresent(sfContractHash))
     {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: Neither ContractCode nor ContractHash present";
+        JLOG(ctx.j.trace()) << "ContractCreate: Neither ContractCode nor ContractHash present";
         return temMALFORMED;
     }
 
-    if (ctx.tx.isFieldPresent(sfContractCode) &&
-        ctx.tx.isFieldPresent(sfContractHash))
+    if (ctx.tx.isFieldPresent(sfContractCode) && ctx.tx.isFieldPresent(sfContractHash))
     {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: Both ContractCode and ContractHash present";
+        JLOG(ctx.j.trace()) << "ContractCreate: Both ContractCode and ContractHash present";
         return temMALFORMED;
     }
 
-    if (auto const res = contract::preflightFunctions(ctx.tx, ctx.j);
-        !isTesSuccess(res))
+    if (auto const res = contract::preflightFunctions(ctx.tx, ctx.j); !isTesSuccess(res))
     {
-        JLOG(ctx.j.trace()) << "ContractCreate: Functions validation failed: "
+        JLOG(ctx.j.trace()) << "ContractCreate: Functions validation failed: " << transToken(res);
+        return res;
+    }
+
+    if (auto const res = contract::preflightInstanceParameters(ctx.tx, ctx.j); !isTesSuccess(res))
+    {
+        JLOG(ctx.j.trace()) << "ContractCreate: InstanceParameters validation failed: "
                             << transToken(res);
         return res;
     }
 
-    if (auto const res = contract::preflightInstanceParameters(ctx.tx, ctx.j);
+    if (auto const res = contract::preflightInstanceParameterValues(ctx.tx, ctx.j);
         !isTesSuccess(res))
     {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: InstanceParameters validation failed: "
-            << transToken(res);
-        return res;
-    }
-
-    if (auto const res =
-            contract::preflightInstanceParameterValues(ctx.tx, ctx.j);
-        !isTesSuccess(res))
-    {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: InstanceParameterValues validation failed: "
-            << transToken(res);
+        JLOG(ctx.j.trace()) << "ContractCreate: InstanceParameterValues validation failed: "
+                            << transToken(res);
         return res;
     }
 
@@ -147,13 +131,11 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
         xrpl::Blob wasmBytes = ctx.tx.getFieldVL(sfContractCode);
         if (wasmBytes.empty())
         {
-            JLOG(ctx.j.trace())
-                << "ContractCreate: ContractCode provided is empty.";
+            JLOG(ctx.j.trace()) << "ContractCreate: ContractCode provided is empty.";
             return temMALFORMED;
         }
 
-        contractHash =
-            xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
 
@@ -179,15 +161,13 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
 
         // Already validated in preflight, but we can check here too.
         auto const& instanceParams = sle->getFieldArray(sfInstanceParameters);
-        auto const& instanceParamValues =
-            ctx.tx.getFieldArray(sfInstanceParameterValues);
-        if (auto const isValid = contract::validateParameterMapping(
-                instanceParams, instanceParamValues, ctx.j);
+        auto const& instanceParamValues = ctx.tx.getFieldArray(sfInstanceParameterValues);
+        if (auto const isValid =
+                contract::validateParameterMapping(instanceParams, instanceParamValues, ctx.j);
             !isValid)
         {
-            JLOG(ctx.j.trace())
-                << "ContractCreate: InstanceParameters do not match what's in "
-                   "the existing ContractSource ledger object.";
+            JLOG(ctx.j.trace()) << "ContractCreate: InstanceParameters do not match what's in "
+                                   "the existing ContractSource ledger object.";
             return temMALFORMED;
         }
     }
@@ -212,8 +192,7 @@ ContractCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfContractCode))
     {
         wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
-        contractHash =
-            xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        contractHash = xrpl::sha512Half_s(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx_.view().exists(keylet::contractSource(*contractHash)))
             isInstall = true;
     }
@@ -224,22 +203,18 @@ ContractCreate::doApply()
         if (!sourceSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        sourceSle->at(sfReferenceCount) =
-            sourceSle->getFieldU64(sfReferenceCount) + 1;
+        sourceSle->at(sfReferenceCount) = sourceSle->getFieldU64(sfReferenceCount) + 1;
         ctx_.view().update(sourceSle);
     }
     else
     {
-        sourceSle =
-            std::make_shared<SLE>(keylet::contractSource(*contractHash));
+        sourceSle = std::make_shared<SLE>(keylet::contractSource(*contractHash));
         sourceSle->at(sfContractHash) = *contractHash;
         sourceSle->at(sfContractCode) = makeSlice(wasmBytes);
-        sourceSle->setFieldArray(
-            sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
+        sourceSle->setFieldArray(sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
         if (ctx_.tx.isFieldPresent(sfInstanceParameters))
             sourceSle->setFieldArray(
-                sfInstanceParameters,
-                ctx_.tx.getFieldArray(sfInstanceParameters));
+                sfInstanceParameters, ctx_.tx.getFieldArray(sfInstanceParameters));
         sourceSle->at(sfReferenceCount) = 1;
 
         ctx_.view().insert(sourceSle);
@@ -249,8 +224,7 @@ ContractCreate::doApply()
     auto const contractKeylet = keylet::contract(*contractHash, account_, seq);
     auto contractSle = std::make_shared<SLE>(contractKeylet);
 
-    auto maybePseudo =
-        createPseudoAccount(view(), contractSle->key(), sfContractID);
+    auto maybePseudo = createPseudoAccount(view(), contractSle->key(), sfContractID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
 
@@ -264,8 +238,7 @@ ContractCreate::doApply()
     contractSle->at(sfContractHash) = *contractHash;
     if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
         contractSle->setFieldArray(
-            sfInstanceParameterValues,
-            ctx_.tx.getFieldArray(sfInstanceParameterValues));
+            sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
 
     if (ctx_.tx.isFieldPresent(sfURI))
         contractSle->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
@@ -275,32 +248,23 @@ ContractCreate::doApply()
     // Handle the instance parameters for the contract creation.
     if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
     {
-        STArray const& params =
-            ctx_.tx.getFieldArray(sfInstanceParameterValues);
+        STArray const& params = ctx_.tx.getFieldArray(sfInstanceParameterValues);
 
         // Note: We have to do preclaim and apply here because we will only have
         // the pseudo account after the contract is created.
-        if (auto ter = contract::preclaimFlagParameters(
-                ctx_.view(), account_, pseudoAccount, params, j_);
+        if (auto ter =
+                contract::preclaimFlagParameters(ctx_.view(), account_, pseudoAccount, params, j_);
             !isTesSuccess(ter))
         {
-            JLOG(j_.trace())
-                << "ContractCreate: Failed to preclaim flag parameters.";
+            JLOG(j_.trace()) << "ContractCreate: Failed to preclaim flag parameters.";
             return ter;
         }
 
         if (auto ter = contract::doApplyFlagParameters(
-                ctx_.view(),
-                ctx_.tx,
-                account_,
-                pseudoAccount,
-                params,
-                mPriorBalance,
-                j_);
+                ctx_.view(), ctx_.tx, account_, pseudoAccount, params, mPriorBalance, j_);
             !isTesSuccess(ter))
         {
-            JLOG(j_.trace())
-                << "ContractCreate: Failed to apply flag parameters.";
+            JLOG(j_.trace()) << "ContractCreate: Failed to apply flag parameters.";
             return ter;
         }
     }
@@ -309,9 +273,7 @@ ContractCreate::doApply()
     // TODO: use dirLink
     {
         auto const page = view().dirInsert(
-            keylet::ownerDir(pseudoAccount),
-            contractKeylet,
-            describeOwnerDir(pseudoAccount));
+            keylet::ownerDir(pseudoAccount), contractKeylet, describeOwnerDir(pseudoAccount));
 
         if (!page)
             return tecDIR_FULL;

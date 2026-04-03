@@ -31,8 +31,7 @@ ContractDelete::preflight(PreflightContext const& ctx)
     auto const flags = ctx.tx.getFlags();
     if (flags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace())
-            << "ContractDelete: only tfUniversalMask is allowed.";
+        JLOG(ctx.j.trace()) << "ContractDelete: only tfUniversalMask is allowed.";
         return temINVALID_FLAG;
     }
 
@@ -43,9 +42,8 @@ TER
 ContractDelete::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx.getAccountID(sfAccount);
-    AccountID const contractAccount = ctx.tx.isFieldPresent(sfContractAccount)
-        ? ctx.tx.getAccountID(sfContractAccount)
-        : account;
+    AccountID const contractAccount =
+        ctx.tx.isFieldPresent(sfContractAccount) ? ctx.tx.getAccountID(sfContractAccount) : account;
 
     auto const caSle = ctx.view.read(keylet::account(contractAccount));
     if (!caSle)
@@ -86,8 +84,7 @@ ContractDelete::preclaim(PreclaimContext const& ctx)
     }
 
     AccountID const owner = contractSle->getAccountID(sfOwner);
-    if (auto const res = deletePreclaim(ctx, 0, account, owner, true);
-        !isTesSuccess(res))
+    if (auto const res = deletePreclaim(ctx, 0, account, owner, true); !isTesSuccess(res))
         return res;
     return tesSUCCESS;
 }
@@ -102,8 +99,7 @@ ContractDelete::deleteContract(
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(
-            keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.trace()) << "Unable to delete Delegate from owner.";
@@ -162,8 +158,7 @@ ContractDelete::doApply()
 
     AccountID const owner = contractSle->getAccountID(sfOwner);
     STAmount const contractBalance = (*caSle)[sfBalance];
-    if (auto const res =
-            deleteDoApply(ctx_, contractBalance, contractAccount, owner);
+    if (auto const res = deleteDoApply(ctx_, contractBalance, contractAccount, owner);
         !isTesSuccess(res))
         return res;
 

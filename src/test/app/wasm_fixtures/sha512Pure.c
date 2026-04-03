@@ -39,104 +39,94 @@ static uint64_t const K512[] = {
 #define Ch(x, y, z) (((x) & (y)) ^ ((~(x)) & (z)))
 #define Maj(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
 
-static inline uint64_t
-B2U64(uint8_t val, uint8_t sh)
+static inline uint64_t B2U64(uint8_t val, uint8_t sh)
 {
-    return ((uint64_t)val) << sh;
+  return ((uint64_t)val) << sh;
 }
 
-void*
-allocate(int sz)
-{
-    return malloc(sz);
-}
-void
-deallocate(void* p)
-{
-    free(p);
-}
+void *allocate(int sz) { return malloc(sz); }
+void deallocate(void *p) { free(p); }
 
 uint8_t e_data[32 * 1024];
 
-uint8_t*
-sha512_process(uint8_t const* data, int32_t length)
+uint8_t *sha512_process(uint8_t const *data, int32_t length)
 {
-    static uint64_t state[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  static uint64_t state[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-    uint64_t a, b, c, d, e, f, g, h, s0, s1, T1, T2;
-    uint64_t X[16];
+  uint64_t a, b, c, d, e, f, g, h, s0, s1, T1, T2;
+  uint64_t X[16];
 
-    uint64_t blocks = length / 128;
-    while (blocks--)
+  uint64_t blocks = length / 128;
+  while (blocks--)
+  {
+    a = state[0];
+    b = state[1];
+    c = state[2];
+    d = state[3];
+    e = state[4];
+    f = state[5];
+    g = state[6];
+    h = state[7];
+
+    unsigned i;
+    for (i = 0; i < 16; i++)
     {
-        a = state[0];
-        b = state[1];
-        c = state[2];
-        d = state[3];
-        e = state[4];
-        f = state[5];
-        g = state[6];
-        h = state[7];
+      X[i] = B2U64(data[0], 56) | B2U64(data[1], 48) | B2U64(data[2], 40) |
+             B2U64(data[3], 32) | B2U64(data[4], 24) | B2U64(data[5], 16) |
+             B2U64(data[6], 8) | B2U64(data[7], 0);
+      data += 8;
 
-        unsigned i;
-        for (i = 0; i < 16; i++)
-        {
-            X[i] = B2U64(data[0], 56) | B2U64(data[1], 48) |
-                B2U64(data[2], 40) | B2U64(data[3], 32) | B2U64(data[4], 24) |
-                B2U64(data[5], 16) | B2U64(data[6], 8) | B2U64(data[7], 0);
-            data += 8;
+      T1 = h;
+      T1 += Sigma1(e);
+      T1 += Ch(e, f, g);
+      T1 += K512[i];
+      T1 += X[i];
 
-            T1 = h;
-            T1 += Sigma1(e);
-            T1 += Ch(e, f, g);
-            T1 += K512[i];
-            T1 += X[i];
+      T2 = Sigma0(a);
+      T2 += Maj(a, b, c);
 
-            T2 = Sigma0(a);
-            T2 += Maj(a, b, c);
-
-            h = g;
-            g = f;
-            f = e;
-            e = d + T1;
-            d = c;
-            c = b;
-            b = a;
-            a = T1 + T2;
-        }
-
-        for (i = 16; i < 80; i++)
-        {
-            s0 = X[(i + 1) & 0x0f];
-            s0 = sigma0(s0);
-            s1 = X[(i + 14) & 0x0f];
-            s1 = sigma1(s1);
-
-            T1 = X[i & 0xf] += s0 + s1 + X[(i + 9) & 0xf];
-            T1 += h + Sigma1(e) + Ch(e, f, g) + K512[i];
-            T2 = Sigma0(a) + Maj(a, b, c);
-
-            h = g;
-            g = f;
-            f = e;
-            e = d + T1;
-            d = c;
-            c = b;
-            b = a;
-            a = T1 + T2;
-        }
-
-        state[0] += a;
-        state[1] += b;
-        state[2] += c;
-        state[3] += d;
-        state[4] += e;
-        state[5] += f;
-        state[6] += g;
-        state[7] += h;
+      h = g;
+      g = f;
+      f = e;
+      e = d + T1;
+      d = c;
+      c = b;
+      b = a;
+      a = T1 + T2;
     }
 
-    return (uint8_t*)(state);
+    for (i = 16; i < 80; i++)
+    {
+      s0 = X[(i + 1) & 0x0f];
+      s0 = sigma0(s0);
+      s1 = X[(i + 14) & 0x0f];
+      s1 = sigma1(s1);
+
+      T1 = X[i & 0xf] += s0 + s1 + X[(i + 9) & 0xf];
+      T1 += h + Sigma1(e) + Ch(e, f, g) + K512[i];
+      T2 = Sigma0(a) + Maj(a, b, c);
+
+      h = g;
+      g = f;
+      f = e;
+      e = d + T1;
+      d = c;
+      c = b;
+      b = a;
+      a = T1 + T2;
+    }
+
+    state[0] += a;
+    state[1] += b;
+    state[2] += c;
+    state[3] += d;
+    state[4] += e;
+    state[5] += f;
+    state[6] += g;
+    state[7] += h;
+  }
+
+  return (uint8_t *)(state);
 }
 
 // int main ()

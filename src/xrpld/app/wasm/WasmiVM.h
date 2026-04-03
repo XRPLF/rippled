@@ -60,18 +60,11 @@ struct WasmVec
     }
 };
 
-using WasmValtypeVec = WasmVec<
-    wasm_valtype_vec_t,
-    &wasm_valtype_vec_new_uninitialized,
-    &wasm_valtype_vec_delete>;
-using WasmValVec = WasmVec<
-    wasm_val_vec_t,
-    &wasm_val_vec_new_uninitialized,
-    &wasm_val_vec_delete>;
-using WasmExternVec = WasmVec<
-    wasm_extern_vec_t,
-    &wasm_extern_vec_new_uninitialized,
-    &wasm_extern_vec_delete>;
+using WasmValtypeVec =
+    WasmVec<wasm_valtype_vec_t, &wasm_valtype_vec_new_uninitialized, &wasm_valtype_vec_delete>;
+using WasmValVec = WasmVec<wasm_val_vec_t, &wasm_val_vec_new_uninitialized, &wasm_val_vec_delete>;
+using WasmExternVec =
+    WasmVec<wasm_extern_vec_t, &wasm_extern_vec_new_uninitialized, &wasm_extern_vec_delete>;
 using WasmExporttypeVec = WasmVec<
     wasm_exporttype_vec_t,
     &wasm_exporttype_vec_new_uninitialized,
@@ -97,8 +90,7 @@ struct WasmiResult
 };
 
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
-using InstancePtr =
-    std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
+using InstancePtr = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
 using EnginePtr = std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)>;
 using StorePtr = std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)>;
 
@@ -128,19 +120,14 @@ public:
     InstanceWrapper&
     operator=(InstanceWrapper&& o);
 
-    InstanceWrapper(
-        StorePtr& s,
-        ModulePtr& m,
-        WasmExternVec const& imports,
-        beast::Journal j);
+    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j);
 
     ~InstanceWrapper() = default;
 
     operator bool() const;
 
     FuncInfo
-    getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes)
-        const;
+    getFunc(std::string_view funcName, WasmExporttypeVec const& exportTypes) const;
 
     wmem
     getMem() const;
@@ -148,7 +135,8 @@ public:
     std::int64_t
     getGas() const;
 
-    std::int64_t setGas(std::int64_t) const;
+    std::int64_t
+    setGas(std::int64_t) const;
 };
 
 struct ModuleWrapper
@@ -267,11 +255,7 @@ private:
         ImportVec const& imports);
 
     int
-    addModule(
-        Bytes const& wasmCode,
-        bool instantiate,
-        int64_t gas,
-        ImportVec const& imports);
+    addModule(Bytes const& wasmCode, bool instantiate, int64_t gas, ImportVec const& imports);
     void
     clearModules();
 
@@ -290,9 +274,7 @@ private:
     convertParams(std::vector<WasmParam> const& params);
 
     static int
-    compareParamTypes(
-        wasm_valtype_vec_t const* ftp,
-        std::vector<wasm_val_t> const& p);
+    compareParamTypes(wasm_valtype_vec_t const* ftp, std::vector<wasm_val_t> const& p);
 
     static void
     add_param(std::vector<wasm_val_t>& in, int32_t p);
@@ -313,19 +295,11 @@ private:
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        std::int32_t p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int32_t p, Types&&... args);
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        std::int64_t p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, std::int64_t p, Types&&... args);
 
     template <int NR, class... Types>
     inline WasmiResult
@@ -338,11 +312,7 @@ private:
 
     template <int NR, class... Types>
     inline WasmiResult
-    call(
-        FuncInfo const& f,
-        std::vector<wasm_val_t>& in,
-        Bytes const& p,
-        Types&&... args);
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in, Bytes const& p, Types&&... args);
 };
 
 }  // namespace xrpl

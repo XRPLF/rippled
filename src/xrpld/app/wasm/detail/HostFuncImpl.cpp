@@ -186,8 +186,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 static inline bool
 noField(STBase const* field)
 {
-    return !field || (STI_NOTPRESENT == field->getSType()) ||
-        (STI_UNKNOWN == field->getSType());
+    return !field || (STI_NOTPRESENT == field->getSType()) || (STI_UNKNOWN == field->getSType());
 }
 
 static Expected<STBase const*, HostFunctionError>
@@ -272,9 +271,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedField(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -326,9 +323,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjArrayLen(
-    int32_t cacheIdx,
-    SField const& fname)
+WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname)
 {
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
@@ -383,9 +378,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
-    int32_t cacheIdx,
-    Slice const& locator)
+WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -475,8 +468,7 @@ WasmHostFunctionsImpl::credentialKeylet(
     if (!subject || !issuer)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
 
-    if (credentialType.empty() ||
-        credentialType.size() > maxCredentialTypeLength)
+    if (credentialType.empty() || credentialType.size() > maxCredentialTypeLength)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     auto const keylet = keylet::credential(subject, issuer, credentialType);
@@ -494,9 +486,7 @@ WasmHostFunctionsImpl::didKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::delegateKeylet(
-    AccountID const& account,
-    AccountID const& authorize)
+WasmHostFunctionsImpl::delegateKeylet(AccountID const& account, AccountID const& authorize)
 {
     if (!account || !authorize)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -507,9 +497,7 @@ WasmHostFunctionsImpl::delegateKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::depositPreauthKeylet(
-    AccountID const& account,
-    AccountID const& authorize)
+WasmHostFunctionsImpl::depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
 {
     if (!account || !authorize)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -546,9 +534,7 @@ WasmHostFunctionsImpl::lineKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::mptIssuanceKeylet(
-    AccountID const& issuer,
-    std::uint32_t seq)
+WasmHostFunctionsImpl::mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq)
 {
     if (!issuer)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -558,9 +544,7 @@ WasmHostFunctionsImpl::mptIssuanceKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::mptokenKeylet(
-    MPTID const& mptid,
-    AccountID const& holder)
+WasmHostFunctionsImpl::mptokenKeylet(MPTID const& mptid, AccountID const& holder)
 {
     if (!mptid)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
@@ -572,9 +556,7 @@ WasmHostFunctionsImpl::mptokenKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::nftOfferKeylet(
-    AccountID const& account,
-    std::uint32_t seq)
+WasmHostFunctionsImpl::nftOfferKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -592,9 +574,7 @@ WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::oracleKeylet(
-    AccountID const& account,
-    std::uint32_t documentId)
+WasmHostFunctionsImpl::oracleKeylet(AccountID const& account, std::uint32_t documentId)
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -617,9 +597,7 @@ WasmHostFunctionsImpl::paychanKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::permissionedDomainKeylet(
-    AccountID const& account,
-    std::uint32_t seq)
+WasmHostFunctionsImpl::permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
@@ -710,10 +688,7 @@ WasmHostFunctionsImpl::getNFTSerial(uint256 const& nftId)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::trace(
-    std::string_view const& msg,
-    Slice const& data,
-    bool asHex)
+WasmHostFunctionsImpl::trace(std::string_view const& msg, Slice const& data, bool asHex)
 {
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
@@ -723,15 +698,13 @@ WasmHostFunctionsImpl::trace(
     if (!asHex)
     {
         j << "WasmTrace[" << leKey.key << "]: " << msg << " "
-          << std::string_view(
-                 reinterpret_cast<char const*>(data.data()), data.size());
+          << std::string_view(reinterpret_cast<char const*>(data.data()), data.size());
     }
     else
     {
         std::string hex;
         hex.reserve(data.size() * 2);
-        boost::algorithm::hex(
-            data.begin(), data.end(), std::back_inserter(hex));
+        boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
         j << "WasmTrace[" << leKey.key << "]: " << msg << " " << hex;
     }
 
@@ -751,9 +724,7 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceAccount(
-    std::string_view const& msg,
-    AccountID const& account)
+WasmHostFunctionsImpl::traceAccount(std::string_view const& msg, AccountID const& account)
 {
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
@@ -768,9 +739,7 @@ WasmHostFunctionsImpl::traceAccount(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceFloat(
-    std::string_view const& msg,
-    Slice const& data)
+WasmHostFunctionsImpl::traceFloat(std::string_view const& msg, Slice const& data)
 {
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
@@ -783,9 +752,7 @@ WasmHostFunctionsImpl::traceFloat(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceAmount(
-    std::string_view const& msg,
-    STAmount const& amount)
+WasmHostFunctionsImpl::traceAmount(std::string_view const& msg, STAmount const& amount)
 {
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
@@ -810,10 +777,7 @@ WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(
-    int64_t mantissa,
-    int32_t exponent,
-    int32_t mode)
+WasmHostFunctionsImpl::floatSet(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     return floatSetImpl(mantissa, exponent, mode);
 }
@@ -831,19 +795,13 @@ WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatSubtract(
-    Slice const& x,
-    Slice const& y,
-    int32_t mode)
+WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode)
 {
     return floatSubtractImpl(x, y, mode);
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::floatMultiply(
-    Slice const& x,
-    Slice const& y,
-    int32_t mode)
+WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode)
 {
     return floatMultiplyImpl(x, y, mode);
 }
@@ -928,8 +886,7 @@ public:
         good_ = true;
     }
 
-    Number2(int64_t mantissa, int32_t exponent)
-        : Number(mantissa, exponent), good_(true)
+    Number2(int64_t mantissa, int32_t exponent) : Number(mantissa, exponent), good_(true)
     {
     }
 
@@ -951,20 +908,16 @@ public:
         uint64_t const absM = mantissa() >= 0 ? mantissa() : -mantissa();
         if (!absM)
         {
-            using etype =
-                std::invoke_result_t<decltype(&Number::exponent), Number>;
+            using etype = std::invoke_result_t<decltype(&Number::exponent), Number>;
             if (exponent() != std::numeric_limits<etype>::lowest())
             {
-                return Unexpected(
-                    HostFunctionError::
-                        FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
             }
             return FLOAT_NULL;
         }
         else if (absM > ((1ull << 54) - 1))
         {
-            return Unexpected(
-                HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
         else if (exponent() > IOUAmount::maxExponent)
             return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
@@ -980,8 +933,8 @@ public:
         auto const data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
-        std::cout << "m: " << std::setw(20) << mantissa()
-                  << ", e: " << std::setw(12) << exponent() << ", hex: ";
+        std::cout << "m: " << std::setw(20) << mantissa() << ", e: " << std::setw(12) << exponent()
+                  << ", hex: ";
         std::cout << std::hex << std::uppercase << std::setfill('0');
         for (auto const& c : data)
             std::cout << std::setw(2) << (unsigned)c << " ";
@@ -992,8 +945,7 @@ public:
     }
 };
 
-Bytes const Number2::FLOAT_NULL =
-    {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+Bytes const Number2::FLOAT_NULL = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 struct SetRound
 {
@@ -1002,8 +954,7 @@ struct SetRound
 
     SetRound(int32_t mode) : oldMode_(Number::getround()), good_(false)
     {
-        if (mode < Number::rounding_mode::to_nearest ||
-            mode > Number::rounding_mode::upward)
+        if (mode < Number::rounding_mode::to_nearest || mode > Number::rounding_mode::upward)
             return;
 
         Number::setround(static_cast<Number::rounding_mode>(mode));
@@ -1029,8 +980,7 @@ floatToString(Slice const& data)
     {
         std::string hex;
         hex.reserve(data.size() * 2);
-        boost::algorithm::hex(
-            data.begin(), data.end(), std::back_inserter(hex));
+        boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
         return "Invalid data: " + hex;
     }
 

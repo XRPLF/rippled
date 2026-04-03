@@ -52,12 +52,10 @@ typedef std::pair<void*, WasmImportFunc> WasmUserData;
 typedef std::vector<WasmUserData> ImportVec;
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
-    WasmImpFunc<f##_proto>(         \
-        v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+    WasmImpFunc<f##_proto>(v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
 #define WASM_IMPORT_FUNC2(v, f, n, ...) \
-    WasmImpFunc<f##_proto>(             \
-        v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+    WasmImpFunc<f##_proto>(v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
 template <int N, int C, typename mpl>
 void
@@ -186,11 +184,7 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 
 template <class... Types>
 inline void
-wasmParamsHlp(
-    std::vector<WasmParam>& v,
-    std::uint8_t const* dt,
-    std::int32_t sz,
-    Types&&... args)
+wasmParamsHlp(std::vector<WasmParam>& v, std::uint8_t const* dt, std::int32_t sz, Types&&... args)
 {
     v.push_back({.type = WT_U8V, .of = {.u8v = {.d = dt, .sz = sz}}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
@@ -200,19 +194,12 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, Bytes const& p, Types&&... args)
 {
-    wasmParamsHlp(
-        v,
-        p.data(),
-        static_cast<std::int32_t>(p.size()),
-        std::forward<Types>(args)...);
+    wasmParamsHlp(v, p.data(), static_cast<std::int32_t>(p.size()), std::forward<Types>(args)...);
 }
 
 template <class... Types>
 inline void
-wasmParamsHlp(
-    std::vector<WasmParam>& v,
-    std::string_view const& p,
-    Types&&... args)
+wasmParamsHlp(std::vector<WasmParam>& v, std::string_view const& p, Types&&... args)
 {
     wasmParamsHlp(
         v,

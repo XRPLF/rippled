@@ -50,8 +50,7 @@ ContractCall::preflight(PreflightContext const& ctx)
     auto const flags = ctx.tx.getFlags();
     if (flags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace())
-            << "ContractCreate: tfUniversalMask is not allowed.";
+        JLOG(ctx.j.trace()) << "ContractCreate: tfUniversalMask is not allowed.";
         return temINVALID_FLAG;
     }
 
@@ -104,8 +103,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
 
     if (!contractSourceSle->isFieldPresent(sfFunctions))
     {
-        JLOG(ctx.j.trace())
-            << "ContractCall: Contract does not have any functions defined.";
+        JLOG(ctx.j.trace()) << "ContractCall: Contract does not have any functions defined.";
         return temMALFORMED;
     }
 
@@ -113,9 +111,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     auto const functionName = ctx.tx.getFieldVL(sfFunctionName);
     std::string functionNameHexStr(functionName.begin(), functionName.end());
     auto it = std::find_if(
-        functions.begin(),
-        functions.end(),
-        [&functionNameHexStr](STObject const& func) {
+        functions.begin(), functions.end(), [&functionNameHexStr](STObject const& func) {
             auto const funcName = func.getFieldVL(sfFunctionName);
             std::string functionNameDefHexStr(funcName.begin(), funcName.end());
             return functionNameDefHexStr == functionNameHexStr;
@@ -123,21 +119,19 @@ ContractCall::preclaim(PreclaimContext const& ctx)
 
     if (it == functions.end())
     {
-        JLOG(ctx.j.trace())
-            << "ContractCall: FunctionName: " << functionNameHexStr
-            << " does not exist in contract abi.";
+        JLOG(ctx.j.trace()) << "ContractCall: FunctionName: " << functionNameHexStr
+                            << " does not exist in contract abi.";
         return temMALFORMED;
     }
 
     if (ctx.tx.isFieldPresent(sfParameters))
     {
         STArray const& params = ctx.tx.getFieldArray(sfParameters);
-        if (auto ter = contract::preclaimFlagParameters(
-                ctx.view, account, contractAccount, params, ctx.j);
+        if (auto ter =
+                contract::preclaimFlagParameters(ctx.view, account, contractAccount, params, ctx.j);
             !isTesSuccess(ter))
         {
-            JLOG(ctx.j.trace())
-                << "ContractCreate: Failed to preclaim flag parameters.";
+            JLOG(ctx.j.trace()) << "ContractCreate: Failed to preclaim flag parameters.";
             return ter;
         }
     }
@@ -175,8 +169,8 @@ ContractCall::doApply()
     }
 
     uint256 const contractHash = contractSle->at(sfContractHash);
-    auto const contractSourceSle = ctx_.view().read(
-        keylet::contractSource(contractSle->at(sfContractHash)));
+    auto const contractSourceSle =
+        ctx_.view().read(keylet::contractSource(contractSle->at(sfContractHash)));
     if (!contractSourceSle)
     {
         JLOG(j_.trace()) << "ContractCall: ContractSource does not exist.";
@@ -197,8 +191,7 @@ ContractCall::doApply()
                 ctx_.journal);
             !isTesSuccess(ter))
         {
-            JLOG(ctx_.journal.trace())
-                << "ContractCall: Failed to handle flag parameters.";
+            JLOG(ctx_.journal.trace()) << "ContractCall: Failed to handle flag parameters.";
             return ter;
         }
     }
@@ -220,8 +213,7 @@ ContractCall::doApply()
     }
     if (!function)
     {
-        JLOG(j_.trace())
-            << "ContractCall: FunctionName does not exist in contract.";
+        JLOG(j_.trace()) << "ContractCall: FunctionName does not exist in contract.";
         return tefINTERNAL;
     }
 
@@ -237,8 +229,7 @@ ContractCall::doApply()
     std::vector<xrpl::ParameterValueVec> instanceParameters;
     if (contractSle->isFieldPresent(sfInstanceParameterValues))
     {
-        STArray const& instParams =
-            contractSle->getFieldArray(sfInstanceParameterValues);
+        STArray const& instParams = contractSle->getFieldArray(sfInstanceParameterValues);
         instanceParameters = getParameterValueVec(instParams);
     }
 
@@ -254,8 +245,7 @@ ContractCall::doApply()
 
     for (std::size_t i = 0; i < functionParameters.size(); i++)
     {
-        if (functionParameters[i].value.getInnerSType() !=
-            typeVec[i].type.getInnerSType())
+        if (functionParameters[i].value.getInnerSType() != typeVec[i].type.getInnerSType())
             return tecINVALID_PARAMETERS;
     }
 
@@ -321,8 +311,7 @@ ContractCall::doApply()
         auto ret = re.value().result;
         if (ret < 0)
         {
-            JLOG(j_.trace())
-                << "WASM Execution Failed: " << contractCtx.result.exitReason;
+            JLOG(j_.trace()) << "WASM Execution Failed: " << contractCtx.result.exitReason;
             ctx_.setWasmReturnCode(ret);
             // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
             return tecWASM_REJECTED;
@@ -336,8 +325,7 @@ ContractCall::doApply()
                 ctx_.tx.getTransactionID());
             !isTesSuccess(res))
         {
-            JLOG(j_.trace())
-                << "Contract data finalization failed: " << transHuman(res);
+            JLOG(j_.trace()) << "Contract data finalization failed: " << transHuman(res);
             return res;
         }
 

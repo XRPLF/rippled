@@ -30,8 +30,7 @@ ContractUserDelete::preflight(PreflightContext const& ctx)
     auto const flags = ctx.tx.getFlags();
     if (flags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace())
-            << "ContractUserDelete: tfUniversalMask is not allowed.";
+        JLOG(ctx.j.trace()) << "ContractUserDelete: tfUniversalMask is not allowed.";
         return temINVALID_FLAG;
     }
 

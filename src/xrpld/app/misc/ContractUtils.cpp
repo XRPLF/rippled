@@ -33,8 +33,8 @@ struct BlobHash
     {
         if (b.empty())
             return 0;
-        return std::hash<std::string_view>{}(std::string_view(
-            reinterpret_cast<char const*>(b.data()), b.size()));
+        return std::hash<std::string_view>{}(
+            std::string_view(reinterpret_cast<char const*>(b.data()), b.size()));
     }
 };
 
@@ -87,8 +87,7 @@ preflightFunctions(STTx const& tx, beast::Journal j)
         auto const& functionName = function.getFieldVL(sfFunctionName);
         if (!uniqueFunctions.insert(functionName).second)
         {
-            JLOG(j.trace())
-                << "Duplicate function name: " << strHex(functionName);
+            JLOG(j.trace()) << "Duplicate function name: " << strHex(functionName);
             return temREDUNDANT;
         }
 
@@ -147,8 +146,7 @@ preflightInstanceParameters(STTx const& tx, beast::Journal j)
     // InstanceParameters must not be empty.
     if (instanceParameters.empty())
     {
-        JLOG(j.trace())
-            << "ContractCreate/Modify: InstanceParameters empty array.";
+        JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameters empty array.";
         return temARRAY_EMPTY;
     }
 
@@ -167,16 +165,14 @@ preflightInstanceParameters(STTx const& tx, beast::Journal j)
         // Instance Parameter must have a flag.
         if (!param.isFieldPresent(sfParameterFlag))
         {
-            JLOG(j.trace())
-                << "ContractCreate/Modify: Instance Parameter is missing flag.";
+            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing flag.";
             return temMALFORMED;
         }
 
         // Instance Parameter must have a type.
         if (!param.isFieldPresent(sfParameterType))
         {
-            JLOG(j.trace())
-                << "ContractCreate/Modify: Instance Parameter is missing type.";
+            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing type.";
             return temMALFORMED;
         }
 
@@ -193,16 +189,12 @@ preflightInstanceParameters(STTx const& tx, beast::Journal j)
 }
 
 bool
-validateParameterMapping(
-    STArray const& params,
-    STArray const& values,
-    beast::Journal j)
+validateParameterMapping(STArray const& params, STArray const& values, beast::Journal j)
 {
     if (params.size() != values.size())
     {
-        JLOG(j.trace())
-            << "ContractCreate/Modify: InstanceParameterValues size "
-               "does not match InstanceParameters size.";
+        JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameterValues size "
+                           "does not match InstanceParameters size.";
         return false;
     }
     return true;
@@ -214,14 +206,12 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
     if (!tx.isFieldPresent(sfInstanceParameterValues))
         return tesSUCCESS;
 
-    auto const& instanceParameterValues =
-        tx.getFieldArray(sfInstanceParameterValues);
+    auto const& instanceParameterValues = tx.getFieldArray(sfInstanceParameterValues);
 
     // InstanceParameters must not be empty.
     if (instanceParameterValues.empty())
     {
-        JLOG(j.trace())
-            << "ContractCreate/Modify: InstanceParameterValues is missing.";
+        JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameterValues is missing.";
         return temARRAY_EMPTY;
     }
 
@@ -240,8 +230,7 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
         // Instance Parameter must have a flag.
         if (!param.isFieldPresent(sfParameterFlag))
         {
-            JLOG(j.trace())
-                << "ContractCreate/Modify: Instance Parameter is missing flag.";
+            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing flag.";
             return temMALFORMED;
         }
 
@@ -267,25 +256,20 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
     bool valid = true;
     if (tx.isFieldPresent(sfInstanceParameters))
         valid = validateParameterMapping(
-            tx.getFieldArray(sfInstanceParameters),
-            tx.getFieldArray(sfInstanceParameterValues),
-            j);
+            tx.getFieldArray(sfInstanceParameters), tx.getFieldArray(sfInstanceParameterValues), j);
     if (!valid)
     {
-        JLOG(j.trace())
-            << "ContractCreate/Modify: InstanceParameterValues do not match "
-               "InstanceParameters.";
+        JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameterValues do not match "
+                           "InstanceParameters.";
         return temMALFORMED;
     }
 
     // Validate flags in InstanceParameterValues
-    if (auto const res = preflightFlagParameters(instanceParameterValues, j);
-        !isTesSuccess(res))
+    if (auto const res = preflightFlagParameters(instanceParameterValues, j); !isTesSuccess(res))
     {
-        JLOG(j.trace())
-            << "ContractCreate/Modify: InstanceParameterValues flag "
-               "validation failed: "
-            << transToken(res);
+        JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameterValues flag "
+                           "validation failed: "
+                        << transToken(res);
         return res;
     }
 
@@ -330,8 +314,7 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
                 }
                 else if (amount.holds<MPTIssue>())
                 {
-                    if (amount.native() ||
-                        amount.mpt() > MPTAmount{maxMPTokenAmount} ||
+                    if (amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} ||
                         amount <= beast::zero)
                         return temBAD_AMOUNT;
                 }
@@ -374,13 +357,11 @@ preclaimFlagParameters(
                 // Preclaim Transfer Amount
                 if (isXRP(amount))
                 {
-                    auto const accountSle =
-                        view.read(keylet::account(sourceAccount));
+                    auto const accountSle = view.read(keylet::account(sourceAccount));
                     if (!accountSle)
                         return tecINTERNAL;
 
-                    auto const& mSourceBalance =
-                        accountSle->getFieldAmount(sfBalance);
+                    auto const& mSourceBalance = accountSle->getFieldAmount(sfBalance);
                     if (mSourceBalance < amount.xrp())
                         return tecUNFUNDED;
                 }
@@ -416,8 +397,7 @@ preclaimFlagParameters(
                 if (!nft::findToken(view, sourceAccount, nftokenID))
                 {
                     JLOG(j.trace())
-                        << "preclaimFlagParameters: Cannot transfer NFT token: "
-                        << nftokenID;
+                        << "preclaimFlagParameters: Cannot transfer NFT token: " << nftokenID;
                     return tecNO_ENTRY;
                 }
                 break;
@@ -455,17 +435,10 @@ doApplyFlagParameters(
                 auto const& value = param.getFieldData(sfParameterValue);
                 STAmount amount = value.getFieldAmount();
                 if (auto ter = accountSend(
-                        view,
-                        sourceAccount,
-                        contractAccount,
-                        amount,
-                        j,
-                        WaiveTransferFee::No);
+                        view, sourceAccount, contractAccount, amount, j, WaiveTransferFee::No);
                     !isTesSuccess(ter))
                 {
-                    JLOG(j.trace())
-                        << "doApplyFlagParameters: Failed to send amount: "
-                        << amount;
+                    JLOG(j.trace()) << "doApplyFlagParameters: Failed to send amount: " << amount;
                     return ter;
                 }
                 break;
@@ -475,13 +448,12 @@ doApplyFlagParameters(
                     return tecINTERNAL;
                 auto const& value = param.getFieldData(sfParameterValue);
                 auto const& nftokenID = value.getFieldH256();
-                if (auto ter = nft::transferNFToken(
-                        view, sourceAccount, contractAccount, nftokenID);
+                if (auto ter =
+                        nft::transferNFToken(view, sourceAccount, contractAccount, nftokenID);
                     !isTesSuccess(ter))
                 {
                     JLOG(j.trace())
-                        << "doApplyFlagParameters: Failed to send NFT token: "
-                        << nftokenID;
+                        << "doApplyFlagParameters: Failed to send NFT token: " << nftokenID;
                     return ter;
                 }
                 break;
@@ -555,13 +527,11 @@ setContractData(
         if (!dataSle)
             return tesSUCCESS;
 
-        uint32_t oldDataReserve =
-            contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
+        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
 
         std::uint64_t const page = (*dataSle)[sfOwnerNode];
         // Remove the page from the account directory
-        if (!view.dirRemove(
-                keylet::ownerDir(account), page, dataKeylet.key, false))
+        if (!view.dirRemove(keylet::ownerDir(account), page, dataKeylet.key, false))
             return tefBAD_LEDGER;
 
         // remove the actual contract data sle
@@ -579,8 +549,7 @@ setContractData(
         // CREATE
         uint32_t dataReserve = contractDataReserve(data.size());
         uint32_t newReserve = ownerCount + dataReserve;
-        XRPAmount const newReserveAmount{
-            view.fees().accountReserve(newReserve)};
+        XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
         if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
             return tecINSUFFICIENT_RESERVE;
 
@@ -591,10 +560,8 @@ setContractData(
         dataSle->setAccountID(sfOwner, account);
         dataSle->setAccountID(sfContractAccount, contractAccount);
 
-        auto const page = view.dirInsert(
-            keylet::ownerDir(account),
-            dataKeylet.key,
-            describeOwnerDir(account));
+        auto const page =
+            view.dirInsert(keylet::ownerDir(account), dataKeylet.key, describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
 
@@ -606,15 +573,13 @@ setContractData(
     else
     {
         // UPDATE
-        uint32_t oldDataReserve =
-            contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
+        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
         uint32_t newDataReserve = contractDataReserve(data.size());
         if (newDataReserve != oldDataReserve)
         {
             // if the reserve changes, we need to adjust the owner count
             uint32_t newReserve = ownerCount - oldDataReserve + newDataReserve;
-            XRPAmount const newReserveAmount{
-                view.fees().accountReserve(newReserve)};
+            XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
             if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
                 return tecINSUFFICIENT_RESERVE;
 
@@ -654,19 +619,16 @@ finalizeContractData(
             if (changeCount > maxDataModifications)
             {
                 // overflow
-                JLOG(j.trace())
-                    << "ContractError[TX:" << txnID
-                    << "]: SetContractData failed: Too many data changes";
+                JLOG(j.trace()) << "ContractError[TX:" << txnID
+                                << "]: SetContractData failed: Too many data changes";
                 return tecWASM_REJECTED;
             }
 
-            TER result =
-                setContractData(applyCtx, acc, contractAccount, jsonData);
+            TER result = setContractData(applyCtx, acc, contractAccount, jsonData);
             if (!isTesSuccess(result))
             {
                 JLOG(j.warn()) << "ContractError[TX:" << txnID
-                               << "]: SetContractData failed: " << result
-                               << " Account: " << acc;
+                               << "]: SetContractData failed: " << result << " Account: " << acc;
                 return result;
             }
         }

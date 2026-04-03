@@ -32,9 +32,7 @@ class ContractHostFunctionsImpl : public WasmHostFunctionsImpl
 public:
     // Constructor for contract-specific functionality
     ContractHostFunctionsImpl(ContractContext& contractContext)
-        : WasmHostFunctionsImpl(
-              contractContext.applyCtx,
-              contractContext.result.contractKeylet)
+        : WasmHostFunctionsImpl(contractContext.applyCtx, contractContext.result.contractKeylet)
         , contractCtx(contractContext)
     {
     }
@@ -50,8 +48,7 @@ public:
     functionParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<Bytes, HostFunctionError>
-    getDataObjectField(AccountID const& account, std::string_view const& key)
-        override;
+    getDataObjectField(AccountID const& account, std::string_view const& key) override;
 
     Expected<Bytes, HostFunctionError>
     getDataNestedObjectField(
@@ -60,10 +57,8 @@ public:
         std::string_view const& nestedKey) override;
 
     Expected<Bytes, HostFunctionError>
-    getDataArrayElementField(
-        AccountID const& account,
-        size_t index,
-        std::string_view const& key) override;
+    getDataArrayElementField(AccountID const& account, size_t index, std::string_view const& key)
+        override;
 
     Expected<Bytes, HostFunctionError>
     getDataNestedArrayElementField(
@@ -104,10 +99,7 @@ public:
     buildTxn(std::uint16_t const& txType) override;
 
     Expected<int32_t, HostFunctionError>
-    addTxnField(
-        std::uint32_t const& index,
-        SField const& field,
-        Slice const& data) override;
+    addTxnField(std::uint32_t const& index, SField const& field, Slice const& data) override;
 
     Expected<int32_t, HostFunctionError>
     emitBuiltTxn(std::uint32_t const& index) override;
@@ -116,8 +108,7 @@ public:
     emitTxn(std::shared_ptr<STTx const> const& stxPtr) override;
 
     Expected<int32_t, HostFunctionError>
-    emitEvent(std::string_view const& eventName, STJson const& eventData)
-        override;
+    emitEvent(std::string_view const& eventName, STJson const& eventData) override;
 };
 
 }  // namespace xrpl

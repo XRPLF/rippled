@@ -128,14 +128,8 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.run(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        &hfs,
-        gasLimit,
-        hfs.getJournal());
+    auto const ret =
+        vm.run(wasmCode, funcName, params, createWasmImport(hfs), &hfs, gasLimit, hfs.getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -149,8 +143,7 @@ runEscrowWasm(
     }
 
 #ifdef DEBUG_OUTPUT
-    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
-              << std::endl;
+    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost << std::endl;
 #endif
     return EscrowResult{ret->result, ret->cost};
 }
@@ -166,13 +159,8 @@ preflightEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
-    auto const ret = vm.check(
-        wasmCode,
-        funcName,
-        params,
-        createWasmImport(hfs),
-        &hfs,
-        hfs.getJournal());
+    auto const ret =
+        vm.check(wasmCode, funcName, params, createWasmImport(hfs), &hfs, hfs.getJournal());
 
     return ret;
 }
