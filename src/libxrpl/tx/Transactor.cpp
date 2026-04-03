@@ -1071,6 +1071,104 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
+void
+Transactor::processPersistentChanges(TER result, XRPAmount& fee, bool& applied)
+{
+    JLOG(j_.trace()) << "reapplying because of " << transToken(result);
+
+    // FIXME: This mechanism for doing work while returning a `tec` is
+    //        awkward and very limiting. A more general purpose approach
+    //        should be used, making it possible to do more useful work
+    //        when transactions fail with a `tec` code.
+
+    // Build a list of ledger entry types to collect, based on the
+    // result code. Only deleted objects of these types will be
+    // re-applied after the context is reset.
+    std::vector<LedgerEntryType> typesToCollect;
+    if ((result == tecOVERSIZE) || (result == tecKILLED))
+        typesToCollect.push_back(ltOFFER);
+    if (result == tecINCOMPLETE)
+        typesToCollect.push_back(ltRIPPLE_STATE);
+    if (result == tecEXPIRED)
+    {
+        typesToCollect.push_back(ltNFTOKEN_OFFER);
+        typesToCollect.push_back(ltCREDENTIAL);
+    }
+
+    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    if (!typesToCollect.empty())
+    {
+        ctx_.visit([&typesToCollect, &deletedObjects](
+                       uint256 const& index,
+                       bool isDelete,
+                       std::shared_ptr<SLE const> const& before,
+                       std::shared_ptr<SLE const> const& after) {
+            if (isDelete)
+            {
+                XRPL_ASSERT(
+                    before && after,
+                    "xrpl::Transactor::operator()::visit : non-null SLE "
+                    "inputs");
+                if (before && after)
+                {
+                    auto const type = before->getType();
+                    if (std::ranges::find(typesToCollect, type) != typesToCollect.end())
+                    {
+                        // For offers, only collect unfunded removals
+                        // (where TakerPays is unchanged)
+                        if (type == ltOFFER &&
+                            before->getFieldAmount(sfTakerPays) !=
+                                after->getFieldAmount(sfTakerPays))
+                            return;
+
+                        deletedObjects[type].push_back(index);
+                    }
+                }
+            }
+        });
+    }
+
+    // Reset the context, potentially adjusting the fee.
+    {
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+    }
+
+    // Re-apply the collected deletions
+    auto const viewJ = ctx_.registry.get().getJournal("View");
+    for (auto const& [type, ids] : deletedObjects)
+    {
+        if (ids.empty())
+            continue;
+
+        switch (type)
+        {
+            case ltOFFER:
+                removeUnfundedOffers(view(), ids, viewJ);
+                break;
+            case ltNFTOKEN_OFFER:
+                removeExpiredNFTokenOffers(view(), ids, viewJ);
+                break;
+            case ltRIPPLE_STATE:
+                removeDeletedTrustLines(view(), ids, viewJ);
+                break;
+            case ltCREDENTIAL:
+                removeExpiredCredentials(view(), ids, viewJ);
+                break;
+            // LCOV_EXCL_START
+            default:
+                UNREACHABLE("xrpl::Transactor::operator() : unexpected type");
+                break;
+                // LCOV_EXCL_STOP
+        }
+    }
+
+    applied = isTecClaim(result);
+}
+
 //------------------------------------------------------------------------------
 ApplyResult
 Transactor::operator()()
@@ -1139,99 +1237,7 @@ Transactor::operator()()
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
         (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
-        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
-
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
-
-        // Build a list of ledger entry types to collect, based on the
-        // result code. Only deleted objects of these types will be
-        // re-applied after the context is reset.
-        std::vector<LedgerEntryType> typesToCollect;
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-            typesToCollect.push_back(ltOFFER);
-        if (result == tecINCOMPLETE)
-            typesToCollect.push_back(ltRIPPLE_STATE);
-        if (result == tecEXPIRED)
-        {
-            typesToCollect.push_back(ltNFTOKEN_OFFER);
-            typesToCollect.push_back(ltCREDENTIAL);
-        }
-
-        std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
-        if (!typesToCollect.empty())
-        {
-            ctx_.visit([&typesToCollect, &deletedObjects](
-                           uint256 const& index,
-                           bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
-                if (isDelete)
-                {
-                    XRPL_ASSERT(
-                        before && after,
-                        "xrpl::Transactor::operator()::visit : non-null SLE "
-                        "inputs");
-                    if (before && after)
-                    {
-                        auto const type = before->getType();
-                        if (std::ranges::find(typesToCollect, type) != typesToCollect.end())
-                        {
-                            // For offers, only collect unfunded removals
-                            // (where TakerPays is unchanged)
-                            if (type == ltOFFER &&
-                                before->getFieldAmount(sfTakerPays) !=
-                                    after->getFieldAmount(sfTakerPays))
-                                return;
-
-                            deletedObjects[type].push_back(index);
-                        }
-                    }
-                }
-            });
-        }
-
-        // Reset the context, potentially adjusting the fee.
-        {
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-        }
-
-        // Re-apply the collected deletions
-        auto const viewJ = ctx_.registry.get().getJournal("View");
-        for (auto const& [type, ids] : deletedObjects)
-        {
-            if (ids.empty())
-                continue;
-
-            switch (type)
-            {
-                case ltOFFER:
-                    removeUnfundedOffers(view(), ids, viewJ);
-                    break;
-                case ltNFTOKEN_OFFER:
-                    removeExpiredNFTokenOffers(view(), ids, viewJ);
-                    break;
-                case ltRIPPLE_STATE:
-                    removeDeletedTrustLines(view(), ids, viewJ);
-                    break;
-                case ltCREDENTIAL:
-                    removeExpiredCredentials(view(), ids, viewJ);
-                    break;
-                // LCOV_EXCL_START
-                default:
-                    UNREACHABLE("xrpl::Transactor::operator() : unexpected type");
-                    break;
-                    // LCOV_EXCL_STOP
-            }
-        }
-
-        applied = isTecClaim(result);
+        processPersistentChanges(result, fee, applied);
     }
 
     if (applied)

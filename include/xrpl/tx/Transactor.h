@@ -299,8 +299,13 @@ private:
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
+
     TER
     payFee();
+
+    void
+    processPersistentChanges(TER result, XRPAmount& fee, bool& applied);
+
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -308,6 +313,7 @@ private:
         AccountID const& idAccount,
         std::shared_ptr<SLE const> sleAccount,
         beast::Journal const j);
+
     static NotTEC
     checkMultiSign(
         ReadView const& view,
