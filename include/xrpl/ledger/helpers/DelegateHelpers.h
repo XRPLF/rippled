@@ -26,10 +26,20 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
  * @param granularPermissions Granted granular permissions tied to the
  * transaction type.
  */
-void
-loadGranularPermission(
-    std::shared_ptr<SLE const> const& delegate,
-    TxType const& type,
-    std::unordered_set<GranularPermissionType>& granularPermissions);
+std::unordered_set<GranularPermissionType>
+getGranularPermission(std::shared_ptr<SLE const> const& delegate, TxType const& type);
+
+/**
+ * This function extracts the granular permissions for the given transaction type and
+ * then enforces the granular sandbox, defined in permissions.macro. Coupling the retrieval and
+ * validation steps ensures the sandbox check cannot be accidentally bypassed by the caller.
+ *
+ * @param delegate The delegate ledger object.
+ * @param tx The transaction to validate.
+ * @return The set of held granular permissions if the sandbox check passes; Returns std::nullopt if
+ * no relevant granular permissions are held, or if the transaction violates the sandbox.
+ */
+std::optional<std::unordered_set<GranularPermissionType>>
+checkGranularPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
 
 }  // namespace xrpl

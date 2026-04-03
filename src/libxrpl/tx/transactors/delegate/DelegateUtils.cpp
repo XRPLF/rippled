@@ -21,14 +21,12 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
     return terNO_DELEGATE_PERMISSION;
 }
 
-void
-loadGranularPermission(
-    std::shared_ptr<SLE const> const& delegate,
-    TxType const& txType,
-    std::unordered_set<GranularPermissionType>& granularPermissions)
+std::unordered_set<GranularPermissionType>
+getGranularPermission(std::shared_ptr<SLE const> const& delegate, TxType const& txType)
 {
+    std::unordered_set<GranularPermissionType> granularPermissions;
     if (!delegate)
-        return;
+        return granularPermissions;  // LCOV_EXCL_LINE
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)
@@ -39,6 +37,19 @@ loadGranularPermission(
         if (type && *type == txType)
             granularPermissions.insert(granularValue);
     }
+
+    return granularPermissions;
+}
+
+std::optional<std::unordered_set<GranularPermissionType>>
+checkGranularPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
+{
+    auto gps = getGranularPermission(delegate, tx.getTxnType());
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, gps))
+        return std::nullopt;
+
+    return gps;
 }
 
 }  // namespace xrpl
