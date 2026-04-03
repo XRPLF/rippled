@@ -46,7 +46,7 @@ STObject::STObject(STObject&& other)
 {
 }
 
-STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
+STObject::STObject(SField const& name) : STBase(name)
 {
 }
 
@@ -62,8 +62,7 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
     applyTemplate(type);  // May throw
 }
 
-STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false)
-    : STBase(name), mType(nullptr)
+STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -141,9 +140,13 @@ STObject::set(SOTemplate const& type)
     for (auto const& elem : type)
     {
         if (elem.style() != soeREQUIRED)
+        {
             v_.emplace_back(detail::nonPresentObject, elem.sField());
+        }
         else
+        {
             v_.emplace_back(detail::defaultObject, elem.sField());
+        }
     }
 }
 
@@ -153,7 +156,7 @@ STObject::applyTemplate(SOTemplate const& type)
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
-        std::string text{ss.str()};
+        std::string const text{ss.str()};
         JLOG(debugLog().error()) << "STObject::applyTemplate failed: " << text;
         Throw<FieldErr>(text);
     };
@@ -201,7 +204,7 @@ void
 STObject::applyTemplateFromSField(SField const& sField)
 {
     SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
-    if (elements)
+    if (elements != nullptr)
         applyTemplate(*elements);  // May throw
 }
 
@@ -216,8 +219,8 @@ STObject::set(SerialIter& sit, int depth)
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
-        int type;
-        int field;
+        int type = 0;
+        int field = 0;
 
         // Get the metadata for the next field
         sit.getFieldID(type, field);
@@ -269,11 +272,11 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
-    if (!o)
+    if (o == nullptr)
         return false;
 
     return t == *o;
@@ -291,16 +294,22 @@ STObject::getFullText() const
         ret += " = {";
     }
     else
+    {
         ret = "{";
+    }
 
     for (auto const& elem : v_)
     {
         if (elem->getSType() != STI_NOTPRESENT)
         {
             if (!first)
+            {
                 ret += ", ";
+            }
             else
+            {
                 first = false;
+            }
 
             ret += elem->getFullText();
         }
@@ -334,7 +343,7 @@ STObject::isEquivalent(STBase const& t) const
 {
     STObject const* v = dynamic_cast<STObject const*>(&t);
 
-    if (!v)
+    if (v == nullptr)
         return false;
 
     if (mType != nullptr && v->mType == mType)
@@ -391,7 +400,7 @@ STObject::getFieldIndex(SField const& field) const
 STBase const&
 STObject::peekAtField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -402,7 +411,7 @@ STObject::peekAtField(SField const& field) const
 STBase&
 STObject::getField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -419,7 +428,7 @@ STObject::getFieldSType(int index) const
 STBase const*
 STObject::peekAtPField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return nullptr;
@@ -430,7 +439,7 @@ STObject::peekAtPField(SField const& field) const
 STBase*
 STObject::getPField(SField const& field, bool createOkay)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -446,7 +455,7 @@ STObject::getPField(SField const& field, bool createOkay)
 bool
 STObject::isFieldPresent(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -471,7 +480,7 @@ STObject::setFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() | f);
@@ -483,7 +492,7 @@ STObject::clearFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() & ~f);
@@ -501,7 +510,7 @@ STObject::getFlags(void) const
 {
     STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return 0;
 
     return t->value();
@@ -510,7 +519,7 @@ STObject::getFlags(void) const
 STBase*
 STObject::makeFieldPresent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -520,7 +529,7 @@ STObject::makeFieldPresent(SField const& field)
         return getPIndex(emplace_back(detail::nonPresentObject, field));
     }
 
-    STBase* f = getPIndex(index);
+    STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
@@ -532,7 +541,7 @@ STObject::makeFieldPresent(SField const& field)
 void
 STObject::makeFieldAbsent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -547,7 +556,7 @@ STObject::makeFieldAbsent(SField const& field)
 bool
 STObject::delField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -565,7 +574,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return mType ? mType->style(field) : soeINVALID;
+    return (mType != nullptr) ? mType->style(field) : soeINVALID;
 }
 
 unsigned char
@@ -631,7 +640,7 @@ STObject::getAccountID(SField const& field) const
 Blob
 STObject::getFieldVL(SField const& field) const
 {
-    STBlob empty;
+    STBlob const empty;
     STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
@@ -868,10 +877,7 @@ STObject::operator==(STObject const& obj) const
             ++fields;
     }
 
-    if (fields != matches)
-        return false;
-
-    return true;
+    return fields == matches;
 }
 
 void
@@ -908,7 +914,8 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields))
+        if ((base.getSType() != STI_NOTPRESENT) &&
+            base.getFName().shouldInclude(static_cast<bool>(whichFields)))
         {
             sf.push_back(&base);
         }

@@ -33,7 +33,7 @@ private:
     boost::asio::ip::tcp::endpoint endpoint_;
     bool running_{true};
     bool finished_{false};
-    unsigned short port_;
+    unsigned short port_{0};
 
     // Custom headers to return
     std::map<std::string, std::string> customHeaders_;
@@ -43,7 +43,7 @@ private:
     beast::Journal j_;
 
 public:
-    TestHTTPServer() : acceptor_(ioc_), port_(0), j_(TestSink::instance())
+    TestHTTPServer() : acceptor_(ioc_), j_(TestSink::instance())
     {
         // Bind to any available port
         endpoint_ = {boost::asio::ip::tcp::v4(), 0};
@@ -267,7 +267,7 @@ protected:
 TEST_F(HTTPClientTest, case_insensitive_content_length)
 {
     // Test different cases of Content-Length header
-    std::vector<std::string> headerCases = {
+    std::vector<std::string> const headerCases = {
         "Content-Length",  // Standard case
         "content-length",  // Lowercase - this tests the regex icase fix
         "CONTENT-LENGTH",  // Uppercase
@@ -278,7 +278,7 @@ TEST_F(HTTPClientTest, case_insensitive_content_length)
     for (auto const& headerName : headerCases)
     {
         TestHTTPServer server;
-        std::string testBody = "Hello World!";
+        std::string const testBody = "Hello World!";
         server.setResponseBody(testBody);
         server.setHeader(headerName, std::to_string(testBody.size()));
 
@@ -287,7 +287,7 @@ TEST_F(HTTPClientTest, case_insensitive_content_length)
         std::string resultData;
         boost::system::error_code resultError;
 
-        bool testCompleted =
+        bool const testCompleted =
             runHTTPTest(server, "/test", completed, resultStatus, resultData, resultError);
         // Verify results
         EXPECT_TRUE(testCompleted);
@@ -300,7 +300,7 @@ TEST_F(HTTPClientTest, case_insensitive_content_length)
 TEST_F(HTTPClientTest, basic_http_request)
 {
     TestHTTPServer server;
-    std::string testBody = "Test response body";
+    std::string const testBody = "Test response body";
     server.setResponseBody(testBody);
     server.setHeader("Content-Type", "text/plain");
 
@@ -309,7 +309,7 @@ TEST_F(HTTPClientTest, basic_http_request)
     std::string resultData;
     boost::system::error_code resultError;
 
-    bool testCompleted =
+    bool const testCompleted =
         runHTTPTest(server, "/basic", completed, resultStatus, resultData, resultError);
 
     EXPECT_TRUE(testCompleted);
@@ -329,7 +329,7 @@ TEST_F(HTTPClientTest, empty_response)
     std::string resultData;
     boost::system::error_code resultError;
 
-    bool testCompleted =
+    bool const testCompleted =
         runHTTPTest(server, "/empty", completed, resultStatus, resultData, resultError);
 
     EXPECT_TRUE(testCompleted);
@@ -340,7 +340,7 @@ TEST_F(HTTPClientTest, empty_response)
 
 TEST_F(HTTPClientTest, different_status_codes)
 {
-    std::vector<unsigned int> statusCodes = {200, 404, 500};
+    std::vector<unsigned int> const statusCodes = {200, 404, 500};
 
     for (auto status : statusCodes)
     {
@@ -353,7 +353,7 @@ TEST_F(HTTPClientTest, different_status_codes)
         std::string resultData;
         boost::system::error_code resultError;
 
-        bool testCompleted =
+        bool const testCompleted =
             runHTTPTest(server, "/status", completed, resultStatus, resultData, resultError);
 
         EXPECT_TRUE(testCompleted);

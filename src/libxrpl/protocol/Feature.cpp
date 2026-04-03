@@ -209,7 +209,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
     XRPL_ASSERT(
         readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
-    if (feature)
+    if (feature != nullptr)
         return feature->feature;
     return std::nullopt;
 }
@@ -229,7 +229,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         support == Supported::yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
-    if (!i)
+    if (i == nullptr)
     {
         check(features.size() < detail::numFeatures, "More features defined than allocated.");
 
@@ -250,18 +250,22 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
             supported.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
+            {
                 ++upVotes;
+            }
             else
+            {
                 ++downVotes;
+            }
         }
         check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
         check(supported.size() <= features.size(), "More supported features than defined features");
         check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
-    else
-        // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
+
+    // Each feature should only be registered once
+    LogicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -279,7 +283,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
         readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
-    if (!feature)
+    if (feature == nullptr)
         LogicError("Invalid Feature ID");
 
     return getIndex(*feature);
@@ -299,10 +303,10 @@ FeatureCollections::featureToName(uint256 const& f) const
 {
     XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
-    return feature ? feature->name : to_string(f);
+    return (feature != nullptr) ? feature->name : to_string(f);
 }
 
-static FeatureCollections featureCollections;
+FeatureCollections featureCollections;
 
 }  // namespace
 

@@ -16,13 +16,13 @@ class BookTip
 {
 private:
     ApplyView& view_;
-    bool m_valid;
+    bool m_valid{false};
     uint256 m_book;
     uint256 m_end;
     uint256 m_dir;
     uint256 m_index;
     std::shared_ptr<SLE> m_entry;
-    Quality m_quality;
+    Quality m_quality{};
 
 public:
     /** Create the iterator. */

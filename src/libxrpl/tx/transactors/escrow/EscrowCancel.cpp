@@ -1,8 +1,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 
 #include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
@@ -29,13 +33,13 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -48,7 +52,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -63,7 +67,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        ter != tesSUCCESS)
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -150,7 +154,9 @@ EscrowCancel::doApply()
 
     // Transfer amount back to the owner
     if (isXRP(amount))
+    {
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
+    }
     else
     {
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
@@ -164,7 +170,7 @@ EscrowCancel::doApply()
                         ctx_.view(),
                         parityRate,
                         slep,
-                        mPriorBalance,
+                        preFeeBalance_,
                         amount,
                         issuer,
                         account,  // sender and receiver are the same

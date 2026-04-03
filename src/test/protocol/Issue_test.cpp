@@ -42,7 +42,7 @@ public:
         BEAST_EXPECT(u3 >= u2);
         BEAST_EXPECT(u3 > u2);
 
-        std::hash<Unsigned> hash;
+        std::hash<Unsigned> const hash;
 
         BEAST_EXPECT(hash(u1) == hash(u1));
         BEAST_EXPECT(hash(u2) == hash(u2));
@@ -83,7 +83,7 @@ public:
         BEAST_EXPECT(Issue(c1, i3) >= Issue(c1, i2));
         BEAST_EXPECT(Issue(c1, i3) > Issue(c1, i2));
 
-        std::hash<Issue> hash;
+        std::hash<Issue> const hash;
 
         BEAST_EXPECT(hash(Issue(c1, i1)) == hash(Issue(c1, i1)));
         BEAST_EXPECT(hash(Issue(c1, i2)) == hash(Issue(c1, i2)));
@@ -394,10 +394,10 @@ public:
         Currency const c3(3);
         AccountID const i3(3);
 
-        Issue a1(c1, i1);
-        Issue a2(c1, i2);
-        Issue a3(c2, i2);
-        Issue a4(c3, i2);
+        Issue const a1(c1, i1);
+        Issue const a2(c1, i2);
+        Issue const a3(c2, i2);
+        Issue const a4(c3, i2);
         uint256 const domain1{1};
         uint256 const domain2{2};
 
@@ -477,7 +477,7 @@ public:
             BEAST_EXPECT(Book(a3, a4, domain2) > Book(a2, a3, domain1));
         }
 
-        std::hash<Book> hash;
+        std::hash<Book> const hash;
 
         //         log << std::hex << hash (Book (a1, a2));
         //         log << std::hex << hash (Book (a1, a2));

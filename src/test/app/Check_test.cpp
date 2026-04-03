@@ -1,5 +1,6 @@
 #include <test/jtx.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -272,7 +273,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(from, to, USD(50)), ter(expected));
             env.close();
 
-            if (expected == tesSUCCESS)
+            if (isTesSuccess(expected))
             {
                 BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount + 2);
                 BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);
@@ -528,8 +529,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, startBalance - XRP(10) - drops(baseFeeDrops)));
             env.require(balance(bob, startBalance + XRP(10) - drops(baseFeeDrops)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -562,8 +563,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, drops(checkAmount.mantissa()));
             env.require(balance(alice, reserve));
             env.require(balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 3)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -592,8 +593,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, drops(checkAmount.mantissa() - 1));
             env.require(balance(alice, reserve));
             env.require(balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 2 + 1)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
@@ -663,8 +664,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, USD(0)));
             env.require(balance(bob, USD(10)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
@@ -688,8 +689,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, USD(2)));
             env.require(balance(bob, USD(8)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
@@ -755,8 +756,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, USD(0)));
             env.require(balance(bob, USD(10)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -838,8 +839,8 @@ class Check_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, USD(2));
             env.require(balance(alice, USD(0)));
             env.require(balance(bob, USD(8)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -890,8 +891,8 @@ class Check_test : public beast::unit_test::suite
             env.require(balance(alice, USD(8) - bobGot));
             env.require(balance(bob, bobGot));
 
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
@@ -945,8 +946,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, USD(5)));
             env.require(balance(bob, USD(3)));
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
+            BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 2);
         }
@@ -1018,8 +1019,8 @@ class Check_test : public beast::unit_test::suite
         env.close();
         env.require(balance(alice, USD(1000 - 125 - 60)));
         env.require(balance(bob, USD(0 + 100 + 50)));
-        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-        BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
+        BEAST_EXPECT(checksOnAccount(env, alice).empty());
+        BEAST_EXPECT(checksOnAccount(env, bob).empty());
     }
 
     void
@@ -1655,7 +1656,7 @@ class Check_test : public beast::unit_test::suite
 
             env(check::cancel(bob, chkIdNotExp3));
             env.close();
-            BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
+            BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
@@ -1815,7 +1816,7 @@ class Check_test : public beast::unit_test::suite
 
         env.require(owners(alice, 6));
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
-        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
+        BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(balance(alice, USD(700)));
 
@@ -1852,7 +1853,7 @@ class Check_test : public beast::unit_test::suite
             }
 
             // Operators to make using the class more convenient.
-            operator Account const() const
+            operator Account() const
             {
                 return acct;
             }
@@ -1879,7 +1880,7 @@ class Check_test : public beast::unit_test::suite
         // Automatic trust line creation should fail if the check destination
         // can't afford the reserve for the trust line.
         {
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
 
             // Fund gw1 with noripple (even though that's atypical for a
             // gateway) so it does not have any flags set.  We'll set flags
@@ -1999,7 +2000,7 @@ class Check_test : public beast::unit_test::suite
         {
             // No account root flags on any participant.
             // Automatic trust line from issuer to destination.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
 
             BEAST_EXPECT((*env.le(gw1))[sfFlags] == 0);
             BEAST_EXPECT((*env.le(alice))[sfFlags] == 0);
@@ -2052,7 +2053,7 @@ class Check_test : public beast::unit_test::suite
             // Transfer of assets using offers does not require rippling.
             // So bob's offer is successfully crossed which creates the
             // trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF1 = gw1["OF1"];
             env(offer(alice, XRP(97), OF1(97)));
             env.close();
@@ -2101,7 +2102,7 @@ class Check_test : public beast::unit_test::suite
         {
             // gw1 enables rippling.
             // Automatic trust line from issuer to non-issuer should still work.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDefaultRipple));
             env.close();
 
@@ -2149,7 +2150,7 @@ class Check_test : public beast::unit_test::suite
             // to non-issuer should work.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF2 = gw1["OF2"];
             env(offer(alice, XRP(95), OF2(95)));
             env.close();
@@ -2190,7 +2191,7 @@ class Check_test : public beast::unit_test::suite
             // change any outcomes.
             //
             // Automatic trust line from issuer to non-issuer should still work.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDepositAuth));
             env(fset(alice, asfDepositAuth));
             env(fset(bob, asfDepositAuth));
@@ -2240,7 +2241,7 @@ class Check_test : public beast::unit_test::suite
             // automatic trust line creation.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF3 = gw1["OF3"];
             env(offer(alice, XRP(93), OF3(93)));
             env.close();
@@ -2277,7 +2278,7 @@ class Check_test : public beast::unit_test::suite
         {
             // Set lsfGlobalFreeze on gw1.  That should stop any automatic
             // trust lines from being created.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfGlobalFreeze));
             env.close();
 
@@ -2319,7 +2320,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF4 = gw1["OF4"];
             env(offer(alice, XRP(91), OF4(91)), ter(tecFROZEN));
             env.close();
@@ -2369,7 +2370,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const OF5 = gw2["OF5"];
-            std::uint32_t gw2OfferSeq = {env.seq(gw2)};
+            std::uint32_t const gw2OfferSeq = {env.seq(gw2)};
             env(offer(gw2, XRP(92), OF5(92)));
             ++gw2.owners;
             env.close();
@@ -2422,7 +2423,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw2{*this, env, "gw2", 0};
+            AccountOwns const gw2{*this, env, "gw2", 0};
             IOU const OF5 = gw2["OF5"];
             env(offer(alice, XRP(91), OF5(91)), ter(tecUNFUNDED_OFFER));
             env.close();

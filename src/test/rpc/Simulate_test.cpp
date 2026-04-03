@@ -41,7 +41,7 @@ class Simulate_test : public beast::unit_test::suite
         else
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
-            SerialIter sitTrans(makeSlice(*unHexed));
+            SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
             tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
         BEAST_EXPECT(tx_json[jss::TransactionType] == tx[jss::TransactionType]);
@@ -59,7 +59,7 @@ class Simulate_test : public beast::unit_test::suite
         int const expectedSequence,
         XRPAmount const& expectedFee)
     {
-        return checkBasicReturnValidity(
+        checkBasicReturnValidity(
             result, tx, expectedSequence, expectedFee.jsonClipped().asString());
     }
 
@@ -87,6 +87,7 @@ class Simulate_test : public beast::unit_test::suite
             // It is technically not a valid STObject, so the following line
             // will crash
             STParsedJSONObject const parsed(std::string(jss::tx_json), tx);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const tx_blob = strHex(parsed.object->getSerializer().peekData());
             if (BEAST_EXPECT(parsed.object.has_value()))
             {
@@ -130,13 +131,13 @@ class Simulate_test : public beast::unit_test::suite
         BEAST_EXPECTS(env.current()->txCount() == 0, std::to_string(env.current()->txCount()));
     }
 
-    Json::Value
-    getJsonMetadata(Json::Value txResult) const
+    static Json::Value
+    getJsonMetadata(Json::Value txResult)
     {
         if (txResult.isMember(jss::meta_blob))
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
-            SerialIter sitTrans(makeSlice(*unHexed));
+            SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
             return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
 
@@ -1126,7 +1127,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
-                Json::Value nftokenId = to_string(token::getNextID(env, alice, 1));
+                Json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
@@ -1136,7 +1137,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
-                Json::Value mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
+                Json::Value const mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
                     env, tx, validateOutput, jss::mpt_issuance_id, mptIssuanceId);

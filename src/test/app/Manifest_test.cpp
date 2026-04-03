@@ -87,7 +87,7 @@ public:
         }
     }
 
-    std::string
+    static std::string
     makeManifestString(
         PublicKey const& pk,
         SecretKey const& sk,
@@ -100,7 +100,10 @@ public:
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
@@ -144,9 +147,8 @@ public:
         Serializer s;
         st.add(s);
 
-        // m is non-const so it can be moved from
-        std::string m(static_cast<char const*>(s.data()), s.size());
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(static_cast<char const*>(s.data()), s.size());
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a revocation manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
@@ -179,15 +181,14 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string m(static_cast<char const*>(s.data()),
-                      s.size());  // non-const so can be moved
-        if (auto r = deserializeManifest(std::move(m)))
+        std::string const m(static_cast<char const*>(s.data()), s.size());
+        if (auto r = deserializeManifest(m))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a manifest");
         return *deserializeManifest(std::string{});  // Silence compiler warning.
     }
 
-    Manifest
+    static Manifest
     clone(Manifest const& m)
     {
         Manifest m2(m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
@@ -248,7 +249,9 @@ public:
             {
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
-                std::vector<std::string> keys;
+                std::vector<std::string> const keys;
+                s1.reserve(inManifests.size());
+
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
@@ -348,7 +351,9 @@ public:
         ss.add32(HashPrefix::manifest);
         st.addWithoutSigningFields(ss);
         auto const sig = sign(KeyType::secp256k1, kp.second, ss.slice());
-        BEAST_EXPECT(strHex(sig) == strHex(*m.getSignature()));
+        BEAST_EXPECT(
+            strHex(sig) ==
+            strHex(*m.getSignature()));  // NOLINT(bugprone-unchecked-optional-access)
 
         auto const masterSig = sign(KeyType::ed25519, sk, ss.slice());
         BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));
@@ -447,7 +452,9 @@ public:
 
             auto const token = loadValidatorToken(tokenBlob);
             BEAST_EXPECT(token);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(test::equal(token->validationSecret, *valSecret));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(token->manifest == manifest);
         }
         {
@@ -575,12 +582,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // invalid manifest (empty domain)
@@ -594,12 +603,12 @@ public:
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain too long)
-                        std::string s(254, 'a');
+                        std::string const s(254, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain component too long)
-                        std::string s(72, 'a');
+                        std::string const s(72, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
@@ -612,12 +621,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // valid manifest with invalid signature
@@ -628,12 +639,14 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
                         BEAST_EXPECT(manifest->signingKey == spk);
                         BEAST_EXPECT(manifest->sequence == sequence + 1);
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->domain == "example.com");
                         BEAST_EXPECT(!manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     {
                         // reject missing sequence
@@ -717,15 +730,16 @@ public:
                         auto const manifest = deserializeManifest(m);
 
                         BEAST_EXPECT(manifest);
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access)
                         BEAST_EXPECT(manifest->masterKey == pk);
 
-                        // Since this manifest is revoked, it should not have
-                        // a signingKey
+                        // Since this manifest is revoked, it should not have a signingKey
                         BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);
                         BEAST_EXPECT(manifest->verify());
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     {  // can't specify an ephemeral signing key

@@ -25,7 +25,7 @@ public:
     TER
     doApply() override;
 
-    // Interface used by DeleteAccount
+    // Interface used by AccountDelete
     static TER
     removeFromLedger(ApplyView& view, uint256 const& delIndex, beast::Journal j);
 };

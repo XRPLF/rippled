@@ -1,9 +1,11 @@
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/tx/paths/BookTip.h>
 
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
-    : view_(view), m_valid(false), m_book(getBookBase(book)), m_end(getQualityNext(m_book))
+    : view_(view), m_book(getBookBase(book)), m_end(getQualityNext(m_book))
 {
 }
 

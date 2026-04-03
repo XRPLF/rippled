@@ -16,8 +16,8 @@ getEndpoint(std::string const& peer)
 {
     try
     {
-        std::size_t first = peer.find_first_of(":");
-        std::size_t last = peer.find_last_of(":");
+        std::size_t const first = peer.find_first_of(':');
+        std::size_t const last = peer.find_last_of(':');
         std::string peerClean(peer);
         if (first != last)
         {
@@ -56,7 +56,7 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     , bindListener_(std::move(bindListener))
     , handler_(std::move(handler))
     , forward_(std::move(forward))
-    , requiredCondition_(std::move(requiredCondition))
+    , requiredCondition_(requiredCondition)
     , loadType_(std::move(loadType))
     , secureGatewayIPs_(secureGatewayIPs)
 {
@@ -88,7 +88,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // sanity check
     BOOST_ASSERT(!finished_);
 
-    std::shared_ptr<CallData<Request, Response>> thisShared = this->shared_from_this();
+    std::shared_ptr<CallData<Request, Response>> const thisShared = this->shared_from_this();
 
     // Need to set finished to true before processing the response,
     // because as soon as the response is posted to the completion
@@ -107,7 +107,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // If coro is null, then the JobQueue has already been shutdown
     if (!coro)
     {
-        grpc::Status status{grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
+        grpc::Status const status{grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
         responder_.FinishWithError(status, this);
     }
 }
@@ -119,10 +119,10 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
     try
     {
         auto usage = getUsage();
-        bool isUnlimited = clientIsUnlimited();
-        if (!isUnlimited && usage.disconnect(app_.journal("gRPCServer")))
+        bool const isUnlimited = clientIsUnlimited();
+        if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
-            grpc::Status status{
+            grpc::Status const status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
         }
@@ -145,11 +145,11 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                     toLog << user.value();
                 toLog << " isUnlimited = " << isUnlimited;
 
-                JLOG(app_.journal("GRPCServer::Calldata").debug()) << toLog.str();
+                JLOG(app_.getJournal("GRPCServer::Calldata").debug()) << toLog.str();
             }
 
             RPC::GRPCContext<Request> context{
-                {app_.journal("gRPCServer"),
+                {app_.getJournal("gRPCServer"),
                  app_,
                  loadType,
                  app_.getOPs(),
@@ -162,12 +162,12 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
                 request_};
 
             // Make sure we can currently handle the rpc
-            error_code_i conditionMetRes = RPC::conditionMet(requiredCondition_, context);
+            error_code_i const conditionMetRes = RPC::conditionMet(requiredCondition_, context);
 
             if (conditionMetRes != rpcSUCCESS)
             {
-                RPC::ErrorInfo errorInfo = RPC::get_error_info(conditionMetRes);
-                grpc::Status status{
+                RPC::ErrorInfo const errorInfo = RPC::get_error_info(conditionMetRes);
+                grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.c_str()};
                 responder_.FinishWithError(status, this);
             }
@@ -181,7 +181,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
     }
     catch (std::exception const& ex)
     {
-        grpc::Status status{grpc::StatusCode::INTERNAL, ex.what()};
+        grpc::Status const status{grpc::StatusCode::INTERNAL, ex.what()};
         responder_.FinishWithError(status, this);
     }
 }
@@ -205,9 +205,11 @@ Role
 GRPCServerImpl::CallData<Request, Response>::getRole(bool isUnlimited)
 {
     if (isUnlimited)
+    {
         return Role::IDENTIFIED;
-    else
-        return Role::USER;
+    }
+
+    return Role::USER;
 }
 
 template <class Request, class Response>
@@ -283,7 +285,8 @@ GRPCServerImpl::CallData<Request, Response>::getUsage()
     Throw<std::runtime_error>("Failed to get client endpoint");
 }
 
-GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.journal("gRPC Server"))
+GRPCServerImpl::GRPCServerImpl(Application& app)
+    : app_(app), journal_(app_.getJournal("gRPC Server"))
 {
     // if present, get endpoint from config
     if (app_.config().exists(SECTION_PORT_GRPC))
@@ -299,7 +302,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app) : app_(app), journal_(app_.jour
             return;
         try
         {
-            boost::asio::ip::tcp::endpoint endpoint(
+            boost::asio::ip::tcp::endpoint const endpoint(
                 boost::asio::ip::make_address(*optIp), std::stoi(*optPort));
 
             std::stringstream ss;
@@ -383,8 +386,8 @@ GRPCServerImpl::handleRpcs()
         requests.pop_back();
     };
 
-    void* tag;  // uniquely identifies a request.
-    bool ok;
+    void* tag = nullptr;  // uniquely identifies a request.
+    bool ok = false;
     // Block waiting to read the next event from the completion queue. The
     // event is uniquely identified by its tag, which in this case is the
     // memory address of a CallData instance.
