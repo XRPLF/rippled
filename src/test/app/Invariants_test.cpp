@@ -978,8 +978,8 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        // MPT OutstandingAmount exceeds max, but locked <= outstanding
-        // (regression: plain assignment would overwrite earlier bad_ = true)
+        // Regression: MPT OutstandingAmount exceeds max, but locked <=
+        // outstanding. Plain assignment would overwrite earlier bad_ = true.
         doInvariantCheck(
             {{"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {

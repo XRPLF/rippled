@@ -629,9 +629,10 @@ NoXRPTrustLines::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    bool const bad = rv.rules().enabled(fixSecurity3_1_3) ? xrpTrustLine_ : xrpTrustLineLegacy_;
+    bool const effectiveXrpTrustLine =
+        rv.rules().enabled(fixSecurity3_1_3) ? xrpTrustLine_ : xrpTrustLineLegacy_;
 
-    if (!bad)
+    if (!effectiveXrpTrustLine)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an XRP trust line was created";
@@ -669,10 +670,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     ReadView const& rv,
     beast::Journal const& j) const
 {
-    bool const bad = rv.rules().enabled(fixSecurity3_1_3) ? deepFreezeWithoutFreeze_
-                                                          : deepFreezeWithoutFreezeLegacy_;
+    bool const effectiveDeepFreezeWithoutFreeze = rv.rules().enabled(fixSecurity3_1_3)
+        ? deepFreezeWithoutFreeze_
+        : deepFreezeWithoutFreezeLegacy_;
 
-    if (!bad)
+    if (!effectiveDeepFreezeWithoutFreeze)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: a trust line with deep freeze flag "
