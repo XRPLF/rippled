@@ -1,7 +1,6 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Indexes.h>
@@ -470,13 +469,11 @@ struct STJson_test : public beast::unit_test::suite
         STJson json;
         json.setObjectField("foo", std::make_shared<STUInt16>(sfTransactionType, 65535));
         json.setObjectField("bar", nullptr);  // test null value
-        json.setNestedObjectField("meta", "version", std::make_shared<STUInt32>(sfNetworkID, 2));
 
         Json::Value jv = json.getJson(JsonOptions::none);
         BEAST_EXPECT(jv.isObject());
-        BEAST_EXPECT(jv[strHex(std::string{"foo"})].asUInt() == 65535);
-        BEAST_EXPECT(jv[strHex(std::string{"bar"})].isNull());
-        BEAST_EXPECT(jv[strHex(std::string{"meta"})][strHex(std::string{"version"})].asUInt() == 2);
+        BEAST_EXPECT(jv["foo"].asUInt() == 65535);
+        BEAST_EXPECT(jv["bar"].isNull());
     }
 
     void

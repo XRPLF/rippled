@@ -1,4 +1,3 @@
-#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -700,11 +699,10 @@ STJson::getJson(JsonOptions options) const
         auto const& map = std::get<Map>(data_);
         for (auto const& [key, value] : map)
         {
-            auto const hexKey = strHex(key);
             if (value)
-                obj[hexKey] = value->getJson(options);
+                obj[key] = value->getJson(options);
             else
-                obj[hexKey] = Json::nullValue;
+                obj[key] = Json::nullValue;
         }
         return obj;
     }
