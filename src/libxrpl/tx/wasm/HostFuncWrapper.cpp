@@ -328,7 +328,7 @@ static inline HostFunctions*
 getHF(void* env)
 {
     auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
+    HostFunctions* hf = reinterpret_cast<HostFunctions*>(udata->first);  // NOLINT
     return hf;
 }
 
@@ -341,7 +341,7 @@ checkGas(void* env)
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     if (runtime == nullptr)
     {
-        wasm_trap_t const* trap = reinterpret_cast<wasm_trap_t*>(
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
             WasmEngine::instance().newTrap("hf no runtime"));  // LCOV_EXCL_LINE
         return Unexpected(trap);                               // LCOV_EXCL_LINE
     }
@@ -352,14 +352,14 @@ checkGas(void* env)
 
     if (runtime->setGas(x) < 0)
     {
-        wasm_trap_t const* trap = reinterpret_cast<wasm_trap_t*>(
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
             WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
         return Unexpected(trap);                               // LCOV_EXCL_LINE
     }
 
     if (gas < impFunc.gas)
     {
-        wasm_trap_t const* trap =
+        wasm_trap_t* const trap =  // NOLINT
             reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
         return Unexpected(trap);
     }

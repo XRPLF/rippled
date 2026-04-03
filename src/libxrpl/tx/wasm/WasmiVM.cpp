@@ -918,7 +918,7 @@ WasmiEngine::newTrap(std::string const& txt)
     if (!txt.empty())
         wasm_name_new(&msg, txt.size() + 1, txt.c_str());  // include 0
 
-    wasm_trap_t const* trap = wasm_trap_new(store_.get(), &msg);
+    wasm_trap_t* trap = wasm_trap_new(store_.get(), &msg);  // NOLINT
 
     if (!txt.empty())
         wasm_byte_vec_delete(&msg);
