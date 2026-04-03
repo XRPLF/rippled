@@ -956,28 +956,22 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
             return Unexpected(HostFunctionError::SUBMIT_TXN_FAILURE);
         }
 
-        // Use a persistent emit view that is seeded with the
-        // transactor's pending state changes (balances, consumed
-        // sequence, etc.) so that each emitted transaction validates
-        // against the full current state.  A full apply() is used
-        // (matching the Batch inner-transaction pattern) so that
-        // sequence numbers, balances, owner counts, and all other
-        // ledger state are properly updated between successive emits.
-        auto& emitView = contractCtx.getEmitView();
+        OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
+        auto applyOneTransaction =
+            [&app, &j, &parentBatchId, &wholeBatchView](std::shared_ptr<STTx const> const& tx) {
+                auto const pfResult =
+                    preflight(app, wholeBatchView.rules(), parentBatchId, *tx, tapBATCH, j);
+                auto const ret = preclaim(pfResult, app, wholeBatchView);
+                JLOG(j.trace()) << "WasmTrace[" << parentBatchId << "]: " << tx->getTransactionID()
+                                << " " << transToken(ret.ter);
+                return ret;
+            };
+
         auto const stx = tpTrans->getSTransaction();
-
-        OpenView perTxView(batch_view, emitView);
-        auto const ret = apply(app, perTxView, parentBatchId, *stx, tapBATCH, j);
-
-        JLOG(j.trace()) << "WasmTrace[" << parentBatchId << "]: " << stx->getTransactionID() << " "
-                        << transToken(ret.ter);
-
-        if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-        {
-            perTxView.apply(emitView);
+        auto const result = applyOneTransaction(stx);
+        if (isTesSuccess(result.ter))
             contractCtx.result.emittedTxns.push(stx);
-        }
-        return TERtoInt(ret.ter);
+        return TERtoInt(result.ter);
     }
     catch (std::exception const& e)
     {
@@ -1011,25 +1005,23 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         if (tpTrans->getStatus() != NEW)
             return Unexpected(HostFunctionError::SUBMIT_TXN_FAILURE);
 
-        // Use a persistent emit view seeded with the transactor's
-        // pending state, and do a full apply() for each emission
-        // (see emitBuiltTxn for detailed rationale).
-        auto& emitView = contractCtx.getEmitView();
+        OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
         auto const parentBatchId = parentTx.getTransactionID();
+        auto applyOneTransaction =
+            [&app, &j, &parentBatchId, &wholeBatchView](std::shared_ptr<STTx const> const& tx) {
+                auto const pfResult =
+                    preflight(app, wholeBatchView.rules(), parentBatchId, *tx, tapBATCH, j);
+                auto const ret = preclaim(pfResult, app, wholeBatchView);
+                JLOG(j.trace()) << "WasmTrace[" << parentBatchId << "]: " << tx->getTransactionID()
+                                << " " << transToken(ret.ter);
+                return ret;
+            };
+
         auto const stx = tpTrans->getSTransaction();
-
-        OpenView perTxView(batch_view, emitView);
-        auto const ret = apply(app, perTxView, parentBatchId, *stx, tapBATCH, j);
-
-        JLOG(j.trace()) << "WasmTrace[" << parentBatchId << "]: " << stx->getTransactionID() << " "
-                        << transToken(ret.ter);
-
-        if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-        {
-            perTxView.apply(emitView);
+        auto const result = applyOneTransaction(stx);
+        if (isTesSuccess(result.ter))
             contractCtx.result.emittedTxns.push(stx);
-        }
-        return TERtoInt(ret.ter);
+        return TERtoInt(result.ter);
     }
     catch (std::exception const& e)
     {

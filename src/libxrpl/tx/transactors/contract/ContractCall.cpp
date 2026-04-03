@@ -291,7 +291,7 @@ ContractCall::doApply()
         auto ret = re.value().result;
         if (ret < 0)
         {
-            JLOG(j_.trace()) << "WASM Execution Failed: " << contractCtx.result.exitCode;
+            JLOG(j_.trace()) << "WASM Execution Failed: " << contractCtx.result.exitReason;
             ctx_.setWasmReturnCode(ret);
             // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
             return tecWASM_REJECTED;
