@@ -500,26 +500,6 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleNew);
                 return true;
             });
-
-        // Regression: two trust lines where the first is bad (XRP) and the
-        // second is valid. Plain assignment would overwrite the earlier true.
-        doInvariantCheck(
-            {{"an XRP trust line was created"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // First: bad XRP trust line
-                auto const sleBad =
-                    std::make_shared<SLE>(keylet::line(A1, A2, xrpIssue().currency));
-                ac.view().insert(sleBad);
-
-                // Second: valid USD trust line — must NOT clear the flag
-                Account const A3{"A3"};
-                auto const sleGood =
-                    std::make_shared<SLE>(keylet::line(A1, A3, A1["USD"].currency));
-                sleGood->setFieldAmount(sfLowLimit, A1["USD"](0));
-                sleGood->setFieldAmount(sfHighLimit, A1["USD"](0));
-                ac.view().insert(sleGood);
-                return true;
-            });
     }
 
     void
@@ -596,31 +576,6 @@ class Invariants_test : public beast::unit_test::suite
                 uFlags |= lsfLowFreeze | lsfHighDeepFreeze;
                 sleNew->setFieldU32(sfFlags, uFlags);
                 ac.view().insert(sleNew);
-                return true;
-            });
-
-        // Regression: two trust lines where the first has deep freeze without
-        // freeze, and the second is valid. Plain assignment would overwrite
-        // the earlier true.
-        doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // First: bad — lowDeepFreeze without lowFreeze
-                auto const sleBad = std::make_shared<SLE>(keylet::line(A1, A2, A1["USD"].currency));
-                sleBad->setFieldAmount(sfLowLimit, A1["USD"](0));
-                sleBad->setFieldAmount(sfHighLimit, A1["USD"](0));
-                sleBad->setFieldU32(sfFlags, lsfLowDeepFreeze);
-                ac.view().insert(sleBad);
-
-                // Second: valid — no deep freeze flags at all
-                Account const A3{"A3"};
-                auto const sleGood =
-                    std::make_shared<SLE>(keylet::line(A1, A3, A1["EUR"].currency));
-                sleGood->setFieldAmount(sfLowLimit, A1["EUR"](0));
-                sleGood->setFieldAmount(sfHighLimit, A1["EUR"](0));
-                sleGood->setFieldU32(sfFlags, 0u);
-                ac.view().insert(sleGood);
                 return true;
             });
     }
@@ -973,25 +928,6 @@ class Invariants_test : public beast::unit_test::suite
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
-                sleNew->setFieldU64(sfLockedAmount, 10);
-                ac.view().insert(sleNew);
-                return true;
-            });
-
-        // Regression: MPT OutstandingAmount exceeds max, but locked <=
-        // outstanding. Plain assignment would overwrite earlier bad_ = true.
-        doInvariantCheck(
-            {{"escrow specifies invalid amount"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-
-                MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
-                // outstanding exceeds maxMPTokenAmount -> checkAmount sets bad_
-                sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
-                // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
                 return true;
@@ -3868,31 +3804,35 @@ class Invariants_test : public beast::unit_test::suite
             precloseMpt);
     }
 
-    // Verify that without fixSecurity3_1_3, the overwrite bug is
-    // preserved: a valid entry after a bad entry overwrites the flag,
-    // causing the invariant to incorrectly pass.
+    // Test the invariant overwrite fix for both pre- and post-amendment
+    // behavior. With the fix enabled, |= accumulates violations across
+    // entries so a later valid entry cannot clear an earlier violation.
+    // Without the fix, = assignment means the last-visited entry wins.
     void
-    testInvariantOverwriteLegacy()
+    testInvariantOverwrite(FeatureBitset features)
     {
         using namespace test::jtx;
-        auto const features = defaultAmendments() - fixSecurity3_1_3;
+        bool const fixEnabled = features[fixSecurity3_1_3];
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+        std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
 
-        // NoXRPTrustLines: a trust line with sfLowLimit set to xrpIssue
-        // (bad), followed by a valid trust line visited last (higher key).
-        // Legacy = assignment overwrites the flag from true to false.
-        // The invariant checks sfLowLimit/sfHighLimit issue, not the
-        // keylet currency, so we use non-XRP keylet currencies to
-        // control the hash ordering.
-        testcase << "legacy overwrite: NoXRPTrustLines";
+        // Regression: bad XRP trust line followed by a valid trust line.
+        // With the fix, the invariant catches the violation.
+        // Without the fix, the valid entry overwrites the flag to false.
+        // We use non-XRP keylet currencies so we can control the hash
+        // ordering (the invariant checks sfLowLimit/sfHighLimit issue,
+        // not the keylet currency).
+        testcase << "overwrite: NoXRPTrustLines" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
             Env(*this, features),
-            {},
+            fixEnabled ? std::vector<std::string>{{"an XRP trust line was created"}}
+                       : std::vector<std::string>{},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
 
-                // Compute ordering once, then assign "bad" (XRP issue)
-                // to the lower-sorting key and "good" (proper IOU limits)
-                // to the higher-sorting key.
+                // Compute ordering: assign "bad" (XRP issue) to the
+                // lower-sorting key and "good" to the higher-sorting key,
+                // so that the good entry is visited last.
                 char const* const c1 = "AAA";
                 char const* const c2 = "ZZZ";
                 auto const k1 = keylet::line(A1, A2, A1[c1].currency);
@@ -3919,15 +3859,15 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
-            {tesSUCCESS, tesSUCCESS});
+            fixEnabled ? failTers : passTers);
 
-        // NoDeepFreezeTrustLinesWithoutFreeze: bad deep-freeze trust line
-        // and a valid trust line. Legacy = assignment means the last-visited
-        // entry determines the flag. We ensure good sorts after bad.
-        testcase << "legacy overwrite: NoDeepFreezeTrustLinesWithoutFreeze";
+        // Regression: bad deep-freeze trust line followed by a valid one.
+        testcase << "overwrite: NoDeepFreeze" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
             Env(*this, features),
-            {},
+            fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
+                                                   "normal freeze was created"}}
+                       : std::vector<std::string>{},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Account const A3{"A3"};
 
@@ -3958,34 +3898,35 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
-            {tesSUCCESS, tesSUCCESS});
+            fixEnabled ? failTers : passTers);
 
-        // NoZeroEscrow: MPT outstanding exceeds max, but locked <= outstanding.
-        // Legacy = assignment overwrites bad_ = true with the result of
-        // outstanding < locked (which is false), so NoZeroEscrow passes.
-        // ValidMPTIssuance still fires ("a MPT issuance was created"), so
-        // the overall result is tecINVARIANT_FAILED, but we verify that
-        // the NoZeroEscrow message is absent (it would be present with the
-        // fix enabled).
-        testcase << "legacy overwrite: NoZeroEscrow MPT";
+        // Regression: MPT OutstandingAmount exceeds max, but locked <=
+        // outstanding. Plain assignment would overwrite bad_ = true.
+        // With the fix, NoZeroEscrow catches it.
+        // Without the fix, NoZeroEscrow passes but ValidMPTIssuance
+        // still fires ("a MPT issuance was created").
+        testcase << "overwrite: NoZeroEscrow MPT" + std::string(fixEnabled ? " fix" : "");
         doInvariantCheck(
             Env(*this, features),
-            {{"a MPT issuance was created"}},
-            [&](Account const& A1, Account const&, ApplyContext& ac) {
+            fixEnabled ? std::vector<std::string>{{"escrow specifies invalid amount"}}
+                       : std::vector<std::string>{{"a MPT issuance was created"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!BEAST_EXPECT(sle))
+                if (!sle)
                     return false;
 
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                // outstanding exceeds maxMPTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, maxMPTokenAmount + 1);
+                // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
                 return true;
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            fixEnabled ? failTers : failTers);
     }
 
 public:
@@ -4013,7 +3954,8 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
-        testInvariantOverwriteLegacy();
+        testInvariantOverwrite(defaultAmendments());
+        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
     }
 };
 
