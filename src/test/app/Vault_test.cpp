@@ -5911,7 +5911,6 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(vaultSle != nullptr);
                 if (!vaultSle)
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
                 auto const brokerKeylet =
@@ -5969,7 +5968,6 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(vaultSle != nullptr);
                 if (!vaultSle)
                     return;
-                PrettyAsset shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 auto const brokerKeylet =
                     keylet::loanbroker(owner.id(), env.seq(owner));
