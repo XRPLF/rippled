@@ -304,7 +304,7 @@ private:
     payFee();
 
     void
-    processPersistentChanges(TER result, XRPAmount& fee, bool& applied);
+    processPersistentChanges(TER& result, XRPAmount& fee, bool& applied);
 
     static NotTEC
     checkSingleSign(
