@@ -364,7 +364,7 @@ populateJsonResponse(
 //   resume previous query
 // }
 Json::Value
-doAccountTxJson(RPC::JsonContext& context)
+doAccountTx(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
         return rpcError(rpcNOT_ENABLED);
