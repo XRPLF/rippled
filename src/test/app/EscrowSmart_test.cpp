@@ -489,7 +489,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         std::uint32_t const allowance = 467;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto [createFee, finishFee] = [&]() {
-            Env env(*this, features);
+            Env const env(*this, features);
             auto createFee = env.current()->fees().base * 10 + ledgerSqnWasmHex.size() / 2 * 5;
             auto finishFee = env.current()->fees().base +
                 (allowance * env.current()->fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
@@ -760,7 +760,8 @@ struct EscrowSmart_test : public beast::unit_test::suite
         auto const seq = env.seq(alice);
         BEAST_EXPECT(env.ownerCount(alice) == 0);
         auto escrowCreate = escrow::create(alice, alice, XRP(1000));
-        XRPAmount txnFees = env.current()->fees().base * 10 + updateDataWasmHex.size() / 2 * 5;
+        XRPAmount const txnFees =
+            env.current()->fees().base * 10 + updateDataWasmHex.size() / 2 * 5;
         env(escrowCreate,
             escrow::finish_function(updateDataWasmHex),
             escrow::finish_time(env.now() + 2s),
@@ -816,7 +817,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
         uint64_t const allowance = 467;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto createFee = [&]() {
-            Env env(*this, features);
+            Env const env(*this, features);
             auto createFee = env.current()->fees().base * 10 + ledgerSqnWasmHex.size() / 2 * 5;
             return createFee;
         }();
@@ -853,7 +854,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
                 env.close();
 
                 auto const bigAllowance = 996'433;
-                uint64_t partialFeeCalc =
+                uint64_t const partialFeeCalc =
                     (static_cast<uint64_t>(bigAllowance) * 1'000'000) / MICRO_DROPS_PER_DROP +
                     1;  // to avoid an overflow
                 auto finishFee = env.current()->fees().base + partialFeeCalc;
@@ -910,7 +911,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees =
+            XRPAmount const txnFees =
                 env.current()->fees().base * 10 + allHostFunctionsWasmHex.size() / 2 * 5;
             env(escrowCreate,
                 escrow::finish_function(allHostFunctionsWasmHex),
@@ -991,7 +992,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             BEAST_EXPECT(env.ownerCount(alice) == 2);
 
             // set up a bunch of objects to check their keylets
-            AMM amm(env, carol, XRP(10), carol["USD"](1000));
+            AMM const amm(env, carol, XRP(10), carol["USD"](1000));
             env(check::create(alice, carol, XRP(100)));
             env(credentials::create(alice, alice, "termsandconditions"));
             env(delegate::set(alice, carol, {"TrustSet"}));
@@ -1004,11 +1005,11 @@ struct EscrowSmart_test : public beast::unit_test::suite
             env(token::createOffer(carol, tokenId, XRP(100)), token::owner(alice));
             env(offer(alice, carol["GBP"](0.1), XRP(100)));
             env(paychan::create(alice, carol, XRP(1000), 100s, alice.pk()));
-            pdomain::Credentials credentials{{alice, "first credential"}};
+            pdomain::Credentials const credentials{{alice, "first credential"}};
             env(pdomain::setTx(alice, credentials));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, _keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
             env(tx);
             env.close();
@@ -1017,7 +1018,7 @@ struct EscrowSmart_test : public beast::unit_test::suite
             if (BEAST_EXPECTS(env.seq(alice) == 20, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
-                XRPAmount txnFees =
+                XRPAmount const txnFees =
                     env.current()->fees().base * 10 + allKeyletsWasmHex.size() / 2 * 5;
                 env(escrow::create(alice, carol, XRP(1000)),
                     escrow::finish_function(allKeyletsWasmHex),

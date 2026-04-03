@@ -88,7 +88,7 @@ generateDataBlob(uint32_t data_size)
     appendBytes(wasm, FUNC_TYPE0);
 
     // Memory Section: must be large enough for data_size
-    uint32_t pages = (data_size + 65535) / 65536;
+    uint32_t const pages = (data_size + 65535) / 65536;
     std::vector<uint8_t> mem_p;
     pushLeb128(mem_p, 1);      // 1 memory defined
     mem_p.push_back(0x00);     // Flags (minimum only)

@@ -384,7 +384,7 @@ EscrowFinish::doApply()
         JLOG(j_.trace()) << "The escrow has a finish function, running WASM code...";
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
-        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
