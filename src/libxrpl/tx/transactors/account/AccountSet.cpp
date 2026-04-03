@@ -187,10 +187,7 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
-
-    if (!Permission::getInstance().checkGranularSandbox(tx, granularPermissions))
+    if (!checkGranularPermission(sle, tx))
         return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;

@@ -139,10 +139,8 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     if (isTesSuccess(checkTxPermission(sle, tx)))
         return tesSUCCESS;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
-
-    if (!Permission::getInstance().checkGranularSandbox(tx, granularPermissions))
+    auto const granularPermissions = checkGranularPermission(sle, tx);
+    if (!granularPermissions)
         return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
