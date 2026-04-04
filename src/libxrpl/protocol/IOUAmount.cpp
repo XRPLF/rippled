@@ -42,15 +42,6 @@ setSTNumberSwitchover(bool v)
     *getStaticSTNumberSwitchover() = v;
 }
 
-/* The range for the mantissa when normalized */
-// log(2^63,10) ~ 18.96
-//
-static std::int64_t constexpr minMantissa = STAmount::cMinValue;
-static std::int64_t constexpr maxMantissa = STAmount::cMaxValue;
-/* The range for the exponent when normalized */
-static int constexpr minExponent = STAmount::cMinOffset;
-static int constexpr maxExponent = STAmount::cMaxOffset;
-
 IOUAmount
 IOUAmount::fromNumber(Number const& number)
 {
@@ -299,7 +290,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
         {
             if (!result)
             {
-                return IOUAmount(-minMantissa, minExponent);
+                return IOUAmount(-IOUAmount::minMantissa, IOUAmount::minExponent);
             }
             // This subtraction cannot underflow because `result` is not zero
             return IOUAmount(result.mantissa() - 1, result.exponent());
