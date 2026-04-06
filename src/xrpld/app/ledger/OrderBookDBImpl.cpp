@@ -2,9 +2,9 @@
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 

@@ -1,10 +1,10 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 

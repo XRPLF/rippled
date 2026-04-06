@@ -3,10 +3,10 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
