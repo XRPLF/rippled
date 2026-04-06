@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -112,19 +112,11 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTClawbackBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,
-        std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,
-        std::decay_t<typename SF_UINT64::type::value_type> const& mPTAmount,
-        std::decay_t<typename SF_VL::type::value_type> const& zKProof,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
-        : TransactionBuilderBase<ConfidentialMPTClawbackBuilder>(
-              ttCONFIDENTIAL_MPT_CLAWBACK,
-              account,
-              sequence,
-              fee)
+    ConfidentialMPTClawbackBuilder(SF_ACCOUNT::type::value_type account,
+                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder,                     std::decay_t<typename SF_UINT64::type::value_type> const& mPTAmount,                     std::decay_t<typename SF_VL::type::value_type> const& zKProof,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<ConfidentialMPTClawbackBuilder>(ttCONFIDENTIAL_MPT_CLAWBACK, account, sequence, fee)
     {
         setMPTokenIssuanceID(mPTokenIssuanceID);
         setHolder(holder);

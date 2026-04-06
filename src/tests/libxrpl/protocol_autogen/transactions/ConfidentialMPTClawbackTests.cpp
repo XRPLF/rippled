@@ -1,13 +1,15 @@
 // Auto-generated unit tests for transaction ConfidentialMPTClawback
 
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol_autogen/transactions/AccountSet.h>
-#include <xrpl/protocol_autogen/transactions/ConfidentialMPTClawback.h>
 
 #include <gtest/gtest.h>
+
 #include <protocol_autogen/TestHelpers.h>
+
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol_autogen/transactions/ConfidentialMPTClawback.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
@@ -39,7 +41,8 @@ TEST(TransactionsConfidentialMPTClawbackTests, BuilderSettersRoundTrip)
         mPTAmountValue,
         zKProofValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     // Set optional fields
 
@@ -112,7 +115,9 @@ TEST(TransactionsConfidentialMPTClawbackTests, BuilderFromStTxRoundTrip)
         mPTAmountValue,
         zKProofValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
+
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -161,7 +166,8 @@ TEST(TransactionsConfidentialMPTClawbackTests, BuilderFromStTxRoundTrip)
 TEST(TransactionsConfidentialMPTClawbackTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -174,7 +180,8 @@ TEST(TransactionsConfidentialMPTClawbackTests, WrapperThrowsOnWrongTxType)
 TEST(TransactionsConfidentialMPTClawbackTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -183,4 +190,5 @@ TEST(TransactionsConfidentialMPTClawbackTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(ConfidentialMPTClawbackBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-}  // namespace xrpl::transactions
+
+}

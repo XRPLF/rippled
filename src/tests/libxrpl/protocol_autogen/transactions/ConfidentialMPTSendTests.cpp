@@ -1,13 +1,15 @@
 // Auto-generated unit tests for transaction ConfidentialMPTSend
 
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol_autogen/transactions/AccountSet.h>
-#include <xrpl/protocol_autogen/transactions/ConfidentialMPTSend.h>
 
 #include <gtest/gtest.h>
+
 #include <protocol_autogen/TestHelpers.h>
+
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol_autogen/transactions/ConfidentialMPTSend.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
@@ -49,7 +51,8 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
         amountCommitmentValue,
         balanceCommitmentValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     // Set optional fields
     builder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
@@ -122,8 +125,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
     {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = tx.getAuditorEncryptedAmount();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfAuditorEncryptedAmount should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptedAmount");
         EXPECT_TRUE(tx.hasAuditorEncryptedAmount());
     }
@@ -135,6 +137,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
         EXPECT_TRUE(tx.hasCredentialIDs());
     }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -174,7 +177,8 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
         amountCommitmentValue,
         balanceCommitmentValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     initialBuilder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
@@ -247,8 +251,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
     {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = rebuiltTx.getAuditorEncryptedAmount();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfAuditorEncryptedAmount should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptedAmount");
     }
 
@@ -258,13 +261,15 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCredentialIDs should be present";
         expectEqualField(expected, *actualOpt, "sfCredentialIDs");
     }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
 TEST(TransactionsConfidentialMPTSendTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -277,7 +282,8 @@ TEST(TransactionsConfidentialMPTSendTests, WrapperThrowsOnWrongTxType)
 TEST(TransactionsConfidentialMPTSendTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -319,7 +325,8 @@ TEST(TransactionsConfidentialMPTSendTests, OptionalFieldsReturnNullopt)
         amountCommitmentValue,
         balanceCommitmentValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     // Do NOT set optional fields
 
@@ -332,4 +339,4 @@ TEST(TransactionsConfidentialMPTSendTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
 
-}  // namespace xrpl::transactions
+}

@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -32,8 +32,7 @@ public:
     static constexpr xrpl::TxType txType = ttCONFIDENTIAL_MPT_MERGE_INBOX;
 
     /**
-     * @brief Construct a ConfidentialMPTMergeInbox transaction wrapper from an existing STTx
-     * object.
+     * @brief Construct a ConfidentialMPTMergeInbox transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
     explicit ConfidentialMPTMergeInbox(std::shared_ptr<STTx const> tx)
@@ -67,8 +66,7 @@ public:
  * Uses Json::Value internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
-class ConfidentialMPTMergeInboxBuilder
-    : public TransactionBuilderBase<ConfidentialMPTMergeInboxBuilder>
+class ConfidentialMPTMergeInboxBuilder : public TransactionBuilderBase<ConfidentialMPTMergeInboxBuilder>
 {
 public:
     /**
@@ -78,16 +76,11 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTMergeInboxBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
-        : TransactionBuilderBase<ConfidentialMPTMergeInboxBuilder>(
-              ttCONFIDENTIAL_MPT_MERGE_INBOX,
-              account,
-              sequence,
-              fee)
+    ConfidentialMPTMergeInboxBuilder(SF_ACCOUNT::type::value_type account,
+                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<ConfidentialMPTMergeInboxBuilder>(ttCONFIDENTIAL_MPT_MERGE_INBOX, account, sequence, fee)
     {
         setMPTokenIssuanceID(mPTokenIssuanceID);
     }
@@ -101,8 +94,7 @@ public:
     {
         if (tx->getTxnType() != ttCONFIDENTIAL_MPT_MERGE_INBOX)
         {
-            throw std::runtime_error(
-                "Invalid transaction type for ConfidentialMPTMergeInboxBuilder");
+            throw std::runtime_error("Invalid transaction type for ConfidentialMPTMergeInboxBuilder");
         }
         object_ = *tx;
     }

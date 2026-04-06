@@ -1,13 +1,15 @@
 // Auto-generated unit tests for transaction ConfidentialMPTConvert
 
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol_autogen/transactions/AccountSet.h>
-#include <xrpl/protocol_autogen/transactions/ConfidentialMPTConvert.h>
 
 #include <gtest/gtest.h>
+
 #include <protocol_autogen/TestHelpers.h>
+
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol_autogen/transactions/ConfidentialMPTConvert.h>
+#include <xrpl/protocol_autogen/transactions/AccountSet.h>
 
 #include <string>
 
@@ -44,7 +46,8 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
         issuerEncryptedAmountValue,
         blindingFactorValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     // Set optional fields
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
@@ -100,8 +103,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
     {
         auto const& expected = holderEncryptionKeyValue;
         auto const actualOpt = tx.getHolderEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfHolderEncryptionKey should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
         expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
         EXPECT_TRUE(tx.hasHolderEncryptionKey());
     }
@@ -109,8 +111,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
     {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = tx.getAuditorEncryptedAmount();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfAuditorEncryptedAmount should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptedAmount");
         EXPECT_TRUE(tx.hasAuditorEncryptedAmount());
     }
@@ -122,6 +123,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
         expectEqualField(expected, *actualOpt, "sfZKProof");
         EXPECT_TRUE(tx.hasZKProof());
     }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -156,7 +158,8 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderFromStTxRoundTrip)
         issuerEncryptedAmountValue,
         blindingFactorValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     initialBuilder.setHolderEncryptionKey(holderEncryptionKeyValue);
     initialBuilder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
@@ -212,16 +215,14 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderFromStTxRoundTrip)
     {
         auto const& expected = holderEncryptionKeyValue;
         auto const actualOpt = rebuiltTx.getHolderEncryptionKey();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfHolderEncryptionKey should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfHolderEncryptionKey should be present";
         expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
     }
 
     {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = rebuiltTx.getAuditorEncryptedAmount();
-        ASSERT_TRUE(actualOpt.has_value())
-            << "Optional field sfAuditorEncryptedAmount should be present";
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptedAmount");
     }
 
@@ -231,13 +232,15 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderFromStTxRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfZKProof should be present";
         expectEqualField(expected, *actualOpt, "sfZKProof");
     }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
 TEST(TransactionsConfidentialMPTConvertTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -250,7 +253,8 @@ TEST(TransactionsConfidentialMPTConvertTests, WrapperThrowsOnWrongTxType)
 TEST(TransactionsConfidentialMPTConvertTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const [pk, sk] =
+        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -286,7 +290,8 @@ TEST(TransactionsConfidentialMPTConvertTests, OptionalFieldsReturnNullopt)
         issuerEncryptedAmountValue,
         blindingFactorValue,
         sequenceValue,
-        feeValue};
+        feeValue
+    };
 
     // Do NOT set optional fields
 
@@ -301,4 +306,4 @@ TEST(TransactionsConfidentialMPTConvertTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getZKProof().has_value());
 }
 
-}  // namespace xrpl::transactions
+}

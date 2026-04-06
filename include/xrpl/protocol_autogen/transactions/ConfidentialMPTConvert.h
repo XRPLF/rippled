@@ -1,15 +1,15 @@
 // This file is auto-generated. Do not edit.
 #pragma once
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol_autogen/TransactionBase.h>
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
+#include <xrpl/json/json_value.h>
 
-#include <optional>
 #include <stdexcept>
+#include <optional>
 
 namespace xrpl::transactions {
 
@@ -35,7 +35,8 @@ public:
      * @brief Construct a ConfidentialMPTConvert transaction wrapper from an existing STTx object.
      * @throws std::runtime_error if the transaction type doesn't match.
      */
-    explicit ConfidentialMPTConvert(std::shared_ptr<STTx const> tx) : TransactionBase(std::move(tx))
+    explicit ConfidentialMPTConvert(std::shared_ptr<STTx const> tx)
+        : TransactionBase(std::move(tx))
     {
         // Verify transaction type
         if (tx_->getTxnType() != txType)
@@ -201,20 +202,11 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTConvertBuilder(
-        SF_ACCOUNT::type::value_type account,
-        std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,
-        std::decay_t<typename SF_UINT64::type::value_type> const& mPTAmount,
-        std::decay_t<typename SF_VL::type::value_type> const& holderEncryptedAmount,
-        std::decay_t<typename SF_VL::type::value_type> const& issuerEncryptedAmount,
-        std::decay_t<typename SF_UINT256::type::value_type> const& blindingFactor,
-        std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-        std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt)
-        : TransactionBuilderBase<ConfidentialMPTConvertBuilder>(
-              ttCONFIDENTIAL_MPT_CONVERT,
-              account,
-              sequence,
-              fee)
+    ConfidentialMPTConvertBuilder(SF_ACCOUNT::type::value_type account,
+                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_UINT64::type::value_type> const& mPTAmount,                     std::decay_t<typename SF_VL::type::value_type> const& holderEncryptedAmount,                     std::decay_t<typename SF_VL::type::value_type> const& issuerEncryptedAmount,                     std::decay_t<typename SF_UINT256::type::value_type> const& blindingFactor,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+)
+        : TransactionBuilderBase<ConfidentialMPTConvertBuilder>(ttCONFIDENTIAL_MPT_CONVERT, account, sequence, fee)
     {
         setMPTokenIssuanceID(mPTokenIssuanceID);
         setMPTAmount(mPTAmount);
