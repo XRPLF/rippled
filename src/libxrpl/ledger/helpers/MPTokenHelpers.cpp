@@ -139,7 +139,9 @@ authorizeMPToken(
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
+                (view.rules().enabled(fixSecurity3_1_3) &&
+                 (*sleMpt)[~sfLockedAmount].value_or(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
@@ -252,7 +254,8 @@ removeEmptyHolding(
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
-    if (mptoken->at(sfMPTAmount) != 0)
+    if (mptoken->at(sfMPTAmount) != 0 ||
+        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].value_or(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
