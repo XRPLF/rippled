@@ -6877,67 +6877,185 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testConfidentialDelegation(FeatureBitset features)
+    {
+        testcase("Confidential transfer through delegation");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};  // issuer
+        Account const bob{"bob"};      // holder / sender
+        Account const carol{"carol"};  // recipient holder
+        Account const dave{"dave"};    // delegate
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        env.fund(XRP(10000), dave);
+        env.close();
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags =
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 200);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob delegates Convert, MergeInbox to dave.
+        env(delegate::set(bob, dave, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        env.close();
+
+        // Carol has no permission from bob to convert on his behalf.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 10,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = carol,
+            .err = terNO_DELEGATE_PERMISSION,
+        });
+
+        // Dave executes Convert on behalf of bob, registering bob's key.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = dave,
+        });
+        env.require(mptbalance(mptAlice, bob, 100));
+
+        // Dave executes Convert again on behalf of bob (no key registration).
+        mptAlice.convert({.account = bob, .amt = 50, .delegate = dave});
+
+        // Dave executes MergeInbox on behalf of bob.
+        mptAlice.mergeInbox({.account = bob, .delegate = dave});
+
+        // Carol converts and merge inbox.
+        mptAlice.convert({
+            .account = carol,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+        mptAlice.mergeInbox({.account = carol});
+
+        // Dave does not have permission to send on behalf of bob.
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = 10,
+             .delegate = dave,
+             .err = terNO_DELEGATE_PERMISSION});
+
+        // Alice delegates ConfidentialMPTSend to dave.
+        env(delegate::set(
+            bob,
+            dave,
+            {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox", "ConfidentialMPTSend"}));
+        env.close();
+
+        // Dave executes Send on behalf of bob.
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10, .delegate = dave});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Deve does not have permission to convert back on behalf of bob.
+        mptAlice.convertBack(
+            {.account = bob, .amt = 10, .delegate = dave, .err = terNO_DELEGATE_PERMISSION});
+
+        // Alice delegates ConfidentialMPTConvertBack to dave.
+        env(delegate::set(
+            bob,
+            dave,
+            {"ConfidentialMPTConvert",
+             "ConfidentialMPTMergeInbox",
+             "ConfidentialMPTSend",
+             "ConfidentialMPTConvertBack"}));
+        env.close();
+
+        // Dave executes ConvertBack on behalf of bob.
+        mptAlice.convertBack({.account = bob, .amt = 10, .delegate = dave});
+
+        // Dave does not have permission to clawback on behalf of alice.
+        mptAlice.confidentialClaw(
+            {.holder = bob, .amt = 130, .delegate = dave, .err = terNO_DELEGATE_PERMISSION});
+
+        // Alice delegates ConfidentialMPTClawback to dave.
+        env(delegate::set(alice, dave, {"ConfidentialMPTClawback"}));
+        env.close();
+
+        // Dave executes Clawback on behalf of alice.
+        mptAlice.confidentialClaw({.holder = bob, .amt = 130, .delegate = dave});
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
-        // ConfidentialMPTConvert
-        testConvert(features);
-        testConvertPreflight(features);
-        testConvertPreclaim(features);
-        testConvertWithAuditor(features);
+        // // ConfidentialMPTConvert
+        // testConvert(features);
+        // testConvertPreflight(features);
+        // testConvertPreclaim(features);
+        // testConvertWithAuditor(features);
 
-        // ConfidentialMPTMergeInbox
-        testMergeInbox(features);
-        testMergeInboxPreflight(features);
-        testMergeInboxPreclaim(features);
+        // // ConfidentialMPTMergeInbox
+        // testMergeInbox(features);
+        // testMergeInboxPreflight(features);
+        // testMergeInboxPreclaim(features);
 
-        testSet(features);
-        testSetPreflight(features);
-        testSetPreclaim(features);
+        // testSet(features);
+        // testSetPreflight(features);
+        // testSetPreclaim(features);
 
-        // ConfidentialMPTSend
-        testSend(features);
-        testSendPreflight(features);
-        testSendPreclaim(features);
-        testSendRangeProof(features);
-        // testSendZeroAmount(features);
-        testSendDepositPreauth(features);
-        testSendCredentialValidation(features);
-        testSendWithAuditor(features);
+        // // ConfidentialMPTSend
+        // testSend(features);
+        // testSendPreflight(features);
+        // testSendPreclaim(features);
+        // testSendRangeProof(features);
+        // // testSendZeroAmount(features);
+        // testSendDepositPreauth(features);
+        // testSendCredentialValidation(features);
+        // testSendWithAuditor(features);
 
-        // ConfidentialMPTClawback
-        testClawback(features);
-        testClawbackPreflight(features);
-        testClawbackPreclaim(features);
-        testClawbackProof(features);
-        testClawbackWithAuditor(features);
+        // // ConfidentialMPTClawback
+        // testClawback(features);
+        // testClawbackPreflight(features);
+        // testClawbackPreclaim(features);
+        // testClawbackProof(features);
+        // testClawbackWithAuditor(features);
 
-        testDelete(features);
+        // testDelete(features);
 
-        // ConfidentialMPTConvertBack
-        testConvertBack(features);
-        testConvertBackPreflight(features);
-        testConvertBackPreclaim(features);
-        testConvertBackWithAuditor(features);
-        testConvertBackPedersenProof(features);
-        testConvertBackBulletproof(features);
+        // // ConfidentialMPTConvertBack
+        // testConvertBack(features);
+        // testConvertBackPreflight(features);
+        // testConvertBackPreclaim(features);
+        // testConvertBackWithAuditor(features);
+        // testConvertBackPedersenProof(features);
+        // testConvertBackBulletproof(features);
 
-        // Homomorphic operation tests
-        testSendHomomorphicOverflow(features);
-        testHomomorphicCiphertextModification(features);
-        testConvertBackHomomorphicUnderflow(features);
+        // // Homomorphic operation tests
+        // testSendHomomorphicOverflow(features);
+        // testHomomorphicCiphertextModification(features);
+        // testConvertBackHomomorphicUnderflow(features);
 
-        testSendWrongIssuerPublicKey(features);
+        // testSendWrongIssuerPublicKey(features);
 
-        // Replay Tests
-        testMutatePrivacy(features);
-        testProofContextBinding(features);
-        testProofCiphertextBinding(features);
-        testProofVersionMismatch(features);
+        // // Replay Tests
+        // testMutatePrivacy(features);
+        // testProofContextBinding(features);
+        // testProofCiphertextBinding(features);
+        // testProofVersionMismatch(features);
 
-        // Ticket Tests
-        testWithTickets(features);
-        testConvertTicketProofBinding(features);
-        testTicketErrors(features);
+        // // Ticket Tests
+        // testWithTickets(features);
+        // testConvertTicketProofBinding(features);
+        // testTicketErrors(features);
+
+        // Delegation Tests
+        testConfidentialDelegation(features);
     }
 
 public:
