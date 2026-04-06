@@ -44,7 +44,7 @@ struct DelegateFilter
     static Expected<DelegateFilter, Json::Value>
     create(Json::Value const& delegateNode);
 
-    DelegateType type;
+    DelegateType type = DelegateType::Actor;
     std::optional<AccountID> counterparty;
 };
 
@@ -80,8 +80,8 @@ public:
         AccountID const& account;
         LedgerRange ledgerRange{};
         std::optional<AccountTxMarker> marker;
-        std::uint32_t limit;
-        bool bAdmin;
+        std::uint32_t limit = 0;
+        bool bAdmin = false;
         std::optional<DelegateFilter> delegate;
     };
 
