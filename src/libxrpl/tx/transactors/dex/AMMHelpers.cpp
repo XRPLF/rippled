@@ -120,14 +120,17 @@ ammAssetOut(
 {
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
+    auto const denom = t1 * f - 1;
+    XRPL_ASSERT(denom != Number{0}, "xrpl::ammAssetOut : denominator is non-zero");
+
     if (!isFeatureEnabled(fixAMMv1_3))
     {
-        auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
+        auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / denom;
         return toSTAmount(assetBalance.issue(), b);
     }
 
     // minimize withdraw
-    auto const frac = (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
+    auto const frac = (t1 * t1 - t1 * (2 - f)) / denom;
     return multiply(assetBalance, frac, Number::downward);
 }
 
