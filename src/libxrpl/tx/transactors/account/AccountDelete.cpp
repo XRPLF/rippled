@@ -292,7 +292,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
-    std::int32_t deletableDirEntryCount{0};
+    std::uint32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind
