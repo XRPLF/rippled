@@ -1,3 +1,5 @@
+#pragma once
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -14,7 +16,7 @@
 
 namespace xrpl {
 
-static void
+inline void
 appendNftOfferJson(
     Application const& app,
     std::shared_ptr<SLE const> const& offer,
@@ -42,7 +44,7 @@ appendNftOfferJson(
 //   limit: integer                 // optional
 //   marker: opaque                 // optional, resume previous query
 // }
-static Json::Value
+inline Json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
@@ -125,34 +127,6 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
 
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;
-}
-
-Json::Value
-doNFTSellOffers(RPC::JsonContext& context)
-{
-    if (!context.params.isMember(jss::nft_id))
-        return RPC::missing_field_error(jss::nft_id);
-
-    uint256 nftId;
-
-    if (!nftId.parseHex(context.params[jss::nft_id].asString()))
-        return RPC::invalid_field_error(jss::nft_id);
-
-    return enumerateNFTOffers(context, nftId, keylet::nft_sells(nftId));
-}
-
-Json::Value
-doNFTBuyOffers(RPC::JsonContext& context)
-{
-    if (!context.params.isMember(jss::nft_id))
-        return RPC::missing_field_error(jss::nft_id);
-
-    uint256 nftId;
-
-    if (!nftId.parseHex(context.params[jss::nft_id].asString()))
-        return RPC::invalid_field_error(jss::nft_id);
-
-    return enumerateNFTOffers(context, nftId, keylet::nft_buys(nftId));
 }
 
 }  // namespace xrpl

@@ -1,5 +1,4 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -203,18 +202,6 @@ doBookOffers(RPC::JsonContext& context)
     context.loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
-}
-
-Json::Value
-doBookChanges(RPC::JsonContext& context)
-{
-    std::shared_ptr<ReadView const> ledger;
-
-    Json::Value result = RPC::lookupLedger(ledger, context);
-    if (ledger == nullptr)
-        return result;
-
-    return RPC::computeBookChanges(ledger);
 }
 
 }  // namespace xrpl

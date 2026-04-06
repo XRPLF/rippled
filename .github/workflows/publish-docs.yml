@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2bbc2dc1abeec7bfaa886804ab86871ac201764e
+        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
         with:
           enable_ccache: false
 
