@@ -56,4 +56,22 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+class ValidMPTTransfer
+{
+    struct Value
+    {
+        std::optional<std::uint64_t> amtBefore;
+        std::optional<std::uint64_t> amtAfter;
+    };
+    // MPTID: {holder: Value}
+    hash_map<uint192, hash_map<AccountID, Value>> amount_;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
 }  // namespace xrpl
