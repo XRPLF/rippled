@@ -1475,11 +1475,14 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     if (arg.amt)
         jv[sfMPTAmount] = std::to_string(*arg.amt);
 
+    if (arg.ticketSeq)
+        jv[sfTicketSequence] = *arg.ticketSeq;
+
     if (arg.proof)
         jv[sfZKProof] = *arg.proof;
     else
     {
-        std::uint32_t const seq = env_.seq(account);
+        std::uint32_t const seq = arg.ticketSeq ? *arg.ticketSeq : env_.seq(account);
         uint256 const contextHash =
             getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
 
