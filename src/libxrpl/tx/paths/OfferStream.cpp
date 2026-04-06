@@ -8,6 +8,7 @@
 #include <xrpl/tx/paths/OfferStream.h>
 
 namespace xrpl {
+
 namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)

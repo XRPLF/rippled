@@ -9,6 +9,7 @@
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
 namespace xrpl {
+
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {

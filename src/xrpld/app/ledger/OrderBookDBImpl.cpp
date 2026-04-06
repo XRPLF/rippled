@@ -7,6 +7,7 @@
 #include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
+
 OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig const& config)
     : registry_(registry)
     , pathSearchMax_(config.pathSearchMax)

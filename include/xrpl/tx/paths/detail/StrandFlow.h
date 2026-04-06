@@ -22,6 +22,7 @@
 #include <numeric>
 
 namespace xrpl {
+
 /** Result of flow() execution of a single Strand. */
 template <class TInAmt, class TOutAmt>
 struct StrandResult

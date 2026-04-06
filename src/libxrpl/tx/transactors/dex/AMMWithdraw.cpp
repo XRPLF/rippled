@@ -7,6 +7,7 @@
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 namespace xrpl {
+
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {

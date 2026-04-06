@@ -11,6 +11,7 @@
 #include <xrpl/tx/transactors/dex/AMMCreate.h>
 
 namespace xrpl {
+
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {

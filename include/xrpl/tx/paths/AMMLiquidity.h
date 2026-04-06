@@ -9,6 +9,7 @@
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 namespace xrpl {
+
 template <typename TIn, typename TOut>
 class AMMOffer;
 

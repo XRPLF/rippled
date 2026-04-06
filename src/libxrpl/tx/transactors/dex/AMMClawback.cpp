@@ -12,6 +12,7 @@
 #include <tuple>
 
 namespace xrpl {
+
 std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
 {
@@ -128,8 +129,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
-        // retrieve LP token balance inside the amendment gate to avoid inconsistent error
-        // behavior
+        // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
         if (lpTokenBalance == beast::zero)
             return tecAMM_BALANCE;
@@ -150,8 +150,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
 
-    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may
-    // adjust the balance
+    // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
+    // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::zero)
         return tecAMM_BALANCE;

@@ -6,6 +6,7 @@
 #include <xrpl/tx/transactors/dex/AMMVote.h>
 
 namespace xrpl {
+
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {

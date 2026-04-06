@@ -6,6 +6,7 @@
 #include <xrpl/tx/transactors/dex/AMMDelete.h>
 
 namespace xrpl {
+
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {

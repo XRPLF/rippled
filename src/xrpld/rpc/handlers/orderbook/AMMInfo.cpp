@@ -12,6 +12,7 @@
 #include <grpcpp/support/status.h>
 
 namespace xrpl {
+
 Expected<Issue, error_code_i>
 getIssue(Json::Value const& v, beast::Journal j)
 {
