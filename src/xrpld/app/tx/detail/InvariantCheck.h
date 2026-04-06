@@ -662,7 +662,10 @@ public:
 class ValidPermissionedDEX
 {
     bool regularOffers_ = false;
-    bool badHybrids_ = false;
+    bool badHybridPre_ =
+        false;  // pre-fixSecurity3_1_3: missing field/domain or size > 1
+    bool badHybridPost_ =
+        false;  // post-fixSecurity3_1_3: also catches size == 0 (size != 1)
     hash_set<uint256> domains_;
 
 public:

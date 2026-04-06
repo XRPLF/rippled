@@ -1741,7 +1741,9 @@ class Invariants_test : public beast::unit_test::suite
                 std::move(env1),
                 A1,
                 A2,
-                {{"hybrid offer is malformed"}},
+                fixS313Enabled
+                    ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                    : std::vector<std::string>{},
                 [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(A2.id(), 10);
                     auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1758,7 +1760,10 @@ class Invariants_test : public beast::unit_test::suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                fixS313Enabled
+                    ? std::initializer_list<
+                          TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
+                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
         }
 
         // hybrid offer missing sfAdditionalBooks

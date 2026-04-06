@@ -1871,13 +1871,20 @@ ValidPermissionedDEX::visitEntry(
         else
             regularOffers_ = true;
 
-        // if a hybrid offer is missing domain or additional book, there's
-        // something wrong
+        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
+        // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
+        if (after->isFlag(lsfHybrid) &&
+            (!after->isFieldPresent(sfDomainID) ||
+             !after->isFieldPresent(sfAdditionalBooks) ||
+             after->getFieldArray(sfAdditionalBooks).size() > 1))
+            badHybridPre_ = true;
+
+        // post-fixSecurity3_1_3: same as above but also catches size == 0
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) ||
              !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() != 1))
-            badHybrids_ = true;
+            badHybridPost_ = true;
     }
 }
 
@@ -1896,7 +1903,9 @@ ValidPermissionedDEX::finalize(
 
     // For each offercreate transaction, check if
     // permissioned offers are valid
-    if (txType == ttOFFER_CREATE && badHybrids_)
+    bool const isMalformed =
+        view.rules().enabled(fixSecurity3_1_3) ? badHybridPost_ : badHybridPre_;
+    if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
         return false;
