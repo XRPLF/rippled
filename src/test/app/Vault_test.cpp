@@ -5971,6 +5971,104 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testRemoveEmptyHoldingLockedAmount()
+    {
+        testcase("removeEmptyHolding deletes MPToken with sfLockedAmount");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const amendments = testable_amendments();
+        auto runTest = [&](FeatureBitset f) {
+            Env env{*this, f};
+            auto const baseFee = env.current()->fees().base;
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100000), issuer, owner, depositor, bob);
+            env.close();
+
+            Vault const vault{env};
+
+            // Create an MPT asset for the vault
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1000)));
+            env.close();
+
+            // Create vault
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultSle = env.le(keylet);
+            BEAST_EXPECT(vaultSle != nullptr);
+            auto const shareMptID = vaultSle->at(sfShareMPTID);
+            MPTIssue const shareIssue{shareMptID};
+
+            // Depositor deposits 1000 asset units into vault, receiving shares
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(1000)}));
+            env.close();
+
+            // Check depositor has shares
+            {
+                auto const sleMpt = env.le(keylet::mptoken(shareMptID, depositor));
+                BEAST_EXPECT(sleMpt != nullptr);
+                BEAST_EXPECT(sleMpt->at(sfMPTAmount) == 1000);
+            }
+
+            // Escrow 500 of those shares
+            env(escrow::create(depositor, bob, STAmount{shareIssue, 500}),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Verify: sfMPTAmount=500, sfLockedAmount=500
+            {
+                auto const sleMpt = env.le(keylet::mptoken(shareMptID, depositor));
+                BEAST_EXPECT(sleMpt != nullptr);
+                BEAST_EXPECT(sleMpt->at(sfLockedAmount) == 500);
+                BEAST_EXPECT(sleMpt->at(sfMPTAmount) == 500);
+            }
+
+            // Withdraw remaining spendable shares — triggers removeEmptyHolding
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(500)}),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const sleMptAfter = env.le(keylet::mptoken(shareMptID, depositor));
+            if (!f[fixSecurity3_1_3])
+            {
+                // Without the fix, removeEmptyHolding deletes the MPToken
+                // even though sfLockedAmount > 0, leaving the escrow's locked
+                // amount untracked.
+                BEAST_EXPECT(sleMptAfter == nullptr);
+            }
+            else
+            {
+                // With the fix, MPToken must still exist with sfLockedAmount > 0
+                // and sfMPTAmount == 0 (all spendable shares withdrawn).
+                BEAST_EXPECT(sleMptAfter != nullptr);
+                if (sleMptAfter)
+                {
+                    BEAST_EXPECT(sleMptAfter->at(sfLockedAmount) == 500);
+                    BEAST_EXPECT(sleMptAfter->at(sfMPTAmount) == 0);
+                }
+            }
+        };
+
+        runTest(amendments - fixSecurity3_1_3);
+        runTest(amendments);
+    }
+
 public:
     void
     run() override
@@ -5993,6 +6091,7 @@ public:
         testVaultEscrowedMPT();
         testAssetsMaximum();
         testBug6_LimitBypassWithShares();
+        testRemoveEmptyHoldingLockedAmount();
     }
 };
 
