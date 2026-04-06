@@ -9,7 +9,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
     work_.emplace(boost::asio::make_work_guard(io_context_));
     threads_.reserve(numberOfThreads);
 
-    while (numberOfThreads--)
+    while ((numberOfThreads--) != 0u)
     {
         threads_.emplace_back([this, numberOfThreads]() {
             beast::setCurrentThreadName("io svc #" + std::to_string(numberOfThreads));

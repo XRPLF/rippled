@@ -33,9 +33,11 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
     auto const format = LedgerFormats::getInstance().findByType(type_);
 
     if (format == nullptr)
+    {
         Throw<std::runtime_error>(
             "Attempt to create a SLE of unknown type " +
             std::to_string(safe_cast<std::uint16_t>(k.type)));
+    }
 
     set(format->getSOTemplate());
 
@@ -43,14 +45,14 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
 }
 
 STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)
-    : STObject(sfLedgerEntry), key_(index)
+    : STObject(sfLedgerEntry), key_(index), type_(ltANY)
 {
     set(sit);
     setSLEType();
 }
 
 STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
-    : STObject(object), key_(index)
+    : STObject(object), key_(index), type_(ltANY)
 {
     setSLEType();
 }
@@ -118,8 +120,10 @@ STLedgerEntry::getJson(JsonOptions options) const
     ret[jss::index] = to_string(key_);
 
     if (getType() == ltMPTOKEN_ISSUANCE)
+    {
         ret[jss::mpt_issuance_id] =
             to_string(makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
+    }
 
     return ret;
 }
@@ -132,7 +136,7 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        std::count(newPreviousTxnIDTypes.cbegin(), newPreviousTxnIDTypes.cend(), type_);
+        (std::count(newPreviousTxnIDTypes.cbegin(), newPreviousTxnIDTypes.cend(), type_) != 0);
     return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 
@@ -143,7 +147,7 @@ STLedgerEntry::thread(
     uint256& prevTxID,
     std::uint32_t& prevLedgerID)
 {
-    uint256 oldPrevTxID = getFieldH256(sfPreviousTxnID);
+    uint256 const oldPrevTxID = getFieldH256(sfPreviousTxnID);
 
     JLOG(debugLog().info()) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 
