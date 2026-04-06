@@ -6590,8 +6590,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     // Confidential sends carry encrypted amounts and a zero-knowledge proof.
-    // Both are built from elliptic-curve math, so every "coordinate" in the
-    // transaction must be a real point on the secp256k1 curve.  These three
+    // Both are built from elliptic-curve math, so every coordinate in the
+    // transaction must be a real point on the secp256k1 curve. These three
     // variants confirm the validator rejects garbage coordinates at the right
     // stage before any expensive cryptographic verification runs.
     void
@@ -6600,7 +6600,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testcase("Send: off-curve EC points");
         using namespace test::jtx;
 
-        // ── Variant A: garbage coordinate in ciphertext / commitment fields ─
+        // Variant A: garbage coordinate in ciphertext / commitment fields
         // getBadCiphertext() looks structurally valid (correct length, right
         // prefix byte 0x02) but its x-coordinate is 0xFF...FF, which does not
         // lie on secp256k1. Preflight must reject before any ledger access.
