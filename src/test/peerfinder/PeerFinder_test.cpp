@@ -391,7 +391,7 @@ public:
 
             testcase(test);
 
-            std::string toLoad = "";
+            std::string toLoad;
             int max = 0;
             if (maxPeers)
             {
@@ -411,7 +411,7 @@ public:
                 (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0);
+            Config const config = Config::makeConfig(c, port, false, 0);
 
             Counts counts;
             counts.onConfig(config);

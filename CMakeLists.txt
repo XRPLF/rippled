@@ -133,7 +133,6 @@ if(coverage)
     include(XrplCov)
 endif()
 
-set(PROJECT_EXPORT_SET XrplExports)
 include(XrplCore)
 include(XrplInstall)
 include(XrplValidatorKeys)

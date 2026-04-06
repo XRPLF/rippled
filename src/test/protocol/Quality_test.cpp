@@ -66,7 +66,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_in(
                 q,
@@ -95,7 +95,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_in(
                 q,
@@ -124,7 +124,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_in(
                 q,
@@ -159,7 +159,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_out(
                 q,
@@ -188,7 +188,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_out(
                 q,
@@ -217,7 +217,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_out(
                 q,
@@ -251,7 +251,7 @@ public:
         testcase("raw");
 
         {
-            Quality q(0x5d048191fb9130daull);  // 126836389.7680090
+            Quality const q(0x5d048191fb9130daull);  // 126836389.7680090
             Amounts const value(
                 amount(349469768),                             // 349.469768 XRP
                 raw(2755280000000000ull, -15));                // 2.75528
@@ -266,7 +266,7 @@ public:
     {
         testcase("round");
 
-        Quality q(0x59148191fb913522ull);  // 57719.63525051682
+        Quality const q(0x59148191fb913522ull);  // 57719.63525051682
         BEAST_EXPECT(q.round(3).rate().getText() == "57800");
         BEAST_EXPECT(q.round(4).rate().getText() == "57720");
         BEAST_EXPECT(q.round(5).rate().getText() == "57720");
