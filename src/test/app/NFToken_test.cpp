@@ -53,7 +53,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     // Helper function returns the close time of the parent ledger.
-    std::uint32_t
+    static std::uint32_t
     lastClose(test::jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -243,7 +243,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(alice, token::getID(env, alice, 0, seq++)));
             env.close();
-            checkAliceOwnerMintedBurned((33 - seq) ? 1 : 0, 33, seq, __LINE__);
+            checkAliceOwnerMintedBurned(((33 - seq) != 0u) ? 1 : 0, 33, seq, __LINE__);
         }
 
         // alice burns a non-existent NFT.
@@ -352,7 +352,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             env(token::burn(minter, token::getID(env, alice, 0, nftSeq++)));
             env.close();
-            checkMintersOwnerMintedBurned(0, 66, nftSeq, (65 - seq) ? 1 : 0, 0, 0, __LINE__);
+            checkMintersOwnerMintedBurned(
+                0, 66, nftSeq, ((65 - seq) != 0u) ? 1 : 0, 0, 0, __LINE__);
         }
 
         // minter has one more NFT to burn.  Should take her owner count to
@@ -398,7 +399,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Note that we're bypassing almost all of the ledger's safety
         // checks with this modify() call.  If you call close() between
         // here and the end of the test all the effort will be lost.
-        env.app().openLedger().modify([&alice](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&alice](OpenView& view, beast::Journal j) {
             // Get the account root we want to hijack.
             auto const sle = view.read(keylet::account(alice.id()));
             if (!sle)
@@ -579,7 +580,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -848,7 +849,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // List of tokens to delete is too long.
         {
-            std::vector<uint256> offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
+            std::vector<uint256> const offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
 
             env(token::cancelOffer(buyer, offers), ter(temMALFORMED));
             env.close();
@@ -935,7 +936,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
@@ -1514,7 +1515,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // An nft without flagCreateTrustLines but with a non-zero transfer
             // fee will not allow creating offers that use IOUs for payment.
-            for (std::uint32_t xferFee : {0, 1})
+            for (std::uint32_t const xferFee : {0, 1})
             {
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
@@ -1529,7 +1530,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // becky attempts to sell the nft for AUD.
-                TER const createOfferTER = xferFee ? TER(tecNO_LINE) : TER(tesSUCCESS);
+                TER const createOfferTER = (xferFee != 0u) ? TER(tecNO_LINE) : TER(tesSUCCESS);
                 uint256 const beckyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
                     txflags(tfSellNFToken),
@@ -1551,7 +1552,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // An nft with flagCreateTrustLines but with a non-zero transfer
             // fee allows transfers using IOUs for payment.
             {
-                std::uint16_t transferFee = 10000;  // 10%
+                std::uint16_t const transferFee = 10000;  // 10%
 
                 uint256 const nftAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
@@ -1605,7 +1606,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Now that alice has trust lines preestablished, an nft without
             // flagCreateTrustLines will work for preestablished trust lines.
             {
-                std::uint16_t transferFee = 5000;  // 5%
+                std::uint16_t const transferFee = 5000;  // 5%
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
                 env(token::mint(alice, 0u), token::xferFee(transferFee), txflags(tfTransferable));
@@ -2260,7 +2261,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Here is the smallest expressible gwXAU amount.
-            STAmount tinyXAU(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset);
+            STAmount const tinyXAU(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset);
 
             // minter buys the nft for tinyXAU.  Since the transfer involves
             // alice there should be no transfer fee.
@@ -3701,7 +3702,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     int line) {
                     for (Account const& acct : accounts)
                     {
-                        if (std::uint32_t ownerCount = test::jtx::ownerCount(env, acct);
+                        if (std::uint32_t const ownerCount = test::jtx::ownerCount(env, acct);
                             ownerCount != 1)
                         {
                             std::stringstream ss;
@@ -4532,7 +4533,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         };
 
         // There are no sell offers.
-        checkOffers("nft_sell_offers", 0, false, __LINE__);
+        checkOffers("nft_sell_offers", 0, 0, __LINE__);
 
         // A lambda that generates sell offers.
         STAmount sellPrice = XRP(0);
@@ -6595,7 +6596,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // issuer creates two NFTs: one with and one without AutoTrustLine.
-            std::uint16_t xferFee = 5000;  // 5%
+            std::uint16_t const xferFee = 5000;  // 5%
             uint256 const nftAutoTrustID{
                 token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
             env(token::mint(issuer, 0u),
@@ -6751,7 +6752,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
 
         // issuer creates two NFTs: one with and one without AutoTrustLine.
-        std::uint16_t xferFee = 5000;  // 5%
+        std::uint16_t const xferFee = 5000;  // 5%
         uint256 const nftAutoTrustID{
             token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
         env(token::mint(issuer, 0u),

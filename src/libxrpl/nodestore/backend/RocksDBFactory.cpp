@@ -38,18 +38,17 @@ public:
     static void
     thread_entry(void* ptr)
     {
-        ThreadParams* const p(reinterpret_cast<ThreadParams*>(ptr));
-        void (*f)(void*) = p->f;
+        ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
+        auto const f = p->f;
+
         void* a(p->a);
         delete p;
 
         static std::atomic<std::size_t> n;
         std::size_t const id(++n);
-        std::stringstream ss;
-        ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        beast::setCurrentThreadName("rocksdb #" + std::to_string(id));
 
-        (*f)(a);
+        f(a);
     }
 
     void
@@ -90,7 +89,7 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
-        bool hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+        bool const hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
 
         if (keyValues.exists("cache_mb"))
         {
@@ -163,7 +162,7 @@ public:
 
         if (keyValues.exists("bbt_options"))
         {
-            rocksdb::ConfigOptions config_options;
+            rocksdb::ConfigOptions const config_options;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
                 config_options, table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
@@ -248,8 +247,8 @@ public:
         }
         rocksdb::DB* db = nullptr;
         m_options.create_if_missing = createIfMissing;
-        rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
-        if (!status.ok() || !db)
+        rocksdb::Status const status = rocksdb::DB::Open(m_options, m_name, &db);
+        if (!status.ok() || (db == nullptr))
         {
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
@@ -271,7 +270,7 @@ public:
             m_db.reset();
             if (m_deletePath)
             {
-                boost::filesystem::path dir = m_name;
+                boost::filesystem::path const dir = m_name;
                 boost::filesystem::remove_all(dir);
             }
         }
@@ -296,7 +295,7 @@ public:
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
         std::string string;
-        rocksdb::Status getStatus = m_db->Get(options, slice, &string);
+        rocksdb::Status const getStatus = m_db->Get(options, slice, &string);
 
         if (getStatus.ok())
         {
@@ -397,7 +396,7 @@ public:
         rocksdb::WriteBatch wb;
         for (auto const& e : batch)
         {
-            EncodedBlob encoded(e);
+            EncodedBlob const encoded(e);
             wb.Put(
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
@@ -532,7 +531,7 @@ public:
 void
 registerRocksDBFactory(Manager& manager)
 {
-    static RocksDBFactory instance{manager};
+    static RocksDBFactory const instance{manager};
 }
 
 }  // namespace NodeStore

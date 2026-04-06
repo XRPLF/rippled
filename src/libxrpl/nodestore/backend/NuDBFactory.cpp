@@ -210,7 +210,7 @@ public:
         // waits for this operation to complete.
         ++pendingReads_;
         auto guard = [this](void*) { --pendingReads_; };
-        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
 
         // Check if we're shutting down. If so, return immediately instead of doing any work.
         if (shutdown_.load(std::memory_order_acquire))
@@ -261,7 +261,7 @@ public:
         // waits for this operation to complete.
         pendingReads_ += hashes.size();
         auto guard = [this, &hashes](void*) { pendingReads_ -= hashes.size(); };
-        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
 
         // Check if we're shutting down. If so, return immediately instead of doing any work.
         if (shutdown_.load(std::memory_order_acquire))
@@ -330,7 +330,7 @@ public:
                     {
                         // Store the first exception that occurs. Ensures count_down() is always
                         // called to prevent deadlock.
-                        std::lock_guard<std::mutex> lock(emutex);
+                        std::lock_guard<std::mutex> const lock(emutex);
                         if (!eptr)
                         {
                             eptr = std::current_exception();
@@ -358,7 +358,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e(no);
+        EncodedBlob const e(no);
 
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
@@ -378,7 +378,7 @@ public:
         // waits for this operation to complete.
         ++pendingWrites_;
         auto guard = [this](void*) { --pendingWrites_; };
-        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
 
         // Check if we're shutting down. If so, return immediately instead of doing any work.
         if (shutdown_.load(std::memory_order_acquire))
@@ -409,7 +409,7 @@ public:
         // waits for this operation to complete.
         pendingWrites_ += batch.size();
         auto guard = [this, &batch](void*) { pendingWrites_ -= batch.size(); };
-        std::unique_ptr<void, decltype(guard)> opGuard(reinterpret_cast<void*>(1), guard);
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
 
         // Check if we're shutting down. If so, return immediately instead of doing any work.
         if (shutdown_.load(std::memory_order_acquire))
@@ -475,7 +475,7 @@ public:
                         auto& item = compressed[i];
                         try
                         {
-                            EncodedBlob e(batch[i]);
+                            EncodedBlob const e(batch[i]);
 
                             // Copy the key data to avoid dangling pointer.
                             auto const* keyPtr = static_cast<std::uint8_t const*>(e.getKey());
@@ -614,7 +614,7 @@ private:
         auto const kp = (folder / "nudb.key").string();
 
         std::size_t const defaultSize = nudb::block_size(kp);  // Default 4K from NuDB
-        std::size_t blockSize = defaultSize;
+        std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -717,7 +717,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory instance{manager};
+    static NuDBFactory const instance{manager};
 }
 
 }  // namespace NodeStore

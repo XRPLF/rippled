@@ -1,5 +1,6 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -63,7 +64,7 @@ TrustSet::preflight(PreflightContext const& ctx)
     {
         // Even though the deep freeze flags are included in the
         // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
-        if (uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze))
+        if ((uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze)) != 0u)
         {
             return temINVALID_FLAG;
         }
@@ -126,7 +127,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     // Currently we only support TrustlineAuthorize, TrustlineFreeze and
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
-    if (txFlags & tfTrustSetPermissionMask)
+    if ((txFlags & tfTrustSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
@@ -144,11 +145,11 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
 
-    if (txFlags & tfSetfAuth && !granularPermissions.contains(TrustlineAuthorize))
+    if (((txFlags & tfSetfAuth) != 0u) && !granularPermissions.contains(TrustlineAuthorize))
         return terNO_DELEGATE_PERMISSION;
-    if (txFlags & tfSetFreeze && !granularPermissions.contains(TrustlineFreeze))
+    if (((txFlags & tfSetFreeze) != 0u) && !granularPermissions.contains(TrustlineFreeze))
         return terNO_DELEGATE_PERMISSION;
-    if (txFlags & tfClearFreeze && !granularPermissions.contains(TrustlineUnfreeze))
+    if (((txFlags & tfClearFreeze) != 0u) && !granularPermissions.contains(TrustlineUnfreeze))
         return terNO_DELEGATE_PERMISSION;
 
     // updating LimitAmount is not allowed only with granular permissions,
@@ -177,9 +178,9 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
-    bool const bSetAuth = (uTxFlags & tfSetfAuth);
+    bool const bSetAuth = (uTxFlags & tfSetfAuth) != 0u;
 
-    if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
+    if (bSetAuth && ((sle->getFieldU32(sfFlags) & lsfRequireAuth) == 0u))
     {
         JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
@@ -201,7 +202,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
+    if ((sleDst->getFlags() & lsfDisallowIncomingTrustline) != 0u)
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
@@ -266,8 +267,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
-        bool const bSetFreeze = (uTxFlags & tfSetFreeze);
-        bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
+        bool const bSetFreeze = (uTxFlags & tfSetFreeze) != 0u;
+        bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
 
         if (bNoFreeze && (bSetFreeze || bSetDeepFreeze))
         {
@@ -275,8 +276,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        bool const bClearFreeze = (uTxFlags & tfClearFreeze);
-        bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
+        bool const bClearFreeze = (uTxFlags & tfClearFreeze) != 0u;
+        bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
         if ((bSetFreeze || bSetDeepFreeze) && (bClearFreeze || bClearDeepFreeze))
         {
             // Freezing and unfreezing in the same transaction should be
@@ -298,7 +299,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         // Trying to set deep freeze on not already frozen trust line must
         // fail. This also checks that clearing normal freeze while deep
         // frozen must not work
-        if (deepFrozen && !frozen)
+        if ((deepFrozen != 0u) && (frozen == 0u))
         {
             return tecNO_PERMISSION;
         }
@@ -317,7 +318,7 @@ TrustSet::doApply()
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
     Currency const currency(saLimitAmount.getCurrency());
-    AccountID uDstAccountID(saLimitAmount.getIssuer());
+    AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
@@ -349,7 +350,7 @@ TrustSet::doApply()
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::zero) : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
+    std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
@@ -357,17 +358,17 @@ TrustSet::doApply()
 
     std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
-    bool const bSetAuth = (uTxFlags & tfSetfAuth);
-    bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
-    bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
-    bool const bSetFreeze = (uTxFlags & tfSetFreeze);
-    bool const bClearFreeze = (uTxFlags & tfClearFreeze);
-    bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
-    bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
+    bool const bSetAuth = (uTxFlags & tfSetfAuth) != 0u;
+    bool const bSetNoRipple = (uTxFlags & tfSetNoRipple) != 0u;
+    bool const bClearNoRipple = (uTxFlags & tfClearNoRipple) != 0u;
+    bool const bSetFreeze = (uTxFlags & tfSetFreeze) != 0u;
+    bool const bClearFreeze = (uTxFlags & tfClearFreeze) != 0u;
+    bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze) != 0u;
+    bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze) != 0u;
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -378,7 +379,8 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState = view().peek(keylet::line(account_, uDstAccountID, currency));
+    SLE::pointer const sleRippleState =
+        view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -422,7 +424,7 @@ TrustSet::doApply()
             uLowQualityIn = sleRippleState->getFieldU32(sfLowQualityIn);
             uHighQualityIn = sleRippleState->getFieldU32(sfHighQualityIn);
         }
-        else if (uQualityIn)
+        else if (uQualityIn != 0u)
         {
             // Setting.
 
@@ -458,7 +460,7 @@ TrustSet::doApply()
             uLowQualityOut = sleRippleState->getFieldU32(sfLowQualityOut);
             uHighQualityOut = sleRippleState->getFieldU32(sfHighQualityOut);
         }
-        else if (uQualityOut)
+        else if (uQualityOut != 0u)
         {
             // Setting.
 
@@ -514,23 +516,23 @@ TrustSet::doApply()
         if (QUALITY_ONE == uHighQualityOut)
             uHighQualityOut = 0;
 
-        bool const bLowDefRipple = sleLowAccount->getFlags() & lsfDefaultRipple;
-        bool const bHighDefRipple = sleHighAccount->getFlags() & lsfDefaultRipple;
+        bool const bLowDefRipple = (sleLowAccount->getFlags() & lsfDefaultRipple) != 0u;
+        bool const bHighDefRipple = (sleHighAccount->getFlags() & lsfDefaultRipple) != 0u;
 
-        bool const bLowReserveSet = uLowQualityIn || uLowQualityOut ||
-            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple || (uFlagsOut & lsfLowFreeze) ||
-            saLowLimit || saLowBalance > beast::zero;
+        bool const bLowReserveSet = (uLowQualityIn != 0u) || (uLowQualityOut != 0u) ||
+            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
+            ((uFlagsOut & lsfLowFreeze) != 0u) || saLowLimit || saLowBalance > beast::zero;
         bool const bLowReserveClear = !bLowReserveSet;
 
-        bool const bHighReserveSet = uHighQualityIn || uHighQualityOut ||
-            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple || (uFlagsOut & lsfHighFreeze) ||
-            saHighLimit || saHighBalance > beast::zero;
+        bool const bHighReserveSet = (uHighQualityIn != 0u) || (uHighQualityOut != 0u) ||
+            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
+            ((uFlagsOut & lsfHighFreeze) != 0u) || saHighLimit || saHighBalance > beast::zero;
         bool const bHighReserveClear = !bHighReserveSet;
 
         bool const bDefault = bLowReserveClear && bHighReserveClear;
 
-        bool const bLowReserved = (uFlagsIn & lsfLowReserve);
-        bool const bHighReserved = (uFlagsIn & lsfHighReserve);
+        bool const bLowReserved = (uFlagsIn & lsfLowReserve) != 0u;
+        bool const bHighReserved = (uFlagsIn & lsfHighReserve) != 0u;
 
         bool bReserveIncrease = false;
 
@@ -601,11 +603,11 @@ TrustSet::doApply()
     }
     // Line does not exist.
     else if (
-        !saLimitAmount &&                  // Setting default limit.
-        (!bQualityIn || !uQualityIn) &&    // Not setting quality in or
-                                           // setting default quality in.
-        (!bQualityOut || !uQualityOut) &&  // Not setting quality out or
-                                           // setting default quality out.
+        !saLimitAmount &&                         // Setting default limit.
+        (!bQualityIn || (uQualityIn == 0u)) &&    // Not setting quality in or
+                                                  // setting default quality in.
+        (!bQualityOut || (uQualityOut == 0u)) &&  // Not setting quality out or
+                                                  // setting default quality out.
         (!bSetAuth))
     {
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
@@ -624,7 +626,7 @@ TrustSet::doApply()
     else
     {
         // Zero balance in currency.
-        STAmount saBalance(Issue{currency, noAccount()});
+        STAmount const saBalance(Issue{currency, noAccount()});
 
         auto const k = keylet::line(account_, uDstAccountID, currency);
 

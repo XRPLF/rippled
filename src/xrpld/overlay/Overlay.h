@@ -18,7 +18,7 @@ namespace boost {
 namespace asio {
 namespace ssl {
 class context;
-}
+}  // namespace ssl
 }  // namespace asio
 }  // namespace boost
 

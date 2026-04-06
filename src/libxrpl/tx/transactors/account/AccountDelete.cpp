@@ -1,7 +1,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -20,10 +22,7 @@ namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -214,7 +213,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!sleDst)
         return tecNO_DST;
 
-    if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if ((((*sleDst)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -226,7 +225,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (sleDst->getFlags() & lsfDepositAuth)
+        if ((sleDst->getFlags() & lsfDepositAuth) != 0u)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -293,7 +292,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
-    std::int32_t deletableDirEntryCount{0};
+    std::uint32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind
@@ -311,7 +310,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
         LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
-        if (!nonObligationDeleter(nodeType))
+        if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too

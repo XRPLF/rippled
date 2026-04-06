@@ -1,5 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -464,7 +466,7 @@ LoanSet::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";

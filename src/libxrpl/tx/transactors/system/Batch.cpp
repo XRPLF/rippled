@@ -123,7 +123,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     // LCOV_EXCL_STOP
 
-    XRPAmount signerFees = signerCount * view.fees().base;
+    XRPAmount const signerFees = signerCount * view.fees().base;
 
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)
@@ -270,7 +270,7 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
-        if (!(stx.getFlags() & tfInnerBatchTxn))
+        if ((stx.getFlags() & tfInnerBatchTxn) == 0u)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have the tfInnerBatchTxn flag. "
@@ -335,7 +335,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Duplicate sequence and ticket checks
-        if (flags & (tfAllOrNothing | tfUntilFailure))
+        if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
             {

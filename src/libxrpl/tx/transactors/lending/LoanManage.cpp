@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 //
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -25,7 +26,7 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    if (auto const flagField = ctx.tx[~sfFlags]; flagField && *flagField)
+    if (auto const flagField = ctx.tx[~sfFlags]; flagField && (*flagField != 0u))
     {
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
@@ -143,7 +144,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -385,21 +386,29 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    // Valid flag combinations are checked in preflight. No flags is valid -
-    // just a noop.
-    if (tx.isFlag(tfLoanDefault))
-        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
-    if (tx.isFlag(tfLoanImpair))
-        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    if (tx.isFlag(tfLoanUnimpair))
-        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-    // Noop, as described above.
+    auto const result = [&]() -> TER {
+        // Valid flag combinations are checked in preflight. No flags is valid -
+        // just a noop.
+        if (tx.isFlag(tfLoanDefault))
+            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+        if (tx.isFlag(tfLoanImpair))
+            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+        if (tx.isFlag(tfLoanUnimpair))
+            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+        // Noop, as described above.
+        return tesSUCCESS;
+    }();
 
-    associateAsset(*loanSle, vaultAsset);
-    associateAsset(*brokerSle, vaultAsset);
-    associateAsset(*vaultSle, vaultAsset);
+    // Pre-amendment, associateAsset was only called on the noop (no flags)
+    // path. Post-amendment, we call associateAsset on all successful paths.
+    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
+    {
+        associateAsset(*loanSle, vaultAsset);
+        associateAsset(*brokerSle, vaultAsset);
+        associateAsset(*vaultSle, vaultAsset);
+    }
 
-    return tesSUCCESS;
+    return result;
 }
 
 //------------------------------------------------------------------------------

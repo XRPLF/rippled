@@ -199,13 +199,13 @@ bool
 createFeatureVotes(soci::session& session)
 {
     soci::transaction tr(session);
-    std::string sql =
+    std::string const sql =
         "SELECT count(*) FROM sqlite_master "
         "WHERE type='table' AND name='FeatureVotes'";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<int> featureVotesCount;
     session << sql, soci::into(featureVotesCount);
-    bool exists = static_cast<bool>(*featureVotesCount);
+    bool const exists = static_cast<bool>(*featureVotesCount);
 
     // Create FeatureVotes table in WalletDB if it doesn't exist
     if (!exists)
@@ -232,8 +232,8 @@ readAmendments(
         return safe_cast<AmendmentVote>(dbVote.value_or(1));
     };
 
-    soci::transaction tr(session);
-    std::string sql =
+    soci::transaction const tr(session);
+    std::string const sql =
         "SELECT AmendmentHash, AmendmentName, Veto FROM "
         "( SELECT AmendmentHash, AmendmentName, Veto, RANK() OVER "
         "(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) "
