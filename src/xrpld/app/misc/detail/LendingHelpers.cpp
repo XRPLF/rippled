@@ -1927,9 +1927,6 @@ loanMakePayment(
         "no value change");
 
     // -------------------------------------------------------------
-    // overpayment handling
-    auto const roundedAmount =
-        roundToAsset(asset, amount, loanScale, Number::towards_zero);
     //
     // If the "fixSecurity3_1_3" amendment is enabled, truncate "amount",
     // at the loan scale. If the raw value is used, the overpayment
