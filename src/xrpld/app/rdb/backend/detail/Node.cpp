@@ -1137,7 +1137,7 @@ accountTxPage(
                         // Case: account_tx(A) delegatee(C)
                         // We want TXs where Context(A) is the Owner, but Signer is
                         // NOT A (it's C)
-                        bool isDelegated =
+                        bool const isDelegated =
                             (txOwner == contextAccount) && (txSigner != contextAccount);
 
                         if (isDelegated)
@@ -1154,7 +1154,7 @@ accountTxPage(
                         // Case: account_tx(C) delegator(A)
                         // We want TXs where Context(C) is the Signer, but Owner is
                         // NOT C (it's A)
-                        bool isActingAsDelegate =
+                        bool const isActingAsDelegate =
                             (txSigner == contextAccount) && (txOwner != contextAccount);
 
                         if (isActingAsDelegate)

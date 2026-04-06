@@ -966,13 +966,13 @@ class AccountTx_test : public beast::unit_test::suite
 
         // "delegate" is not an object (e.g., string)
         {
-            Json::Value p = "not_an_object";
+            Json::Value const p = "not_an_object";
             checkError(p, "invalidParams");
         }
 
         // Missing "delegate_filter" inside object
         {
-            Json::Value p(Json::objectValue);
+            Json::Value const p(Json::objectValue);
             checkError(p, "invalidParams");
         }
 
