@@ -3240,13 +3240,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptt.create({
                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback,
             });
-            PrettyAsset asset = mptt.issuanceID();
+            PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
             env(pay(issuer, depositor, asset(1000)));
             env.close();
 
-            test::jtx::Vault vault{env};
+            test::jtx::Vault const vault{env};
             auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -4400,6 +4400,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             setupBasic(env, mpt);
 
             std::vector<std::string> tooManyCredentials;
+            tooManyCredentials.reserve(9);
             for (int i = 0; i < 9; ++i)
                 tooManyCredentials.push_back(to_string(uint256(i)));
 
