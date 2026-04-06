@@ -10,7 +10,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
 
@@ -183,8 +182,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             return tecINSUFFICIENT_RESERVE;
         }
 
-        if (auto const ter = MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);
-            !isTesSuccess(ter))
+        if (auto const ter = createMPToken(view, mptID, receiver, 0); !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }

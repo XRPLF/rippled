@@ -1,10 +1,10 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 

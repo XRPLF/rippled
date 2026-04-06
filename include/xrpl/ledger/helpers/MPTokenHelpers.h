@@ -157,4 +157,11 @@ rippleUnlockEscrowMPT(
     STAmount const& grossAmount,
     beast::Journal j);
 
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags);
+
 }  // namespace xrpl

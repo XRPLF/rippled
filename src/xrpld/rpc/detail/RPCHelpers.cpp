@@ -5,12 +5,12 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>

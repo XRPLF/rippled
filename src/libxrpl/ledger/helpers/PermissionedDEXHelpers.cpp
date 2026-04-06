@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
+#include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 
 namespace xrpl {
 namespace permissioned_dex {

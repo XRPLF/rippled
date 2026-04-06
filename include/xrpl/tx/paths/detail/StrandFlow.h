@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -13,7 +14,6 @@
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
 
 #include <boost/container/flat_set.hpp>
 
