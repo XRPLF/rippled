@@ -4,9 +4,9 @@
 #include <test/jtx/mpt.h>
 
 #include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 

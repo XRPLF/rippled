@@ -476,7 +476,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if ((sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
@@ -746,32 +746,6 @@ rippleUnlockEscrowMPT(
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
         view.update(sleIssuance);
     }
-    return tesSUCCESS;
-}
-
-TER
-createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    std::uint32_t const flags)
-{
-    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-
-    auto const ownerNode =
-        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
-
-    if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    auto mptoken = std::make_shared<SLE>(mptokenKey);
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
-
-    view.insert(mptoken);
-
     return tesSUCCESS;
 }
 

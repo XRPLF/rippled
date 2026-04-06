@@ -1,21 +1,13 @@
-#include <xrpl/ledger/helpers/LendingHelpers.h>
-//
+#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+// DO NOT REMOVE forces header file include to sort first
+#include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 namespace xrpl {
 
 bool
-checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
+checkLendingProtocolDependencies(PreflightContext const& ctx)
 {
-    if (!rules.enabled(featureSingleAssetVault))
-        return false;
-
-    if (!rules.enabled(featureMPTokensV1))
-        return false;
-
-    if (tx.isFieldPresent(sfDomainID) && !rules.enabled(featurePermissionedDomains))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureSingleAssetVault) && VaultCreate::checkExtraFeatures(ctx);
 }
 
 LoanPaymentParts&

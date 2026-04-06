@@ -1,14 +1,15 @@
 #pragma once
 
 #include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/st.h>
 
 namespace xrpl {
 
+struct PreflightContext;
+
 // Lending protocol has dependencies, so capture them here.
 bool
-checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
+checkLendingProtocolDependencies(PreflightContext const& ctx);
 
 static constexpr std::uint32_t secondsInYear = 365 * 24 * 60 * 60;
 
