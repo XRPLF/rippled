@@ -136,9 +136,21 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
 
                     return std::nullopt;
                 });
@@ -152,7 +164,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
+    return tesSUCCESS;
 }
 
 TER

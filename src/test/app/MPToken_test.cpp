@@ -5833,7 +5833,7 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // MPTCanTransfer disabled
+        // MPTCanTransfer is disabled
         {
             Env env{*this, features};
             env.fund(XRP(1'000), gw, alice, carol);
@@ -5874,49 +5874,44 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(0));
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(0));
 
-            // neither src nor dst is issuer, can still create
+            // neither src nor dst is issuer, can't create
+            checkId = keylet::check(alice, env.seq(alice)).key;
+            env(check::create(alice, carol, mpt(100)), ter(tecNO_AUTH));
+            env.close();
+
+            // can create now
+            mpt.set({.account = gw, .mutableFlags = tmfMPTSetCanTransfer});
             checkId = keylet::check(alice, env.seq(alice)).key;
             env(check::create(alice, carol, mpt(100)));
             env.close();
-
-            // can't cash
-            env(check::cash(carol, checkId, mpt(10)), ter(tecPATH_PARTIAL));
-            env.close();
-
-            // can cash now
-            mpt.set({.account = gw, .mutableFlags = tmfMPTSetCanTransfer});
+            // can cash
             env(pay(gw, alice, mpt(10)));
             env.close();
             env(check::cash(carol, checkId, mpt(10)));
             env.close();
         }
 
-        // MPTCanTrade disabled
+        // MPTCanTrade is disabled
         {
             Env env{*this, features};
             env.fund(XRP(1'000), gw, alice, carol);
             env.close();
 
-            MPTTester mpt(
+            MPT const mpt = MPTTester(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol},
-                 .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanMutateCanTrade});
+                 .pay = 10,
+                 .flags = tfMPTCanTransfer});
 
-            uint256 checkId{keylet::check(gw, env.seq(gw)).key};
+            uint256 const checkId{keylet::check(alice, env.seq(alice)).key};
 
-            // can't create
-            env(check::create(gw, alice, mpt(100)), ter(tecNO_PERMISSION));
+            // can create
+            env(check::create(alice, carol, mpt(100)));
             env.close();
-            mpt.set({.account = gw, .mutableFlags = tmfMPTSetCanTrade});
 
-            // can't cash
-            checkId = keylet::check(gw, env.seq(gw)).key;
-            env(check::create(gw, carol, mpt(100)));
-            env.close();
-            mpt.set({.account = gw, .mutableFlags = tmfMPTClearCanTrade});
-            env(check::cash(carol, checkId, mpt(10)), ter(tecNO_PERMISSION));
+            // can cash
+            env(check::cash(carol, checkId, mpt(10)));
             env.close();
         }
 
@@ -5968,33 +5963,6 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             env(check::cash(carol, chkId, BTC(1)), ter(tecPATH_PARTIAL));
-            env.close();
-        }
-
-        // MPTCanTransfer is not set and the account is not the issuer of MPT
-        {
-            Env env{*this, features};
-            env.fund(XRP(1'000), gw, alice, carol);
-
-            auto EUR = MPTTester(
-                {.env = env, .issuer = gw, .holders = {alice, carol}, .flags = tfMPTCanTrade});
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            // alice can create
-            env(check::create(alice, carol, EUR(1)));
-            env.close();
-
-            // carol can't cash
-            env(check::cash(carol, chkId, EUR(1)), ter(tecPATH_PARTIAL));
-            env.close();
-
-            // if issuer creates a check then carol can cash since
-            // it's a transfer from the issuer
-            uint256 const chkId1{getCheckIndex(gw, env.seq(gw))};
-            // alice can't create since CanTransfer is not set
-            env(check::create(gw, carol, EUR(1)));
-            env.close();
-
-            env(check::cash(carol, chkId1, EUR(1)));
             env.close();
         }
 

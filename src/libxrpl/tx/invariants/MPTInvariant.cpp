@@ -425,7 +425,7 @@ ValidMPTTransfer::finalize(
             auto const amount = tx[sfAmount];
             return tx[~sfSendMax].value_or(amount).asset() != amount.asset();
         }
-        return txnType == ttCHECK_CASH || txnType == ttOFFER_CREATE;
+        return txnType == ttOFFER_CREATE;
     }();
 
     // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
