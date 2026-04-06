@@ -1,9 +1,9 @@
 #include <test/jtx.h>
 #include <test/jtx/mpt.h>
 
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -421,132 +421,133 @@ MPTTester::set(MPTSet const& arg)
     {
         if ((arg.flags.value_or(0) || arg.mutableFlags))
         {
-        auto require = [&](std::optional<Account> const& holder, bool unchanged) {
-            auto flags = getFlags(holder);
-            if (!unchanged)
+            auto require = [&](std::optional<Account> const& holder, bool unchanged) {
+                auto flags = getFlags(holder);
+                if (!unchanged)
+                {
+                    if (arg.flags)
+                    {
+                        if (*arg.flags & tfMPTLock)
+                        {
+                            flags |= lsfMPTLocked;
+                        }
+                        else if (*arg.flags & tfMPTUnlock)
+                        {
+                            flags &= ~lsfMPTLocked;
+                        }
+                    }
+
+                    if (arg.mutableFlags)
+                    {
+                        if (*arg.mutableFlags & tmfMPTSetCanLock)
+                        {
+                            flags |= lsfMPTCanLock;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanLock)
+                        {
+                            flags &= ~lsfMPTCanLock;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetRequireAuth)
+                        {
+                            flags |= lsfMPTRequireAuth;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
+                        {
+                            flags &= ~lsfMPTRequireAuth;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetCanEscrow)
+                        {
+                            flags |= lsfMPTCanEscrow;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
+                        {
+                            flags &= ~lsfMPTCanEscrow;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetCanClawback)
+                        {
+                            flags |= lsfMPTCanClawback;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanClawback)
+                        {
+                            flags &= ~lsfMPTCanClawback;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTrade)
+                        {
+                            flags |= lsfMPTCanTrade;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanTrade)
+                        {
+                            flags &= ~lsfMPTCanTrade;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetCanTransfer)
+                        {
+                            flags |= lsfMPTCanTransfer;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
+                        {
+                            flags &= ~lsfMPTCanTransfer;
+                        }
+
+                        if (*arg.mutableFlags & tmfMPTSetCanConfidentialAmount)
+                        {
+                            flags |= lsfMPTCanConfidentialAmount;
+                        }
+                        else if (*arg.mutableFlags & tmfMPTClearCanConfidentialAmount)
+                        {
+                            flags &= ~lsfMPTCanConfidentialAmount;
+                        }
+                    }
+                }
+                env_.require(mptflags(*this, flags, holder));
+            };
+            if (arg.account)
+                require(std::nullopt, arg.holder.has_value());
+            if (auto const account = (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
+                require(*account, false);
+
+            if (arg.issuerPubKey)
             {
-                if (arg.flags)
-                {
-                    if (*arg.flags & tfMPTLock)
-                    {
-                        flags |= lsfMPTLocked;
-                    }
-                    else if (*arg.flags & tfMPTUnlock)
-                    {
-                        flags &= ~lsfMPTLocked;
-                    }
-                }
+                env_.require(requireAny([&]() -> bool {
+                    return forObject([&](SLEP const& sle) -> bool {
+                        if (sle)
+                        {
+                            auto const issuerPubKey = getPubKey(issuer_);
+                            if (!issuerPubKey)
+                                Throw<std::runtime_error>(
+                                    "MPTTester::set: issuer's pubkey is not set");
 
-                if (arg.mutableFlags)
-                {
-                    if (*arg.mutableFlags & tmfMPTSetCanLock)
-                    {
-                        flags |= lsfMPTCanLock;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
-                    {
-                        flags &= ~lsfMPTCanLock;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
-                    {
-                        flags |= lsfMPTRequireAuth;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
-                    {
-                        flags &= ~lsfMPTRequireAuth;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
-                    {
-                        flags |= lsfMPTCanEscrow;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
-                    {
-                        flags &= ~lsfMPTCanEscrow;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
-                    {
-                        flags |= lsfMPTCanClawback;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
-                    {
-                        flags &= ~lsfMPTCanClawback;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
-                    {
-                        flags |= lsfMPTCanTrade;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
-                    {
-                        flags &= ~lsfMPTCanTrade;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
-                    {
-                        flags |= lsfMPTCanTransfer;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
-                    {
-                        flags &= ~lsfMPTCanTransfer;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanConfidentialAmount)
-                    {
-                        flags |= lsfMPTCanConfidentialAmount;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanConfidentialAmount)
-                    {
-                        flags &= ~lsfMPTCanConfidentialAmount;
-                    }
-                }
+                            return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
+                        }
+                        return false;
+                    });
+                }));
             }
-            env_.require(mptflags(*this, flags, holder));
-        };
-        if (arg.account)
-            require(std::nullopt, arg.holder.has_value());
-        if (auto const account = (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
-            require(*account, false);
 
-        if (arg.issuerPubKey)
-        {
-            env_.require(requireAny([&]() -> bool {
-                return forObject([&](SLEP const& sle) -> bool {
-                    if (sle)
-                    {
-                        auto const issuerPubKey = getPubKey(issuer_);
-                        if (!issuerPubKey)
-                            Throw<std::runtime_error>("MPTTester::set: issuer's pubkey is not set");
+            if (arg.auditorPubKey)
+            {
+                env_.require(requireAny([&]() -> bool {
+                    return forObject([&](SLEP const& sle) -> bool {
+                        if (sle)
+                        {
+                            if (!auditor_.has_value())
+                                Throw<std::runtime_error>("MPTTester::set: auditor is not set");
 
-                        return strHex((*sle)[sfIssuerEncryptionKey]) == strHex(*issuerPubKey);
-                    }
-                    return false;
-                });
-            }));
-        }
+                            auto const auditorPubKey = getPubKey(*auditor_);
+                            if (!auditorPubKey)
+                                Throw<std::runtime_error>(
+                                    "MPTTester::set: auditor's pubkey is not set");
 
-        if (arg.auditorPubKey)
-        {
-            env_.require(requireAny([&]() -> bool {
-                return forObject([&](SLEP const& sle) -> bool {
-                    if (sle)
-                    {
-                        if (!auditor_.has_value())
-                            Throw<std::runtime_error>("MPTTester::set: auditor is not set");
-
-                        auto const auditorPubKey = getPubKey(*auditor_);
-                        if (!auditorPubKey)
-                            Throw<std::runtime_error>(
-                                "MPTTester::set: auditor's pubkey is not set");
-
-                        return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
-                    }
-                    return false;
-                });
-            }));
-        }
+                            return strHex((*sle)[sfAuditorEncryptionKey]) == strHex(*auditorPubKey);
+                        }
+                        return false;
+                    });
+                }));
+            }
         }
     }
 }

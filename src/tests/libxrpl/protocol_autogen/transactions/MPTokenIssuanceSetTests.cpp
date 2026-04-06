@@ -1,15 +1,13 @@
 // Auto-generated unit tests for transaction MPTokenIssuanceSet
 
-
-#include <gtest/gtest.h>
-
-#include <protocol_autogen/TestHelpers.h>
-
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol_autogen/transactions/MPTokenIssuanceSet.h>
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
+#include <xrpl/protocol_autogen/transactions/MPTokenIssuanceSet.h>
+
+#include <gtest/gtest.h>
+#include <protocol_autogen/TestHelpers.h>
 
 #include <string>
 
@@ -35,13 +33,11 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     auto const mPTokenMetadataValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
     auto const mutableFlagsValue = canonical_UINT32();
+    auto const issuerEncryptionKeyValue = canonical_VL();
+    auto const auditorEncryptionKeyValue = canonical_VL();
 
     MPTokenIssuanceSetBuilder builder{
-        accountValue,
-        mPTokenIssuanceIDValue,
-        sequenceValue,
-        feeValue
-    };
+        accountValue, mPTokenIssuanceIDValue, sequenceValue, feeValue};
 
     // Set optional fields
     builder.setHolder(holderValue);
@@ -49,6 +45,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setTransferFee(transferFeeValue);
     builder.setMutableFlags(mutableFlagsValue);
+    builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
+    builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -112,6 +110,23 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasMutableFlags());
     }
 
+    {
+        auto const& expected = issuerEncryptionKeyValue;
+        auto const actualOpt = tx.getIssuerEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value())
+            << "Optional field sfIssuerEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfIssuerEncryptionKey");
+        EXPECT_TRUE(tx.hasIssuerEncryptionKey());
+    }
+
+    {
+        auto const& expected = auditorEncryptionKeyValue;
+        auto const actualOpt = tx.getAuditorEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value())
+            << "Optional field sfAuditorEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
+        EXPECT_TRUE(tx.hasAuditorEncryptionKey());
+    }
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -134,20 +149,20 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     auto const mPTokenMetadataValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
     auto const mutableFlagsValue = canonical_UINT32();
+    auto const issuerEncryptionKeyValue = canonical_VL();
+    auto const auditorEncryptionKeyValue = canonical_VL();
 
     // Build an initial transaction
     MPTokenIssuanceSetBuilder initialBuilder{
-        accountValue,
-        mPTokenIssuanceIDValue,
-        sequenceValue,
-        feeValue
-    };
+        accountValue, mPTokenIssuanceIDValue, sequenceValue, feeValue};
 
     initialBuilder.setHolder(holderValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
     initialBuilder.setTransferFee(transferFeeValue);
     initialBuilder.setMutableFlags(mutableFlagsValue);
+    initialBuilder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
+    initialBuilder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -207,14 +222,28 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfMutableFlags");
     }
 
+    {
+        auto const& expected = issuerEncryptionKeyValue;
+        auto const actualOpt = rebuiltTx.getIssuerEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value())
+            << "Optional field sfIssuerEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfIssuerEncryptionKey");
+    }
+
+    {
+        auto const& expected = auditorEncryptionKeyValue;
+        auto const actualOpt = rebuiltTx.getAuditorEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value())
+            << "Optional field sfAuditorEncryptionKey should be present";
+        expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
+    }
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
 TEST(TransactionsMPTokenIssuanceSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -227,8 +256,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, WrapperThrowsOnWrongTxType)
 TEST(TransactionsMPTokenIssuanceSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
-    auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+    auto const [pk, sk] = generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -253,11 +281,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
 
     MPTokenIssuanceSetBuilder builder{
-        accountValue,
-        mPTokenIssuanceIDValue,
-        sequenceValue,
-        feeValue
-    };
+        accountValue, mPTokenIssuanceIDValue, sequenceValue, feeValue};
 
     // Do NOT set optional fields
 
@@ -274,6 +298,10 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getTransferFee().has_value());
     EXPECT_FALSE(tx.hasMutableFlags());
     EXPECT_FALSE(tx.getMutableFlags().has_value());
+    EXPECT_FALSE(tx.hasIssuerEncryptionKey());
+    EXPECT_FALSE(tx.getIssuerEncryptionKey().has_value());
+    EXPECT_FALSE(tx.hasAuditorEncryptionKey());
+    EXPECT_FALSE(tx.getAuditorEncryptionKey().has_value());
 }
 
-}
+}  // namespace xrpl::transactions
