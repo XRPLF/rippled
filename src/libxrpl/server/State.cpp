@@ -31,7 +31,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO DbState VALUES (1, '', '', 0);";
     }
@@ -45,7 +45,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO CanDelete VALUES (1, 0);";
     }
@@ -54,7 +54,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
 LedgerIndex
 getCanDelete(soci::session& session)
 {
-    LedgerIndex seq;
+    LedgerIndex seq = 0;
     session << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;", soci::into(seq);
     ;
     return seq;

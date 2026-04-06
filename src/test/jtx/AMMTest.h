@@ -83,24 +83,24 @@ protected:
      */
     void
     testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::vector<FeatureBitset> const& features = {testable_amendments()});
 
     void
-    testAMM(std::function<void(jtx::AMM&, jtx::Env&)>&& cb, TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase
 {
 protected:
-    XRPAmount
-    reserve(jtx::Env& env, std::uint32_t count) const;
+    static XRPAmount
+    reserve(jtx::Env& env, std::uint32_t count);
 
-    XRPAmount
-    ammCrtFee(jtx::Env& env) const;
+    static XRPAmount
+    ammCrtFee(jtx::Env& env);
 
     /* Path_test */
     /************************************************/
@@ -127,7 +127,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }

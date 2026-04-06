@@ -3269,7 +3269,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Inject confidential balance fields on the share MPToken
             // to simulate a scenario where vault shares somehow have
             // confidential balances
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 // Set lsfMPTCanConfidentialAmount on the share issuance
                 // so the invariant allows encrypted fields on the MPToken
                 auto issuance = std::const_pointer_cast<SLE>(view.read(keylet::mptIssuance(share)));

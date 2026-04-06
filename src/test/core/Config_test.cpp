@@ -268,7 +268,7 @@ public:
 
         Config c;
 
-        std::string toLoad(R"xrpldConfig(
+        std::string const toLoad(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -284,7 +284,7 @@ port_wss_admin
         expectException([&c] { c.legacy("server"); });  // not a single line
 
         // set a legacy value
-        BEAST_EXPECT(c.legacy("not_in_file") == "");
+        BEAST_EXPECT(c.legacy("not_in_file").empty());
         c.legacy("not_in_file", "new_value");
         BEAST_EXPECT(c.legacy("not_in_file") == "new_value");
     }
@@ -297,15 +297,15 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        char const* configFiles[] = {Config::configFileName, Config::configLegacyName};
+        std::string_view const configFiles[] = {Config::configFileName, Config::configLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
-            path const f = td.file(configFile);
+            path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -325,13 +325,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -344,7 +344,7 @@ port_wss_admin
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
                 create_directory(p);
-                p = tc.file(systemName() + "/" + configFile);
+                p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -358,14 +358,14 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                x ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
 
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -380,7 +380,7 @@ port_wss_admin
                 s += "/" + systemName();
                 p = tc.file(s);
                 create_directory(p);
-                p = tc.file(s + "/" + configFile);
+                p = tc.file(s + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -394,8 +394,8 @@ port_wss_admin
                     "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x)
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                if (x != nullptr)
                     setenv("XDG_CONFIG_HOME", x, 1);
             }
         }
@@ -434,7 +434,7 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString("");
-                BEAST_EXPECT(c.legacy("database_path") == "");
+                BEAST_EXPECT(c.legacy("database_path").empty());
             }
         }
         {
@@ -533,7 +533,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -546,7 +546,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -561,7 +561,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 255);
 
         try
@@ -576,7 +576,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 10000);
     }
 
@@ -626,7 +626,7 @@ main
         {
             // load validators from config into single section
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
 n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
@@ -644,7 +644,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -674,7 +674,7 @@ trust-these-validators.gov
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -705,7 +705,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_threshold] is greater than
             // the number of [validator_list_keys]
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -734,7 +734,7 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is malformed
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -763,7 +763,7 @@ value = 2
         {
             // load should throw if [validator_list_threshold] is negative
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -790,7 +790,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_sites] is configured but
             // [validator_list_keys] is not
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -958,7 +958,7 @@ trust-these-validators.gov
             // load should throw if [validators], [validator_keys] and
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
-            Config c;
+            Config const c;
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
@@ -968,7 +968,7 @@ trust-these-validators.gov
                 "[validators], [validator_keys] or [validator_list_keys] "
                 "section: " +
                 vtg.validatorsFile();
-            std::ofstream o(vtg.validatorsFile());
+            std::ofstream const o(vtg.validatorsFile());
             try
             {
                 Config c2;
@@ -1141,7 +1141,7 @@ trust-these-validators.gov
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1182,7 +1182,7 @@ r.ripple.com 51235
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1261,7 +1261,7 @@ r.ripple.com:51235
             bool had_comment;
         };
 
-        std::array<TestCommentData, 13> tests = {
+        std::array<TestCommentData, 13> const tests = {
             {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
              {"password = aaaa#bbbb", "password", "aaaa", true},
              {"password = aaaa #bbbb", "password", "aaaa", true},
@@ -1280,7 +1280,7 @@ r.ripple.com:51235
         for (auto const& t : tests)
         {
             Section s;
-            s.append(t.line.data());
+            s.append(std::string(t.line));
             BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
             if (t.field.empty())
             {
@@ -1289,7 +1289,7 @@ r.ripple.com:51235
             else
             {
                 std::string field;
-                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(set(field, std::string(t.field), s), t.line);
                 BEAST_EXPECTS(field == t.expect, t.line);
             }
         }
@@ -1299,6 +1299,7 @@ r.ripple.com:51235
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
         }
 
@@ -1307,6 +1308,7 @@ r.ripple.com:51235
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
         }
     }
@@ -1335,7 +1337,7 @@ r.ripple.com:51235
             auto val_3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val_3 == "mystring");
             auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4 == "");
+            BEAST_EXPECT(val_4.empty());
             auto val_5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val_5 == "default");
 
@@ -1417,7 +1419,7 @@ r.ripple.com:51235
             bool shouldPass;
         };
 
-        std::vector<ConfigUnit> units = {
+        std::vector<ConfigUnit> const units = {
             {"seconds", 1, 15 * 60, false},
             {"minutes", 60, 14, false},
             {"minutes", 60, 15, true},
@@ -1427,7 +1429,7 @@ r.ripple.com:51235
             {"months", 2592000, 1, false},
             {"years", 31536000, 1, false}};
 
-        std::string space = "";
+        std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;
@@ -1435,22 +1437,30 @@ r.ripple.com:51235
 [amendment_majority_time]
 )xrpldConfig");
             toLoad += std::to_string(val) + space + unit;
-            space = space == "" ? " " : "";
+            space = space.empty() ? " " : "";
 
             try
             {
                 c.loadFromString(toLoad);
                 if (shouldPass)
+                {
                     BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                }
                 else
+                {
                     fail();
+                }
             }
             catch (std::runtime_error&)
             {
                 if (!shouldPass)
+                {
                     pass();
+                }
                 else
+                {
                     fail();
+                }
             }
         }
     }

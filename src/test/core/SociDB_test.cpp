@@ -7,6 +7,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <string_view>
+
 namespace xrpl {
 class SociDB_test final : public TestSuite
 {
@@ -87,7 +89,7 @@ public:
 
         for (auto const& i : d)
         {
-            DBConfig sc(c, i.first);
+            DBConfig const sc(c, i.first);
             BEAST_EXPECT(boost::ends_with(sc.connectionString(), i.first + i.second));
         }
     }
@@ -97,7 +99,7 @@ public:
         testcase("open");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         std::vector<std::string> const stringData({"String1", "String2", "String3"});
         std::vector<int> const intData({1, 2, 3});
         auto checkValues = [this, &stringData, &intData](soci::session& s) {
@@ -142,7 +144,7 @@ public:
         {
             namespace bfs = boost::filesystem;
             // Remove the database
-            bfs::path dbPath(sc.connectionString());
+            bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
                 bfs::remove(dbPath);
         }
@@ -154,7 +156,7 @@ public:
         testcase("select");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
             {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
@@ -272,7 +274,7 @@ public:
         {
             namespace bfs = boost::filesystem;
             // Remove the database
-            bfs::path dbPath(sc.connectionString());
+            bfs::path const dbPath(sc.connectionString());
             if (bfs::is_regular_file(dbPath))
                 bfs::remove(dbPath);
         }
@@ -283,11 +285,12 @@ public:
         testcase("deleteWithSubselect");
         BasicConfig c;
         setupSQLiteConfig(c, getDatabasePath());
-        DBConfig sc(c, "SociTestDB");
+        DBConfig const sc(c, "SociTestDB");
         {
             soci::session s;
             sc.open(s);
-            char const* dbInit[] = {
+
+            std::string_view const dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \
@@ -323,7 +326,7 @@ public:
         }
         namespace bfs = boost::filesystem;
         // Remove the database
-        bfs::path dbPath(sc.connectionString());
+        bfs::path const dbPath(sc.connectionString());
         if (bfs::is_regular_file(dbPath))
             bfs::remove(dbPath);
     }

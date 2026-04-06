@@ -237,7 +237,7 @@ template <
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
-    auto const m = std::make_shared<T>();
+    auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
     stream.Skip(header.header_size);
@@ -349,7 +349,7 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
-    bool success;
+    bool success = false;
 
     switch (header->message_type)
     {

@@ -85,7 +85,7 @@ admin = 127.0.0.1
                     (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
-                    (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
+                    (git[jss::branch].isString() && !git[jss::branch].asString().empty()));
             }
         }
 
@@ -93,7 +93,7 @@ admin = 127.0.0.1
             Env env(*this);
 
             // Call NetworkOPs directly and set the admin flag to false.
-            auto const result = env.app().getOPs().getServerInfo(true, false, 0);
+            auto const result = env.app().getOPs().getServerInfo(true, false, false);
             // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);

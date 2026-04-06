@@ -16,4 +16,4 @@ template <
     class Allocator = std::allocator<std::pair<Key const, T>>>
 using aged_map = detail::aged_ordered_container<false, true, Key, T, Clock, Compare, Allocator>;
 
-}
+}  // namespace beast
