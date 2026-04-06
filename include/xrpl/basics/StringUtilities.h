@@ -66,12 +66,12 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     while (iter != end)
     {
-        int cHigh = digitLookupTable[*iter++];
+        int const cHigh = digitLookupTable[*iter++];
 
         if (cHigh < 0)
             return {};
 
-        int cLow = digitLookupTable[*iter++];
+        int const cLow = digitLookupTable[*iter++];
 
         if (cLow < 0)
             return {};

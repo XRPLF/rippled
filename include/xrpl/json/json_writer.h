@@ -106,9 +106,9 @@ private:
     ChildValues childValues_;
     std::string document_;
     std::string indentString_;
-    int rightMargin_;
-    int indentSize_;
-    bool addChildValues_;
+    int rightMargin_{74};
+    int indentSize_{3};
+    bool addChildValues_{};
 };
 
 /** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
@@ -171,11 +171,11 @@ private:
     using ChildValues = std::vector<std::string>;
 
     ChildValues childValues_;
-    std::ostream* document_;
+    std::ostream* document_{nullptr};
     std::string indentString_;
-    int rightMargin_;
+    int rightMargin_{74};
     std::string indentation_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 std::string

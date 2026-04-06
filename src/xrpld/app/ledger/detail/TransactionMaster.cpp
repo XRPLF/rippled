@@ -15,7 +15,7 @@ TransactionMaster::TransactionMaster(Application& app)
           65536,
           std::chrono::minutes{30},
           stopwatch(),
-          mApp.journal("TaggedCache"))
+          mApp.getJournal("TaggedCache"))
 {
 }
 
@@ -110,7 +110,7 @@ TransactionMaster::fetch(
     }
     else
     {
-        if (uCommitLedger)
+        if (uCommitLedger != 0u)
             iTx->setStatus(COMMITTED, uCommitLedger);
 
         txn = iTx->getSTransaction();

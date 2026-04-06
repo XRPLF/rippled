@@ -12,7 +12,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 {
     std::optional<Seed> seed;
 
-    if (cmdline.count("nodeid"))
+    if (cmdline.contains("nodeid"))
     {
         seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
 
@@ -37,7 +37,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 
     auto db = app.getWalletDB().checkoutDb();
 
-    if (cmdline.count("newnodeid") != 0)
+    if (cmdline.contains("newnodeid"))
         clearNodeIdentity(*db);
 
     return getNodeIdentity(*db);

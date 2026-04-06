@@ -85,12 +85,12 @@ private:
         /// when we've gotten a temp redirect
         std::shared_ptr<Resource> activeResource;
 
-        unsigned short redirCount;
+        unsigned short redirCount{0};
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
         std::optional<Status> lastRefreshStatus;
         endpoint_type lastRequestEndpoint;
-        bool lastRequestSuccessful;
+        bool lastRequestSuccessful{false};
     };
 
     Application& app_;
@@ -197,7 +197,7 @@ private:
     onSiteFetch(
         boost::system::error_code const& ec,
         endpoint_type const& endpoint,
-        detail::response_type&& res,
+        detail::response_type const& res,
         std::size_t siteIdx);
 
     /// Store latest list fetched from anywhere
@@ -224,7 +224,7 @@ private:
     /// lock over sites_mutex_ required
     std::shared_ptr<Site::Resource>
     processRedirect(
-        detail::response_type& res,
+        detail::response_type const& res,
         std::size_t siteIdx,
         std::lock_guard<std::mutex> const&);
 

@@ -1,6 +1,10 @@
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -60,7 +64,7 @@ getPageForToken(
     // A suitable page doesn't exist; we'll have to create one.
     if (!cp)
     {
-        STArray arr;
+        STArray const arr;
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
@@ -101,9 +105,11 @@ getPageForToken(
         // equivalent NFTokens then check the front of the page for a
         // place to make the split.
         if (splitIter == narr.end())
+        {
             splitIter = std::find_if(narr.begin(), narr.end(), [&cmp](STObject const& obj) {
                 return (obj.getFieldH256(sfNFTokenID) & nft::pageMask) == cmp;
             });
+        }
 
         // There should be no circumstance when splitIter == end(), but if it
         // were to happen we should bail out because something is confused.
@@ -218,9 +224,13 @@ changeTokenURI(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (uri)
+    {
         nftIter->setFieldVL(sfURI, *uri);
+    }
     else if (nftIter->isFieldPresent(sfURI))
+    {
         nftIter->makeFieldAbsent(sfURI);
+    }
 
     view.update(page);
     return tesSUCCESS;
@@ -235,7 +245,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    std::shared_ptr<SLE> page =
+    std::shared_ptr<SLE> const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
             adjustOwnerCount(
                 view,
@@ -328,13 +338,13 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> page = locatePage(view, owner, nftokenID);
+    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
         return tecNO_ENTRY;
 
-    return removeToken(view, owner, nftokenID, std::move(page));
+    return removeToken(view, owner, nftokenID, page);
 }
 
 /** Remove the token from the owner's token directory. */
@@ -343,7 +353,7 @@ removeToken(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& nftokenID,
-    std::shared_ptr<SLE>&& curr)
+    std::shared_ptr<SLE> const& curr)
 {
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);
@@ -368,9 +378,11 @@ removeToken(
             page2 = view.peek(Keylet(ltNFTOKEN_PAGE, *id));
 
             if (!page2)
+            {
                 Throw<std::runtime_error>(
                     "page " + to_string(page1->key()) + " has a broken " + field.getName() +
                     " field pointing to " + to_string(*id));
+            }
         }
 
         return page2;
@@ -396,11 +408,13 @@ removeToken(
             cnt--;
 
         if (cnt != 0)
+        {
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 cnt,
                 beast::Journal{beast::Journal::getNullSink()});
+        }
 
         return tesSUCCESS;
     }
@@ -448,9 +462,13 @@ removeToken(
         // The page is empty and not the last page, so we can just unlink it
         // and then remove it.
         if (next)
+        {
             prev->setFieldH256(sfNextPageMin, next->key());
+        }
         else
+        {
             prev->makeFieldAbsent(sfNextPageMin);
+        }
 
         view.update(prev);
     }
@@ -459,9 +477,13 @@ removeToken(
     {
         // Make our next page point to our previous page:
         if (prev)
+        {
             next->setFieldH256(sfPreviousPageMin, prev->key());
+        }
         else
+        {
             next->makeFieldAbsent(sfPreviousPageMin);
+        }
 
         view.update(next);
     }
@@ -497,7 +519,7 @@ removeToken(
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE const> page = locatePage(view, owner, nftokenID);
+    std::shared_ptr<SLE const> const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -526,8 +548,10 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftoken
     for (auto const& t : page->getFieldArray(sfNFTokens))
     {
         if (t[sfNFTokenID] == nftokenID)
+        {
             // This std::optional constructor is explicit, so it is spelled out.
             return std::optional<TokenAndPage>(std::in_place, t, std::move(page));
+        }
     }
     return std::nullopt;
 }
@@ -564,16 +588,20 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
             if (auto const offer = view.peek(keylet::nftoffer(offerIndexes[i])))
             {
                 if (deleteTokenOffer(view, offer))
+                {
                     ++deletedOffersCount;
+                }
                 else
+                {
                     Throw<std::runtime_error>(
                         "Offer " + to_string(offerIndexes[i]) + " cannot be deleted!");
+                }
             }
 
             if (maxDeletableOffers == deletedOffersCount)
                 break;
         }
-    } while (pageIndex.value_or(0) && maxDeletableOffers != deletedOffersCount);
+    } while ((pageIndex.value_or(0) != 0u) && maxDeletableOffers != deletedOffersCount);
 
     return deletedOffersCount;
 }
@@ -584,7 +612,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
     std::size_t totalOffers = 0;
 
     {
-        Dir buys(view, keylet::nft_buys(nftokenID));
+        Dir const buys(view, keylet::nft_buys(nftokenID));
         for (auto iter = buys.begin(); iter != buys.end(); iter.next_page())
         {
             totalOffers += iter.page_size();
@@ -594,7 +622,7 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
     }
 
     {
-        Dir sells(view, keylet::nft_sells(nftokenID));
+        Dir const sells(view, keylet::nft_sells(nftokenID));
         for (auto iter = sells.begin(); iter != sells.end(); iter.next_page())
         {
             totalOffers += iter.page_size();
@@ -619,8 +647,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            ((*offer)[sfFlags] & tfSellNFToken) ? keylet::nft_sells(nftokenID)
-                                                : keylet::nft_buys(nftokenID),
+            (((*offer)[sfFlags] & lsfSellNFToken) != 0u) ? keylet::nft_sells(nftokenID)
+                                                         : keylet::nft_buys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
@@ -696,8 +724,10 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         }
 
         if (nextPage->key() == last.key)
+        {
             // We need special handling for the last page.
             break;
+        }
 
         page = nextPage;
     }
@@ -727,9 +757,11 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             // Also fix up the NextPageMin link in the new Previous.
             auto const newPrev = view.peek(Keylet(ltNFTOKEN_PAGE, *prevLink));
             if (!newPrev)
+            {
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
                     " cannot be repaired.  Unexpected link problem.");
+            }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
         }
@@ -760,12 +792,14 @@ tokenOfferCreatePreflight(
     std::uint32_t txFlags)
 {
     if (amount.negative())
+    {
         // An offer for a negative amount makes no sense.
         return temBAD_AMOUNT;
+    }
 
     if (!isXRP(amount))
     {
-        if (nftFlags & nft::flagOnlyXRP)
+        if ((nftFlags & nft::flagOnlyXRP) != 0)
             return temBAD_AMOUNT;
 
         if (!amount)
@@ -774,7 +808,7 @@ tokenOfferCreatePreflight(
 
     // If this is an offer to buy, you must offer something; if it's an
     // offer to sell, you can ask for nothing.
-    bool const isSellOffer = txFlags & tfSellNFToken;
+    bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
     if (!isSellOffer && !amount)
         return temBAD_AMOUNT;
 
@@ -810,7 +844,7 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
-    if (!(nftFlags & nft::flagCreateTrustLines) && !amount.native() && xferFee)
+    if (((nftFlags & nft::flagCreateTrustLines) == 0) && !amount.native() && (xferFee != 0u))
     {
         if (!view.exists(keylet::account(nftIssuer)))
             return tecNO_ISSUER;
@@ -832,7 +866,7 @@ tokenOfferCreatePreclaim(
             return tecFROZEN;
     }
 
-    if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
+    if (nftIssuer != acctID && ((nftFlags & nft::flagTransferable) == 0))
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
@@ -865,7 +899,7 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -878,7 +912,7 @@ tokenOfferCreatePreclaim(
         if (!sleOwner)
             return tecNO_TARGET;
 
-        if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+        if ((sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -891,7 +925,7 @@ tokenOfferCreatePreclaim(
         // unauthorized trustlines with balance
         auto const res =
             nft::checkTrustlineAuthorized(view, acctID, j, amount.asset().get<Issue>());
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
             return res;
     }
     return tesSUCCESS;
@@ -926,7 +960,7 @@ tokenOfferCreateApply(
         if (!ownerNode)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        bool const isSellOffer = txFlags & tfSellNFToken;
+        bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
 
         // Token offers are also added to the token's buy or sell offer
         // directory
@@ -1060,7 +1094,8 @@ checkTrustlineDeepFrozen(
 
         // There's no difference which side enacted deep freeze, accepting
         // tokens shouldn't be possible.
-        bool const deepFrozen = (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+        bool const deepFrozen =
+            ((*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze)) != 0u;
 
         if (deepFrozen)
         {
