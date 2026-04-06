@@ -200,6 +200,7 @@ xrpl.protocol_autogen > xrpl.json
 xrpl.protocol_autogen > xrpl.protocol
 xrpl.rdb > xrpl.basics
 xrpl.rdb > xrpl.core
+xrpl.rdb > xrpl.json
 xrpl.rdb > xrpl.protocol
 xrpl.resource > xrpl.basics
 xrpl.resource > xrpl.json
