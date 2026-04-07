@@ -38,6 +38,7 @@ checkExpired(
     return now > exp;
 }
 
+[[nodiscard]]
 static Expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
