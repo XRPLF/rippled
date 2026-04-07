@@ -1,9 +1,9 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 namespace xrpl {

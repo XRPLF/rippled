@@ -519,7 +519,7 @@ DirectStepI<TDerived>::revImp(
     {
         IOUAmount const in = mulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         cache_.emplace(in, srcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,
@@ -536,7 +536,7 @@ DirectStepI<TDerived>::revImp(
     IOUAmount const in = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
     IOUAmount const actualOut = mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
     cache_.emplace(in, maxSrcToDst, actualOut, srcDebtDir);
-    rippleCredit(
+    directSendNoFee(
         sb,
         src_,
         dst_,
@@ -628,7 +628,7 @@ DirectStepI<TDerived>::fwdImp(
     {
         IOUAmount const out = mulRatio(srcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
         setCacheLimiting(in, srcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,
@@ -645,7 +645,7 @@ DirectStepI<TDerived>::fwdImp(
         IOUAmount const actualIn = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         IOUAmount const out = mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
         setCacheLimiting(actualIn, maxSrcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,

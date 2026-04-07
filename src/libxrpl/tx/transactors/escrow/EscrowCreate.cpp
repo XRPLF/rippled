@@ -353,7 +353,8 @@ escrowLockApplyHelper<Issue>(
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ter = rippleCredit(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
+    auto const ter =
+        directSendNoFee(view, sender, issuer, amount, !amount.holds<MPTIssue>(), journal);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;
@@ -372,7 +373,7 @@ escrowLockApplyHelper<MPTIssue>(
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
+    auto const ter = lockEscrowMPT(view, sender, amount, journal);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;

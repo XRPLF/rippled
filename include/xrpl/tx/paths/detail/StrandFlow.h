@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -13,7 +14,6 @@
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -771,7 +771,7 @@ flow(
         {
             // Rounding in the payment engine is causing this assert to
             // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of rippled. While this issue still needs to
+            // running debug builds of xrpld. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
             // UNREACHABLE("xrpl::flow : rounding error");

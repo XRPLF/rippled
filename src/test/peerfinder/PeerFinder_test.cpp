@@ -469,32 +469,32 @@ public:
                 pass();
             }
         };
-        run(R"rippleConfig(
+        run(R"xrpldConfig(
 [peers_in_max]
 100
-)rippleConfig");
-        run(R"rippleConfig(
+)xrpldConfig");
+        run(R"xrpldConfig(
 [peers_out_max]
 100
-)rippleConfig");
-        run(R"rippleConfig(
+)xrpldConfig");
+        run(R"xrpldConfig(
 [peers_in_max]
 100
 [peers_out_max]
 5
-)rippleConfig");
-        run(R"rippleConfig(
+)xrpldConfig");
+        run(R"xrpldConfig(
 [peers_in_max]
 1001
 [peers_out_max]
 10
-)rippleConfig");
-        run(R"rippleConfig(
+)xrpldConfig");
+        run(R"xrpldConfig(
 [peers_in_max]
 10
 [peers_out_max]
 1001
-)rippleConfig");
+)xrpldConfig");
     }
 
     void

@@ -5,6 +5,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
@@ -13,7 +14,6 @@
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/transactors/dex/OfferCreate.h>
-#include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 
 namespace xrpl {
 TxConsequences
@@ -726,7 +726,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         {
             // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
-            // change is here: https://github.com/ripple/rippled/issues/4115
+            // change is here: https://github.com/XRPLF/rippled/issues/4115
             return {tecKILLED, false};
         }
         return {tesSUCCESS, true};
