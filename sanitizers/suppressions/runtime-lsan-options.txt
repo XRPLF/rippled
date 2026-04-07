@@ -1,0 +1,1 @@
+halt_on_error=false

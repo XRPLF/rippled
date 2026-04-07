@@ -235,8 +235,10 @@ public:
     {
         testBadInput();
         for (auto user : {true, false})
+        {
             for (auto problem : {true, false})
                 testBasic(user, problem);
+        }
     }
 };
 

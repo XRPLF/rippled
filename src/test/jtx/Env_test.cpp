@@ -28,7 +28,7 @@ public:
     }
 
     // Declarations in Account.h
-    void
+    static void
     testAccount()
     {
         using namespace jtx;
@@ -37,7 +37,7 @@ public:
             Account b(a);
             a = b;
             a = std::move(b);
-            Account c(std::move(a));
+            Account const c(std::move(a));
         }
         Account("alice");                      // NOLINT(bugprone-unused-raii)
         Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
@@ -533,14 +533,14 @@ public:
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        BEAST_EXPECT(!jt1.get<int>());
-        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt1.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        BEAST_EXPECT(!jt2.get<int>());
-        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt2.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt1.get<int>());
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
@@ -635,9 +635,10 @@ public:
         std::uint32_t const aliceSeq = env.seq("alice");
 
         // Sign jsonNoop.
-        Json::Value jsonNoop = env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
+        Json::Value const jsonNoop =
+            env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
         // Re-sign jsonNoop.
-        JTx jt = env.jt(jsonNoop);
+        JTx const jt = env.jt(jsonNoop);
         env(jt);
     }
 
@@ -707,8 +708,10 @@ public:
         auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
+            {
                 if (!supported[i])
                     return bitsetIndexToFeature(i);
+            }
 
             return std::nullopt;
         }();
@@ -721,7 +724,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (env.app().config().features.find(f) != env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {
@@ -750,7 +753,7 @@ public:
             Env env{*this, missingSomeFeatures};
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -769,7 +772,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -785,7 +788,7 @@ public:
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -809,7 +812,7 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{
+            jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");

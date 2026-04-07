@@ -39,7 +39,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
-    bool enableLargeNumbers =
+    bool const enableLargeNumbers =
         !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
 
@@ -77,9 +77,9 @@ public:
     bool
     enabled(uint256 const& feature) const
     {
-        if (presets_.count(feature) > 0)
+        if (presets_.contains(feature))
             return true;
-        return set_.count(feature) > 0;
+        return set_.contains(feature);
     }
 
     bool

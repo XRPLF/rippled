@@ -9,7 +9,7 @@ namespace PeerFinder {
 class Fixed
 {
 public:
-    explicit Fixed(clock_type& clock) : m_when(clock.now()), m_failures(0)
+    explicit Fixed(clock_type& clock) : m_when(clock.now())
     {
     }
 
@@ -40,7 +40,7 @@ public:
 
 private:
     clock_type::time_point m_when;
-    std::size_t m_failures;
+    std::size_t m_failures{0};
 };
 
 }  // namespace PeerFinder

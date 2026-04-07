@@ -33,7 +33,7 @@ enum class ReleaseWeakRefAction { noop, destroy };
 /** Implement the strong count, weak count, and bit flags for an intrusive
     pointer.
 
-    A class can satisfy the requirements of a xrpl::IntrusivePointer by
+    A class can satisfy the requirements of an xrpl::IntrusivePointer by
     inheriting from this class.
   */
 struct IntrusiveRefCounts
@@ -448,7 +448,7 @@ inline void
 partialDestructorFinished(T** o)
 {
     T& self = **o;
-    IntrusiveRefCounts::RefCountPair p =
+    IntrusiveRefCounts::RefCountPair const p =
         self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
     XRPL_ASSERT(
         (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit && !p.strong),

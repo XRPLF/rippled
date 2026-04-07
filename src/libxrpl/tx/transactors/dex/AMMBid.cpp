@@ -1,12 +1,12 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
@@ -46,15 +46,15 @@ AMMBid::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAuthAccounts))
     {
-        if (auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
-            authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
+        auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
+        if (authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
         }
-        else if (ctx.rules.enabled(fixAMMv1_3))
+        if (ctx.rules.enabled(fixAMMv1_3))
         {
-            AccountID account = ctx.tx[sfAccount];
+            AccountID const account = ctx.tx[sfAccount];
             std::set<AccountID> unique;
             for (auto const& obj : authAccounts)
             {
@@ -193,14 +193,22 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         auctionSlot.setAccountID(sfAccount, account_);
         auctionSlot.setFieldU32(sfExpiration, current + TOTAL_TIME_SLOT_SECS);
         if (fee != 0)
+        {
             auctionSlot.setFieldU16(sfDiscountedFee, fee);
+        }
         else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+        {
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
         auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
+        {
             auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
+        }
         else
+        {
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
+        }
         // Burn the remaining bid amount
         auto const saBurn =
             adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
@@ -214,7 +222,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             // LCOV_EXCL_STOP
         }
         auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
             return res;
@@ -245,7 +253,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             {
                 return std::max(computedPrice, Number(*bidMin));
             }
-            else if (bidMax)
+            if (bidMax)
             {
                 if (computedPrice <= *bidMax)
                     return computedPrice;
@@ -253,23 +261,30 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
                     << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
             }
-            else
-                return computedPrice;
+
+            return computedPrice;
         }();
         if (!payPrice)
+        {
             return Unexpected(tecAMM_FAILED);
-        else if (payPrice > lpTokens)
+        }
+        if (payPrice > lpTokens)
+        {
             return Unexpected(tecAMM_INVALID_TOKENS);
+        }
         return *payPrice;
     };
 
     // No one owns the slot or expired slot.
     if (auto const acct = auctionSlot[~sfAccount]; !acct || !validOwner(*acct))
     {
-        if (auto const payPrice = getPayPrice(minSlotPrice); !payPrice)
+        auto const payPrice = getPayPrice(minSlotPrice);
+        if (!payPrice)
+        {
             return {payPrice.error(), false};
-        else
-            res = updateSlot(discountedFee, *payPrice, *payPrice);
+        }
+
+        res = updateSlot(discountedFee, *payPrice, *payPrice);
     }
     else
     {
@@ -308,7 +323,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             auctionSlot[sfAccount],
             toSTAmount(lpTokens.issue(), refund),
             ctx_.journal);
-        if (res != tesSUCCESS)
+        if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to refund.";
             return {res, false};
@@ -318,7 +333,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         res = updateSlot(discountedFee, *payPrice, burn);
     }
 
-    return {res, res == tesSUCCESS};
+    return {res, isTesSuccess(res)};
 }
 
 TER

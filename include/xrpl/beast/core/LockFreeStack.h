@@ -187,7 +187,7 @@ public:
     bool
     push_front(Node* node)
     {
-        bool first;
+        bool first = false;
         Node* old_head = m_head.load(std::memory_order_relaxed);
         do
         {
@@ -211,7 +211,7 @@ public:
     pop_front()
     {
         Node* node = m_head.load();
-        Node* new_head;
+        Node* new_head = nullptr;
         do
         {
             if (node == &m_end)

@@ -129,7 +129,7 @@ public:
     Validation const&
     unwrap() const
     {
-        // For the rippled implementation in which RCLValidation wraps
+        // For the xrpld implementation in which RCLValidation wraps
         // STValidation, the csf::Validation has no more specific type it
         // wraps, so csf::Validation unwraps to itself
         return *this;

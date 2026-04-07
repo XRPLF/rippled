@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
-#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -471,7 +471,7 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 testcase("Credentials fail, expiration in the past.");
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in ripple epoch - 1s
+                // current time in XRPL epoch - 1s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() - 1;
                 jv[sfExpiration.jsonName] = t;
@@ -522,6 +522,7 @@ struct Credentials_test : public beast::unit_test::suite
                     directory::adjustOwnerNode);
                 BEAST_EXPECT(res1);
 
+                // NOLINTNEXTLINE(readability-suspicious-call-argument)
                 auto const jv = credentials::create(issuer, subject, credType);
                 env(jv, ter(tecDIR_FULL));
                 // Free one directory entry by using a ticket
@@ -811,7 +812,7 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("CredentialsDelete fail, time not expired yet.");
 
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in ripple epoch + 1000s
+                // current time in XRPL epoch + 1000s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
                 jv[sfExpiration.jsonName] = t;

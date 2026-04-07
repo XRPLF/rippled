@@ -1,8 +1,8 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenCancelOffer.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <boost/endian/conversion.hpp>
 

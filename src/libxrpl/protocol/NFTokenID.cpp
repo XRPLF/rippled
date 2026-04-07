@@ -30,7 +30,7 @@ canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& 
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
@@ -70,7 +70,7 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             // field changing, but no NFTs within that page changing. In this
             // case, there will be no previous NFTs and we need to skip.
             // However, there will always be NFTs listed in the final fields,
-            // as rippled outputs all fields in final fields even if they were
+            // as xrpld outputs all fields in final fields even if they were
             // not changed.
             STObject const& previousFields =
                 node.peekAtField(sfPreviousFields).downcast<STObject>();
@@ -154,12 +154,12 @@ insertNFTokenID(
     {
         std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
-        if (result.size() > 0)
+        if (!result.empty())
             response[jss::nftoken_id] = to_string(result.front());
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
         for (auto const& nftID : result)
