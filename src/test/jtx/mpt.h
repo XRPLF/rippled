@@ -200,6 +200,7 @@ struct MPTConvert
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
 
     std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -211,6 +212,7 @@ struct MPTMergeInbox
 {
     std::optional<Account> account = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -235,6 +237,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<Buffer> amountCommitment = std::nullopt;
     std::optional<Buffer> balanceCommitment = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -255,6 +258,7 @@ struct MPTConvertBack
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
     std::optional<Buffer> pedersenCommitment = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -269,6 +273,7 @@ struct MPTConfidentialClawback
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint64_t> amt = std::nullopt;
     std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
@@ -530,17 +535,28 @@ private:
     {
         auto const expectedFlags = txflags(arg.flags.value_or(0));
         auto const expectedTer = ter(arg.err.value_or(tesSUCCESS));
+
+        std::optional<std::uint32_t> ticketSeq;
         if constexpr (requires { arg.ticketSeq; })
-        {
-            if (arg.ticketSeq)
-                env_(jv, expectedFlags, expectedTer, ticket::use(*arg.ticketSeq));
-            else
-                env_(jv, expectedFlags, expectedTer);
-        }
+            ticketSeq = arg.ticketSeq;
+
+        std::optional<Account> delegateAcct;
+        if constexpr (requires { arg.delegate; })
+            delegateAcct = arg.delegate;
+
+        if (ticketSeq && delegateAcct)
+            env_(
+                jv,
+                expectedFlags,
+                expectedTer,
+                ticket::use(*ticketSeq),
+                delegate::as(*delegateAcct));
+        else if (ticketSeq)
+            env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
+        else if (delegateAcct)
+            env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
         else
-        {
             env_(jv, expectedFlags, expectedTer);
-        }
         auto const err = env_.ter();
         if (close_)
             env_.close();
