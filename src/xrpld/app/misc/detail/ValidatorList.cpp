@@ -1710,7 +1710,7 @@ ValidatorList::for_each_available(
         if (plCollection.status != PublisherStatus::available)
             continue;
         XRPL_ASSERT(
-            plCollection.maxSequence != 0,
+            plCollection.maxSequence.value_or(0) != 0,
             "xrpl::ValidatorList::for_each_available : nonzero maxSequence");
         func(
             plCollection.rawManifest,

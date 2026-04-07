@@ -38,6 +38,8 @@ This section contains changes targeting a future version.
 ### Bugfixes
 
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
+- `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
+- gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 
 ## XRP Ledger server version 3.1.0
 
