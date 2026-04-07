@@ -94,11 +94,16 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // Globally or individually frozen
-    if (isFrozen(ctx.view, accountID, amount.asset()) ||
-        isFrozen(ctx.view, accountID, amount2.asset()))
+    if (auto const ter = checkFrozen(ctx.view, accountID, amount.asset()); !isTesSuccess(ter))
+
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
+        return ter;
+    }
+    if (auto const ter = checkFrozen(ctx.view, accountID, amount2.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
+        return ter;
     }
 
     auto noDefaultRipple = [](ReadView const& view, Asset const& asset) {
@@ -165,10 +170,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return terADDRESS_COLLISION;
     }
 
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_CREATE, amount.asset(), accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount.asset(), accountID, accountID);
         !isTesSuccess(ter))
         return ter;
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_CREATE, amount2.asset(), accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount2.asset(), accountID, accountID);
         !isTesSuccess(ter))
         return ter;
 

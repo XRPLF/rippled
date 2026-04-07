@@ -94,10 +94,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, sendMax.asset()))
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {

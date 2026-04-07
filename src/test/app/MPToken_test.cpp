@@ -3395,10 +3395,10 @@ class MPToken_test : public beast::unit_test::suite
                     auto const [errBuy, errSell] = [&]() -> std::pair<TER, TER> {
                         // Global lock
                         if (lockMPTIssue)
-                            return std::make_pair(tecFROZEN, tecFROZEN);
+                            return std::make_pair(tecLOCKED, tecLOCKED);
                         // Local lock
                         if (lockMPToken)
-                            return std::make_pair(tesSUCCESS, error(tecUNFUNDED_OFFER));
+                            return std::make_pair(error(tecLOCKED), error(tecUNFUNDED_OFFER));
                         // MPToken doesn't exist
                         if (requireAuth)
                             return std::make_pair(error(tecNO_AUTH), error(tecUNFUNDED_OFFER));
@@ -3496,10 +3496,9 @@ class MPToken_test : public beast::unit_test::suite
                 else
                 {
                     auto const err = flag == tfMPTLock ? ter(tecUNFUNDED_OFFER) : ter(tesSUCCESS);
+                    auto const err1 = flag == tfMPTLock ? ter(tecLOCKED) : ter(tesSUCCESS);
                     env(offer(alice, ETH(1), BTC(1)), err);
-                    // Offer created by not crossed
-                    env(offer(carol, BTC(1), ETH(1)));
-                    BEAST_EXPECT(expectOffers(env, carol, 1, {{BTC(1), ETH(1)}}));
+                    env(offer(carol, BTC(1), ETH(1)), err1);
                 }
             };
 
@@ -6126,8 +6125,7 @@ class MPToken_test : public beast::unit_test::suite
             AMM amm(env, gw, BTC(100), USD(100));
             env.close();
             // alice can't deposit since MPTCanTransfer is not set
-            amm.deposit(
-                DepositArg{.account = alice, .tokens = 1'000, .err = ter(tecNO_PERMISSION)});
+            amm.deposit(DepositArg{.account = alice, .tokens = 1'000, .err = ter(tecNO_AUTH)});
             env.close();
 
             // can't clawback since alice is not an LP
@@ -6360,8 +6358,8 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice and issuer can't create
             USD.set({.flags = tfMPTLock});
-            createFail(alice, tecFROZEN);
-            createFail(gw, tecFROZEN);
+            createFail(alice, tecLOCKED);
+            createFail(gw, tecLOCKED);
 
             // MPTRequireAuth is set
 
@@ -6381,7 +6379,7 @@ class MPToken_test : public beast::unit_test::suite
             USD.set({.mutableFlags = tmfMPTClearRequireAuth});
             USD.set({.mutableFlags = tmfMPTClearCanTransfer});
             // alice can't create
-            createFail(alice, tecNO_PERMISSION);
+            createFail(alice, tecNO_AUTH);
             // issuer can create
             createDeleteAMM(gw);
             USD.set({.mutableFlags = tmfMPTSetCanTransfer});
@@ -6427,12 +6425,12 @@ class MPToken_test : public beast::unit_test::suite
                     {.account = account,
                      .asset1In = USD(1),
                      .asset2In = EUR(1),
-                     .err = ter(tecFROZEN)});
+                     .err = ter(tecLOCKED)});
                 amm.deposit(
                     {.account = account,
                      .asset1In = EUR(1),
                      .assets = std::make_pair(EUR, USD),
-                     .err = ter(tecFROZEN)});
+                     .err = ter(tecLOCKED)});
             }
             USD.set({.flags = tfMPTUnlock});
 
@@ -6467,15 +6465,12 @@ class MPToken_test : public beast::unit_test::suite
             USD.set({.mutableFlags = tmfMPTClearCanTransfer});
             // carol can't deposit
             amm.deposit(
-                {.account = carol,
-                 .asset1In = USD(1),
-                 .asset2In = EUR(1),
-                 .err = ter(tecNO_PERMISSION)});
+                {.account = carol, .asset1In = USD(1), .asset2In = EUR(1), .err = ter(tecNO_AUTH)});
             amm.deposit(
                 {.account = carol,
                  .asset1In = EUR(1),
                  .assets = std::make_pair(EUR, USD),
-                 .err = ter(tecNO_PERMISSION)});
+                 .err = ter(tecNO_AUTH)});
             // issuer can deposit
             amm.deposit({.account = gw, .tokens = 1'000});
             // carol can deposit
@@ -6517,8 +6512,8 @@ class MPToken_test : public beast::unit_test::suite
                     {.account = account,
                      .asset1Out = USD(1),
                      .asset2Out = EUR(1),
-                     .err = ter(tecFROZEN)});
-                amm.withdraw({.account = account, .tokens = 1'000, .err = ter(tecFROZEN)});
+                     .err = ter(tecLOCKED)});
+                amm.withdraw({.account = account, .tokens = 1'000, .err = ter(tecLOCKED)});
                 // can single withdraw another asset
                 amm.withdraw(
                     {.account = account, .asset1Out = EUR(1), .assets = std::make_pair(EUR, USD)});
@@ -6544,7 +6539,7 @@ class MPToken_test : public beast::unit_test::suite
             USD.authorize({.account = gw, .holder = carol});
             amm.withdraw({.account = carol, .asset1Out = USD(1), .asset2Out = EUR(1)});
 
-            // MPTCanTransfer is set
+            // MPTCanTransfer is not set
 
             USD.set({.mutableFlags = tmfMPTClearRequireAuth});
             USD.set({.mutableFlags = tmfMPTClearCanTransfer});
@@ -6553,7 +6548,7 @@ class MPToken_test : public beast::unit_test::suite
                 {.account = carol,
                  .asset1Out = USD(1),
                  .asset2Out = EUR(1),
-                 .err = ter(tecNO_PERMISSION)});
+                 .err = ter(tecNO_AUTH)});
             // can withdraw another asset
             amm.withdraw(
                 {.account = carol, .asset1Out = EUR(1), .assets = std::make_pair(EUR, USD)});
@@ -6564,6 +6559,9 @@ class MPToken_test : public beast::unit_test::suite
             amm.withdraw({.account = carol, .asset1Out = USD(1), .asset2Out = EUR(1)});
 
             USD.set({.mutableFlags = tmfMPTSetCanTransfer});
+
+            // MPTCanTrade is not set
+
             USD.set({.mutableFlags = tmfMPTClearCanTrade});
             amm.withdraw({.account = gw, .tokens = 1'000, .err = ter(tecNO_PERMISSION)});
             amm.withdraw({.account = carol, .tokens = 1'000, .err = ter(tecNO_PERMISSION)});
