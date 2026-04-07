@@ -971,10 +971,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     if (ledger->seq() % 256 == 0)
     {
-        // Check if the majority of validators run a higher version rippled
+        // Check if the majority of validators run a higher version xrpld
         // software. If so print a warning.
         //
-        // Validators include their rippled software version in the validation
+        // Validators include their xrpld software version in the validation
         // messages of every (flag - 1) ledger. We wait for one ledger time
         // before checking the version information to accumulate more validation
         // messages.
@@ -990,28 +990,28 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             auto const vals = app_.getValidations().getTrustedForLedger(
                 ledger->header().parentHash, ledger->header().seq - 1);
             std::size_t higherVersionCount = 0;
-            std::size_t rippledCount = 0;
+            std::size_t xrpldCount = 0;
             for (auto const& v : vals)
             {
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
                     higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    rippledCount += BuildInfo::isRippledVersion(version) ? 1 : 0;
+                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
             // from 90% validators from the UNL, (2) 60% of validators
-            // running the rippled implementation have higher version numbers,
+            // running the xrpld implementation have higher version numbers,
             // and (3) the calculation won't cause divide-by-zero.
-            if (higherVersionCount > 0 && rippledCount > 0)
+            if (higherVersionCount > 0 && xrpldCount > 0)
             {
                 constexpr std::size_t reportingPercent = 90;
                 constexpr std::size_t cutoffPercent = 60;
                 auto const unlSize{app_.getValidators().getQuorumKeys().second.size()};
                 needPrint = unlSize > 0 &&
                     calculatePercent(vals.size(), unlSize) >= reportingPercent &&
-                    calculatePercent(higherVersionCount, rippledCount) >= cutoffPercent;
+                    calculatePercent(higherVersionCount, xrpldCount) >= cutoffPercent;
             }
         }
         // To throttle the warning messages, instead of printing a warning

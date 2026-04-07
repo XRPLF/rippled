@@ -685,9 +685,9 @@ public:
     }
 
     void
-    testRippleLibEd25519()
+    testXrplLibEd25519()
     {
-        testcase("ripple-lib encoded Ed25519 keys");
+        testcase("XrplLib encoded Ed25519 keys");
 
         auto test = [this](char const* seed, char const* addr) {
             {
@@ -784,7 +784,7 @@ public:
         testKeypairForSignature(std::string("ed25519"), ed25519_strings);
         testKeypairForSignature(std::string("secp256k1"), strong_brain_strings);
 
-        testRippleLibEd25519();
+        testXrplLibEd25519();
 
         testKeypairForSignatureErrors();
     }
