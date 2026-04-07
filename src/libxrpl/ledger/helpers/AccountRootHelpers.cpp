@@ -153,8 +153,8 @@ getPseudoAccountFields()
         if (!ar)
         {
             // LCOV_EXCL_START
-            LogicError(
-                "xrpl::getPseudoAccountFields : unable to find account root "
+            Throw<std::logic_error>(
+                "ripple::getPseudoAccountFields : unable to find account root "
                 "ledger format");
             // LCOV_EXCL_STOP
         }
