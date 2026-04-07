@@ -174,12 +174,12 @@ getAccountObjects(
     bool iterateNFTPages =
         (!typeFilter.has_value() ||
          typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
-        dirIndex == beast::zero;
+        dirIndex.isZero();
 
     Keylet const firstNFTPage = keylet::nftpage_min(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
-    if (iterateNFTPages && entryIndex != beast::zero)
+    if (iterateNFTPages && entryIndex.isNonZero())
     {
         // if it is we will try to iterate the pages up to the limit
         // and then change over to the owner directory
@@ -192,46 +192,47 @@ getAccountObjects(
 
     // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
-    uint32_t mlimit = limit;
+    uint32_t limitLeft = limit;
 
     // iterate NFTokenPages preferentially
     if (iterateNFTPages)
     {
-        Keylet const first = entryIndex == beast::zero
+        Keylet const first = entryIndex.isZero()
             ? firstNFTPage
             : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
         Keylet const last = keylet::nftpage_max(account);
 
-        // current key
-        uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
+        auto currentKey =
+            ledger.succ(first.key, last.key.next()).value_or(last.key);
 
-        // current page
-        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
+        auto currentPage = ledger.read(Keylet{ltNFTOKEN_PAGE, currentKey});
 
-        while (cp)
+        while (currentPage)
         {
-            jvObjects.append(cp->getJson(JsonOptions::none));
-            auto const npm = (*cp)[~sfNextPageMin];
+            jvObjects.append(currentPage->getJson(JsonOptions::none));
+            auto const npm = (*currentPage)[~sfNextPageMin];
             if (npm)
-                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
-            else
-                cp = nullptr;
-
-            if (--mlimit == 0)
             {
-                if (cp)
-                {
-                    jvResult[jss::limit] = limit;
-                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
-                    return true;
-                }
+                currentPage = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            }
+            else
+            {
+                currentPage = nullptr;
+            }
+
+            if (--limitLeft == 0 && currentPage)
+            {
+                jvResult[jss::limit] = limit;
+                jvResult[jss::marker] =
+                    std::string("0,") + to_string(currentKey);
+                return true;
             }
 
             if (!npm)
                 break;
 
-            ck = *npm;
+            currentKey = *npm;
         }
 
         // if execution reaches here then we're about to transition
@@ -242,12 +243,12 @@ getAccountObjects(
     }
 
     auto const root = keylet::ownerDir(account);
-    auto found = false;
+    auto startEntryFound = false;
 
     if (dirIndex.isZero())
     {
         dirIndex = root.key;
-        found = true;
+        startEntryFound = true;
     }
 
     auto dir = ledger.read({ltDIR_NODE, dirIndex});
@@ -256,7 +257,7 @@ getAccountObjects(
         // it's possible the user had nftoken pages but no
         // directory entries. If there's no nftoken page, we will
         // give empty array for account_objects.
-        if (mlimit >= limit)
+        if (limitLeft >= limit)
             jvResult[jss::account_objects] = Json::arrayValue;
 
         // non-zero dirIndex validity was checked in the beginning of this
@@ -268,34 +269,35 @@ getAccountObjects(
         return true;
     }
 
-    std::uint32_t i = 0;
+    std::uint32_t itemsAdded = 0;
     for (;;)
     {
-        auto const& entries = dir->getFieldV256(sfIndexes);
-        auto iter = entries.begin();
+        auto const& dirEntries = dir->getFieldV256(sfIndexes);
+        auto entryIter = dirEntries.begin();
 
-        if (!found)
+        if (!startEntryFound)
         {
-            iter = std::find(iter, entries.end(), entryIndex);
-            if (iter == entries.end())
+            entryIter = std::find(entryIter, dirEntries.end(), entryIndex);
+            if (entryIter == dirEntries.end())
                 return false;
 
-            found = true;
+            startEntryFound = true;
         }
 
         // it's possible that the returned NFTPages exactly filled the
         // response.  Check for that condition.
-        if (i == mlimit && mlimit < limit)
+        if (itemsAdded == limitLeft && limitLeft < limit &&
+            entryIter != dirEntries.end())
         {
             jvResult[jss::limit] = limit;
             jvResult[jss::marker] =
-                to_string(dirIndex) + ',' + to_string(*iter);
+                to_string(dirIndex) + ',' + to_string(*entryIter);
             return true;
         }
 
-        for (; iter != entries.end(); ++iter)
+        for (; entryIter != dirEntries.end(); ++entryIter)
         {
-            auto const sleNode = ledger.read(keylet::child(*iter));
+            auto const sleNode = ledger.read(keylet::child(*entryIter));
 
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
@@ -303,13 +305,13 @@ getAccountObjects(
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
             }
 
-            if (++i == mlimit)
+            if (++itemsAdded == limitLeft)
             {
-                if (++iter != entries.end())
+                if (++entryIter != dirEntries.end())
                 {
                     jvResult[jss::limit] = limit;
                     jvResult[jss::marker] =
-                        to_string(dirIndex) + ',' + to_string(*iter);
+                        to_string(dirIndex) + ',' + to_string(*entryIter);
                     return true;
                 }
 
@@ -326,14 +328,14 @@ getAccountObjects(
         if (!dir)
             return true;
 
-        if (i == mlimit)
+        if (itemsAdded == limitLeft)
         {
-            auto const& e = dir->getFieldV256(sfIndexes);
-            if (!e.empty())
+            auto const& currentDirEntries = dir->getFieldV256(sfIndexes);
+            if (!currentDirEntries.empty())
             {
                 jvResult[jss::limit] = limit;
-                jvResult[jss::marker] =
-                    to_string(dirIndex) + ',' + to_string(*e.begin());
+                jvResult[jss::marker] = to_string(dirIndex) + ',' +
+                    to_string(*currentDirEntries.begin());
             }
 
             return true;
