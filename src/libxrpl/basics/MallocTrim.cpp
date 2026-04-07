@@ -51,7 +51,7 @@ parseStatmRSSkB(std::string const& statm)
     // /proc/self/statm format: size resident shared text lib data dt
     // We want the second field (resident) which is in pages
     std::istringstream iss(statm);
-    long size, resident;
+    long size = 0, resident = 0;
     if (!(iss >> size >> resident))
         return -1;
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
-
+#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
 
 #include <memory>

@@ -20,7 +20,7 @@ SHAMapInnerNode::~SHAMapInnerNode() = default;
 void
 SHAMapInnerNode::partialDestructor()
 {
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
@@ -61,8 +61,8 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
-    SHAMapHash *cloneHashes, *thisHashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren, *thisChildren;
+    SHAMapHash *cloneHashes = nullptr, *thisHashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren = nullptr, *thisChildren = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -82,7 +82,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     }
 
     spinlock sl(lock_);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (thisIsSparse)
     {
@@ -125,9 +125,13 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
     ret->resizeChildArrays(ret->getBranchCount());
 
     if (hashValid)
+    {
         ret->hash_ = hash;
+    }
     else
+    {
         ret->updateHash();
+    }
 
     return ret;
 }
@@ -185,8 +189,8 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
-    SHAMapHash* hashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    SHAMapHash* hashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
@@ -253,9 +257,11 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     auto const dstIsBranch = [&] {
         if (child)
+        {
             return isBranch_ | (1u << m);
-        else
-            return isBranch_ & ~(1u << m);
+        }
+
+        return isBranch_ & ~(1u << m);
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);
@@ -307,7 +313,7 @@ SHAMapInnerNode::getChildPointer(int branch)
     auto const index = *getChildIndex(branch);
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index].get();
 }
 
@@ -322,7 +328,7 @@ SHAMapInnerNode::getChild(int branch)
     auto const index = *getChildIndex(branch);
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index];
 }
 
@@ -355,7 +361,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
         "hash do match");
 
     packed_spinlock sl(lock_, childIndex);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (children[childIndex])
     {

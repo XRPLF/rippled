@@ -15,7 +15,7 @@ enum class TokenCodecErrc {
     overflowAdd,
     unknown,
 };
-}
+}  // namespace xrpl
 
 namespace std {
 template <>
@@ -69,7 +69,7 @@ public:
 inline xrpl::detail::TokenCodecErrcCategory const&
 TokenCodecErrcCategory()
 {
-    static xrpl::detail::TokenCodecErrcCategory c;
+    static xrpl::detail::TokenCodecErrcCategory const c;
     return c;
 }
 

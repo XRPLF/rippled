@@ -98,7 +98,7 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(m_items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(m_items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, m_collector);
