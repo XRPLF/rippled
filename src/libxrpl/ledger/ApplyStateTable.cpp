@@ -5,6 +5,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
 
+#include <stdexcept>
+
 namespace xrpl {
 namespace detail {
 

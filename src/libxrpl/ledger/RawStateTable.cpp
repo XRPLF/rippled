@@ -1,6 +1,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
+#include <stdexcept>
+
 namespace xrpl {
 namespace detail {
 

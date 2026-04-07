@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Protocol.h>
 
 #include <limits>
+#include <stdexcept>
 #include <type_traits>
 
 namespace xrpl {

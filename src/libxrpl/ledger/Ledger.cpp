@@ -12,6 +12,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <stdexcept>
 #include <utility>
 #include <vector>
 

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 namespace xrpl {
 

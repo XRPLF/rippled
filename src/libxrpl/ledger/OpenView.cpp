@@ -1,6 +1,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
 
+#include <stdexcept>
+
 namespace xrpl {
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
