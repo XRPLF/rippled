@@ -14,6 +14,7 @@
 #include <xrpl/tx/transactors/payment/Payment.h>
 
 namespace xrpl {
+
 TxConsequences
 Payment::makeTxConsequences(PreflightContext const& ctx)
 {

@@ -7,6 +7,7 @@
 #include <xrpl/protocol/STObject.h>
 
 namespace xrpl {
+
 std::pair<STAmount, STAmount>
 ammPoolHolds(
     ReadView const& view,

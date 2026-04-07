@@ -479,7 +479,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if ((sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};

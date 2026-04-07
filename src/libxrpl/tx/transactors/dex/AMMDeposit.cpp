@@ -9,6 +9,7 @@
 #include <xrpl/tx/transactors/dex/AMMDeposit.h>
 
 namespace xrpl {
+
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {

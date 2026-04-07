@@ -21,6 +21,7 @@
 #include <sstream>
 
 namespace xrpl {
+
 template <class TIn, class TOut, class TDerived>
 class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 {
