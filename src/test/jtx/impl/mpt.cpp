@@ -1688,6 +1688,28 @@ MPTTester::chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Va
     return std::move(*chain);
 }
 
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt)
+{
+    if (sendAmt > currentSpending)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    auto newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
+    if (!newEncSpending)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    return ConfidentialSendChainState{
+        .spending = currentSpending - sendAmt,
+        .encSpending = std::move(*newEncSpending),
+        .version = currentVersion + 1,
+    };
+}
+
 void
 MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
 {
