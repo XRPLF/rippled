@@ -86,7 +86,7 @@ Message::compress()
             case protocol::mtSQUELCH:
                 break;
             default:
-                XRPL_ASSERT(false, "Message::compress : unknown message type");
+                UNREACHABLE("Message::compress : unknown message type");
                 break;
         }
         return false;
