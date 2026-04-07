@@ -83,6 +83,10 @@ Message::compress()
             case protocol::mtPROOF_PATH_RESPONSE:
             case protocol::mtREPLAY_DELTA_REQ:
             case protocol::mtHAVE_TRANSACTIONS:
+            case protocol::mtSQUELCH:
+                break;
+            default:
+                XRPL_ASSERT(false, "Message::compress : unknown message type");
                 break;
         }
         return false;
