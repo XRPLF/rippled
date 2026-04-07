@@ -18,7 +18,11 @@ is_private(AddressV6 const& addr)
 bool
 is_public(AddressV6 const& addr)
 {
-    // TODO is this correct?
+    if (addr.is_loopback())
+        return false;
+    if (addr.is_v4_mapped())
+        return is_public(
+            boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
     return !is_private(addr) && !addr.is_multicast();
 }
 
