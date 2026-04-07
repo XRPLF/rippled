@@ -4279,8 +4279,7 @@ public:
 
         Env env{*this, features};
 
-        // This test mimics the payment flow used in the Ripple Connect
-        // smoke test.  The players:
+        // This test mimics a payment flow. The players:
         //   A USD gateway with hot and cold wallets
         //   A EUR gateway with hot and cold walllets
         //   A MM gateway that will provide offers from USD->EUR and EUR->USD

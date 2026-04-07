@@ -114,10 +114,10 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
 }
 
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& value)
+parseXrplLibSeed(Json::Value const& value)
 {
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
-    // non-standard way. While rippled never encode seeds that way, we
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While xrpld never encode seeds that way, we
     // try to detect such keys to avoid user confusion.
     if (!value.isString())
         return std::nullopt;
@@ -258,14 +258,14 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         }
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
     // using strcmp as pointers may not match (see
     // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
     if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
-        seed = RPC::parseRippleLibSeed(params[secretType]);
+        seed = RPC::parseXrplLibSeed(params[secretType]);
 
         if (seed)
         {

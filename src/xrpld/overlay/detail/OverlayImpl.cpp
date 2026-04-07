@@ -663,7 +663,7 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
 }
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
-    and are running the Ripple protocol.
+    and are running the XRPL protocol.
 */
 std::size_t
 OverlayImpl::size() const

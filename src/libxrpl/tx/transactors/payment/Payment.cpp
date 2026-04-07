@@ -403,7 +403,7 @@ Payment::doApply()
 
     if (ripple)
     {
-        // Ripple payment with at least one intermediate step and uses
+        // XRPL payment with at least one intermediate step and uses
         // transitive balances.
 
         // An account that requires authorization has two ways to get an

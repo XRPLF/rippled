@@ -184,7 +184,14 @@ public:
                 jp[jss::command] = cmd;
             }
             auto const s = to_string(jp);
-            ws_.write_some(true, buffer(s));
+
+            // Use the error_code overload to avoid an unhandled exception
+            // when the server closes the WebSocket connection (e.g. after
+            // booting a client that exceeded resource thresholds).
+            error_code ec;
+            ws_.write_some(true, buffer(s), ec);
+            if (ec)
+                return {};
         }
 
         auto jv =
