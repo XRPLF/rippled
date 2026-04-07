@@ -106,10 +106,10 @@ makeEcPair(Slice const& buffer)
             slice.length());
     };
 
-    Slice s1{buffer.data(), ecGamalEncryptedLength};
-    Slice s2{buffer.data() + ecGamalEncryptedLength, ecGamalEncryptedLength};
+    Slice const s1{buffer.data(), ecGamalEncryptedLength};
+    Slice const s2{buffer.data() + ecGamalEncryptedLength, ecGamalEncryptedLength};
 
-    EcPair pair;
+    EcPair pair{};
     if (parsePubKey(s1, pair.c1) != 1 || parsePubKey(s2, pair.c2) != 1)
         return std::nullopt;
 
@@ -169,7 +169,7 @@ homomorphicAdd(Slice const& a, Slice const& b)
     if (!pairA || !pairB)
         return std::nullopt;
 
-    EcPair sum;
+    EcPair sum{};
     if (auto res = secp256k1_elgamal_add(
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
@@ -192,7 +192,7 @@ homomorphicSubtract(Slice const& a, Slice const& b)
     if (!pairA || !pairB)
         return std::nullopt;
 
-    EcPair diff;
+    EcPair diff{};
     if (auto res = secp256k1_elgamal_subtract(
             secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
@@ -234,7 +234,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
     if (pubKeySlice.size() != ecPubKeyLength)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    EcPair pair;
+    EcPair pair{};
     secp256k1_pubkey pubKey;
     if (auto res = secp256k1_ec_pubkey_parse(
             secp256k1Context(), &pubKey, pubKeySlice.data(), ecPubKeyLength);
@@ -453,7 +453,7 @@ computeNextSendChainState(
     if (sendAmt > currentSpending)
         return std::nullopt;
 
-    auto const newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
+    auto newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
     if (!newEncSpending)
         return std::nullopt;
 

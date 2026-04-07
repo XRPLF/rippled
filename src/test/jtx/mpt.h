@@ -347,6 +347,11 @@ public:
     void
     convert(MPTConvert const& arg = MPTConvert{});
 
+    // Build a confidential convert JV without submitting.  'seq' is the inner
+    // transaction sequence used in the Schnorr proof context hash.
+    Json::Value
+    convertJV(MPTConvert const& arg, std::uint32_t seq);
+
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
@@ -382,6 +387,13 @@ public:
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+
+    // Build a confidential convertBack JV without submitting.  'seq' is the
+    // inner transaction sequence used in the proof context hash.  Reads the
+    // current encrypted spending balance and version from the ledger, so call
+    // this before the batch is submitted.
+    Json::Value
+    convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
     confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
