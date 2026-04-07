@@ -56,7 +56,7 @@ walletPropose(Json::Value const& params)
 {
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
-    bool rippleLibSeed = false;
+    bool libSeed = false;
 
     if (params.isMember(jss::key_type))
     {
@@ -86,7 +86,7 @@ walletPropose(Json::Value const& params)
 
         if (seed)
         {
-            rippleLibSeed = true;
+            libSeed = true;
 
             // If the user *explicitly* requests a key type other than
             // Ed25519 we return an error.
@@ -137,7 +137,7 @@ walletPropose(Json::Value const& params)
     // If a passphrase was specified, and it was hashed and used as a seed
     // run a quick entropy check and add an appropriate warning, because
     // "brain wallets" can be easily attacked.
-    if (!rippleLibSeed && params.isMember(jss::passphrase))
+    if (!libSeed && params.isMember(jss::passphrase))
     {
         auto const passphrase = params[jss::passphrase].asString();
 
