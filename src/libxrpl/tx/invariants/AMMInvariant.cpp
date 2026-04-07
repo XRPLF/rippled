@@ -7,6 +7,7 @@
 #include <xrpl/protocol/TxFormats.h>
 
 namespace xrpl {
+
 void
 ValidAMM::visitEntry(
     bool isDelete,
