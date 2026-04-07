@@ -13,7 +13,7 @@ namespace xrpl {
 class Seed
 {
 private:
-    std::array<uint8_t, 16> buf_;
+    std::array<uint8_t, 16> buf_{};
 
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;
@@ -80,7 +80,7 @@ randomSeed();
 
 /** Generate a seed deterministically.
 
-    The algorithm is specific to Ripple:
+    The algorithm is specific to the XRPL:
 
         The seed is calculated as the first 128 bits
         of the SHA512-Half of the string text excluding

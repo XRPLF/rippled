@@ -65,19 +65,19 @@ public:
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    std::optional<std::reference_wrapper<uint256 const>> const
+    std::optional<std::reference_wrapper<uint256 const>>
     getTxFeature(TxType txType) const;
 
     bool
     isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
-    uint32_t
-    txToPermissionType(TxType const& type) const;
+    static uint32_t
+    txToPermissionType(TxType const& type);
 
     // tx type value is permission value minus one
-    TxType
-    permissionToTxType(uint32_t const& value) const;
+    static TxType
+    permissionToTxType(uint32_t const& value);
 };
 
 }  // namespace xrpl

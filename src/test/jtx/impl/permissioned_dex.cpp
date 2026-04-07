@@ -20,7 +20,7 @@ setupDomain(
     env.fund(XRP(100000), domainOwner);
     env.close();
 
-    pdomain::Credentials credentials{{domainOwner, credType}};
+    pdomain::Credentials const credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
     auto const objects = pdomain::getObjects(domainOwner, env);

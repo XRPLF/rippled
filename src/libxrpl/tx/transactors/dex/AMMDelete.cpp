@@ -1,9 +1,9 @@
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMDelete.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
@@ -45,7 +45,7 @@ AMMDelete::doApply()
 
     auto const ter =
         deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
-    if (ter == tesSUCCESS || ter == tecINCOMPLETE)
+    if (isTesSuccess(ter) || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 
     return ter;

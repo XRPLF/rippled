@@ -13,7 +13,7 @@
 namespace xrpl {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
-    : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
+    : app_(app), journal_(journal), armed_(false)
 {
 }
 
@@ -35,7 +35,7 @@ LoadManager::~LoadManager()
 void
 LoadManager::activateStallDetector()
 {
-    std::lock_guard sl(mutex_);
+    std::lock_guard const sl(mutex_);
     armed_ = true;
     lastHeartbeat_ = std::chrono::steady_clock::now();
 }
@@ -44,7 +44,7 @@ void
 LoadManager::heartbeat()
 {
     auto const heartbeat = std::chrono::steady_clock::now();
-    std::lock_guard sl(mutex_);
+    std::lock_guard const sl(mutex_);
     lastHeartbeat_ = heartbeat;
 }
 
@@ -63,7 +63,7 @@ void
 LoadManager::stop()
 {
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         stop_ = true;
         // There is at most one thread waiting on this condition.
         cv_.notify_all();

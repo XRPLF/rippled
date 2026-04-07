@@ -400,7 +400,7 @@ public:
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
         auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
-        if (!BEAST_EXPECT(parsedseed))
+        if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 
         std::string const valPublicKey = toBase58(
@@ -461,7 +461,7 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
-                uint32_t netID = env.app().getNetworkIDService().getNetworkID();
+                uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
                 if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
@@ -784,9 +784,9 @@ public:
         using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
         Account alice("alice");
-        Account bob("bob");
+        Account const bob("bob");
         Account carol("carol");
-        Account david("david");
+        Account const david("david");
         ///////////////////////////////////////////////////////////////////
 
         /*
@@ -802,13 +802,17 @@ public:
          * return {true, true} if received numReplies replies and also
          * received a tx with the account_history_tx_first == true
          */
-        auto getTxHash = [](WSClient& wsc, IdxHashVec& v, int numReplies) -> std::pair<bool, bool> {
+        auto getTxHash = [](WSClient& wsc,
+                            IdxHashVec& v,
+                            int numReplies,
+                            std::chrono::milliseconds timeout =
+                                std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
             bool first_flag = false;
 
             for (int i = 0; i < numReplies; ++i)
             {
                 std::uint32_t idx{0};
-                auto reply = wsc.getMsg(100ms);
+                auto reply = wsc.getMsg(timeout);
                 if (reply)
                 {
                     auto r = *reply;
@@ -816,8 +820,8 @@ public:
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
                         first_flag = true;
-                    bool boundary = r.isMember(jss::account_history_boundary);
-                    int ledger_idx = r[jss::ledger_index].asInt();
+                    bool const boundary = r.isMember(jss::account_history_boundary);
+                    int const ledger_idx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
@@ -928,7 +932,7 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t num_tx = vec.size();
+            size_t const num_tx = vec.size();
             for (size_t i = 0; i < num_tx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
@@ -982,7 +986,7 @@ public:
             BEAST_EXPECT(goodSubRPC(jv));
 
             sendPayments(env, env.master, alice, 1, 1);
-            r = getTxHash(*wscTxHistory, vec, 1);
+            r = getTxHash(*wscTxHistory, vec, 1, 10ms);
             BEAST_EXPECT(!r.first);
         }
         {
@@ -1001,7 +1005,7 @@ public:
                 return;
             IdxHashVec genesisFullHistoryVec;
             BEAST_EXPECT(env.syncClose());
-            if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1).first))
+            if (!BEAST_EXPECT(!getTxHash(*wscTxHistory, genesisFullHistoryVec, 1, 10ms).first))
                 return;
 
             /*
@@ -1071,7 +1075,7 @@ public:
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
-            std::array<Account, 2> accounts = {alice, bob};
+            std::array<Account, 2> const accounts = {alice, bob};
             env.fund(XRP(222222), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1139,7 +1143,7 @@ public:
             Env env(*this, single_thread_io(envconfig()));
             auto const USD_a = alice["USD"];
 
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
             env.trust(USD_a(20000), carol);
             BEAST_EXPECT(env.syncClose());
@@ -1161,7 +1165,7 @@ public:
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
-                getTxHash(*ws, tempVec, 100);
+                getTxHash(*ws, tempVec, 100, 1000ms);
             }
 
             auto count = mixedPayments();
@@ -1176,7 +1180,7 @@ public:
              * long transaction history
              */
             Env env(*this, single_thread_io(envconfig()));
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1195,7 +1199,7 @@ public:
             {
                 // take out existing txns from the stream
                 IdxHashVec tempVec;
-                getTxHash(*wscLong, tempVec, 100);
+                getTxHash(*wscLong, tempVec, 100, 1000ms);
             }
 
             // repeat the payments many rounds
@@ -1230,7 +1234,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, single_thread_io(envconfig()), all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;

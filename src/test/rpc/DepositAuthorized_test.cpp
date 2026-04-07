@@ -191,14 +191,14 @@ public:
         }
         {
             // Request an invalid ledger.
-            Json::Value args{depositAuthArgs(alice, becky, "-1")};
+            Json::Value const args{depositAuthArgs(alice, becky, "-1")};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
                 result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
-            Json::Value args{depositAuthArgs(alice, becky, "17")};
+            Json::Value const args{depositAuthArgs(alice, becky, "17")};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
@@ -211,7 +211,7 @@ public:
         }
         {
             // alice is not yet funded.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "srcActNotFound", "Source account not found.");
         }
@@ -219,7 +219,7 @@ public:
         env.close();
         {
             // becky is not yet funded.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "dstActNotFound", "Destination account not found.");
         }
@@ -227,7 +227,7 @@ public:
         env.close();
         {
             // Once becky is funded try it again and see it succeed.
-            Json::Value args{depositAuthArgs(alice, becky)};
+            Json::Value const args{depositAuthArgs(alice, becky)};
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             validateDepositAuthResult(result, true);
         }
@@ -246,9 +246,11 @@ public:
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
+        {
             BEAST_EXPECT(
                 result.isMember(jss::deposit_authorized) &&
                 (result[jss::deposit_authorized] == true));
+        }
 
         BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
         if (!error.empty())

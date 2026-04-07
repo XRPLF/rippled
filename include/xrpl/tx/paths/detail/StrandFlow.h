@@ -1,7 +1,10 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -11,7 +14,6 @@
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -25,7 +27,7 @@ namespace xrpl {
 template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    bool success;                                  ///< Strand succeeded
+    bool success = false;                          ///< Strand succeeded
     TInAmt in = beast::zero;                       ///< Currency amount in
     TOutAmt out = beast::zero;                     ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
@@ -59,7 +61,7 @@ struct StrandResult
     }
 
     StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+        : ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
     {
     }
 };
@@ -569,7 +571,7 @@ flow(
 
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
-    std::uint32_t maxOffersToConsider = 1500;
+    std::uint32_t const maxOffersToConsider = 1500;
     std::uint32_t offersConsidered = 0;
 
     // There is a bug in gcc that incorrectly warns about using uninitialized
@@ -769,7 +771,7 @@ flow(
         {
             // Rounding in the payment engine is causing this assert to
             // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of rippled. While this issue still needs to
+            // running debug builds of xrpld. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
             // UNREACHABLE("xrpl::flow : rounding error");

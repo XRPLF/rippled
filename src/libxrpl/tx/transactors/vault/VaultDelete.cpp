@@ -1,4 +1,7 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -52,7 +55,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
@@ -60,7 +63,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: invalid owner of vault shares.";
         return tecNO_PERMISSION;
         // LCOV_EXCL_STOP
     }
@@ -196,8 +199,6 @@ VaultDelete::doApply()
 
     // Destroy the vault.
     view().erase(vault);
-
-    associateAsset(*vault, asset);
 
     return tesSUCCESS;
 }
