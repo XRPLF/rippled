@@ -2848,8 +2848,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             STAmount const amount = XRP(-1);
-            auto const result = hfs.floatFromSTAmount(amount, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+            auto const y = hfs.floatSet(-1 * 1'000'000, 0, 0);
+            if (BEAST_EXPECT(y))
+            {
+                auto const result = hfs.floatFromSTAmount(amount, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            }
         }
 
         {
