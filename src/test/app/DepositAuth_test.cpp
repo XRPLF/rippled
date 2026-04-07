@@ -1045,7 +1045,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credentials
             auto jv = credentials::create(alice, issuer, credType);
-            // Current time in ripple epoch.
+            // Current time in XRPL epoch.
             // Every time ledger close, unittest timer increase by 10s
             uint32_t const t =
                 env.current()->header().parentCloseTime.time_since_epoch().count() + 60;

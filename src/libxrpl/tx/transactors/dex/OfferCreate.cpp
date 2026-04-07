@@ -726,7 +726,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         {
             // Any ImmediateOrCancel offer that transfers absolutely no funds
             // returns tecKILLED rather than tesSUCCESS.  Motivation for the
-            // change is here: https://github.com/ripple/rippled/issues/4115
+            // change is here: https://github.com/XRPLF/rippled/issues/4115
             return {tecKILLED, false};
         }
         return {tesSUCCESS, true};
