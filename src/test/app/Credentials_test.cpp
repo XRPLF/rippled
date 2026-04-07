@@ -471,7 +471,7 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 testcase("Credentials fail, expiration in the past.");
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in ripple epoch - 1s
+                // current time in XRPL epoch - 1s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() - 1;
                 jv[sfExpiration.jsonName] = t;
@@ -812,7 +812,7 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("CredentialsDelete fail, time not expired yet.");
 
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in ripple epoch + 1000s
+                // current time in XRPL epoch + 1000s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
                 jv[sfExpiration.jsonName] = t;

@@ -204,7 +204,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << to_string(newLPTokenBalance.iou())
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
+    auto const ter = directSendNoFee(sb, holder, issuer, amountWithdraw, true, j_);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 
@@ -217,7 +217,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const flags = ctx_.tx.getFlags();
     if ((flags & tfClawTwoAssets) != 0u)
-        return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
+        return directSendNoFee(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;
 }
