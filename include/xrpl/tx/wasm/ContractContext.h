@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -75,32 +74,16 @@ struct ContractContext
     std::optional<OpenView> emitView;
 
     /// Return the emit view, lazily creating it on first use.
-    /// On first call the view is seeded with any pending changes
-    /// already in the transactor's apply-view (e.g. the tfSendAmount
-    /// balance transfer, consumed sequence number, paid fee) so that
-    /// emitted transactions validate against up-to-date state.
+    /// The view is layered on top of the transactor's ApplyViewImpl
+    /// (applyCtx.view()) so that reads automatically fall through to
+    /// the transactor's pending state (e.g. the tfSendAmount balance
+    /// transfer, consumed sequence number, paid fee) without needing
+    /// to manually copy SLE changes.
     OpenView&
     getEmitView()
     {
         if (!emitView)
-        {
-            emitView.emplace(batch_view, applyCtx.openView());
-
-            // Copy every SLE change that doApply has already made
-            // (via ctx_.view()) into the emit view.
-            applyCtx.visit([this](
-                               uint256 const&,
-                               bool isDelete,
-                               std::shared_ptr<SLE const> const& before,
-                               std::shared_ptr<SLE const> const& after) {
-                if (isDelete && before)
-                    emitView->rawErase(std::make_shared<SLE>(*before));
-                else if (!before && after)
-                    emitView->rawInsert(std::make_shared<SLE>(*after));
-                else if (before && after)
-                    emitView->rawReplace(std::make_shared<SLE>(*after));
-            });
-        }
+            emitView.emplace(static_cast<ReadView const*>(&applyCtx.view()));
         return *emitView;
     }
 };
