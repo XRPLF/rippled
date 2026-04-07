@@ -198,7 +198,7 @@ floatFromSTAmountImpl(STAmount const& x, int32_t mode)
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        detail::WasmNumber const num(x.mantissa(), x.exponent());
+        detail::WasmNumber const num(static_cast<Number>(x));
         if (!num)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();

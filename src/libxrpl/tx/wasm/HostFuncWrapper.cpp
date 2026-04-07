@@ -364,7 +364,7 @@ returnResult(
             params->data[index].of.i32,
             params->data[index + 1].of.i32,
             reinterpret_cast<uint8_t const*>(&exponent),
-            sizeof(exponent));
+            static_cast<int32_t>(sizeof(exponent)));
         if (r2 < 0)
             return hfResult(results, r2);
 

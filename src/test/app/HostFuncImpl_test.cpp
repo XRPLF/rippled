@@ -2847,6 +2847,12 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
+            STAmount const amount = XRP(-1);
+            auto const result = hfs.floatFromSTAmount(amount, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+        }
+
+        {
             auto const y = hfs.floatSet(9223372036854776, 3, 0);
             STAmount const amount(noIssue(), std::numeric_limits<int64_t>::max());
             auto const result = hfs.floatFromSTAmount(amount, 0);

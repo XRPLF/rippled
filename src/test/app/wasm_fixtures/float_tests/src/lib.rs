@@ -672,7 +672,7 @@ fn test_float_to_int() -> bool {
             f01.as_ptr(),
             FLOAT_SIZE as i32,
             result.as_mut_ptr(),
-            FLOAT_SIZE as i32,
+            8 as i32,
             FLOAT_ROUNDING_MODES_TO_NEAREST
         )
     };
@@ -697,7 +697,7 @@ fn test_float_to_int() -> bool {
             f01.as_ptr(),
             FLOAT_SIZE as i32,
             result.as_mut_ptr(),
-            FLOAT_SIZE as i32,
+            8 as i32,
             1
         )
     };

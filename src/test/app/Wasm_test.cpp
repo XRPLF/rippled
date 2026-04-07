@@ -599,7 +599,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
-            checkResult(re, 1, 125'647);
+            checkResult(re, 1, 167'965);
             env.close();
         }
 
@@ -609,15 +609,6 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
             checkResult(re, 1, 4'309);
-            env.close();
-        }
-
-        {
-            auto const floatNewWasm = hexToBytes(floatNewWasmHex);
-
-            TestHostFunctions hfs(env, 0);
-            auto re = runEscrowWasm(floatNewWasm, hfs, 250'000, funcName, {});
-            checkResult(re, 1, 180'454);  // Expected result 1 = all tests pass
             env.close();
         }
     }
