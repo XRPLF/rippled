@@ -4412,6 +4412,53 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testStandaloneInnerBatchFlag(FeatureBitset features)
+    {
+        testcase("standalone tx with tfInnerBatchTxn rejected");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // A standalone Payment with tfInnerBatchTxn must be rejected.
+        // Without proper guards this would bypass signature verification
+        // in preflight2.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Submit a normal Payment with tfInnerBatchTxn flag.
+            // preflight1 must reject with temINVALID_INNER_BATCH because
+            // the flag is set but no parentBatchId exists.
+            env(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn), ter(telENV_RPC_FAILED));
+            env.close();
+
+            // Verify via direct apply path (bypassing RPC layer)
+            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+                // Construct a Payment STTx with tfInnerBatchTxn,
+                // empty signing pub key, and no signature — mimicking
+                // what an attacker would send to skip sig verification.
+                STTx const stx = STTx(ttPAYMENT, [&](auto& obj) {
+                    obj.setAccountID(sfAccount, alice.id());
+                    obj.setAccountID(sfDestination, bob.id());
+                    obj.setFieldAmount(sfAmount, XRP(1));
+                    obj.setFieldAmount(sfFee, XRP(0));
+                    obj.setFieldU32(sfSequence, env.seq(alice));
+                    obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+                });
+
+                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                // Must NOT be applied — signature was never checked
+                BEAST_EXPECT(!result.applied);
+                return false;
+            });
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -4445,6 +4492,7 @@ class Batch_test : public beast::unit_test::suite
         testBatchDelegate(features);
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
+        testStandaloneInnerBatchFlag(features);
     }
 
 public:

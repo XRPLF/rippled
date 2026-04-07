@@ -181,14 +181,12 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
-    if (ctx.rules.enabled(featureBatchV1_1) &&
-        ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+    // Reject if the inner batch flag and parentBatchId are inconsistent.
+    // A standalone tx with tfInnerBatchTxn but no parentBatchId is an
+    // attack attempt. A tx with parentBatchId but without tfInnerBatchTxn
+    // is a programming error.
+    if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
         return temINVALID_INNER_BATCH;
-
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatchV1_1),
-        "Inner batch transaction must have a parent batch ID.");
 
     return tesSUCCESS;
 }
@@ -204,15 +202,18 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // It should be impossible for the InnerBatchTxn flag to be set without
-    // featureBatchV1_1 being enabled
-    XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatchV1_1),
-        "xrpl::Transactor::preflight2",
-        "InnerBatch flag only set if feature enabled");
-    // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1))
+    // Skip signature check on batch inner transactions, but only if
+    // this tx was actually submitted through the batch apply path
+    // (parentBatchId is set). Without this check, a standalone tx
+    // with tfInnerBatchTxn could bypass signature verification.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        if (!ctx.rules.enabled(featureBatchV1_1))
+            return temINVALID_FLAG;
+        if (!ctx.parentBatchId.has_value())
+            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
+    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
