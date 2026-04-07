@@ -1,6 +1,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -8,7 +9,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/account/AccountSet.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 

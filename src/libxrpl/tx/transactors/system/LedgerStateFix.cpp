@@ -1,9 +1,9 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
 namespace xrpl {

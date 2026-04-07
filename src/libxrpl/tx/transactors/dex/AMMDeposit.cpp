@@ -1,12 +1,12 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMDeposit.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 

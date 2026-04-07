@@ -1,15 +1,16 @@
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nftPageMask.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <functional>
 #include <memory>

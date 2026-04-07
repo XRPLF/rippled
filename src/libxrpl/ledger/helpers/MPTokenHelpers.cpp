@@ -139,7 +139,9 @@ authorizeMPToken(
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
+                (view.rules().enabled(fixSecurity3_1_3) &&
+                 (*sleMpt)[~sfLockedAmount].value_or(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
@@ -252,7 +254,8 @@ removeEmptyHolding(
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
-    if (mptoken->at(sfMPTAmount) != 0)
+    if (mptoken->at(sfMPTAmount) != 0 ||
+        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].value_or(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
@@ -746,6 +749,32 @@ rippleUnlockEscrowMPT(
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
         view.update(sleIssuance);
     }
+    return tesSUCCESS;
+}
+
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
+
     return tesSUCCESS;
 }
 
