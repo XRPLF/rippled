@@ -15,17 +15,22 @@ ValidPermissionedDEX::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (after && after->getType() == ltDIR_NODE)
+    // Use `after` if present, otherwise fall back to `before` (defensive: handles
+    // the case where `after` is null for a deleted entry, even though in practice
+    // ApplyStateTable::visit always passes a non-null `after` for erased entries).
+    auto const& sle = after ? after : before;
+
+    if (sle && sle->getType() == ltDIR_NODE)
     {
-        if (after->isFieldPresent(sfDomainID))
-            domains_.insert(after->getFieldH256(sfDomainID));
+        if (sle->isFieldPresent(sfDomainID))
+            domains_.insert(sle->getFieldH256(sfDomainID));
     }
 
-    if (after && after->getType() == ltOFFER)
+    if (sle && sle->getType() == ltOFFER)
     {
-        if (after->isFieldPresent(sfDomainID))
+        if (sle->isFieldPresent(sfDomainID))
         {
-            domains_.insert(after->getFieldH256(sfDomainID));
+            domains_.insert(sle->getFieldH256(sfDomainID));
         }
         else
         {
@@ -34,7 +39,7 @@ ValidPermissionedDEX::visitEntry(
 
         // if a hybrid offer is missing domain or additional book, there's
         // something wrong
-        if (after->isFlag(lsfHybrid) &&
+        if (after && after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
             badHybrids_ = true;
