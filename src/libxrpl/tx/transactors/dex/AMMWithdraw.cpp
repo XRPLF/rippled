@@ -606,10 +606,6 @@ AMMWithdraw::withdraw(
             auto const balance_ = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
             if (balance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
-
-            // Update owner count.
-            if (!isIssue)
-                adjustOwnerCount(view, sleAccount, 1, journal);
         }
         return tesSUCCESS;
     };

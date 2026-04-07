@@ -6583,6 +6583,48 @@ class MPToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testFixDoubleOwnerCount(FeatureBitset all)
+    {
+        testcase("Fix Double adjustOwnerCount in AMMWithdraw");
+
+        using namespace jtx;
+
+        // Carol deposits XRP into an XRP/MPT pool, then withdraws MPT.
+        // Carol has no MPToken before the withdrawal. If the bug exists,
+        // her ownerCount will be inflated by +1 extra.
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Env env(*this, all);
+        env.fund(XRP(30'000), gw, alice, carol);
+        env.close();
+
+        // Create MPT with DEX flags. Only alice is a holder initially.
+        MPT const BTC = MPTTester(
+            {.env = env, .issuer = gw, .holders = {alice}, .pay = 20'000, .flags = MPTDEXFlags});
+
+        // Alice creates XRP/MPT AMM pool
+        AMM amm(env, alice, XRP(10'000), BTC(10'000));
+
+        // Carol deposits XRP (single asset) into the pool.
+        // Carol gets LP tokens but does NOT have an MPToken yet.
+        auto const carolOwnersBefore = ownerCount(env, carol);
+        amm.deposit(carol, XRP(1'000), std::nullopt, std::nullopt, tfSingleAsset);
+        auto const carolOwnersAfterDeposit = ownerCount(env, carol);
+        // Carol should have +1 for LP token trustline
+        BEAST_EXPECT(carolOwnersAfterDeposit == carolOwnersBefore + 1);
+
+        auto const carolOwnersBeforeWithdraw = ownerCount(env, carol);
+        // Carol withdraws single MPT asset. She doesn't have an MPToken,
+        // so one must be created. Bug: ownerCount incremented twice.
+        amm.withdraw({.account = carol, .asset1Out = BTC(100), .flags = tfSingleAsset});
+        auto const carolOwnersAfterWithdraw = ownerCount(env, carol);
+
+        // Expected: +1 for the new MPToken (so total increase = 1)
+        BEAST_EXPECT(carolOwnersAfterWithdraw == carolOwnersBeforeWithdraw + 1);
+    }
+
 public:
     void
     run() override
@@ -6689,6 +6731,9 @@ public:
 
         // Test AMM
         testBasicAMM(all);
+
+        // Fixes
+        testFixDoubleOwnerCount(all);
     }
 };
 
