@@ -62,7 +62,7 @@ public:
     {
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOContext());
-        std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
         auto results = resolver.resolve(pUrl_.domain, port);
         auto it = results.begin();
         auto end = results.end();

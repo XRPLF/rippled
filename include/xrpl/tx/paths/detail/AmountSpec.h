@@ -12,7 +12,7 @@ struct AmountSpec
 {
     explicit AmountSpec() = default;
 
-    bool native;
+    bool native{};
     union
     {
         XRPAmount xrp;

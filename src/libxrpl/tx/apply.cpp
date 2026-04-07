@@ -99,7 +99,7 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
@@ -132,7 +132,7 @@ applyBatchTransactions(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
+        batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
         "Batch transaction missing sfRawTransactions");
 
     auto const parentBatchId = batchTxn.getTransactionID();
@@ -171,13 +171,13 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if (mode & tfAllOrNothing)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if (mode & tfUntilFailure)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if (mode & tfOnlyOne)
+        else if ((mode & tfOnlyOne) != 0u)
         {
             break;
         }

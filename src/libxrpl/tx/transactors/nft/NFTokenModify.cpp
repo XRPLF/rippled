@@ -1,7 +1,7 @@
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenModify.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -30,7 +30,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     // Check if the NFT is mutable
-    if (!(nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagMutable))
+    if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagMutable) == 0)
         return tecNO_PERMISSION;
 
     // Verify permissions for the issuer

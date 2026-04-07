@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -63,7 +62,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     auto const flags = sleDst->getFlags();
 
     // Check if the destination has disallowed incoming checks
-    if (flags & lsfDisallowIncomingCheck)
+    if ((flags & lsfDisallowIncomingCheck) != 0u)
         return tecNO_PERMISSION;
 
     // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
@@ -73,7 +72,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
-    if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -169,7 +168,7 @@ CheckCreate::doApply()
 
     view().insert(sleCheck);
 
-    auto viewJ = ctx_.registry.journal("View");
+    auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != account_)

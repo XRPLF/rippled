@@ -105,7 +105,7 @@ class Feature_test : public beast::unit_test::suite
         }
 
         // Test an arbitrary unknown feature
-        uint256 zero{0};
+        uint256 const zero{0};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==
@@ -143,8 +143,9 @@ class Feature_test : public beast::unit_test::suite
                 return;
             // default config - so all should be disabled, and
             // supported. Some may be vetoed.
-            bool expectVeto = (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete =
+            bool const expectVeto =
+                (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
                 (votes.at(feature[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 feature.isMember(jss::enabled) && !feature[jss::enabled].asBool(),
@@ -278,8 +279,8 @@ class Feature_test : public beast::unit_test::suite
                 (void)id.parseHex(it.key().asString().c_str());
                 if (!BEAST_EXPECT((*it).isMember(jss::name)))
                     return;
-                bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
-                bool expectSupported = env.app().getAmendmentTable().isSupported(id);
+                bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);
+                bool const expectSupported = env.app().getAmendmentTable().isSupported(id);
                 BEAST_EXPECTS(
                     (*it).isMember(jss::enabled) && (*it)[jss::enabled].asBool() == expectEnabled,
                     (*it)[jss::name].asString() + " enabled");
@@ -339,10 +340,12 @@ class Feature_test : public beast::unit_test::suite
             (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
-            bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
-            bool expectSupported = env.app().getAmendmentTable().isSupported(id);
-            bool expectVeto = (votes.at((*it)[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete = (votes.at((*it)[jss::name].asString()) == VoteBehavior::Obsolete);
+            bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);
+            bool const expectSupported = env.app().getAmendmentTable().isSupported(id);
+            bool const expectVeto =
+                (votes.at((*it)[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
+                (votes.at((*it)[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 (*it).isMember(jss::enabled) && (*it)[jss::enabled].asBool() == expectEnabled,
                 (*it)[jss::name].asString() + " enabled");
@@ -421,8 +424,9 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
-            bool expectVeto = (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete =
+            bool const expectVeto =
+                (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
                 (votes.at(feature[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 (expectVeto || expectObsolete) ^ feature.isMember(jss::majority),

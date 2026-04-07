@@ -18,19 +18,19 @@ namespace {
 bool
 isFull(LedgerFill const& fill)
 {
-    return fill.options & LedgerFill::full;
+    return (fill.options & LedgerFill::full) != 0;
 }
 
 bool
 isExpanded(LedgerFill const& fill)
 {
-    return isFull(fill) || (fill.options & LedgerFill::expand);
+    return isFull(fill) || ((fill.options & LedgerFill::expand) != 0);
 }
 
 bool
 isBinary(LedgerFill const& fill)
 {
-    return fill.options & LedgerFill::binary;
+    return (fill.options & LedgerFill::binary) != 0;
 }
 
 void
@@ -173,7 +173,7 @@ fillJsonTx(
         }
     }
 
-    if ((fill.options & LedgerFill::ownerFunds) && txn->getTxnType() == ttOFFER_CREATE)
+    if (((fill.options & LedgerFill::ownerFunds) != 0) && txn->getTxnType() == ttOFFER_CREATE)
     {
         auto const account = txn->getAccountID(sfAccount);
         auto const amount = txn->getFieldAmount(sfTakerGets);
@@ -216,7 +216,7 @@ fillJsonTx(Json::Value& json, LedgerFill const& fill)
     catch (std::exception const& ex)
     {
         // Nothing the user can do about this.
-        if (fill.context)
+        if (fill.context != nullptr)
         {
             JLOG(fill.context->j.error()) << "Exception in " << __func__ << ": " << ex.what();
         }
@@ -304,13 +304,14 @@ fillJson(Json::Value& json, LedgerFill const& fill)
             !fill.ledger.open(),
             fill.ledger.header(),
             bFull,
-            (fill.context ? fill.context->apiVersion : RPC::apiMaximumSupportedVersion));
+            ((fill.context != nullptr) ? fill.context->apiVersion
+                                       : RPC::apiMaximumSupportedVersion));
     }
 
-    if (bFull || fill.options & LedgerFill::dumpTxrp)
+    if (bFull || ((fill.options & LedgerFill::dumpTxrp) != 0))
         fillJsonTx(json, fill);
 
-    if (bFull || fill.options & LedgerFill::dumpState)
+    if (bFull || ((fill.options & LedgerFill::dumpState) != 0))
         fillJsonState(json, fill);
 }
 
@@ -322,7 +323,7 @@ addJson(Json::Value& json, LedgerFill const& fill)
     auto& object = json[jss::ledger] = Json::objectValue;
     fillJson(object, fill);
 
-    if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())
+    if (((fill.options & LedgerFill::dumpQueue) != 0) && !fill.txQueue.empty())
         fillJsonQueue(json, fill);
 }
 

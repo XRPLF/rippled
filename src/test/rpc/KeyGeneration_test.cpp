@@ -1,7 +1,7 @@
 #include <test/jtx/TestSuite.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -98,7 +98,7 @@ public:
             params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
-        std::string seed = result[jss::master_seed].asString();
+        std::string const seed = result[jss::master_seed].asString();
 
         result = walletPropose(params);
 

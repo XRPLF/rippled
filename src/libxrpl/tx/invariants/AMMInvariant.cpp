@@ -2,9 +2,9 @@
 //
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
@@ -28,7 +28,7 @@ ValidAMM::visitEntry(
         }
         // AMM pool changed
         else if (
-            (type == ltRIPPLE_STATE && after->getFlags() & lsfAMMNode) ||
+            (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
             (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
         {
             ammPoolChanged_ = true;

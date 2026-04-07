@@ -439,7 +439,7 @@ public:
 
     // Make a list of trusted validators.
     // Register the validators with AmendmentTable and return the list.
-    std::vector<std::pair<PublicKey, SecretKey>>
+    static std::vector<std::pair<PublicKey, SecretKey>>
     makeValidators(int num, std::unique_ptr<AmendmentTable> const& table)
     {
         std::vector<std::pair<PublicKey, SecretKey>> ret;
@@ -462,7 +462,7 @@ public:
     }
 
     // Execute a pretend consensus round for a flag ledger
-    void
+    static void
     doRound(
         Rules const& rules,
         AmendmentTable& table,
@@ -1067,7 +1067,7 @@ public:
         // Since the local validator vote record expires after 24 hours,
         // with 23 hour flapping the amendment will go live.  But with 25
         // hour flapping the amendment will not go live.
-        for (int flapRateHours : {23, 25})
+        for (int const flapRateHours : {23, 25})
         {
             test::jtx::Env env{*this, feat};
             auto const testAmendment = amendmentId("validatorFlapping");

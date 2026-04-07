@@ -29,7 +29,7 @@ public:
         return cluster;
     }
 
-    PublicKey
+    static PublicKey
     randomNode()
     {
         return derivePublicKey(KeyType::secp256k1, randomSecretKey());
@@ -113,7 +113,7 @@ public:
 
         auto const node = randomNode();
         auto const name = toBase58(TokenType::NodePublic, node);
-        std::uint32_t load = 0;
+        std::uint32_t const load = 0;
         NetClock::time_point tick = {};
 
         // Initial update
