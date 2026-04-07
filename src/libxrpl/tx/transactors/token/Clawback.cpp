@@ -1,4 +1,6 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -88,7 +90,8 @@ preclaimHelper<Issue>(
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -136,7 +139,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!((*sleIssuance)[sfFlags] & lsfMPTCanClawback))
+    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
@@ -168,9 +171,13 @@ Clawback::preclaim(PreclaimContext const& ctx)
     // Note the order of checks - when SAV is active, this check here will make
     // the one which follows `sleHolder->isFieldPresent(sfAMMID)` redundant.
     if (ctx.view.rules().enabled(featureSingleAssetVault) && isPseudoAccount(sleHolder))
+    {
         return tecPSEUDO_ACCOUNT;
-    else if (sleHolder->isFieldPresent(sfAMMID))
+    }
+    if (sleHolder->isFieldPresent(sfAMMID))
+    {
         return tecAMM_ACCOUNT;
+    }
 
     return std::visit(
         [&]<typename T>(T const&) {
@@ -205,7 +212,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         fhIGNORE_FREEZE,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
 }
 
@@ -226,7 +233,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ahIGNORE_AUTH,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(),
         holder,
         issuer,

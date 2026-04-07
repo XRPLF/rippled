@@ -32,10 +32,10 @@ class TOffer : private TOfferBase<TIn, TOut>
 {
 private:
     SLE::pointer m_entry;
-    Quality m_quality;
+    Quality m_quality{};
     AccountID m_account;
 
-    TAmounts<TIn, TOut> m_amounts;
+    TAmounts<TIn, TOut> m_amounts{};
     void
     setFieldAmounts();
 

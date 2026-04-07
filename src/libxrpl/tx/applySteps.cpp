@@ -95,34 +95,31 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 // For Transactor::Normal
 //
 
-// clang-format off
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Normal)
+    requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
 // For Transactor::Blocker
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Blocker)
+    requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::blocker);
 };
 
 // For Transactor::Custom
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Custom)
+    requires(T::ConsequencesFactory == Transactor::Custom)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
-// clang-format on
 
 static std::pair<NotTEC, TxConsequences>
 invoke_preflight(PreflightContext const& ctx)
@@ -344,6 +341,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     {
         auto secondFlight = [&]() {
             if (preflightResult.parentBatchId)
+            {
                 return preflight(
                     registry,
                     view.rules(),
@@ -351,6 +349,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
                     preflightResult.tx,
                     preflightResult.flags,
                     preflightResult.j);
+            }
 
             return preflight(
                 registry,
@@ -383,7 +382,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 
     try
     {
-        if (ctx->preflightResult != tesSUCCESS)
+        if (!isTesSuccess(ctx->preflightResult))
             return {*ctx, ctx->preflightResult};
         return {*ctx, invoke_preclaim(*ctx)};
     }

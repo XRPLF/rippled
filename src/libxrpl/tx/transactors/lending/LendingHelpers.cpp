@@ -856,9 +856,11 @@ computeFullPayment(
                     << ", untrackedInterest: " << full.untrackedInterest;
 
     if (amount < full.totalDue)
+    {
         // If the payment is less than the full payment amount, it's not
         // sufficient to be a full payment.
         return Unexpected(tecINSUFFICIENT_PAYMENT);
+    }
 
     return full;
 }
@@ -1288,7 +1290,7 @@ checkLoanGuards(
     // loan can't be amortized in the specified number of payments, raise an
     // error
     {
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
 
         if (std::int64_t const computedPayments{
                 properties.loanState.valueOutstanding / roundedPayment};
@@ -1521,7 +1523,7 @@ computeLoanProperties(
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
-        NumberRoundModeGuard mg(periodicRate == 0 ? Number::to_nearest : Number::upward);
+        NumberRoundModeGuard const mg(periodicRate == 0 ? Number::to_nearest : Number::upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
@@ -1672,24 +1674,26 @@ loanMakePayment(
         LoanState const roundedLoanState = constructLoanState(
             totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
 
-        if (auto const fullPaymentComponents = detail::computeFullPayment(
-                asset,
-                view,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                periodicPayment,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                startDate,
-                paymentInterval,
-                closeInterestRate,
-                loanScale,
-                roundedLoanState.interestDue,
-                periodicRate,
-                closePaymentFee,
-                amount,
-                managementFeeRate,
-                j))
+        auto const fullPaymentComponents = detail::computeFullPayment(
+            asset,
+            view,
+            principalOutstandingProxy,
+            managementFeeOutstandingProxy,
+            periodicPayment,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            startDate,
+            paymentInterval,
+            closeInterestRate,
+            loanScale,
+            roundedLoanState.interestDue,
+            periodicRate,
+            closePaymentFee,
+            amount,
+            managementFeeRate,
+            j);
+
+        if (fullPaymentComponents.has_value())
         {
             return doPayment(
                 *fullPaymentComponents,
@@ -1701,11 +1705,14 @@ loanMakePayment(
                 nextDueDateProxy,
                 paymentInterval);
         }
-        else if (fullPaymentComponents.error())
+
+        if (fullPaymentComponents.error())
+        {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful. Otherwise,
             // tesSUCCESS means nothing was done, so continue.
             return Unexpected(fullPaymentComponents.error());
+        }
 
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
@@ -1741,18 +1748,20 @@ loanMakePayment(
         TenthBips32 const lateInterestRate{loan->at(sfLateInterestRate)};
         Number const latePaymentFee = loan->at(sfLatePaymentFee);
 
-        if (auto const latePaymentComponents = detail::computeLatePayment(
-                asset,
-                view,
-                principalOutstandingProxy,
-                nextDueDateProxy,
-                periodic,
-                lateInterestRate,
-                loanScale,
-                latePaymentFee,
-                amount,
-                managementFeeRate,
-                j))
+        auto const latePaymentComponents = detail::computeLatePayment(
+            asset,
+            view,
+            principalOutstandingProxy,
+            nextDueDateProxy,
+            periodic,
+            lateInterestRate,
+            loanScale,
+            latePaymentFee,
+            amount,
+            managementFeeRate,
+            j);
+
+        if (latePaymentComponents.has_value())
         {
             return doPayment(
                 *latePaymentComponents,
@@ -1764,7 +1773,8 @@ loanMakePayment(
                 nextDueDateProxy,
                 paymentInterval);
         }
-        else if (latePaymentComponents.error())
+
+        if (latePaymentComponents.error())
         {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful.
@@ -1895,13 +1905,17 @@ loanMakePayment(
                     paymentRemainingProxy,
                     managementFeeRate,
                     j))
+            {
                 totalParts += *overResult;
+            }
             else if (overResult.error())
+            {
                 // error() will be the TER returned if a payment is not
                 // made. It will only evaluate to true if it's unsuccessful.
                 // Otherwise, tesSUCCESS means nothing was done, so
                 // continue.
                 return Unexpected(overResult.error());
+            }
         }
     }
 

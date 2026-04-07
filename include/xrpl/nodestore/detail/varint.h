@@ -82,6 +82,7 @@ template <class = void>
 std::size_t
 write_varint(void* p0, std::size_t v)
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {

@@ -147,7 +147,7 @@ TEST(tagged_integer, increment_decrement_operators)
 
 TEST(tagged_integer, arithmetic_operators)
 {
-    TagInt a{-2};
+    TagInt const a{-2};
     EXPECT_EQ(+a, TagInt{-2});
     EXPECT_EQ(-a, TagInt{2});
     EXPECT_EQ(TagInt{-3} + TagInt{4}, TagInt{1});
