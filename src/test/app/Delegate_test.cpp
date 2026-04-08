@@ -870,6 +870,54 @@ class Delegate_test : public beast::unit_test::suite
             }
         }
 
+        // PaymentMint/PaymentBurn with sfSendMax of the same asset is allowed,
+        // same-asset SendMax is still a direct payment, not cross-currency.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env.close();
+
+            // sfSendMax with same asset as sfAmount, still a direct payment
+            env(pay(gw, alice, USD(50)), sendmax(USD(50)), delegate::as(bob));
+            env.require(balance(alice, USD(50)));
+
+            env(delegate::set(alice, bob, {"PaymentBurn"}));
+            env.close();
+
+            env(pay(alice, gw, USD(30)), sendmax(USD(30)), delegate::as(bob));
+            env.require(balance(alice, USD(20)));
+        }
+
+        // Delegate account holds no granular permissions for the tx type:
+        // getGranularPermission returns empty set.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            // Bob holds only an AccountSet granular permission.
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            // Payment has granular permissions defined in permissions.macro,
+            // but bob only holds AccountSet's granular permission,
+            // getGranularPermission returns empty.
+            env(pay(alice, gw, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+        }
+
         // PaymentMint and PaymentBurn for MPT
         {
             std::string logs;
@@ -925,6 +973,40 @@ class Delegate_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(100));
                 BEAST_EXPECT(env.balance(bob, MPT) == bobMPT + MPT(100));
             }
+        }
+
+        // Verify granular permissions of different tx types in the same SLE are scoped
+        // correctly. AccountSet permissions don't apply to Payment and vice versa
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            // Alice granted bob with both AccountDomainSet and PaymentMint.
+            env(delegate::set(alice, bob, {"AccountDomainSet", "PaymentMint"}));
+            env.close();
+
+            // PaymentMint fails at granular semantic check because alice is not the issuer.
+            env(pay(alice, gw, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+            // AccountDomainSet applies correctly to AccountSet
+            std::string const domain = "example.com";
+            auto jt = noop(alice);
+            jt[sfDomain] = strHex(domain);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
+
+            // gw gives bob PaymentMint and bob can mint on gw's behalf
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env.close();
+            env(pay(gw, alice, USD(50)), delegate::as(bob));
+            env.require(balance(alice, USD(50)));
         }
     }
 
@@ -1412,6 +1494,47 @@ class Delegate_test : public beast::unit_test::suite
             txJson[sfNFTokenMinter] = bob.human();
 
             env(txJson, ter(terNO_DELEGATE_PERMISSION));
+        }
+
+        // Delegated AccountSet with no fields and no flags is allowed,
+        // because it is allowed in the non-delegated case as well.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            auto jt = noop(alice);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+        }
+
+        // Revoking all permissions deletes the SLE and subsequent attempts are rejected.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            std::string const domain = "example.com";
+            auto jt = noop(alice);
+            jt[sfDomain] = strHex(domain);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+
+            // empty DelegateSet deletes the SLE
+            env(delegate::set(alice, bob, {}));
+            env.close();
+
+            env(jt, ter(terNO_DELEGATE_PERMISSION));
         }
     }
 
@@ -1991,9 +2114,8 @@ class Delegate_test : public beast::unit_test::suite
         STTx const tx{ttPAYMENT, [](STObject&) {}};
         BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
 
-        // loadGranularPermission nullptr check
-        std::unordered_set<GranularPermissionType> granularPermissions;
-        loadGranularPermission(nullptr, ttPAYMENT, granularPermissions);
+        // getGranularPermission nullptr check
+        auto const granularPermissions = getGranularPermission(nullptr, ttPAYMENT);
         BEAST_EXPECT(granularPermissions.empty());
     }
 

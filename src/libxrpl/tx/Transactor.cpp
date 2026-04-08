@@ -256,19 +256,33 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkPermissionImpl(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& heldGranularPermissions)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
+    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    return checkTxPermission(sle, tx);
+    if (isTesSuccess(checkTxPermission(sle, tx)))
+        return tesSUCCESS;
+
+    if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
+        return terNO_DELEGATE_PERMISSION;
+
+    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    if (heldGranularPermissions.empty())
+        return terNO_DELEGATE_PERMISSION;
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, heldGranularPermissions))
+        return terNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 XRPAmount

@@ -110,28 +110,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
-MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    if (!checkGranularPermission(sle, tx))
-        return terNO_DELEGATE_PERMISSION;
-
-    return tesSUCCESS;
-}
-
 TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
