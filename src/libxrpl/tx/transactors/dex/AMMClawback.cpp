@@ -1,12 +1,12 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/AMMClawback.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <tuple>
@@ -204,7 +204,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << to_string(newLPTokenBalance.iou())
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
+    auto const ter = directSendNoFee(sb, holder, issuer, amountWithdraw, true, j_);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 
@@ -217,7 +217,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const flags = ctx_.tx.getFlags();
     if ((flags & tfClawTwoAssets) != 0u)
-        return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
+        return directSendNoFee(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;
 }

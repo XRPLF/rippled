@@ -249,6 +249,7 @@ words:
   - STATSDCOLLECTOR
   - stissue
   - stnum
+  - stnumber
   - stobj
   - stobject
   - stpath

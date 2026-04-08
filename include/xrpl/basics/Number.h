@@ -381,6 +381,9 @@ public:
     friend Number
     root2(Number f);
 
+    friend Number
+    log10(Number const&, int);
+
     // Thread local rounding control.  Default is to_nearest
     enum rounding_mode { to_nearest, towards_zero, downward, upward };
     static rounding_mode

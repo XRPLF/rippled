@@ -94,16 +94,16 @@ std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
 /**
- * @brief Parses a RippleLib seed from RPC parameters.
+ * @brief Parses a XrplLib seed from RPC parameters.
  *
  * Attempts to extract and return a Seed from the provided JSON parameters using
- * RippleLib conventions.
+ * XrplLib conventions.
  *
  * @param params The JSON value containing RPC parameters.
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& params);
+parseXrplLibSeed(Json::Value const& params);
 
 /**
  * @brief Chooses the ledger entry type based on RPC parameters.

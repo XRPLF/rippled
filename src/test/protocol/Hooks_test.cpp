@@ -11,7 +11,7 @@ class Hooks_test : public beast::unit_test::suite
 {
     /**
      * This unit test was requested here:
-     * https://github.com/ripple/rippled/pull/4089#issuecomment-1050274539
+     * https://github.com/XRPLF/rippled/pull/4089#issuecomment-1050274539
      * These are tests that exercise facilities that are reserved for when Hooks
      * is merged in the future.
      **/

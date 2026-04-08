@@ -10,7 +10,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
 
@@ -149,7 +148,7 @@ escrowUnlockApplyHelper<Issue>(
     // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
-        auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
+        auto const ter = directSendNoFee(view, issuer, receiver, finalAmt, true, journal);
         if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
@@ -183,8 +182,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             return tecINSUFFICIENT_RESERVE;
         }
 
-        if (auto const ter = MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);
-            !isTesSuccess(ter))
+        if (auto const ter = createMPToken(view, mptID, receiver, 0); !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
@@ -218,7 +216,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-    return rippleUnlockEscrowMPT(
+    return unlockEscrowMPT(
         view,
         sender,
         receiver,
