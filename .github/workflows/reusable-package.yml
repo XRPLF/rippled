@@ -4,16 +4,12 @@ name: Package
 on:
   workflow_call:
     inputs:
-      pkg_type:
-        description: "Package type to build: deb or rpm."
-        required: true
-        type: string
       artifact_name:
-        description: "Name of the pre-built binary artifact to download."
+        description: "Name of the GitHub pre-built binary artifact to download (e.g. xrpld-ubuntu-jammy-gcc-12-amd64-release)."
         required: true
         type: string
-      version:
-        description: "Version string used for naming the output artifact."
+      container_image:
+        description: "Container image to use for packaging."
         required: true
         type: string
       pkg_release:
@@ -21,8 +17,12 @@ on:
         required: false
         type: string
         default: "1"
-      container_image:
-        description: "Container image to use for packaging."
+      pkg_type:
+        description: "Package type to build: deb or rpm."
+        required: true
+        type: string
+      version:
+        description: "Version string used for naming the output artifact."
         required: true
         type: string
 
@@ -35,7 +35,7 @@ env:
 
 jobs:
   package:
-    name: ${{ inputs.pkg_type }} (${{ inputs.version }})
+    name: "${{ inputs.pkg_type }} (${{ inputs.version }})"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]

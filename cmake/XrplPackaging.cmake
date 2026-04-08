@@ -90,7 +90,8 @@ foreach(PKG deb rpm)
             --cgroupns host \
             --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
             --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            --tmpfs /tmp --tmpfs /run \
+            --tmpfs /tmp \
+            --tmpfs /run \
             --tmpfs /run/lock \
             ${IMAGE} \
             /usr/sbin/init"

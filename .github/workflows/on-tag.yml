@@ -45,13 +45,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/actions/generate-version
+            src/libxrpl/protocol/BuildInfo.cpp
       - name: Generate version
         id: version
         uses: ./.github/actions/generate-version
 
   package-deb:
     needs: [build-test, generate-version]
-    if: ${{ github.repository == 'XRPLF/rippled' }}
     uses: ./.github/workflows/reusable-package.yml
     with:
       pkg_type: deb
@@ -61,7 +64,6 @@ jobs:
 
   package-rpm:
     needs: [build-test, generate-version]
-    if: ${{ github.repository == 'XRPLF/rippled' }}
     uses: ./.github/workflows/reusable-package.yml
     with:
       pkg_type: rpm
