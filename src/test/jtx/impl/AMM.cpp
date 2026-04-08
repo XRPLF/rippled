@@ -3,7 +3,6 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
