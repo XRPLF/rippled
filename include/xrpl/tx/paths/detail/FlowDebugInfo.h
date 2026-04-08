@@ -208,14 +208,14 @@ struct FlowDebugInfo
             auto writeXrpAmtList = [&write_list](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return xrpl::to_string(a.xrp);
+                    return xrpl::to_string(a.get<XRPAmount>());
                 };
                 write_list(amts, get_val, delim);
             };
             auto writeIouAmtList = [&write_list](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return xrpl::to_string(a.iou);
+                    return xrpl::to_string(a.get<IOUAmount>());
                 };
                 write_list(amts, get_val, delim);
             };

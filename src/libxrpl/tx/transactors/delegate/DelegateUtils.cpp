@@ -1,5 +1,5 @@
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 NotTEC
