@@ -120,7 +120,7 @@ jobs:
       pkg_type: deb
       artifact_name: xrpld-ubuntu-jammy-gcc-12-amd64-release
       version: ${{ needs.generate-version.outputs.version }}
-      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12@sha256:14e463a9a88060b5a1e579204525c4a6f23afdd0255446f8e4f5415ae0cedac6
 
   package-rpm:
     needs: [build-test, generate-version]
@@ -129,4 +129,4 @@ jobs:
       pkg_type: rpm
       artifact_name: xrpld-rhel-9-gcc-12-amd64-release
       version: ${{ needs.generate-version.outputs.version }}
-      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12
+      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12@sha256:196f97b62b8352da1b7cfa91c59d442cc4940eae89a05b547408f62cbddcb8b3

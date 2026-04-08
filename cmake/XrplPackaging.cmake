@@ -69,8 +69,12 @@ if(NOT DOCKER_EXECUTABLE)
     return()
 endif()
 
-set(DEB_TEST_IMAGE "geerlingguy/docker-ubuntu2204-ansible:latest")
-set(RPM_TEST_IMAGE "geerlingguy/docker-rockylinux9-ansible:latest")
+set(DEB_TEST_IMAGE
+    "geerlingguy/docker-ubuntu2204-ansible@sha256:bbe4c56c16c57c902554b9a47833590926b7a7d4440aef3d9851473b9f7be9d4"
+)
+set(RPM_TEST_IMAGE
+    "geerlingguy/docker-rockylinux9-ansible@sha256:790c2db9add93c0daa903ace816f352c9c04abb046ecfa12c581e8d4c59f41d6"
+)
 
 foreach(PKG deb rpm)
     if(PKG STREQUAL "deb")
