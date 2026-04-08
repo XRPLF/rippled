@@ -11,19 +11,19 @@
 
 namespace xrpl {
 
-/** Get the current RippleLineCache, updating it if necessary.
+/** Get the current AssetCache, updating it if necessary.
     Get the correct ledger to use.
 */
-std::shared_ptr<RippleLineCache>
-PathRequestManager::getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
+std::shared_ptr<AssetCache>
+PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {
     std::lock_guard const sl(mLock);
 
-    auto lineCache = lineCache_.lock();
+    auto assetCache = assetCache_.lock();
 
-    std::uint32_t const lineSeq = lineCache ? lineCache->getLedger()->seq() : 0;
+    std::uint32_t const lineSeq = assetCache ? assetCache->getLedger()->seq() : 0;
     std::uint32_t const lgrSeq = ledger->seq();
-    JLOG(mJournal.debug()) << "getLineCache has cache for " << lineSeq << ", considering "
+    JLOG(mJournal.debug()) << "getAssetCache has cache for " << lineSeq << ", considering "
                            << lgrSeq;
 
     if ((lineSeq == 0) ||                               // no ledger
@@ -31,14 +31,14 @@ PathRequestManager::getLineCache(std::shared_ptr<ReadView const> const& ledger, 
         (authoritative && ((lgrSeq + 8) < lineSeq)) ||  // we jumped way back for some reason
         (lgrSeq > (lineSeq + 8)))                       // we jumped way forward for some reason
     {
-        JLOG(mJournal.debug()) << "getLineCache creating new cache for " << lgrSeq;
+        JLOG(mJournal.debug()) << "getAssetCache creating new cache for " << lgrSeq;
         // Assign to the local before the member, because the member is a
         // weak_ptr, and will immediately discard it if there are no other
         // references.
-        lineCache_ = lineCache =
-            std::make_shared<RippleLineCache>(ledger, app_.getJournal("RippleLineCache"));
+        assetCache_ = assetCache =
+            std::make_shared<AssetCache>(ledger, app_.getJournal("AssetCache"));
     }
-    return lineCache;
+    return assetCache;
 }
 
 void
@@ -47,13 +47,13 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
-    std::shared_ptr<RippleLineCache> cache;
+    std::shared_ptr<AssetCache> cache;
 
     // Get the ledger and cache we should be using
     {
         std::lock_guard const sl(mLock);
         requests = requests_;
-        cache = getLineCache(inLedger, true);
+        cache = getAssetCache(inLedger, true);
     }
 
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
@@ -172,7 +172,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
         // Hold on to the line cache until after the lock is released, so it can
         // be destroyed outside of the lock
-        std::shared_ptr<RippleLineCache> lastCache;
+        std::shared_ptr<AssetCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
             std::lock_guard const sl(mLock);
@@ -181,7 +181,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                 break;
             requests = requests_;
             lastCache = cache;
-            cache = getLineCache(cache->getLedger(), false);
+            cache = getAssetCache(cache->getLedger(), false);
         }
     } while (!app_.getJobQueue().isStopping());
 
@@ -222,7 +222,7 @@ PathRequestManager::makePathRequest(
 {
     auto req = std::make_shared<PathRequest>(app_, subscriber, ++mLastIdentifier, *this, mJournal);
 
-    auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), requestJson);
+    auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), requestJson);
 
     if (valid)
     {
@@ -247,7 +247,7 @@ PathRequestManager::makeLegacyPathRequest(
     req = std::make_shared<PathRequest>(
         app_, completion, consumer, ++mLastIdentifier, *this, mJournal);
 
-    auto [valid, jvRes] = req->doCreate(getLineCache(inLedger, false), request);
+    auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), request);
 
     if (!valid)
     {
@@ -273,7 +273,7 @@ PathRequestManager::doLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
-    auto cache = std::make_shared<RippleLineCache>(inLedger, app_.getJournal("RippleLineCache"));
+    auto cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
 
     auto req =
         std::make_shared<PathRequest>(app_, [] {}, consumer, ++mLastIdentifier, *this, mJournal);

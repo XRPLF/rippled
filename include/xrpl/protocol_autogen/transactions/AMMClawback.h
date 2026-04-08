@@ -21,7 +21,7 @@ class AMMClawbackBuilder;
  * Type: ttAMM_CLAWBACK (31)
  * Delegable: Delegation::delegable
  * Amendment: featureAMMClawback
- * Privileges: mayDeleteAcct | overrideFreeze
+ * Privileges: mayDeleteAcct | overrideFreeze | mayAuthorizeMPT
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMClawbackBuilder to construct new transactions.
@@ -60,6 +60,7 @@ public:
 
     /**
      * @brief Get sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -71,6 +72,7 @@ public:
 
     /**
      * @brief Get sfAsset2 (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -82,6 +84,7 @@ public:
 
     /**
      * @brief Get sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -166,6 +169,7 @@ public:
 
     /**
      * @brief Set sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -177,6 +181,7 @@ public:
 
     /**
      * @brief Set sfAsset2 (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
@@ -188,6 +193,7 @@ public:
 
     /**
      * @brief Set sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMClawbackBuilder&
