@@ -3,9 +3,13 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
 
 namespace xrpl {
 namespace test {
@@ -14,6 +18,22 @@ namespace jtx {
 class MPTTester;
 
 auto const MPTDEXFlags = tfMPTCanTrade | tfMPTCanTransfer;
+
+/*Helper lambda to create a zero-initialized buffer.
+WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
+Because CI runs unit tests sequentially in the same process, uninitialized memory
+often recycles "ghost data" (like valid SECP256k1 keys or Pedersen commitments)
+left over from previously executed tests.
+When testing malformed cryptography paths, passing uninitialized memory might
+accidentally supply a valid curve point, causing the ledger's preflight checks
+to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
+Explicitly zeroing the buffer guarantees it fails structural validation. */
+static auto makeZeroBuffer = [](size_t size) {
+    Buffer b(size);
+    if (size > 0)
+        std::memset(b.data(), 0, size);
+    return b;
+};
 
 // Check flags settings on MPT create
 class mptflags
@@ -96,6 +116,7 @@ struct MPTCreate
 struct MPTInit
 {
     Holders holders = {};
+    std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -110,6 +131,7 @@ struct MPTInitDef
     Env& env;
     Account issuer;
     Holders holders = {};
+    std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
@@ -154,18 +176,182 @@ struct MPTSet
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
+    std::optional<Buffer> issuerPubKey = std::nullopt;
+    std::optional<Buffer> auditorPubKey = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
+
+struct MPTConvert
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
+    // indicates whether to autofill schnorr proof.
+    // default : auto generate proof if holderPubKey is present.
+    // true: force proof generation.
+    // false: force proof omission.
+    std::optional<bool> fillSchnorrProof = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> holderEncryptedAmt = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+
+    std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTMergeInbox
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTConfidentialSend
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> dest = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    // amt is to generate encrypted amounts for testing purposes
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Buffer> senderEncryptedAmt = std::nullopt;
+    std::optional<Buffer> destEncryptedAmt = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
+    std::optional<std::vector<std::string>> credentials = std::nullopt;
+    // not an txn param, only used for autofilling
+    std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Buffer> amountCommitment = std::nullopt;
+    std::optional<Buffer> balanceCommitment = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTConvertBack
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
+    std::optional<Buffer> holderEncryptedAmt = std::nullopt;
+    std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
+    std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
+    // not an txn param, only used for autofilling
+    std::optional<Buffer> blindingFactor = std::nullopt;
+    std::optional<Buffer> pedersenCommitment = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTConfidentialClawback
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<Account> holder = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<std::uint64_t> amt = std::nullopt;
+    std::optional<std::string> proof = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> ticketSeq = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
+ * @brief Stores the parameters that are exclusively used to generate a
+ * pedersen linkage proof
+ */
+struct PedersenProofParams
+{
+    Buffer const pedersenCommitment;
+    uint64_t const amt;  // either spending balance or value to be transferred
+    Buffer const encryptedAmt;
+    Buffer const blindingFactor;
+};
+
+/**
+ * @brief When building multiple confidential sends from the same account inside a
+ * single batch transaction, pass this state to the transaction builder for
+ * each subsequent send so that its proof references the post previous-send
+ * encrypted balance rather than the stale pre-send ledger state.
+ *
+ * The fields mirror what the ledger will contain after the preceding send's
+ * doApply() completes:
+ *   encSpending = homomorphicSubtract(prevEncSpending, senderEncAmt)
+ *   version     = prevVersion + 1
+ */
+struct ConfidentialSendChainState
+{
+    std::uint64_t spending;  // Decrypted spending balance after the previous send.
+    Buffer encSpending;      // Encrypted spending balance after the previous send.
+    std::uint32_t version;   // sfConfidentialBalanceVersion after the previous send.
+};
+
+/**
+ * @brief Use this when building a second (or later) confidential send from the same
+ * account in the same batch. Pass the state to the chain aware
+ * transaction builder so that the next proof is constructed against the
+ * correct post-send encrypted balance and version.
+ *
+ * @param currentSpending     Decrypted spending balance before the send.
+ * @param currentEncSpending  sfConfidentialBalanceSpending before the send.
+ * @param currentVersion      sfConfidentialBalanceVersion before the send.
+ * @param sendAmt             Plaintext amount being sent.
+ * @param senderEncAmt        sfSenderEncryptedAmount from the send transaction.
+ * @return The predicted chain state, or std::nullopt if homomorphic subtraction fails
+ */
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt);
 
 class MPTTester
 {
     Env& env_;
     Account const issuer_;
     std::unordered_map<std::string, Account> const holders_;
+    std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
+    std::unordered_map<AccountID, Buffer> pubKeys;
+    std::unordered_map<AccountID, Buffer> privKeys;
 
 public:
+    enum EncryptedBalanceType {
+        ISSUER_ENCRYPTED_BALANCE,
+        HOLDER_ENCRYPTED_INBOX,
+        HOLDER_ENCRYPTED_SPENDING,
+        AUDITOR_ENCRYPTED_BALANCE,
+    };
+
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
@@ -203,6 +389,60 @@ public:
     static Json::Value
     setJV(MPTSet const& set = {});
 
+    void
+    convert(MPTConvert const& arg = MPTConvert{});
+
+    // Build a confidential convert JV without submitting.  'seq' is the inner
+    // transaction sequence used in the Schnorr proof context hash.
+    Json::Value
+    convertJV(MPTConvert const& arg, std::uint32_t seq);
+
+    void
+    mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
+
+    Json::Value
+    mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
+
+    void
+    send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
+
+    // Build a confidential send JV.  When 'chain' is provided the sender's
+    // proof parameters are taken from it instead of the ledger, enabling
+    // correct proof generation for a second (or later) send from the same
+    // account inside a single batch.
+    Json::Value
+    sendJV(
+        MPTConfidentialSend const& arg,
+        std::uint32_t seq,
+        std::optional<ConfidentialSendChainState> chain = std::nullopt);
+
+    // Compute the projected sender state after a confidential send in a batch.
+    //
+    // Each confidential send requires a ZK proof that the sender's spending
+    // balance covers the transfer. In a batch, if there are more than one
+    // Confidential Send, the 2nd onwards send requires a proof that includes the
+    // updated spending balance.
+    //
+    // Example: Bob has 200, batches send 100 to Carol then 50 to Dave:
+    //   jv1   = sendJV({bob->carol, 100}, seq1)
+    //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
+    //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
+    ConfidentialSendChainState
+    chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const;
+
+    void
+    convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+
+    // Build a confidential convertBack JV without submitting.  'seq' is the
+    // inner transaction sequence used in the proof context hash.  Reads the
+    // current encrypted spending balance and version from the ledger, so call
+    // this before the batch is submitted.
+    Json::Value
+    convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
+
+    void
+    confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
+
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
 
@@ -211,6 +451,9 @@ public:
 
     [[nodiscard]] bool
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
+
+    [[nodiscard]] bool
+    checkIssuanceConfidentialBalance(std::int64_t expectedAmount) const;
 
     [[nodiscard]] bool
     checkFlags(uint32_t const expectedFlags, std::optional<Account> const& holder = std::nullopt)
@@ -233,6 +476,7 @@ public:
     {
         return issuer_;
     }
+
     Account const&
     holder(std::string const& h) const;
 
@@ -264,6 +508,14 @@ public:
     std::int64_t
     getBalance(Account const& account) const;
 
+    std::int64_t
+    getIssuanceConfidentialBalance() const;
+
+    std::optional<Buffer>
+    getEncryptedBalance(
+        Account const& account,
+        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+
     MPT
     operator[](std::string const& name) const;
 
@@ -271,6 +523,84 @@ public:
     operator()(std::int64_t amount) const;
 
     operator Asset() const;
+
+    bool
+    printMPT(Account const& holder_) const;
+
+    void
+    generateKeyPair(Account const& account);
+
+    std::optional<Buffer>
+    getPubKey(Account const& account) const;
+
+    std::optional<Buffer>
+    getPrivKey(Account const& account) const;
+
+    Buffer
+    encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
+
+    std::optional<uint64_t>
+    decryptAmount(Account const& account, Buffer const& amt) const;
+
+    std::optional<uint64_t>
+    getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
+
+    std::int64_t
+    getIssuanceOutstandingBalance() const;
+
+    std::optional<Buffer>
+    getClawbackProof(
+        Account const& holder,
+        std::uint64_t amount,
+        Buffer const& privateKey,
+        uint256 const& txHash) const;
+
+    std::optional<Buffer>
+    getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
+
+    std::optional<Buffer>
+    getConfidentialSendProof(
+        Account const& sender,
+        std::uint64_t const amount,
+        std::vector<ConfidentialRecipient> const& recipients,
+        Slice const& blindingFactor,
+        std::size_t const nRecipients,
+        uint256 const& contextHash,
+        PedersenProofParams const& amountParams,
+        PedersenProofParams const& balanceParams) const;
+
+    Buffer
+    getConvertBackProof(
+        Account const& holder,
+        std::uint64_t const amount,
+        uint256 const& contextHash,
+        PedersenProofParams const& pcParams) const;
+
+    std::uint32_t
+    getMPTokenVersion(Account const account) const;
+
+    Buffer
+    getAmountLinkageProof(
+        Buffer const& pubKey,
+        Buffer const& blindingFactor,
+        uint256 const& contextHash,
+        PedersenProofParams const& params) const;
+
+    Buffer
+    getBalanceLinkageProof(
+        Account const& account,
+        uint256 const& contextHash,
+        Buffer const& pubKey,
+        PedersenProofParams const& params) const;
+
+    Buffer
+    getBulletproof(
+        std::vector<std::uint64_t> const& values,
+        std::vector<Buffer> const& blindingFactors,
+        uint256 const& contextHash) const;
+
+    Buffer
+    getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
 private:
     using SLEP = SLE::const_pointer;
@@ -283,7 +613,30 @@ private:
     TER
     submit(A const& arg, Json::Value const& jv)
     {
-        env_(jv, txflags(arg.flags.value_or(0)), ter(arg.err.value_or(tesSUCCESS)));
+        auto const expectedFlags = txflags(arg.flags.value_or(0));
+        auto const expectedTer = ter(arg.err.value_or(tesSUCCESS));
+
+        std::optional<std::uint32_t> ticketSeq;
+        if constexpr (requires { arg.ticketSeq; })
+            ticketSeq = arg.ticketSeq;
+
+        std::optional<Account> delegateAcct;
+        if constexpr (requires { arg.delegate; })
+            delegateAcct = arg.delegate;
+
+        if (ticketSeq && delegateAcct)
+            env_(
+                jv,
+                expectedFlags,
+                expectedTer,
+                ticket::use(*ticketSeq),
+                delegate::as(*delegateAcct));
+        else if (ticketSeq)
+            env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
+        else if (delegateAcct)
+            env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
+        else
+            env_(jv, expectedFlags, expectedTer);
         auto const err = env_.ter();
         if (close_)
             env_.close();
@@ -302,6 +655,16 @@ private:
 
     std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
+
+    template <typename T>
+    void
+    fillConversionCiphertexts(
+        T const& arg,
+        Json::Value& jv,
+        Buffer& holderCiphertext,
+        Buffer& issuerCiphertext,
+        std::optional<Buffer>& auditorCiphertext,
+        Buffer& blindingFactor) const;
 };
 
 }  // namespace jtx
