@@ -3,7 +3,6 @@
 #include <test/jtx/AMMTest.h>
 
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
