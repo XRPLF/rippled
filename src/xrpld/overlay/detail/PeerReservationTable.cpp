@@ -38,7 +38,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
     return list;
 }
 
-// See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
+// See `include/xrpl/rdb/DBInit.h` for the `CREATE TABLE` statement.
 // It is unfortunate that we do not get to define a function for it.
 
 // We choose a `bool` return type to fit in with the error handling scheme

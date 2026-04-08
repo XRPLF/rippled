@@ -34,6 +34,8 @@ run from the repository root.
 6. `.github/scripts/rename/config.sh`: This script will rename the config from
    `rippled.cfg` to `xrpld.cfg`, and updating the code accordingly. The old
    filename will still be accepted.
+7. `.github/scripts/rename/docs.sh`: This script will rename any lingering
+   references of `ripple(d)` to `xrpl(d)` in code, comments, and documentation.
 
 You can run all these scripts from the repository root as follows:
 
@@ -44,4 +46,5 @@ You can run all these scripts from the repository root as follows:
 ./.github/scripts/rename/binary.sh .
 ./.github/scripts/rename/namespace.sh .
 ./.github/scripts/rename/config.sh .
+./.github/scripts/rename/docs.sh .
 ```

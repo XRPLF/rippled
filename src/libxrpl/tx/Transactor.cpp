@@ -4,6 +4,8 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -16,8 +18,6 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <map>
 #include <unordered_set>
@@ -1009,6 +1009,26 @@ removeDeletedTrustLines(
     }
 }
 
+static void
+removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
+{
+    // There could be at most two MPTs - one for each side of AMM pool
+    if (mpts.size() > 2)
+    {
+        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
+        return;
+    }
+
+    for (auto const& index : mpts)
+    {
+        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
+            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
+        {
+            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1089,6 +1109,7 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
         typesToCollect.insert(ltOFFER);
     if (result == tecINCOMPLETE)
         typesToCollect.insert(ltRIPPLE_STATE);
+    typesToCollect.insert(ltMPTOKEN);
     if (result == tecEXPIRED)
     {
         typesToCollect.insert(ltNFTOKEN_OFFER);
@@ -1154,6 +1175,9 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
                 break;
             case ltRIPPLE_STATE:
                 removeDeletedTrustLines(view(), ids, viewJ);
+                break;
+            case ltMPTOKEN:
+                removeDeletedMPTs(view(), ids, viewJ);
                 break;
             case ltCREDENTIAL:
                 removeExpiredCredentials(view(), ids, viewJ);

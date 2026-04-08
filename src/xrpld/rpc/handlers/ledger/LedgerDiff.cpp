@@ -36,7 +36,7 @@ doLedgerDiffGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDiffRequest>& con
         std::dynamic_pointer_cast<Ledger const>(desiredLedgerRv);
     if (!desiredLedger)
     {
-        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "base ledger not validated"};
+        grpc::Status const errorStatus{grpc::StatusCode::NOT_FOUND, "desired ledger not validated"};
         return {response, errorStatus};
     }
 

@@ -2,11 +2,11 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -44,6 +44,7 @@ issues(DebtDirection dir)
      BookStepIX is an IOU/XRP offer book
      BookStepXI is an XRP/IOU offer book
      XRPEndpointStep is the source or destination account for XRP
+     MPTEndpointStep is the source or destination account for MPT
 
    Amounts may be transformed through a step in either the forward or the
    reverse direction. In the forward direction, the function `fwd` is used to
@@ -339,8 +340,8 @@ std::pair<TER, STPath>
 normalizePath(
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
-    std::optional<Issue> const& sendMaxIssue,
+    Asset const& deliver,
+    std::optional<Asset> const& sendMaxAsset,
     STPath const& path);
 
 /**
@@ -355,7 +356,7 @@ normalizePath(
                        optimization.  If, during direct offer crossing, the
                        quality of the tip of the book drops below this value,
                        then evaluating the strand can stop.
-   @param sendMaxIssue Optional asset to send.
+   @param sendMaxAsset Optional asset to send.
    @param path Liquidity sources to use for this strand of the payment. The path
                contains an ordered collection of the offer books to use and
                accounts to ripple through.
@@ -372,9 +373,9 @@ toStrand(
     ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
+    Asset const& deliver,
     std::optional<Quality> const& limitQuality,
-    std::optional<Issue> const& sendMaxIssue,
+    std::optional<Asset> const& sendMaxAsset,
     STPath const& path,
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
@@ -413,9 +414,9 @@ toStrands(
     ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
-    Issue const& deliver,
+    Asset const& deliver,
     std::optional<Quality> const& limitQuality,
-    std::optional<Issue> const& sendMax,
+    std::optional<Asset> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
@@ -425,7 +426,7 @@ toStrands(
     beast::Journal j);
 
 /// @cond INTERNAL
-template <class TIn, class TOut, class TDerived>
+template <StepAmount TIn, StepAmount TOut, class TDerived>
 struct StepImp : public Step
 {
     explicit StepImp() = default;
@@ -493,8 +494,16 @@ public:
 // Check equal with tolerance
 bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual);
-bool
-checkNear(XRPAmount const& expected, XRPAmount const& actual);
+inline bool
+checkNear(MPTAmount const& expected, MPTAmount const& actual)
+{
+    return expected == actual;
+}
+inline bool
+checkNear(XRPAmount const& expected, XRPAmount const& actual)
+{
+    return expected == actual;
+}
 /// @endcond
 
 /**
@@ -505,7 +514,7 @@ struct StrandContext
     ReadView const& view;                       ///< Current ReadView
     AccountID const strandSrc;                  ///< Strand source account
     AccountID const strandDst;                  ///< Strand destination account
-    Issue const strandDeliver;                  ///< Issue strand delivers
+    Asset const strandDeliver;                  ///< Asset strand delivers
     std::optional<Quality> const limitQuality;  ///< Worst accepted quality
     bool const isFirst;                         ///< true if Step is first in Strand
     bool const isLast = false;                  ///< true if Step is last in Strand
@@ -522,11 +531,11 @@ struct StrandContext
         at most twice: once as a src and once as a dst (hence the two element
        array). The strandSrc and strandDst will only show up once each.
     */
-    std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues;
+    std::array<boost::container::flat_set<Asset>, 2>& seenDirectAssets;
     /** A strand may not include an offer that output the same issue more
         than once
     */
-    boost::container::flat_set<Issue>& seenBookOuts;
+    boost::container::flat_set<Asset>& seenBookOuts;
     AMMContext& ammContext;
     std::optional<uint256> domainID;  // the domain the order book will use
     beast::Journal const j;
@@ -539,15 +548,15 @@ struct StrandContext
         // replicates the source or destination.
         AccountID const& strandSrc_,
         AccountID const& strandDst_,
-        Issue const& strandDeliver_,
+        Asset const& strandDeliver_,
         std::optional<Quality> const& limitQuality_,
         bool isLast_,
         bool ownerPaysTransferFee_,
         OfferCrossing offerCrossing_,
         bool isDefaultPath_,
-        std::array<boost::container::flat_set<Issue>, 2>&
-            seenDirectIssues_,                             ///< For detecting currency loops
-        boost::container::flat_set<Issue>& seenBookOuts_,  ///< For detecting book loops
+        std::array<boost::container::flat_set<Asset>, 2>&
+            seenDirectAssets_,                             ///< For detecting currency loops
+        boost::container::flat_set<Asset>& seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
         std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
@@ -564,6 +573,13 @@ directStepEqual(
     Currency const& currency);
 
 bool
+mptEndpointStepEqual(
+    Step const& step,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& mptid);
+
+bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc);
 
 bool
@@ -578,6 +594,13 @@ make_DirectStepI(
     Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
+make_MPTEndpointStep(
+    StrandContext const& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& a);
+
+std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
@@ -589,9 +612,30 @@ make_BookStepXI(StrandContext const& ctx, Issue const& out);
 std::pair<TER, std::unique_ptr<Step>>
 make_XRPEndpointStep(StrandContext const& ctx, AccountID const& acc);
 
-template <class InAmt, class OutAmt>
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMM(StrandContext const& ctx, MPTIssue const& in, MPTIssue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMX(StrandContext const& ctx, MPTIssue const& in);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepXM(StrandContext const& ctx, MPTIssue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
+
+template <StepAmount InAmt, StepAmount OutAmt>
 bool
-isDirectXrpToXrp(Strand const& strand);
+isDirectXrpToXrp(Strand const& strand)
+{
+    if constexpr (std::is_same_v<InAmt, XRPAmount> && std::is_same_v<OutAmt, XRPAmount>)
+        return strand.size() == 2;
+    else
+        return false;
+}
 /// @endcond
 
 }  // namespace xrpl
