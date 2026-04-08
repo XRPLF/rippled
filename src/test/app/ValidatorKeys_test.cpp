@@ -59,27 +59,31 @@ public:
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
         test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-        beast::Journal journal{env.app().journal("ValidatorKeys_test")};
+        beast::Journal const journal{env.app().getJournal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed));
         PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const tokenSecretKey = *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
         auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
 
         auto const m = deserializeManifest(base64_decode(tokenManifest));
         BEAST_EXPECT(m);
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         NodeID const tokenNodeID = calcNodeID(m->masterKey);
 
         {
             // No config -> no key but valid
-            Config c;
-            ValidatorKeys k{c, journal};
+            Config const c;
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -90,7 +94,7 @@ public:
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
             ValidatorKeys k{c, journal};
-            if (BEAST_EXPECT(k.keys))
+            if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
                 BEAST_EXPECT(test::equal(k.keys->secretKey, seedSecretKey));
@@ -105,7 +109,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append("badseed");
 
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
@@ -117,7 +121,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, journal};
 
-            if (BEAST_EXPECT(k.keys))
+            if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
                 BEAST_EXPECT(test::equal(k.keys->secretKey, tokenSecretKey));
@@ -130,7 +134,7 @@ public:
             // invalid validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
@@ -141,7 +145,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed);
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -152,7 +156,7 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob);
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);

@@ -1,4 +1,3 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
@@ -35,17 +34,17 @@ RippleCalc::rippleCalculate(
     STPathSet const& spsPaths,
 
     std::optional<uint256> const& domainID,
-    Logs& l,
+    ServiceRegistry& registry,
     Input const* const pInputs)
 {
     Output flowOut;
     PaymentSandbox flowSB(&view);
-    auto j = l.journal("Flow");
+    auto j = registry.getJournal("Flow");
 
     {
-        bool const defaultPaths = !pInputs ? true : pInputs->defaultPathsAllowed;
+        bool const defaultPaths = (pInputs == nullptr) ? true : pInputs->defaultPathsAllowed;
 
-        bool const partialPayment = !pInputs ? false : pInputs->partialPaymentAllowed;
+        bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
             if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
@@ -55,7 +54,7 @@ RippleCalc::rippleCalculate(
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
             if (saMaxAmountReq >= beast::zero ||
-                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+                !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;

@@ -83,7 +83,7 @@ requestRole(
 
     if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
     {
-        if (user.size())
+        if (!user.empty())
             return Role::IDENTIFIED;
         return Role::PROXY;
     }
@@ -137,9 +137,11 @@ extractIpAddrFromField(std::string_view field)
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
             if (firstNonSpace == std::string_view::npos)
+            {
                 // We know there's at least one leading space.  So if we got
                 // npos, then it must be all spaces.  Return empty string_view.
                 return {};
+            }
 
             ret = ret.substr(firstNonSpace);
         }
@@ -151,9 +153,11 @@ extractIpAddrFromField(std::string_view field)
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
+                {
                     // We know there's at least one leading space.  So if we
                     // got npos, then it must be all spaces.
                     return {};
+                }
 
                 ret = ret.substr(0, lastNonSpace + 1);
             }
@@ -220,7 +224,7 @@ extractIpAddrFromField(std::string_view field)
 
     // If there's a port appended to the IP address, strip that by
     // terminating at the colon.
-    if (std::size_t colon = ret.find(':'); colon != std::string_view::npos)
+    if (std::size_t const colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
     return ret;
@@ -253,7 +257,7 @@ forwardedFor(http_request_type const& request)
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
             auto const remaining = static_cast<std::size_t>(it->value().end() - found);
-            std::size_t pos = std::string_view(found, remaining).find_first_of(",;");
+            std::size_t const pos = std::string_view(found, remaining).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 

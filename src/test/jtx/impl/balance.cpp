@@ -35,8 +35,8 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
         else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(issue.account);
-            if (account > issue.account)
+            amount.get<Issue>().account = value.getIssuer();
+            if (account > value.getIssuer())
                 amount.negate();
             TEST_EXPECTS(amount == value, amount.getText());
         }
@@ -66,7 +66,7 @@ doBalance(
 void
 balance::operator()(Env& env) const
 {
-    return std::visit(
+    std::visit(
         [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
         value_.asset().value());
 }

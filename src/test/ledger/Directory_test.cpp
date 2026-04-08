@@ -3,6 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
@@ -36,7 +37,7 @@ struct Directory_test : public beast::unit_test::suite
 
     // Insert n empty pages, numbered [0, ... n - 1], in the
     // specified directory:
-    void
+    static void
     makePages(Sandbox& sb, uint256 const& base, std::uint64_t n)
     {
         for (std::uint64_t i = 0; i < n; ++i)
@@ -46,14 +47,22 @@ struct Directory_test : public beast::unit_test::suite
             p->setFieldV256(sfIndexes, STVector256{});
 
             if (i + 1 == n)
+            {
                 p->setFieldU64(sfIndexNext, 0);
+            }
             else
+            {
                 p->setFieldU64(sfIndexNext, i + 1);
+            }
 
             if (i == 0)
+            {
                 p->setFieldU64(sfIndexPrevious, n - 1);
+            }
             else
+            {
                 p->setFieldU64(sfIndexPrevious, i - 1);
+            }
 
             sb.insert(p);
         }
@@ -114,7 +123,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD, std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
@@ -195,7 +204,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            for (auto c : currencies)
+            for (auto const& c : currencies)
             {
                 env(trust(charlie, c(50)));
                 env.close();
@@ -254,8 +263,10 @@ struct Directory_test : public beast::unit_test::suite
 
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
+        {
             for (int j = 0; j < dirNodeMaxEntries; ++j)
                 env(offer(alice, XRP(1), USD(1)));
+        }
         env.close();
 
         // remove all the offers. Remove the middle page last
@@ -263,7 +274,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             for (int i = 0; i < dirNodeMaxEntries; ++i)
             {
-                env(offer_cancel(alice, firstOfferSeq + page * dirNodeMaxEntries + i));
+                env(offer_cancel(alice, firstOfferSeq + (page * dirNodeMaxEntries) + i));
                 env.close();
             }
         }
@@ -271,8 +282,8 @@ struct Directory_test : public beast::unit_test::suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox sb(env.closed().get(), tapNONE);
-            uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
+            Sandbox const sb(env.closed().get(), tapNONE);
+            uint256 const bookBase = getBookBase({xrpIssue(), USD, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -464,7 +475,7 @@ struct Directory_test : public beast::unit_test::suite
     testDirectoryFull()
     {
         using namespace test::jtx;
-        Account alice("alice");
+        Account const alice("alice");
 
         auto const testCase = [&, this](FeatureBitset features, auto setup) {
             using namespace test::jtx;

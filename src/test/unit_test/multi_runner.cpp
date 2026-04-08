@@ -108,7 +108,7 @@ results::print(S& s)
 {
     using namespace beast::unit_test;
 
-    if (top.size() > 0)
+    if (!top.empty())
     {
         s << "Longest suite times:\n";
         for (auto const& [name, dur] : top)
@@ -154,7 +154,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::tests() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.total;
 }
 
@@ -162,7 +162,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::suites() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.suites;
 }
 
@@ -184,7 +184,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.merge(r);
 }
 
@@ -193,7 +193,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.print(s);
 }
 
@@ -234,9 +234,13 @@ multi_runner_base<IsParent>::multi_runner_base()
 
         region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
+        {
             inner_ = new (region_.get_address()) inner{};
+        }
         else
+        {
             inner_ = reinterpret_cast<inner*>(region_.get_address());
+        }
     }
     catch (...)
     {
@@ -322,7 +326,7 @@ void
 multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard l{inner_->m_};
+    std::lock_guard const l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
@@ -382,7 +386,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                 if (!recvd_size)
                     continue;
                 assert(recvd_size == 1);
-                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+                MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)

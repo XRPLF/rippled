@@ -36,10 +36,10 @@ public:
     {
         Stats();
 
-        std::uint64_t count;
+        std::uint64_t count{0};
         std::chrono::milliseconds latencyAvg;
         std::chrono::milliseconds latencyPeak;
-        bool isOverloaded;
+        bool isOverloaded{false};
     };
 
     Stats
@@ -54,8 +54,8 @@ private:
 
     std::mutex mutex_;
 
-    std::uint64_t mCounts;
-    int mLatencyEvents;
+    std::uint64_t mCounts{0};
+    int mLatencyEvents{0};
     std::chrono::milliseconds mLatencyMSAvg;
     std::chrono::milliseconds mLatencyMSPeak;
     std::chrono::milliseconds mTargetLatencyAvg;

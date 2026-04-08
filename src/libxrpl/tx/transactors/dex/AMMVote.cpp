@@ -1,8 +1,8 @@
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 #include <xrpl/tx/transactors/dex/AMMVote.h>
 
 namespace xrpl {
@@ -10,14 +10,17 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return ammEnabled(ctx.rules);
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
 NotTEC
 AMMVote::preflight(PreflightContext const& ctx)
 {
-    if (auto const res =
-            invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
+    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
@@ -35,15 +38,17 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    if (auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])); !ammSle)
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
-    else if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
+    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
+    {
         return tecAMM_EMPTY;
-    else if (
-        auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    }
+    if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
         lpTokensNew == beast::zero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
@@ -134,16 +139,22 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
             if (minPos)
+            {
                 *(updatedVoteSlots.begin() + *minPos) = std::move(newEntry);
+            }
             else
+            {
                 updatedVoteSlots.push_back(std::move(newEntry));
+            }
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
         if (updatedVoteSlots.size() < VOTE_MAX_SLOTS)
+        {
             update();
-        // Add the entry if the account has more tokens than
-        // the least token holder or same tokens and higher fee.
+            // Add the entry if the account has more tokens than
+            // the least token holder or same tokens and higher fee.
+        }
         else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
@@ -174,9 +185,13 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
             if (auto const discountedFee = fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+            {
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
+            }
             else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+            {
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
+            }
         }
     }
     else

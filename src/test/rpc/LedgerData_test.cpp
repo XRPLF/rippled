@@ -13,7 +13,7 @@ public:
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void
@@ -208,8 +208,10 @@ public:
             jvParams[jss::ledger_index] = "closed";
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
                 BEAST_EXPECT(
                     jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
+            }
         }
         {
             // Closed ledger with binary form
@@ -220,7 +222,7 @@ public:
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
             {
                 auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
-                if (BEAST_EXPECT(data))
+                if (BEAST_EXPECT(data); data.has_value())
                 {
                     Serializer s(data->data(), data->size());
                     std::uint32_t seq = 0;

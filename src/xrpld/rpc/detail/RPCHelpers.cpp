@@ -1,19 +1,20 @@
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/format.hpp>
 
 namespace xrpl {
 namespace RPC {
@@ -24,9 +25,13 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
     if (sle->getType() == ltRIPPLE_STATE)
     {
         if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfLowNode);
-        else if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        }
+        if (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID)
+        {
             return sle->getFieldU64(sfHighNode);
+        }
     }
 
     if (!sle->isFieldPresent(sfOwnerNode))
@@ -46,7 +51,7 @@ isRelatedToAccount(
         return (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID) ||
             (sle->getFieldAmount(sfHighLimit).getIssuer() == accountID);
     }
-    else if (sle->isFieldPresent(sfAccount))
+    if (sle->isFieldPresent(sfAccount))
     {
         // If there's an sfAccount present, also test the sfDestination, if
         // present. This will match objects such as Escrows (ltESCROW), Payment
@@ -57,12 +62,12 @@ isRelatedToAccount(
         return sle->getAccountID(sfAccount) == accountID ||
             (sle->isFieldPresent(sfDestination) && sle->getAccountID(sfDestination) == accountID);
     }
-    else if (sle->getType() == ltSIGNER_LIST)
+    if (sle->getType() == ltSIGNER_LIST)
     {
         Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
     }
-    else if (sle->getType() == ltNFTOKEN_OFFER)
+    if (sle->getType() == ltNFTOKEN_OFFER)
     {
         // Do not check the sfDestination field. NFToken Offers are NOT added to
         // the Destination account's directory.
@@ -96,7 +101,7 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
         return std::nullopt;
 
     auto const& jvLimit = context.params[jss::limit];
-    if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
+    if (!jvLimit.isUInt() && (!jvLimit.isInt() || jvLimit.asInt() < 0))
         return RPC::expected_field_error(jss::limit, "unsigned integer");
 
     limit = jvLimit.asUInt();
@@ -110,10 +115,10 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
 }
 
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& value)
+parseXrplLibSeed(Json::Value const& value)
 {
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
-    // non-standard way. While rippled never encode seeds that way, we
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
+    // non-standard way. While xrpld never encode seeds that way, we
     // try to detect such keys to avoid user confusion.
     if (!value.isString())
         return std::nullopt;
@@ -234,9 +239,13 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         if (!keyType)
         {
             if (apiVersion > 1u)
+            {
                 error = RPC::make_error(rpcBAD_KEY_TYPE);
+            }
             else
+            {
                 error = RPC::invalid_field_error(jss::key_type);
+            }
             return {};
         }
 
@@ -250,14 +259,14 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
         }
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
     // using strcmp as pointers may not match (see
     // https://developercommunity.visualstudio.com/t/assigning-constexpr-char--to-static-cha/10021357?entry=problem)
     if (strcmp(secretType, jss::seed_hex.c_str()) != 0)
     {
-        seed = RPC::parseRippleLibSeed(params[secretType]);
+        seed = RPC::parseXrplLibSeed(params[secretType]);
 
         if (seed)
         {
@@ -279,7 +288,9 @@ keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int 
     if (!seed)
     {
         if (has_key_type)
+        {
             seed = getSeedFromRPC(params, error);
+        }
         else
         {
             if (!params[jss::secret].isString())
@@ -372,6 +383,65 @@ isAccountObjectsValidType(LedgerEntryType const& type)
         default:
             return true;
     }
+}
+
+error_code_i
+parseSubUnsubJson(
+    Asset& asset,
+    Json::Value const& params,
+    Json::StaticString const& name,
+    beast::Journal j)
+{
+    auto const& jv = params[name];
+    auto const [issuerError, assetError] = [&]() {
+        if (name == jss::taker_pays)
+            return std::make_pair(rpcSRC_ISR_MALFORMED, rpcSRC_CUR_MALFORMED);
+        return std::make_pair(rpcDST_ISR_MALFORMED, rpcDST_AMT_MALFORMED);
+    }();
+
+    if (jv.isMember(jss::mpt_issuance_id) &&
+        (jv.isMember(jss::currency) || jv.isMember(jss::issuer)))
+    {
+        JLOG(j.info()) << boost::format("Bad %s currency or MPT.") % name.c_str();
+        return rpcINVALID_PARAMS;
+    }
+
+    if (jv.isMember(jss::currency))
+    {
+        Issue issue = xrpIssue();
+        // Parse mandatory currency.
+        if (!jv.isMember(jss::currency) ||
+            !to_currency(issue.currency, jv[jss::currency].asString()))
+        {
+            JLOG(j.info()) << boost::format("Bad %s currency.") % name.c_str();
+            return assetError;
+        }
+
+        // Parse optional issuer.
+        if (((jv.isMember(jss::issuer)) &&
+             (!jv[jss::issuer].isString() || !to_issuer(issue.account, jv[jss::issuer].asString())))
+            // Don't allow illegal issuers.
+            || (!issue.currency != !issue.account) || noAccount() == issue.account)
+        {
+            JLOG(j.info()) << boost::format("Bad %s issuer.") % name.c_str();
+            return issuerError;
+        }
+        asset = issue;
+    }
+    else if (jv.isMember(jss::mpt_issuance_id))
+    {
+        MPTID mptid;
+        if (!mptid.parseHex(jv[jss::mpt_issuance_id].asString()))
+            return assetError;
+        asset = mptid;
+    }
+    else
+    {
+        JLOG(j.info()) << boost::format("Neither %s currency or MPT is present.") % name.c_str();
+        return assetError;
+    }
+
+    return rpcSUCCESS;
 }
 
 }  // namespace RPC

@@ -40,7 +40,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[96];
+    char ctx_[96]{};
 };
 
 /** SHA-512 digest
@@ -63,7 +63,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[216];
+    char ctx_[216]{};
 };
 
 /** SHA-256 digest
@@ -86,7 +86,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[112];
+    char ctx_[112]{};
 };
 
 //------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ using sha512_hasher = openssl_sha512_hasher;
 /** Returns the RIPEMD-160 digest of the SHA256 hash of the message.
 
     This operation is used to compute the 160-bit identifier
-    representing a Ripple account, from a message. Typically the
+    representing an XRPL account, from a message. Typically the
     message is the public key of the account - which is not
     stored in the account root.
 

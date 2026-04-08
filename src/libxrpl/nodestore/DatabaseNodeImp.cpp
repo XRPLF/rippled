@@ -29,7 +29,7 @@ DatabaseNodeImp::fetchNodeObject(
     bool duplicate)
 {
     std::shared_ptr<NodeObject> nodeObject = nullptr;
-    Status status;
+    Status status = ok;
 
     try
     {

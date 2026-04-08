@@ -11,13 +11,13 @@ namespace test {
 
 class OfferBaseUtil_test : public beast::unit_test::suite
 {
-    XRPAmount
+    static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
         return env.current()->fees().accountReserve(count);
     }
 
-    std::uint32_t
+    static std::uint32_t
     lastClose(jtx::Env& env)
     {
         return env.current()->header().parentCloseTime.time_since_epoch().count();
@@ -93,7 +93,7 @@ public:
         // Offers for the good quality path
         env(offer(carol, BTC(1), USD(100)));
 
-        PathSet paths(Path(XRP, USD), Path(USD));
+        PathSet const paths(Path(XRP, USD), Path(USD));
 
         env(pay(alice, bob, USD(100)),
             json(paths.json()),
@@ -382,7 +382,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -419,8 +419,8 @@ public:
         auto const EUR = gw["EUR"];
 
         auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
-            STAmount amt(
-                iou.issue(),
+            STAmount const amt(
+                iou,
                 /*mantissa*/ 1,
                 /*exponent*/ -81);
             return PrettyAmount(amt, iou.account.name());
@@ -507,7 +507,7 @@ public:
                 ter(expectedTer));
             env.close();
 
-            if (expectedTer == tesSUCCESS)
+            if (isTesSuccess(expectedTer))
             {
                 env.require(offers(carol, 0));
                 env.require(balance(carol,
@@ -709,7 +709,7 @@ public:
 
     // Helper function that returns the Offers on an account.
     static std::vector<std::shared_ptr<SLE const>>
-    offersOnAccount(jtx::Env& env, jtx::Account account)
+    offersOnAccount(jtx::Env& env, jtx::Account const& account)
     {
         std::vector<std::shared_ptr<SLE const>> result;
         forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
@@ -863,7 +863,7 @@ public:
 
             auto const aliceOffers = offersOnAccount(env, alice);
             BEAST_EXPECT(aliceOffers.size() == 1);
-            for (auto offerPtr : aliceOffers)
+            for (auto const& offerPtr : aliceOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == XRP(2000));
@@ -878,7 +878,7 @@ public:
 
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            for (auto offerPtr : bobOffers)
+            for (auto const& offerPtr : bobOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == USD(1000));
@@ -927,7 +927,7 @@ public:
 
             auto const bobOffers = offersOnAccount(env, "bob");
             BEAST_EXPECT(bobOffers.size() == 1);
-            for (auto offerPtr : bobOffers)
+            for (auto const& offerPtr : bobOffers)
             {
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == USD(499.5));
@@ -1203,12 +1203,11 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
-        // NOTE :
         // At this point, all offers are expected to be consumed.
         {
             auto acctOffers = offersOnAccount(env, account_to_test);
 
-            BEAST_EXPECT(acctOffers.size() == 0);
+            BEAST_EXPECT(acctOffers.empty());
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1279,7 +1278,7 @@ public:
             auto const gw_initial_balance = drops(1149999730);
             auto const alice_initial_balance = drops(499946999680);
             auto const bob_initial_balance = drops(10199999920);
-            auto const small_amount = STAmount{bob["USD"].issue(), UINT64_C(2710505431213761), -33};
+            auto const small_amount = STAmount{bob["USD"], UINT64_C(2710505431213761), -33};
 
             env.fund(gw_initial_balance, gw);
             env.fund(alice_initial_balance, alice);
@@ -1926,9 +1925,13 @@ public:
         {
             Env env{*this, features};
             if (NumberSwitchOver)
+            {
                 env.enableFeature(fixUniversalNumber);
+            }
             else
+            {
                 env.disableFeature(fixUniversalNumber);
+            }
 
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -2132,18 +2135,18 @@ public:
         jtx::Account const& account,
         jtx::PrettyAmount const& expectBalance)
     {
-        auto const sleTrust = env.le(keylet::line(account.id(), expectBalance.value().issue()));
+        Issue const& issue = expectBalance.value().get<Issue>();
+        auto const sleTrust = env.le(keylet::line(account.id(), issue));
         BEAST_EXPECT(sleTrust);
         if (sleTrust)
         {
-            Issue const issue = expectBalance.value().issue();
             bool const accountLow = account.id() < issue.account;
 
             STAmount low{issue};
             STAmount high{issue};
 
-            low.setIssuer(accountLow ? account.id() : issue.account);
-            high.setIssuer(accountLow ? issue.account : account.id());
+            low.get<Issue>().account = (accountLow ? account.id() : issue.account);
+            high.get<Issue>().account = (accountLow ? issue.account : account.id());
 
             BEAST_EXPECT(sleTrust->getFieldAmount(sfLowLimit) == low);
             BEAST_EXPECT(sleTrust->getFieldAmount(sfHighLimit) == high);
@@ -2249,7 +2252,7 @@ public:
 
             // The gateway optionally creates an offer that would be crossed.
             auto const book = t.bookAmount;
-            if (book)
+            if (book != 0)
                 env(offer(gw, XRP(book), USD(book)));
             env.close();
             std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
@@ -2274,14 +2277,14 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
-            BEAST_EXPECT(env.balance(acct, USD.issue()) == t.balanceUsd);
+            BEAST_EXPECT(env.balance(acct, USD) == t.balanceUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.require(offers(acct, t.offers));
             env.require(owners(acct, t.owners));
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
-            if (acctOffers.size() && t.offers)
+            if (!acctOffers.empty() && (t.offers != 0))
             {
                 auto const& acctOffer = *(acctOffers.front());
 
@@ -2292,7 +2295,7 @@ public:
 
             if (t.preTrust == noPreTrust)
             {
-                if (t.balanceUsd.value().signum())
+                if (t.balanceUsd.value().signum() != 0)
                 {
                     // Verify the correct contents of the trustline
                     verifyDefaultTrustline(env, acct, t.balanceUsd);
@@ -2300,7 +2303,7 @@ public:
                 else
                 {
                     // Verify that no trustline was created.
-                    auto const sleTrust = env.le(keylet::line(acct, USD.issue()));
+                    auto const sleTrust = env.le(keylet::line(acct, USD));
                     BEAST_EXPECT(!sleTrust);
                 }
             }
@@ -2485,8 +2488,8 @@ public:
         env.require(offers(bob, 0));
 
         // The two trustlines that were generated by offers should be gone.
-        BEAST_EXPECT(!env.le(keylet::line(alice.id(), EUR.issue())));
-        BEAST_EXPECT(!env.le(keylet::line(bob.id(), USD.issue())));
+        BEAST_EXPECT(!env.le(keylet::line(alice.id(), EUR)));
+        BEAST_EXPECT(!env.le(keylet::line(bob.id(), USD)));
 
         // Make two more offers that leave one of the offers non-dry. We
         // need to properly sequence the transactions:
@@ -2592,7 +2595,7 @@ public:
 
         // In pre-flow code alice's offer is left empty in the ledger.
         auto const aliceOffers = offersOnAccount(env, alice);
-        if (aliceOffers.size() != 0)
+        if (!aliceOffers.empty())
         {
             BEAST_EXPECT(aliceOffers.size() == 1);
             auto const& aliceOffer = *(aliceOffers.front());
@@ -2764,15 +2767,15 @@ public:
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
             // Check results
-            BEAST_EXPECT(env.balance(acct, USD.issue()) == t.finalUsd);
+            BEAST_EXPECT(env.balance(acct, USD) == t.finalUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.require(offers(acct, t.offers));
             env.require(owners(acct, t.owners));
 
-            if (t.offers)
+            if (t.offers != 0)
             {
                 auto const acctOffers = offersOnAccount(env, acct);
-                if (acctOffers.size() > 0)
+                if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
                     auto const& acctOffer = *(acctOffers.front());
@@ -2984,7 +2987,7 @@ public:
             env.require(balance(eve, XRP(18000)));
             auto const evesOffers = offersOnAccount(env, eve);
             BEAST_EXPECT(evesOffers.size() == 1);
-            if (evesOffers.size() != 0)
+            if (!evesOffers.empty())
             {
                 auto const& evesOffer = *(evesOffers.front());
                 BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
@@ -3160,7 +3163,7 @@ public:
 
             // In pre-flow code ova's offer is left empty in the ledger.
             auto const ovasOffers = offersOnAccount(env, ova);
-            if (ovasOffers.size() != 0)
+            if (!ovasOffers.empty())
             {
                 BEAST_EXPECT(ovasOffers.size() == 1);
                 auto const& ovasOffer = *(ovasOffers.front());
@@ -3314,7 +3317,7 @@ public:
             env.close();
             std::uint32_t const firstOfferSeq = env.seq(acct) - 1;
 
-            int offerCount = t.firstOfferTec == tesSUCCESS ? 1 : 0;
+            int offerCount = isTesSuccess(t.firstOfferTec) ? 1 : 0;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -3333,7 +3336,7 @@ public:
             env.close();
             std::uint32_t const secondOfferSeq = env.seq(acct) - 1;
 
-            offerCount = t.secondOfferTec == tesSUCCESS ? 1 : offerCount;
+            offerCount = isTesSuccess(t.secondOfferTec) ? 1 : offerCount;
             env.require(owners(acct, 2 + offerCount));
             env.require(balance(acct, t.fundUSD));
             env.require(balance(acct, t.fundEUR));
@@ -3671,7 +3674,7 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(JPY.issue(), std::uint64_t(2230682446713524ul), -12));
+                STAmount(JPY, std::uint64_t(2230682446713524ul), -12));
             BEAST_EXPECT(offer[sfTakerPays] == BTC(0.035378));
         }
     }
@@ -3708,24 +3711,24 @@ public:
         env(
             pay(gw1,
                 alice,
-                STAmount{USD.issue(), std::uint64_t(2185410179555600), -14}));
+                STAmount{USD, std::uint64_t(2185410179555600), -14}));
         env(
             pay(gw2,
                 bob,
-                STAmount{JPY.issue(), std::uint64_t(6351823459548956), -12}));
+                STAmount{JPY, std::uint64_t(6351823459548956), -12}));
         env.close();
 
         env(offer(
             bob,
-            STAmount{USD.issue(), std::uint64_t(4371257532306000), -17},
-            STAmount{JPY.issue(), std::uint64_t(4573216636606000), -15}));
+            STAmount{USD, std::uint64_t(4371257532306000), -17},
+            STAmount{JPY, std::uint64_t(4573216636606000), -15}));
         env.close();
 
         // This offer did not partially cross correctly.
         env(offer(
             alice,
-            STAmount{JPY.issue(), std::uint64_t(2291181510070762), -12},
-            STAmount{USD.issue(), std::uint64_t(2190218999914694), -14}));
+            STAmount{JPY, std::uint64_t(2291181510070762), -12},
+            STAmount{USD, std::uint64_t(2190218999914694), -14}));
         env.close();
 
         auto const aliceOffers = offersOnAccount(env, alice);
@@ -3736,10 +3739,10 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(USD.issue(), std::uint64_t(2185847305256635), -14));
+                STAmount(USD, std::uint64_t(2185847305256635), -14));
             BEAST_EXPECT(
                 offer[sfTakerPays] ==
-                STAmount(JPY.issue(), std::uint64_t(2286608293434156), -12));
+                STAmount(JPY, std::uint64_t(2286608293434156), -12));
         }
     }
 
@@ -3768,21 +3771,21 @@ public:
         // Place alice's tiny offer in the book first.  Let's see what happens
         // when a reasonable offer crosses it.
         STAmount const aliceCnyOffer{
-            CNY.issue(), std::uint64_t(4926000000000000), -23};
+            CNY, std::uint64_t(4926000000000000), -23};
 
         env(offer(alice, aliceCnyOffer, drops(1), tfPassive));
         env.close();
 
         // bob places an ordinary offer
         STAmount const bobCnyStartBalance{
-            CNY.issue(), std::uint64_t(3767479960090235), -15};
+            CNY, std::uint64_t(3767479960090235), -15};
         env(pay(gw, bob, bobCnyStartBalance));
         env.close();
 
         env(offer(
             bob,
             drops(203),
-            STAmount{CNY.issue(), std::uint64_t(1000000000000000), -20}));
+            STAmount{CNY, std::uint64_t(1000000000000000), -20}));
         env.close();
 
         env.require(balance(alice, aliceCnyOffer));
@@ -3871,10 +3874,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {0, 0, 1, BTC(20), {{"ann", 0, drops(3900000'000000 - 4 * baseFee), BTC(20.0), USD(3000)}, {"abe", 0, drops(4100000'000000 - 3 * baseFee), BTC( 0), USD(750)}}},  // no BTC xfer fee
-            {0, 1, 0, BTC(20), {{"bev", 0, drops(4100000'000000 - 4 * baseFee), BTC( 7.5), USD(2000)}, {"bob", 0, drops(3900000'000000 - 3 * baseFee), BTC(10), USD(  0)}}},  // no USD xfer fee
-            {0, 0, 0, BTC(20), {{"cam", 0, drops(4000000'000000 - 5 * baseFee), BTC(20.0), USD(2000)}                                                     }},  // no xfer fee
-            {0, 1, 0, BTC( 5), {{"deb", 1, drops(4040000'000000 - 4 * baseFee), BTC( 0.0), USD(2000)}, {"dan", 1, drops(3960000'000000 - 3 * baseFee), BTC( 4), USD(  0)}}},  // no USD xfer fee
+            {0, 0, 1, BTC(20), {{"ann", 0, drops(3900000'000000 - (4 * baseFee)), BTC(20.0), USD(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), BTC( 0), USD(750)}}},  // no BTC xfer fee
+            {0, 1, 0, BTC(20), {{"bev", 0, drops(4100000'000000 - (4 * baseFee)), BTC( 7.5), USD(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), BTC(10), USD(  0)}}},  // no USD xfer fee
+            {0, 0, 0, BTC(20), {{"cam", 0, drops(4000000'000000 - (5 * baseFee)), BTC(20.0), USD(2000)}                                                     }},  // no xfer fee
+            {0, 1, 0, BTC( 5), {{"deb", 1, drops(4040000'000000 - (4 * baseFee)), BTC( 0.0), USD(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), BTC( 4), USD(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -4022,8 +4025,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
-            {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
+            {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), BTC(0), USD(1375)}}}, // no BTC xfer fee
+            {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 
@@ -4275,8 +4278,7 @@ public:
 
         Env env{*this, features};
 
-        // This test mimics the payment flow used in the Ripple Connect
-        // smoke test.  The players:
+        // This test mimics a payment flow. The players:
         //   A USD gateway with hot and cold wallets
         //   A EUR gateway with hot and cold walllets
         //   A MM gateway that will provide offers from USD->EUR and EUR->USD
@@ -4593,8 +4595,10 @@ public:
         std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
         forEachItem(*env.current(), alice, [&](std::shared_ptr<SLE const> const& sle) {
             if (sle->getType() == ltOFFER)
+            {
                 offers.emplace(
                     (*sle)[sfSequence], std::make_pair((*sle)[sfTakerPays], (*sle)[sfTakerGets]));
+            }
         });
 
         // first offer
@@ -4749,7 +4753,7 @@ public:
         // Verify that the third offer alice created was consumed.
         {
             auto offers = sortedOffersOnAccount(env, alice);
-            BEAST_EXPECT(offers.size() == 0);
+            BEAST_EXPECT(offers.empty());
         }
         env.require(balance(alice, USD(0)));
         env.require(owners(alice, 1));
@@ -4931,7 +4935,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance -= USD(100);
                 takerUSDBalance += USD(100);
@@ -4948,7 +4952,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);
@@ -4965,7 +4969,7 @@ public:
 
             makerXRPBalance -= txfee(env, 1);
             takerXRPBalance -= txfee(env, 1);
-            if (err == tesSUCCESS)
+            if (isTesSuccess(err))
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);

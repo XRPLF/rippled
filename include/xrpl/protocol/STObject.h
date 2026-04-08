@@ -57,7 +57,7 @@ class STObject : public STBase, public CountedObject<STObject>
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
-    SOTemplate const* mType;
+    SOTemplate const* mType{};
 
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
@@ -349,6 +349,8 @@ public:
     void
     setFieldH128(SField const& field, uint128 const&);
     void
+    setFieldH192(SField const& field, uint192 const&);
+    void
     setFieldH256(SField const& field, uint256 const&);
     void
     setFieldI32(SField const& field, std::int32_t);
@@ -401,7 +403,7 @@ public:
     getStyle(SField const& field) const;
 
     bool
-    hasMatchingEntry(STBase const&);
+    hasMatchingEntry(STBase const&) const;
 
     bool
     operator==(STObject const& o) const;
@@ -671,7 +673,7 @@ public:
     OptionalProxy&
     operator=(std::nullopt_t const&);
     OptionalProxy&
-    operator=(optional_type&& v);
+    operator=(optional_type&& v);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     OptionalProxy&
     operator=(optional_type const& v);
 
@@ -766,7 +768,7 @@ STObject::Proxy<T>::assign(U&& u)
         st_->makeFieldAbsent(*f_);
         return;
     }
-    T* t;
+    T* t = nullptr;
     if (style_ == soeINVALID)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
@@ -851,7 +853,9 @@ STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type&& v) -> OptionalProxy&
+STObject::OptionalProxy<T>::operator=(
+    optional_type&& v)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    -> OptionalProxy&
 {
     if (v)
         this->assign(std::move(*v));
@@ -930,6 +934,7 @@ STObject::Transform::operator()(detail::STVar const& e) const
 
 //------------------------------------------------------------------------------
 
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
 inline STObject::STObject(SerialIter&& sit, SField const& name) : STObject(sit, name)
 {
 }
@@ -1153,7 +1158,7 @@ STObject::getFieldByValue(SField const& field) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return V();  // optional field not present
@@ -1180,7 +1185,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return empty;  // optional field not present

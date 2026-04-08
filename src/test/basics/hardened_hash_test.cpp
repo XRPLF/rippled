@@ -189,13 +189,13 @@ public:
     check_container()
     {
         {
-            C<detail::test_user_type_member<std::string>> c;
+            C<detail::test_user_type_member<std::string>> const c;
         }
 
         pass();
 
         {
-            C<detail::test_user_type_free<std::string>> c;
+            C<detail::test_user_type_free<std::string>> const c;
         }
 
         pass();

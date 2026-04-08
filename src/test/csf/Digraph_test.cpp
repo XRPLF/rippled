@@ -24,13 +24,15 @@ public:
 
         BEAST_EXPECT(graph.connect('a', 'b', "foobar"));
         BEAST_EXPECT(graph.connected('a', 'b'));
-        BEAST_EXPECT(*graph.edge('a', 'b') == "foobar");
+        BEAST_EXPECT(
+            *graph.edge('a', 'b') == "foobar");  // NOLINT(bugprone-unchecked-optional-access)
 
         BEAST_EXPECT(!graph.connect('a', 'b', "repeat"));
         BEAST_EXPECT(graph.disconnect('a', 'b'));
         BEAST_EXPECT(graph.connect('a', 'b', "repeat"));
         BEAST_EXPECT(graph.connected('a', 'b'));
-        BEAST_EXPECT(*graph.edge('a', 'b') == "repeat");
+        BEAST_EXPECT(
+            *graph.edge('a', 'b') == "repeat");  // NOLINT(bugprone-unchecked-optional-access)
 
         BEAST_EXPECT(graph.connect('a', 'c', "tree"));
 
@@ -55,7 +57,7 @@ public:
 
         // only 'a' has out edges
         BEAST_EXPECT(graph.outVertices().size() == 1);
-        std::vector<char> expected = {'b', 'c'};
+        std::vector<char> const expected = {'b', 'c'};
 
         BEAST_EXPECT((graph.outVertices('a') == expected));
         BEAST_EXPECT(graph.outVertices('b').size() == 0);
@@ -64,7 +66,7 @@ public:
 
         std::stringstream ss;
         graph.saveDot(ss, [](char v) { return v; });
-        std::string expectedDot =
+        std::string const expectedDot =
             "digraph {\n"
             "a -> b;\n"
             "a -> c;\n"
