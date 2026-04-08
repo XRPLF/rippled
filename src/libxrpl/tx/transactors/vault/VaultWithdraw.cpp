@@ -43,10 +43,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const assets = ctx.tx[sfAmount];
+    auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
-    if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
+    if (amount.asset() != vaultAsset && amount.asset() != vaultShare)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -67,8 +67,53 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
-        return ret;
+    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
+    {
+        // Post-fixSecurity3_1_3: if the user specified shares, convert
+        // to the equivalent asset amount before checking withdrawal
+        // limits. Pre-amendment the limit check was skipped for
+        // share-denominated withdrawals.
+        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
+        if (!sleIssuance)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        try
+        {
+            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
+            if (!maybeAssets)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            if (auto const ret = canWithdraw(
+                    ctx.view,
+                    account,
+                    dstAcct,
+                    *maybeAssets,
+                    ctx.tx.isFieldPresent(sfDestinationTag)))
+                return ret;
+        }
+        catch (std::overflow_error const&)
+        {
+            // It's easy to hit this exception from Number with large enough Scale
+            // so we avoid spamming the log and only use debug here.
+            JLOG(ctx.j.debug())  //
+                << "VaultWithdraw: overflow error with"
+                << " scale=" << (int)vault->at(sfScale)  //
+                << ", assetsTotal=" << vault->at(sfAssetsTotal)
+                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+                << ", amount=" << amount.value();
+            return tecPATH_DRY;
+        }
+    }
+    else
+    {
+        if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+            return ret;
+    }
 
     // If sending to Account (i.e. not a transfer), we will also create (only
     // if authorized) a trust line or MPToken as needed, in doApply().

@@ -3,8 +3,8 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/tx/transactors/Sponsor/SponsorshipSet.h>
 
 namespace xrpl {
 

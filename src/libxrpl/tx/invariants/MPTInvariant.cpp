@@ -56,7 +56,7 @@ ValidMPTIssuance::finalize(
     {
         auto const& rules = view.rules();
         [[maybe_unused]]
-        bool enforceCreatedByIssuer =
+        bool const enforceCreatedByIssuer =
             rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol);
         if (mptCreatedByIssuer_)
         {

@@ -106,8 +106,8 @@ private:
     ChildValues childValues_;
     std::string document_;
     std::string indentString_;
-    int rightMargin_;
-    int indentSize_;
+    int rightMargin_{74};
+    int indentSize_{3};
     bool addChildValues_{};
 };
 
@@ -171,9 +171,9 @@ private:
     using ChildValues = std::vector<std::string>;
 
     ChildValues childValues_;
-    std::ostream* document_;
+    std::ostream* document_{nullptr};
     std::string indentString_;
-    int rightMargin_;
+    int rightMargin_{74};
     std::string indentation_;
     bool addChildValues_{};
 };

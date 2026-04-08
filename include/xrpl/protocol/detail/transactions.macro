@@ -1078,7 +1078,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 
 /** This transaction transfer sponsorship */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
+#   include <xrpl/tx/transactors/Sponsor/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
     Delegation::delegable,
@@ -1091,7 +1091,7 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
 
 /** This transaction create sponsorship object */
 #if TRANSACTION_INCLUDE
-#   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+#   include <xrpl/tx/transactors/Sponsor/SponsorshipSet.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_SET, 86, SponsorshipSet,
     Delegation::delegable,

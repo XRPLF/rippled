@@ -5,9 +5,9 @@
 Consensus is the task of reaching agreement within a distributed system in the
 presence of faulty or even malicious participants. This document outlines the
 [XRP Ledger Consensus Algorithm](https://arxiv.org/abs/1802.07242)
-as implemented in [rippled](https://github.com/ripple/rippled), but
+as implemented in [xrpld](https://github.com/XRPLF/rippled), but
 focuses on its utility as a generic consensus algorithm independent of the
-detailed mechanics of the Ripple Consensus Ledger. Most notably, the algorithm
+detailed mechanics of the XRPL consensus Ledger. Most notably, the algorithm
 does not require fully synchronous communication between all nodes in the
 network, or even a fixed network topology, but instead achieves consensus via
 collectively trusted subnetworks.
@@ -15,7 +15,7 @@ collectively trusted subnetworks.
 ## Distributed Agreement
 
 A challenge for distributed systems is reaching agreement on changes in shared
-state. For the Ripple network, the shared state is the current ledger--account
+state. For the XRPL network, the shared state is the current ledger--account
 information, account balances, order books and other financial data. We will
 refer to shared distributed state as a /ledger/ throughout the remainder of this
 document.
@@ -23,7 +23,7 @@ document.
 ![Ledger Chain](images/consensus/ledger_chain.png "Ledger Chain")
 
 As shown above, new ledgers are made by applying a set of transactions to the
-prior ledger. For the Ripple network, transactions include payments,
+prior ledger. For the XRPL network, transactions include payments,
 modification of account settings, updates to offers and more.
 
 In a centralized system, generating the next ledger is trivial since there is a
@@ -33,10 +33,10 @@ the set of transactions to include, the order to apply those transactions, and
 even the resulting ledger after applying the transactions. This is even more
 difficult when some participants are faulty or malicious.
 
-The Ripple network is a decentralized and **trust-full** network. Anyone is free
+The XRPL network is a decentralized and **trust-full** network. Anyone is free
 to join and participants are free to choose a subset of peers that are
 collectively trusted to not collude in an attempt to defraud the participant.
-Leveraging this network of trust, the Ripple algorithm has two main components.
+Leveraging this network of trust, the XRPL algorithm has two main components.
 
 - _Consensus_ in which network participants agree on the transactions to apply
   to a prior ledger, based on the positions of their chosen peers.
@@ -54,9 +54,9 @@ and was abandoned.
 
 The remainder of this section describes the Consensus and Validation algorithms
 in more detail and is meant as a companion guide to understanding the generic
-implementation in `rippled`. The document **does not** discuss correctness,
+implementation in `xrpld`. The document **does not** discuss correctness,
 fault-tolerance or liveness properties of the algorithms or the full details of
-how they integrate within `rippled` to support the Ripple Consensus Ledger.
+how they integrate within `xrpld` to support the XRPL consensus Ledger.
 
 ## Consensus Overview
 

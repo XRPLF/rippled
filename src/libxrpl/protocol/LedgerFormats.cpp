@@ -41,7 +41,7 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
+    static LedgerFormats const instance;
     return instance;
 }
 

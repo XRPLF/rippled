@@ -1,11 +1,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/tx/paths/OfferStream.h>
-#include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 
 namespace xrpl {
 
@@ -203,7 +203,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> entry = tip_.entry();
+        std::shared_ptr<SLE> const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())

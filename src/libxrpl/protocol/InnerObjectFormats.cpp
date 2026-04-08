@@ -172,7 +172,7 @@ InnerObjectFormats::InnerObjectFormats()
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats instance;
+    static InnerObjectFormats const instance;
     return instance;
 }
 

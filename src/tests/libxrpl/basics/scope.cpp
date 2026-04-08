@@ -10,7 +10,7 @@ TEST(scope, scope_exit)
     // unless release() is called
     int i = 0;
     {
-        scope_exit x{[&i]() { i = 1; }};
+        scope_exit const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
@@ -32,7 +32,7 @@ TEST(scope, scope_exit)
     {
         try
         {
-            scope_exit x{[&i]() { i = 5; }};
+            scope_exit const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -60,7 +60,7 @@ TEST(scope, scope_fail)
     // if an exception is unwinding, unless release() is called
     int i = 0;
     {
-        scope_fail x{[&i]() { i = 1; }};
+        scope_fail const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 0);
     {
@@ -82,7 +82,7 @@ TEST(scope, scope_fail)
     {
         try
         {
-            scope_fail x{[&i]() { i = 5; }};
+            scope_fail const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
@@ -110,7 +110,7 @@ TEST(scope, scope_success)
     // if an exception is not unwinding, unless release() is called
     int i = 0;
     {
-        scope_success x{[&i]() { i = 1; }};
+        scope_success const x{[&i]() { i = 1; }};
     }
     EXPECT_EQ(i, 1);
     {
@@ -132,7 +132,7 @@ TEST(scope, scope_success)
     {
         try
         {
-            scope_success x{[&i]() { i = 5; }};
+            scope_success const x{[&i]() { i = 5; }};
             throw 1;
         }
         catch (...)  // NOLINT(bugprone-empty-catch)

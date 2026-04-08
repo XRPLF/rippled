@@ -1,7 +1,9 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -9,8 +11,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/dex/PermissionedDEXHelpers.h>
 #include <xrpl/tx/transactors/payment/Payment.h>
 
 namespace xrpl {
@@ -443,7 +443,7 @@ Payment::doApply()
 
     if (ripple)
     {
-        // Ripple payment with at least one intermediate step and uses
+        // XRPL payment with at least one intermediate step and uses
         // transitive balances.
 
         // An account that requires authorization has two ways to get an
@@ -597,18 +597,23 @@ Payment::doApply()
     auto const reserve = calculateReserve(sleSrc, view().fees()) +
         (((txFlags & tfSponsorCreatedAccount) != 0u) ? view().fees().reserve : beast::zero);
 
-    // preFeeBalance_ is the balance on the sending account BEFORE the
-    // fees were charged. We want to make sure we have enough reserve
-    // to send. Allow final spend to use reserve for fee.
-    auto const mmm = std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp());
+    // In a delegated payment, the fee payer is the delegated account,
+    // not the source account (account_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
 
-    if (preFeeBalance_ < dstAmount.xrp() + mmm)
+    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // were charged. If source account is the fee payer, it must also cover the fee.
+    // The final spend may use the reserve to cover fees.
+    auto const minRequiredFunds =
+        accountIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
+
+    if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
     {
         // Vote no. However the transaction might succeed, if applied in
         // a different order.
         JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
-                         << " / " << to_string(dstAmount.xrp() + mmm) << " (" << to_string(reserve)
-                         << ")";
+                         << " / " << to_string(dstAmount.xrp() + minRequiredFunds) << " ("
+                         << to_string(reserve) << ")";
 
         return tecUNFUNDED_PAYMENT;
     }

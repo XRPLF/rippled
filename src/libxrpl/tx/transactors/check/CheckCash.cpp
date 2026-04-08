@@ -333,29 +333,27 @@ CheckCash::doApply()
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
 
-                // clang-format off
                 if (TER const ter = trustCreate(
-                        psb,                            // payment sandbox
-                        destLow,                        // is dest low?
-                        issuer,                         // source
-                        account_,                       // destination
-                        trustLineKey.key,               // ledger index
-                        sleDst,                         // Account to add to
-                        false,                          // authorize account
-                        (sleDst->getFlags() & lsfDefaultRipple) == 0,
-                        false,                          // freeze trust line
-                        false,                          // deep freeze trust line
-                        initialBalance,                 // zero initial balance
-                        Issue(currency, account_),      // limit of zero
-                        0,                              // quality in
-                        0,                              // quality out
-                        sponsorAccountID,                     // sponsor
-                        viewJ);                         // journal
+                        psb,                                           // payment sandbox
+                        destLow,                                       // is dest low?
+                        issuer,                                        // source
+                        account_,                                      // destination
+                        trustLineKey.key,                              // ledger index
+                        sleDst,                                        // Account to add to
+                        false,                                         // authorize account
+                        (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
+                        false,                                         // freeze trust line
+                        false,                                         // deep freeze trust line
+                        initialBalance,                                // zero initial balance
+                        Issue(currency, account_),                     // limit of zero
+                        0,                                             // quality in
+                        0,                                             // quality out
+                        sponsorAccountID,                              // sponsor
+                        viewJ);                                        // journal
                     !isTesSuccess(ter))
                 {
                     return ter;
                 }
-                // clang-format on
 
                 psb.update(sleDst);
 
@@ -376,7 +374,7 @@ CheckCash::doApply()
             STAmount const savedLimit = sleTrustLine->at(tweakedLimit);
 
             // Make sure the tweaked limits are restored when we leave scope.
-            scope_exit fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
+            scope_exit const fixup([&psb, &trustLineKey, &tweakedLimit, &savedLimit]() {
                 if (auto const sleTrustLine = psb.peek(trustLineKey))
                     sleTrustLine->at(tweakedLimit) = savedLimit;
             });

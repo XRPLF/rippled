@@ -51,7 +51,7 @@ public:
         BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
 
         {
-            AddressV4::bytes_type d = {{1, 2, 3, 4}};
+            AddressV4::bytes_type const d = {{1, 2, 3, 4}};
             BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
 
             unexpected(is_unspecified(AddressV4{d}));
@@ -110,7 +110,7 @@ public:
     {
         testcase("AddressV4::Bytes");
 
-        AddressV4::bytes_type d1 = {{10, 0, 0, 1}};
+        AddressV4::bytes_type const d1 = {{10, 0, 0, 1}};
         AddressV4 v4{d1};
         BEAST_EXPECT(v4.to_bytes()[0] == 10);
         BEAST_EXPECT(v4.to_bytes()[1] == 0);
@@ -136,8 +136,8 @@ public:
         testcase("Address");
 
         boost::system::error_code ec;
-        Address result{boost::asio::ip::make_address("1.2.3.4", ec)};
-        AddressV4::bytes_type d = {{1, 2, 3, 4}};
+        Address const result{boost::asio::ip::make_address("1.2.3.4", ec)};
+        AddressV4::bytes_type const d = {{1, 2, 3, 4}};
         BEAST_EXPECT(!ec);
         BEAST_EXPECT(result.is_v4() && result.to_v4() == AddressV4{d});
     }
@@ -286,7 +286,7 @@ public:
         BEAST_EXPECTS(to_string(ep) == "::ffff:166.78.151.147", to_string(ep));
 
         // a private IPv6
-        AddressV6::bytes_type d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+        AddressV6::bytes_type const d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
         ep = Endpoint(AddressV6{d2});
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));

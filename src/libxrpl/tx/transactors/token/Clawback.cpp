@@ -212,7 +212,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         fhIGNORE_FREEZE,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
 }
 
@@ -233,7 +233,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ahIGNORE_AUTH,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(),
         holder,
         issuer,

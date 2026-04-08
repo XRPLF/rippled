@@ -78,12 +78,12 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
-    std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(':');
+    std::string const strUserPass = base64_decode(strUserPass64);
+    std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
-    std::string strUser = strUserPass.substr(0, nColon);
-    std::string strPassword = strUserPass.substr(nColon + 1);
+    std::string const strUser = strUserPass.substr(0, nColon);
+    std::string const strPassword = strUserPass.substr(nColon + 1);
     return strUser == port.user && strPassword == port.password;
 }
 
@@ -158,7 +158,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return ++count_[port];
     }();
 
@@ -282,7 +282,7 @@ ServerHandler::onRequest(Session& session)
         return;
     }
 
-    std::shared_ptr<Session> detachedSession = session.detach();
+    std::shared_ptr<Session> const detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
         jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -343,14 +343,14 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandler::onStopped(Server&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }
@@ -732,7 +732,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        std::string strMethod = method.asString();
+        std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
             usage.charge(Resource::feeMalformedRPC);

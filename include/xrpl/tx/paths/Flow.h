@@ -9,7 +9,7 @@ namespace xrpl {
 namespace path {
 namespace detail {
 struct FlowDebugInfo;
-}
+}  // namespace detail
 }  // namespace path
 
 /**

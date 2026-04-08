@@ -167,7 +167,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -297,7 +297,7 @@ SignerListSet::replaceSignerList()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     constexpr int addedOwnerCount = 1;
-    std::uint32_t flags{lsfOneOwnerCount};
+    std::uint32_t const flags{lsfOneOwnerCount};
 
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
@@ -339,7 +339,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

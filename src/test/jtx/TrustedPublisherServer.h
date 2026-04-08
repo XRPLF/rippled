@@ -170,7 +170,7 @@ public:
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             return std::make_pair(data, blob);
         }();
         auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
@@ -198,7 +198,7 @@ public:
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
             blobInfo.emplace_back(blob, sig);
         }
@@ -295,7 +295,7 @@ public:
         openssl genrsa -out ca.key 2048
         openssl req -new -x509 -nodes -days 10000 -key ca.key -out ca.crt \
             -subj "/C=US/ST=CA/L=Los
-     Angeles/O=rippled-unit-tests/CN=example.com" # generate private cert
+     Angeles/O=xrpld-unit-tests/CN=example.com" # generate private cert
         openssl genrsa -out server.key 2048
         # Generate certificate signing request
         # since our unit tests can run in either ipv4 or ipv6 mode,
@@ -318,7 +318,7 @@ public:
         openssl req -new -key server.key -out server.csr \
             -config extras.cnf \
             -subj "/C=US/ST=California/L=San
-     Francisco/O=rippled-unit-tests/CN=127.0.0.1" \
+     Francisco/O=xrpld-unit-tests/CN=127.0.0.1" \
 
         # Create public certificate by signing with our CA
         openssl x509 -req -days 10000 -in server.csr -CA ca.crt -CAkey ca.key
@@ -562,7 +562,7 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "text/example");
                     // if huge was requested, lie about content length
-                    std::uint64_t cl = boost::starts_with(path, "/textfile/huge")
+                    std::uint64_t const cl = boost::starts_with(path, "/textfile/huge")
                         ? std::numeric_limits<uint64_t>::max()
                         : 1024;
                     res.content_length(cl);

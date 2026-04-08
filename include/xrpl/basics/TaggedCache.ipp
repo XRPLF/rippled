@@ -36,9 +36,7 @@ inline TaggedCache<
     , m_name(name)
     , m_target_size(size)
     , m_target_age(expiration)
-    , m_cache_count(0)
-    , m_hits(0)
-    , m_misses(0)
+
 {
 }
 

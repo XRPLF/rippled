@@ -146,19 +146,26 @@ removeEmptyHolding(
 //------------------------------------------------------------------------------
 
 TER
-rippleLockEscrowMPT(
+lockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     STAmount const& saAmount,
     beast::Journal j);
 
 TER
-rippleUnlockEscrowMPT(
+unlockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     AccountID const& uGranteeID,
     STAmount const& netAmount,
     STAmount const& grossAmount,
     beast::Journal j);
+
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags);
 
 }  // namespace xrpl

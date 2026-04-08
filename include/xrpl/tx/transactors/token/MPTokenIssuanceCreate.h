@@ -10,7 +10,7 @@ struct MPTCreateArgs
 {
     std::optional<XRPAmount> priorBalance;
     AccountID const& account;
-    std::uint32_t sequence;
+    std::uint32_t sequence = 0;
     std::uint32_t flags = 0;
     std::optional<std::uint64_t> maxAmount{};
     std::optional<std::uint8_t> assetScale{};

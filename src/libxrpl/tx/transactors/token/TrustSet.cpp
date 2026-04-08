@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
@@ -7,7 +8,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/TrustSet.h>
 
 namespace {
@@ -318,7 +318,7 @@ TrustSet::doApply()
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
     Currency const currency(saLimitAmount.getCurrency());
-    AccountID uDstAccountID(saLimitAmount.getIssuer());
+    AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
@@ -334,7 +334,7 @@ TrustSet::doApply()
     // items.
     //
     // We do this because being able to exchange currencies,
-    // which needs trust lines, is a powerful Ripple feature.
+    // which needs trust lines, is a powerful XRPL feature.
     // So we want to make it easy for a gateway to fund the
     // accounts of its users without fear of being tricked.
     //
@@ -357,7 +357,7 @@ TrustSet::doApply()
     // ReserveCount exists.
     bool const freeTrustLine = uOwnerCount < 2 && !isSponsoredAndPreFunded;
 
-    std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
+    std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
@@ -375,7 +375,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -386,7 +386,8 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState = view().peek(keylet::line(account_, uDstAccountID, currency));
+    SLE::pointer const sleRippleState =
+        view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -669,7 +670,7 @@ TrustSet::doApply()
     else
     {
         // Zero balance in currency.
-        STAmount saBalance(Issue{currency, noAccount()});
+        STAmount const saBalance(Issue{currency, noAccount()});
 
         auto const k = keylet::line(account_, uDstAccountID, currency);
 

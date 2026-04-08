@@ -2,12 +2,12 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 namespace test {
@@ -677,13 +677,13 @@ AMM::bid(BidArg const& arg)
     };
     if (arg.bidMin)
     {
-        STAmount saTokens = getBid(*arg.bidMin);
+        STAmount const saTokens = getBid(*arg.bidMin);
         saTokens.setJson(jv[jss::BidMin]);
         bidMin_ = saTokens.iou();
     }
     if (arg.bidMax)
     {
-        STAmount saTokens = getBid(*arg.bidMax);
+        STAmount const saTokens = getBid(*arg.bidMax);
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }

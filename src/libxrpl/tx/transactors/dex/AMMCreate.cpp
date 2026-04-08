@@ -1,14 +1,14 @@
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMCreate.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
@@ -258,7 +258,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         // Set AMM flag on AMM trustline
         if (!isXRP(amount))
         {
-            SLE::pointer sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
+            SLE::pointer const sleRippleState = sb.peek(keylet::line(accountId, amount.issue()));
             if (!sleRippleState)
             {
                 return tecINTERNAL;  // LCOV_EXCL_LINE
