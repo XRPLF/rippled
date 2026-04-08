@@ -5898,7 +5898,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             try
             {
                 STAmount const amount(noIssue(), -1, Number::maxExponent + normalExp);
-                [[maybe_unused]] Bytes amountBytes = toBytes(amount);
+                [[maybe_unused]] Bytes const amountBytes = toBytes(amount);
             }
             catch (...)
             {
