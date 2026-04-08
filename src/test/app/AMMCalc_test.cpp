@@ -3,6 +3,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Quality.h>
 
+#include <boost/format.hpp>
 #include <boost/regex.hpp>
 
 namespace xrpl {
@@ -164,9 +165,7 @@ class AMMCalc_test : public beast::unit_test::suite
     static std::string
     toString(STAmount const& a)
     {
-        std::stringstream str;
-        str << a.getText() << "/" << to_string(a.issue().currency);
-        return str.str();
+        return (boost::format("%s/%s") % a.getText() % to_string(a.get<Issue>().currency)).str();
     }
 
     static STAmount
@@ -175,8 +174,8 @@ class AMMCalc_test : public beast::unit_test::suite
         if (a == b)
             return amt;
         if (amt.native())
-            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.issue());
-        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.issue());
+            return toSTAmount(mulRatio(amt.xrp(), a, b, round), amt.asset());
+        return toSTAmount(mulRatio(amt.iou(), a, b, round), amt.asset());
     }
 
     static void
@@ -191,9 +190,9 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount sin{};
         int limitingStep = vp.size();
         STAmount limitStepOut{};
-        auto transferRate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
+        auto transferRate = [&](STAmount const& amt) {
+            auto const currency = to_string(amt.get<Issue>().currency);
+            return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // swap out reverse
         sin = sout;
@@ -254,9 +253,9 @@ class AMMCalc_test : public beast::unit_test::suite
         STAmount sout{};
         int limitingStep = 0;
         STAmount limitStepIn{};
-        auto transferRate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
-            return rates.find(currency) != rates.end() ? rates.at(currency) : QUALITY_ONE;
+        auto transferRate = [&](STAmount const& amt) {
+            auto const currency = to_string(amt.get<Issue>().currency);
+            return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // Swap in forward
         for (auto it = vp.begin(); it != vp.end(); ++it)

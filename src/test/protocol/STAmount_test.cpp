@@ -35,10 +35,10 @@ public:
             mantissa--;
 
             if (mantissa < STAmount::cMinValue)
-                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
+                return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
-                amount.issue(),
+                amount.asset(),
                 mantissa,
                 amount.exponent(),
                 amount.negative(),
@@ -50,10 +50,10 @@ public:
             mantissa++;
 
             if (mantissa > STAmount::cMaxValue)
-                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
+                return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
-                amount.issue(),
+                amount.asset(),
                 mantissa,
                 amount.exponent(),
                 amount.negative(),
@@ -79,7 +79,7 @@ public:
 
         BEAST_EXPECT(!cmp.native());
 
-        BEAST_EXPECT(cmp.issue().currency == res.issue().currency);
+        BEAST_EXPECT(cmp.get<Issue>().currency == res.get<Issue>().currency);
 
         if (res != cmp)
         {
