@@ -2,9 +2,9 @@
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/delegate.h>
 
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 namespace test {
