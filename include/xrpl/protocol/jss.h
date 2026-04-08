@@ -110,6 +110,7 @@ JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
+JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
 JSS(affected);                    // out: AcceptedLedgerTx
@@ -133,6 +134,7 @@ JSS(attestation_reward_account);  //
 JSS(auction_slot);                // out: amm_info
 JSS(authorized);                  // out: AccountLines
 JSS(authorize);                   // out: delegate
+JSS(authorizer);                  // in/out: AccountTx
 JSS(authorized_credentials);      // in: ledger_entry DepositPreauth
 JSS(auth_accounts);               // out: amm_info
 JSS(auth_change);                 // out: AccountInfo

@@ -470,9 +470,9 @@ doAccountTx(RPC::JsonContext& context)
         args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
     }
 
-    if (params.isMember("delegate"))
+    if (params.isMember(jss::delegate))
     {
-        if (auto const filter = DelegateFilter::create(params["delegate"]); filter.has_value())
+        if (auto const filter = DelegateFilter::create(params[jss::delegate]); filter.has_value())
             args.delegate = *filter;
         else
             return filter.error();

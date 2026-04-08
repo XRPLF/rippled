@@ -890,7 +890,7 @@ class AccountTx_test : public beast::unit_test::suite
             params[jss::ledger_index_max] = -1;
 
             if (!delegateParams.isNull())
-                params["delegate"] = delegateParams;
+                params[jss::delegate] = delegateParams;
 
             auto const res = env.rpc("json", "account_tx", to_string(params));
 
@@ -903,7 +903,7 @@ class AccountTx_test : public beast::unit_test::suite
                                     std::string const& errToken) {
             Json::Value params;
             params[jss::account] = alice.human();
-            params["delegate"] = delegateParams;
+            params[jss::delegate] = delegateParams;
             auto res = env.rpc("json", "account_tx", to_string(params));
             BEAST_EXPECT(res[jss::result][jss::error] == errToken);
         };
@@ -911,23 +911,23 @@ class AccountTx_test : public beast::unit_test::suite
         // Filter: Delegatee. Expects TX #2 (Signed by Bob)
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
+            p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
         // Filter: Delegatee + Counterparty Bob. Expects TX #2.
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
-            p["counterparty"] = bob.human();
+            p[jss::delegate_filter] = "actor";
+            p[jss::counterparty] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
         // Filter: Delegatee + Counterparty Carol. Expects 0.
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
-            p["counterparty"] = carol.human();
+            p[jss::delegate_filter] = "actor";
+            p[jss::counterparty] = carol.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
         }
 
@@ -935,15 +935,15 @@ class AccountTx_test : public beast::unit_test::suite
         // (Bob signed it, but Alice is the owner).
         {
             Json::Value p;
-            p["delegate_filter"] = "authorizer";
+            p[jss::delegate_filter] = "authorizer";
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
         // Filter: Delegator + Counterparty Alice. Expects TX #2.
         {
             Json::Value p;
-            p["delegate_filter"] = "authorizer";
-            p["counterparty"] = alice.human();
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counterparty] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
@@ -951,8 +951,8 @@ class AccountTx_test : public beast::unit_test::suite
         // Expect: None (Alice is Owner, not Carol)
         {
             Json::Value p;
-            p["delegate_filter"] = "authorizer";
-            p["counterparty"] = carol.human();
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counterparty] = carol.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
@@ -960,7 +960,7 @@ class AccountTx_test : public beast::unit_test::suite
         // Expect: None. Bob did not employ a delegatee for his own TXs (TX C).
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
+            p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
@@ -979,30 +979,30 @@ class AccountTx_test : public beast::unit_test::suite
         // "delegate_filter" is not a string (e.g., int)
         {
             Json::Value p;
-            p["delegate_filter"] = 123;
+            p[jss::delegate_filter] = 123;
             checkError(p, "invalidParams");
         }
 
         // "delegate_filter" has invalid value
         {
             Json::Value p;
-            p["delegate_filter"] = "random_string";
+            p[jss::delegate_filter] = "random_string";
             checkError(p, "invalidParams");
         }
 
         // "counterparty" is not a string
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
-            p["counterparty"] = 123;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counterparty] = 123;
             checkError(p, "invalidParams");
         }
 
         // "counterparty" is malformed base58
         {
             Json::Value p;
-            p["delegate_filter"] = "actor";
-            p["counterparty"] = "not_an_account";
+            p[jss::delegate_filter] = "actor";
+            p[jss::counterparty] = "not_an_account";
             checkError(p, "actMalformed");
         }
     }
