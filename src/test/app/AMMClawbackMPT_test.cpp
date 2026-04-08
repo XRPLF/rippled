@@ -2,7 +2,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/CaptureLogs.h>
 
-#include <xrpl/ledger/helpers/AMMUtils.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace xrpl {
