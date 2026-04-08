@@ -14,7 +14,7 @@ endif()
 if(NOT DEFINED pkg_release)
     set(pkg_release 1)
 endif()
-if(NOT DEFINED xrpld_version OR xrpld_version STREQUAL "")
+if(NOT DEFINED xrpld_version OR "${xrpld_version}" STREQUAL "")
     message(
         FATAL_ERROR
         "xrpld_version must be set (e.g. -Dxrpld_version=2.4.0)"
