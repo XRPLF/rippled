@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -775,7 +776,7 @@ STAmount
 ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const& asset);
 
 /** Delete trustlines to AMM. If all trustlines are deleted then
- * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
+ * AMM object and account are deleted. Otherwise tecINCOMPLETE is returned.
  */
 TER
 deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
