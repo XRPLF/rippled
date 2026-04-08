@@ -1950,11 +1950,11 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j)
 {
+    if (!sle)
+        return;
     // This function is only used for LoanBrokers, so assert that
     // AccountRoot should use WAccountRoot.adjustOwnerCount instead
     XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
-    if (!sle)
-        return;
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];

@@ -60,8 +60,7 @@ public:
     {
     }
 
-    /** Create an AccountRoot backed by a brand-new SLE
-     *  (not yet inserted into the view).
+    /** Create an AccountRoot backed by a brand-new SLE.
      */
     [[nodiscard]] static AccountRoot
     makeNew(
