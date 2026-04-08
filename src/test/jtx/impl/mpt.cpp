@@ -1479,9 +1479,8 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         jv[sfZKProof] = *arg.proof;
     else
     {
-        std::uint32_t const seq = env_.seq(account);
-        uint256 const contextHash =
-            getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
+        auto const seq = arg.ticketSeq ? *arg.ticketSeq : env_.seq(account);
+        auto const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
 
         auto const privKey = getPrivKey(account);
         if (!privKey || privKey->size() != ecPrivKeyLength)
