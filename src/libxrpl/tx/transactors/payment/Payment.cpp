@@ -268,38 +268,24 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    auto const granularPermissions = checkGranularPermission(sle, tx);
-    if (!granularPermissions)
-        return terNO_DELEGATE_PERMISSION;
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
     // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions->contains(PaymentMint) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions->contains(PaymentBurn) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 

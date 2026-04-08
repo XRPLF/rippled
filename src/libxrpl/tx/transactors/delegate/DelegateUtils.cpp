@@ -50,15 +50,4 @@ getGranularPermission(std::shared_ptr<SLE const> const& delegate, TxType const& 
     return granularPermissions;
 }
 
-std::optional<std::unordered_set<GranularPermissionType>>
-checkGranularPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
-{
-    auto gps = getGranularPermission(delegate, tx.getTxnType());
-
-    if (!Permission::getInstance().checkGranularSandbox(tx, gps))
-        return std::nullopt;
-
-    return gps;
-}
-
 }  // namespace xrpl

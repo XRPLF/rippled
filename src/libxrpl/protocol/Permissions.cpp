@@ -116,6 +116,9 @@ Permission::Permission()
             "xrpl::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
     }
+
+    for (auto const& [gp, txType] : granularTxTypeMap_)
+        granularTxTypes_.insert(txType);
 }
 
 Permission const&
@@ -168,6 +171,12 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
         return it->second;
 
     return std::nullopt;
+}
+
+bool
+Permission::hasGranularPermissions(TxType txType) const
+{
+    return granularTxTypes_.contains(txType);
 }
 
 std::optional<std::reference_wrapper<uint256 const>>

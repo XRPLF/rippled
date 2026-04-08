@@ -13,6 +13,13 @@ namespace xrpl {
 
 class STTx;
 
+/**
+ * We have both transaction type permissions and granular type permissions.
+ * Since we will reuse the TransactionFormats to parse the Transaction
+ * Permissions, only the GranularPermissionType is defined here. To prevent
+ * conflicts with TxType, the GranularPermissionType is always set to a value
+ * greater than the maximum value of uint16.
+ */
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
@@ -41,6 +48,7 @@ private:
 
     std::unordered_map<GranularPermissionType, std::uint32_t> granularPermittedFlags_;
     std::unordered_map<GranularPermissionType, SOTemplate> granularTemplates_;
+    std::unordered_set<TxType> granularTxTypes_;
 
 public:
     static Permission const&
@@ -67,6 +75,9 @@ public:
 
     bool
     isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
+
+    bool
+    hasGranularPermissions(TxType txType) const;
 
     // for tx level permission, permission value is equal to tx type plus one
     static uint32_t

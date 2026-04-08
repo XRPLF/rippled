@@ -124,36 +124,21 @@ TrustSet::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-TrustSet::checkPermission(ReadView const& view, STTx const& tx)
+TrustSet::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    auto const granularPermissions = checkGranularPermission(sle, tx);
-    if (!granularPermissions)
-        return terNO_DELEGATE_PERMISSION;
-
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
         keylet::line(
             tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
-    // if the trustline does not exist, granular permissions are
-    // not allowed to create trustline
+    // granular permissions are not allowed to create a trustline
     if (!sleRippleState)
         return terNO_DELEGATE_PERMISSION;
 
-    // updating LimitAmount is not allowed only with granular permissions,
+    // updating LimitAmount is not allowed with granular permissions,
     // unless there's a new granular permission for this in the future.
     auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
         ? sleRippleState->getFieldAmount(sfHighLimit)

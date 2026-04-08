@@ -172,27 +172,6 @@ AccountSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
-AccountSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    // AccountSet is prohibited to be granted on a transaction level,
-    // but some granular permissions are allowed.
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (!checkGranularPermission(sle, tx))
-        return terNO_DELEGATE_PERMISSION;
-
-    return tesSUCCESS;
-}
-
 TER
 AccountSet::preclaim(PreclaimContext const& ctx)
 {
