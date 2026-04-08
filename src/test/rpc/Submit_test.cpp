@@ -29,7 +29,7 @@ public:
                 Json::Value params;
                 params[jss::tx_blob] = txBlob;
                 params[jss::fail_hard] = param;
-                auto jrr = env.rpc("json", "submit", to_string(params))[jss::result];
+                auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'fail_hard', not boolean.");
             }
@@ -40,7 +40,7 @@ public:
                 params[jss::secret] = toBase58(generateSeed("alice"));
                 params[jss::tx_json] = pay("alice", "bob", XRP(1));
                 params[jss::fail_hard] = param;
-                auto jrr = env.rpc("json", "submit", to_string(params))[jss::result];
+                auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'fail_hard', not boolean.");
             }
@@ -63,7 +63,7 @@ public:
             Json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::fail_hard] = true;
-            auto jrr = env.rpc("json", "submit", to_string(params))[jss::result];
+            auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
             BEAST_EXPECT(!jrr.isMember(jss::error) || jrr[jss::error] != "invalidParams");
         }
         {
@@ -73,7 +73,7 @@ public:
             Json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::fail_hard] = false;
-            auto jrr = env.rpc("json", "submit", to_string(params))[jss::result];
+            auto const jrr = env.rpc("json", "submit", to_string(params))[jss::result];
             BEAST_EXPECT(!jrr.isMember(jss::error) || jrr[jss::error] != "invalidParams");
         }
     }
