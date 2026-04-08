@@ -783,9 +783,9 @@ public:
         using namespace jtx;
         using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
-        Account alice("alice");
+        Account const alice("alice");
         Account const bob("bob");
-        Account carol("carol");
+        Account const carol("carol");
         Account const david("david");
         ///////////////////////////////////////////////////////////////////
 
