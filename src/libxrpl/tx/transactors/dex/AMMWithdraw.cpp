@@ -2,16 +2,27 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AMMUtils.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
 
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return ammEnabled(ctx.rules);
+    if (!ammEnabled(ctx.rules))
+        return false;
+
+    auto const amount = ctx.tx[~sfAmount];
+    auto const amount2 = ctx.tx[~sfAmount2];
+
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>() &&
+         !(amount && amount->holds<MPTIssue>()) && !(amount2 && amount2->holds<MPTIssue>()));
 }
 
 std::uint32_t
@@ -78,18 +89,18 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
         return res;
     }
 
-    if (amount && amount2 && amount->issue() == amount2->issue())
+    if (amount && amount2 && amount->asset() == amount2->asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens, same issue." << amount->issue() << " "
-                            << amount2->issue();
+        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens, same issue." << amount->asset() << " "
+                            << amount2->asset();
         return temBAD_AMM_TOKENS;
     }
 
@@ -162,9 +173,10 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const expected = ammHolds(
         ctx.view,
         *ammSle,
-        amount ? amount->issue() : std::optional<Issue>{},
-        amount2 ? amount2->issue() : std::optional<Issue>{},
+        amount ? amount->asset() : std::optional<Asset>{},
+        amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.j);
     if (!expected)
         return expected.error();
@@ -191,26 +203,33 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                     << "AMM Withdraw: withdrawing more than the balance, " << *amount;
                 return tecAMM_BALANCE;
             }
-            if (auto const ter = requireAuth(ctx.view, amount->issue(), accountID))
+            // WeakAuth - MPToken is created if it doesn't exist.
+            if (auto const ter =
+                    requireAuth(ctx.view, amount->asset(), accountID, AuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug())
-                    << "AMM Withdraw: account is not authorized, " << amount->issue();
+                    << "AMM Withdraw: account is not authorized, " << amount->asset();
                 return ter;
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Withdraw: AMM account or currency is frozen, " << to_string(accountID);
                 return tecFROZEN;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
             {
                 JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, " << to_string(accountID)
-                                    << " " << to_string(amount->issue().currency);
+                                    << " " << to_string(amount->asset());
                 return tecFROZEN;
             }
+
+            if (auto const ter =
+                    checkMPTTxAllowed(ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
+                !isTesSuccess(ter))
+                return ter;
         }
         return tesSUCCESS;
     };
@@ -230,7 +249,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return tecAMM_BALANCE;
     }
 
-    if (lpTokensWithdraw && lpTokensWithdraw->issue() != lpTokens.issue())
+    if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
         return temBAD_AMM_TOKENS;
@@ -242,7 +261,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
-    if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->issue() != lpTokens.issue())
+    if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
         return temBAD_AMM_TOKENS;
@@ -289,9 +308,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const expected = ammHolds(
         sb,
         *ammSle,
-        amount ? amount->issue() : std::optional<Issue>{},
-        amount2 ? amount2->issue() : std::optional<Issue>{},
+        amount ? amount->asset() : std::optional<Asset>{},
+        amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};
@@ -363,12 +383,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {result, false};
 
     auto const res = deleteAMMAccountIfEmpty(
-        sb,
-        ammSle,
-        newLPTokenBalance,
-        ctx_.tx[sfAsset].get<Issue>(),
-        ctx_.tx[sfAsset2].get<Issue>(),
-        j_);
+        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
     // LCOV_EXCL_START
     if (!res.second)
         return {res.first, false};
@@ -421,6 +436,7 @@ AMMWithdraw::withdraw(
         lpTokensWithdraw,
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         j_);
@@ -440,13 +456,14 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
     auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
-    auto const expected =
-        ammHolds(view, ammSle, amountWithdraw.issue(), std::nullopt, freezeHandling, journal);
+    auto const expected = ammHolds(
+        view, ammSle, amountWithdraw.asset(), std::nullopt, freezeHandling, authHandling, journal);
     // LCOV_EXCL_START
     if (!expected)
         return {expected.error(), STAmount{}, STAmount{}, STAmount{}};
@@ -525,32 +542,101 @@ AMMWithdraw::withdraw(
         return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
     }
 
-    // Check the reserve in case a trustline has to be created
-    bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
-    auto sufficientReserve = [&](Issue const& issue) -> TER {
-        if (!enabledFixAMMv1_2 || isXRP(issue))
-            return tesSUCCESS;
-        if (!view.exists(keylet::line(account, issue)))
+    // Updated pool state must be valid - either all balances are zero
+    // or all balances are non-zero.
+    if (view.rules().enabled(featureMPTokensV2))
+    {
+        bool const newBalanceZero = (curBalance - amountWithdrawActual) == beast::zero;
+        bool const newBalance2Zero =
+            (curBalance2 - amount2WithdrawActual.value_or(curBalance2.asset())) == beast::zero;
+        bool const newLPTokensZero = (lpTokensAMMBalance - lpTokensWithdrawActual) == beast::zero;
+        // newBalance2Zero can be zero if that side of the pool is frozen.
+        // ignore newBalance2Zero if one-sided withdrawal.
+        bool const valid = [&]() {
+            if (!amount2WithdrawActual)
+                return newBalanceZero == newLPTokensZero;
+            return newBalanceZero == newBalance2Zero && newBalance2Zero == newLPTokensZero;
+        }();
+        if (!valid)
         {
-            auto const sleAccount = view.read(keylet::account(account));
+            JLOG(journal.debug()) << "AMM Withdraw: some balances are zero"
+                                  << " curBalance: " << curBalance << " " << amountWithdrawActual
+                                  << " curBalance2: " << curBalance2 << " "
+                                  << (amount2WithdrawActual ? *amount2WithdrawActual : STAmount{})
+                                  << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+                                  << lpTokensAMMBalance;
+            return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
+        }
+    }
+
+    // Check the reserve in case a trustline or MPT has to be created
+    bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
+    // If seated after a call to sufficientReserve() then MPToken must be
+    // authorized
+    std::optional<Keylet> mptokenKey;
+    auto sufficientReserve = [&](Asset const& asset) -> TER {
+        mptokenKey = std::nullopt;
+        if (!enabledFixAMMv1_2 || isXRP(asset))
+            return tesSUCCESS;
+        bool const isIssue = asset.holds<Issue>();
+        bool const assetNotExists = [&] {
+            if (isIssue)
+                return !view.exists(keylet::line(account, asset.get<Issue>()));
+            auto const issuanceKey = keylet::mptIssuance(asset.get<MPTIssue>());
+            mptokenKey = keylet::mptoken(issuanceKey.key, account);
+            if (!view.exists(*mptokenKey))
+                return true;
+            mptokenKey = std::nullopt;
+            return false;
+        }();
+        if (assetNotExists)
+        {
+            auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            auto const balance = (*sleAccount)[sfBalance].xrp();
+            STAmount const balance = (*sleAccount)[sfBalance];
             std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
-            // See also TrustSet::doApply()
+            // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
                 (ownerCount < 2) ? XRPAmount(beast::zero)
                                  : view.fees().accountReserve(ownerCount + 1));
 
-            if (std::max(priorBalance, balance) < reserve)
+            auto const balance_ = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
+            if (balance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
+
+            // Update owner count.
+            if (!isIssue)
+                adjustOwnerCount(view, sleAccount, 1, journal);
         }
         return tesSUCCESS;
     };
 
-    if (auto const err = sufficientReserve(amountWithdrawActual.issue()))
+    // Create MPToken if it doesn't exist
+    auto createMPToken = [&](Asset const& asset) -> TER {
+        // If mptoken is seated then must authorize
+        if (mptokenKey && account != asset.getIssuer())
+        {
+            auto const& mptIssue = asset.get<MPTIssue>();
+            if (auto const err = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
+                !isTesSuccess(err))
+                return err;
+
+            if (auto const err = checkCreateMPT(view, mptIssue, account, journal);
+                !isTesSuccess(err))
+            {
+                return err;
+            }
+        }
+        return tesSUCCESS;
+    };
+
+    if (auto const err = sufficientReserve(amountWithdrawActual.asset()))
         return {err, STAmount{}, STAmount{}, STAmount{}};
+
+    if (auto const res = createMPToken(amountWithdrawActual.asset()); !isTesSuccess(res))
+        return {res, STAmount{}, STAmount{}, STAmount{}};
 
     // Withdraw amountWithdraw
     auto res = accountSend(
@@ -566,8 +652,11 @@ AMMWithdraw::withdraw(
     // Withdraw amount2Withdraw
     if (amount2WithdrawActual)
     {
-        if (auto const err = sufficientReserve(amount2WithdrawActual->issue()); !isTesSuccess(err))
+        if (auto const err = sufficientReserve(amount2WithdrawActual->asset()); !isTesSuccess(err))
             return {err, STAmount{}, STAmount{}, STAmount{}};
+
+        if (auto const res = createMPToken(amount2WithdrawActual->asset()); !isTesSuccess(res))
+            return {res, STAmount{}, STAmount{}, STAmount{}};
 
         res = accountSend(
             view, ammAccount, account, *amount2WithdrawActual, journal, WaiveTransferFee::Yes);
@@ -581,7 +670,8 @@ AMMWithdraw::withdraw(
     }
 
     // Withdraw LP tokens
-    res = redeemIOU(view, account, lpTokensWithdrawActual, lpTokensWithdrawActual.issue(), journal);
+    res = redeemIOU(
+        view, account, lpTokensWithdrawActual, lpTokensWithdrawActual.get<Issue>(), journal);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
@@ -637,6 +727,7 @@ AMMWithdraw::equalWithdrawTokens(
         lpTokensWithdraw,
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
         ctx_.journal);
@@ -648,15 +739,15 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
     std::shared_ptr<SLE> const ammSle,
     STAmount const& lpTokenBalance,
-    Issue const& issue1,
-    Issue const& issue2,
+    Asset const& asset1,
+    Asset const& asset2,
     beast::Journal const& journal)
 {
     TER ter;
     bool updateBalance = true;
     if (lpTokenBalance == beast::zero)
     {
-        ter = deleteAMMAccount(sb, issue1, issue2, journal);
+        ter = deleteAMMAccount(sb, asset1, asset2, journal);
         if (!isTesSuccess(ter) && ter != tecINCOMPLETE)
             return {ter, false};  // LCOV_EXCL_LINE
 
@@ -687,6 +778,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -708,6 +800,7 @@ AMMWithdraw::equalWithdrawTokens(
                 lpTokensWithdraw,
                 tfee,
                 freezeHandling,
+                authHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -742,6 +835,7 @@ AMMWithdraw::equalWithdrawTokens(
             tokensAdj,
             tfee,
             freezeHandling,
+            authHandling,
             withdrawAll,
             priorBalance,
             journal);
@@ -793,13 +887,12 @@ AMMWithdraw::equalWithdrawLimit(
     std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
-    auto amount2Withdraw = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-    amount2Withdraw = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
+    auto const amount2Withdraw = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     if (amount2Withdraw <= amount2)
     {
         return withdraw(

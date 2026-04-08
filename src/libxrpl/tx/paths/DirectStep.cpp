@@ -671,7 +671,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native, "xrpl::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(in.holds<IOUAmount>(), "xrpl::DirectStepI::validFwd : input is IOU");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -680,7 +680,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     try
     {
         boost::container::flat_set<uint256> dummy;
-        fwdImp(sb, afView, dummy, in.iou);  // changes cache
+        fwdImp(sb, afView, dummy, in.get<IOUAmount>());  // changes cache
     }
     catch (FlowException const&)
     {
@@ -857,13 +857,13 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             // issue
             if (auto book = ctx.prevStep->bookStepBook())
             {
-                if (book->out != srcIssue)
+                if (book->out.get<Issue>() != srcIssue)
                     return temBAD_PATH_LOOP;
             }
         }
 
-        if (!ctx.seenDirectIssues[0].insert(srcIssue).second ||
-            !ctx.seenDirectIssues[1].insert(dstIssue).second)
+        if (!ctx.seenDirectAssets[0].insert(srcIssue).second ||
+            !ctx.seenDirectAssets[1].insert(dstIssue).second)
         {
             JLOG(j_.debug()) << "DirectStepI: loop detected: Index: " << ctx.strandSize << ' '
                              << *this;
