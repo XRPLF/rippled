@@ -260,6 +260,31 @@ using floatFromUint_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, 
 wasm_trap_t*
 floatFromUint_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using floatFromSTAmount_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatFromSTAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatFromSTNumber_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatToInt_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatToMantissaAndExponent_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatNegate_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatAbs_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+floatAbs_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
 using floatSet_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);

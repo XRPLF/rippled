@@ -255,6 +255,24 @@ public:
     floatFromUint(uint64_t x, int32_t mode) const override;
 
     Expected<Bytes, HostFunctionError>
+    floatFromSTAmount(STAmount const& x, int32_t mode) const override;
+
+    Expected<Bytes, HostFunctionError>
+    floatFromSTNumber(STNumber const& x, int32_t mode) const override;
+
+    Expected<int64_t, HostFunctionError>
+    floatToInt(Slice const& x, int32_t mode) const override;
+
+    Expected<FloatPair, HostFunctionError>
+    floatToMantissaAndExponent(Slice const& x) const override;
+
+    Expected<Bytes, HostFunctionError>
+    floatNegate(Slice const& x) const override;
+
+    Expected<Bytes, HostFunctionError>
+    floatAbs(Slice const& x) const override;
+
+    Expected<Bytes, HostFunctionError>
     floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
     Expected<int32_t, HostFunctionError>
@@ -281,15 +299,5 @@ public:
     Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode) const override;
 };
-
-namespace wasm_float {
-
-// The range for the mantissa and exponent when normalized
-static std::int64_t constexpr wasmMinMantissa = 1'000'000'000'000'000ll;
-static std::int64_t constexpr wasmMaxMantissa = wasmMinMantissa * 10 - 1;
-static int constexpr wasmMinExponent = -96;
-static int constexpr wasmMaxExponent = 80;
-
-}  // namespace wasm_float
 
 }  // namespace xrpl
