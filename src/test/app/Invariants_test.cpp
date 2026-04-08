@@ -1892,7 +1892,7 @@ class Invariants_test : public beast::unit_test::suite
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
-                    STArray bookArr;  // empty array, size 0
+                    STArray const bookArr;  // empty array, size 0
                     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
                     ac.view().insert(sleOffer);
                     return true;
