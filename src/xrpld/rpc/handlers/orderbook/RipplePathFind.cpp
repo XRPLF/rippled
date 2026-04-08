@@ -94,7 +94,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // Both of these failure modes are hard to recreate in a unit test
         // because they are so dependent on inter-thread timing.  However
         // the failure modes can be observed by synchronously (inside the
-        // rippled source code) shutting down the application.  The code to
+        // xrpld source code) shutting down the application.  The code to
         // do so looks like this:
         //
         //   context.app.signalStop();

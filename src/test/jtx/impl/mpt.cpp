@@ -120,6 +120,7 @@ makeMPTCreate(MPTInitDef const& arg)
             .transferFee = arg.transferFee,
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
+            .mutableFlags = arg.mutableFlags,
             .authHolder = arg.authHolder};
     }
     return {
@@ -127,6 +128,7 @@ makeMPTCreate(MPTInitDef const& arg)
         .transferFee = arg.transferFee,
         .authorize = arg.holders,
         .flags = arg.flags,
+        .mutableFlags = arg.mutableFlags,
         .authHolder = arg.authHolder};
 }
 

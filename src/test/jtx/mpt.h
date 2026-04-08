@@ -7,6 +7,7 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
@@ -135,6 +136,7 @@ struct MPTInitDef
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -521,6 +523,12 @@ public:
 
     Buffer
     getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
+
+    friend BookSpec
+    operator~(MPTTester const& mpt)
+    {
+        return ~static_cast<MPT>(mpt);
+    }
 
 private:
     using SLEP = SLE::const_pointer;
