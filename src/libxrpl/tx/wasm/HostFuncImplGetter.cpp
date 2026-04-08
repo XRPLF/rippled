@@ -90,6 +90,7 @@ getAnyFieldData(STBase const* obj)
         }
 
         case STI_AMOUNT:
+        case STI_NUMBER:
         default:
             break;  // Use serializer
     }

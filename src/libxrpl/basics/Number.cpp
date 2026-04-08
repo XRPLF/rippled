@@ -949,10 +949,10 @@ power(Number const& f, unsigned n)
 static Number
 ln(Number const& x, int iterations = 50)
 {
-    static Number const N0(0);
-    static Number const N2(2, 0);
-    static Number const N05(5, -1);
-    static Number const LN2(693'147'180'559'945'309ll, -18);
+    Number const N0(0);
+    Number const N2(2, 0);
+    Number const N05(5, -1);
+    Number const LN2(693'147'180'559'945'309ll, -18);
 
     if (x <= 0)
     {
@@ -993,8 +993,8 @@ ln(Number const& x, int iterations = 50)
 Number
 log10(Number const& x, int iterations)
 {
-    static Number const N0(0);
-    static Number const LN10(2'302'585'092'994'046ll, -15);
+    Number const N0(0);
+    Number const LN10(2'302'585'092'994'045'684ll, -18);
 
     if (x <= 0)
     {
@@ -1012,8 +1012,9 @@ log10(Number const& x, int iterations)
     }
 
     // (1 <= normalX < 10)
+    // x = normalX * 10^norm
     // ln(x) = ln(normalX * 10^norm) = ln(normalX) + norm * ln(10)
-    int const diffExp = 15 + x.exponent();
+    int const diffExp = Number::mantissaLog() + x.exponent_;
     Number const normalX = x / Number(1, diffExp);
     auto const lnX = ln(normalX, iterations) + diffExp * LN10;
     auto const lgX = lnX / LN10;

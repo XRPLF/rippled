@@ -3276,7 +3276,7 @@ class MPToken_test : public beast::unit_test::suite
     void
     testMultiSendMaximumAmount(FeatureBitset features)
     {
-        // Verify that rippleSendMultiMPT correctly enforces MaximumAmount
+        // Verify that directSendNoLimitMultiMPT correctly enforces MaximumAmount
         // when the issuer sends to multiple receivers. Pre-fixSecurity3_1_3,
         // a stale view.read() snapshot caused per-iteration checks to miss
         // aggregate overflows. Post-fix, a running total is used instead.
