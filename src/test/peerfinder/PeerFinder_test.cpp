@@ -364,127 +364,181 @@ public:
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
 
-        // Valid: public routable IPv4 with non-zero port
-        BEAST_EXPECT(logic.is_valid_address(
-            beast::IP::Endpoint::from_string("65.0.0.1:8080")));
-        BEAST_EXPECT(logic.is_valid_address(
-            beast::IP::Endpoint::from_string("8.8.8.8:443")));
+        auto const pass = [&](std::string const& s) {
+            BEAST_EXPECT(
+                logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
+        };
+        auto const fail = [&](std::string const& s) {
+            BEAST_EXPECT(
+                !logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
+        };
 
         // Invalid: port 0
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("65.0.0.1:0")));
+        fail("65.0.0.1:0");
 
-        // Invalid: unspecified address (0.0.0.0)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("0.0.0.0:8080")));
+        // --- IPv4 ranges ---
+        // For each range: 1 before (pass), first (fail), last (fail),
+        // 1 after (pass)
 
-        // Invalid: 0.0.0.0/8 "This network"
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("0.1.2.3:8080")));
+        // 0.0.0.0/8 - "This network"
+        // No "before" - nothing before 0.0.0.0
+        fail("0.0.0.0:8080");
+        fail("0.255.255.255:8080");
+        pass("1.0.0.0:8080");
 
-        // Invalid: private 10.x.x.x (/8)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("10.0.0.1:8080")));
+        // 10.0.0.0/8 - Private (RFC 1918)
+        pass("9.255.255.255:8080");
+        fail("10.0.0.0:8080");
+        fail("10.255.255.255:8080");
+        pass("11.0.0.0:8080");
 
-        // Invalid: private 172.16.x.x (/12)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("172.16.0.1:8080")));
+        // 100.64.0.0/10 - Shared Address Space / CGNAT (RFC 6598)
+        pass("100.63.255.255:8080");
+        fail("100.64.0.0:8080");
+        fail("100.127.255.255:8080");
+        pass("100.128.0.0:8080");
 
-        // Invalid: private 192.168.x.x (/16)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("192.168.1.1:8080")));
+        // 127.0.0.0/8 - Loopback
+        pass("126.255.255.255:8080");
+        fail("127.0.0.0:8080");
+        fail("127.255.255.255:8080");
+        pass("128.0.0.0:8080");
 
-        // Invalid: 100.64.0.0/10 Shared Address Space (CGNAT)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("100.64.0.1:8080")));
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("100.127.255.254:8080")));
+        // 169.254.0.0/16 - Link-local
+        pass("169.253.255.255:8080");
+        fail("169.254.0.0:8080");
+        fail("169.254.255.255:8080");
+        pass("169.255.0.0:8080");
 
-        // Invalid: 169.254.0.0/16 Link-local
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("169.254.1.1:8080")));
+        // 172.16.0.0/12 - Private (RFC 1918)
+        pass("172.15.255.255:8080");
+        fail("172.16.0.0:8080");
+        fail("172.31.255.255:8080");
+        pass("172.32.0.0:8080");
 
-        // Invalid: 192.0.0.0/24 IETF Protocol Assignments
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("192.0.0.1:8080")));
+        // 192.0.0.0/24 - IETF Protocol Assignments (RFC 6890)
+        pass("191.255.255.255:8080");
+        fail("192.0.0.0:8080");
+        fail("192.0.0.255:8080");
+        pass("192.0.1.0:8080");
 
-        // Invalid: 192.0.2.0/24 TEST-NET-1 (documentation)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("192.0.2.1:8080")));
+        // 192.0.2.0/24 - TEST-NET-1 (RFC 5737)
+        pass("192.0.1.255:8080");
+        fail("192.0.2.0:8080");
+        fail("192.0.2.255:8080");
+        pass("192.0.3.0:8080");
 
-        // Invalid: 192.88.99.0/24 6to4 Relay Anycast (deprecated)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("192.88.99.1:8080")));
+        // 192.88.99.0/24 - 6to4 Relay Anycast (RFC 7526)
+        pass("192.88.98.255:8080");
+        fail("192.88.99.0:8080");
+        fail("192.88.99.255:8080");
+        pass("192.88.100.0:8080");
 
-        // Invalid: 198.18.0.0/15 Benchmarking
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("198.18.0.1:8080")));
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("198.19.255.254:8080")));
+        // 192.168.0.0/16 - Private (RFC 1918)
+        pass("192.167.255.255:8080");
+        fail("192.168.0.0:8080");
+        fail("192.168.255.255:8080");
+        pass("192.169.0.0:8080");
 
-        // Invalid: 198.51.100.0/24 TEST-NET-2 (documentation)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("198.51.100.1:8080")));
+        // 198.18.0.0/15 - Benchmarking (RFC 2544)
+        pass("198.17.255.255:8080");
+        fail("198.18.0.0:8080");
+        fail("198.19.255.255:8080");
+        pass("198.20.0.0:8080");
 
-        // Invalid: 203.0.113.0/24 TEST-NET-3 (documentation)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("203.0.113.1:8080")));
+        // 198.51.100.0/24 - TEST-NET-2 (RFC 5737)
+        pass("198.51.99.255:8080");
+        fail("198.51.100.0:8080");
+        fail("198.51.100.255:8080");
+        pass("198.51.101.0:8080");
 
-        // Invalid: 240.0.0.0/4 Reserved for future use
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("240.0.0.1:8080")));
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("255.255.255.255:8080")));
+        // 203.0.113.0/24 - TEST-NET-3 (RFC 5737)
+        pass("203.0.112.255:8080");
+        fail("203.0.113.0:8080");
+        fail("203.0.113.255:8080");
+        pass("203.0.114.0:8080");
 
-        // Invalid: IPv4 loopback (127.0.0.0/8)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("127.0.0.1:8080")));
+        // 224.0.0.0/4 - Multicast
+        pass("223.255.255.255:8080");
+        fail("224.0.0.0:8080");
+        fail("239.255.255.255:8080");
+        // 240.0.0.0 (after multicast) is also blocked (reserved)
 
-        // Invalid: IPv4 multicast (224.0.0.0/4)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("224.0.0.1:8080")));
+        // 240.0.0.0/4 - Reserved (RFC 1112)
+        // 239.255.255.255 (before reserved) is also blocked (multicast)
+        fail("240.0.0.0:8080");
+        fail("255.255.255.255:8080");
 
-        // Invalid: IPv6 loopback (::1)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::1]:8080")));
+        // --- IPv6 ranges ---
 
-        // Invalid: IPv6 unspecified (::)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::]:8080")));
+        // ::1 - Loopback (single address)
+        fail("[::1]:8080");
 
-        // Invalid: IPv6 v4-mapped multicast (::ffff:224.0.0.1)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::ffff:224.0.0.1]:8080")));
+        // :: - Unspecified (single address)
+        fail("[::]:8080");
 
-        // Invalid: IPv6 link-local (fe80::/10)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[fe80::1]:8080")));
+        // fc00::/7 - Unique Local Address (ULA)
+        pass("[fb00::1]:8080");
+        fail("[fc00::1]:8080");
+        fail("[fdff::1]:8080");
+        pass("[fe00::1]:8080");
 
-        // Invalid: IPv6 unique local address (fc00::/7)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[fc00::1]:8080")));
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[fd00::1]:8080")));
+        // fe80::/10 - Link-local
+        pass("[fe7f::1]:8080");
+        fail("[fe80::1]:8080");
+        fail("[febf::1]:8080");
+        pass("[fec0::1]:8080");
 
-        // Invalid: IPv6 multicast (ff00::/8)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[ff02::1]:8080")));
+        // ff00::/8 - Multicast
+        pass("[feff::1]:8080");
+        fail("[ff00::1]:8080");
+        fail("[ffff::1]:8080");
+        // No "after" - ffff:... is the highest IPv6 range
 
-        // Invalid: IPv6 documentation (2001:db8::/32)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[2001:db8::1]:8080")));
+        // 100::/64 - Discard prefix (RFC 6666)
+        pass("[ff::1]:8080");
+        fail("[100::]:8080");
+        fail("[100::ffff:ffff:ffff:ffff]:8080");
+        pass("[100:0:0:1::1]:8080");
 
-        // Invalid: IPv6 v4-mapped private (::ffff:10.0.0.1)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::ffff:10.0.0.1]:8080")));
+        // 2001::/32 - IETF Protocol Assignments / Teredo (RFC 4380)
+        pass("[2000:ffff::1]:8080");
+        fail("[2001::]:8080");
+        fail("[2001:0:ffff::1]:8080");
+        pass("[2001:1::1]:8080");
 
-        // Invalid: IPv6 v4-mapped link-local (::ffff:169.254.1.1)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::ffff:169.254.1.1]:8080")));
+        // 2001:20::/28 - ORCHIDv2 (RFC 7343)
+        pass("[2001:1f::1]:8080");
+        fail("[2001:20::1]:8080");
+        fail("[2001:2f::1]:8080");
+        pass("[2001:30::1]:8080");
 
-        // Invalid: IPv6 v4-mapped TEST-NET-1 (::ffff:192.0.2.1)
-        BEAST_EXPECT(!logic.is_valid_address(
-            beast::IP::Endpoint::from_string("[::ffff:192.0.2.1]:8080")));
+        // 2001:db8::/32 - Documentation (RFC 3849)
+        pass("[2001:db7::1]:8080");
+        fail("[2001:db8::1]:8080");
+        fail("[2001:db8:ffff::1]:8080");
+        pass("[2001:db9::1]:8080");
+
+        // 2002::/16 - 6to4 (RFC 3056, deprecated)
+        pass("[2001:ffff::1]:8080");
+        fail("[2002::1]:8080");
+        fail("[2002:ffff::1]:8080");
+        pass("[2003::1]:8080");
+
+        // --- IPv6 v4-mapped (delegates to IPv4 checks) ---
+        fail("[::ffff:10.0.0.1]:8080");
+        fail("[::ffff:100.64.0.1]:8080");
+        fail("[::ffff:169.254.1.1]:8080");
+        fail("[::ffff:192.0.2.1]:8080");
+        fail("[::ffff:198.18.0.1]:8080");
+        fail("[::ffff:224.0.0.1]:8080");
+        fail("[::ffff:240.0.0.1]:8080");
+
+        // --- Valid public addresses ---
+        pass("8.8.8.8:443");
+        pass("65.0.0.1:8080");
+        pass("[2001:4860:4860::8888]:8080");
+        pass("[2606:4700:4700::1111]:8080");
     }
 
     void
@@ -632,17 +686,17 @@ public:
     void
     run() override
     {
-        // test_backoff1();
-        // test_backoff2();
-        // test_duplicateOutIn();
-        // test_duplicateInOut();
-        // test_config();
-        // test_invalid_config();
-        // test_peerLimitExceeded();
-        // test_activate_duplicate_peer();
-        // test_activate_inbound_disabled();
-        // test_addFixedPeer_no_port();
-        // test_onConnected_self_connection();
+        test_backoff1();
+        test_backoff2();
+        test_duplicateOutIn();
+        test_duplicateInOut();
+        test_config();
+        test_invalid_config();
+        test_peerLimitExceeded();
+        test_activate_duplicate_peer();
+        test_activate_inbound_disabled();
+        test_addFixedPeer_no_port();
+        test_onConnected_self_connection();
         test_is_valid_address();
     }
 };
