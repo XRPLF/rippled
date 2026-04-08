@@ -98,10 +98,9 @@ getAccountObjects(
             bool canAppendNFT = true;
             if (sponsored.has_value())
             {
-                std::optional<AccountID> const nftSponsor =
-                    cp->isFieldPresent(sfSponsor)
-                        ? cp->getAccountID(sfSponsor)
-                        : std::optional<AccountID>(std::nullopt);
+                std::optional<AccountID> const nftSponsor = cp->isFieldPresent(sfSponsor)
+                    ? cp->getAccountID(sfSponsor)
+                    : std::optional<AccountID>(std::nullopt);
                 if (!sponsoredMatchesFilter(sponsored.value(), nftSponsor))
                     canAppendNFT = false;
             }

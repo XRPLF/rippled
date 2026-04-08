@@ -690,7 +690,8 @@ directSendNoLimitIOU(
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter = directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, false,sponsorAccountID, j);
+        auto const ter =
+            directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccountID, j);
         if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
@@ -708,10 +709,12 @@ directSendNoLimitIOU(
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult = directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true,sponsorAccountID, j);
+    TER terResult =
+        directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccountID, j);
 
     if (tesSUCCESS == terResult)
-        terResult = directSendNoFeeIOU(view, uSenderID, issuer, saActual, true,sponsorAccountID, j);
+        terResult =
+            directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorAccountID, j);
 
     return terResult;
 }
@@ -755,7 +758,8 @@ directSendNoLimitMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, sponsorAccountID, j))
+            if (auto const ter = directSendNoFeeIOU(
+                    view, senderID, receiverID, amount, false, sponsorAccountID, j))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because directSendNoFeeIOU took
@@ -778,14 +782,15 @@ directSendNoLimitMultiIOU(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actual.getFullText();
 
-        if (TER const terResult = directSendNoFeeIOU(view, issuer, receiverID, amount, true, sponsorAccountID, j))
+        if (TER const terResult =
+                directSendNoFeeIOU(view, issuer, receiverID, amount, true, sponsorAccountID, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult =
-                directSendNoFeeIOU(view, senderID, issuer, takeFromSender, true,sponsorAccountID, j))
+        if (TER const terResult = directSendNoFeeIOU(
+                view, senderID, issuer, takeFromSender, true, sponsorAccountID, j))
             return terResult;
     }
 
@@ -831,7 +836,8 @@ accountSendIOU(
         JLOG(j.trace()) << "accountSendIOU: " << to_string(uSenderID) << " -> "
                         << to_string(uReceiverID) << " : " << saAmount.getFullText();
 
-        return directSendNoLimitIOU(view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccountID, waiveFee);
+        return directSendNoLimitIOU(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -931,7 +937,8 @@ accountSendMultiIOU(
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
                         << receivers.size() << " IOUs";
 
-        return directSendNoLimitMultiIOU(view, senderID, issue, receivers, actual, j, sponsorAccountID, waiveFee);
+        return directSendNoLimitMultiIOU(
+            view, senderID, issue, receivers, actual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1338,7 +1345,8 @@ directSendNoFee(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
             {
-                return directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, std::nullopt, j);
+                return directSendNoFeeIOU(
+                    view, uSenderID, uReceiverID, saAmount, bCheckIssuer, std::nullopt, j);
             }
             else
             {

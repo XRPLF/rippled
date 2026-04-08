@@ -1,9 +1,9 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 namespace xrpl {
