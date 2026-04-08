@@ -99,7 +99,6 @@ words:
   - endmacro
   - exceptioned
   - Falco
-  - fcontext
   - finalizers
   - firewalled
   - fmtdur

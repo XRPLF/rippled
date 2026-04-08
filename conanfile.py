@@ -1,4 +1,3 @@
-import os
 import re
 
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
@@ -57,9 +56,6 @@ class Xrpl(ConanFile):
         "tests": False,
         "unity": False,
         "xrpld": False,
-        "boost/*:without_context": False,
-        "boost/*:without_coroutine": True,
-        "boost/*:without_coroutine2": False,
         "date/*:header_only": True,
         "ed25519/*:shared": False,
         "grpc/*:shared": False,
@@ -129,12 +125,6 @@ class Xrpl(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
 
-        # Check if environment variable exists
-        if "SANITIZERS" in os.environ:
-            sanitizers = os.environ["SANITIZERS"]
-            if "address" in sanitizers.lower():
-                self.default_options["fPIC"] = False
-
     def requirements(self):
         self.requires("boost/1.90.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
@@ -201,7 +191,7 @@ class Xrpl(ConanFile):
             "boost::headers",
             "boost::chrono",
             "boost::container",
-            "boost::context",
+            "boost::coroutine",
             "boost::date_time",
             "boost::filesystem",
             "boost::json",
