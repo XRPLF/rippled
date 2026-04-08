@@ -682,8 +682,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(place_offer.out);
         }
 
-        bool const isLedgerOpen = sb.open();
-        if (result == tecFAILED_PROCESSING && isLedgerOpen)
+        if (result == tecFAILED_PROCESSING && sb.open())
             result = telFAILED_PROCESSING;
 
         if (!isTesSuccess(result))
