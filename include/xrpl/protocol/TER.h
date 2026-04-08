@@ -121,6 +121,7 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    temBAD_MPT,
 };
 
 //------------------------------------------------------------------------------
@@ -208,6 +209,7 @@ enum TERcodes : TERUnderlyingType {
     terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
+    terLOCKED,                  // MPT is locked
 };
 
 //------------------------------------------------------------------------------

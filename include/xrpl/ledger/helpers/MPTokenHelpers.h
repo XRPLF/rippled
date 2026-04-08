@@ -80,6 +80,7 @@ authorizeMPToken(
  * requireAuth check is recursive for MPT shares in a vault, descending to
  * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
  * purely defensive, as we currently do not allow such vaults to be created.
+ * WeakAuth intentionally allows missing MPTokens under MPToken V2.
  */
 [[nodiscard]] TER
 requireAuth(
@@ -113,6 +114,12 @@ canTransfer(
     MPTIssue const& mptIssue,
     AccountID const& from,
     AccountID const& to);
+
+/** Check if Asset can be traded on DEX. return tecNO_PERMISSION
+ * if it doesn't and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTrade(ReadView const& view, Asset const& asset);
 
 //------------------------------------------------------------------------------
 //
@@ -163,5 +170,74 @@ createMPToken(
     MPTID const& mptIssuanceID,
     AccountID const& account,
     std::uint32_t const flags);
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j);
+
+//------------------------------------------------------------------------------
+//
+// MPT Overflow related
+//
+//------------------------------------------------------------------------------
+
+// MaximumAmount doesn't exceed 2**63-1
+std::int64_t
+maxMPTAmount(SLE const& sleIssuance);
+
+// OutstandingAmount may overflow and available amount might be negative.
+// But available amount is always <= |MaximumAmount - OutstandingAmount|.
+std::int64_t
+availableMPTAmount(SLE const& sleIssuance);
+
+std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID);
+
+/** Checks for two types of OutstandingAmount overflow during a send operation.
+ * 1.  **Direct directSendNoFee (Overflow: No):** A true overflow check when
+ * `OutstandingAmount > MaximumAmount`. This threshold is used for direct
+ * directSendNoFee transactions that bypass the payment engine.
+ * 2.  **accountSend & Payment Engine (Overflow: Yes):** A temporary overflow
+ * check when `OutstandingAmount > UINT64_MAX`. This higher threshold is used
+ * for `accountSend` and payments processed via the payment engine.
+ */
+bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow);
+
+/**
+ * Determine funds available for an issuer to sell in an issuer owned offer.
+ * Issuing step, which could be either MPTEndPointStep last step or BookStep's
+ * TakerPays may overflow OutstandingAmount. Redeeming step, in BookStep's
+ * TakerGets redeems the offer's owner funds, essentially balancing out
+ * the overflow, unless the offer's owner is the issuer.
+ */
+[[nodiscard]] STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
+
+/** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+ * See ApplyView::issuerSelfDebitHookMPT().
+ */
+void
+issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);
+
+//------------------------------------------------------------------------------
+//
+// MPT DEX
+//
+//------------------------------------------------------------------------------
+
+/* Return true if a transaction is allowed for the specified MPT/account. The
+ * function checks MPTokenIssuance and MPToken objects flags to determine if the
+ * transaction is allowed.
+ */
+TER
+checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID const& accountID);
 
 }  // namespace xrpl
