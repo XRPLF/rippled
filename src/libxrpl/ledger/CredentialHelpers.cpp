@@ -347,7 +347,7 @@ verifyValidDomain(
     }
 
     auto const foundExpired = credentials::removeExpired(view, credentials, j);
-    if (!foundExpired)
+    if (!foundExpired.has_value())
         return foundExpired.error();
 
     for (auto const& h : credentials)
@@ -384,7 +384,7 @@ verifyDepositPreauth(
     {
         auto const foundExpired = credentials::removeExpired(
             view, tx.getFieldV256(sfCredentialIDs), j);
-        if (!foundExpired)
+        if (!foundExpired.has_value())
             return foundExpired.error();
         if (*foundExpired)
             return tecEXPIRED;
