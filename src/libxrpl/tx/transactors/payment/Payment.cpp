@@ -347,11 +347,29 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+        auto const domainID = ctx.tx[sfDomainID];
+        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
             return tecNO_PERMISSION;
 
-        if (!permissioned_dex::accountInDomain(ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
-            return tecNO_PERMISSION;
+        // Domain owner is always considered in the domain. For other accounts,
+        // suppress tecEXPIRED so doApply can run and delete expired credential
+        // SLEs from the ledger.
+        auto const checkAccount = [&](AccountID const& acct) -> TER {
+            if (sleDomain->getAccountID(sfOwner) == acct)
+                return tesSUCCESS;
+            // validDomain returns tecNO_AUTH when no matching credential is
+            // found. Map it to tecNO_PERMISSION to preserve existing behavior.
+            if (auto const err = credentials::validDomain(ctx.view, domainID, acct);
+                !isTesSuccess(err) && err != tecEXPIRED)
+                return tecNO_PERMISSION;
+            return tesSUCCESS;
+        };
+
+        if (auto const err = checkAccount(ctx.tx[sfAccount]); !isTesSuccess(err))
+            return err;
+        if (auto const err = checkAccount(ctx.tx[sfDestination]); !isTesSuccess(err))
+            return err;
     }
 
     return tesSUCCESS;
@@ -360,6 +378,27 @@ Payment::preclaim(PreclaimContext const& ctx)
 TER
 Payment::doApply()
 {
+    // If a DomainID is present, verify both sender and destination are still in
+    // the domain and delete any expired credential SLEs from the ledger.
+    if (ctx_.tx.isFieldPresent(sfDomainID))
+    {
+        auto const domainID = ctx_.tx[sfDomainID];
+        auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));
+        if (!sleDomain)
+            return tecNO_PERMISSION;
+
+        auto const cleanupFor = [&](AccountID const& acct) -> TER {
+            if (sleDomain->getAccountID(sfOwner) == acct)
+                return tesSUCCESS;
+            return verifyValidDomain(ctx_.view(), acct, domainID, j_);
+        };
+
+        if (auto const err = cleanupFor(account_); !isTesSuccess(err))
+            return err;
+        if (auto const err = cleanupFor(ctx_.tx[sfDestination]); !isTesSuccess(err))
+            return err;
+    }
+
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.

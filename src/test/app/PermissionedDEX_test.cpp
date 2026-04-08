@@ -239,8 +239,9 @@ class PermissionedDEX_test : public beast::unit_test::suite
             // time advance
             env.close(std::chrono::seconds(20));
 
-            // devin cannot create offer with expired cred
-            env(offer(devin, XRP(10), USD(10)), domain(domainID), ter(tecNO_PERMISSION));
+            // devin cannot create offer with expired cred; the expired credential
+            // SLE is deleted by doApply and tecEXPIRED is returned
+            env(offer(devin, XRP(10), USD(10)), domain(domainID), ter(tecEXPIRED));
             env.close();
         }
 
@@ -1372,6 +1373,131 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(!offerExists(env, bob, carolOfferSeq));
     }
 
+    void
+    testExpiredCredentialCleanup(FeatureBitset features)
+    {
+        testcase("Expired credential cleanup");
+
+        // Scenario 1: OfferCreate with an expired credential deletes the
+        // credential SLE from the ledger and returns tecEXPIRED
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            auto const credKey =
+                keylet::credential(devin.id(), domainOwner.id(), makeSlice(credType));
+            BEAST_EXPECT(env.le(credKey));  // credential exists before expiry
+
+            env.close(std::chrono::seconds(20));
+
+            // doApply now runs, deletes the expired SLE, returns tecEXPIRED
+            env(offer(devin, XRP(10), USD(10)), domain(domainID), ter(tecEXPIRED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(credKey));  // credential was deleted
+        }
+
+        // Scenario 2: Payment where the sender's credential is expired deletes
+        // the credential SLE and returns tecEXPIRED
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            auto const credKey =
+                keylet::credential(devin.id(), domainOwner.id(), makeSlice(credType));
+            BEAST_EXPECT(env.le(credKey));
+
+            env.close(std::chrono::seconds(20));
+
+            // devin is the sender; expired credential is deleted, tecEXPIRED returned
+            env(pay(devin, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecEXPIRED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(credKey));  // credential was deleted
+        }
+
+        // Scenario 3: Payment where the destination's credential is expired
+        // deletes the credential SLE and returns tecEXPIRED
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            auto const credKey =
+                keylet::credential(devin.id(), domainOwner.id(), makeSlice(credType));
+            BEAST_EXPECT(env.le(credKey));
+
+            env.close(std::chrono::seconds(20));
+
+            // devin is the destination; expired credential is deleted, tecEXPIRED returned
+            env(pay(alice, devin, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecEXPIRED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(credKey));  // credential was deleted
+        }
+    }
+
 public:
     void
     run() override
@@ -1387,6 +1513,7 @@ public:
         testRemoveUnfundedOffer(all);
         testAmmNotUsed(all);
         testAutoBridge(all);
+        testExpiredCredentialCleanup(all);
 
         // Test hybrid offers
         testHybridOfferCreate(all);
