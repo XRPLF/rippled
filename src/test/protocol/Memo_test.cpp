@@ -13,7 +13,7 @@ public:
         testcase("Test memos");
 
         using namespace test::jtx;
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         Env env(*this);
         env.fund(XRP(10000), alice);
