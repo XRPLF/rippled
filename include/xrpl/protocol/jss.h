@@ -21,149 +21,156 @@ namespace jss {
    error: Common properties of RPC error responses.
 */
 
-JSS(AL_size);                     // out: GetCounts
-JSS(AL_hit_rate);                 // out: GetCounts
-JSS(AcceptedCredentials);         // out: AccountObjects
-JSS(ACCOUNT_SET_FLAGS);           // out: RPC server_definitions
-JSS(Account);                     // in: TransactionSign; field.
-JSS(AMMID);                       // field
-JSS(Amount);                      // in: TransactionSign; field.
-JSS(Amount2);                     // in/out: AMM IOU/XRP pool, deposit, withdraw amount
-JSS(Asset);                       // in: AMM Asset1
-JSS(Asset2);                      // in: AMM Asset2
-JSS(AssetClass);                  // in: Oracle
-JSS(AssetPrice);                  // in: Oracle
-JSS(AuthAccount);                 // in: AMM Auction Slot
-JSS(AuthAccounts);                // in: AMM Auction Slot
-JSS(BaseAsset);                   // in: Oracle
-JSS(BidMax);                      // in: AMM Bid
-JSS(BidMin);                      // in: AMM Bid
-JSS(ClearFlag);                   // field.
-JSS(Counterparty);                // field.
-JSS(CounterpartySignature);       // field.
-JSS(DeliverMax);                  // out: alias to Amount
-JSS(DeliverMin);                  // in: TransactionSign
-JSS(Destination);                 // in: TransactionSign; field.
-JSS(EPrice);                      // in: AMM Deposit option
-JSS(Fee);                         // in/out: TransactionSign; field.
-JSS(Flags);                       // in/out: TransactionSign; field.
-JSS(Holder);                      // field.
-JSS(Invalid);                     //
-JSS(Issuer);                      // in: Credential transactions
-JSS(IssuingChainDoor);            // field.
-JSS(IssuingChainIssue);           // field.
-JSS(LastLedgerSequence);          // in: TransactionSign; field
-JSS(LastUpdateTime);              // field.
-JSS(LimitAmount);                 // field.
-JSS(LockingChainDoor);            // field.
-JSS(LockingChainIssue);           // field.
-JSS(NetworkID);                   // field.
-JSS(LPTokenOut);                  // in: AMM Liquidity Provider deposit tokens
-JSS(LPTokenIn);                   // in: AMM Liquidity Provider withdraw tokens
-JSS(LPToken);                     // out: AMM Liquidity Provider tokens info
-JSS(OfferSequence);               // field.
-JSS(OracleDocumentID);            // field
-JSS(Owner);                       // field
-JSS(Paths);                       // in/out: TransactionSign
-JSS(PriceDataSeries);             // field.
-JSS(PriceData);                   // field.
-JSS(Provider);                    // field.
-JSS(QuoteAsset);                  // in: Oracle.
-JSS(RawTransaction);              // in: Batch
-JSS(RawTransactions);             // in: Batch
-JSS(SLE_hit_rate);                // out: GetCounts.
-JSS(Scale);                       // field.
-JSS(SettleDelay);                 // in: TransactionSign
-JSS(SendMax);                     // in: TransactionSign
-JSS(Sequence);                    // in/out: TransactionSign; field.
-JSS(SetFlag);                     // field.
-JSS(Signer);                      // field.
-JSS(Signers);                     // field.
-JSS(SigningPubKey);               // field.
-JSS(Subject);                     // in: Credential transactions
-JSS(TakerGets);                   // field.
-JSS(TakerPays);                   // field.
-JSS(TradingFee);                  // in/out: AMM trading fee
-JSS(TransactionType);             // in: TransactionSign.
-JSS(TransferRate);                // in: TransferRate.
-JSS(TxnSignature);                // field.
-JSS(URI);                         // field.
-JSS(VoteSlots);                   // out: AMM Vote
-JSS(aborted);                     // out: InboundLedger
-JSS(accepted);                    // out: LedgerToJson, OwnerInfo, SubmitTransaction
-JSS(accountState);                // out: LedgerToJson
-JSS(accountTreeHash);             // out: ledger/Ledger.cpp
-JSS(account_data);                // out: AccountInfo
-JSS(account_flags);               // out: AccountInfo
-JSS(account_hash);                // out: LedgerToJson
-JSS(account_id);                  // out: WalletPropose
-JSS(account_nfts);                // out: AccountNFTs
-JSS(account_objects);             // out: AccountObjects
-JSS(account_root);                // in: LedgerEntry
-JSS(account_sequence_next);       // out: SubmitTransaction
-JSS(account_sequence_available);  // out: SubmitTransaction
-JSS(account_history_tx_stream);   // in: Subscribe, Unsubscribe
-JSS(account_history_tx_index);    // out: Account txn history subscribe
-JSS(account_history_tx_first);    // out: Account txn history subscribe
-JSS(account_history_boundary);    // out: Account txn history subscribe
-JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger, Unsubscribe
-JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
-JSS(action);                      //
-JSS(active);                      // out: OverlayImpl
-JSS(acquiring);                   // out: LedgerRequest
-JSS(address);                     // out: PeerImp
-JSS(affected);                    // out: AcceptedLedgerTx
-JSS(age);                         // out: NetworkOPs, Peers
-JSS(alternatives);                // out: PathRequest, RipplePathFind
-JSS(amendment_blocked);           // out: NetworkOPs
-JSS(amm_account);                 // in: amm_info
-JSS(amount);                      // out: AccountChannels, amm_info
-JSS(amount2);                     // out: amm_info
-JSS(api_version);                 // in: many, out: Version
-JSS(api_version_low);             // out: Version
-JSS(applied);                     // out: SubmitTransaction
-JSS(asks);                        // out: Subscribe
-JSS(asset);                       // in: amm_info
-JSS(asset2);                      // in: amm_info
-JSS(assets);                      // out: GatewayBalances
-JSS(asset_frozen);                // out: amm_info
-JSS(asset2_frozen);               // out: amm_info
-JSS(attestations);                //
-JSS(attestation_reward_account);  //
-JSS(auction_slot);                // out: amm_info
-JSS(authorized);                  // out: AccountLines
-JSS(authorize);                   // out: delegate
-JSS(authorized_credentials);      // in: ledger_entry DepositPreauth
-JSS(auth_accounts);               // out: amm_info
-JSS(auth_change);                 // out: AccountInfo
-JSS(auth_change_queued);          // out: AccountInfo
-JSS(available);                   // out: ValidatorList
-JSS(avg_bps_recv);                // out: Peers
-JSS(avg_bps_sent);                // out: Peers
-JSS(balance);                     // out: AccountLines
-JSS(balances);                    // out: GatewayBalances
-JSS(base);                        // out: LogLevel
-JSS(base_asset);                  // in: get_aggregate_price
-JSS(base_fee);                    // out: NetworkOPs
-JSS(base_fee_xrp);                // out: NetworkOPs
-JSS(bids);                        // out: Subscribe
-JSS(binary);                      // in: AccountTX, LedgerEntry, AccountTxOld, Tx LedgerData
-JSS(blob);                        // out: ValidatorList
-JSS(blobs_v2);                    // out: ValidatorList
-                                  // in: UNL
-JSS(books);                       // in: Subscribe, Unsubscribe
-JSS(both);                        // in: Subscribe, Unsubscribe
-JSS(both_sides);                  // in: Subscribe, Unsubscribe
-JSS(branch);                      // out: server_info
-JSS(broadcast);                   // out: SubmitTransaction
-JSS(bridge_account);              // in: LedgerEntry
-JSS(build_path);                  // in: TransactionSign
-JSS(build_version);               // out: NetworkOPs
-JSS(cancel_after);                // out: AccountChannels
-JSS(can_delete);                  // out: CanDelete
-JSS(mpt_amount);                  // out: mpt_holders
-JSS(mpt_issuance_id);             // in: Payment, mpt_holders
-JSS(mptoken_index);               // out: mpt_holders
+JSS(AL_size);                        // out: GetCounts
+JSS(AL_hit_rate);                    // out: GetCounts
+JSS(AcceptedCredentials);            // out: AccountObjects
+JSS(ACCOUNT_SET_FLAGS);              // out: RPC server_definitions
+JSS(Account);                        // in: TransactionSign; field.
+JSS(AMMID);                          // field
+JSS(Amount);                         // in: TransactionSign; field.
+JSS(Amount2);                        // in/out: AMM IOU/XRP pool, deposit, withdraw amount
+JSS(Asset);                          // in: AMM Asset1
+JSS(Asset2);                         // in: AMM Asset2
+JSS(AssetClass);                     // in: Oracle
+JSS(AssetPrice);                     // in: Oracle
+JSS(AuthAccount);                    // in: AMM Auction Slot
+JSS(AuthAccounts);                   // in: AMM Auction Slot
+JSS(BaseAsset);                      // in: Oracle
+JSS(BidMax);                         // in: AMM Bid
+JSS(BidMin);                         // in: AMM Bid
+JSS(ClearFlag);                      // field.
+JSS(Counterparty);                   // field.
+JSS(CounterpartySignature);          // field.
+JSS(DeliverMax);                     // out: alias to Amount
+JSS(DeliverMin);                     // in: TransactionSign
+JSS(Destination);                    // in: TransactionSign; field.
+JSS(EPrice);                         // in: AMM Deposit option
+JSS(Fee);                            // in/out: TransactionSign; field.
+JSS(Flags);                          // in/out: TransactionSign; field.
+JSS(Holder);                         // field.
+JSS(Invalid);                        //
+JSS(Issuer);                         // in: Credential transactions
+JSS(IssuingChainDoor);               // field.
+JSS(IssuingChainIssue);              // field.
+JSS(LastLedgerSequence);             // in: TransactionSign; field
+JSS(LastUpdateTime);                 // field.
+JSS(LimitAmount);                    // field.
+JSS(LockingChainDoor);               // field.
+JSS(LockingChainIssue);              // field.
+JSS(NetworkID);                      // field.
+JSS(LPTokenOut);                     // in: AMM Liquidity Provider deposit tokens
+JSS(LPTokenIn);                      // in: AMM Liquidity Provider withdraw tokens
+JSS(LPToken);                        // out: AMM Liquidity Provider tokens info
+JSS(OfferSequence);                  // field.
+JSS(OracleDocumentID);               // field
+JSS(Owner);                          // field
+JSS(Paths);                          // in/out: TransactionSign
+JSS(PriceDataSeries);                // field.
+JSS(PriceData);                      // field.
+JSS(Provider);                       // field.
+JSS(QuoteAsset);                     // in: Oracle.
+JSS(RawTransaction);                 // in: Batch
+JSS(RawTransactions);                // in: Batch
+JSS(SLE_hit_rate);                   // out: GetCounts.
+JSS(Scale);                          // field.
+JSS(SettleDelay);                    // in: TransactionSign
+JSS(SendMax);                        // in: TransactionSign
+JSS(Sequence);                       // in/out: TransactionSign; field.
+JSS(SetFlag);                        // field.
+JSS(Signer);                         // field.
+JSS(Signers);                        // field.
+JSS(SigningPubKey);                  // field.
+JSS(Subject);                        // in: Credential transactions
+JSS(TakerGets);                      // field.
+JSS(TakerPays);                      // field.
+JSS(TradingFee);                     // in/out: AMM trading fee
+JSS(TransactionType);                // in: TransactionSign.
+JSS(TransferRate);                   // in: TransferRate.
+JSS(TxnSignature);                   // field.
+JSS(URI);                            // field.
+JSS(VoteSlots);                      // out: AMM Vote
+JSS(aborted);                        // out: InboundLedger
+JSS(accepted);                       // out: LedgerToJson, OwnerInfo, SubmitTransaction
+JSS(accountState);                   // out: LedgerToJson
+JSS(accountTreeHash);                // out: ledger/Ledger.cpp
+JSS(account_data);                   // out: AccountInfo
+JSS(account_flags);                  // out: AccountInfo
+JSS(account_hash);                   // out: LedgerToJson
+JSS(account_id);                     // out: WalletPropose
+JSS(account_nfts);                   // out: AccountNFTs
+JSS(account_objects);                // out: AccountObjects
+JSS(account_root);                   // in: LedgerEntry
+JSS(account_sequence_next);          // out: SubmitTransaction
+JSS(account_sequence_available);     // out: SubmitTransaction
+JSS(account_history_tx_stream);      // in: Subscribe, Unsubscribe
+JSS(account_history_tx_index);       // out: Account txn history subscribe
+JSS(account_history_tx_first);       // out: Account txn history subscribe
+JSS(account_history_boundary);       // out: Account txn history subscribe
+JSS(accounts);                       // in: LedgerEntry, Subscribe, handlers/Ledger, Unsubscribe
+JSS(accounts_proposed);              // in: Subscribe, Unsubscribe
+JSS(action);                         //
+JSS(active);                         // out: OverlayImpl
+JSS(acquiring);                      // out: LedgerRequest
+JSS(address);                        // out: PeerImp
+JSS(affected);                       // out: AcceptedLedgerTx
+JSS(age);                            // out: NetworkOPs, Peers
+JSS(alternatives);                   // out: PathRequest, RipplePathFind
+JSS(amendment_blocked);              // out: NetworkOPs
+JSS(amm_account);                    // in: amm_info
+JSS(amount);                         // out: AccountChannels, amm_info
+JSS(amount2);                        // out: amm_info
+JSS(api_version);                    // in: many, out: Version
+JSS(api_version_low);                // out: Version
+JSS(applied);                        // out: SubmitTransaction
+JSS(asks);                           // out: Subscribe
+JSS(asset);                          // in: amm_info
+JSS(asset2);                         // in: amm_info
+JSS(assets);                         // out: GatewayBalances
+JSS(asset_frozen);                   // out: amm_info
+JSS(asset2_frozen);                  // out: amm_info
+JSS(attestations);                   //
+JSS(attestation_reward_account);     //
+JSS(auction_slot);                   // out: amm_info
+JSS(authorized);                     // out: AccountLines
+JSS(authorize);                      // out: delegate
+JSS(authorized_credentials);         // in: ledger_entry DepositPreauth
+JSS(auth_accounts);                  // out: amm_info
+JSS(auth_change);                    // out: AccountInfo
+JSS(auth_change_queued);             // out: AccountInfo
+JSS(available);                      // out: ValidatorList
+JSS(avg_bps_recv);                   // out: Peers
+JSS(avg_bps_sent);                   // out: Peers
+JSS(balance);                        // out: AccountLines
+JSS(balances);                       // out: GatewayBalances
+JSS(base);                           // out: LogLevel
+JSS(base_asset);                     // in: get_aggregate_price
+JSS(base_fee);                       // out: NetworkOPs
+JSS(base_fee_xrp);                   // out: NetworkOPs
+JSS(bids);                           // out: Subscribe
+JSS(binary);                         // in: AccountTX, LedgerEntry, AccountTxOld, Tx LedgerData
+JSS(blob);                           // out: ValidatorList
+JSS(blobs_v2);                       // out: ValidatorList
+                                     // in: UNL
+JSS(books);                          // in: Subscribe, Unsubscribe
+JSS(both);                           // in: Subscribe, Unsubscribe
+JSS(both_sides);                     // in: Subscribe, Unsubscribe
+JSS(branch);                         // out: server_info
+JSS(broadcast);                      // out: SubmitTransaction
+JSS(bridge_account);                 // in: LedgerEntry
+JSS(build_path);                     // in: TransactionSign
+JSS(build_version);                  // out: NetworkOPs
+JSS(cancel_after);                   // out: AccountChannels
+JSS(can_delete);                     // out: CanDelete
+JSS(mpt_amount);                     // out: mpt_holders
+JSS(mpt_issuance_id);                // in: Payment, mpt_holders
+JSS(mptoken_index);                  // out: mpt_holders
+JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
+JSS(confidential_balance_inbox);     // out: mpt_holders (confidential MPT)
+JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
+JSS(holder_encryption_key);          // out: mpt_holders (confidential MPT)
+JSS(issuer_encrypted_balance);       // out: mpt_holders (confidential MPT)
+JSS(auditor_encrypted_balance);      // out: mpt_holders (confidential MPT)
+
 JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels
