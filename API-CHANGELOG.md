@@ -77,20 +77,11 @@ When reading Payments, the `Amount` field should generally **not** be used. Inst
 
 This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
-## Unreleased
+The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/request-formatting/#commandline-format) always uses the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
-This section contains changes targeting a future version.
+## XRP Ledger server version 3.1.3
 
-### Additions
-
-- `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
-  - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
-  - `LEDGER_ENTRY_FORMATS`: Describes the fields and their optionality for each ledger entry type, including common fields shared across all ledger entries.
-  - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
-  - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
-  - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
-
-### Bugfixes
+### Bugfixes in 3.1.3
 
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 
