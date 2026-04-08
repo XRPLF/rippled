@@ -24,6 +24,10 @@
 
 #include <thread>
 
+#if BOOST_OS_LINUX
+#include <pthread.h>
+#endif  // BOOST_OS_LINUX
+
 namespace ripple {
 namespace test {
 
