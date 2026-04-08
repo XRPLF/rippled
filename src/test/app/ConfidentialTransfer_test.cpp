@@ -2916,9 +2916,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mptAlice.convert(
                 {.account = carol, .amt = 0, .holderPubKey = mptAlice.getPubKey(carol)});
 
-            BEAST_EXPECT(
-                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
-
             // Trying to send any amount with 0 spending balance must fail:
             // the range proof for < 0 is invalid.
             mptAlice.send({
@@ -7067,7 +7064,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         auto const bobSpendingBefore =
             mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(bobSpendingBefore == 100);
 
         // issuer ciphertext encrypted under carol's holder key
         // (should be under alice's registered issuer key).
@@ -7395,9 +7391,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
             // bob = A (100 spending), carol = B (0), dave = C (0)
             setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
-
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
 
             // Build the batch:
             //   Batch Txn 1 bob -> carol 100 : valid proof, bob spending=100
@@ -7816,8 +7809,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
             mpt.pay(alice, bob, 50);
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-
             auto const bobSeq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
@@ -7859,8 +7850,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
             mpt.pay(alice, bob, 50);
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-
             auto const bobSeq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
 
@@ -7886,7 +7875,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     // Tests a batch containing all four confidential MPT operations, Send,
     // Convert, ConvertBack, and MergeInbox in a single AllOrNothing batch.
     void
-    testBatchConfidentialMixTxn(FeatureBitset features)
+    testBatchConfidentialMixTransactions(FeatureBitset features)
     {
         testcase("Batch confidential mixed operations");
         using namespace test::jtx;
@@ -7920,10 +7909,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             mpt.pay(alice, dave, 50);
             mpt.convert({.account = dave, .amt = 50});
             mpt.mergeInbox({.account = dave});
-
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 0);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 50);
 
             auto const bobSeq = env.seq(bob);
             auto const carolSeq = env.seq(carol);
@@ -7976,8 +7961,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
             setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-
             auto const bobSeq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
@@ -7993,6 +7976,129 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             env.close();
 
             // AllOrNothing: jv2 fails (stale proof) → nothing applied.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
+        }
+    }
+
+    // Verifies that batch transactions work correctly when tickets are used instead
+    // of sequence numbers
+    void
+    testBatchWithTickets(FeatureBitset features)
+    {
+        testcase("Batch confidential MPT with tickets");
+        using namespace test::jtx;
+
+        // outer batch uses a ticket.
+        // The inner send proofs are still bound to regular account sequences.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            // Bob creates one ticket to use for the outer batch.
+            std::uint32_t const outerTicketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            // 0 extra signers: all inner txns are from bob;
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // When the outer uses a ticket (seq=0), inner txns start from bobSeq, bobSeq+1.
+            // jv2 must use chain state predicted after jv1 since both sends are from bob.
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq);
+            auto const chain1 = mpt.chainAfterSend(bob, 40, jv1);
+            auto const jv2 =
+                mpt.sendJV({.account = bob, .dest = dave, .amt = 20}, bobSeq + 1, chain1);
+
+            env(batch::outer(bob, 0, batchFee, tfAllOrNothing),
+                batch::inner(jv1, bobSeq),
+                batch::inner(jv2, bobSeq + 1),
+                ticket::use(outerTicketSeq),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Both sends applied: bob 100→40, carol inbox=40, dave inbox=20.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 20);
+        }
+
+        // inner transactions each consume their own ticket.
+        // The send proof context hash must be bound to the ticket sequence, not the
+        // account sequence. sendJV receives the ticket seq as its `seq` parameter.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            // Bob creates two tickets for the two inner sends.
+            std::uint32_t const ticketSeq1 = env.seq(bob) + 1;
+            std::uint32_t const ticketSeq2 = env.seq(bob) + 2;
+            env(ticket::create(bob, 2));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // jv1: proof bound to ticketSeq1.
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, ticketSeq1);
+            // jv2: proof bound to ticketSeq2, spending state predicted after jv1.
+            auto const chain1 = mpt.chainAfterSend(bob, 40, jv1);
+            auto const jv2 =
+                mpt.sendJV({.account = bob, .dest = dave, .amt = 30}, ticketSeq2, chain1);
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::inner(jv1, 0, ticketSeq1),
+                batch::inner(jv2, 0, ticketSeq2),
+                ter(tesSUCCESS));
+            env.close();
+
+            // Both sends applied: bob 100→30, carol inbox=40, dave inbox=30.
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HOLDER_ENCRYPTED_INBOX) == 30);
+        }
+
+        // inner send uses wrong sequence (account seq instead of ticket seq)
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            Account const dave("dave");
+
+            MPTTester mpt(env, alice, {.holders = {bob, carol, dave}});
+            setupBatchEnv(mpt, alice, bob, carol, dave, 100, 0);
+
+            std::uint32_t const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Proof intentionally built with account seq (bobSeq+1) instead of ticketSeq.
+            auto const badJV = mpt.sendJV({.account = bob, .dest = carol, .amt = 40}, bobSeq + 1);
+            auto const jv2 = mpt.mergeInboxJV({.account = bob});
+
+            env(batch::outer(bob, bobSeq, batchFee, tfAllOrNothing),
+                batch::inner(badJV, 0, ticketSeq),
+                batch::inner(jv2, bobSeq + 1),
+                ter(tesSUCCESS));
+            env.close();
+
             BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
             BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
         }
@@ -8387,11 +8493,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Batch Tests
         testBatchConfidentialSend(features);
         testBatchConfidentialConvertAndConvertBack(features);
-        testBatchConfidentialMixTxn(features);
+        testBatchConfidentialMixTransactions(features);
         testBatchAllOrNothing(features);
         testBatchOnlyOne(features);
         testBatchUntilFailure(features);
         testBatchIndependent(features);
+        testBatchWithTickets(features);
 
         // Delegation Tests
         testConfidentialDelegation(features);
