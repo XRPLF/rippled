@@ -265,6 +265,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfPaths))
         return terNO_DELEGATE_PERMISSION;
 
+    // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
     if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
