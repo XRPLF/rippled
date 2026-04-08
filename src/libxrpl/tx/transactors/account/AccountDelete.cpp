@@ -16,7 +16,7 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
-#include <xrpl/tx/transactors/Sponsor/SponsorshipSet.h>
+#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 namespace xrpl {
 bool

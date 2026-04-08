@@ -4,7 +4,7 @@
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
-#include <xrpl/tx/transactors/Sponsor/SponsorshipSet.h>
+#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 namespace xrpl {
 
