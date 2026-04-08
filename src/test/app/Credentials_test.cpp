@@ -1112,11 +1112,13 @@ struct Credentials_test : public beast::unit_test::suite
     void
     testRemoveExpiredCorruption(FeatureBitset features)
     {
-        testcase("removeExpired ignores deleteSLE failure (AXRT-2)");
+        bool const fixEnabled = features[fixSecurity3_1_3];
+        testcase(
+            "removeExpired ignores deleteSLE failure " +
+            (fixEnabled ? std::string(" after fix")
+                        : std::string(" before fix")));
 
         using namespace test::jtx;
-
-        bool const fixEnabled = features[fixSecurity3_1_3];
 
         char const credType[] = "abcde";
         Account const issuer{"issuer"};
@@ -1151,8 +1153,7 @@ struct Credentials_test : public beast::unit_test::suite
         // Verify credential exists and is accepted
         {
             auto const sleCred = env.current()->read(credKeylet);
-            BEAST_EXPECT(sleCred);
-            BEAST_EXPECT(sleCred->getFlags() & lsfAccepted);
+            BEAST_EXPECT(sleCred && sleCred->getFlags() & lsfAccepted);
         }
 
         // Create DepositPreauth
@@ -1170,16 +1171,16 @@ struct Credentials_test : public beast::unit_test::suite
         env.close();
         auto const domain = pdomain::getObjects(becky, env).begin()->first;
 
-        // Advance time past expiration (each close = +10s)
-        for (int i = 0; i < 5; ++i)
-            env.close();
+        using namespace std::chrono_literals;
+        env.close(50s);
 
         // Verify time has advanced past expiration
         {
             auto const sleCred = env.current()->read(credKeylet);
-            BEAST_EXPECT(sleCred);
-            BEAST_EXPECT(ripple::credentials::checkExpired(
-                sleCred, env.current()->info().parentCloseTime));
+            BEAST_EXPECT(
+                sleCred &&
+                ripple::credentials::checkExpired(
+                    sleCred, env.current()->info().parentCloseTime));
         }
 
         // Create an ApplyViewImpl on top of the current closed ledger
@@ -1189,7 +1190,8 @@ struct Credentials_test : public beast::unit_test::suite
 
         // Erase the issuer's account to simulate ledger corruption
         auto sleIssuer = av.peek(keylet::account(issuer.id()));
-        BEAST_EXPECT(sleIssuer);
+        if (!BEAST_EXPECT(sleIssuer))
+            return;
         av.erase(sleIssuer);
         BEAST_EXPECT(!av.exists(keylet::account(issuer.id())));
 

@@ -1091,7 +1091,8 @@ removeExpiredCredentials(
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
-            credentials::deleteSLE(view, sle, viewJ);
+            [[maybe_unused]]
+            auto const ter = credentials::deleteSLE(view, sle, viewJ);
     }
 }
 

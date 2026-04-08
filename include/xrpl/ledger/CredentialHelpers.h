@@ -44,7 +44,7 @@ checkExpired(
     NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
-TER
+[[nodiscard]] TER
 deleteSLE(
     ApplyView& view,
     std::shared_ptr<SLE> const& sleCredential,
