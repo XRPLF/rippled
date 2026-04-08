@@ -131,7 +131,7 @@ ConfidentialMPTClawback::doApply()
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
-    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = std::move(*encZeroForHolder);
+    (*sleHolderMPToken)[sfConfidentialBalanceSpending] = *encZeroForHolder;
     (*sleHolderMPToken)[sfIssuerEncryptedBalance] = std::move(*encZeroForIssuer);
     incrementConfidentialVersion(*sleHolderMPToken);
 

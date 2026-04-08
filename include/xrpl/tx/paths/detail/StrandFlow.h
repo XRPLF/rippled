@@ -246,7 +246,7 @@ flow(
             EitherAmount stepIn(*strand[0]->cachedIn());
             for (auto i = 0; i < s; ++i)
             {
-                bool valid;
+                bool valid = false;
                 std::tie(valid, stepIn) = strand[i]->validFwd(checkSB, checkAfView, stepIn);
                 if (!valid)
                 {

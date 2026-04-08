@@ -232,6 +232,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> destEncryptedAmt = std::nullopt;
     std::optional<Buffer> issuerEncryptedAmt = std::nullopt;
     std::optional<Buffer> auditorEncryptedAmt = std::nullopt;
+    std::optional<bool> fillAuditorEncryptedAmt = true;
     std::optional<std::vector<std::string>> credentials = std::nullopt;
     // not an txn param, only used for autofilling
     std::optional<Buffer> blindingFactor = std::nullopt;
@@ -293,6 +294,45 @@ struct PedersenProofParams
     Buffer const blindingFactor;
 };
 
+/**
+ * @brief When building multiple confidential sends from the same account inside a
+ * single batch transaction, pass this state to the transaction builder for
+ * each subsequent send so that its proof references the post previous-send
+ * encrypted balance rather than the stale pre-send ledger state.
+ *
+ * The fields mirror what the ledger will contain after the preceding send's
+ * doApply() completes:
+ *   encSpending = homomorphicSubtract(prevEncSpending, senderEncAmt)
+ *   version     = prevVersion + 1
+ */
+struct ConfidentialSendChainState
+{
+    std::uint64_t spending;  // Decrypted spending balance after the previous send.
+    Buffer encSpending;      // Encrypted spending balance after the previous send.
+    std::uint32_t version;   // sfConfidentialBalanceVersion after the previous send.
+};
+
+/**
+ * @brief Use this when building a second (or later) confidential send from the same
+ * account in the same batch. Pass the state to the chain aware
+ * transaction builder so that the next proof is constructed against the
+ * correct post-send encrypted balance and version.
+ *
+ * @param currentSpending     Decrypted spending balance before the send.
+ * @param currentEncSpending  sfConfidentialBalanceSpending before the send.
+ * @param currentVersion      sfConfidentialBalanceVersion before the send.
+ * @param sendAmt             Plaintext amount being sent.
+ * @param senderEncAmt        sfSenderEncryptedAmount from the send transaction.
+ * @return The predicted chain state, or std::nullopt if homomorphic subtraction fails
+ */
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt);
+
 class MPTTester
 {
     Env& env_;
@@ -352,14 +392,53 @@ public:
     void
     convert(MPTConvert const& arg = MPTConvert{});
 
+    // Build a confidential convert JV without submitting.  'seq' is the inner
+    // transaction sequence used in the Schnorr proof context hash.
+    Json::Value
+    convertJV(MPTConvert const& arg, std::uint32_t seq);
+
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
+
+    Json::Value
+    mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
     send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
 
+    // Build a confidential send JV.  When 'chain' is provided the sender's
+    // proof parameters are taken from it instead of the ledger, enabling
+    // correct proof generation for a second (or later) send from the same
+    // account inside a single batch.
+    Json::Value
+    sendJV(
+        MPTConfidentialSend const& arg,
+        std::uint32_t seq,
+        std::optional<ConfidentialSendChainState> chain = std::nullopt);
+
+    // Compute the projected sender state after a confidential send in a batch.
+    //
+    // Each confidential send requires a ZK proof that the sender's spending
+    // balance covers the transfer. In a batch, if there are more than one
+    // Confidential Send, the 2nd onwards send requires a proof that includes the
+    // updated spending balance.
+    //
+    // Example: Bob has 200, batches send 100 to Carol then 50 to Dave:
+    //   jv1   = sendJV({bob->carol, 100}, seq1)
+    //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
+    //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
+    ConfidentialSendChainState
+    chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const;
+
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
+
+    // Build a confidential convertBack JV without submitting.  'seq' is the
+    // inner transaction sequence used in the proof context hash.  Reads the
+    // current encrypted spending balance and version from the ledger, so call
+    // this before the batch is submitted.
+    Json::Value
+    convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
     confidentialClaw(MPTConfidentialClawback const& arg = MPTConfidentialClawback{});
