@@ -237,8 +237,4 @@ protected:
     beast::Journal j_;
 };
 
-// Backward-compatible aliases
-using ReadOnlySLE = SLEBase<ReadView>;
-using WritableSLE = SLEBase<ApplyView>;
-
 }  // namespace xrpl

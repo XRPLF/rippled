@@ -117,7 +117,7 @@ AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
     this->update();
 }
 
-AccountID
+[[nodiscard]] AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment

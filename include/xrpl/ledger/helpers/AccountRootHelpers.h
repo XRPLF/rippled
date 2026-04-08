@@ -170,7 +170,7 @@ extern template class AccountRoot<ApplyView>;
     @param pseudoOwnerKey The key to generate the address from
     @return The generated account ID
 */
-AccountID
+[[nodiscard]] AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
 
 /** Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account
