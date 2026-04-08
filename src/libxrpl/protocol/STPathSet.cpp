@@ -31,8 +31,15 @@ STPathElement::get_hash(STPathElement const& element)
     for (auto const x : element.getAccountID())
         hash_account += (hash_account * 257) ^ x;
 
-    for (auto const x : element.getCurrency())
-        hash_currency += (hash_currency * 509) ^ x;
+    // Check pathAsset type instead of element's mType
+    // In some cases mType might be account but the asset
+    // is still set to either MPT or currency (see Pathfinder::addLink())
+    element.getPathAsset().visit(
+        [&](MPTID const& mpt) { hash_currency += beast::uhash<>{}(mpt); },
+        [&](Currency const& currency) {
+            for (auto const x : currency)
+                hash_currency += (hash_currency * 509) ^ x;
+        });
 
     for (auto const x : element.getIssuerID())
         hash_issuer += (hash_issuer * 911) ^ x;
@@ -68,24 +75,30 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
         }
         else
         {
-            auto hasAccount = iType & STPathElement::typeAccount;
-            auto hasCurrency = iType & STPathElement::typeCurrency;
-            auto hasIssuer = iType & STPathElement::typeIssuer;
+            auto const hasAccount = (iType & STPathElement::typeAccount) != 0u;
+            auto const hasCurrency = (iType & STPathElement::typeCurrency) != 0u;
+            auto const hasIssuer = (iType & STPathElement::typeIssuer) != 0u;
+            auto const hasMPT = (iType & STPathElement::typeMPT) != 0u;
 
             AccountID account;
-            Currency currency;
+            PathAsset asset;
             AccountID issuer;
 
-            if (hasAccount != 0)
+            if (hasAccount)
                 account = sit.get160();
 
-            if (hasCurrency != 0)
-                currency = sit.get160();
+            XRPL_ASSERT(
+                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
+            if (hasCurrency)
+                asset = static_cast<Currency>(sit.get160());
 
-            if (hasIssuer != 0)
+            if (hasMPT)
+                asset = sit.get192();
+
+            if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, currency, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency);
         }
     }
 }
@@ -137,11 +150,11 @@ STPathSet::isDefault() const
 }
 
 bool
-STPath::hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const
+STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
     for (auto& p : mPath)
     {
-        if (p.getAccountID() == account && p.getCurrency() == currency && p.getIssuerID() == issuer)
+        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
             return true;
     }
 
@@ -163,8 +176,15 @@ STPath::getJson(JsonOptions) const
         if ((iType & STPathElement::typeAccount) != 0u)
             elem[jss::account] = to_string(it.getAccountID());
 
+        XRPL_ASSERT(
+            ((iType & STPathElement::typeCurrency) == 0u) ||
+                ((iType & STPathElement::typeMPT) == 0u),
+            "xrpl::STPath::getJson : not type Currency and MPT");
         if ((iType & STPathElement::typeCurrency) != 0u)
             elem[jss::currency] = to_string(it.getCurrency());
+
+        if ((iType & STPathElement::typeMPT) != 0u)
+            elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
 
         if ((iType & STPathElement::typeIssuer) != 0u)
             elem[jss::issuer] = to_string(it.getIssuerID());
@@ -209,13 +229,16 @@ STPathSet::add(Serializer& s) const
 
             s.add8(iType);
 
-            if ((iType & STPathElement::typeAccount) != 0)
+            if ((iType & STPathElement::typeAccount) != 0u)
                 s.addBitString(speElement.getAccountID());
 
-            if ((iType & STPathElement::typeCurrency) != 0)
+            if ((iType & STPathElement::typeMPT) != 0u)
+                s.addBitString(speElement.getMPTID());
+
+            if ((iType & STPathElement::typeCurrency) != 0u)
                 s.addBitString(speElement.getCurrency());
 
-            if ((iType & STPathElement::typeIssuer) != 0)
+            if ((iType & STPathElement::typeIssuer) != 0u)
                 s.addBitString(speElement.getIssuerID());
         }
 

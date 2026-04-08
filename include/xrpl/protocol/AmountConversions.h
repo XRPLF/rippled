@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -9,11 +10,12 @@
 namespace xrpl {
 
 inline STAmount
-toSTAmount(IOUAmount const& iou, Issue const& iss)
+toSTAmount(IOUAmount const& iou, Asset const& asset)
 {
+    XRPL_ASSERT(asset.holds<Issue>(), "xrpl::toSTAmount : is Issue");
     bool const isNeg = iou.signum() < 0;
     std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(iss, umant, iou.exponent(), isNeg, STAmount::unchecked());
+    return STAmount(asset, umant, iou.exponent(), isNeg, STAmount::unchecked());
 }
 
 inline STAmount
@@ -31,10 +33,23 @@ toSTAmount(XRPAmount const& xrp)
 }
 
 inline STAmount
-toSTAmount(XRPAmount const& xrp, Issue const& iss)
+toSTAmount(XRPAmount const& xrp, Asset const& asset)
 {
-    XRPL_ASSERT(isXRP(iss.account) && isXRP(iss.currency), "xrpl::toSTAmount : is XRP");
+    XRPL_ASSERT(isXRP(asset), "xrpl::toSTAmount : is XRP");
     return toSTAmount(xrp);
+}
+
+inline STAmount
+toSTAmount(MPTAmount const& mpt)
+{
+    return STAmount(mpt, noMPT());
+}
+
+inline STAmount
+toSTAmount(MPTAmount const& mpt, Asset const& asset)
+{
+    XRPL_ASSERT(asset.holds<MPTIssue>(), "xrpl::toSTAmount : is MPT");
+    return STAmount(mpt, asset.get<MPTIssue>());
 }
 
 template <class T>
@@ -76,6 +91,21 @@ toAmount<XRPAmount>(STAmount const& amt)
     return XRPAmount(sMant);
 }
 
+template <>
+inline MPTAmount
+toAmount<MPTAmount>(STAmount const& amt)
+{
+    XRPL_ASSERT(
+        amt.holds<MPTIssue>() && amt.mantissa() <= maxMPTokenAmount && amt.exponent() == 0,
+        "xrpl::toAmount<MPTAmount> : maximum mantissa");
+    if (amt.mantissa() > maxMPTokenAmount || amt.exponent() != 0)
+        Throw<std::runtime_error>("toAmount<MPTAmount>: invalid mantissa or exponent");
+    bool const isNeg = amt.negative();
+    std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
+
+    return MPTAmount(sMant);
+}
+
 template <class T>
 T
 toAmount(IOUAmount const& amt) = delete;
@@ -98,23 +128,36 @@ toAmount<XRPAmount>(XRPAmount const& amt)
     return amt;
 }
 
+template <class T>
+T
+toAmount(MPTAmount const& amt) = delete;
+
+template <>
+inline MPTAmount
+toAmount<MPTAmount>(MPTAmount const& amt)
+{
+    return amt;
+}
+
 template <typename T>
 T
-toAmount(Issue const& issue, Number const& n, Number::rounding_mode mode = Number::getround())
+toAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Number::getround())
 {
     saveNumberRoundMode const rm(Number::getround());
-    if (isXRP(issue))
+    if (isXRP(asset))
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)
         return IOUAmount(n);
     else if constexpr (std::is_same_v<XRPAmount, T>)
         return XRPAmount(static_cast<std::int64_t>(n));
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+        return MPTAmount(static_cast<std::int64_t>(n));
     else if constexpr (std::is_same_v<STAmount, T>)
     {
-        if (isXRP(issue))
-            return STAmount(issue, static_cast<std::int64_t>(n));
-        return STAmount(issue, n);
+        if (isXRP(asset))
+            return STAmount(asset, static_cast<std::int64_t>(n));
+        return STAmount(asset, n);
     }
     else
     {
@@ -125,17 +168,23 @@ toAmount(Issue const& issue, Number const& n, Number::rounding_mode mode = Numbe
 
 template <typename T>
 T
-toMaxAmount(Issue const& issue)
+toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
         return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
     else if constexpr (std::is_same_v<XRPAmount, T>)
         return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+        return MPTAmount(maxMPTokenAmount);
     else if constexpr (std::is_same_v<STAmount, T>)
     {
-        if (isXRP(issue))
-            return STAmount(issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
-        return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
+        return asset.visit(
+            [](Issue const& issue) {
+                if (isXRP(issue))
+                    return STAmount(issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
+                return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
+            },
+            [](MPTIssue const& issue) { return STAmount(issue, maxMPTokenAmount); });
     }
     else
     {
@@ -145,21 +194,23 @@ toMaxAmount(Issue const& issue)
 }
 
 inline STAmount
-toSTAmount(Issue const& issue, Number const& n, Number::rounding_mode mode = Number::getround())
+toSTAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Number::getround())
 {
-    return toAmount<STAmount>(issue, n, mode);
+    return toAmount<STAmount>(asset, n, mode);
 }
 
 template <typename T>
-Issue
-getIssue(T const& amt)
+Asset
+getAsset(T const& amt)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
         return noIssue();
     else if constexpr (std::is_same_v<XRPAmount, T>)
         return xrpIssue();
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+        return noMPT();
     else if constexpr (std::is_same_v<STAmount, T>)
-        return amt.issue();
+        return amt.asset();
     else
     {
         constexpr bool alwaysFalse = !std::is_same_v<T, T>;
@@ -175,6 +226,8 @@ get(STAmount const& a)
         return a.iou();
     else if constexpr (std::is_same_v<XRPAmount, T>)
         return a.xrp();
+    else if constexpr (std::is_same_v<MPTAmount, T>)
+        return a.mpt();
     else if constexpr (std::is_same_v<STAmount, T>)
         return a;
     else

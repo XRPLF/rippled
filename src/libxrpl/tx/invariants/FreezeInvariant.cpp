@@ -172,7 +172,7 @@ TransfersNotFrozen::recordBalanceChanges(
     STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
-    auto const currency = after->at(sfBalance).getCurrency();
+    auto const currency = after->at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
     recordBalance({currency, after->at(sfHighLimit).getIssuer()}, {after, balanceChangeSign});
