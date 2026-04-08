@@ -6590,6 +6590,441 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(bobSpendingBefore == bobSpendingAfter);
     }
 
+    // Confidential sends carry encrypted amounts and a zero-knowledge proof.
+    // Both are built from elliptic-curve math, so every coordinate in the
+    // transaction must be a real point on the secp256k1 curve. These three
+    // variants confirm the validator rejects garbage coordinates at the right
+    // stage before any expensive cryptographic verification runs.
+    void
+    testSendInvalidCurvePoints(FeatureBitset features)
+    {
+        testcase("Send: off-curve EC points");
+        using namespace test::jtx;
+
+        // Variant A: garbage coordinate in ciphertext / commitment fields
+        // getBadCiphertext() looks structurally valid (correct length, right
+        // prefix byte 0x02) but its x-coordinate is 0xFF...FF, which does not
+        // lie on secp256k1. Preflight must reject before any ledger access.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.convert(
+                {.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
+
+            // sender's encrypted amount has an invalid coordinate
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .senderEncryptedAmt = getBadCiphertext(),
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // recipient's encrypted amount has an invalid coordinate
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .destEncryptedAmt = getBadCiphertext(),
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // issuer's encrypted amount has an invalid coordinate
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .issuerEncryptedAmt = getBadCiphertext(),
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // The amount and balance commitments are single curve coordinates
+            // used to tie the proof to the transfer amount and sender balance.
+            // A commitment with a valid-looking prefix but an impossible
+            // x-coordinate must also be rejected.
+            Buffer badCommitment(ecPedersenCommitmentLength);
+            std::memset(badCommitment.data(), 0xFF, ecPedersenCommitmentLength);
+            badCommitment.data()[0] = ecCompressedPrefixEvenY;
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .amountCommitment = badCommitment,
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temMALFORMED,
+            });
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = badCommitment,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Variant B: garbage coordinates inside the ZKP proof blob
+        // The proof blob has the right total byte length (so it passes the
+        // length check at preflight), but every embedded coordinate is
+        // 0xFF...FF — impossible on secp256k1. The proof verifier must detect
+        // this and return tecBAD_PROOF without crashing.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({.account = bob});
+            mptAlice.convert(
+                {.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
+            mptAlice.mergeInbox({.account = carol});
+
+            size_t const proofSize =
+                getEqualityProofSize(3) + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
+            Buffer badProof(proofSize);
+            std::memset(badProof.data(), 0xFF, proofSize);
+            badProof.data()[0] = ecCompressedPrefixEvenY;
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = strHex(badProof),
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        // Variant C: only one of the two ciphertext coordinates is bad
+        // Each encrypted amount is two coordinates back-to-back: C1 then C2.
+        // Both must be valid. These tests corrupt only one at a time to
+        // confirm both are checked independently.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+            mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.convert(
+                {.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
+
+            // getTrivialCiphertext() has both C1 and C2 as valid (but trivial)
+            // curve coordinates.  We replace one half at a time with 0xFF...FF.
+            auto const& tc = getTrivialCiphertext();
+
+            // C1 = bad (0xFF...FF), C2 = valid trivial point
+            Buffer badC1goodC2(ecGamalEncryptedTotalLength);
+            std::memset(badC1goodC2.data(), 0xFF, ecGamalEncryptedTotalLength);
+            badC1goodC2.data()[0] = ecCompressedPrefixEvenY;
+            std::memcpy(
+                badC1goodC2.data() + ecGamalEncryptedLength,
+                tc.data() + ecGamalEncryptedLength,
+                ecGamalEncryptedLength);
+
+            // C1 = valid trivial point, C2 = bad (0xFF...FF)
+            Buffer goodC1badC2(ecGamalEncryptedTotalLength);
+            std::memset(goodC1badC2.data(), 0xFF, ecGamalEncryptedTotalLength);
+            std::memcpy(goodC1badC2.data(), tc.data(), ecGamalEncryptedLength);
+            goodC1badC2.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+
+            // sender's encrypted amount — bad C1
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .senderEncryptedAmt = badC1goodC2,
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // sender's encrypted amount — bad C2
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .senderEncryptedAmt = goodC1badC2,
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // recipient's encrypted amount — bad C1
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .destEncryptedAmt = badC1goodC2,
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+
+            // recipient's encrypted amount — bad C2
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(3),
+                .destEncryptedAmt = goodC1badC2,
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = temBAD_CIPHERTEXT,
+            });
+        }
+    }
+
+    // Reject points from the wrong elliptic curve (wrong-group injection).
+    //
+    // An attacker might submit coordinates that come from a completely
+    // different elliptic curve, for example, the one used in TLS
+    // certificates (NIST P-256). If those coordinates happen to also be
+    // valid points on secp256k1 (which is possible since both curves use
+    // 256-bit fields), the format check at preflight will pass. However,
+    // the zero-knowledge proof is built specifically for secp256k1: the
+    // math inside the proof only holds for the right curve, so any
+    // transaction carrying cross-curve data will still be rejected at
+    // proof verification (tecBAD_PROOF).
+    void
+    testSendWrongGroupPointInjection(FeatureBitset features)
+    {
+        testcase("Send: wrong-group point injection rejected");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob"), carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+        mptAlice.convert({.account = bob, .amt = 60, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+        mptAlice.convert({.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // The x-coordinate of the NIST P-256 generator point — a real,
+        // well-known value from a different elliptic curve (used in TLS
+        // and certificates).  This x-coordinate is also a valid secp256k1
+        // point, so it passes preflight.  Rejection happens at proof
+        // verification because the ZKP is secp256k1-specific.
+        //
+        //   P-256 generator x:
+        //     6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
+        static constexpr std::uint8_t kP256GeneratorX[32] = {
+            0x6B, 0x17, 0xD1, 0xF2, 0xE1, 0x2C, 0x42, 0x47, 0xF8, 0xBC, 0xE6,
+            0xE5, 0x63, 0xA4, 0x40, 0xF2, 0x77, 0x03, 0x7D, 0x81, 0x2D, 0xEB,
+            0x33, 0xA0, 0xF4, 0xA1, 0x39, 0x45, 0xD8, 0x98, 0xC2, 0x96,
+        };
+
+        // A 66-byte encrypted amount using the P-256 x-coordinate for both halves.
+        Buffer wrongGroupCt(ecGamalEncryptedTotalLength);
+        wrongGroupCt.data()[0] = ecCompressedPrefixEvenY;
+        std::memcpy(wrongGroupCt.data() + 1, kP256GeneratorX, 32);
+        wrongGroupCt.data()[ecGamalEncryptedLength] = ecCompressedPrefixEvenY;
+        std::memcpy(wrongGroupCt.data() + ecGamalEncryptedLength + 1, kP256GeneratorX, 32);
+
+        // A 33-byte commitment using the same wrong-curve x-coordinate.
+        Buffer wrongGroupCommitment(ecPedersenCommitmentLength);
+        wrongGroupCommitment.data()[0] = ecCompressedPrefixEvenY;
+        std::memcpy(wrongGroupCommitment.data() + 1, kP256GeneratorX, 32);
+
+        // sender's encrypted amount uses a coordinate from the wrong curve
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(3),
+            .senderEncryptedAmt = wrongGroupCt,
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // recipient's encrypted amount uses a coordinate from the wrong curve
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(3),
+            .destEncryptedAmt = wrongGroupCt,
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // issuer's encrypted amount uses a coordinate from the wrong curve
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(3),
+            .issuerEncryptedAmt = wrongGroupCt,
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // amount commitment uses a coordinate from the wrong curve
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(3),
+            .amountCommitment = wrongGroupCommitment,
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecBAD_PROOF,
+        });
+
+        // balance commitment uses a coordinate from the wrong curve
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(3),
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = wrongGroupCommitment,
+            .err = tecBAD_PROOF,
+        });
+    }
+
+    // Reject an all-zero "null" public key.
+    //
+    // Every account in a confidential transfer needs a real public key —
+    // a specific point on the secp256k1 curve derived from a secret number
+    // only that account knows. An all-zero key (33 bytes of 0x00) is not
+    // a real key. It has no secret behind it, and encrypting data to it
+    // would not actually hide anything. The validator must reject it at
+    // preflight so no account can ever register a broken key.
+    void
+    testIdentityElementRejection(FeatureBitset features)
+    {
+        testcase("Send: all-zero public key rejected");
+        using namespace test::jtx;
+
+        // 33 zero bytes — not a real public key; no valid secret maps to this.
+        Buffer const nullKey = makeZeroBuffer(ecPubKeyLength);
+
+        // Recipient (holder) tries to register an all-zero key.
+        // Must be rejected so no account ends up with an unprotected balance.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 50);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            // recipient (carol) tries to register an all-zero key
+            mptAlice.convert({
+                .account = carol,
+                .amt = 10,
+                .holderPubKey = nullKey,
+                .err = temMALFORMED,
+            });
+
+            // sender (bob) tries to register an all-zero key
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .holderPubKey = nullKey,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Issuer tries to register an all-zero key.
+        // The issuer's key is used to encrypt the issuer's copy of every
+        // transfer amount.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = nullKey,
+                .err = temMALFORMED,
+            });
+        }
+    }
+
     /* This test ensures that when sending confidential tokens, the encrypted
      * amounts are securely locked to the correct accounts' official public keys.
      *
@@ -7563,6 +7998,325 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         }
     }
 
+    // Basic tests of confidential transfer through delegation. Verifies that a delegated account
+    // with the appropriate permissions can execute confidential transfer transactions
+    // on behalf of the delegator.
+    void
+    testConfidentialDelegation(FeatureBitset features)
+    {
+        testcase("Confidential transfers through delegation");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        env.fund(XRP(10000), dave);
+        env.close();
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags =
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 200);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Bob delegates Convert, MergeInbox to dave.
+        env(delegate::set(bob, dave, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        env.close();
+
+        // Carol has no permission from bob to convert on his behalf.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 10,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = carol,
+            .err = terNO_DELEGATE_PERMISSION,
+        });
+
+        // Dave executes Convert on behalf of bob, registering bob's key.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = dave,
+        });
+        env.require(mptbalance(mptAlice, bob, 100));
+
+        // Dave executes Convert again on behalf of bob (no key registration).
+        mptAlice.convert({.account = bob, .amt = 50, .delegate = dave});
+
+        // Dave executes MergeInbox on behalf of bob.
+        mptAlice.mergeInbox({.account = bob, .delegate = dave});
+
+        // Carol converts and merge inbox.
+        mptAlice.convert({
+            .account = carol,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+        mptAlice.mergeInbox({.account = carol});
+
+        // Dave does not have permission to send on behalf of bob.
+        mptAlice.send(
+            {.account = bob,
+             .dest = carol,
+             .amt = 10,
+             .delegate = dave,
+             .err = terNO_DELEGATE_PERMISSION});
+
+        // Bob delegates ConfidentialMPTSend to dave.
+        env(delegate::set(
+            bob,
+            dave,
+            {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox", "ConfidentialMPTSend"}));
+        env.close();
+
+        // Dave executes Send on behalf of bob.
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10, .delegate = dave});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Dave does not have permission to convert back on behalf of bob.
+        mptAlice.convertBack(
+            {.account = bob, .amt = 10, .delegate = dave, .err = terNO_DELEGATE_PERMISSION});
+
+        // Bob delegates ConfidentialMPTConvertBack to dave.
+        env(delegate::set(
+            bob,
+            dave,
+            {"ConfidentialMPTConvert",
+             "ConfidentialMPTMergeInbox",
+             "ConfidentialMPTSend",
+             "ConfidentialMPTConvertBack"}));
+        env.close();
+
+        // Dave executes ConvertBack on behalf of bob.
+        mptAlice.convertBack({.account = bob, .amt = 10, .delegate = dave});
+
+        // Dave does not have permission to clawback on behalf of alice.
+        mptAlice.confidentialClaw(
+            {.holder = bob, .amt = 130, .delegate = dave, .err = terNO_DELEGATE_PERMISSION});
+
+        // Alice delegates ConfidentialMPTClawback to dave.
+        env(delegate::set(alice, dave, {"ConfidentialMPTClawback"}));
+        env.close();
+
+        // Dave executes Clawback on behalf of alice.
+        mptAlice.confidentialClaw({.holder = bob, .amt = 130, .delegate = dave});
+    }
+
+    // Verifies that revoking delegation prevents further delegated operations.
+    void
+    testDelegationRevocation(FeatureBitset features)
+    {
+        testcase("Confidential delegation revocation");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        env.fund(XRP(10000), carol);
+        env.close();
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.pay(alice, bob, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Creating the Delegate SLE consumes one owner reserve slot for bob.
+        auto const bobOwnersBefore = ownerCount(env, bob);
+        env(delegate::set(bob, carol, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        env.close();
+        env.require(owners(bob, bobOwnersBefore + 1));
+
+        // Carol converts and merge inbox on behalf of bob.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = carol,
+        });
+        mptAlice.mergeInbox({.account = bob, .delegate = carol});
+
+        // Bob revokes all permissions, deletes the Delegate SLE, releasing the reserve.
+        env(delegate::set(bob, carol, std::vector<std::string>{}));
+        env.close();
+        env.require(owners(bob, bobOwnersBefore));
+
+        // Carol can no longer convert on behalf of bob.
+        mptAlice.convert({
+            .account = bob,
+            .amt = 30,
+            .delegate = carol,
+            .err = terNO_DELEGATE_PERMISSION,
+        });
+
+        // Bob can still convert by himself.
+        mptAlice.convert({.account = bob, .amt = 30});
+    }
+
+    // Verifies that a delegated confidential transfer works correctly when an
+    // auditor is configured on the issuance.
+    void
+    testDelegationWithAuditor(FeatureBitset features)
+    {
+        testcase("Confidential delegation with auditor");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const auditor{"auditor"};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+        env.fund(XRP(10000), dave);
+        env.close();
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(auditor);
+        mptAlice.set(
+            {.issuerPubKey = mptAlice.getPubKey(alice),
+             .auditorPubKey = mptAlice.getPubKey(auditor)});
+
+        // Bob delegates Convert and Send permissions to dave.
+        env(delegate::set(bob, dave, {"ConfidentialMPTSend", "ConfidentialMPTConvert"}));
+        env.close();
+
+        // Dave converts on behalf of bob.
+        mptAlice.convert(
+            {.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob), .delegate = dave});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({
+            .account = carol,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+        mptAlice.mergeInbox({.account = carol});
+
+        // Dave sends on behalf of bob.
+        mptAlice.send({.account = bob, .dest = carol, .amt = 20, .delegate = dave});
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10, .delegate = dave});
+
+        // Bob delegates ConvertBack and Send permissions to auditor.
+        env(delegate::set(bob, auditor, {"ConfidentialMPTSend", "ConfidentialMPTConvertBack"}));
+        env.close();
+
+        // auditor can send and convert back on behalf of bob as well.
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10, .delegate = auditor});
+        mptAlice.convertBack({.account = bob, .amt = 10, .delegate = auditor});
+    }
+
+    // Verifies that a non-issuer delegating clawback to a third party does not
+    // allow that party to execute clawback, since clawback is issuer-only.
+    void
+    testDelegationClawbackIssuerOnly(FeatureBitset features)
+    {
+        testcase("Confidential clawback delegation requires issuer");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        env.fund(XRP(10000), dave);
+        env.close();
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+        });
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+        });
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({
+            .account = carol,
+            .amt = 100,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+        mptAlice.mergeInbox({.account = carol});
+
+        // Bob delegates Clawback permission to dave.
+        env(delegate::set(bob, dave, {"ConfidentialMPTClawback"}));
+        env.close();
+
+        // Dave attempts clawback on behalf of bob targetting bob, but since bob is not the issuer,
+        // the transaction should be rejected.
+        {
+            Json::Value jv;
+            jv[jss::Account] = bob.human();
+            jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
+            jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+            jv[sfHolder] = bob.human();
+            jv[sfMPTAmount.jsonName] = "50";
+            jv[sfZKProof.jsonName] = std::string(ecEqualityProofLength * 2, '0');
+            env(jv, delegate::as(dave), ter(temMALFORMED));
+        }
+
+        // Dave attempts clawback on behalf of bob targeting carol, but since bob is not the issuer,
+        // the transaction should be rejected.
+        {
+            Json::Value jv;
+            jv[jss::Account] = bob.human();
+            jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
+            jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
+            jv[sfHolder] = carol.human();
+            jv[sfMPTAmount.jsonName] = "100";
+            jv[sfZKProof.jsonName] = std::string(ecEqualityProofLength * 2, '0');
+            env(jv, delegate::as(dave), ter(temMALFORMED));
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -7613,6 +8367,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testHomomorphicCiphertextModification(features);
         testConvertBackHomomorphicUnderflow(features);
 
+        // invalid curve points
+        testSendInvalidCurvePoints(features);
+        testSendWrongGroupPointInjection(features);
+        testIdentityElementRejection(features);
         testSendWrongIssuerPublicKey(features);
 
         // Replay Tests
@@ -7634,6 +8392,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testBatchOnlyOne(features);
         testBatchUntilFailure(features);
         testBatchIndependent(features);
+
+        // Delegation Tests
+        testConfidentialDelegation(features);
+        testDelegationRevocation(features);
+        testDelegationWithAuditor(features);
+        testDelegationClawbackIssuerOnly(features);
     }
 
 public:
