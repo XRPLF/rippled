@@ -62,4 +62,11 @@ assetFromJson(Json::Value const& v)
     return mptIssueFromJson(v);
 }
 
+std::ostream&
+operator<<(std::ostream& os, Asset const& x)
+{
+    std::visit([&]<ValidIssueType TIss>(TIss const& issue) { os << issue; }, x.value());
+    return os;
+}
+
 }  // namespace xrpl
