@@ -13,6 +13,9 @@ public:
     {
     }
 
+    static bool
+    checkExtraFeatures(xrpl::PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 

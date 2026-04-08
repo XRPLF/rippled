@@ -339,7 +339,7 @@ doSimulate(RPC::JsonContext& context)
     {
         return simulateTxn(context, transaction);
     }
-    // LCOV_EXCL_START this is just in case, so rippled doesn't crash
+    // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
         Json::Value jvResult = Json::objectValue;

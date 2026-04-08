@@ -161,8 +161,10 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     {sfOwner,                soeOPTIONAL},  // for owner directories
     {sfTakerPaysCurrency,    soeOPTIONAL},  // order book directories
     {sfTakerPaysIssuer,      soeOPTIONAL},  // order book directories
+    {sfTakerPaysMPT,         soeOPTIONAL},  // order book directories
     {sfTakerGetsCurrency,    soeOPTIONAL},  // order book directories
     {sfTakerGetsIssuer,      soeOPTIONAL},  // order book directories
+    {sfTakerGetsMPT,         soeOPTIONAL},  // order book directories
     {sfExchangeRate,         soeOPTIONAL},  // order book directories
     {sfIndexes,              soeREQUIRED},
     {sfRootIndex,            soeREQUIRED},
@@ -578,7 +580,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //   The unrounded true total value of the loan.
     //
     // - TrueTotalPrincipalOutstanding can be computed using the algorithm
-    //   in the ripple::detail::loanPrincipalFromPeriodicPayment function.
+    //   in the xrpl::detail::loanPrincipalFromPeriodicPayment function.
     //
     // - TrueTotalInterestOutstanding = TrueTotalLoanValue -
     //      TrueTotalPrincipalOutstanding

@@ -98,11 +98,11 @@ ValidLoanBroker::finalize(
     {
         for (auto const& field : {&sfLowLimit, &sfHighLimit})
         {
-            auto const account = view.read(keylet::account(line->at(*field).getIssuer()));
+            auto const account = AccountRoot(line->at(*field).getIssuer(), view, j);
             // This Invariant doesn't know about the rules for Trust Lines, so
             // if the account is missing, don't treat it as an error. This
             // loop is only concerned with finding Broker pseudo-accounts
-            if (account && account->isFieldPresent(sfLoanBrokerID))
+            if (account.exists() && account->isFieldPresent(sfLoanBrokerID))
             {
                 auto const& loanBrokerID = account->at(sfLoanBrokerID);
                 // create an entry if one doesn't already exist
@@ -112,11 +112,11 @@ ValidLoanBroker::finalize(
     }
     for (auto const& mpt : mpts_)
     {
-        auto const account = view.read(keylet::account(mpt->at(sfAccount)));
+        auto const account = AccountRoot(mpt->at(sfAccount), view, j);
         // This Invariant doesn't know about the rules for MPTokens, so
         // if the account is missing, don't treat is as an error. This
         // loop is only concerned with finding Broker pseudo-accounts
-        if (account && account->isFieldPresent(sfLoanBrokerID))
+        if (account.exists() && account->isFieldPresent(sfLoanBrokerID))
         {
             auto const& loanBrokerID = account->at(sfLoanBrokerID);
             // create an entry if one doesn't already exist

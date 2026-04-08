@@ -204,7 +204,10 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) &&
+        (!doPath ||
+         (!app.getOpenLedger().current()->rules().enabled(featureMPTokensV2) &&
+          amount.holds<MPTIssue>())))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -240,9 +243,11 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer.
+            // If no SendMax, default to Amount with sender as issuer if Issue.
             sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
+            sendMax.asset().visit(
+                [&](Issue const&) { sendMax.get<Issue>().account = srcAddressID; },
+                [](MPTIssue const&) {});
         }
 
         if (sendMax.native() && amount.native())
@@ -258,11 +263,11 @@ checkPayment(
             if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger, app.getJournal("RippleLineCache")),
+                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.asset(),
+                    sendMax.getIssuer(),
                     amount,
                     std::nullopt,
                     domain,
@@ -273,7 +278,7 @@ checkPayment(
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet const paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
                 }
             }
 

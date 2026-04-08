@@ -3177,10 +3177,15 @@ NetworkOPsImp::transJson(
         auto const amount = transaction->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
-        if (account != amount.issue().account)
+        if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(
-                *ledger, account, amount, fhIGNORE_FREEZE, registry_.get().getJournal("View"));
+                *ledger,
+                account,
+                amount,
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }
@@ -4270,8 +4275,8 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    AccountRoot const issuerOut(book.out.account, view);
-    AccountRoot const issuerIn(book.in.account, view);
+    AccountRoot const issuerOut(book.out.getIssuer(), view);
+    AccountRoot const issuerIn(book.in.getIssuer(), view);
     bool const bGlobalFreeze = issuerOut.isGlobalFrozen() || issuerIn.isGlobalFrozen();
 
     bool bDone = false;
@@ -4332,7 +4337,7 @@ NetworkOPsImp::getBookPage(
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
 
-                if (book.out.account == uOfferOwnerID)
+                if (book.out.getIssuer() == uOfferOwnerID)
                 {
                     // If an offer is selling issuer's own IOUs, it is fully
                     // funded.
@@ -4361,9 +4366,9 @@ NetworkOPsImp::getBookPage(
                         saOwnerFunds = accountHolds(
                             view,
                             uOfferOwnerID,
-                            book.out.currency,
-                            book.out.account,
+                            book.out,
                             fhZERO_IF_FROZEN,
+                            ahZERO_IF_UNAUTHORIZED,
                             viewJ);
 
                         if (saOwnerFunds < beast::zero)
@@ -4383,9 +4388,9 @@ NetworkOPsImp::getBookPage(
 
                 if (rate != parityRate
                     // Have a transfer fee.
-                    && uTakerID != book.out.account
+                    && uTakerID != book.out.getIssuer()
                     // Not taking offers of own IOUs.
-                    && book.out.account != uOfferOwnerID)
+                    && book.out.getIssuer() != uOfferOwnerID)
                 // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
@@ -4406,7 +4411,7 @@ NetworkOPsImp::getBookPage(
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
                     std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.issue()))
+                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
@@ -4550,7 +4555,7 @@ NetworkOPsImp::getBookPage(
 
                 // TODO(tom): The result of this expression is not used - what's
                 // going on here?
-                std::min(saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.issue()))
+                std::min(saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
                     .setJson(jvOffer[jss::taker_pays_funded]);
             }
 

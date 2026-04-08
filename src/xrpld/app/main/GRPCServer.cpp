@@ -557,7 +557,7 @@ GRPCServer::start()
     {
         thread_ = std::thread([this]() {
             // Start the event loop and begin handling requests
-            beast::setCurrentThreadName("rippled: grpc");
+            beast::setCurrentThreadName("xrpld: grpc");
             this->impl_.handleRpcs();
         });
     }

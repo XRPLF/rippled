@@ -79,7 +79,7 @@ AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
 
     auto const fullBalance = this->sle_->getFieldAmount(sfBalance);
 
-    auto const balance = this->readView().balanceHook(id_, xrpAccount(), fullBalance);
+    auto const balance = this->readView().balanceHookIOU(id_, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 

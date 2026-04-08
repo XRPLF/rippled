@@ -86,8 +86,8 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
         Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
@@ -132,8 +132,8 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
         Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
@@ -265,8 +265,8 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
         Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
@@ -373,8 +373,8 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
         Account const A2{"A2"};
         Account const broker{"broker"};
         auto const USD{G1["USD"]};
