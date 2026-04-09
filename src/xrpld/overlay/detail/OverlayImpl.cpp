@@ -447,7 +447,8 @@ OverlayImpl::start()
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
-        setup_.ipLimit);
+        setup_.ipLimit,
+        setup_.verifyEndpoints);
 
     m_peerFinder->setConfig(config);
     m_peerFinder->start();
@@ -1469,6 +1470,8 @@ setup_Overlay(BasicConfig const& config)
             if (ec || beast::IP::is_private(setup.public_ip))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
+
+        set(setup.verifyEndpoints, true, "verify_endpoints", section);
     }
 
     {

@@ -52,7 +52,7 @@ public:
         async_connect(beast::IP::Endpoint const& ep, Handler&& handler)
         {
             boost::system::error_code ec;
-            handler(ep, ep, ec);
+            handler(ec);
         }
     };
 
@@ -542,6 +542,84 @@ public:
     }
 
     void
+    test_verify_endpoints()
+    {
+        // Helper that sets up a Logic instance, creates and activates a slot,
+        // then calls on_endpoints with the given list and returns the
+        // livecache size afterwards.
+        auto run = [&](bool verifyEndpoints, Endpoints eps) -> std::size_t {
+            TestStore store;
+            TestChecker checker;
+            TestStopwatch clock;
+            Logic<TestChecker> logic(clock, store, checker, journal_);
+            {
+                Config c;
+                c.autoConnect = false;
+                c.listeningPort = 1024;
+                c.ipLimit = 2;
+                c.verifyEndpoints = verifyEndpoints;
+                logic.config(c);
+            }
+
+            auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
+            auto const local =
+                beast::IP::Endpoint::from_string("65.0.0.2:1024");
+
+            auto const [slot, r] = logic.new_outbound_slot(remote);
+            BEAST_EXPECT(slot != nullptr);
+            BEAST_EXPECT(r == Result::success);
+            BEAST_EXPECT(logic.onConnected(slot, local));
+
+            PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
+            BEAST_EXPECT(logic.activate(slot, pk, false) == Result::success);
+
+            logic.on_endpoints(slot, std::move(eps));
+
+            auto const size = logic.livecache_.size();
+            logic.on_closed(slot);
+            return size;
+        };
+
+        {
+            testcase("verify_endpoints enabled");
+
+            // Valid public addresses
+            Endpoints eps;
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
+            // Invalid: private address
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
+            // Invalid: port 0
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
+
+            // With verification enabled, only the 2 valid endpoints survive
+            BEAST_EXPECT(run(true, eps) == 2);
+        }
+        {
+            testcase("verify_endpoints disabled");
+
+            Endpoints eps;
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
+            // Private address — kept when verification is off
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
+            // Port 0 — kept when verification is off
+            eps.push_back(
+                Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
+
+            // Without verification, all 4 endpoints survive
+            BEAST_EXPECT(run(false, eps) == 4);
+        }
+    }
+
+    void
     test_onConnected_self_connection()
     {
         testcase("test onConnected self connection");
@@ -597,7 +675,7 @@ public:
                 (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config const config = Config::makeConfig(c, port, false, 0);
+            Config config = Config::makeConfig(c, port, false, 0, true);
 
             Counts counts;
             counts.onConfig(config);
@@ -698,6 +776,7 @@ public:
         test_addFixedPeer_no_port();
         test_onConnected_self_connection();
         test_is_valid_address();
+        test_verify_endpoints();
     }
 };
 

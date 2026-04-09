@@ -693,7 +693,7 @@ public:
             }
 
             // Discard invalid addresses
-            if (!is_valid_address(ep.address))
+            if (!is_valid_address(ep.address) && config_.verifyEndpoints)
             {
                 JLOG(m_journal.debug())
                     << beast::leftw(18) << "Endpoints drop " << ep.address << " as invalid";
