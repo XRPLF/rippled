@@ -12,6 +12,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
@@ -6625,6 +6626,57 @@ class MPToken_test : public beast::unit_test::suite
         BEAST_EXPECT(carolOwnersAfterWithdraw == carolOwnersBeforeWithdraw + 1);
     }
 
+    void
+    testTradeAndTransfer()
+    {
+        using namespace jtx;
+        testcase("Trade and Transfer");
+
+        // Verify canMPTTradeAndTransfer validates the flags when from == to and from != to
+
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Env env(*this);
+        env.fund(XRP(1'000), gw, alice, carol);
+
+        MPTTester mpt(
+            {.env = env,
+             .issuer = gw,
+             .holders = {alice, carol},
+             .pay = 100,
+             .flags = MPTDEXFlags,
+             .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanTrade});
+
+        // Both flags are enabled
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, gw, gw)));
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, gw, alice)));
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, alice, alice)));
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, alice, carol)));
+
+        // MPTCanTrade is disabled
+        mpt.set({.mutableFlags = tmfMPTClearCanTrade});
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, gw, gw) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, gw, alice) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, alice) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, carol) == tecNO_PERMISSION);
+
+        // MPTCanTransfer is disabled
+        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, gw, gw)));
+        BEAST_EXPECT(isTesSuccess(canMPTTradeAndTransfer(*env.current(), mpt, gw, alice)));
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, alice) == tecNO_AUTH);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, carol) == tecNO_AUTH);
+
+        // Both flags are disabled
+        mpt.set({.mutableFlags = tmfMPTClearCanTrade});
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, gw, gw) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, gw, alice) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, alice) == tecNO_PERMISSION);
+        BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, alice, carol) == tecNO_PERMISSION);
+    }
+
 public:
     void
     run() override
@@ -6731,6 +6783,9 @@ public:
 
         // Test AMM
         testBasicAMM(all);
+
+        // Test Trade/Transfer
+        testTradeAndTransfer();
 
         // Fixes
         testFixDoubleOwnerCount(all);

@@ -414,8 +414,8 @@ ValidMPTTransfer::finalize(
     if (txnType == ttAMM_CLAWBACK)
         return true;
 
-    // DEX transactions (cross-currency payments, offer creates) are subject to
-    // the MPTCanTrade flag in addition to the standard transfer rules.
+    // DEX transactions (AMM[Create,Deposit,Withdraw], cross-currency payments, offer creates) are
+    // subject to the MPTCanTrade flag in addition to the standard transfer rules.
     // A payment is only DEX if it is a cross-currency payment.
     auto const isDEX = [&tx, &txnType] {
         if (txnType == ttPAYMENT)
@@ -425,10 +425,12 @@ ValidMPTTransfer::finalize(
             auto const amount = tx[sfAmount];
             return tx[~sfSendMax].value_or(amount).asset() != amount.asset();
         }
-        return txnType == ttOFFER_CREATE;
+        return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttAMM_WITHDRAW ||
+            txnType == ttOFFER_CREATE;
     }();
 
     // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
+    // Log invariant failure error even if MPTokensV2 is disabled.
     auto const enforce = !view.rules().enabled(featureMPTokensV2);
 
     for (auto const& [mptID, values] : amount_)
@@ -447,16 +449,10 @@ ValidMPTTransfer::finalize(
 
         for (auto const& [account, value] : values)
         {
-            // Check once: if any involved account is frozen, the whole
-            // issuance transfer is considered frozen.
-            if (!frozen && isFrozen(view, account, MPTIssue{mptID}))
-            {
-                frozen = true;
-            }
-            // Classify each account as a sender or receiver based on whether
-            // their MPTAmount decreased or increased.
-            if (value.amtBefore.has_value() && value.amtAfter.has_value() &&
-                *value.amtBefore != *value.amtAfter)
+            // Classify each account as a sender or receiver based on whether their MPTAmount
+            // decreased or increased. Count new MPToken holders (no amtBefore) as receivers.
+            if (value.amtAfter.has_value() &&
+                (!value.amtBefore.has_value() || *value.amtBefore != *value.amtAfter))
             {
                 if (*value.amtAfter > *value.amtBefore)
                 {
@@ -466,6 +462,13 @@ ValidMPTTransfer::finalize(
                 {
                     ++senders;
                 }
+            }
+            // Check once: if any involved account is frozen, the whole
+            // issuance transfer is considered frozen. Only need to check for
+            // frozen if there is a transfer of funds.
+            if (!frozen && isFrozen(view, account, MPTIssue{mptID}))
+            {
+                frozen = true;
             }
         }
         // A transfer between holders has occurred (senders > 0 && receivers > 0).
