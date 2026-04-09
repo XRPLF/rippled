@@ -1396,14 +1396,11 @@ public:
         env(trust(bob, USD(1000)));
         env.close();
 
-        // sponsored=true should find the sponsorship object for bob
+        // sponsored=true should not find any objects for bob (doesn't have any sponsored objects)
         {
             auto const resp = acctObjsSponsored(bob.id(), true);
             auto const& objs = resp[jss::result][jss::account_objects];
-            // bob has sponsorship object (which has sfSponsor? no - it's in owner dir)
-            // Actually the Sponsorship SLE itself doesn't have sfSponsor on it
-            // Let's just check the count
-            BEAST_EXPECT(objs.size() >= 0);
+            BEAST_EXPECT(objs.size() == 0);
         }
 
         // Now sponsor bob's trust line
@@ -1426,10 +1423,16 @@ public:
             auto const resp = acctObjsSponsored(bob.id(), true);
             auto const& objs = resp[jss::result][jss::account_objects];
             bool foundTrustLine = false;
+            BEAST_EXPECT(objs.size() == 1);
             for (auto const& obj : objs)
             {
                 if (obj[sfLedgerEntryType.jsonName] == jss::RippleState)
+                {
+                    BEAST_EXPECT(
+                        obj.isMember(sfHighSponsor.jsonName) ||
+                        obj.isMember(sfLowSponsor.jsonName));
                     foundTrustLine = true;
+                }
             }
             BEAST_EXPECT(foundTrustLine);
         }
