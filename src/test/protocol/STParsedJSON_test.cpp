@@ -374,7 +374,8 @@ class STParsedJSON_test : public beast::unit_test::suite
                 0xCD,
                 0xEF};
             BEAST_EXPECT(
-                obj.object->getFieldH128(sfEmailHash) == uint128{expected});
+                obj.object->getFieldH128(sfEmailHash) ==
+                uint128::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt128
@@ -467,7 +468,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
             BEAST_EXPECT(
                 obj.object->getFieldH160(sfTakerPaysCurrency) ==
-                uint160{expected});
+                uint160::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt160
         {
@@ -555,7 +556,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
             BEAST_EXPECT(
                 obj.object->getFieldH192(sfMPTokenIssuanceID) ==
-                uint192{expected});
+                uint192::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt192
@@ -655,7 +656,8 @@ class STParsedJSON_test : public beast::unit_test::suite
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
             BEAST_EXPECT(
-                obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
+                obj.object->getFieldH256(sfLedgerHash) ==
+                uint256::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt256
         {

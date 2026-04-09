@@ -66,6 +66,11 @@ struct is_contiguous_container<Slice> : std::true_type
 {
 };
 
+template <typename...>
+struct always_false_t : std::bool_constant<false>
+{
+};
+
 }  // namespace detail
 
 /** Integers of any length that is a multiple of 32-bits
@@ -292,10 +297,31 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
+        // Use always_false_t so the static_assert condition is dependent
+        // and only triggers when this constructor template is instantiated.
+        static_assert(
+            detail::always_false_t<Container>::value,
+            "This constructor is not intended to be used and will be soon "
+            "removed. "
+            "Use base_uint::fromRaw instead.");
+    }
+
+    template <
+        class Container,
+        class = std::enable_if_t<
+            detail::is_contiguous_container<Container>::value &&
+            std::is_trivially_copyable<typename Container::value_type>::value>>
+    static base_uint
+    fromRaw(Container const& c)
+    {
+        base_uint result;
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "ripple::base_uint::base_uint(Container auto) : input size match");
-        std::memcpy(data_.data(), c.data(), size());
+            "xrpl::base_uint::fromRaw(Container auto) : input size match");
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        std::memcpy(result.data_.data(), c.data(), canCopy);
+        return result;
     }
 
     template <class Container>

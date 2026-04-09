@@ -148,7 +148,7 @@ struct base_uint_test : beast::unit_test::suite
         Blob raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
         BEAST_EXPECT(test96::bytes == raw.size());
 
-        test96 u{raw};
+        test96 u = test96::fromRaw(raw);
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
@@ -169,7 +169,8 @@ struct base_uint_test : beast::unit_test::suite
         // back into another base_uint (w) for comparison with the original
         nonhash<96> h;
         hash_append(h, u);
-        test96 w{std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
+        test96 w = test96::fromRaw(
+            std::vector<std::uint8_t>(h.data_.begin(), h.data_.end()));
         BEAST_EXPECT(w == u);
 
         test96 v{~u};

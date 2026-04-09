@@ -1157,7 +1157,8 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
         ripesha_hasher rsh;
         auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret{static_cast<ripesha_hasher::result_type>(rsh)};
+        AccountID const ret =
+            AccountID::fromRaw(static_cast<ripesha_hasher::result_type>(rsh));
         if (!view.read(keylet::account(ret)))
             return ret;
     }

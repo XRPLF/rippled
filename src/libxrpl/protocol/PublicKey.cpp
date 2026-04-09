@@ -323,7 +323,7 @@ calcNodeID(PublicKey const& pk)
 
     ripesha_hasher h;
     h(pk.data(), pk.size());
-    return NodeID{static_cast<ripesha_hasher::result_type>(h)};
+    return NodeID::fromRaw(static_cast<ripesha_hasher::result_type>(h));
 }
 
 }  // namespace ripple
