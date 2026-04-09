@@ -533,7 +533,7 @@ All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-Rippled uses a linear workflow model that can be summarized as:
+Xrpld uses a linear workflow model that can be summarized as:
 
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from

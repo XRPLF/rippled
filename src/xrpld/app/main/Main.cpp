@@ -470,8 +470,8 @@ run(int argc, char** argv)
     }
     catch (std::exception const& ex)
     {
-        std::cerr << "rippled: " << ex.what() << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "xrpld: " << ex.what() << std::endl;
+        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
         return 1;
     }
 
@@ -483,7 +483,7 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
-        std::cout << "rippled version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -492,8 +492,8 @@ run(int argc, char** argv)
 #ifndef ENABLE_TESTS
     if (vm.count("unittest") || vm.count("unittest-child"))
     {
-        std::cerr << "rippled: Tests disabled in this build." << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "xrpld: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
         return 1;
     }
 #else
@@ -529,7 +529,7 @@ run(int argc, char** argv)
     if (vm.contains("unittest-jobs"))
     {
         // unittest jobs only makes sense with `unittest`
-        std::cerr << "rippled: '--unittest-jobs' specified without "
+        std::cerr << "xrpld: '--unittest-jobs' specified without "
                      "'--unittest'.\n";
         std::cerr << "To run the unit tests the '--unittest' option must "
                      "be present.\n";
@@ -793,7 +793,7 @@ run(int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    beast::setCurrentThreadName("rippled: rpc");
+    beast::setCurrentThreadName("xrpld: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP

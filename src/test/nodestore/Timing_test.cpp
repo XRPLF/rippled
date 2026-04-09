@@ -490,7 +490,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key

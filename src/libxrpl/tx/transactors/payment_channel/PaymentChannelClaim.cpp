@@ -1,14 +1,13 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
-
-#include <libxrpl/tx/transactors/payment_channel/PaymentChannelHelpers.h>
 
 namespace xrpl {
 
