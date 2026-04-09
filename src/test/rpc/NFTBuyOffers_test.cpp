@@ -31,7 +31,7 @@ class NFTBuyOffers_test : public beast::unit_test::suite
         {
             Json::Value params{Json::objectValue};
             params[jss::nft_id] = 20;
-            auto const result = env.client().invoke("nft_sell_offers", params)[jss::result];
+            auto const result = env.client().invoke("nft_buy_offers", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
