@@ -1193,9 +1193,9 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
 
             env(fset(gw, asfRequireAuth));
@@ -1660,8 +1660,8 @@ class Delegate_test : public beast::unit_test::suite
         // field not permitted to exist in granular delegation
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
 
             MPTTester mpt(env, alice, {.fund = false});
@@ -2023,9 +2023,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account gw{"gw"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(10000), gw, alice, bob);
 
         env(fset(gw, asfRequireAuth));
