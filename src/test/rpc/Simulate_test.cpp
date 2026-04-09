@@ -4,13 +4,19 @@
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
+#include <xrpld/rpc/RPCHandler.h>
 
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
+#include <xrpl/resource/Fees.h>
 
+#include <condition_variable>
+#include <mutex>
 #include <optional>
 #include <tuple>
 
@@ -1145,6 +1151,96 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLoadType()
+    {
+        // Regression test for issue #6801:
+        // doSimulate must charge feeHeavyBurdenRPC, not feeMediumBurdenRPC,
+        // because it performs full transaction execution (autofill, STTx parse,
+        // OpenView copy, TxQ::apply with preclaim/doclaim/apply).
+        testcase("simulate load type is feeHeavyBurdenRPC");
+        using namespace jtx;
+
+        Env env(*this);
+        env.close();
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // Build a minimal payment tx_json
+        Json::Value tx = Json::objectValue;
+        tx[jss::TransactionType] = jss::Payment;
+        tx[jss::Account] = alice.human();
+        tx[jss::Destination] = bob.human();
+        tx[jss::Amount] = "1000000";
+
+        Json::Value params = Json::objectValue;
+        params[jss::command] = jss::simulate;
+        params[jss::tx_json] = tx;
+
+        // Invoke doSimulate via RPC::doCommand so we can inspect loadType
+        auto& app = env.app();
+        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Consumer c;
+
+        RPC::JsonContext context{
+            {env.journal,
+             app,
+             loadType,
+             app.getOPs(),
+             app.getLedgerMaster(),
+             c,
+             Role::USER,
+             {},
+             {},
+             RPC::apiVersionIfUnspecified},
+            {},
+            {}};
+
+        Json::Value result;
+
+        class gate
+        {
+            std::mutex mutex_;
+            std::condition_variable cv_;
+            bool signaled_ = false;
+
+        public:
+            void
+            signal()
+            {
+                std::lock_guard lock(mutex_);
+                signaled_ = true;
+                cv_.notify_all();
+            }
+
+            template <class Rep, class Period>
+            bool
+            wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+            {
+                std::unique_lock lock(mutex_);
+                return cv_.wait_for(lock, rel_time, [&] { return signaled_; });
+            }
+        };
+
+        gate g;
+        app.getJobQueue().postCoro(
+            jtCLIENT, "RPC-Client", [&](auto const& coro) {
+                context.params = params;
+                context.coro = coro;
+                RPC::doCommand(context, result);
+                g.signal();
+            });
+
+        using namespace std::chrono_literals;
+        BEAST_EXPECT(g.wait_for(5s));
+
+        // The handler must have set loadType to feeHeavyBurdenRPC
+        BEAST_EXPECT(loadType == Resource::feeHeavyBurdenRPC);
+    }
+
 public:
     void
     run() override
@@ -1162,6 +1258,7 @@ public:
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
+        testLoadType();
     }
 };
 
