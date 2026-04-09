@@ -333,22 +333,9 @@ SHAMapStoreImp::run()
             auto newBackend = makeBackendRotating();
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
-            // For in-memory backends, only clear old ledger objects.
-            // Skip FullBelowCache clear—all state nodes are preserved
-            // in the new archive (which received the copyNode data),
-            // so full-below markers remain valid.  Clearing them would
-            // force SHAMap to re-verify every subtree, causing a storm
-            // of backend fetches during consensus.
-            if (!isMemoryBackend_)
-            {
-                clearCaches(validatedSeq);
-                if (healthWait() == stopping)
-                    return;
-            }
-            else
-            {
-                ledgerMaster_->clearLedgerCachePrior(validatedSeq);
-            }
+            clearCaches(validatedSeq);
+            if (healthWait() == stopping)
+                return;
 
             lastRotated = validatedSeq;
 
@@ -361,10 +348,7 @@ SHAMapStoreImp::run()
                     savedState.lastRotated = lastRotated;
                     state_db_.setState(savedState);
 
-                    if (!isMemoryBackend_)
-                        clearCaches(validatedSeq);
-                    else
-                        ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+                    clearCaches(validatedSeq);
                 });
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
