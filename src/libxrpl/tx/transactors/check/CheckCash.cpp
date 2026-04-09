@@ -402,7 +402,7 @@ CheckCash::doApply()
                         //     b. issuing account (not sending account).
 
                         auto dstOpt = checkReserve();
-                        if (dstOpt)
+                        if (!dstOpt)
                             return tecNO_LINE_INSUF_RESERVE;
                         auto& dst = *dstOpt;
 

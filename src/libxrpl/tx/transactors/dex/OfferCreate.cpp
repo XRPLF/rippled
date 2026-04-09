@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -319,8 +320,7 @@ OfferCreate::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (accountID_ != sendMax.getIssuer()))
         {
-            WAccountRoot const wrappedAcct(sendMax.getIssuer(), psb, j_);
-            gatewayXferRate = wrappedAcct.transferRate();
+            gatewayXferRate = transferRate(psb, sendMax);
             if (gatewayXferRate.value != QUALITY_ONE)
             {
                 sendMax =

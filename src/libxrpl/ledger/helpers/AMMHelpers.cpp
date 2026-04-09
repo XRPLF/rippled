@@ -704,7 +704,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         return ter;
 
     auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
-    if (!sb.dirRemove(ownerDirKeylet, (*ammRoot)[sfOwnerNode], ammRoot->key(), false))
+    if (!sb.dirRemove(ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
