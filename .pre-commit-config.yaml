@@ -15,7 +15,6 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: mixed-line-ending
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
@@ -30,6 +29,7 @@ repos:
     rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
     hooks:
       - id: prettier
+        args: [--end-of-line=auto]
 
 exclude: |
   (?x)^(
