@@ -23,7 +23,7 @@ getFeatureValue(boost::beast::http::fields const& headers, std::string const& fe
     if (header == headers.end())
         return {};
     boost::smatch match;
-    boost::regex rx(feature + "=([^;\\s]+)");
+    boost::regex const rx(feature + "=([^;\\s]+)");
     std::string const allFeatures(header->value());
     if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
@@ -99,7 +99,7 @@ makeFeaturesResponseHeader(
     @note This construct is non-standard. There are potential "standard"
           alternatives that should be considered. For a discussion, on
           this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/ripple/rippled/issues/2413.
+          https://github.com/XRPLF/rippled/issues/2413.
 */
 static std::optional<base_uint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
@@ -107,12 +107,12 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     constexpr std::size_t sslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
-    size_t len = get(ssl, buf, sizeof(buf));
+    size_t const len = get(ssl, buf, sizeof(buf));
 
     if (len < sslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher h;
+    sha512_hasher const h;
 
     base_uint<512> cookie;
     SHA512(buf, len, cookie.data());
@@ -166,7 +166,7 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert("Network-Time", std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+    h.insert("Network-Time", std::to_string(app.getTimeKeeper().now().time_since_epoch().count()));
 
     h.insert("Public-Key", toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
@@ -235,7 +235,7 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = app.getTimeKeeper().now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point

@@ -16,7 +16,7 @@ namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 class Logs;
 struct Coro_create_t
@@ -45,7 +45,7 @@ public:
         JobQueue& jq_;
         JobType type_;
         std::string name_;
-        bool running_;
+        bool running_{false};
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
@@ -99,8 +99,8 @@ public:
             Effects:
                The coroutine continues execution from where it last left off
                  using this same thread.
-            Undefined behavior if called after the coroutine has completed
-              with a return (as opposed to a yield()).
+               If the coroutine has already completed, returns immediately
+                 (handles the documented post-before-yield race condition).
             Undefined behavior if resume() or post() called consecutively
               without a corresponding yield.
         */
@@ -224,7 +224,7 @@ private:
 
     beast::Journal m_journal;
     mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob;
+    std::uint64_t m_lastJob{0};
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
@@ -233,7 +233,7 @@ private:
     JobTypeData m_invalidJobData;
 
     // The number of jobs currently in processTask()
-    int m_processCount;
+    int m_processCount{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
@@ -357,8 +357,10 @@ private:
     If the post() job were to be executed before yield(), undefined behavior
     would occur. The lock ensures that coro_ is not called again until we exit
     the coroutine. At which point a scheduled resume() job waiting on the lock
-    would gain entry, harmlessly call coro_ and immediately return as we have
-    already completed the coroutine.
+    would gain entry. resume() checks if the coroutine has already completed
+    (coro_ converts to false) and, if so, skips invoking operator() since
+    calling operator() on a completed boost::coroutine2 pull_type is undefined
+    behavior.
 
     The race condition occurs as follows:
 

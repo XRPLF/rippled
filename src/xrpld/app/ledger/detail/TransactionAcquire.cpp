@@ -30,8 +30,7 @@ TransactionAcquire::TransactionAcquire(
           hash,
           TX_ACQUIRE_TIMEOUT,
           {jtTXN_DATA, "TxAcq", {}},
-          app.journal("TransactionAcquire"))
-    , mHaveRoot(false)
+          app.getJournal("TransactionAcquire"))
     , mPeerSet(std::move(peerSet))
 {
     mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
@@ -162,7 +161,7 @@ TransactionAcquire::takeNodes(
     std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
     std::shared_ptr<Peer> const& peer)
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     if (complete_)
     {
@@ -241,7 +240,7 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::stillNeed()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     timeouts_ = std::min<int>(timeouts_, NORM_TIMEOUTS);
     failed_ = false;

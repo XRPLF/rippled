@@ -34,7 +34,7 @@ public:
         {
             // Insert ourselves at the front of the lock-free linked list
             CountedObjects& instance = CountedObjects::getInstance();
-            Counter* head;
+            Counter* head = nullptr;
 
             do
             {
@@ -99,7 +99,7 @@ private:
     Derived classes have their instances counted automatically. This is used
     for reporting purposes.
 
-    @ingroup ripple_basics
+    @ingroup basics
 */
 template <class Object>
 class CountedObject

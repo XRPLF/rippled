@@ -5,6 +5,7 @@
 #include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/detail/AccountAssets.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -16,12 +17,9 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <chrono>
-#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <thread>
 
 namespace xrpl {
 namespace test {
@@ -100,7 +98,7 @@ public:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -848,7 +846,7 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -890,15 +888,14 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue())) == nullptr);
+        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
     }
 
     void
@@ -941,14 +938,13 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
+        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue())) == nullptr);
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
     }
 
     void
@@ -959,13 +955,13 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const G3{"G3"};
+        Account const M1{"M1"};
 
         env.fund(XRP(100000), A1);
         env.fund(XRP(10000), A2);
@@ -1060,10 +1056,10 @@ public:
             "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G3{"G3"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const G3{"G3"};
+        Account const M1{"M1"};
 
         env.fund(XRP(1000), A1, A2, G3);
         env.fund(XRP(11000), M1);
@@ -1120,11 +1116,11 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G1BS{"G1BS"};
-        Account G2SW{"G2SW"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const G1BS{"G1BS"};
+        Account const G2SW{"G2SW"};
+        Account const M1{"M1"};
 
         env.fund(XRP(1000), G1BS, G2SW, A1, A2);
         env.fund(XRP(11000), M1);
@@ -1206,16 +1202,16 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account G3{"G3"};
-        Account G4{"G4"};
-        Account M1{"M1"};
-        Account M2{"M2"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const G3{"G3"};
+        Account const G4{"G4"};
+        Account const M1{"M1"};
+        Account const M2{"M2"};
 
         env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
         env.fund(XRP(10000), A4);
@@ -1349,12 +1345,12 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account M1{"M1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const G1{"G1"};
+        Account const G2{"G2"};
+        Account const M1{"M1"};
 
         env.fund(XRP(11000), M1);
         env.fund(XRP(1000), A1, A2, A3, G1, G2);
@@ -1539,16 +1535,16 @@ public:
         // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
-            Account A1{"A1"};
-            Account A2{"A2"};
-            Account A3{"A3"};
-            Account A4{"A4"};
-            Account G1{"G1"};
-            Account G2{"G2"};
-            Account G3{"G3"};
-            Account G4{"G4"};
-            Account M1{"M1"};
-            Account M2{"M2"};
+            Account const A1{"A1"};
+            Account const A2{"A2"};
+            Account const A3{"A3"};
+            Account const A4{"A4"};
+            Account const G1{"G1"};
+            Account const G2{"G2"};
+            Account const G3{"G3"};
+            Account const G4{"G4"};
+            Account const M1{"M1"};
+            Account const M2{"M2"};
 
             env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
             env.fund(XRP(10000), A4);
@@ -1815,9 +1811,9 @@ public:
         testcase("AMM not used in domain path");
         using namespace jtx;
         Env env = pathTestEnv();
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
-        AMM amm(env, alice, XRP(10), USD(50));
+        AMM const amm(env, alice, XRP(10), USD(50));
 
         STPathSet st;
         STAmount sa, da;

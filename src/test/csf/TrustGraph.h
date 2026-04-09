@@ -122,9 +122,9 @@ public:
             {
                 auto const& unlA = uniqueUNLs[i];
                 auto const& unlB = uniqueUNLs[j];
-                double rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
+                double const rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
-                int intersectionSize = std::count_if(
+                int const intersectionSize = std::count_if(
                     unlA.begin(), unlA.end(), [&](Peer p) { return unlB.find(p) != unlB.end(); });
 
                 if (intersectionSize < rhs)

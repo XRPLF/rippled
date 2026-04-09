@@ -231,7 +231,7 @@ struct Peer
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
@@ -501,16 +501,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value const& consensusJson)
     {
         onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -520,10 +514,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        Json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
             bool const proposing = mode == ConsensusMode::proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
@@ -550,9 +544,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail &&
                 validations.canValidateSeq(newLedger.seq()))
             {
-                bool isFull = proposing;
+                bool const isFull = proposing;
 
-                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
+                Validation const v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -880,7 +874,7 @@ struct Peer
         issue(StartRound{bestLCL, lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> nowUntrusted;
+        hash_set<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 

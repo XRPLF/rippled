@@ -100,8 +100,8 @@ public:
     void
     testKeypairGenerationAndSigning()
     {
-        std::string const message1 = "http://www.ripple.com";
-        std::string const message2 = "https://www.ripple.com";
+        std::string const message1 = "http://www.xrpl.org";
+        std::string const message2 = "https://www.xrpl.org";
 
         {
             testcase("Node keypair generation & signing (secp256k1)");
