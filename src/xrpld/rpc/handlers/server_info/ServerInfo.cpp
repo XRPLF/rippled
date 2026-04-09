@@ -16,7 +16,9 @@ doServerInfo(RPC::JsonContext& context)
     ret[jss::info] = context.netOps.getServerInfo(
         true,
         context.role == Role::ADMIN,
-        context.params.isMember(jss::counters) && context.params[jss::counters].asBool());
+        context.params.isMember(jss::counters) &&
+            context.params[jss::counters].isBool() &&
+            context.params[jss::counters].asBool());
 
     return ret;
 }
