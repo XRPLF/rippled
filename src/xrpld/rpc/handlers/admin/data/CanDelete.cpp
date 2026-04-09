@@ -46,6 +46,21 @@ doCanDelete(RPC::JsonContext& context)
             {
                 canDeleteSeq = std::numeric_limits<std::uint32_t>::max();
             }
+            else if (canDeleteStr == "now")
+            {
+                canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
+                if (canDeleteSeq == 0u)
+                    return RPC::make_error(rpcNOT_READY);
+            }
+            else if (uint256 lh; lh.parseHex(canDeleteStr))
+            {
+                auto ledger = context.ledgerMaster.getLedgerByHash(lh);
+
+                if (!ledger)
+                    return RPC::make_error(rpcLGR_NOT_FOUND, "ledgerNotFound");
+
+                canDeleteSeq = ledger->header().seq;
+            }
             else
             {
                 return RPC::make_error(rpcINVALID_PARAMS);
@@ -53,9 +68,10 @@ doCanDelete(RPC::JsonContext& context)
         }
         else
         {
-            // Not a uint or string: reject with INVALID_PARAMS
             return RPC::make_error(rpcINVALID_PARAMS);
         }
+
+        ret[jss::can_delete] = context.app.getSHAMapStore().setCanDelete(canDeleteSeq);
     }
     else
     {
