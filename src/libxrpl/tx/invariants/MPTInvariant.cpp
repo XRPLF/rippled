@@ -414,7 +414,7 @@ ValidMPTTransfer::finalize(
     if (txnType == ttAMM_CLAWBACK)
         return true;
 
-    // DEX transactions (payments, check cash, offer creates) are subject to
+    // DEX transactions (cross-currency payments, offer creates) are subject to
     // the MPTCanTrade flag in addition to the standard transfer rules.
     // A payment is only DEX if it is a cross-currency payment.
     auto const isDEX = [&tx, &txnType] {
