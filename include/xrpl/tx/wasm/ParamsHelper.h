@@ -32,6 +32,20 @@ struct WasmResult
 };
 typedef WasmResult<int32_t> EscrowResult;
 
+struct WasmRuntimeWrapper
+{
+    virtual ~WasmRuntimeWrapper() = default;
+
+    virtual wmem
+    getMem() = 0;
+
+    virtual std::int64_t
+    getGas() = 0;
+
+    virtual std::int64_t
+    setGas(std::int64_t gas) = 0;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum WasmTypes { WT_I32, WT_I64, WT_U8V };

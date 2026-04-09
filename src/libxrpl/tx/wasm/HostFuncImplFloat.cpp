@@ -96,7 +96,7 @@ public:
             std::cout << std::setw(2) << (unsigned)c << " ";
         std::cout << std::dec << std::setfill(' ') << std::endl;
 #endif
-        return data;
+        return Expected<Bytes, HostFunctionError>(std::move(data));
     }
 };
 

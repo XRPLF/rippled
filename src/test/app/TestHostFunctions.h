@@ -15,7 +15,7 @@ namespace test {
 struct TestLedgerDataProvider : public HostFunctions
 {
     jtx::Env& env_;
-    void const* rt_ = nullptr;
+    void* rt_ = nullptr;
 
 public:
     TestLedgerDataProvider(jtx::Env& env) : HostFunctions(env.journal), env_(env)
@@ -23,12 +23,12 @@ public:
     }
 
     virtual void
-    setRT(void const* rt) override
+    setRT(void* rt) override
     {
         rt_ = rt;
     }
 
-    virtual void const*
+    virtual void*
     getRT() const override
     {
         return rt_;
@@ -47,7 +47,7 @@ struct TestHostFunctions : public HostFunctions
     AccountID accountID_;
     Bytes data_;
     int clock_drift_ = 0;
-    void const* rt_ = nullptr;
+    void* rt_ = nullptr;
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
@@ -59,12 +59,12 @@ public:
     }
 
     virtual void
-    setRT(void const* rt) override
+    setRT(void* rt) override
     {
         rt_ = rt;
     }
 
-    virtual void const*
+    virtual void*
     getRT() const override
     {
         return rt_;

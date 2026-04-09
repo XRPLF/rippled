@@ -2,6 +2,8 @@
 
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/WasmiVM.h>
 
 namespace xrpl {
 namespace test {
@@ -35,18 +37,21 @@ toBytes(uint256 const& value)
 }
 
 static Bytes
+toBytes(Issue const& issue)
+{
+    Serializer s;
+    s.addBitString(issue.currency);
+    if (!isXRP(issue.currency))
+        s.addBitString(issue.account);
+    auto const data = s.getData();
+    return data;
+}
+
+static Bytes
 toBytes(Asset const& asset)
 {
     if (asset.holds<Issue>())
-    {
-        Serializer s;
-        auto const& issue = asset.get<Issue>();
-        s.addBitString(issue.currency);
-        if (!isXRP(issue.currency))
-            s.addBitString(issue.account);
-        auto const data = s.getData();
-        return data;
-    }
+        return toBytes(asset.get<Issue>());
 
     auto const& mptIssue = asset.get<MPTIssue>();
     auto const& mptID = mptIssue.getMptID();
@@ -58,6 +63,16 @@ toBytes(STAmount const& amount)
 {
     Serializer msg;
     amount.add(msg);
+    auto const data = msg.getData();
+
+    return data;
+}
+
+static Bytes
+toBytes(STNumber const& number)
+{
+    Serializer msg;
+    number.add(msg);
     auto const data = msg.getData();
 
     return data;
@@ -83,6 +98,175 @@ createApplyContext(
     return createApplyContext(env, ov, env.journal, tx);
 }
 
+class VirtualRuntime : public WasmRuntimeWrapper
+{
+    Bytes buffer_;
+    std::int64_t gas_ = 1'000'000;
+
+public:
+    VirtualRuntime() : buffer_(1024 * 1024)
+    {
+    }
+
+    wmem
+    getMem() override
+    {
+        return {buffer_.data(), buffer_.size()};
+    }
+
+    std::int64_t
+    getGas() override
+    {
+        gas_ -= 100;
+        return gas_;
+    }
+
+    std::int64_t
+    setGas(std::int64_t gas) override
+    {
+        if (gas == -2)
+            return -1;
+
+        if (gas < 0)
+        {
+            gas_ = std::numeric_limits<decltype(gas)>::max();
+        }
+        else
+        {
+            gas_ = gas;
+        }
+
+        return gas_;
+    }
+
+    void
+    checkIdx(WasmValVec const& params, size_t i) const
+    {
+        if (i + 1 >= params.size())
+            Throw<std::runtime_error>("Out of bounds");
+        if (params[i].kind != WASM_I32 || params[i + 1].kind != WASM_I32)
+            Throw<std::runtime_error>("Invalid params");
+        std::int32_t const ptr = params[i].of.i32;
+        std::int32_t const size = params[i + 1].of.i32;
+        std::int64_t const offset = (std::int64_t)ptr + size;
+        if (ptr < 0 || size < 0 || std::cmp_greater_equal(offset, buffer_.size()))
+            Throw<std::runtime_error>("Out of bounds");
+    }
+
+    Slice
+    getBuffer(WasmValVec const& params, size_t i) const
+    {
+        checkIdx(params, i);
+        std::int32_t const ptr = params[i].of.i32;
+        std::int32_t const size = params[i + 1].of.i32;
+        return {&buffer_[ptr], static_cast<size_t>(size)};
+    }
+
+    Bytes
+    getBytes(WasmValVec const& params, size_t i) const
+    {
+        checkIdx(params, i);
+        std::int32_t const ptr = params[i].of.i32;
+        std::int32_t const size = params[i + 1].of.i32;
+        return {&buffer_[ptr], &buffer_[ptr + size]};
+    }
+
+    void
+    setBytes(size_t ptr, void const* bytes, size_t size)
+    {
+        if (ptr + size >= buffer_.size())
+            Throw<std::runtime_error>("Out of bounds");
+        memcpy(&buffer_[ptr], bytes, size);
+    }
+
+    template <class T>
+    T
+    getInt(WasmValVec const& params, size_t i) const
+    {
+        checkIdx(params, i);
+        std::int32_t const ptr = params[i].of.i32;
+        std::int32_t const size = params[i + 1].of.i32;
+        if (size != sizeof(T))
+            Throw<std::runtime_error>("Invalid size");
+        return *reinterpret_cast<T const*>(&buffer_[ptr]);
+    }
+
+    std::int32_t
+    getInt32(WasmValVec const& params, size_t i) const
+    {
+        return getInt<std::int32_t>(params, i);
+    }
+
+    std::uint32_t
+    getUint32(WasmValVec const& params, size_t i) const
+    {
+        return getInt<std::uint32_t>(params, i);
+    }
+
+    std::int64_t
+    getInt64(WasmValVec const& params, size_t i) const
+    {
+        return getInt<std::int64_t>(params, i);
+    }
+
+    std::uint64_t
+    getUint64(WasmValVec const& params, size_t i) const
+    {
+        return getInt<std::uint64_t>(params, i);
+    }
+};
+
+template <class P, class E, typename Arg>
+void
+ww_hlp(size_t& idx, E&& e, P&& params, Arg&& arg)
+{
+    if constexpr (std::is_integral_v<Arg>)
+    {
+        params[idx++] = std::is_same_v<Arg, int64_t> || std::is_same_v<Arg, long long>
+            ? wasm_val_t WASM_I64_VAL(static_cast<int64_t>(arg))
+            : wasm_val_t WASM_I32_VAL(static_cast<int32_t>(arg));
+    }
+    else if constexpr (std::is_same_v<Arg, Issue>)
+    {
+        auto const* udata = reinterpret_cast<WasmUserData*>(e);
+        HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
+        auto* vrt = reinterpret_cast<VirtualRuntime*>(hf->getRT());
+
+        auto const data = toBytes(std::forward<Arg>(arg));
+
+        size_t const ptr = (idx << 10);
+        vrt->setBytes(ptr, data.data(), data.size());
+        params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(ptr));
+        params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(data.size()));
+    }
+    else
+    {
+        auto const* udata = reinterpret_cast<WasmUserData*>(e);
+        HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
+        auto* vrt = reinterpret_cast<VirtualRuntime*>(hf->getRT());
+
+        size_t const ptr = (idx << 10);
+        vrt->setBytes(ptr, arg.data(), arg.size());
+        params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(ptr));
+        params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(arg.size()));
+    }
+}
+
+// Helper wrapper to call WASM wrapper functions with automatic parameter packing
+template <class F, class E, class P, typename... Args>
+wasm_trap_t*
+ww(F&& f, E&& e, P&& params, P&& result, Args... args)
+{
+    size_t idx = 0;
+    (ww_hlp(idx, std::forward<E>(e), std::forward<P>(params), std::forward<Args>(args)),
+     ...);                                                     // NOLINT
+    return f(std::forward<E>(e), params.get(), result.get());  // NOLINT
+}
+
+constexpr int64_t min64 = std::numeric_limits<int64_t>::min();
+constexpr int64_t max64 = std::numeric_limits<int64_t>::max();
+constexpr int32_t FLOAT_SIZE = 12;
+
 struct HostFuncImpl_test : public beast::unit_test::suite
 {
     void
@@ -95,11 +279,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto const result = hfs.getLedgerSqn();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->header().seq);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        {
+            // hfs.getLedgerSqn();
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerSqn_wrap, &import[0], params, result, 0, sizeof(std::uint32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
+                BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->header().seq);
+        }
     }
 
     void
@@ -109,18 +304,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            OpenView ov{*env.current()};
-            ApplyContext ac = createApplyContext(env, ov);
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
-            auto const result = hfs.getParentLedgerTime();
-            if (BEAST_EXPECT(result.has_value()))
-            {
+            // hfs.getParentLedgerTime();
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getParentLedgerTime_wrap, &import[1], params, result, 0, sizeof(std::uint32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
                 BEAST_EXPECT(
-                    result.value() == env.current()->parentCloseTime().time_since_epoch().count());
-            }
+                    vrt.getUint32(params, 0) ==
+                    env.current()->parentCloseTime().time_since_epoch().count());
         }
     }
 
@@ -134,12 +337,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        auto const result = hfs.getParentLedgerHash();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->header().parentHash);
+        {
+            // hfs.getParentLedgerHash();
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getParentLedgerHash_wrap, &import[2], params, result, 0, uint256::bytes);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == uint256::bytes);
+            auto const resultBytes = vrt.getBytes(params, 0);
+            auto const expectedHash = env.current()->header().parentHash;
+            BEAST_EXPECT(
+                resultBytes.size() == uint256::bytes &&
+                std::memcmp(resultBytes.data(), expectedHash.data(), uint256::bytes) == 0);
+        }
     }
 
     void
@@ -152,12 +369,21 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        auto const result = hfs.getBaseFee();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == env.current()->fees().base.drops());
+        // hfs.getBaseFee();
+        {
+            WasmValVec params(2), result(1);
+            auto* trap = ww(getBaseFee_wrap, &import[3], params, result, 0, sizeof(std::uint32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
+                BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->fees().base.drops());
+        }
     }
 
     void
@@ -170,40 +396,58 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Use featureTokenEscrow for testing
         auto const amendmentId = featureTokenEscrow;
 
-        // Test by id
+        // hfs.isAmendmentEnabled(amendmentId);
         {
-            auto const result = hfs.isAmendmentEnabled(amendmentId);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 1);
+            WasmValVec params(2), result(1);
+            vrt.setBytes(0, amendmentId.data(), uint256::bytes);
+            auto* trap = ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, uint256::bytes);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
-        // Test by name
         std::string const amendmentName = "TokenEscrow";
+        // hfs.isAmendmentEnabled(amendmentName);
         {
-            auto const result = hfs.isAmendmentEnabled(amendmentName);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 1);
+            WasmValVec params(2), result(1);
+            vrt.setBytes(0, amendmentName.data(), amendmentName.size());
+            auto* trap =
+                ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, amendmentName.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
-        // Test with a fake amendment id (all zeros)
         uint256 const fakeId;
+        // hfs.isAmendmentEnabled(fakeId);
         {
-            auto const result = hfs.isAmendmentEnabled(fakeId);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 0);
+            WasmValVec params(2), result(1);
+            vrt.setBytes(0, fakeId.data(), uint256::bytes);
+            auto* trap = ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, uint256::bytes);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
 
-        // Test with a fake amendment name
         std::string const fakeName = "FakeAmendment";
+        // hfs.isAmendmentEnabled(fakeName);
         {
-            auto const result = hfs.isAmendmentEnabled(fakeName);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 0);
+            WasmValVec params(2), result(1);
+            vrt.setBytes(0, fakeName.data(), fakeName.size());
+            auto* trap =
+                ww(isAmendmentEnabled_wrap, &import[4], params, result, 0, fakeName.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
     }
 
@@ -219,38 +463,127 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const dummyEscrow = keylet::escrow(env.master, 2);
         auto const accountKeylet = keylet::account(env.master);
         {
+            VirtualRuntime vrt;
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-            BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, -1).error() ==
-                HostFunctionError::SLOT_OUT_RANGE);
-            BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, 257).error() ==
-                HostFunctionError::SLOT_OUT_RANGE);
-            BEAST_EXPECT(
-                hfs.cacheLedgerObj(dummyEscrow.key, 0).error() ==
-                HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 0).value() == 1);
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
+            // hfs.cacheLedgerObj(accountKeylet.key, -1);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, -1);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+            }
+
+            // hfs.cacheLedgerObj(accountKeylet.key, 257);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 257);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+            }
+
+            // hfs.cacheLedgerObj(dummyEscrow.key, 0);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, dummyEscrow.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
+            }
+
+            // hfs.cacheLedgerObj(accountKeylet.key, 0);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 1);
+            }
+
+            vrt.setGas(2'000'000);
             for (int i = 1; i <= 256; ++i)
             {
-                auto const result = hfs.cacheLedgerObj(accountKeylet.key, i);
-                BEAST_EXPECT(result.has_value() && result.value() == i);
+                // hfs.cacheLedgerObj(accountKeylet.key, i);
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, i);
+
+                if (!(BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                      BEAST_EXPECTS(
+                          result[0].of.i32 == i,
+                          "result: " + std::to_string(result[0].of.i32) +
+                              ", expected: " + std::to_string(i))))
+                    break;
             }
-            BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
+
+            // hfs.cacheLedgerObj(accountKeylet.key, 0);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOTS_FULL));
+            }
         }
 
         {
+            VirtualRuntime vrt;
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
+
+            vrt.setGas(2'000'000);
             for (int i = 1; i <= 256; ++i)
             {
-                auto const result = hfs.cacheLedgerObj(accountKeylet.key, 0);
-                BEAST_EXPECT(result.has_value() && result.value() == i);
+                // hfs.cacheLedgerObj(accountKeylet.key, 0);
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+
+                if (!(BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                      BEAST_EXPECTS(
+                          result[0].of.i32 == i,
+                          "result: " + std::to_string(result[0].of.i32) +
+                              ", expected: " + std::to_string(i))))
+                    break;
             }
-            BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, 0).error() == HostFunctionError::SLOTS_FULL);
+
+            // hfs.cacheLedgerObj(accountKeylet.key, 0);
+            {
+                WasmValVec params(3), result(1);
+                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                auto* trap =
+                    ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOTS_FULL));
+            }
         }
     }
 
@@ -280,42 +613,139 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
 
         {
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
-            auto const account = hfs.getTxField(sfAccount);
-            BEAST_EXPECT(account && std::ranges::equal(*account, env.master.id()));
+            VirtualRuntime vrt;
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-            auto const owner = hfs.getTxField(sfOwner);
-            BEAST_EXPECT(owner && std::ranges::equal(*owner, env.master.id()));
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
-            auto const txType = hfs.getTxField(sfTransactionType);
-            BEAST_EXPECT(txType && *txType == toBytes(ttESCROW_FINISH));
-
-            auto const offerSeq = hfs.getTxField(sfOfferSequence);
-            BEAST_EXPECT(offerSeq && *offerSeq == toBytes(env.seq(env.master)));
-
-            auto const notPresent = hfs.getTxField(sfDestination);
-            if (BEAST_EXPECT(!notPresent.has_value()))
-                BEAST_EXPECT(notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
-
-            auto const memos = hfs.getTxField(sfMemos);
-            if (BEAST_EXPECT(!memos.has_value()))
-                BEAST_EXPECT(memos.error() == HostFunctionError::NOT_LEAF_FIELD);
-
-            auto const credentialIds = hfs.getTxField(sfCredentialIDs);
-            if (BEAST_EXPECT(!credentialIds.has_value()))
+            // hfs.getTxField(sfAccount);
             {
-                BEAST_EXPECTS(
-                    credentialIds.error() == HostFunctionError::NOT_LEAF_FIELD,
-                    std::to_string(HfErrorToInt(credentialIds.error())));
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import[6],
+                       params,
+                       result,
+                       sfAccount.getCode(),
+                       0,
+                       AccountID::bytes);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == AccountID::bytes);
+                auto const accountBytes = vrt.getBytes(params, 1);
+                BEAST_EXPECT(std::ranges::equal(accountBytes, env.master.id()));
             }
 
-            auto const nonField = hfs.getTxField(sfInvalid);
-            if (BEAST_EXPECT(!nonField.has_value()))
-                BEAST_EXPECT(nonField.error() == HostFunctionError::FIELD_NOT_FOUND);
+            // hfs.getTxField(sfOwner);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import[6],
+                       params,
+                       result,
+                       sfOwner.getCode(),
+                       0,
+                       AccountID::bytes);
 
-            auto const nonField2 = hfs.getTxField(sfGeneric);
-            if (BEAST_EXPECT(!nonField2.has_value()))
-                BEAST_EXPECT(nonField2.error() == HostFunctionError::FIELD_NOT_FOUND);
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == AccountID::bytes);
+                auto const ownerBytes = vrt.getBytes(params, 1);
+                BEAST_EXPECT(std::ranges::equal(ownerBytes, env.master.id()));
+            }
+
+            // hfs.getTxField(sfTransactionType);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap,
+                       &import[6],
+                       params,
+                       result,
+                       sfTransactionType.getCode(),
+                       0,
+                       256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 > 0);
+                auto txTypeBytes = vrt.getBytes(params, 1);
+                txTypeBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(txTypeBytes == toBytes(ttESCROW_FINISH));
+            }
+
+            // hfs.getTxField(sfOfferSequence);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap = ww(
+                    getTxField_wrap, &import[6], params, result, sfOfferSequence.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 > 0);
+                auto offerSeqBytes = vrt.getBytes(params, 1);
+                offerSeqBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(offerSeqBytes == toBytes(env.seq(env.master)));
+            }
+
+            // hfs.getTxField(sfDestination);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap = ww(
+                    getTxField_wrap, &import[6], params, result, sfDestination.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+            }
+
+            // hfs.getTxField(sfMemos);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfMemos.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::NOT_LEAF_FIELD));
+            }
+
+            // hfs.getTxField(sfCredentialIDs);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap = ww(
+                    getTxField_wrap, &import[6], params, result, sfCredentialIDs.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+                BEAST_EXPECTS(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NOT_LEAF_FIELD),
+                    std::to_string(result[0].of.i32));
+            }
+
+            // hfs.getTxField(sfInvalid);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfInvalid.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+            }
+
+            // hfs.getTxField(sfGeneric);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfGeneric.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+            }
         }
 
         {
@@ -326,14 +756,38 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, iouAsset.issue()});
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
+            VirtualRuntime vrt;
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
-            auto const asset = hfs.getTxField(sfAsset);
-            std::vector<std::uint8_t> const expectedAsset(20, 0);
-            BEAST_EXPECT(asset && *asset == expectedAsset);
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
-            auto const asset2 = hfs.getTxField(sfAsset2);
-            BEAST_EXPECT(asset2 && *asset2 == toBytes(Asset(iouAsset)));
+            // hfs.getTxField(sfAsset);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfAsset.getCode(), 0, 256);
+
+                std::vector<std::uint8_t> const expectedAsset(20, 0);
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 > 0);
+                auto assetBytes = vrt.getBytes(params, 1);
+                assetBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(assetBytes == expectedAsset);
+            }
+
+            // hfs.getTxField(sfAsset2);
+            {
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfAsset2.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 > 0);
+                auto asset2Bytes = vrt.getBytes(params, 1);
+                asset2Bytes.resize(result[0].of.i32);
+                BEAST_EXPECT(asset2Bytes == toBytes(Asset(iouAsset)));
+            }
         }
 
         {
@@ -345,18 +799,40 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, MPTIssue{mptId}});
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
+            VirtualRuntime vrt;
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
-            auto const asset = hfs.getTxField(sfAsset);
-            if (BEAST_EXPECT(asset.has_value()))
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
+
+            // hfs.getTxField(sfAsset);
             {
-                BEAST_EXPECT(*asset == toBytes(Asset(iouAsset)));
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfAsset.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+                if (BEAST_EXPECT(result[0].of.i32 > 0))
+                {
+                    auto assetBytes = vrt.getBytes(params, 1);
+                    assetBytes.resize(result[0].of.i32);
+                    BEAST_EXPECT(assetBytes == toBytes(Asset(iouAsset)));
+                }
             }
 
-            auto const asset2 = hfs.getTxField(sfAsset2);
-            if (BEAST_EXPECT(asset2.has_value()))
+            // hfs.getTxField(sfAsset2);
             {
-                BEAST_EXPECT(*asset2 == toBytes(Asset(mptId)));
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfAsset2.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+                if (BEAST_EXPECT(result[0].of.i32 > 0))
+                {
+                    auto assetBytes = vrt.getBytes(params, 1);
+                    assetBytes.resize(result[0].of.i32);
+                    BEAST_EXPECT(assetBytes == toBytes(Asset(mptId)));
+                }
             }
         }
 
@@ -367,12 +843,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 obj.setFieldU8(sfAssetScale, expectedScale);
             });
             ApplyContext ac2 = createApplyContext(env, ov, stx2);
-            WasmHostFunctionsImpl const hfs(ac2, dummyEscrow);
+            VirtualRuntime vrt;
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
-            auto const actualScale = hfs.getTxField(sfAssetScale);
-            if (BEAST_EXPECT(actualScale.has_value()))
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
+
+            // hfs.getTxField(sfAssetScale);
             {
-                BEAST_EXPECT(std::ranges::equal(*actualScale, toBytes(expectedScale)));
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getTxField_wrap, &import[6], params, result, sfAssetScale.getCode(), 0, 256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+                if (BEAST_EXPECT(result[0].of.i32 > 0))
+                {
+                    auto assetBytes = vrt.getBytes(params, 1);
+                    assetBytes.resize(result[0].of.i32);
+                    BEAST_EXPECT(std::ranges::equal(assetBytes, toBytes(expectedScale)));
+                }
             }
         }
     }
@@ -397,39 +886,116 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const escrowKeylet = keylet::escrow(env.master, env.seq(env.master) - 1);
         BEAST_EXPECT(env.le(escrowKeylet));
 
-        WasmHostFunctionsImpl const hfs(ac, escrowKeylet);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
-        // Should return the Account field from the escrow ledger object
-        auto const account = hfs.getCurrentLedgerObjField(sfAccount);
-        if (BEAST_EXPECTS(account.has_value(), std::to_string(static_cast<int>(account.error()))))
-            BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        // Should return the Amount field from the escrow ledger object
-        auto const amountField = hfs.getCurrentLedgerObjField(sfAmount);
-        if (BEAST_EXPECT(amountField.has_value()))
+        // hfs.getCurrentLedgerObjField(sfAccount);
         {
-            BEAST_EXPECT(*amountField == toBytes(XRP(100)));
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjField_wrap,
+                   &import[7],
+                   params,
+                   result,
+                   sfAccount.getCode(),
+                   0,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
+            {
+                auto accountBytes = vrt.getBytes(params, 1);
+                accountBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(accountBytes, env.master.id()));
+            }
         }
 
-        // Should return the PreviousTxnID field from the escrow ledger object
-        auto const previousTxnId = hfs.getCurrentLedgerObjField(sfPreviousTxnID);
-        if (BEAST_EXPECT(previousTxnId.has_value()))
+        // hfs.getCurrentLedgerObjField(sfAmount);
         {
-            BEAST_EXPECT(*previousTxnId == toBytes(env.tx()->getTransactionID()));
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjField_wrap,
+                   &import[7],
+                   params,
+                   result,
+                   sfAmount.getCode(),
+                   0,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+            {
+                auto amountBytes = vrt.getBytes(params, 1);
+                amountBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(amountBytes == toBytes(XRP(100)));
+            }
         }
 
-        // Should return nullopt for a field not present
-        auto const notPresent = hfs.getCurrentLedgerObjField(sfOwner);
-        BEAST_EXPECT(
-            !notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // hfs.getCurrentLedgerObjField(sfPreviousTxnID);
+        {
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjField_wrap,
+                   &import[7],
+                   params,
+                   result,
+                   sfPreviousTxnID.getCode(),
+                   0,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+            {
+                auto previousTxnIdBytes = vrt.getBytes(params, 1);
+                previousTxnIdBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(previousTxnIdBytes == toBytes(env.tx()->getTransactionID()));
+            }
+        }
+
+        // hfs.getCurrentLedgerObjField(sfOwner);
+        {
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjField_wrap,
+                   &import[7],
+                   params,
+                   result,
+                   sfOwner.getCode(),
+                   0,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+        }
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl const hfs2(ac, dummyEscrow);
-            auto const account = hfs2.getCurrentLedgerObjField(sfAccount);
-            if (BEAST_EXPECT(!account.has_value()))
+            VirtualRuntime vrt2;
+            WasmHostFunctionsImpl hfs2(ac, dummyEscrow);
+
+            auto import2 = xrpl::createWasmImport(hfs2);
+            hfs2.setRT(&vrt2);
+
+            // hfs2.getCurrentLedgerObjField(sfAccount);
             {
-                BEAST_EXPECT(account.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+                WasmValVec params(3), result(1);
+                auto* trap =
+                    ww(getCurrentLedgerObjField_wrap,
+                       &import2[7],
+                       params,
+                       result,
+                       sfAccount.getCode(),
+                       0,
+                       256);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
             }
         }
     }
@@ -451,40 +1017,102 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto const accountKeylet = keylet::account(env.master.id());
         auto const escrowKeylet = keylet::escrow(env.master.id(), env.seq(env.master) - 1);
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
-        // Cache the escrow ledger object in slot 1
-        auto cacheResult = hfs.cacheLedgerObj(accountKeylet.key, 1);
-        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        // Should return the Account field from the cached ledger object
-        auto const account = hfs.getLedgerObjField(1, sfAccount);
-        if (BEAST_EXPECTS(account.has_value(), std::to_string(static_cast<int>(account.error()))))
-            BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
-
-        // Should return the Balance field from the cached ledger object
-        auto const balanceField = hfs.getLedgerObjField(1, sfBalance);
-        if (BEAST_EXPECT(balanceField.has_value()))
+        // hfs.cacheLedgerObj(accountKeylet.key, 1);
         {
-            BEAST_EXPECT(*balanceField == toBytes(env.balance(env.master)));
+            WasmValVec params(3), result(1);
+            vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
-        // Should return error for slot out of range
-        auto const outOfRange = hfs.getLedgerObjField(0, sfAccount);
-        BEAST_EXPECT(
-            !outOfRange.has_value() && outOfRange.error() == HostFunctionError::SLOT_OUT_RANGE);
+        // hfs.getLedgerObjField(1, sfAccount);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getLedgerObjField_wrap, &import[8], params, result, 1, sfAccount.getCode(), 0, 256);
 
-        auto const tooHigh = hfs.getLedgerObjField(257, sfAccount);
-        BEAST_EXPECT(!tooHigh.has_value() && tooHigh.error() == HostFunctionError::SLOT_OUT_RANGE);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
+            {
+                auto accountBytes = vrt.getBytes(params, 2);
+                accountBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(accountBytes, env.master.id()));
+            }
+        }
 
-        // Should return error for empty slot
-        auto const emptySlot = hfs.getLedgerObjField(2, sfAccount);
-        BEAST_EXPECT(!emptySlot.has_value() && emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+        // hfs.getLedgerObjField(1, sfBalance);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getLedgerObjField_wrap, &import[8], params, result, 1, sfBalance.getCode(), 0, 256);
 
-        // Should return error for field not present
-        auto const notPresent = hfs.getLedgerObjField(1, sfOwner);
-        BEAST_EXPECT(
-            !notPresent.has_value() && notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+            {
+                auto balanceBytes = vrt.getBytes(params, 2);
+                balanceBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(balanceBytes == toBytes(env.balance(env.master)));
+            }
+        }
+
+        // hfs.getLedgerObjField(0, sfAccount);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getLedgerObjField_wrap, &import[8], params, result, 0, sfAccount.getCode(), 0, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+        }
+
+        // hfs.getLedgerObjField(257, sfAccount);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getLedgerObjField_wrap,
+                   &import[8],
+                   params,
+                   result,
+                   257,
+                   sfAccount.getCode(),
+                   0,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+        }
+
+        // hfs.getLedgerObjField(2, sfAccount);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getLedgerObjField_wrap, &import[8], params, result, 2, sfAccount.getCode(), 0, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EMPTY_SLOT));
+        }
+
+        // hfs.getLedgerObjField(1, sfOwner);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getLedgerObjField_wrap, &import[8], params, result, 1, sfOwner.getCode(), 0, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+        }
     }
 
     void
@@ -516,84 +1144,140 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         ApplyContext ac = createApplyContext(env, ov, stx);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        // hfs.getTxNestedField(locator);
         {
             // Locator for sfMemos[0].sfMemo.sfMemoData
             // Locator is a sequence of int32_t codes:
             // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
-            std::vector<int32_t> locatorVec = {sfMemos.fieldCode, 0, sfMemoData.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
+            std::vector<int32_t> const locatorVec = {sfMemos.fieldCode, 0, sfMemoData.fieldCode};
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
 
-            auto const result = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getTxNestedField_wrap,
+                   &import[9],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                std::string const memoData(result.value().begin(), result.value().end());
+                auto memoDataBytes = vrt.getBytes(params, 2);
+                memoDataBytes.resize(result[0].of.i32);
+                std::string const memoData(memoDataBytes.begin(), memoDataBytes.end());
                 BEAST_EXPECT(memoData == "hello");
             }
         }
 
+        // hfs.getTxNestedField(locator);
         {
             // Locator for sfCredentialIDs[0]
             std::vector<int32_t> locatorVec = {sfCredentialIDs.fieldCode, 0};
-            Slice const locator(
+            vrt.setBytes(
+                0,
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
 
-            auto const result = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getTxNestedField_wrap,
+                   &import[9],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                std::string const credIdResult(result.value().begin(), result.value().end());
+                auto credIdBytes = vrt.getBytes(params, 2);
+                credIdBytes.resize(result[0].of.i32);
+                std::string const credIdResult(credIdBytes.begin(), credIdBytes.end());
                 BEAST_EXPECT(strHex(credIdResult) == credIdHex);
             }
         }
 
+        // hfs.getTxNestedField(locator);
         {
             // can use the nested locator for base fields too
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
 
-            auto const account = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(
-                    account.has_value(), std::to_string(static_cast<int>(account.error()))))
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getTxNestedField_wrap,
+                   &import[9],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
+                auto accountBytes = vrt.getBytes(params, 2);
+                accountBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(accountBytes, env.master.id()));
             }
         }
 
+        // hfs.getTxNestedField(locator);
         {
             // unaligned locator
             std::vector<uint8_t> locatorVec(sizeof(int32_t) + 1);
             memcpy(locatorVec.data() + 1, &sfAccount.fieldCode, sizeof(int32_t));
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data() + 1), sizeof(int32_t));
+            vrt.setBytes(0, locatorVec.data() + 1, sizeof(int32_t));
 
-            auto const account = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECTS(
-                    account.has_value(), std::to_string(static_cast<int>(account.error()))))
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getTxNestedField_wrap, &import[9], params, result, 0, sizeof(int32_t), 256, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                BEAST_EXPECT(std::ranges::equal(*account, env.master.id()));
+                auto accountBytes = vrt.getBytes(params, 2);
+                accountBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(accountBytes, env.master.id()));
             }
         }
 
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getTxNestedField(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+
+            WasmValVec params(4), result(1);
+            // hfs.getTxNestedField(locator);
+            auto* trap =
+                ww(getTxNestedField_wrap,
+                   &import[9],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
+
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent base field
         expectError(
             {sfSigners.fieldCode,  // sfSigners does not exist
@@ -601,6 +1285,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::FIELD_NOT_FOUND);
 
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent index
         expectError(
             {sfMemos.fieldCode,
@@ -608,11 +1293,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfMemoData.fieldCode},
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent index
         expectError(
             {sfCredentialIDs.fieldCode, 1},  // index 1 does not exist
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // hfs.getTxNestedField(locator);
         // Locator for negative index (STArray)
         expectError(
             {sfMemos.fieldCode,
@@ -620,16 +1307,19 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfMemoData.fieldCode},
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // hfs.getTxNestedField(locator);
         // Locator for negative index (STVector256)
         expectError(
             {sfCredentialIDs.fieldCode, -1},  // negative index
             HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent nested field
         expectError(
             {sfMemos.fieldCode, 0, sfURI.fieldCode},  // sfURI does not exist in the memo
             HostFunctionError::FIELD_NOT_FOUND);
 
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent base sfield
         expectError(
             {field_code(20000, 20000),  // nonexistent SField code
@@ -637,6 +1327,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::INVALID_FIELD);
 
+        // hfs.getTxNestedField(locator);
         // Locator for non-existent nested sfield
         expectError(
             {sfMemos.fieldCode,  // nonexistent SField code
@@ -644,6 +1335,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              field_code(20000, 20000)},
             HostFunctionError::INVALID_FIELD);
 
+        // hfs.getTxNestedField(locator);
         // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
         expectError(
             {-1,  // sfInvalid's field code
@@ -651,6 +1343,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::FIELD_NOT_FOUND);
 
+        // hfs.getTxNestedField(locator);
         // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
         expectError(
             {0,  // sfGeneric's field code
@@ -658,23 +1351,28 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::FIELD_NOT_FOUND);
 
+        // hfs.getTxNestedField(locator);
         // Locator for very negative base sfield code (not in knownCodeToField map)
         expectError(
             {std::numeric_limits<int32_t>::min(), 0, sfAccount.fieldCode},
             HostFunctionError::INVALID_FIELD);
 
+        // hfs.getTxNestedField(locator);
         // Locator for negative nested sfield code in STObject context
         // (sfMemos[0] is an STObject, then -1 is looked up as SField)
         expectError(
             {sfMemos.fieldCode, 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
             HostFunctionError::FIELD_NOT_FOUND);
 
+        // hfs.getTxNestedField(locator);
         // Locator for STArray
         expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
 
+        // hfs.getTxNestedField(locator);
         // Locator for STVector256
         expectError({sfCredentialIDs.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
 
+        // hfs.getTxNestedField(locator);
         // Locator for nesting into non-array/object field
         expectError(
             {sfAccount.fieldCode,  // sfAccount is not an array or object
@@ -682,17 +1380,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::LOCATOR_MALFORMED);
 
+        // hfs.getTxNestedField(locator);
         // Locator for empty locator
         expectError({}, HostFunctionError::LOCATOR_MALFORMED);
 
+        // hfs.getTxNestedField(locator);
         // Locator for malformed locator (not multiple of 4)
         {
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-            Slice const malformedLocator(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
-            auto const malformedResult = hfs.getTxNestedField(malformedLocator);
-            BEAST_EXPECT(
-                !malformedResult.has_value() &&
-                malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+            vrt.setBytes(0, locatorVec.data(), 3);
+
+            WasmValVec params(4), result(1);
+            auto* trap = ww(getTxNestedField_wrap, &import[9], params, result, 0, 3, 256, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
         }
     }
 
@@ -715,39 +1418,68 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto const signerKeylet = keylet::signers(env.master.id());
         BEAST_EXPECT(env.le(signerKeylet));
 
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        // hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
         // Locator for base field
-        std::vector<int32_t> baseLocator = {sfSignerQuorum.fieldCode};
-        Slice const baseLocatorSlice(
-            reinterpret_cast<uint8_t const*>(baseLocator.data()),
-            baseLocator.size() * sizeof(int32_t));
-        auto const signerQuorum = hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
-        if (BEAST_EXPECTS(
-                signerQuorum.has_value(), std::to_string(static_cast<int>(signerQuorum.error()))))
         {
-            BEAST_EXPECT(*signerQuorum == toBytes(static_cast<uint32_t>(2)));
+            std::vector<int32_t> baseLocator = {sfSignerQuorum.fieldCode};
+            vrt.setBytes(0, baseLocator.data(), baseLocator.size() * sizeof(int32_t));
+
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedField_wrap,
+                   &import[10],
+                   params,
+                   result,
+                   0,
+                   baseLocator.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
+            {
+                auto signerQuorumBytes = vrt.getBytes(params, 2);
+                signerQuorumBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(signerQuorumBytes == toBytes(static_cast<uint32_t>(2)));
+            }
         }
 
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getCurrentLedgerObjNestedField(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+
+            WasmValVec params(4), result(1);
+            // hfs.getCurrentLedgerObjNestedField(locator);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedField_wrap,
+                   &import[10],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
+        // hfs.getCurrentLedgerObjNestedField(locator);
         // Locator for non-existent base field
         expectError(
             {sfSigners.fieldCode,  // sfSigners does not exist
              0,
              sfAccount.fieldCode},
             HostFunctionError::FIELD_NOT_FOUND);
+
+        // hfs.getCurrentLedgerObjNestedField(locator);
         // Locator for nesting into non-array/object field
         expectError(
             {sfSignerQuorum.fieldCode,  // sfSignerQuorum is not an array or object
@@ -755,36 +1487,60 @@ struct HostFuncImpl_test : public beast::unit_test::suite
              sfAccount.fieldCode},
             HostFunctionError::LOCATOR_MALFORMED);
 
+        // hfs.getCurrentLedgerObjNestedField(emptyLocator);
         // Locator for empty locator
-        Slice const emptyLocator(nullptr, 0);
-        auto const emptyResult = hfs.getCurrentLedgerObjNestedField(emptyLocator);
-        BEAST_EXPECT(
-            !emptyResult.has_value() &&
-            emptyResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+        {
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getCurrentLedgerObjNestedField_wrap, &import[10], params, result, 0, 0, 256, 256);
 
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+        }
+
+        // hfs.getCurrentLedgerObjNestedField(malformedLocator);
         // Locator for malformed locator (not multiple of 4)
-        std::vector<int32_t> malformedLocatorVec = {sfMemos.fieldCode};
-        Slice const malformedLocator(
-            reinterpret_cast<uint8_t const*>(malformedLocatorVec.data()), 3);
-        auto const malformedResult = hfs.getCurrentLedgerObjNestedField(malformedLocator);
-        BEAST_EXPECT(
-            !malformedResult.has_value() &&
-            malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+        {
+            std::vector<int32_t> malformedLocatorVec = {sfMemos.fieldCode};
+            vrt.setBytes(0, malformedLocatorVec.data(), 3);
 
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                getCurrentLedgerObjNestedField_wrap, &import[10], params, result, 0, 3, 256, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+        }
+
+        // hfs.getCurrentLedgerObjNestedField(locator);
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
+            VirtualRuntime vrt2;
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+
+            auto import2 = xrpl::createWasmImport(dummyHfs);
+            dummyHfs.setRT(&vrt2);
+
             std::vector<int32_t> const locatorVec = {sfAccount.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = dummyHfs.getCurrentLedgerObjNestedField(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            vrt2.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedField_wrap,
+                   &import2[10],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND),
+                std::to_string(result[0].of.i32));
         }
     }
 
@@ -805,25 +1561,47 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Cache the SignerList ledger object in slot 1
         auto const signerListKeylet = keylet::signers(env.master.id());
-        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
-        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+        // hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        {
+            WasmValVec params(3), result(1);
+            vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
+            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
+        }
 
         // Locator for sfSignerEntries[0].sfAccount
         {
             std::vector<int32_t> const locatorVec = {
                 sfSignerEntries.fieldCode, 0, sfAccount.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
+            // hfs.getLedgerObjNestedField(1, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap,
+                   &import[11],
+                   params,
+                   result,
+                   1,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
 
-            auto const result = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(result.has_value(), std::to_string(static_cast<int>(result.error()))))
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                BEAST_EXPECT(std::ranges::equal(*result, alice.id()));
+                auto aliceIdBytes = vrt.getBytes(params, 3);
+                aliceIdBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(aliceIdBytes, alice.id()));
             }
         }
 
@@ -831,14 +1609,26 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             std::vector<int32_t> const locatorVec = {
                 sfSignerEntries.fieldCode, 1, sfAccount.fieldCode};
-            Slice const locator = Slice(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result2 = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(
-                    result2.has_value(), std::to_string(static_cast<int>(result2.error()))))
+            // hfs.getLedgerObjNestedField(1, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap,
+                   &import[11],
+                   params,
+                   result,
+                   1,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
-                BEAST_EXPECT(std::ranges::equal(*result2, becky.id()));
+                auto beckyIdBytes = vrt.getBytes(params, 3);
+                beckyIdBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(beckyIdBytes, becky.id()));
             }
         }
 
@@ -846,33 +1636,55 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             std::vector<int32_t> const locatorVec = {
                 sfSignerEntries.fieldCode, 0, sfSignerWeight.fieldCode};
-            Slice const locator = Slice(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const weightResult = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(
-                    weightResult.has_value(),
-                    std::to_string(static_cast<int>(weightResult.error()))))
+            // hfs.getLedgerObjNestedField(1, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap,
+                   &import[11],
+                   params,
+                   result,
+                   1,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
                 // Should be 1
                 auto const expected = toBytes(static_cast<std::uint16_t>(1));
-                BEAST_EXPECT(*weightResult == expected);
+                auto weightBytes = vrt.getBytes(params, 3);
+                weightBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(weightBytes == expected);
             }
         }
 
         // Locator for base field sfSignerQuorum
         {
             std::vector<int32_t> const locatorVec = {sfSignerQuorum.fieldCode};
-            Slice const locator = Slice(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const quorumResult = hfs.getLedgerObjNestedField(1, locator);
-            if (BEAST_EXPECTS(
-                    quorumResult.has_value(),
-                    std::to_string(static_cast<int>(quorumResult.error()))))
+            // hfs.getLedgerObjNestedField(1, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap,
+                   &import[11],
+                   params,
+                   result,
+                   1,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))
             {
                 auto const expected = toBytes(static_cast<std::uint32_t>(2));
-                BEAST_EXPECT(*quorumResult == expected);
+                auto quorumBytes = vrt.getBytes(params, 3);
+                quorumBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(quorumBytes == expected);
             }
         }
 
@@ -880,16 +1692,23 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError,
                                int slot = 1) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getLedgerObjNestedField(slot, locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            // hfs.getLedgerObjNestedField(slot, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap,
+                   &import[11],
+                   params,
+                   result,
+                   slot,
+                   0,
+                   locatorVec.size() * sizeof(int32_t),
+                   256,
+                   256);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
 
         // Error: base field not found
@@ -943,11 +1762,18 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         expectError({}, HostFunctionError::LOCATOR_MALFORMED);
 
         // Error: locator malformed (not multiple of 4)
-        std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode};
-        Slice const locator = Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
-        auto const malformed = hfs.getLedgerObjNestedField(1, locator);
-        BEAST_EXPECT(
-            !malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+        {
+            std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode};
+            // hfs.getLedgerObjNestedField(1, locator);
+            vrt.setBytes(0, locatorVec.data(), 3);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedField_wrap, &import[11], params, result, 1, 0, 3, 256, 256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+        }
     }
 
     void
@@ -986,27 +1812,55 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         ApplyContext ac = createApplyContext(env, ov, stx);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        // Should return 1 for sfMemos
-        auto const memosLen = hfs.getTxArrayLen(sfMemos);
-        if (BEAST_EXPECT(memosLen.has_value()))
-            BEAST_EXPECT(memosLen.value() == 2);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        // Should return 2 for sfMemos
+        // hfs.getTxArrayLen(sfMemos);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfMemos.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+                BEAST_EXPECT(result[0].of.i32 == 2);
+        }
 
         // Should return error for non-array field
-        auto const notArray = hfs.getTxArrayLen(sfAccount);
-        if (BEAST_EXPECT(!notArray.has_value()))
-            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+        // hfs.getTxArrayLen(sfAccount);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfAccount.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
+        }
 
         // Should return error for missing array field
-        auto const missingArray = hfs.getTxArrayLen(sfSigners);
-        if (BEAST_EXPECT(!missingArray.has_value()))
-            BEAST_EXPECT(missingArray.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // hfs.getTxArrayLen(sfSigners);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap = ww(getTxArrayLen_wrap, &import[12], params, result, sfSigners.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+        }
 
         // Should return 1 for sfCredentialIDs
-        auto const credIdsLen = hfs.getTxArrayLen(sfCredentialIDs);
-        if (BEAST_EXPECT(credIdsLen.has_value()))
-            BEAST_EXPECT(credIdsLen.value() == 1);
+        // hfs.getTxArrayLen(sfCredentialIDs);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap =
+                ww(getTxArrayLen_wrap, &import[12], params, result, sfCredentialIDs.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+                BEAST_EXPECT(result[0].of.i32 == 1);
+        }
     }
 
     void
@@ -1026,27 +1880,65 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const signerKeylet = keylet::signers(env.master.id());
-        WasmHostFunctionsImpl const hfs(ac, signerKeylet);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
-        auto const entriesLen = hfs.getCurrentLedgerObjArrayLen(sfSignerEntries);
-        if (BEAST_EXPECT(entriesLen.has_value()))
-            BEAST_EXPECT(entriesLen.value() == 2);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        auto const arrLen = hfs.getCurrentLedgerObjArrayLen(sfMemos);
-        if (BEAST_EXPECT(!arrLen.has_value()))
-            BEAST_EXPECT(arrLen.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // hfs.getCurrentLedgerObjArrayLen(sfSignerEntries);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjArrayLen_wrap,
+                   &import[13],
+                   params,
+                   result,
+                   sfSignerEntries.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+                BEAST_EXPECT(result[0].of.i32 == 2);
+        }
+
+        // hfs.getCurrentLedgerObjArrayLen(sfMemos);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap = ww(
+                getCurrentLedgerObjArrayLen_wrap, &import[13], params, result, sfMemos.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+        }
 
         // Should return NO_ARRAY for non-array field
-        auto const notArray = hfs.getCurrentLedgerObjArrayLen(sfAccount);
-        if (BEAST_EXPECT(!notArray.has_value()))
-            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+        // hfs.getCurrentLedgerObjArrayLen(sfAccount);
+        {
+            WasmValVec params(1), result(1);
+            auto* trap = ww(
+                getCurrentLedgerObjArrayLen_wrap, &import[13], params, result, sfAccount.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
+        }
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
-            auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
-            if (BEAST_EXPECT(!len.has_value()))
-                BEAST_EXPECT(len.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            VirtualRuntime vrt2;
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+
+            auto import2 = xrpl::createWasmImport(dummyHfs);
+            dummyHfs.setRT(&vrt2);
+
+            // auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
+            WasmValVec params(1), result(1);
+            auto* trap = ww(
+                getCurrentLedgerObjArrayLen_wrap, &import2[13], params, result, sfMemos.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
         }
     }
 
@@ -1067,45 +1959,93 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
         auto const signerListKeylet = keylet::signers(env.master.id());
-        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
-        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+        // hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        {
+            WasmValVec params(3), result(1);
+            vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
+            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
+        }
 
         {
-            auto const arrLen = hfs.getLedgerObjArrayLen(1, sfSignerEntries);
-            if (BEAST_EXPECT(arrLen.has_value()))
+            // hfs.getLedgerObjArrayLen(1, sfSignerEntries);
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerObjArrayLen_wrap,
+                   &import[14],
+                   params,
+                   result,
+                   1,
+                   sfSignerEntries.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
             {
                 // Should return 2 for sfSignerEntries
-                BEAST_EXPECT(arrLen.value() == 2);
+                BEAST_EXPECT(result[0].of.i32 == 2);
             }
         }
         {
-            auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
-            if (BEAST_EXPECT(!arrLen.has_value()))
-                BEAST_EXPECT(arrLen.error() == HostFunctionError::SLOT_OUT_RANGE);
+            // hfs.getLedgerObjArrayLen(0, sfSignerEntries);
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerObjArrayLen_wrap,
+                   &import[14],
+                   params,
+                   result,
+                   0,
+                   sfSignerEntries.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
         }
 
         {
             // Should return error for non-array field
-            auto const notArray = hfs.getLedgerObjArrayLen(1, sfAccount);
-            if (BEAST_EXPECT(!notArray.has_value()))
-                BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+            // hfs.getLedgerObjArrayLen(1, sfAccount);
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerObjArrayLen_wrap, &import[14], params, result, 1, sfAccount.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
         }
 
         {
             // Should return error for empty slot
-            auto const emptySlot = hfs.getLedgerObjArrayLen(2, sfSignerEntries);
-            if (BEAST_EXPECT(!emptySlot.has_value()))
-                BEAST_EXPECT(emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+            // hfs.getLedgerObjArrayLen(2, sfSignerEntries);
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerObjArrayLen_wrap,
+                   &import[14],
+                   params,
+                   result,
+                   2,
+                   sfSignerEntries.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EMPTY_SLOT));
         }
 
         {
             // Should return error for missing array field
-            auto const missingArray = hfs.getLedgerObjArrayLen(1, sfMemos);
-            if (BEAST_EXPECT(!missingArray.has_value()))
-                BEAST_EXPECT(missingArray.error() == HostFunctionError::FIELD_NOT_FOUND);
+            // hfs.getLedgerObjArrayLen(1, sfMemos);
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getLedgerObjArrayLen_wrap, &import[14], params, result, 1, sfMemos.fieldCode);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
         }
     }
 
@@ -1128,32 +2068,48 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         ApplyContext ac = createApplyContext(env, ov, stx);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Helper for error checks
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
-                               HostFunctionError expectedError,
-                               int slot = 1) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getTxNestedArrayLen(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+                               HostFunctionError expectedError) {
+            // hfs.getTxNestedArrayLen(locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getTxNestedArrayLen_wrap,
+                   &import[15],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
 
         // Locator for sfMemos
         {
             std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const arrLen = hfs.getTxNestedArrayLen(locator);
-            BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 1);
+            // hfs.getTxNestedArrayLen(locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getTxNestedArrayLen_wrap,
+                   &import[15],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
         // Error: non-array field
@@ -1180,32 +2136,48 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const signerKeylet = keylet::signers(env.master.id());
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Helper for error checks
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
-                               HostFunctionError expectedError,
-                               int slot = 1) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getCurrentLedgerObjNestedArrayLen(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+                               HostFunctionError expectedError) {
+            // hfs.getCurrentLedgerObjNestedArrayLen(locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedArrayLen_wrap,
+                   &import[16],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
 
         // Locator for sfSignerEntries
         {
             std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
-            BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 2);
+            // hfs.getCurrentLedgerObjNestedArrayLen(locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedArrayLen_wrap,
+                   &import[16],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECT(result[0].of.i32 == 2);
         }
 
         // Error: non-array field
@@ -1216,18 +2188,28 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
-            WasmHostFunctionsImpl const dummyHfs(ac, dummyEscrow);
+            VirtualRuntime vrt2;
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+
+            auto import2 = xrpl::createWasmImport(dummyHfs);
+            dummyHfs.setRT(&vrt2);
+
             std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            // auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
+            vrt2.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(2), result(1);
+            auto* trap =
+                ww(getCurrentLedgerObjNestedArrayLen_wrap,
+                   &import2[16],
+                   params,
+                   result,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND),
+                std::to_string(result[0].of.i32));
         }
     }
 
@@ -1247,35 +2229,62 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
         auto const signerListKeylet = keylet::signers(env.master.id());
-        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
-        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+        // hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        {
+            WasmValVec params(3), result(1);
+            vrt.setBytes(0, signerListKeylet.key.data(), uint256::bytes);
+            auto* trap = ww(cacheLedgerObj_wrap, &import[5], params, result, 0, uint256::bytes, 1);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
+        }
 
         // Locator for sfSignerEntries
         std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
-        Slice const locator(
-            reinterpret_cast<uint8_t const*>(locatorVec.data()),
-            locatorVec.size() * sizeof(int32_t));
-        auto const arrLen = hfs.getLedgerObjNestedArrayLen(1, locator);
-        if (BEAST_EXPECT(arrLen.has_value()))
-            BEAST_EXPECT(arrLen.value() == 2);
+        // hfs.getLedgerObjNestedArrayLen(1, locator);
+        {
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedArrayLen_wrap,
+                   &import[17],
+                   params,
+                   result,
+                   1,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            if (BEAST_EXPECT(result[0].of.i32 > 0))
+                BEAST_EXPECT(result[0].of.i32 == 2);
+        }
 
         // Helper for error checks
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
                                HostFunctionError expectedError,
                                int slot = 1) {
-            Slice const locator(
-                reinterpret_cast<uint8_t const*>(locatorVec.data()),
-                locatorVec.size() * sizeof(int32_t));
-            auto const result = hfs.getLedgerObjNestedArrayLen(slot, locator);
-            if (BEAST_EXPECT(!result.has_value()))
-            {
-                BEAST_EXPECTS(
-                    result.error() == expectedError,
-                    std::to_string(static_cast<int>(result.error())));
-            }
+            // hfs.getLedgerObjNestedArrayLen(slot, locator);
+            vrt.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
+            WasmValVec params(3), result(1);
+            auto* trap =
+                ww(getLedgerObjNestedArrayLen_wrap,
+                   &import[17],
+                   params,
+                   result,
+                   slot,
+                   0,
+                   locatorVec.size() * sizeof(int32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
+            BEAST_EXPECTS(
+                result[0].of.i32 == static_cast<int32_t>(expectedError),
+                std::to_string(result[0].of.i32));
         };
 
         // Error: non-array field
@@ -1295,10 +2304,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         expectError({}, HostFunctionError::LOCATOR_MALFORMED);
 
         // Error: locator malformed (not multiple of 4)
-        Slice const malformedLocator(reinterpret_cast<uint8_t const*>(locator.data()), 3);
-        auto const malformed = hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
-        BEAST_EXPECT(
-            !malformed.has_value() && malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+        {
+            // hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
+            vrt.setBytes(0, locatorVec.data(), 3);
+            WasmValVec params(3), result(1);
+            auto* trap = ww(getLedgerObjNestedArrayLen_wrap, &import[17], params, result, 1, 0, 3);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+        }
 
         // Error: locator for non-STArray field
         expectError(
@@ -1321,18 +2336,37 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const escrowKeylet = keylet::escrow(env.master, env.seq(env.master) - 1);
+        VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
         // Should succeed for small data
-        std::vector<uint8_t> data(10, 0x42);
-        auto const result = hfs.updateData(Slice(data.data(), data.size()));
-        BEAST_EXPECT(result.has_value() && result.value() == data.size());
+        Bytes data(10, 0x42);
+        // hfs.updateData(Slice(data.data(), data.size()));
+        {
+            vrt.setBytes(0, data.data(), data.size());
+            WasmValVec params(2), result(1);
+            auto* trap = ww(updateData_wrap, &import[67], params, result, 0, data.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == data.size());
+            BEAST_EXPECT(hfs.getData() && *hfs.getData() == data);
+        }
 
         // Should fail for too large data
-        std::vector<uint8_t> bigData(maxWasmDataLength + 1, 0x42);
-        auto const tooBig = hfs.updateData(Slice(bigData.data(), bigData.size()));
-        if (BEAST_EXPECT(!tooBig.has_value()))
-            BEAST_EXPECT(tooBig.error() == HostFunctionError::DATA_FIELD_TOO_LARGE);
+        Bytes bigData(maxWasmDataLength + 1, 0x42);
+        // hfs.updateData(Slice(bigData.data(), bigData.size()));
+        {
+            vrt.setBytes(0, bigData.data(), bigData.size());
+            WasmValVec params(2), result(1);
+            auto* trap = ww(updateData_wrap, &import[67], params, result, 0, bigData.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE));
+        }
     }
 
     void
@@ -1346,7 +2380,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Generate a keypair and sign a message
         auto const kp = generateKeyPair(KeyType::secp256k1, randomSeed());
@@ -1357,62 +2395,155 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         // Should succeed for valid signature
         {
-            auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()),
-                Slice(sig.data(), sig.size()),
-                Slice(pk.data(), pk.size()));
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 1);
+            // hfs.checkSignature(
+            //     Slice(message.data(), message.size()),
+            //     Slice(sig.data(), sig.size()),
+            //     Slice(pk.data(), pk.size()));
+            vrt.setBytes(0, message.data(), message.size());
+            vrt.setBytes(256, sig.data(), sig.size());
+            vrt.setBytes(512, pk.data(), pk.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   message.size(),
+                   256,
+                   sig.size(),
+                   512,
+                   pk.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
         // Should fail for invalid signature
         {
             std::string badSig(sig.size(), 0xFF);
-            auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()),
-                Slice(badSig.data(), badSig.size()),
-                Slice(pk.data(), pk.size()));
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 0);
+            // hfs.checkSignature(
+            //     Slice(message.data(), message.size()),
+            //     Slice(badSig.data(), badSig.size()),
+            //     Slice(pk.data(), pk.size()));
+            vrt.setBytes(0, message.data(), message.size());
+            vrt.setBytes(256, badSig.data(), badSig.size());
+            vrt.setBytes(512, pk.data(), pk.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   message.size(),
+                   256,
+                   badSig.size(),
+                   512,
+                   pk.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
 
         // Should fail for invalid public key
         {
             std::string badPk(pk.size(), 0x00);
-            auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()),
-                Slice(sig.data(), sig.size()),
-                Slice(badPk.data(), badPk.size()));
-            BEAST_EXPECT(!result.has_value());
-            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+            // hfs.checkSignature(
+            //     Slice(message.data(), message.size()),
+            //     Slice(sig.data(), sig.size()),
+            //     Slice(badPk.data(), badPk.size()));
+            vrt.setBytes(0, message.data(), message.size());
+            vrt.setBytes(256, sig.data(), sig.size());
+            vrt.setBytes(512, badPk.data(), badPk.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   message.size(),
+                   256,
+                   sig.size(),
+                   512,
+                   badPk.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
         }
 
         // Should fail for empty public key
         {
-            auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()),
-                Slice(sig.data(), sig.size()),
-                Slice(nullptr, 0));
-            BEAST_EXPECT(!result.has_value());
-            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+            // hfs.checkSignature(
+            //     Slice(message.data(), message.size()),
+            //     Slice(sig.data(), sig.size()),
+            //     Slice(nullptr, 0));
+            vrt.setBytes(0, message.data(), message.size());
+            vrt.setBytes(256, sig.data(), sig.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   message.size(),
+                   256,
+                   sig.size(),
+                   512,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
         }
 
         // Should fail for empty signature
         {
-            auto const result = hfs.checkSignature(
-                Slice(message.data(), message.size()),
-                Slice(nullptr, 0),
-                Slice(pk.data(), pk.size()));
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 0);
+            // hfs.checkSignature(
+            //     Slice(message.data(), message.size()),
+            //     Slice(nullptr, 0),
+            //     Slice(pk.data(), pk.size()));
+            vrt.setBytes(0, message.data(), message.size());
+            vrt.setBytes(512, pk.data(), pk.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   message.size(),
+                   256,
+                   0,
+                   512,
+                   pk.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
 
         // Should fail for empty message
         {
-            auto const result = hfs.checkSignature(
-                Slice(nullptr, 0), Slice(sig.data(), sig.size()), Slice(pk.data(), pk.size()));
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(result.value() == 0);
+            // hfs.checkSignature(
+            //     Slice(nullptr, 0), Slice(sig.data(), sig.size()), Slice(pk.data(), pk.size()));
+            vrt.setBytes(256, sig.data(), sig.size());
+            vrt.setBytes(512, pk.data(), pk.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkSignature_wrap,
+                   &import[18],
+                   params,
+                   result,
+                   0,
+                   0,
+                   256,
+                   sig.size(),
+                   512,
+                   pk.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
     }
 
@@ -1427,15 +2558,35 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         std::string data = "hello world";
-        auto const result = hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
-        BEAST_EXPECT(result.has_value());
+        // hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
+        {
+            vrt.setBytes(0, data.data(), data.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(computeSha512HalfHash_wrap,
+                   &import[19],
+                   params,
+                   result,
+                   0,
+                   data.size(),
+                   256,
+                   uint256::bytes);
 
-        // Should match direct call to sha512Half
-        auto expected = sha512Half(Slice(data.data(), data.size()));
-        BEAST_EXPECT(result.value() == expected);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == uint256::bytes);
+
+            // Should match direct call to sha512Half
+            auto expected = sha512Half(Slice(data.data(), data.size()));
+            auto hashBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(std::ranges::equal(hashBytes, expected));
+        }
     }
 
     void
@@ -1449,172 +2600,558 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
 
+        auto const usdIssue = env.master["USD"].issue();
+        auto const masterID = env.master.id();
+        auto const baseMpt = makeMptID(1, masterID);
+
+        auto imp = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        // Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
         auto compareKeylet = [](std::vector<uint8_t> const& bytes, Keylet const& kl) {
             return std::ranges::equal(bytes, kl.key);
         };
-// Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
-#define COMPARE_KEYLET(hfsFunc, keyletFunc, ...)                   \
-    {                                                              \
-        auto actual = hfs.hfsFunc(__VA_ARGS__);                    \
-        auto expected = keyletFunc(__VA_ARGS__);                   \
-        if (BEAST_EXPECT(actual.has_value()))                      \
-        {                                                          \
-            BEAST_EXPECT(compareKeylet(actual.value(), expected)); \
-        }                                                          \
-    }
-#define COMPARE_KEYLET_FAIL(hfsFunc, expected, ...)                                        \
-    {                                                                                      \
-        auto actual = hfs.hfsFunc(__VA_ARGS__);                                            \
-        if (BEAST_EXPECT(!actual.has_value()))                                             \
-        {                                                                                  \
-            BEAST_EXPECTS(                                                                 \
-                actual.error() == expected, std::to_string(HfErrorToInt(actual.error()))); \
-        }                                                                                  \
-    }
 
-        COMPARE_KEYLET(accountKeylet, keylet::account, env.master.id());
-        COMPARE_KEYLET_FAIL(accountKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+        {
+            auto const expected = keylet::account(masterID);
+            WasmValVec params(4), result(1);
+            auto* trap = ww(accountKeylet_wrap, &imp[20], params, result, masterID, 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 2);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(ammKeylet, keylet::amm, xrpIssue(), env.master["USD"].issue());
-        COMPARE_KEYLET_FAIL(ammKeylet, HostFunctionError::INVALID_PARAMS, xrpIssue(), xrpIssue());
-        COMPARE_KEYLET_FAIL(
-            ammKeylet,
-            HostFunctionError::INVALID_PARAMS,
-            makeMptID(1, env.master.id()),
-            xrpIssue());
+            auto* trap2 = ww(accountKeylet_wrap, &imp[20], params, result, xrpAccount(), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
-        COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(checkKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        {
+            auto const expected = keylet::amm(xrpIssue(), usdIssue);
+            WasmValVec params(6), result(1);
 
-        std::string const credType = "test";
-        COMPARE_KEYLET(
-            credentialKeylet,
-            keylet::credential,
-            env.master.id(),
-            env.master.id(),
-            Slice(credType.data(), credType.size()));
+            auto* trap =
+                ww(ammKeylet_wrap, &imp[21], params, result, xrpIssue(), usdIssue, 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
+            auto* trap2 =
+                ww(ammKeylet_wrap, &imp[21], params, result, xrpIssue(), xrpIssue(), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 =
+                ww(ammKeylet_wrap, &imp[21], params, result, baseMpt, xrpIssue(), 1024, 32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+        }
+
+        {
+            auto const expected = keylet::check(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(checkKeylet_wrap, &imp[22], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(checkKeylet_wrap, &imp[22], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        std::string const credTypeStr = "test";
+        Slice const credType(credTypeStr.data(), credTypeStr.size());
         Account const alice("alice");
-        constexpr std::string_view longCredType =
-            "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
-            "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
-        static_assert(longCredType.size() > maxCredentialTypeLength);
-        COMPARE_KEYLET_FAIL(
-            credentialKeylet,
-            HostFunctionError::INVALID_PARAMS,
-            env.master.id(),
-            alice.id(),
-            Slice(longCredType.data(), longCredType.size()));
-        COMPARE_KEYLET_FAIL(
-            credentialKeylet,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            alice.id(),
-            Slice(credType.data(), credType.size()));
-        COMPARE_KEYLET_FAIL(
-            credentialKeylet,
-            HostFunctionError::INVALID_ACCOUNT,
-            env.master.id(),
-            xrpAccount(),
-            Slice(credType.data(), credType.size()));
+        {
+            auto const expected = keylet::credential(masterID, masterID, credType);
+            WasmValVec params(8), result(1);
+            auto* trap =
+                ww(credentialKeylet_wrap,
+                   &imp[23],
+                   params,
+                   result,
+                   masterID,
+                   masterID,
+                   credType,
+                   1024,
+                   32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 6);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(didKeylet, keylet::did, env.master.id());
-        COMPARE_KEYLET_FAIL(didKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+            std::string_view constexpr longCredTypeStr =
+                "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
+                "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
+            Slice const longCredType(longCredTypeStr.data(), longCredTypeStr.size());
+            static_assert(longCredTypeStr.size() > maxCredentialTypeLength);
+            auto* trap2 =
+                ww(credentialKeylet_wrap,
+                   &imp[23],
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   longCredType,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
-        COMPARE_KEYLET(delegateKeylet, keylet::delegate, env.master.id(), alice.id());
-        COMPARE_KEYLET_FAIL(
-            delegateKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id());
-        COMPARE_KEYLET_FAIL(
-            delegateKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount());
-        COMPARE_KEYLET_FAIL(
-            delegateKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id());
+            auto* trap3 =
+                ww(credentialKeylet_wrap,
+                   &imp[23],
+                   params,
+                   result,
+                   xrpAccount(),
+                   alice.id(),
+                   credType,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
 
-        COMPARE_KEYLET(depositPreauthKeylet, keylet::depositPreauth, env.master.id(), alice.id());
-        COMPARE_KEYLET_FAIL(
-            depositPreauthKeylet,
-            HostFunctionError::INVALID_PARAMS,
-            env.master.id(),
-            env.master.id());
-        COMPARE_KEYLET_FAIL(
-            depositPreauthKeylet,
-            HostFunctionError::INVALID_ACCOUNT,
-            env.master.id(),
-            xrpAccount());
-        COMPARE_KEYLET_FAIL(
-            depositPreauthKeylet,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            env.master.id());
+            auto* trap4 =
+                ww(credentialKeylet_wrap,
+                   &imp[23],
+                   params,
+                   result,
+                   masterID,
+                   xrpAccount(),
+                   credType,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
-        COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(escrowKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        {
+            auto const expected = keylet::did(masterID);
+            WasmValVec params(4), result(1);
+            auto* trap = ww(didKeylet_wrap, &imp[26], params, result, masterID, 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 2);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 = ww(didKeylet_wrap, &imp[26], params, result, xrpAccount(), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::delegate(masterID, alice.id());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, alice.id(), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, masterID, 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 =
+                ww(delegateKeylet_wrap, &imp[24], params, result, masterID, xrpAccount(), 1024, 32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap4 =
+                ww(delegateKeylet_wrap, &imp[24], params, result, xrpAccount(), masterID, 1024, 32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::depositPreauth(masterID, alice.id());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(depositPreauthKeylet_wrap,
+                   &imp[25],
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   1024,
+                   32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 = ww(
+                depositPreauthKeylet_wrap, &imp[25], params, result, masterID, masterID, 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 =
+                ww(depositPreauthKeylet_wrap,
+                   &imp[25],
+                   params,
+                   result,
+                   masterID,
+                   xrpAccount(),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap4 =
+                ww(depositPreauthKeylet_wrap,
+                   &imp[25],
+                   params,
+                   result,
+                   xrpAccount(),
+                   masterID,
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::escrow(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(escrowKeylet_wrap, &imp[27], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 = ww(
+                escrowKeylet_wrap, &imp[27], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
         Currency const usd = to_currency("USD");
-        COMPARE_KEYLET(lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
-        COMPARE_KEYLET_FAIL(
-            lineKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), usd);
-        COMPARE_KEYLET_FAIL(
-            lineKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), usd);
-        COMPARE_KEYLET_FAIL(
-            lineKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), usd);
-        COMPARE_KEYLET_FAIL(
-            lineKeylet,
-            HostFunctionError::INVALID_PARAMS,
-            env.master.id(),
-            alice.id(),
-            to_currency(""));
-
         {
-            auto actual = hfs.mptIssuanceKeylet(env.master.id(), 1);
-            auto expected = keylet::mptIssuance(1, env.master.id());
-            if (BEAST_EXPECT(actual.has_value()))
+            auto const expected = keylet::line(masterID, alice.id(), usd);
+            WasmValVec params(8), result(1);
+            auto* trap =
+                ww(lineKeylet_wrap, &imp[28], params, result, masterID, alice.id(), usd, 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
             {
-                BEAST_EXPECT(compareKeylet(actual.value(), expected));
+                auto const actual = vrt.getBytes(params, 6);
+                BEAST_EXPECT(compareKeylet(actual, expected));
             }
+
+            auto* trap2 =
+                ww(lineKeylet_wrap, &imp[28], params, result, masterID, masterID, usd, 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 = ww(
+                lineKeylet_wrap, &imp[28], params, result, masterID, xrpAccount(), usd, 1024, 32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap4 = ww(
+                lineKeylet_wrap, &imp[28], params, result, xrpAccount(), masterID, usd, 1024, 32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap5 =
+                ww(lineKeylet_wrap,
+                   &imp[28],
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   to_currency(""),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap5 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
         }
+
         {
-            auto actual = hfs.mptIssuanceKeylet(xrpAccount(), 1);
-            if (BEAST_EXPECT(!actual.has_value()))
-                BEAST_EXPECT(actual.error() == HostFunctionError::INVALID_ACCOUNT);
+            auto const expected = keylet::mptIssuance(1u, masterID);
+            WasmValVec params(6), result(1);
+            auto* trap = ww(
+                mptIssuanceKeylet_wrap, &imp[29], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(mptIssuanceKeylet_wrap,
+                   &imp[29],
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
         }
 
-        auto const sampleMPTID = makeMptID(1, env.master.id());
-        COMPARE_KEYLET(mptokenKeylet, keylet::mptoken, sampleMPTID, alice.id());
-        COMPARE_KEYLET_FAIL(mptokenKeylet, HostFunctionError::INVALID_PARAMS, MPTID{}, alice.id());
-        COMPARE_KEYLET_FAIL(
-            mptokenKeylet, HostFunctionError::INVALID_ACCOUNT, sampleMPTID, xrpAccount());
+        {
+            auto const expected = keylet::mptoken(baseMpt, alice.id());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(mptokenKeylet_wrap, &imp[30], params, result, baseMpt, alice.id(), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(nftOfferKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+            auto* trap2 =
+                ww(mptokenKeylet_wrap, &imp[30], params, result, MPTID{}, alice.id(), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
 
-        COMPARE_KEYLET(offerKeylet, keylet::offer, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(offerKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+            auto* trap3 =
+                ww(mptokenKeylet_wrap, &imp[30], params, result, baseMpt, xrpAccount(), 1024, 32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
-        COMPARE_KEYLET(oracleKeylet, keylet::oracle, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(oracleKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        {
+            auto const expected = keylet::nftoffer(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(nftOfferKeylet_wrap, &imp[31], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(paychanKeylet, keylet::payChan, env.master.id(), alice.id(), 1);
-        COMPARE_KEYLET_FAIL(
-            paychanKeylet, HostFunctionError::INVALID_PARAMS, env.master.id(), env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(
-            paychanKeylet, HostFunctionError::INVALID_ACCOUNT, env.master.id(), xrpAccount(), 1);
-        COMPARE_KEYLET_FAIL(
-            paychanKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), env.master.id(), 1);
+            auto* trap2 = ww(
+                nftOfferKeylet_wrap, &imp[31], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
-        COMPARE_KEYLET(permissionedDomainKeylet, keylet::permissionedDomain, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(
-            permissionedDomainKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        {
+            auto const expected = keylet::offer(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(offerKeylet_wrap, &imp[32], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
-        COMPARE_KEYLET_FAIL(signersKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+            auto* trap2 =
+                ww(offerKeylet_wrap, &imp[32], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
 
-        COMPARE_KEYLET(ticketKeylet, keylet::ticket, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(ticketKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+        {
+            auto const expected = keylet::oracle(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(oracleKeylet_wrap, &imp[33], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
 
-        COMPARE_KEYLET(vaultKeylet, keylet::vault, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(vaultKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+            auto* trap2 = ww(
+                oracleKeylet_wrap, &imp[33], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::payChan(masterID, alice.id(), 1u);
+            WasmValVec params(8), result(1);
+            auto* trap =
+                ww(paychanKeylet_wrap,
+                   &imp[34],
+                   params,
+                   result,
+                   masterID,
+                   alice.id(),
+                   toBytes(1u),
+                   1024,
+                   32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 6);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(paychanKeylet_wrap,
+                   &imp[34],
+                   params,
+                   result,
+                   masterID,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+
+            auto* trap3 =
+                ww(paychanKeylet_wrap,
+                   &imp[34],
+                   params,
+                   result,
+                   masterID,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap3 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+
+            auto* trap4 =
+                ww(paychanKeylet_wrap,
+                   &imp[34],
+                   params,
+                   result,
+                   xrpAccount(),
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap4 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::permissionedDomain(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(permissionedDomainKeylet_wrap,
+                   &imp[35],
+                   params,
+                   result,
+                   masterID,
+                   toBytes(1u),
+                   1024,
+                   32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(permissionedDomainKeylet_wrap,
+                   &imp[35],
+                   params,
+                   result,
+                   xrpAccount(),
+                   toBytes(1u),
+                   1024,
+                   32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::signers(masterID);
+            WasmValVec params(4), result(1);
+            auto* trap = ww(signersKeylet_wrap, &imp[36], params, result, masterID, 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 2);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 = ww(signersKeylet_wrap, &imp[36], params, result, xrpAccount(), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::ticket(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(ticketKeylet_wrap, &imp[37], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 = ww(
+                ticketKeylet_wrap, &imp[37], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
+
+        {
+            auto const expected = keylet::vault(masterID, 1u);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(vaultKeylet_wrap, &imp[38], params, result, masterID, toBytes(1u), 1024, 32);
+            if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
+            {
+                auto const actual = vrt.getBytes(params, 4);
+                BEAST_EXPECT(compareKeylet(actual, expected));
+            }
+
+            auto* trap2 =
+                ww(vaultKeylet_wrap, &imp[38], params, result, xrpAccount(), toBytes(1u), 1024, 32);
+            BEAST_EXPECT(
+                !trap2 && result[0].kind == WASM_I32 &&
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+        }
     }
 
     void
@@ -1641,41 +3178,127 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(alice, env.seq(alice));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Should succeed for valid NFT
         {
-            auto const result = hfs.getNFT(alice.id(), nftId);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(std::ranges::equal(*result, uri));
+            // hfs.getNFT(alice.id(), nftId);
+            vrt.setBytes(0, alice.id().data(), AccountID::bytes);
+            vrt.setBytes(256, nftId.data(), uint256::bytes);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(getNFT_wrap,
+                   &import[39],
+                   params,
+                   result,
+                   0,
+                   AccountID::bytes,
+                   256,
+                   uint256::bytes,
+                   512,
+                   256);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 > 0))
+            {
+                auto uriBytes = vrt.getBytes(params, 4);
+                uriBytes.resize(result[0].of.i32);
+                BEAST_EXPECT(std::ranges::equal(uriBytes, uri));
+            }
         }
 
         // Should fail for invalid account
         {
-            auto const result = hfs.getNFT(xrpAccount(), nftId);
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_ACCOUNT);
+            // hfs.getNFT(xrpAccount(), nftId);
+            vrt.setBytes(0, xrpAccount().data(), AccountID::bytes);
+            vrt.setBytes(256, nftId.data(), uint256::bytes);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(getNFT_wrap,
+                   &import[39],
+                   params,
+                   result,
+                   0,
+                   AccountID::bytes,
+                   256,
+                   uint256::bytes,
+                   512,
+                   256);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_ACCOUNT));
         }
 
         // Should fail for invalid nftId
         {
-            auto const result = hfs.getNFT(alice.id(), uint256());
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+            // hfs.getNFT(alice.id(), uint256());
+            uint256 zeroId;
+            vrt.setBytes(0, alice.id().data(), AccountID::bytes);
+            vrt.setBytes(256, zeroId.data(), uint256::bytes);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(getNFT_wrap,
+                   &import[39],
+                   params,
+                   result,
+                   0,
+                   AccountID::bytes,
+                   256,
+                   uint256::bytes,
+                   512,
+                   256);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
         }
 
         // Should fail for invalid nftId
         {
             auto const badId = token::getNextID(env, alice, 0u, 1u);
-            auto const result = hfs.getNFT(alice.id(), badId);
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            // hfs.getNFT(alice.id(), badId);
+            vrt.setBytes(0, alice.id().data(), AccountID::bytes);
+            vrt.setBytes(256, badId.data(), uint256::bytes);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(getNFT_wrap,
+                   &import[39],
+                   params,
+                   result,
+                   0,
+                   AccountID::bytes,
+                   256,
+                   uint256::bytes,
+                   512,
+                   256);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == HfErrorToInt(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
         }
 
         {
-            auto const result = hfs.getNFT(alice.id(), nftId2);
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(result.error() == HostFunctionError::FIELD_NOT_FOUND);
+            // hfs.getNFT(alice.id(), nftId2);
+            vrt.setBytes(0, alice.id().data(), AccountID::bytes);
+            vrt.setBytes(256, nftId2.data(), uint256::bytes);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(getNFT_wrap,
+                   &import[39],
+                   params,
+                   result,
+                   0,
+                   AccountID::bytes,
+                   256,
+                   uint256::bytes,
+                   512,
+                   256);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::FIELD_NOT_FOUND));
         }
     }
 
@@ -1696,20 +3319,53 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Should succeed for valid NFT id
         {
-            auto const result = hfs.getNFTIssuer(nftId);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(std::ranges::equal(*result, env.master.id()));
+            // hfs.getNFTIssuer(nftId);
+            vrt.setBytes(0, nftId.data(), uint256::bytes);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getNFTIssuer_wrap,
+                   &import[40],
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   256,
+                   AccountID::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == AccountID::bytes))
+            {
+                auto issuerBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(std::ranges::equal(issuerBytes, env.master.id()));
+            }
         }
 
         // Should fail for zero NFT id
         {
-            auto const result = hfs.getNFTIssuer(uint256());
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+            // hfs.getNFTIssuer(uint256());
+            uint256 zeroId;
+            vrt.setBytes(0, zeroId.data(), uint256::bytes);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getNFTIssuer_wrap,
+                   &import[40],
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   256,
+                   AccountID::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
         }
     }
 
@@ -1730,11 +3386,30 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto const result = hfs.getNFTTaxon(nftId);
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(result.value() == taxon);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        // hfs.getNFTTaxon(nftId);
+        vrt.setBytes(0, nftId.data(), uint256::bytes);
+        WasmValVec params(4), result(1);
+        auto* trap =
+            ww(getNFTTaxon_wrap,
+               &import[41],
+               params,
+               result,
+               0,
+               uint256::bytes,
+               256,
+               sizeof(uint32_t));
+
+        if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+            BEAST_EXPECT(result[0].of.i32 == sizeof(uint32_t)))
+        {
+            BEAST_EXPECT(vrt.getUint32(params, 2) == taxon);
+        }
     }
 
     void
@@ -1754,19 +3429,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.getNFTFlags(nftId);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == tfTransferable);
+            // hfs.getNFTFlags(nftId);
+            vrt.setBytes(0, nftId.data(), uint256::bytes);
+            WasmValVec params(2), result(1);
+            auto* trap = ww(getNFTFlags_wrap, &import[42], params, result, 0, uint256::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == tfTransferable);
         }
 
         // Should return 0 for zero NFT id
         {
-            auto const result = hfs.getNFTFlags(uint256());
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == 0);
+            // hfs.getNFTFlags(uint256());
+            uint256 zeroId;
+            vrt.setBytes(0, zeroId.data(), uint256::bytes);
+            WasmValVec params(2), result(1);
+            auto* trap = ww(getNFTFlags_wrap, &import[42], params, result, 0, uint256::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
     }
 
@@ -1787,19 +3475,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.getNFTTransferFee(nftId);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == transferFee);
+            // hfs.getNFTTransferFee(nftId);
+            vrt.setBytes(0, nftId.data(), uint256::bytes);
+            WasmValVec params(2), result(1);
+            auto* trap = ww(getNFTTransferFee_wrap, &import[43], params, result, 0, uint256::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == transferFee);
         }
 
         // Should return 0 for zero NFT id
         {
-            auto const result = hfs.getNFTTransferFee(uint256());
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == 0);
+            // hfs.getNFTTransferFee(uint256());
+            uint256 zeroId;
+            vrt.setBytes(0, zeroId.data(), uint256::bytes);
+            WasmValVec params(2), result(1);
+            auto* trap = ww(getNFTTransferFee_wrap, &import[43], params, result, 0, uint256::bytes);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
     }
 
@@ -1821,19 +3522,54 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.getNFTSerial(nftId);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == serial);
+            // hfs.getNFTSerial(nftId);
+            vrt.setBytes(0, nftId.data(), uint256::bytes);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getNFTSerial_wrap,
+                   &import[44],
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   256,
+                   sizeof(uint32_t));
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(uint32_t)))
+            {
+                BEAST_EXPECT(vrt.getUint32(params, 2) == serial);
+            }
         }
 
         // Should return 0 for zero NFT id
         {
-            auto const result = hfs.getNFTSerial(uint256());
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(result.value() == 0);
+            // hfs.getNFTSerial(uint256());
+            uint256 zeroId;
+            vrt.setBytes(0, zeroId.data(), uint256::bytes);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(getNFTSerial_wrap,
+                   &import[44],
+                   params,
+                   result,
+                   0,
+                   uint256::bytes,
+                   256,
+                   sizeof(uint32_t));
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(uint32_t)))
+            {
+                BEAST_EXPECT(vrt.getUint32(params, 2) == 0);
+            }
         }
     }
 
@@ -1851,30 +3587,50 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "test trace";
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
-            auto const result = hfs.trace(msg, slice, false);
-            if (BEAST_EXPECT(result.has_value()))
+
+            // hfs.trace(msg, slice, false);
             {
-                BEAST_EXPECT(result.value() == 0);
-                auto const messages = sink.messages().str();
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, slice.data(), slice.size());
+                WasmValVec params(5), result(1);
+                auto* trap = ww(
+                    trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 0);
+
+                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0))
+                {
+                    auto const messages = sink.messages().str();
+                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                }
             }
 
-            auto const resultHex = hfs.trace(msg, slice, true);
-            if (BEAST_EXPECT(resultHex.has_value()))
+            // hfs.trace(msg, slice, true);
             {
-                BEAST_EXPECT(resultHex.has_value());
-                BEAST_EXPECT(resultHex.value() == 0);
-                auto const messages = sink.messages().str();
-                std::string hex;
-                hex.reserve(data.size() * 2);
-                boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                BEAST_EXPECT(messages.find(hex) != std::string::npos);
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, slice.data(), slice.size());
+                WasmValVec params(5), result(1);
+                auto* trap = ww(
+                    trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 1);
+
+                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0))
+                {
+                    auto const messages = sink.messages().str();
+                    std::string hex;
+                    hex.reserve(data.size() * 2);
+                    boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
+                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                    BEAST_EXPECT(messages.find(hex) != std::string::npos);
+                }
             }
         }
 
@@ -1887,13 +3643,25 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "test trace";
             std::string data = "abc";
             auto const slice = Slice(data.data(), data.size());
-            auto const result = hfs.trace(msg, slice, false);
-            BEAST_EXPECT(result && *result == 0);
+
+            // hfs.trace(msg, slice, false);
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            vrt.setBytes(256, slice.data(), slice.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(trace_wrap, &import[45], params, result, 0, msg.size(), 256, slice.size(), 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -1913,14 +3681,23 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace number";
             int64_t const num = 123456789;
-            auto const result = hfs.traceNum(msg, num);
-            if (BEAST_EXPECT(result.has_value()))
+
+            // hfs.traceNum(msg, num);
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            WasmValVec params(3), result(1);
+            auto* trap = ww(traceNum_wrap, &import[46], params, result, 0, msg.size(), num);
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0))
             {
-                BEAST_EXPECT(result.value() == 0);
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
                 BEAST_EXPECT(messages.find(std::to_string(num)) != std::string::npos);
@@ -1936,12 +3713,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace number";
             int64_t const num = 123456789;
-            auto const result = hfs.traceNum(msg, num);
-            BEAST_EXPECT(result && *result == 0);
+
+            // hfs.traceNum(msg, num);
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            WasmValVec params(3), result(1);
+            auto* trap = ww(traceNum_wrap, &import[46], params, result, 0, msg.size(), num);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -1961,13 +3748,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace account";
-            auto const result = hfs.traceAccount(msg, env.master.id());
-            if (BEAST_EXPECT(result.has_value()))
+            auto const& accountId = env.master.id();
+
+            // hfs.traceAccount(msg, env.master.id());
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            vrt.setBytes(256, accountId.data(), accountId.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(traceAccount_wrap,
+                   &import[47],
+                   params,
+                   result,
+                   0,
+                   msg.size(),
+                   256,
+                   accountId.size());
+
+            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0))
             {
-                BEAST_EXPECT(result.value() == 0);
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.find(msg) != std::string::npos);
                 BEAST_EXPECT(messages.find(env.master.human()) != std::string::npos);
@@ -1983,10 +3789,31 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
-            std::string const msg = "trace account";
-            auto const result = hfs.traceAccount(msg, env.master.id());
-            BEAST_EXPECT(result && *result == 0);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
+
+            std::string msg = "trace account";
+            auto const& accountId = env.master.id();
+
+            // hfs.traceAccount(msg, env.master.id());
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            vrt.setBytes(256, accountId.data(), accountId.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(traceAccount_wrap,
+                   &import[47],
+                   params,
+                   result,
+                   0,
+                   msg.size(),
+                   256,
+                   accountId.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2006,15 +3833,33 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace amount";
             STAmount const amount = XRP(12345);
             {
-                auto const result = hfs.traceAmount(msg, amount);
-                if (BEAST_EXPECT(result.has_value()))
+                // hfs.traceAmount(msg, amount);
+                Bytes amountBytes = toBytes(amount);
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, amountBytes.data(), amountBytes.size());
+                WasmValVec params(4), result(1);
+                auto* trap =
+                    ww(traceAmount_wrap,
+                       &import[49],
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       amountBytes.size());
+
+                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0))
                 {
-                    BEAST_EXPECT(*result == 0);
                     auto const messages = sink.messages().str();
                     BEAST_EXPECT(messages.find(msg) != std::string::npos);
                     BEAST_EXPECT(messages.find(amount.getFullText()) != std::string::npos);
@@ -2027,9 +3872,23 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             env.close();
             STAmount const iouAmount = env.master["USD"](100);
             {
-                auto const result = hfs.traceAmount(msg, iouAmount);
-                if (BEAST_EXPECT(result.has_value()))
-                    BEAST_EXPECT(*result == 0);
+                // hfs.traceAmount(msg, iouAmount);
+                Bytes amountBytes = toBytes(iouAmount);
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, amountBytes.data(), amountBytes.size());
+                WasmValVec params(4), result(1);
+                auto* trap =
+                    ww(traceAmount_wrap,
+                       &import[49],
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       amountBytes.size());
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0);
             }
 
             // MPT amount
@@ -2037,9 +3896,24 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 auto const mptId = makeMptID(42, env.master.id());
                 Asset const mptAsset = Asset(mptId);
                 STAmount const mptAmount(mptAsset, 123456);
-                auto const result = hfs.traceAmount(msg, mptAmount);
-                if (BEAST_EXPECT(result.has_value()))
-                    BEAST_EXPECT(*result == 0);
+
+                // hfs.traceAmount(msg, mptAmount);
+                Bytes amountBytes = toBytes(mptAmount);
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, amountBytes.data(), amountBytes.size());
+                WasmValVec params(4), result(1);
+                auto* trap =
+                    ww(traceAmount_wrap,
+                       &import[49],
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       amountBytes.size());
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0);
             }
         }
 
@@ -2052,12 +3926,32 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace amount";
             STAmount const amount = XRP(12345);
-            auto const result = hfs.traceAmount(msg, amount);
-            BEAST_EXPECT(result && *result == 0);
+
+            // hfs.traceAmount(msg, amount);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            vrt.setBytes(256, amountBytes.data(), amountBytes.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(traceAmount_wrap,
+                   &import[49],
+                   params,
+                   result,
+                   0,
+                   msg.size(),
+                   256,
+                   amountBytes.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2161,18 +4055,50 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace float";
 
             {
-                auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-                BEAST_EXPECT(result && *result == 0);
+                // hfs.traceFloat(msg, makeSlice(invalid));
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, reinterpret_cast<uint8_t const*>(invalid.data()), invalid.size());
+                WasmValVec params(4), result(1);
+                auto* trap =
+                    ww(traceFloat_wrap,
+                       &import[48],
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       invalid.size());
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0);
             }
 
             {
-                auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
-                BEAST_EXPECT(result && *result == 0);
+                // hfs.traceFloat(msg, makeSlice(floatMaxExp));
+                vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+                vrt.setBytes(256, floatMaxExp.data(), floatMaxExp.size());
+                WasmValVec params(4), result(1);
+                auto* trap =
+                    ww(traceFloat_wrap,
+                       &import[48],
+                       params,
+                       result,
+                       0,
+                       msg.size(),
+                       256,
+                       floatMaxExp.size());
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == 0);
             }
         }
 
@@ -2185,12 +4111,23 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac = createApplyContext(env, ov, jlog);
 
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-            WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+            VirtualRuntime vrt;
+            auto import = xrpl::createWasmImport(hfs);
+            hfs.setRT(&vrt);
 
             std::string const msg = "trace float";
 
-            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
-            BEAST_EXPECT(result && *result == 0);
+            // hfs.traceFloat(msg, makeSlice(invalid));
+            vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
+            vrt.setBytes(256, reinterpret_cast<uint8_t const*>(invalid.data()), invalid.size());
+            WasmValVec params(4), result(1);
+            auto* trap = ww(
+                traceFloat_wrap, &import[48], params, result, 0, msg.size(), 256, invalid.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -2206,33 +4143,69 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatFromInt(min64, -1);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatFromInt(min64, 4);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, 4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+            // hfs.floatFromInt(min64, 0);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatFromInt_wrap, &import[50], params, result, min64, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 1);
+            BEAST_EXPECT(resultBytes == floatIntMin);
         }
 
         {
-            auto const result = hfs.floatFromInt(0, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatFromInt(0, 0);
+            WasmValVec params(4), result(1);
+            auto* trap = ww(floatFromInt_wrap, &import[50], params, result, 0ll, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 1);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatFromInt(std::numeric_limits<int64_t>::max(), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMax);
+            // hfs.floatFromInt(max64, 0);
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatFromInt_wrap, &import[50], params, result, max64, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 1);
+            BEAST_EXPECT(resultBytes == floatIntMax);
         }
     }
 
@@ -2246,28 +4219,66 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
+            WasmValVec params(5), result(1);
+            uint64_t val = std::numeric_limits<uint64_t>::min();
+            vrt.setBytes(0, &val, sizeof(val));
+            auto* trap =
+                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), 4);
+            WasmValVec params(5), result(1);
+            uint64_t val = std::numeric_limits<uint64_t>::min();
+            vrt.setBytes(0, &val, sizeof(val));
+            auto* trap =
+                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatFromUint(0, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatFromUint(0, 0);
+            WasmValVec params(5), result(1);
+            uint64_t val = 0;
+            vrt.setBytes(0, &val, sizeof(val));
+            auto* trap =
+                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatFromUint(std::numeric_limits<uint64_t>::max(), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatUIntMax);
+            // hfs.floatFromUint(std::numeric_limits<uint64_t>::max(), 0);
+            WasmValVec params(5), result(1);
+            uint64_t val = std::numeric_limits<uint64_t>::max();
+            vrt.setBytes(0, &val, sizeof(val));
+            auto* trap =
+                ww(floatFromUint_wrap, &import[51], params, result, 0, 8, 16, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatUIntMax);
         }
     }
 
@@ -2282,59 +4293,203 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatSet(1, 0, -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSet(1, 0, -1);
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatSet_wrap, &import[58], params, result, 0, 1ll, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatSet(1, 0, 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSet(1, 0, 4);
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatSet_wrap, &import[58], params, result, 0, 1ll, 0, FLOAT_SIZE, 4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::maxExponent + normalExp + 1,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatSet(1, Number::minExponent + normalExp - 1, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatSet(1, Number::minExponent + normalExp - 1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::minExponent + normalExp - 1,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+            // hfs.floatSet(1, Number::maxExponent + normalExp, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::maxExponent + normalExp,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMaxExp);
         }
 
         {
-            auto const result = hfs.floatSet(-1, Number::maxExponent + normalExp, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+            // hfs.floatSet(-1, Number::maxExponent + normalExp, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::maxExponent + normalExp,
+                   -1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
 
         {
-            auto const result = hfs.floatSet(1, Number::maxExponent + normalExp - 1, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+            // hfs.floatSet(1, Number::maxExponent + normalExp - 1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::maxExponent + normalExp - 1,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatPreMaxExp);
         }
 
         {
-            auto const result = hfs.floatSet(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+            // hfs.floatSet(STAmount::cMaxValue, STAmount::cMaxOffset, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   STAmount::cMaxOffset,
+                   static_cast<int64_t>(STAmount::cMaxValue),
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
 
         {
-            auto const result = hfs.floatSet(1, Number::minExponent - normalExp, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
+            // hfs.floatSet(1, Number::minExponent + normalExp, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::minExponent - normalExp,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinExp);
         }
 
         {
-            auto const result = hfs.floatSet(10, -1, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+            // hfs.floatSet(10, -1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatSet_wrap, &import[58], params, result, -1, 10ll, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == float1);
+        }
+
+        {
+            // hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatSet_wrap,
+                   &import[58],
+                   params,
+                   result,
+                   Number::maxExponent + normalExp + 1,
+                   1ll,
+                   0,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
     }
 
@@ -2348,38 +4503,111 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatCompare(Slice(), Slice());
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatCompare(Slice(), Slice());
+            WasmValVec params(4), result(1);
+            auto* trap = ww(floatCompare_wrap, &import[59], params, result, 0, 0, 0, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatCompare(makeSlice(floatInvalidZero), Slice());
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatCompare(makeSlice(floatInvalidZero), Slice());
+            WasmValVec params(4), result(1);
+            vrt.setBytes(0, floatInvalidZero.data(), floatInvalidZero.size());
+            auto* trap = ww(floatCompare_wrap, &import[59], params, result, 0, FLOAT_SIZE, 0, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
-            BEAST_EXPECT(!result && result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
+            WasmValVec params(4), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatCompare_wrap,
+                   &import[59],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   invalid.size());
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatCompare(makeSlice(floatIntMin), makeSlice(floatIntZero));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 2);
+            // hfs.floatCompare(makeSlice(floatIntMin), makeSlice(floatIntZero));
+            WasmValVec params(4), result(1);
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatCompare_wrap,
+                   &import[59],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 2);
         }
 
         {
-            auto const result = hfs.floatCompare(makeSlice(floatIntMax), makeSlice(floatIntZero));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 1);
+            // hfs.floatCompare(makeSlice(floatIntMax), makeSlice(floatIntZero));
+            WasmValVec params(4), result(1);
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatCompare_wrap,
+                   &import[59],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 1);
         }
 
         {
-            auto const result = hfs.floatCompare(makeSlice(float1), makeSlice(float1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 0);
+            // hfs.floatCompare(makeSlice(float1), makeSlice(float1));
+            WasmValVec params(4), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            auto* trap =
+                ww(floatCompare_wrap,
+                   &import[59],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
         }
     }
 
@@ -2393,41 +4621,132 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatAdd(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatAdd(Slice(), Slice(), -1);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatAdd_wrap, &import[60], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatAdd(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatAdd(Slice(), Slice(), 0);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatAdd_wrap, &import[60], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatAdd_wrap,
+                   &import[60],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   invalid.size(),
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
+            // hfs.floatAdd(makeSlice(floatMaxIOU), makeSlice(floatMaxExp), 0);
             // max IOU is too small to make any change
-            auto const result = hfs.floatAdd(makeSlice(floatMaxIOU), makeSlice(floatMaxExp), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
+            vrt.setBytes(FLOAT_SIZE, floatMaxExp.data(), floatMaxExp.size());
+            auto* trap =
+                ww(floatAdd_wrap,
+                   &import[60],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatMaxExp);
         }
 
         {
-            auto const result = hfs.floatAdd(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+            // hfs.floatAdd(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatAdd_wrap,
+                   &import[60],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatIntMin);
         }
 
         {
-            // Number can't hold int64.min, it is rounded and we get -3, not -1
-            auto const result = hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus3);
+            // hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);//
+            //  Number can't hold int64.min, it is rounded and we get -3, not -1
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntMin.data(), floatIntMin.size());
+            auto* trap =
+                ww(floatAdd_wrap,
+                   &import[60],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatMinus3);
         }
     }
 
@@ -2441,41 +4760,130 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatSubtract(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSubtract(Slice(), Slice(), -1);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatSubtract_wrap, &import[61], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatSubtract(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSubtract(Slice(), Slice(), 0);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatSubtract_wrap, &import[61], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatSubtract_wrap,
+                   &import[61],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   invalid.size(),
+                   FLOAT_SIZE * 2,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result =
-                hfs.floatSubtract(makeSlice(floatMinusMaxExp), makeSlice(floatMaxIOU), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+            // hfs.floatSubtract(makeSlice(floatMinusMaxExp), makeSlice(floatMaxIOU), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatMinusMaxExp.data(), floatMinusMaxExp.size());
+            vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
+            auto* trap =
+                ww(floatSubtract_wrap,
+                   &import[61],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
 
         {
-            auto const result =
-                hfs.floatSubtract(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+            // hfs.floatSubtract(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatSubtract_wrap,
+                   &import[61],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatIntMin);
         }
 
         {
-            auto const result = hfs.floatSubtract(makeSlice(floatIntZero), makeSlice(float1), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+            // hfs.floatSubtract(makeSlice(floatIntZero), makeSlice(float1), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            auto* trap =
+                ww(floatSubtract_wrap,
+                   &import[61],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatMinus1);
         }
     }
 
@@ -2489,46 +4897,154 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatMultiply(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatMultiply(Slice(), Slice(), -1);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatMultiply_wrap, &import[62], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatMultiply(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatMultiply(Slice(), Slice(), 0);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatMultiply_wrap, &import[62], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatMultiply_wrap,
+                   &import[62],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   invalid.size(),
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatMultiply(makeSlice(floatMax), makeSlice(float1More), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            // hfs.floatMultiply(makeSlice(floatMax), makeSlice(float1More), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatMax.data(), floatMax.size());
+            vrt.setBytes(FLOAT_SIZE, float1More.data(), float1More.size());
+            auto* trap =
+                ww(floatMultiply_wrap,
+                   &import[62],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
         }
 
         {
-            auto const result = hfs.floatMultiply(makeSlice(float1), makeSlice(float1), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+            // hfs.floatMultiply(makeSlice(float1), makeSlice(float1), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            auto* trap =
+                ww(floatMultiply_wrap,
+                   &import[62],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == float1);
         }
 
         {
-            auto const result =
-                hfs.floatMultiply(makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatMultiply(makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
+            auto* trap =
+                ww(floatMultiply_wrap,
+                   &import[62],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatMultiply(makeSlice(float10), makeSlice(floatPreMaxExp), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+            // hfs.floatMultiply(makeSlice(float10), makeSlice(floatPreMaxExp), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float10.data(), float10.size());
+            vrt.setBytes(FLOAT_SIZE, floatPreMaxExp.data(), floatPreMaxExp.size());
+            auto* trap =
+                ww(floatMultiply_wrap,
+                   &import[62],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatMaxExp);
         }
     }
 
@@ -2542,50 +5058,153 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatDivide(Slice(), Slice(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatDivide(Slice(), Slice(), -1);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatDivide_wrap, &import[63], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatDivide(Slice(), Slice(), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatDivide(Slice(), Slice(), 0);
+            WasmValVec params(7), result(1);
+            auto* trap =
+                ww(floatDivide_wrap, &import[63], params, result, 0, 0, 0, 0, 0, FLOAT_SIZE, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
-        {
-            auto const result = hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {  // hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatDivide_wrap,
+                   &import[63],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   invalid.size(),
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
-        {
-            auto const result = hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {  // hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatDivide_wrap,
+                   &import[63],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
         }
 
-        {
+        {  // hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
             auto const y = hfs.floatSet(STAmount::cMaxValue, -normalExp - 1, 0);  // 0.9999999...
             if (BEAST_EXPECT(y))
             {
-                auto const result = hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
-                BEAST_EXPECT(!result) &&
-                    BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                WasmValVec params(7), result(1);
+                vrt.setBytes(0, floatMax.data(), floatMax.size());
+                vrt.setBytes(FLOAT_SIZE, y->data(), y->size());
+                auto* trap =
+                    ww(floatDivide_wrap,
+                       &import[63],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(
+                        result[0].of.i32 ==
+                        static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
             }
         }
 
-        {
-            auto const result = hfs.floatDivide(makeSlice(floatIntZero), makeSlice(float1), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {  // hfs.floatDivide(makeSlice(floatIntZero), makeSlice(float1), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            auto* trap =
+                ww(floatDivide_wrap,
+                   &import[63],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
-        {
-            auto const result = hfs.floatDivide(makeSlice(floatMaxExp), makeSlice(float10), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+        {  // hfs.floatDivide(makeSlice(floatMaxExp), makeSlice(float10), 0);
+            WasmValVec params(7), result(1);
+            vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
+            vrt.setBytes(FLOAT_SIZE, float10.data(), float10.size());
+            auto* trap =
+                ww(floatDivide_wrap,
+                   &import[63],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 4);
+            BEAST_EXPECT(resultBytes == floatPreMaxExp);
         }
     }
 
@@ -2599,61 +5218,183 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        {
-            auto const result = hfs.floatRoot(Slice(), 2, -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        {  // hfs.floatRoot(Slice(), 2, -1);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatRoot_wrap, &import[64], params, result, 0, 0, 2, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {  // hfs.floatRoot(makeSlice(invalid), 3, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatRoot_wrap,
+                   &import[64],
+                   params,
+                   result,
+                   0,
+                   invalid.size(),
+                   3,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {  // hfs.floatRoot(makeSlice(float1), -2, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            auto* trap =
+                ww(floatRoot_wrap,
+                   &import[64],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   -2,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {  // hfs.floatRoot(makeSlice(floatIntZero), 2, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            auto* trap =
+                ww(floatRoot_wrap,
+                   &import[64],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   2,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 3);
+            BEAST_EXPECT(resultBytes == floatIntZero);
+        }
+
+        {  // hfs.floatRoot(makeSlice(floatMaxIOU), 1, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
+            auto* trap =
+                ww(floatRoot_wrap,
+                   &import[64],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   1,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 3);
+            BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
 
         {
-            auto const result = hfs.floatRoot(makeSlice(invalid), 3, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-        }
-
-        {
-            auto const result = hfs.floatRoot(makeSlice(float1), -2, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-        }
-
-        {
-            auto const result = hfs.floatRoot(makeSlice(floatIntZero), 2, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
-        }
-
-        {
-            auto const result = hfs.floatRoot(makeSlice(floatMaxIOU), 1, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
-        }
-
-        {
+            // hfs.floatRoot(makeSlice(*x), 2, 0);
             auto const x = hfs.floatSet(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
-                auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+                WasmValVec params(6), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatRoot_wrap,
+                       &import[64],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 3);
+                BEAST_EXPECT(resultBytes == float10);
             }
         }
 
         {
+            // hfs.floatRoot(makeSlice(*x), 3, 0);
             auto const x = hfs.floatSet(1000, 0, 0);  // 1000
             if (BEAST_EXPECT(x))
             {
-                auto const result = hfs.floatRoot(makeSlice(*x), 3, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+                WasmValVec params(6), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatRoot_wrap,
+                       &import[64],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       3,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 3);
+                BEAST_EXPECT(resultBytes == float10);
             }
         }
 
         {
+            // hfs.floatRoot(makeSlice(*x), 2, 0);
             auto const x = hfs.floatSet(1, -2, 0);  // 0.01
             auto const y = hfs.floatSet(1, -1, 0);  // 0.1
             if (BEAST_EXPECT(x && y))
             {
-                auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+                WasmValVec params(6), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatRoot_wrap,
+                       &import[64],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 3);
+                BEAST_EXPECT(resultBytes == *y);
             }
         }
     }
@@ -2668,64 +5409,201 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        {
-            auto const result = hfs.floatPower(Slice(), 2, -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        {  // hfs.floatPower(Slice(), 2, -1);
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatPower_wrap, &import[65], params, result, 0, 0, 2, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {  // hfs.floatPower(makeSlice(invalid), 3, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   invalid.size(),
+                   3,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+        }
+
+        {  // hfs.floatPower(makeSlice(float1), -2, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   -2,
+                   2 * FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatPower(makeSlice(invalid), 3, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatPower(makeSlice(floatMax), 2, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatMax.data(), floatMax.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   2,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
         }
 
         {
-            auto const result = hfs.floatPower(makeSlice(float1), -2, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatPower(makeSlice(floatMax), Number::maxExponent + 1, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatMax.data(), floatMax.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   Number::maxExponent + 1,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatPower(makeSlice(floatMax), 2, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            // hfs.floatPower(makeSlice(floatMaxIOU), 0, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   0,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 3);
+            BEAST_EXPECT(resultBytes == float1);
+        }
+
+        {  // hfs.floatPower(makeSlice(floatMaxIOU), 1, 0);
+            WasmValVec params(6), result(1);
+            vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
+            auto* trap =
+                ww(floatPower_wrap,
+                   &import[65],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   1,
+                   FLOAT_SIZE,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 3);
+            BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
 
         {
-            auto const result = hfs.floatPower(makeSlice(floatMax), Number::maxExponent + 1, 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-        }
-
-        {
-            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 0, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
-        }
-
-        {
-            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 1, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
-        }
-
-        {
+            // hfs.floatPower(makeSlice(float10), 2, 0);
             auto const x = hfs.floatSet(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
-                auto const result = hfs.floatPower(makeSlice(float10), 2, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+                WasmValVec params(6), result(1);
+                vrt.setBytes(0, float10.data(), float10.size());
+                auto* trap =
+                    ww(floatPower_wrap,
+                       &import[65],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 3);
+                BEAST_EXPECT(resultBytes == *x);
             }
         }
 
-        {
+        {                                           // hfs.floatPower(makeSlice(*x), 2, 0);
             auto const x = hfs.floatSet(1, -1, 0);  // 0.1
             auto const y = hfs.floatSet(1, -2, 0);  // 0.01
             if (BEAST_EXPECT(x && y))
             {
-                auto const result = hfs.floatPower(makeSlice(*x), 2, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+                WasmValVec params(6), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatPower_wrap,
+                       &import[65],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 3);
+                BEAST_EXPECT(resultBytes == *y);
             }
         }
     }
@@ -2740,55 +5618,120 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        {
-            auto const result = hfs.floatLog(Slice(), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-        }
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
-        {
-            auto const result = hfs.floatLog(makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {  // hfs.floatLog(Slice(), -1);
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatLog_wrap, &import[66], params, result, 0, 0, 0, FLOAT_SIZE, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
             auto const x = hfs.floatSet(32'786, 0, 0);
             if (BEAST_EXPECT(x))
             {
-                auto const result = hfs.floatLog(makeSlice(floatMaxExp), 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+                WasmValVec params(5), result(1);
+                vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
+                auto* trap =
+                    ww(floatLog_wrap,
+                       &import[66],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(resultBytes == *x);
             }
         }
 
         {
+            // hfs.floatLog(makeSlice(*x), 0);
             auto const x = hfs.floatSet(100, 0, 0);  // 100
             if (BEAST_EXPECT(x))
             {
-                auto const result = hfs.floatLog(makeSlice(*x), 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float2);
+                WasmValVec params(5), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatLog_wrap,
+                       &import[66],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(resultBytes == float2);
             }
         }
 
         {
+            // hfs.floatLog(makeSlice(*x), 0);
             auto const x = hfs.floatSet(1000, 0, 0);  // 1000
             auto const y = hfs.floatSet(3, 0, 0);     // 3
             if (BEAST_EXPECT(x && y))
             {
-                auto const result = hfs.floatLog(makeSlice(*x), 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+                WasmValVec params(5), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatLog_wrap,
+                       &import[66],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(resultBytes == *y);
             }
         }
 
         {
+            // hfs.floatLog(makeSlice(*x), 0);
             auto const x = hfs.floatSet(1, -2, 0);                                   // 0.01
             auto const y = hfs.floatSet(-1'999'999'999'999'999'999, -normalExp, 0);  // -2
             if (BEAST_EXPECT(x && y))
             {
-                auto const result = hfs.floatLog(makeSlice(*x), 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+                WasmValVec params(5), result(1);
+                vrt.setBytes(0, x->data(), x->size());
+                auto* trap =
+                    ww(floatLog_wrap,
+                       &import[66],
+                       params,
+                       result,
+                       0,
+                       FLOAT_SIZE,
+                       2 * FLOAT_SIZE,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(resultBytes == *y);
             }
         }
     }
@@ -2824,43 +5767,130 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
+            // hfs.floatFromSTAmount(amount, -1);
             STAmount const amount = XRP(100);
-            auto const result = hfs.floatFromSTAmount(amount, -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
+            // hfs.floatFromSTAmount(amount, 4);
             STAmount const amount = XRP(100);
-            auto const result = hfs.floatFromSTAmount(amount, 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
+            // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount = XRP(0);
-            auto const result = hfs.floatFromSTAmount(amount, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
+            // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount = XRP(-1);
             auto const y = hfs.floatSet(-1 * 1'000'000, 0, 0);
             if (BEAST_EXPECT(y))
             {
-                auto const result = hfs.floatFromSTAmount(amount, 0);
-                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+                Bytes amountBytes = toBytes(amount);
+                vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+                WasmValVec params(5), result(1);
+                auto* trap =
+                    ww(floatFromSTAmount_wrap,
+                       &import[52],
+                       params,
+                       result,
+                       0,
+                       amountBytes.size(),
+                       256,
+                       FLOAT_SIZE,
+                       0);
+
+                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                auto const resultBytes = vrt.getBytes(params, 2);
+                BEAST_EXPECT(resultBytes == *y);
             }
         }
 
         {
+            // hfs.floatFromSTAmount(amount, 0);
             auto const y = hfs.floatSet(9223372036854776, 3, 0);
             STAmount const amount(noIssue(), std::numeric_limits<int64_t>::max());
-            auto const result = hfs.floatFromSTAmount(amount, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == *y);
         }
 
         {
@@ -2868,7 +5898,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             try
             {
                 STAmount const amount(noIssue(), -1, Number::maxExponent + normalExp);
-                [[maybe_unused]] auto const r = hfs.floatFromSTAmount(amount, 0);
+                [[maybe_unused]] Bytes const amountBytes = toBytes(amount);
             }
             catch (...)
             {
@@ -2880,17 +5910,51 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         auto const USD = env.master["USD"];
         {
+            // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount(
                 IOUAmount(STAmount::cMinValue, STAmount::cMinOffset), USD.issue());
-            auto const result = hfs.floatFromSTAmount(amount, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinIOU);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinIOU);
         }
 
         {
+            // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount(
                 IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset), USD.issue());
-            auto const result = hfs.floatFromSTAmount(amount, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+            Bytes amountBytes = toBytes(amount);
+            vrt.setBytes(0, amountBytes.data(), amountBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTAmount_wrap,
+                   &import[52],
+                   params,
+                   result,
+                   0,
+                   amountBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
     }
 
@@ -2904,34 +5968,104 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         // Test with invalid rounding mode
         {
+            // hfs.floatFromSTNumber(num, -1);
             STNumber const num(sfNumber, Number(123, 0));
-            auto const result = hfs.floatFromSTNumber(num, -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            Bytes numBytes = toBytes(num);
+            vrt.setBytes(0, numBytes.data(), numBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTNumber_wrap,
+                   &import[53],
+                   params,
+                   result,
+                   0,
+                   numBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
+            // hfs.floatFromSTNumber(num, 4);
             STNumber const num(sfNumber, Number(123, 0));
-            auto const result = hfs.floatFromSTNumber(num, 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            Bytes numBytes = toBytes(num);
+            vrt.setBytes(0, numBytes.data(), numBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTNumber_wrap,
+                   &import[53],
+                   params,
+                   result,
+                   0,
+                   numBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
+            // hfs.floatFromSTNumber(num, 0);
             STNumber const num(
                 sfNumber, Number(std::numeric_limits<uint64_t>::max(), 0, Number::normalized()));
-            auto const result = hfs.floatFromSTNumber(num, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatUIntMax);
+            Bytes numBytes = toBytes(num);
+            vrt.setBytes(0, numBytes.data(), numBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTNumber_wrap,
+                   &import[53],
+                   params,
+                   result,
+                   0,
+                   numBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatUIntMax);
         }
 
         {
+            // hfs.floatFromSTNumber(num, 0);
             STNumber const num(sfNumber, Number(-1, Number::maxExponent + normalExp));
-            auto const result = hfs.floatFromSTNumber(num, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+            Bytes numBytes = toBytes(num);
+            vrt.setBytes(0, numBytes.data(), numBytes.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatFromSTNumber_wrap,
+                   &import[53],
+                   params,
+                   result,
+                   0,
+                   numBytes.size(),
+                   256,
+                   FLOAT_SIZE,
+                   0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
     }
 
@@ -2945,105 +6079,201 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatToInt(makeSlice(float1), -1);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatToInt(makeSlice(float1), -1);
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(5), result(1);
+            auto* trap =
+                ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, -1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(float1), 4);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatToInt(makeSlice(float1), 4);
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatToInt(Slice(), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatToInt(Slice(), 0);
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, 0, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(invalid), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatToInt(makeSlice(invalid), 0);
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(floatIntZero), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 0);
+            // hfs.floatToInt(makeSlice(floatIntZero), 0);
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 0);
 
             // roundtrip
-            auto const result2 = hfs.floatFromInt(*result, 0);
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(float1), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 1);
+            // hfs.floatToInt(makeSlice(float1), 0);
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 1);
 
             // roundtrip
-            auto const result2 = hfs.floatFromInt(*result, 0);
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(floatMinus1), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == -1);
+            // hfs.floatToInt(makeSlice(floatMinus1), 0);
+            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == -1);
 
             // roundtrip
-            auto const result2 = hfs.floatFromInt(*result, 0);
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(floatIntMax), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == std::numeric_limits<int64_t>::max());
+            // hfs.floatToInt(makeSlice(floatIntMax), 0);
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == std::numeric_limits<int64_t>::max());
 
             // roundtrip
-            auto const result2 = hfs.floatFromInt(*result, 0);
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
         }
 
         {
             // Number can't hold int64.min, it is rounded and we get int64_t.min - 3, which doesn't
             // fit into int64
-            auto const result = hfs.floatToInt(makeSlice(floatIntMin), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            // hfs.floatToInt(makeSlice(floatIntMin), 0);
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
         }
 
         {
-            auto const result = hfs.floatToInt(makeSlice(floatUIntMax), 0);
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            // hfs.floatToInt(makeSlice(floatUIntMax), 0);
+            vrt.setBytes(0, floatUIntMax.data(), floatUIntMax.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
         }
 
         // Test rounding modes with pi (3.141592653589793)
         {
             // to_nearest (mode 0): should round to 3
-            auto const result = hfs.floatToInt(makeSlice(floatPi), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 3);
+            // hfs.floatToInt(makeSlice(floatPi), 0);
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 0);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 3);
         }
 
         {
             // towards_zero (mode 1): should truncate to 3
-            auto const result = hfs.floatToInt(makeSlice(floatPi), 1);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 3);
+            // hfs.floatToInt(makeSlice(floatPi), 1);
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 3);
         }
 
         {
             // downward (mode 2): should round down to 3
-            auto const result = hfs.floatToInt(makeSlice(floatPi), 2);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 3);
+            // hfs.floatToInt(makeSlice(floatPi), 2);
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 2);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 3);
         }
 
         {
             // upward (mode 3): should round up to 4
-            auto const result = hfs.floatToInt(makeSlice(floatPi), 3);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 4);
+            // hfs.floatToInt(makeSlice(floatPi), 3);
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(5), result(1);
+            auto* trap = ww(floatToInt_wrap, &import[54], params, result, 0, FLOAT_SIZE, 256, 8, 3);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == 4);
         }
     }
 
@@ -3057,93 +6287,252 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(invalid));
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatToMantissaAndExponent(makeSlice(invalid));
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 0) &&
-                BEAST_EXPECT(result->second == std::numeric_limits<int32_t>::min());
+            // hfs.floatToMantissaAndExponent(makeSlice(floatIntZero));
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == 0) &&
+                BEAST_EXPECT(exponent == std::numeric_limits<int32_t>::min());
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(float1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
-                BEAST_EXPECT(result->second == -normalExp);
+            // hfs.floatToMantissaAndExponent(makeSlice(float1));
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == 1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float1);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == -1000000000000000000) &&
-                BEAST_EXPECT(result->second == -normalExp);
+            // hfs.floatToMantissaAndExponent(makeSlice(floatMinus1));
+            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == -1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMinus1);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(float10));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 1000000000000000000) &&
-                BEAST_EXPECT(result->second == -normalExp + 1);
+            // hfs.floatToMantissaAndExponent(makeSlice(float10));
+            vrt.setBytes(0, float10.data(), float10.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == 1000000000000000000) &&
+                BEAST_EXPECT(exponent == -normalExp + 1);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == float10);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatPi));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == 3141592653589793000) &&
-                BEAST_EXPECT(result->second == -normalExp);
+            // hfs.floatToMantissaAndExponent(makeSlice(floatPi));
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == 3141592653589793000) && BEAST_EXPECT(exponent == -normalExp);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatPi);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntMax));
-            BEAST_EXPECT(result) &&
-                BEAST_EXPECT(result->first == std::numeric_limits<int64_t>::max()) &&
-                BEAST_EXPECT(result->second == 0);
+            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMax));
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == std::numeric_limits<int64_t>::max()) &&
+                BEAST_EXPECT(exponent == 0);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMax);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatIntMin));
-            BEAST_EXPECT(result) &&
-                BEAST_EXPECT(result->first == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
-                BEAST_EXPECT(result->second == 1);
+            // hfs.floatToMantissaAndExponent(makeSlice(floatIntMin));
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
+                BEAST_EXPECT(exponent == 1);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
-            auto const result = hfs.floatToMantissaAndExponent(makeSlice(floatMax));
-            BEAST_EXPECT(result) && BEAST_EXPECT(result->first == Number::maxRep) &&
-                BEAST_EXPECT(result->second == Number::maxExponent);
+            // hfs.floatToMantissaAndExponent(makeSlice(floatMax));
+            vrt.setBytes(0, floatMax.data(), floatMax.size());
+            WasmValVec params(6), result(1);
+            auto* trap =
+                ww(floatToMantissaAndExponent_wrap,
+                   &import[55],
+                   params,
+                   result,
+                   0,
+                   FLOAT_SIZE,
+                   256,
+                   8,
+                   512,
+                   4);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const mantissa = vrt.getInt64(params, 2);
+            auto const exponent = vrt.getInt32(params, 4);
+            BEAST_EXPECT(mantissa == Number::maxRep) &&
+                BEAST_EXPECT(exponent == Number::maxExponent);
 
             // roundtrip
-            auto const result2 = hfs.floatSet(result->first, result->second, 0);
+            auto const result2 = hfs.floatSet(mantissa, exponent, 0);
             BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatMax);
         }
     }
@@ -3158,44 +6547,112 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatNegate(makeSlice(invalid));
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatNegate(makeSlice(invalid));
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(floatIntZero));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatNegate(makeSlice(floatIntZero));
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(float1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+            // hfs.floatNegate(makeSlice(float1));
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinus1);
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(floatMinus1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+            // hfs.floatNegate(makeSlice(floatMinus1));
+            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == float1);
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(floatIntMax));
+            // hfs.floatNegate(makeSlice(floatIntMax));
             auto const expected = hfs.floatFromInt(std::numeric_limits<int64_t>::min() + 1, 0);
-            BEAST_EXPECT(result && expected) && BEAST_EXPECT(*result == *expected);
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(expected) && BEAST_EXPECT(resultBytes == *expected);
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(floatMaxExp));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+            // hfs.floatNegate(makeSlice(floatMaxExp));
+            vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
 
         {
-            auto const result = hfs.floatNegate(makeSlice(floatPi));
-            auto const negPi = hfs.floatNegate(makeSlice(*result));
-            BEAST_EXPECT(result && negPi) && BEAST_EXPECT(*negPi == floatPi);
+            // hfs.floatNegate(makeSlice(floatPi));
+            vrt.setBytes(0, floatPi.data(), floatPi.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatNegate_wrap, &import[56], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+
+            // hfs.floatNegate(makeSlice(*result));
+            vrt.setBytes(512, resultBytes.data(), resultBytes.size());
+            WasmValVec params2(4), result2(1);
+            auto* trap2 = ww(
+                floatNegate_wrap, &import[56], params2, result2, 512, FLOAT_SIZE, 768, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap2) && BEAST_EXPECT(result2[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result2[0].of.i32 == FLOAT_SIZE);
+            auto const negPiBytes = vrt.getBytes(params2, 2);
+            BEAST_EXPECT(negPiBytes == floatPi);
         }
     }
 
@@ -3209,49 +6666,116 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl const hfs(ac, dummyEscrow);
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
 
         {
-            auto const result = hfs.floatAbs(makeSlice(invalid));
-            BEAST_EXPECT(!result) &&
-                BEAST_EXPECT(result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+            // hfs.floatAbs(makeSlice(invalid));
+            vrt.setBytes(0, invalid.data(), invalid.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 ==
+                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatIntZero));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+            // hfs.floatAbs(makeSlice(floatIntZero));
+            vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(float1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+            // hfs.floatAbs(makeSlice(float1));
+            vrt.setBytes(0, float1.data(), float1.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == float1);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatMinus1));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+            // hfs.floatAbs(makeSlice(floatMinus1));
+            vrt.setBytes(0, floatMinus1.data(), floatMinus1.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == float1);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatIntMax));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMax);
+            // hfs.floatAbs(makeSlice(floatIntMax));
+            vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatIntMax);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatIntMin));
+            // hfs.floatAbs(makeSlice(floatIntMin));
             auto const negated = hfs.floatNegate(makeSlice(floatIntMin));
-            BEAST_EXPECT(result && negated) && BEAST_EXPECT(*result == *negated);
+            vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(negated) && BEAST_EXPECT(resultBytes == *negated);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatMinusMaxExp));
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+            // hfs.floatAbs(makeSlice(floatMinusMaxExp));
+            vrt.setBytes(0, floatMinusMaxExp.data(), floatMinusMaxExp.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(resultBytes == floatMaxExp);
         }
 
         {
-            auto const result = hfs.floatAbs(makeSlice(floatMinus3));
+            // hfs.floatAbs(makeSlice(floatMinus3));
             auto const expected = hfs.floatFromInt(3, 0);
-            BEAST_EXPECT(result && expected) && BEAST_EXPECT(*result == *expected);
+            vrt.setBytes(0, floatMinus3.data(), floatMinus3.size());
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(floatAbs_wrap, &import[57], params, result, 0, FLOAT_SIZE, 256, FLOAT_SIZE);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+            auto const resultBytes = vrt.getBytes(params, 2);
+            BEAST_EXPECT(expected) && BEAST_EXPECT(resultBytes == *expected);
         }
     }
 
@@ -3280,6 +6804,57 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatPower();
         testFloatLog();
         testFloatSpecialCases();
+    }
+
+    void
+    testVectorIndexes()
+    {
+        testcase("WasmValVec indicies");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        bool ex = false;
+        try
+        {
+            // hfs.getLedgerSqn();
+            WasmValVec params(2), result(1);
+            // 3 parameters instead of 2
+            auto* trap =
+                ww(getLedgerSqn_wrap, &import[0], params, result, 0, sizeof(std::uint32_t), 1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
+                BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->header().seq);
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECTS(e.what() == std::string("Out of bound"), e.what());
+            ex = true;
+        }
+
+        // const version
+        ex = false;
+        try
+        {
+            WasmValVec params(2);
+            [[maybe_unused]] auto const x = params[2];
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECTS(e.what() == std::string("Out of bound"), e.what());
+            ex = true;
+        }
+
+        BEAST_EXPECT(ex);
     }
 
     void
@@ -3318,6 +6893,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testTraceAccount();
         testTraceAmount();
         testFloats();
+
+        testVectorIndexes();
     }
 };
 
