@@ -3,10 +3,6 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/jss.h>
-
-namespace xrpl {
 
 // {
 //   ledger_hash : <ledger>,
@@ -26,14 +22,14 @@ doTransactionEntry(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_hash))
     {
-        jvResult[jss::error] = "fieldNotFoundTransaction";
+        RPC::inject_error(error_code_i::rpcINVALID_PARAMS, jvResult);
     }
     else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
     {
         // We don't work on ledger current.
 
         // XXX We don't support any transaction yet.
-        jvResult[jss::error] = "notYetImplemented";
+        RPC::inject_error(error_code_i::rpcNOT_IMPL, jvResult);
     }
     else
     {
@@ -42,14 +38,14 @@ doTransactionEntry(RPC::JsonContext& context)
         // routine, returning success or failure.
         if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            RPC::inject_error(error_code_i::rpcINVALID_PARAMS, jvResult);
             return jvResult;
         }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
         {
-            jvResult[jss::error] = "transactionNotFound";
+            RPC::inject_error(error_code_i::rpcTXN_NOT_FOUND, jvResult);
         }
         else
         {
