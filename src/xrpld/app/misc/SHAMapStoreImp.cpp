@@ -92,11 +92,11 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     get_if_exists(section, "online_delete", deleteInterval_);
-    bool const isMemoryBackend = boost::iequals(get(section, "type"), "rwdb");
+    isMemoryBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
     // For RWDB, default online_delete to ledger_history only if user did not
     // explicitly set online_delete.
-    if (isMemoryBackend && deleteInterval_ == 0)
+    if (isMemoryBackend_ && deleteInterval_ == 0)
         deleteInterval_ = config.LEDGER_HISTORY;
 
     if (deleteInterval_ != 0u)
@@ -134,7 +134,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
 
         state_db_.init(config, dbName_);
-        if (!isMemoryBackend)
+        if (!isMemoryBackend_)
             dbPaths();
     }
 }
@@ -308,20 +308,41 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
 
-            JLOG(journal_.debug()) << "freshening caches";
-            freshenCaches();
-            if (healthWait() == stopping)
-                return;
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+            // For in-memory backends (RWDB), skip freshenCaches.
+            // freshenCaches copies every cached object from archive to
+            // writable—millions of mutex acquisitions that create heavy
+            // contention with consensus threads.  Since RWDB stores
+            // shared_ptrs, cached objects remain valid even after the
+            // old archive backend is cleared.
+            if (!isMemoryBackend_)
+            {
+                JLOG(journal_.debug()) << "freshening caches";
+                freshenCaches();
+                if (healthWait() == stopping)
+                    return;
+                JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+            }
 
             JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = makeBackendRotating();
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
-            clearCaches(validatedSeq);
-            if (healthWait() == stopping)
-                return;
+            // For in-memory backends, only clear old ledger objects.
+            // Skip FullBelowCache clear—all state nodes are preserved
+            // in the new archive (which received the copyNode data),
+            // so full-below markers remain valid.  Clearing them would
+            // force SHAMap to re-verify every subtree, causing a storm
+            // of backend fetches during consensus.
+            if (!isMemoryBackend_)
+            {
+                clearCaches(validatedSeq);
+                if (healthWait() == stopping)
+                    return;
+            }
+            else
+            {
+                ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+            }
 
             lastRotated = validatedSeq;
 
@@ -334,7 +355,10 @@ SHAMapStoreImp::run()
                     savedState.lastRotated = lastRotated;
                     state_db_.setState(savedState);
 
-                    clearCaches(validatedSeq);
+                    if (!isMemoryBackend_)
+                        clearCaches(validatedSeq);
+                    else
+                        ledgerMaster_->clearLedgerCachePrior(validatedSeq);
                 });
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
