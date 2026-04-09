@@ -560,7 +560,7 @@ GRPCServerImpl::setupListeners()
 std::shared_ptr<grpc::ServerCredentials>
 GRPCServerImpl::createServerCredentials()
 {
-    if (not sslCertPath_.has_value() || not sslKeyPath_.has_value())
+    if (not sslCertPath_.has_value() or not sslKeyPath_.has_value())
     {
         JLOG(journal_.info()) << "Configuring gRPC server without TLS";
         return grpc::InsecureServerCredentials();
