@@ -33,7 +33,7 @@ is_public(AddressV6 const& addr)
     auto const b = addr.to_bytes();
 
     // fe80::/10 - Link-local
-    if ((b[0] & 0xff) == 0xfe && (b[1] & 0xc0) == 0x80)
+    if (b[0] & 0xff == 0xfe && (b[1] & 0xc0) == 0x80)
         return false;
     // 100::/64 - Discard prefix (RFC 6666)
     if (b[0] == 0x01 && b[1] == 0x00 && b[2] == 0 && b[3] == 0 && b[4] == 0 &&
