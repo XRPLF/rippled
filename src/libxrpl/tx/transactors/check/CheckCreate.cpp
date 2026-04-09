@@ -1,6 +1,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -9,6 +10,12 @@
 #include <xrpl/tx/transactors/check/CheckCreate.h>
 
 namespace xrpl {
+
+bool
+CheckCreate::checkExtraFeatures(xrpl::PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureMPTokensV2) || !ctx.tx[sfSendMax].holds<MPTIssue>();
+}
 
 NotTEC
 CheckCreate::preflight(PreflightContext const& ctx)
@@ -29,7 +36,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
         }
 
-        if (badCurrency() == sendMax.getCurrency())
+        if (badAsset() == sendMax.asset())
         {
             JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
             return temBAD_CURRENCY;
@@ -52,6 +59,7 @@ TER
 CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
+    AccountID const srcId{ctx.tx[sfAccount]};
     auto const sleDst = ctx.view.read(keylet::account(dstId));
     if (!sleDst)
     {
@@ -86,39 +94,56 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, issuerId))
+            if (isGlobalFrozen(ctx.view, sendMax.asset()))
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return tecFROZEN;
+                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
             }
-            // If this account has a trustline for the currency, that
-            // trustline may not be frozen.
-            //
-            // Note that we DO allow create check for a currency that the
-            // account does not yet have a trustline to.
-            AccountID const srcId{ctx.tx.getAccountID(sfAccount)};
-            if (issuerId != srcId)
-            {
-                // Check if the issuer froze the line
-                auto const sleTrust =
-                    ctx.view.read(keylet::line(srcId, issuerId, sendMax.getCurrency()));
-                if (sleTrust && sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
-                {
-                    JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
-                    return tecFROZEN;
-                }
-            }
-            if (issuerId != dstId)
-            {
-                // Check if dst froze the line.
-                auto const sleTrust =
-                    ctx.view.read(keylet::line(issuerId, dstId, sendMax.getCurrency()));
-                if (sleTrust && sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
-                {
-                    JLOG(ctx.j.warn()) << "Creating a check for destination frozen trustline.";
-                    return tecFROZEN;
-                }
-            }
+            auto const err = sendMax.asset().visit(
+                [&](Issue const& issue) -> std::optional<TER> {
+                    // If this account has a trustline for the currency,
+                    // that trustline may not be frozen.
+                    //
+                    // Note that we DO allow create check for a currency
+                    // that the account does not yet have a trustline to.
+                    if (issuerId != srcId)
+                    {
+                        // Check if the issuer froze the line
+                        auto const sleTrust =
+                            ctx.view.read(keylet::line(srcId, issuerId, issue.currency));
+                        if (sleTrust &&
+                            sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
+                        {
+                            JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
+                            return tecFROZEN;
+                        }
+                    }
+                    if (issuerId != dstId)
+                    {
+                        // Check if dst froze the line.
+                        auto const sleTrust =
+                            ctx.view.read(keylet::line(issuerId, dstId, issue.currency));
+                        if (sleTrust &&
+                            sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
+                        {
+                            JLOG(ctx.j.warn()) << "Creating a check for "
+                                                  "destination frozen trustline.";
+                            return tecFROZEN;
+                        }
+                    }
+
+                    return std::nullopt;
+                },
+                [&](MPTIssue const& issue) -> std::optional<TER> {
+                    if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                        return tecLOCKED;
+                    if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                        return tecLOCKED;
+
+                    return std::nullopt;
+                });
+            if (err)
+                return *err;
         }
     }
     if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
@@ -126,7 +151,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Creating a check that has already expired.";
         return tecEXPIRED;
     }
-    return tesSUCCESS;
+
+    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
 }
 
 TER

@@ -1863,8 +1863,8 @@ public:
             Json::Value jv;
             jv[jss::TransactionType] = jss::AMMDeposit;
             jv[jss::Account] = account.human();
-            jv[jss::Asset] = STIssue(sfAsset, amount1.issue()).getJson(JsonOptions::none);
-            jv[jss::Asset2] = STIssue(sfAsset, amount2.issue()).getJson(JsonOptions::none);
+            jv[jss::Asset] = STIssue(sfAsset, amount1.asset()).getJson(JsonOptions::none);
+            jv[jss::Asset2] = STIssue(sfAsset, amount2.asset()).getJson(JsonOptions::none);
             jv[jss::Amount] = amount1.value().getJson(JsonOptions::none);
             jv[jss::Amount2] = amount2.value().getJson(JsonOptions::none);
             jv[jss::Flags] = tfTwoAsset;

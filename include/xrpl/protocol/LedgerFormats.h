@@ -187,7 +187,8 @@ enum LedgerEntryType : std::uint16_t {
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \
-        LSF_FLAG(lsfMPTAuthorized, 0x00000002))                                                                                    \
+        LSF_FLAG(lsfMPTAuthorized, 0x00000002)                                                                                     \
+        LSF_FLAG(lsfMPTAMM, 0x00000004))                                                                                           \
                                                                                                                                    \
     LEDGER_OBJECT(Credential,                                                                                                      \
         LSF_FLAG(lsfAccepted, 0x00010000))                                                                                         \

@@ -128,7 +128,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
+    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
         return ret;
 
     return tesSUCCESS;

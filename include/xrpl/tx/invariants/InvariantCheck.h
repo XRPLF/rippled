@@ -400,6 +400,7 @@ using InvariantChecks = std::tuple<
     ValidLoanBroker,
     ValidLoan,
     ValidVault,
+    ValidMPTPayment,
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField>;
 

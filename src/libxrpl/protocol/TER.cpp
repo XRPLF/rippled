@@ -106,7 +106,6 @@ transResults()
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
-        MAKE_ERROR(tecNO_DELEGATE_PERMISSION,        "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
@@ -158,6 +157,7 @@ transResults()
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
         MAKE_ERROR(temBAD_ISSUER,                "Malformed: Bad issuer."),
         MAKE_ERROR(temBAD_LIMIT,                 "Limits must be non-negative."),
+        MAKE_ERROR(temBAD_MPT,                   "Malformed: Bad MPT."),
         MAKE_ERROR(temBAD_OFFER,                 "Malformed: Bad offer."),
         MAKE_ERROR(temBAD_PATH,                  "Malformed: Bad path."),
         MAKE_ERROR(temBAD_PATH_LOOP,             "Malformed: Loop in path."),
@@ -216,6 +216,7 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
         MAKE_ERROR(terNO_SPONSORSHIP,         "No sponsorship found."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),

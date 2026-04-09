@@ -44,7 +44,8 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Keylet const trustLineKey = keylet::line(receiver, amount.issue());
+    Issue const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::line(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -71,9 +72,9 @@ escrowUnlockApplyHelper<Issue>(
             return tecNO_LINE_INSUF_RESERVE;
         }
 
-        Currency const currency = amount.getCurrency();
-        STAmount initialBalance(amount.issue());
-        initialBalance.setIssuer(noAccount());
+        Currency const currency = issue.currency;
+        STAmount initialBalance(issue);
+        initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
                 view,                                           // payment sandbox
@@ -121,7 +122,8 @@ escrowUnlockApplyHelper<Issue>(
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
         // compute transfer fee, if any
-        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.issue(), true);
+        auto const xferFee =
+            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
@@ -186,20 +188,24 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsor = getTxReserveSponsor(view, tx);
-        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsor, 1);
+        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
+        std::shared_ptr<SLE> sponsorSle = {};
+        if (sponsorAccountID)
+            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(view, mptID, receiver, 0); !isTesSuccess(ter))
+        if (auto const ter = createMPToken(view, mptID, receiver, sponsorAccountID, 0);
+            !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, sponsor, 1, journal);
+        adjustOwnerCount(view, sleDest, sponsorSle, 1, journal);
         auto mptSle = view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, sponsor);
+        addSponsorToLedgerEntry(mptSle, sponsorSle);
     }
 
     if (!view.exists(mptKeylet) && !receiverIssuer)
