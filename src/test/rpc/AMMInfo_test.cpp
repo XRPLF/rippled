@@ -344,6 +344,37 @@ public:
     }
 
     void
+    testGetAssetExceptionCoverage()
+    {
+        // Regression test for issue #6787:
+        // getAsset must catch all std::exception subtypes from assetFromJson/
+        // issueFromJson, not just std::runtime_error.  issueFromJson throws
+        // Json::error (not std::runtime_error) for invalid currency/issuer
+        // strings; previously that exception would escape getAsset uncaught.
+        testcase("getAsset catches all exceptions");
+
+        using namespace jtx;
+
+        testAMM([&](AMM& /*amm*/, Env& env) {
+            // asset with an invalid currency string — triggers Json::error
+            // inside issueFromJson, which was not caught before this fix.
+            Json::Value jv;
+            jv[jss::asset] = Json::objectValue;
+            jv[jss::asset]["currency"] = "!!!INVALID!!!";
+            jv[jss::asset2] = Json::objectValue;
+            jv[jss::asset2]["currency"] = "USD";
+            jv[jss::asset2]["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+
+            auto const jr = env.rpc("json", "amm_info", to_string(jv));
+            // Must return a well-formed error (rpcISSUE_MALFORMED or similar),
+            // not crash or return rpcINTERNAL from an uncaught exception.
+            auto const& result = jr[jss::result];
+            BEAST_EXPECT(result.isMember(jss::error));
+            BEAST_EXPECT(result[jss::error].asString() != "internal");
+        });
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -354,6 +385,7 @@ public:
         testVoteAndBid(all - fixAMMv1_3);
         testFreeze();
         testInvalidAmmField();
+        testGetAssetExceptionCoverage();
     }
 };
 

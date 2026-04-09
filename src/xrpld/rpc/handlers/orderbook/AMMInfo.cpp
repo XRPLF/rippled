@@ -20,7 +20,7 @@ getAsset(Json::Value const& v, beast::Journal j)
     {
         return assetFromJson(v);
     }
-    catch (std::runtime_error const& ex)
+    catch (std::exception const& ex)
     {
         JLOG(j.debug()) << "getAsset " << ex.what();
     }
