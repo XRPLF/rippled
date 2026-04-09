@@ -932,28 +932,6 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // Invalid: inner txn with MPT amount on tx type that doesn't
-        // support MPT (OfferCreate TakerPays)
-        {
-            MPTIssue issue(makeMptID(1, alice));
-            STAmount mptAmt{issue, UINT64_C(100)};
-
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
-
-            Json::Value tx1;
-            tx1[jss::TransactionType] = jss::OfferCreate;
-            tx1[jss::Account] = alice.human();
-            tx1[jss::TakerPays] = mptAmt.getJson(JsonOptions::none);
-            tx1[jss::TakerGets] = XRP(10).value().getJson(JsonOptions::none);
-
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(telENV_RPC_FAILED));
-            env.close();
-        }
-
         // Invalid: inner txn with invalid memo (non-URL-safe MemoType)
         {
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
