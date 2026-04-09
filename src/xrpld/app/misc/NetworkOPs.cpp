@@ -932,7 +932,12 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         mConsensus.parms().ledgerGRANULARITY,
         [this]() {
-            m_job_queue.addJob(jtNETOP_TIMER, "NetHeart", [this]() { processHeartbeatTimer(); });
+            // Run the heartbeat directly on the io_service thread instead
+            // of posting to the JobQueue.  This prevents heavy RPC load
+            // from starving the consensus heartbeat timer — the io_service
+            // thread pool ([io_workers]) is independent of the JobQueue
+            // worker pool ([workers]).
+            processHeartbeatTimer();
         },
         [this]() { setHeartbeatTimer(); });
 }
