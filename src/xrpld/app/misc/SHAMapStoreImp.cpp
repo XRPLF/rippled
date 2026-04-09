@@ -95,9 +95,15 @@ SHAMapStoreImp::SHAMapStoreImp(
     isMemoryBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
     // For RWDB, default online_delete to ledger_history only if user did not
-    // explicitly set online_delete.
+    // explicitly set online_delete.  Clamp to the minimum allowed interval
+    // so an implicit default never triggers the "online_delete must be at
+    // least N" check below.
     if (isMemoryBackend_ && deleteInterval_ == 0)
-        deleteInterval_ = config.LEDGER_HISTORY;
+    {
+        auto const minInterval =
+            config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+        deleteInterval_ = std::max(config.LEDGER_HISTORY, minInterval);
+    }
 
     if (deleteInterval_ != 0u)
     {
