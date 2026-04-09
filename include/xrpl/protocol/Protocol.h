@@ -307,4 +307,46 @@ std::size_t constexpr permissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 std::size_t constexpr maxBatchTxCount = 8;
 
+/** Length of one component of EC ElGamal ciphertext */
+std::size_t constexpr ecGamalEncryptedLength = 33;
+
+/** EC ElGamal ciphertext length: two 33-byte components concatenated */
+std::size_t constexpr ecGamalEncryptedTotalLength = ecGamalEncryptedLength * 2;
+
+/** Length of equality ZKProof in bytes */
+std::size_t constexpr ecEqualityProofLength = 98;
+
+/** Length of EC point (compressed) */
+std::size_t constexpr compressedECPointLength = 33;
+
+/** Length of EC public key (compressed) */
+std::size_t constexpr ecPubKeyLength = compressedECPointLength;
+
+/** Length of EC private key in bytes */
+std::size_t constexpr ecPrivKeyLength = 32;
+
+/** Length of the EC blinding factor in bytes */
+std::size_t constexpr ecBlindingFactorLength = 32;
+
+/** Length of Schnorr ZKProof for public key registration in bytes */
+std::size_t constexpr ecSchnorrProofLength = 65;
+
+/** Length of ElGamal Pedersen linkage proof in bytes */
+std::size_t constexpr ecPedersenProofLength = 195;
+
+/** Length of Pedersen Commitment (compressed) */
+std::size_t constexpr ecPedersenCommitmentLength = compressedECPointLength;
+
+/** Length of single bulletproof (range proof for 1 commitment) in bytes */
+std::size_t constexpr ecSingleBulletproofLength = 688;
+
+/** Length of double bulletproof (range proof for 2 commitments) in bytes */
+std::size_t constexpr ecDoubleBulletproofLength = 754;
+
+/** Compressed EC point prefix for even y-coordinate */
+std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
+
+/** Compressed EC point prefix for odd y-coordinate */
+std::uint8_t constexpr ecCompressedPrefixOddY = 0x03;
+
 }  // namespace xrpl
