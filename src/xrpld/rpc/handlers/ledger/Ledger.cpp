@@ -23,11 +23,8 @@ LedgerHandler::check()
     auto const& params = context_.params;
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
-    if (needsLedger)
-    {
-        if (auto s = lookupLedger(ledger_, context_, result_))
-            return s;
-    }
+    if (!needsLedger)
+        return Status::OK;
 
     auto getBool = [&](Json::StaticString const& field, bool& out) -> Status {
         if (!params.isMember(field))
@@ -84,6 +81,10 @@ LedgerHandler::check()
         }
         context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
+
+    if (auto s = lookupLedger(ledger_, context_, result_))
+        return s;
+
     if (queue)
     {
         if (!ledger_ || !ledger_->open())
