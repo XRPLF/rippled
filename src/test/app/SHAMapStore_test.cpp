@@ -367,6 +367,16 @@ public:
             auto const result = env.rpc("json", "can_delete", to_string(jvParams));
             BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
         }
+
+        // positive int literal — Json::Reader parses values <= maxInt as
+        // intValue (not uintValue); must be accepted as a valid ledger seq
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = 1000000;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]));
+            BEAST_EXPECT(result[jss::result][jss::can_delete] == 1000000);
+        }
     }
 
     void
