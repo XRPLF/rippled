@@ -28,7 +28,7 @@ doTransactionEntry(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_hash))
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::missing_field_error(jss::tx_hash);
     }
     else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
     {
