@@ -326,19 +326,19 @@ public:
             Account const owner2{"owner2"};
             env.fund(XRP(1'000), owner1);
             env.fund(XRP(1'000), owner2);
-            Oracle oracle1(
+            Oracle const oracle1(
                 env, {.owner = owner1, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
-            Oracle oracle2(
+            Oracle const oracle2(
                 env, {.owner = owner2, .series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
 
             // Query with both oracles listed once
-            OraclesData single = {
+            OraclesData const single = {
                 {owner1, oracle1.documentID()},
                 {owner2, oracle2.documentID()}};
             auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
 
             // Query with oracle1 listed twice
-            OraclesData duplicated = {
+            OraclesData const duplicated = {
                 {owner1, oracle1.documentID()},
                 {owner1, oracle1.documentID()},
                 {owner2, oracle2.documentID()}};
