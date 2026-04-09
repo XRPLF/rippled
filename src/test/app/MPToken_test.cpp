@@ -538,7 +538,8 @@ class MPToken_test : public beast::unit_test::suite
             // (2)
             mptAlice.set({.account = alice, .flags = 0x00000008, .err = temINVALID_FLAG});
 
-            if (!features[featureSingleAssetVault] && !features[featureDynamicMPT])
+            if (!features[featureSingleAssetVault] && !features[featureDynamicMPT] &&
+                !features[featureConfidentialTransfer])
             {
                 // test invalid flags - nothing is being changed
                 mptAlice.set({.account = alice, .flags = 0x00000000, .err = tecNO_PERMISSION});
@@ -2680,6 +2681,7 @@ class MPToken_test : public beast::unit_test::suite
                 tmfMPTSetCanTrade | tmfMPTClearCanTrade,
                 tmfMPTSetCanTransfer | tmfMPTClearCanTransfer,
                 tmfMPTSetCanClawback | tmfMPTClearCanClawback,
+                tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount,
                 tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTClearCanTrade,
                 tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanEscrow |
                     tmfMPTClearCanClawback};

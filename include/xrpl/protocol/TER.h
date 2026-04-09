@@ -121,6 +121,7 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    temBAD_CIPHERTEXT,
 };
 
 //------------------------------------------------------------------------------
@@ -346,6 +347,7 @@ enum TECcodes : TERUnderlyingType {
     // backward compatibility with historical data on non-prod networks, can be
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
+    tecBAD_PROOF = 199,
 };
 
 //------------------------------------------------------------------------------

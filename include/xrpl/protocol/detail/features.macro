@@ -16,6 +16,7 @@
 // Keep it sorted in reverse chronological order.
 
 XRPL_FEATURE(BatchV1_1,                   Supported::no, VoteBehavior::DefaultNo)
+XRPL_FEATURE(ConfidentialTransfer,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Security3_1_3,               Supported::no, VoteBehavior::DefaultNo)
 XRPL_FIX    (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ExpiredNFTokenOfferRemoval,  Supported::yes, VoteBehavior::DefaultNo)
