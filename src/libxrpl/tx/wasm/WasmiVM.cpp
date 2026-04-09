@@ -802,6 +802,8 @@ WasmiEngine::runHlp(
     if (!moduleWrap_ || !moduleWrap_->instanceWrap_)
         throw std::runtime_error("no instance");  // LCOV_EXCL_LINE
 
+    auto clear = [](HostFunctions* p) { p->setRT(nullptr); };
+    std::unique_ptr<HostFunctions, decltype(clear)> const clearGuard(&hfs, clear);
     WasmiRuntimeWrapper iw(getRT());
     hfs.setRT(&iw);
 
