@@ -9,7 +9,18 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
+#include <array>
+
 namespace xrpl {
+
+static constexpr auto confidentialMPTTxTypes = std::to_array<TxType>({
+    ttCONFIDENTIAL_MPT_SEND,
+    ttCONFIDENTIAL_MPT_CONVERT,
+    ttCONFIDENTIAL_MPT_CONVERT_BACK,
+    ttCONFIDENTIAL_MPT_MERGE_INBOX,
+    ttCONFIDENTIAL_MPT_CLAWBACK,
+});
 
 void
 ValidMPTIssuance::visitEntry(
@@ -341,6 +352,14 @@ ValidMPTPayment::finalize(
 {
     if (isTesSuccess(result))
     {
+        // Confidential transactions are validated by ValidConfidentialMPToken.
+        // They modify encrypted fields and sfConfidentialOutstandingAmount
+        // rather than sfMPTAmount/sfOutstandingAmount in the standard way,
+        // so ValidMPTPayment's accounting does not apply to them.
+        if (std::ranges::find(confidentialMPTTxTypes, tx.getTxnType()) !=
+            confidentialMPTTxTypes.end())
+            return true;
+
         bool const enforce = view.rules().enabled(featureMPTokensV2);
         if (overflow_)
         {
