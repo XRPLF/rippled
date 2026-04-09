@@ -131,7 +131,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
     if (tx_json.isMember(sfSponsorSignature.jsonName))
     {
         if (auto error = autofillSignature(tx_json[sfSponsorSignature.jsonName]))
-            return *error;
+            return error;
     }
 
     if (!tx_json.isMember(jss::Sequence))

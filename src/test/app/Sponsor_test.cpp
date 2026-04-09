@@ -137,12 +137,12 @@ public:
             ter(temMALFORMED));
 
         // Invalid feeAmount
-        for (auto amt : {XRP(-1), USD(1)})
+        for (auto const& amt : {XRP(-1), USD(1)})
         {
             env(sponsor::set_fee(sponsor, 0, amt), sponsor::sponseeAcc(alice), ter(temBAD_AMOUNT));
         }
         // Invalid MaxFee
-        for (auto amt : {XRP(-1), USD(1)})
+        for (auto const& amt : {XRP(-1), USD(1)})
         {
             env(sponsor::set_fee(sponsor, 0, XRP(1), amt),
                 sponsor::sponseeAcc(alice),
@@ -260,13 +260,13 @@ public:
         Account const gw("gw");
         Account const sp("sponsor");
 
-        Asset asset = gw["IOU"].asset();
+        Asset const asset = gw["IOU"].asset();
 
         env.fund(XRP(1000000), alice, bob, gw, sp);
         env.close();
 
-        // Create a vault to get a pseudo account
-        Vault vault{env};
+        // Create a vault to get a pseudo acconst count
+        Vault const vault{env};
         auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
         env(tx);
         env.close();
@@ -1174,7 +1174,7 @@ public:
             auto const& highAcc = alice > bob ? alice : bob;
             auto const& lowAcc = alice > bob ? bob : alice;
 
-            for (bool isIssuerHigh : {false, true})
+            for (bool const isIssuerHigh : {false, true})
             {
                 Env env{*this, testable_amendments()};
                 env.fund(XRP(10000), alice, bob, sponsor);
@@ -2147,9 +2147,9 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor, sponsor2);
             env.close();
 
-            // CheckCreate -> CheckCancel
+            // CheckCreate -> Check = 0Cancel
 
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2213,8 +2213,8 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            // CheckCreate -> CheckCash
-            uint32_t seq2;
+            // CheckCreate -> = 0 CheckCash
+            uint32_t seq2 = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2254,8 +2254,8 @@ public:
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            // CheckCreate -> CheckCash
-            uint32_t seq2;
+            // CheckCreat = 0e -> CheckCash
+            uint32_t seq2 = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2316,7 +2316,7 @@ public:
             env.close();
 
             // OfferCreate
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2374,7 +2374,7 @@ public:
             env.close();
 
             // OfferCreate
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2515,7 +2515,7 @@ public:
             env.close();
 
             // TicketCreate
-            uint32_t ticketSeq;
+            uint32_t ticketSeq = 0;
 
             testEachSponsorship(
                 env,
@@ -2915,7 +2915,7 @@ public:
             env.close();
 
             // EscrowCreate
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -2994,7 +2994,7 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 1);
 
             // EscrowCreate
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -3227,8 +3227,8 @@ public:
             env.close();
 
             // for free mptoken checks
-            // adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
-            std::uint32_t ticketSeq{env.seq(sponsor) + 1};
+            // adjustAccountXRPBalance(env, sponsconst or, reserve(env, 2));
+            std::uint32_t const ticketSeq{env.seq(sponsor) + 1};
             env(ticket::create(sponsor, 2));
             env.close();
 
@@ -3714,7 +3714,7 @@ public:
 
             // PermissionedDomainSet
             pdomain::Credentials credentials{{alice, "first credential"}};
-            uint32_t seq;
+            uint32_t seq = 0;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -3806,7 +3806,7 @@ public:
                 {"XRP", "U10", 750, 1},
             };
 
-            DataSeries actualSeries(series.begin(), series.begin() + dataSeriesSize);
+            DataSeries const actualSeries(series.begin(), series.begin() + dataSeriesSize);
 
             Json::Value dataSeries(Json::arrayValue);
             for (auto const& data : actualSeries)
@@ -4018,7 +4018,7 @@ public:
                 BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
                 BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             }
-            for (bool isTwoOwnerCount : {false, true})
+            for (bool const isTwoOwnerCount : {false, true})
             {
                 // test sponsor transfer
                 auto const dataSeriesSize = isTwoOwnerCount ? 6 : 5;
@@ -4168,7 +4168,7 @@ public:
         auto const& lowAcc = alice > bob ? bob : alice;
 
         // create and delete
-        for (bool isIssuerHigh : {false, true})
+        for (bool const isIssuerHigh : {false, true})
         {
             Env env{*this, testable_amendments()};
             env.fund(XRP(1000000), alice, bob, charlie, sponsor, sponsor2);
@@ -4238,7 +4238,7 @@ public:
         }
 
         // update
-        for (bool isIssuerHigh : {false, true})
+        for (bool const isIssuerHigh : {false, true})
         {
             Env env{*this, testable_amendments()};
             env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
@@ -4355,7 +4355,7 @@ public:
             env.fund(XRP(1000000), alice, bob, gw, sponsor);
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
 
             env(ticket::create(sponsor, 2));
@@ -4382,7 +4382,7 @@ public:
             env.fund(XRP(1000000), alice, bob, gw, sponsor);
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx);
             env.close();
@@ -4418,7 +4418,7 @@ public:
                 env.fund(XRP(1000000), alice, bob, gw, sponsor);
                 env.close();
 
-                Vault vault{env};
+                Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
                 env(tx);
                 env.close();
@@ -4493,7 +4493,7 @@ public:
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx);
             env.close();
@@ -4541,7 +4541,7 @@ public:
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx, sponsor::as(sponsor, spfSponsorReserve), sig(sfSponsorSignature, sponsor));
             env.close();
@@ -4714,7 +4714,7 @@ public:
 
             PrettyAsset const asset{xrpIssue(), 1'000'000};
 
-            Vault vault{env};
+            Vault const vault{env};
             auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx);
             env.close();
@@ -4770,7 +4770,7 @@ public:
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 1);
 
-            Vault vault{env};
+            Vault const vault{env};
             auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
             env(tx);
             env.close();
@@ -4849,7 +4849,7 @@ public:
             env(pay(issuer, bob, asset(1000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto const [tx, keylet] = vault.create({.owner = bob, .asset = asset});
             env(tx);
             env.close();

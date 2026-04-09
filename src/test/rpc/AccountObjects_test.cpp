@@ -915,7 +915,7 @@ public:
             env.close();
 
             // Find the sponsorship.
-            for (auto acct : {alice, gw})
+            for (const auto& acct : {alice, gw})
             {
                 Json::Value const resp = acctObjs(acct, jss::sponsorship);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));

@@ -118,7 +118,7 @@ struct FeePayer
 {
     Keylet entry;
     SF_AMOUNT const& balanceField;
-    FeePayerType type;
+    FeePayerType type{FeePayerType::Account};
 };
 
 class Transactor

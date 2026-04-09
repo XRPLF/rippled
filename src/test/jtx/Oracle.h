@@ -1,6 +1,9 @@
 #pragma once
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
 
 #include <date/date.h>
 
