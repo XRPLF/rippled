@@ -1472,6 +1472,12 @@ setup_Overlay(BasicConfig const& config)
         }
 
         set(setup.verifyEndpoints, true, "verify_endpoints", section);
+        if (setup.verifyEndpoints)
+        {
+            JLOG(j_.warn()) << "Endpoint verification is enabled. This is a "
+                               "security risk and should only be used for "
+                               "testing.";
+        }
     }
 
     {
