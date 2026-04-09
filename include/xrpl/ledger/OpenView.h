@@ -28,7 +28,7 @@ inline constexpr struct open_ledger_t
 /** Batch view construction tag.
 
     Views constructed with this tag are part of a stack of views
-    used during batch transaction applied.
+    used during batch transaction application.
  */
 inline constexpr struct batch_view_t
 {

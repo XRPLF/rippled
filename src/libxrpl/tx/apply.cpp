@@ -24,29 +24,12 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     auto const flags = router.getFlags(id);
 
     // Ignore signature check on batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatchV1_1))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
             tx.isFieldPresent(sfSigners))
             return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
-
-        // This block should probably have never been included in the
-        // original `Batch` implementation. An inner transaction never
-        // has a valid signature.
-        bool const neverValid = rules.enabled(fixBatchInnerSigs);
-        if (!neverValid)
-        {
-            std::string reason;
-            if (!passesLocalChecks(tx, reason))
-            {
-                router.setFlags(id, SF_LOCALBAD);
-                return {Validity::SigGoodOnly, reason};
-            }
-
-            router.setFlags(id, SF_SIGGOOD);
-            return {Validity::Valid, ""};
-        }
     }
 
     if (any(flags & SF_SIGBAD))

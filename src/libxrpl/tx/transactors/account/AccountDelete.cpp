@@ -166,7 +166,7 @@ removeDelegateFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+    return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
 TER

@@ -252,38 +252,24 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
     // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
@@ -316,7 +302,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (ctx.view.open() && partialPaymentAllowed)
+        if (partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -369,7 +355,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if ((hasPaths || sendMax || !dstAmount.native()) && ctx.view.open())
+    if (hasPaths || sendMax || !dstAmount.native())
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 

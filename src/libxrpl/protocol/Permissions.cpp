@@ -1,6 +1,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -32,40 +34,69 @@ Permission::Permission()
     };
 
     granularPermissionMap_ = {
-#pragma push_macro("PERMISSION")
-#undef PERMISSION
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
 
-#define PERMISSION(type, txType, value) {#type, type},
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {#type, type},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
-#undef PERMISSION
-#pragma pop_macro("PERMISSION")
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
     };
 
     granularNameMap_ = {
-#pragma push_macro("PERMISSION")
-#undef PERMISSION
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
 
-#define PERMISSION(type, txType, value) {type, #type},
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {type, #type},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
-#undef PERMISSION
-#pragma pop_macro("PERMISSION")
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
     };
 
     granularTxTypeMap_ = {
-#pragma push_macro("PERMISSION")
-#undef PERMISSION
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
 
-#define PERMISSION(type, txType, value) {type, txType},
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {type, txType},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
-#undef PERMISSION
-#pragma pop_macro("PERMISSION")
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
     };
+
+    {
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
+
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields) \
+    granularPermittedFlags_[type] = (flags);
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
+    }
+
+    {
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
+
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields) \
+    granularTemplates_.emplace(                                 \
+        std::piecewise_construct,                               \
+        std::forward_as_tuple(type),                            \
+        std::forward_as_tuple(std::vector<SOElement> fields, TxFormats::getCommonFields()));
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
+    }
 
     XRPL_ASSERT(
         txFeatureMap_.size() == delegableTx_.size(),
@@ -79,6 +110,9 @@ Permission::Permission()
             "xrpl::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
     }
+
+    for (auto const& [gp, txType] : granularTxTypeMap_)
+        granularTxTypes_.insert(txType);
 }
 
 Permission const&
@@ -131,6 +165,12 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
         return it->second;
 
     return std::nullopt;
+}
+
+bool
+Permission::hasGranularPermissions(TxType txType) const
+{
+    return granularTxTypes_.contains(txType);
 }
 
 std::optional<std::reference_wrapper<uint256 const>>
@@ -190,6 +230,50 @@ TxType
 Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
+}
+
+bool
+Permission::checkGranularSandbox(
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldPermissions) const
+{
+    auto const txFlags = tx.getFlags();
+
+    // Build union of flags and templates across all held permissions.
+    std::uint32_t unionFlags = 0;
+    for (auto const& gp : heldPermissions)
+    {
+        auto const it = granularPermittedFlags_.find(gp);
+        if (it != granularPermittedFlags_.end())
+            unionFlags |= it->second;
+    }
+
+    // Check if flags are permitted
+    if ((txFlags & ~unionFlags) != 0)
+        return false;
+
+    // Check if fields are permitted. Every present field must appear in at least one held
+    // permission's template. The common fields are included in the constructor.
+    for (auto const& field : tx)
+    {
+        if (field.getSType() == STI_NOTPRESENT)
+            continue;
+
+        bool fieldAllowed = false;
+        for (auto const& gp : heldPermissions)
+        {
+            auto const it = granularTemplates_.find(gp);
+            if (it != granularTemplates_.end() && it->second.getIndex(field.getFName()) != -1)
+            {
+                fieldAllowed = true;
+                break;
+            }
+        }
+        if (!fieldAllowed)
+            return false;
+    }
+
+    return true;
 }
 
 }  // namespace xrpl
