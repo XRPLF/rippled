@@ -33,6 +33,8 @@ jobs:
         run: .github/scripts/rename/config.sh .
       - name: Check include guards
         run: .github/scripts/rename/include.sh .
+      - name: Check documentation
+        run: .github/scripts/rename/docs.sh .
       - name: Check for differences
         env:
           MESSAGE: |

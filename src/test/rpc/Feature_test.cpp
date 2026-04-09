@@ -505,7 +505,7 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const& supportedAmendments = detail::supportedAmendments();
+        auto const& supportedAmendments = xrpl::detail::supportedAmendments();
         auto obsoleteFeature = std::find_if(
             std::begin(supportedAmendments), std::end(supportedAmendments), [](auto const& pair) {
                 return pair.second == VoteBehavior::Obsolete;

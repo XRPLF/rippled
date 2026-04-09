@@ -44,11 +44,11 @@ class Vault_test : public beast::unit_test::suite
     testSequences()
     {
         using namespace test::jtx;
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        Account charlie{"charlie"};  // authorized 3rd party
-        Account dave{"dave"};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const charlie{"charlie"};  // authorized 3rd party
+        Account const dave{"dave"};
 
         auto const testSequence = [&, this](
                                       std::string const& prefix,
@@ -1330,10 +1330,10 @@ class Vault_test : public beast::unit_test::suite
                         return defXRP;
                     return a + XRP(1000);
                 }
-                auto defIOU = STAmount{a.issue(), 30000};
+                auto defIOU = STAmount{a.asset(), 30000};
                 if (a <= defIOU)
                     return defIOU;
-                return a + STAmount{a.issue(), 1000};
+                return a + STAmount{a.asset(), 1000};
             };
             auto const toFund1 = toFund(asset1);
             auto const toFund2 = toFund(asset2);
@@ -1550,9 +1550,9 @@ class Vault_test : public beast::unit_test::suite
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
             env.fund(XRP(args.initialXRP), issuer, owner, depositor);
             env.close();
             Vault vault{env};
@@ -2174,8 +2174,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("MPT shares to a vault");
 
             Env env{*this, testable_amendments() | featureSingleAssetVault};
-            Account owner{"owner"};
-            Account issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
             env.fund(XRP(1000000), owner, issuer);
             env.close();
             Vault const vault{env};
@@ -2242,6 +2242,43 @@ class Vault_test : public beast::unit_test::suite
             // Delete vault with zero balance
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
+
+        {
+            testcase("MPT OutstandingAmount > MaximumAmount");
+
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+            Account const alice{"alice"};
+            Account const issuer{"issuer"};
+            env.fund(XRP(1'000), alice, issuer);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester const BTC({.env = env, .issuer = issuer, .holders = {alice}, .maxAmt = 100});
+
+            auto [tx, k] = vault.create({.owner = issuer, .asset = BTC});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit({.depositor = issuer, .id = k.key, .amount = BTC(110)});
+            // accountHolds is the first check and the issuer has only BTC(100)
+            // available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            // OutstandingAmount == MaximumAmount
+            env(pay(issuer, alice, BTC(100)));
+            env.close();
+
+            tx = vault.deposit({.depositor = issuer, .id = k.key, .amount = BTC(100)});
+            // the issuer has BTC(0) available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            tx = vault.deposit({.depositor = alice, .id = k.key, .amount = BTC(100)});
+            // alice transfers BTC(100), OutstandingAmount is 100
+            env(tx);
+            env.close();
+        }
     }
 
     void

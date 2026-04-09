@@ -30,11 +30,11 @@ paths::operator()(Env& env, JTx& jt) const
     }
 
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(env.current(), env.app().getJournal("RippleLineCache")),
+        std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache")),
         from,
         to,
-        in_.currency,
-        in_.account,
+        in_,
+        in_.getIssuer(),
         amount,
         std::nullopt,
         domain,
@@ -44,7 +44,7 @@ paths::operator()(Env& env, JTx& jt) const
 
     STPath fp;
     pf.computePathRanks(limit_);
-    auto const found = pf.getBestPaths(limit_, fp, {}, in_.account);
+    auto const found = pf.getBestPaths(limit_, fp, {}, in_.getIssuer());
 
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
@@ -53,6 +53,11 @@ paths::operator()(Env& env, JTx& jt) const
 }
 
 //------------------------------------------------------------------------------
+
+path::path(STPath const& p)
+{
+    jv_ = p.getJson(JsonOptions::none);
+}
 
 Json::Value&
 path::create()
@@ -77,16 +82,20 @@ void
 path::append_one(IOU const& iou)
 {
     auto& jv = create();
-    jv["currency"] = to_string(iou.issue().currency);
-    jv["account"] = toBase58(iou.issue().account);
+    jv["currency"] = to_string(iou.currency);
+    jv["account"] = toBase58(iou.account);
 }
 
 void
 path::append_one(BookSpec const& book)
 {
     auto& jv = create();
-    jv["currency"] = to_string(book.currency);
-    jv["issuer"] = toBase58(book.account);
+    book.asset.visit(
+        [&](Issue const& issue) {
+            jv["currency"] = to_string(issue.currency);
+            jv["issuer"] = toBase58(issue.account);
+        },
+        [&](MPTIssue const& issue) { jv["mpt_issuance_id"] = to_string(issue.getMptID()); });
 }
 
 void
