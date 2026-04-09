@@ -118,6 +118,30 @@ public:
     }
 
     /**
+     * @brief Get sfTakerPaysMPT (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    getTakerPaysMPT() const
+    {
+        if (hasTakerPaysMPT())
+            return this->sle_->at(sfTakerPaysMPT);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTakerPaysMPT is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTakerPaysMPT() const
+    {
+        return this->sle_->isFieldPresent(sfTakerPaysMPT);
+    }
+
+    /**
      * @brief Get sfTakerGetsCurrency (soeOPTIONAL)
      * @return The field value, or std::nullopt if not present.
      */
@@ -163,6 +187,30 @@ public:
     hasTakerGetsIssuer() const
     {
         return this->sle_->isFieldPresent(sfTakerGetsIssuer);
+    }
+
+    /**
+     * @brief Get sfTakerGetsMPT (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    getTakerGetsMPT() const
+    {
+        if (hasTakerGetsMPT())
+            return this->sle_->at(sfTakerGetsMPT);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTakerGetsMPT is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTakerGetsMPT() const
+    {
+        return this->sle_->isFieldPresent(sfTakerGetsMPT);
     }
 
     /**
@@ -428,6 +476,17 @@ public:
     }
 
     /**
+     * @brief Set sfTakerPaysMPT (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    DirectoryNodeBuilder&
+    setTakerPaysMPT(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    {
+        object_[sfTakerPaysMPT] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfTakerGetsCurrency (soeOPTIONAL)
      * @return Reference to this builder for method chaining.
      */
@@ -446,6 +505,17 @@ public:
     setTakerGetsIssuer(std::decay_t<typename SF_UINT160::type::value_type> const& value)
     {
         object_[sfTakerGetsIssuer] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTakerGetsMPT (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    DirectoryNodeBuilder&
+    setTakerGetsMPT(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    {
+        object_[sfTakerGetsMPT] = value;
         return *this;
     }
 

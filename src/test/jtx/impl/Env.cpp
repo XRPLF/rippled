@@ -174,54 +174,47 @@ Env::balance(Account const& account) const
 }
 
 PrettyAmount
-Env::balance(Account const& account, Issue const& issue) const
-{
-    if (isXRP(issue.currency))
-        return balance(account);
-    auto const sle = le(keylet::line(account.id(), issue));
-    if (!sle)
-        return {STAmount(issue, 0), account.name()};
-    auto amount = sle->getFieldAmount(sfBalance);
-    amount.setIssuer(issue.account);
-    if (account.id() > issue.account)
-        amount.negate();
-    return {amount, lookup(issue.account).name()};
-}
-
-PrettyAmount
-Env::balance(Account const& account, MPTIssue const& mptIssue) const
-{
-    MPTID const id = mptIssue.getMptID();
-    if (!id)
-        return {STAmount(mptIssue, 0), account.name()};
-
-    AccountID const issuer = mptIssue.getIssuer();
-    if (account.id() == issuer)
-    {
-        // Issuer balance
-        auto const sle = le(keylet::mptIssuance(id));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
-
-        // Make it negative
-        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
-        return {amount, lookup(issuer).name()};
-    }
-
-    // Holder balance
-    auto const sle = le(keylet::mptoken(id, account));
-    if (!sle)
-        return {STAmount(mptIssue, 0), account.name()};
-
-    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-    return {amount, lookup(issuer).name()};
-}
-
-PrettyAmount
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Env::balance(Account const& account, Asset const& asset) const
 {
-    return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());
+    return asset.visit(
+        [&](Issue const& issue) -> PrettyAmount {
+            if (isXRP(issue.currency))
+                return balance(account);
+            auto const sle = le(keylet::line(account.id(), issue));
+            if (!sle)
+                return {STAmount(issue, 0), account.name()};
+            auto amount = sle->getFieldAmount(sfBalance);
+            amount.get<Issue>().account = issue.account;
+            if (account.id() > issue.account)
+                amount.negate();
+            return {amount, lookup(issue.account).name()};
+        },
+        [&](MPTIssue const& mptIssue) -> PrettyAmount {
+            MPTID const& id = mptIssue.getMptID();
+            if (!id)
+                return {STAmount(mptIssue, 0), account.name()};
+
+            AccountID const& issuer = mptIssue.getIssuer();
+            if (account.id() == issuer)
+            {
+                // Issuer balance
+                auto const sle = le(keylet::mptIssuance(id));
+                if (!sle)
+                    return {STAmount(mptIssue, 0), account.name()};
+
+                // Make it negative
+                STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
+                return {amount, lookup(issuer).name()};
+            }
+
+            // Holder balance
+            auto const sle = le(keylet::mptoken(id, account));
+            if (!sle)
+                return {STAmount(mptIssue, 0), account.name()};
+
+            STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+            return {amount, lookup(issuer).name()};
+        });
 }
 
 PrettyAmount
@@ -300,6 +293,8 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
 void
 Env::trust(STAmount const& amount, Account const& account)
 {
+    if (!amount.holds<Issue>())
+        Throw<std::runtime_error>("Env::trust: amount doesn't hold Issue");
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
