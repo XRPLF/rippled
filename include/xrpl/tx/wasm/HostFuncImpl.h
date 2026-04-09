@@ -4,6 +4,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 
 namespace xrpl {
+
+// Intended to work only through wasm runtime. Don't call them directly, except with unit tests
 class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx_;
