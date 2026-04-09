@@ -14,7 +14,7 @@ doNFTSellOffers(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::nft_id);
 
     if (!context.params[jss::nft_id].isString())
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::expected_field_error(jss::nft_id, "string");
 
     uint256 nftId;
 
