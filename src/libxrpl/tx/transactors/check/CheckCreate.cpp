@@ -3,6 +3,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -94,8 +95,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            AccountRoot const issuer(issuerId, ctx.view);
-            if (issuer.isGlobalFrozen())
+            if (isGlobalFrozen(ctx.view, sendMax.asset()))
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
                 return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
