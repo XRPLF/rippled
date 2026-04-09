@@ -1449,7 +1449,7 @@ OverlayImpl::deleteIdlePeers()
 //------------------------------------------------------------------------------
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config)
+setup_Overlay(BasicConfig const& config, beast::Journal j)
 {
     Overlay::Setup setup;
 
@@ -1474,9 +1474,9 @@ setup_Overlay(BasicConfig const& config)
         set(setup.verifyEndpoints, true, "verify_endpoints", section);
         if (!setup.verifyEndpoints)
         {
-            JLOG(j_.warn()) << "Endpoint verification is disabled. This is a "
-                               "security risk and should only be used for "
-                               "testing.";
+            JLOG(j.warn()) << "Endpoint verification is disabled. This is a "
+                              "security risk and should only be used for "
+                              "testing.";
         }
     }
 

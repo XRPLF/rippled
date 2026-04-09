@@ -10,7 +10,7 @@
 namespace xrpl {
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config);
+setup_Overlay(BasicConfig const& config, beast::Journal j);
 
 /** Creates the implementation of Overlay. */
 std::unique_ptr<Overlay>
