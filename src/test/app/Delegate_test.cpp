@@ -870,6 +870,54 @@ class Delegate_test : public beast::unit_test::suite
             }
         }
 
+        // PaymentMint/PaymentBurn with sfSendMax of the same asset is allowed,
+        // same-asset SendMax is still a direct payment, not cross-currency.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env.close();
+
+            // sfSendMax with same asset as sfAmount, still a direct payment
+            env(pay(gw, alice, USD(50)), sendmax(USD(50)), delegate::as(bob));
+            env.require(balance(alice, USD(50)));
+
+            env(delegate::set(alice, bob, {"PaymentBurn"}));
+            env.close();
+
+            env(pay(alice, gw, USD(30)), sendmax(USD(30)), delegate::as(bob));
+            env.require(balance(alice, USD(20)));
+        }
+
+        // Delegate account holds no granular permissions for the tx type:
+        // getGranularPermission returns empty set.
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            // Bob holds only an AccountSet granular permission.
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            // Payment has granular permissions defined in permissions.macro,
+            // but bob only holds AccountSet's granular permission,
+            // getGranularPermission returns empty.
+            env(pay(alice, gw, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+        }
+
         // PaymentMint and PaymentBurn for MPT
         {
             std::string logs;
@@ -925,6 +973,40 @@ class Delegate_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(100));
                 BEAST_EXPECT(env.balance(bob, MPT) == bobMPT + MPT(100));
             }
+        }
+
+        // Verify granular permissions of different tx types in the same SLE are scoped
+        // correctly. AccountSet permissions don't apply to Payment and vice versa
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            // Alice granted bob with both AccountDomainSet and PaymentMint.
+            env(delegate::set(alice, bob, {"AccountDomainSet", "PaymentMint"}));
+            env.close();
+
+            // PaymentMint fails at granular semantic check because alice is not the issuer.
+            env(pay(alice, gw, USD(50)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+            // AccountDomainSet applies correctly to AccountSet
+            std::string const domain = "example.com";
+            auto jt = noop(alice);
+            jt[sfDomain] = strHex(domain);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+            BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
+
+            // gw gives bob PaymentMint and bob can mint on gw's behalf
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env.close();
+            env(pay(gw, alice, USD(50)), delegate::as(bob));
+            env.require(balance(alice, USD(50)));
         }
     }
 
@@ -1108,6 +1190,34 @@ class Delegate_test : public beast::unit_test::suite
             env(trust(gw, gw["USD"](0), alice, tfSetfAuth | tfFullyCanonicalSig),
                 delegate::as(bob));
         }
+
+        {
+            Env env(*this);
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), gw, alice, bob);
+
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env(trust(alice, gw["USD"](50)));
+            env.close();
+            env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+            env.close();
+
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
+            env.close();
+
+            // sfQualityOut is a valid TrustSet field, but not permitted in granular template
+            Json::Value txJson = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+            txJson[sfQualityOut.jsonName] = 100;
+            env(txJson, delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+            // tfSetNoRipple is a valid flag for TrustSet, but not permitted in granular template
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth | tfSetNoRipple),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
+        }
     }
 
     void
@@ -1263,7 +1373,9 @@ class Delegate_test : public beast::unit_test::suite
             env(jv2, ter(terNO_DELEGATE_PERMISSION));
         }
 
-        // can not set AccountSet flags on behalf of other account
+        // can not set AccountSet flags on behalf of other account,
+        // in permissions.macro, the template for AccountSet does
+        // not allow any flag set or clear.
         {
             Env env(*this);
             auto const alice = Account{"alice"};
@@ -1358,6 +1470,71 @@ class Delegate_test : public beast::unit_test::suite
 
             env(jt);
             BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
+        }
+
+        // setting invalid field not in permissions.macro template will be rejected.
+        {
+            Env env(*this);
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Alice gives Bob permission to set her Domain
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            std::string const domain = "example.com";
+            auto txJson = noop(alice);
+            txJson[sfDomain] = strHex(domain);
+            txJson[sfDelegate] = bob.human();
+
+            // sfNFTokenMinter is a valid field in AccountSet tx, but
+            // it is not permitted for granular template
+            txJson[sfNFTokenMinter] = bob.human();
+
+            env(txJson, ter(terNO_DELEGATE_PERMISSION));
+        }
+
+        // Delegated AccountSet with no fields and no flags is allowed,
+        // because it is allowed in the non-delegated case as well.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            auto jt = noop(alice);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+        }
+
+        // Revoking all permissions deletes the SLE and subsequent attempts are rejected.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            std::string const domain = "example.com";
+            auto jt = noop(alice);
+            jt[sfDomain] = strHex(domain);
+            jt[sfDelegate] = bob.human();
+            env(jt);
+
+            // empty DelegateSet deletes the SLE
+            env(delegate::set(alice, bob, {}));
+            env.close();
+
+            env(jt, ter(terNO_DELEGATE_PERMISSION));
         }
     }
 
@@ -1478,6 +1655,37 @@ class Delegate_test : public beast::unit_test::suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
             mpt.set({.account = alice, .flags = tfMPTLock | tfFullyCanonicalSig, .delegate = bob});
+        }
+
+        // field not permitted to exist in granular delegation
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(100000), alice, bob);
+
+            MPTTester mpt(env, alice, {.fund = false});
+            mpt.create({.flags = tfMPTCanLock});
+            env.close();
+
+            // alice gives granular permission to bob for MPTokenIssuanceLock
+            env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
+            env.close();
+
+            // Field is not permitted, permitted fields for delegation is defined in
+            // permissions.macro.
+            mpt.set(
+                {.account = alice,
+                 .mutableFlags = 2,
+                 .delegate = bob,
+                 .err = terNO_DELEGATE_PERMISSION});
+
+            // Notice: flags not defined in permissions.macro are not permitted for delegation.
+            // Since preflight will check invalid flag for the tx, it is not reachable.
+            // If any new flag is defined into the transaction in the future,
+            // but is not allowed for delegation, the transaction will be rejected with
+            // terNO_DELEGATE_PERMISSION. The set of permitted flags for delegation is defined in
+            // permissions.macro.
         }
     }
 
@@ -1808,6 +2016,46 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testGranularSandboxCheckOrder()
+    {
+        testcase("Make sure GranularSandbox is checked after transaction-level permission");
+
+        using namespace jtx;
+
+        Env env(*this);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), gw, alice, bob);
+
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(alice, gw["USD"](50)));
+        env.close();
+        env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
+        env.close();
+
+        env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
+        env.close();
+
+        // sfQualityOut is a valid TrustSet field, but not permitted in granular template
+        Json::Value txJson = trust(gw, gw["USD"](0), alice, tfSetfAuth);
+        txJson[sfQualityOut.jsonName] = 100;
+        env(txJson, delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
+
+        // Now Alice grants Bob with transaction level permission
+        env(delegate::set(gw, bob, {"TrustlineAuthorize", "TrustSet"}));
+        env.close();
+
+        // NOTE: This case is to ensure that if a delegate possesses a
+        // transaction-level permission (e.g., TrustSet), the granular sandbox must not incorrectly
+        // block the transaction. The function checkGranularSandbox MUST be called after the
+        // transaction-level permission check. This test case is to avoid future refactor mistakes,
+        // modifying the order will fail here.
+        env(txJson, delegate::as(bob));
+    }
+
+    void
     testTxDelegableCount()
     {
         testcase("Delegable Transactions Completeness");
@@ -1866,9 +2114,8 @@ class Delegate_test : public beast::unit_test::suite
         STTx const tx{ttPAYMENT, [](STObject&) {}};
         BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
 
-        // loadGranularPermission nullptr check
-        std::unordered_set<GranularPermissionType> granularPermissions;
-        loadGranularPermission(nullptr, ttPAYMENT, granularPermissions);
+        // getGranularPermission nullptr check
+        auto const granularPermissions = getGranularPermission(nullptr, ttPAYMENT);
         BEAST_EXPECT(granularPermissions.empty());
     }
 
@@ -1896,6 +2143,7 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
         testTxRequireFeatures(all);
+        testGranularSandboxCheckOrder();
         testTxDelegableCount();
         testDelegateUtilsNullptrCheck();
     }

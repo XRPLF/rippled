@@ -26,10 +26,7 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
  * @param granularPermissions Granted granular permissions tied to the
  * transaction type.
  */
-void
-loadGranularPermission(
-    std::shared_ptr<SLE const> const& delegate,
-    TxType const& type,
-    std::unordered_set<GranularPermissionType>& granularPermissions);
+std::unordered_set<GranularPermissionType>
+getGranularPermission(std::shared_ptr<SLE const> const& delegate, TxType const& type);
 
 }  // namespace xrpl
