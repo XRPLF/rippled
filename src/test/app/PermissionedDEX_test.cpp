@@ -940,6 +940,61 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     void
+    testAmmQualityNotLeaked(FeatureBitset features)
+    {
+        testcase("AMM quality not leaked into domain BookStep");
+
+        // When both an AMM pool and a domain LOB offer exist for the same asset
+        // pair, quality estimation for a domain BookStep must NOT include AMM
+        // liquidity. getAMMOffer() returns nullopt for domain books, so
+        // qualityUpperBound/tip/tipOfferQualityF only see the LOB offer, which
+        // is consistent with tryAMM() skipping AMM during actual crossing.
+        //
+        // Setup:
+        //   - AMM pool: XRP(10)/USD(50), quality ~5 USD per XRP
+        //   - Domain LOB offer: XRP(10)/USD(10), quality 1 USD per XRP
+        //
+        // A domain partial payment requesting USD(100) with sendmax XRP(20)
+        // should consume only the LOB offer and leave AMM balances unchanged.
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // alice: starts with XRP(100000), USD(100)
+        // Create AMM pool with good quality (~5 USD per XRP)
+        AMM amm(env, alice, XRP(10), USD(50));
+
+        // bob creates a domain LOB offer at worse quality (1 USD per XRP)
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), domain(domainID));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+
+        auto const carolBalBefore = env.balance(carol, USD);
+
+        // Domain partial payment: alice pays carol USD via XRP->USD path.
+        // AMM has quality ~5:1 but cannot be consumed in a domain payment.
+        // Only the LOB offer at 1:1 should be consumed.
+        env(pay(alice, carol, USD(100)),
+            path(~USD),
+            sendmax(XRP(20)),
+            txflags(tfPartialPayment),
+            domain(domainID));
+        env.close();
+
+        // Carol should receive exactly 10 USD (from the LOB offer at 1:1).
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(10));
+
+        // The LOB offer should be fully consumed.
+        BEAST_EXPECT(!offerExists(env, bob, bobOfferSeq));
+
+        // AMM balances must be unchanged: AMM was not consumed in domain payment.
+        auto [xrp, usd, lpt] = amm.balances(XRP, USD);
+        BEAST_EXPECT(xrp == XRP(10));
+        BEAST_EXPECT(usd == USD(50));
+    }
+
+    void
     testHybridOfferCreate(FeatureBitset features)
     {
         testcase("Hybrid offer create");
@@ -1386,6 +1441,7 @@ public:
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
         testAmmNotUsed(all);
+        testAmmQualityNotLeaked(all);
         testAutoBridge(all);
 
         // Test hybrid offers
