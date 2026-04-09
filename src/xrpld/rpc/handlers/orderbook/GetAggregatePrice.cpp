@@ -218,7 +218,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
-    // Get the ledger
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
     if (!ledger)

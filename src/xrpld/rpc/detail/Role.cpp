@@ -257,8 +257,8 @@ forwardedFor(http_request_type const& request)
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
             auto const remaining = static_cast<std::size_t>(it->value().end() - found);
-            std::size_t const pos = std::string_view(found, remaining).find_first_of(",;");
-            if (pos != std::string_view::npos)
+            if (std::size_t const pos = std::string_view(found, remaining).find_first_of(",;");
+                pos != std::string_view::npos)
                 return pos;
 
             return remaining;
