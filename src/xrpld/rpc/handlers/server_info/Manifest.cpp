@@ -18,7 +18,7 @@ doManifest(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::public_key);
 
     if (!params[jss::public_key].isString())
-        return RPC::missing_field_error(jss::public_key);
+        return RPC::expected_field_error(jss::public_key, "string");
 
     auto const requested = params[jss::public_key].asString();
 
