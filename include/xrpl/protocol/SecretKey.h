@@ -118,7 +118,7 @@ derivePublicKey(KeyType type, SecretKey const& sk);
 
 /** Generate a key pair deterministically.
 
-    This algorithm is specific to Ripple:
+    This algorithm is specific to the XRPL:
 
     For secp256k1 key pairs, the seed is converted
     to a Generator and used to compute the key pair

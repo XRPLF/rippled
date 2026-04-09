@@ -67,6 +67,11 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
+    XRPL_ASSERT(
+        txFeatureMap_.size() == delegableTx_.size(),
+        "xrpl::Permission : txFeatureMap_ and delegableTx_ must have same "
+        "size");
+
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
     {
         XRPL_ASSERT(

@@ -34,7 +34,7 @@ auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
 /** Calculates the close time resolution for the specified ledger.
 
-    The Ripple protocol uses binning to represent time intervals using only one
+    The XRPL protocol uses binning to represent time intervals using only one
     timestamp. This allows servers to derive a common time for the next ledger,
     without the need for perfectly synchronized clocks.
     The time resolution (i.e. the size of the intervals) is adjusted dynamically
@@ -62,7 +62,7 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     Seq ledgerSeq)
 {
-    XRPL_ASSERT(ledgerSeq != Seq{0}, "ripple:getNextLedgerTimeResolution : valid ledger sequence");
+    XRPL_ASSERT(ledgerSeq != Seq{0}, "xrpl::getNextLedgerTimeResolution : valid ledger sequence");
 
     using namespace std::chrono;
     // Find the current resolution:
@@ -72,7 +72,7 @@ getNextLedgerTimeResolution(
         previousResolution);
     XRPL_ASSERT(
         iter != std::end(ledgerPossibleTimeResolutions),
-        "ripple:getNextLedgerTimeResolution : found time resolution");
+        "xrpl::getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))

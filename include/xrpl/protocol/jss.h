@@ -407,6 +407,8 @@ JSS(missingCommand);              // error
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
 JSS(mptoken_index);               // out: mpt_holders
+JSS(mpt_issuance_id_a);           // out: BookChanges
+JSS(mpt_issuance_id_b);           // out: BookChanges
 JSS(name);                        // out: AmendmentTableImpl, PeerImp
 JSS(needed_state_hashes);         // out: InboundLedger
 JSS(needed_transaction_hashes);   // out: InboundLedger
@@ -517,7 +519,7 @@ JSS(response);                    // websocket
 JSS(result);                      // RPC
 JSS(ripple_lines);                // out: NetworkOPs
 JSS(ripple_state);                // in: LedgerEntr
-JSS(ripplerpc);                   // ripple RPC version
+JSS(ripplerpc);                   // XRPL RPC version
 JSS(role);                        // out: Ping.cpp
 JSS(rpc);                         //
 JSS(rt_accounts);                 // in: Subscribe, Unsubscribe

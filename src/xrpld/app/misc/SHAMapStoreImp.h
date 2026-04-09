@@ -195,7 +195,7 @@ private:
     clearPrior(LedgerIndex lastRotated);
 
     /**
-     * This is a health check for online deletion that waits until rippled is
+     * This is a health check for online deletion that waits until xrpld is
      * stable before returning. It returns an indication of whether the server
      * is stopping.
      *
