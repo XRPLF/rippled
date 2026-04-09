@@ -4,6 +4,17 @@ name: Build and publish documentation
 
 on:
   push:
+    branches:
+      - "develop"
+    paths:
+      - ".github/workflows/publish-docs.yml"
+      - "*.md"
+      - "**/*.md"
+      - "docs/**"
+      - "include/**"
+      - "src/libxrpl/**"
+      - "src/xrpld/**"
+  pull_request:
     paths:
       - ".github/workflows/publish-docs.yml"
       - "*.md"
@@ -22,21 +33,26 @@ defaults:
     shell: bash
 
 env:
-  BUILD_DIR: .build
-  NPROC_SUBTRACT: 2
+  BUILD_DIR: build
+  # ubuntu-latest has only 2 CPUs for private repositories
+  # https://docs.github.com/en/actions/reference/runners/github-hosted-runners#standard-github-hosted-runners-for--private-repositories
+  NPROC_SUBTRACT: ${{ github.event.repository.visibility == 'public' && '2' || '1' }}
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
-    permissions:
-      contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner
+        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        with:
+          enable_ccache: false
 
       - name: Get number of processors
-        uses: XRPLF/actions/.github/actions/get-nproc@046b1620f6bfd6cd0985dc82c3df02786801fe0a
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}
@@ -64,9 +80,23 @@ jobs:
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel ${BUILD_NPROC}
 
-      - name: Publish documentation
-        if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+      - name: Create documentation artifact
+        if: ${{ github.event.repository.visibility == 'public' && github.event_name == 'push' }}
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ env.BUILD_DIR }}/docs/html
+          path: ${{ env.BUILD_DIR }}/docs/html
+
+  deploy:
+    if: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
