@@ -560,106 +560,102 @@ GRPCServerImpl::setupListeners()
 std::shared_ptr<grpc::ServerCredentials>
 GRPCServerImpl::createServerCredentials()
 {
-    if (sslCertPath_.has_value() && sslKeyPath_.has_value())
-    {
-        JLOG(journal_.info()) << "Configuring gRPC server with TLS";
-
-        try
-        {
-            boost::system::error_code ec;
-
-            std::string const certContents = getFileContents(ec, *sslCertPath_);
-            if (ec)
-            {
-                JLOG(journal_.error())
-                    << "Failed to read gRPC SSL certificate file: " << *sslCertPath_ << " - "
-                    << ec.message();  // LCOV_EXCL_LINE
-                return nullptr;
-            }
-
-            std::string const keyContents = getFileContents(ec, *sslKeyPath_);
-            if (ec)
-            {
-                JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_
-                                       << " - " << ec.message();  // LCOV_EXCL_LINE
-                return nullptr;
-            }
-
-            // Read intermediate CA certificates for server certificate chain (optional)
-            std::string certChainContents;
-            if (sslCertChainPath_.has_value())
-            {
-                certChainContents = getFileContents(ec, *sslCertChainPath_);
-                if (ec)
-                {
-                    JLOG(journal_.error())
-                        << "Failed to read gRPC SSL cert chain file: " << *sslCertChainPath_
-                        << " - " << ec.message();  // LCOV_EXCL_LINE
-                    return nullptr;
-                }
-            }
-
-            // Read CA certificate for client verification (mTLS, optional)
-            std::string clientCAContents;
-            if (sslClientCAPath_.has_value())
-            {
-                clientCAContents = getFileContents(ec, *sslClientCAPath_);
-                if (ec)
-                {
-                    JLOG(journal_.error())
-                        << "Failed to read gRPC SSL client CA file: " << *sslClientCAPath_ << " - "
-                        << ec.message();  // LCOV_EXCL_LINE
-                    return nullptr;
-                }
-            }
-
-            grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
-            keyCertPair.private_key = keyContents;
-            // Combine server cert with intermediate CA certs for complete chain
-            keyCertPair.cert_chain = certContents;
-            if (!certChainContents.empty())
-            {
-                keyCertPair.cert_chain += '\n' + certChainContents;
-                JLOG(journal_.info()) << "gRPC server certificate chain configured with "
-                                         "intermediate CA certificates";  // LCOV_EXCL_LINE
-            }
-
-            grpc::SslServerCredentialsOptions sslOpts;
-            sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
-
-            // Configure client certificate verification (mTLS) if CA is provided
-            if (sslClientCAPath_.has_value())
-            {
-                if (clientCAContents.empty())
-                {
-                    JLOG(journal_.error())
-                        << "Empty/truncated gRPC SSL client CA file: " << *sslClientCAPath_
-                        << " - failed to configure mutual TLS";  // LCOV_EXCL_LINE
-                    return nullptr;
-                }
-
-                sslOpts.pem_root_certs = clientCAContents;
-                sslOpts.client_certificate_request =
-                    GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
-                JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
-                                         "required and verified";
-            }
-
-            JLOG(journal_.info())
-                << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
-            return grpc::SslServerCredentials(sslOpts);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(journal_.error())
-                << "Exception while configuring gRPC TLS: " << e.what();  // LCOV_EXCL_LINE
-            return nullptr;
-        }
-    }
-    else
+    if (not sslCertPath_.has_value() || not sslKeyPath_.has_value())
     {
         JLOG(journal_.info()) << "Configuring gRPC server without TLS";
         return grpc::InsecureServerCredentials();
+    }
+
+    JLOG(journal_.info()) << "Configuring gRPC server with TLS";
+
+    try
+    {
+        boost::system::error_code ec;
+
+        std::string const certContents = getFileContents(ec, *sslCertPath_);
+        if (ec)
+        {
+            JLOG(journal_.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath_
+                                   << " - " << ec.message();  // LCOV_EXCL_LINE
+            return nullptr;
+        }
+
+        std::string const keyContents = getFileContents(ec, *sslKeyPath_);
+        if (ec)
+        {
+            JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - "
+                                   << ec.message();  // LCOV_EXCL_LINE
+            return nullptr;
+        }
+
+        // Read intermediate CA certificates for server certificate chain (optional)
+        std::string certChainContents;
+        if (sslCertChainPath_.has_value())
+        {
+            certChainContents = getFileContents(ec, *sslCertChainPath_);
+            if (ec)
+            {
+                JLOG(journal_.error())
+                    << "Failed to read gRPC SSL cert chain file: " << *sslCertChainPath_ << " - "
+                    << ec.message();  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+        }
+
+        // Read CA certificate for client verification (mTLS, optional)
+        std::string clientCAContents;
+        if (sslClientCAPath_.has_value())
+        {
+            clientCAContents = getFileContents(ec, *sslClientCAPath_);
+            if (ec)
+            {
+                JLOG(journal_.error())
+                    << "Failed to read gRPC SSL client CA file: " << *sslClientCAPath_ << " - "
+                    << ec.message();  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+        }
+
+        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
+        keyCertPair.private_key = keyContents;
+        // Combine server cert with intermediate CA certs for complete chain
+        keyCertPair.cert_chain = certContents;
+        if (!certChainContents.empty())
+        {
+            keyCertPair.cert_chain += '\n' + certChainContents;
+            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
+                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
+        }
+
+        grpc::SslServerCredentialsOptions sslOpts;
+        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
+
+        // Configure client certificate verification (mTLS) if CA is provided
+        if (sslClientCAPath_.has_value())
+        {
+            if (clientCAContents.empty())
+            {
+                JLOG(journal_.error())
+                    << "Empty/truncated gRPC SSL client CA file: " << *sslClientCAPath_
+                    << " - failed to configure mutual TLS";  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+
+            sslOpts.pem_root_certs = clientCAContents;
+            sslOpts.client_certificate_request =
+                GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+            JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
+                                     "required and verified";
+        }
+
+        JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
+        return grpc::SslServerCredentials(sslOpts);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.error()) << "Exception while configuring gRPC TLS: "
+                               << e.what();  // LCOV_EXCL_LINE
+        return nullptr;
     }
 }
 
