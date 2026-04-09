@@ -136,7 +136,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 if (escrow.holds<MPTIssue>())
                     return;
 
-                auto& bal = locked[escrow.getCurrency()];
+                auto& bal = locked[escrow.get<Issue>().currency];
                 if (bal == beast::zero)
                 {
                     // This is needed to set the currency code correctly
@@ -154,7 +154,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal = STAmount(bal.get<Issue>(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
             }
@@ -192,7 +192,7 @@ doGatewayBalances(RPC::JsonContext& context)
             else
             {
                 // normal negative balance, obligation to customer
-                auto& bal = sums[rs->getBalance().getCurrency()];
+                auto& bal = sums[rs->getBalance().get<Issue>().currency];
                 if (bal == beast::zero)
                 {
                     // This is needed to set the currency code correctly
@@ -210,7 +210,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal = STAmount(bal.asset(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
             }
@@ -239,7 +239,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 for (auto const& balance : accBalances)
                 {
                     Json::Value entry;
-                    entry[jss::currency] = to_string(balance.issue().currency);
+                    entry[jss::currency] = to_string(balance.get<Issue>().currency);
                     entry[jss::value] = balance.getText();
                     balanceArray.append(std::move(entry));
                 }

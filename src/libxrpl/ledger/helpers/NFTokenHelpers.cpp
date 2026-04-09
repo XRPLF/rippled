@@ -1,15 +1,16 @@
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nftPageMask.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 #include <functional>
 #include <memory>
@@ -854,15 +855,15 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(featureNFTokenMintOffer))
         {
             if (nftIssuer != amount.getIssuer() &&
-                !view.read(keylet::line(nftIssuer, amount.issue())))
+                !view.read(keylet::line(nftIssuer, amount.get<Issue>())))
                 return tecNO_LINE;
         }
-        else if (!view.exists(keylet::line(nftIssuer, amount.issue())))
+        else if (!view.exists(keylet::line(nftIssuer, amount.get<Issue>())))
         {
             return tecNO_LINE;
         }
 
-        if (isFrozen(view, nftIssuer, amount.getCurrency(), amount.getIssuer()))
+        if (isFrozen(view, nftIssuer, amount.get<Issue>().currency, amount.getIssuer()))
             return tecFROZEN;
     }
 
@@ -875,7 +876,7 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (isFrozen(view, acctID, amount.getCurrency(), amount.getIssuer()))
+    if (isFrozen(view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the

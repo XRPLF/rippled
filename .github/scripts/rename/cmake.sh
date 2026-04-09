@@ -38,7 +38,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 # Rename the files.
 find cmake -type f -name 'Rippled*.cmake' -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
