@@ -23,7 +23,7 @@ public:
         auto testInvalidFailHard = [&](auto const& param) {
             // Test with tx_blob path
             {
-                JTx jt = env.jt(pay(alice, bob, XRP(1)));
+                JTx const jt = env.jt(pay(alice, bob, XRP(1)));
                 auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
                 Json::Value params;
@@ -57,7 +57,7 @@ public:
 
         // Valid boolean values should work (not return invalidParams)
         {
-            JTx jt = env.jt(pay(alice, bob, XRP(1)));
+            JTx const jt = env.jt(pay(alice, bob, XRP(1)));
             auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
             Json::Value params;
@@ -67,7 +67,7 @@ public:
             BEAST_EXPECT(!jrr.isMember(jss::error) || jrr[jss::error] != "invalidParams");
         }
         {
-            JTx jt = env.jt(pay(alice, bob, XRP(1)));
+            JTx const jt = env.jt(pay(alice, bob, XRP(1)));
             auto const txBlob = strHex(jt.stx->getSerializer().slice());
 
             Json::Value params;

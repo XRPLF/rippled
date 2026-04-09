@@ -44,7 +44,8 @@ LedgerHandler::check()
         return Status::OK;
     };
 
-    bool full, transactions, accounts, expand, binary, owner_funds, queue;
+    bool full = false, transactions = false, accounts = false, expand = false, binary = false,
+         owner_funds = false, queue = false;
     if (auto s = getBool(jss::full, full))
         return s;
     if (auto s = getBool(jss::transactions, transactions))
