@@ -21,10 +21,6 @@ Status
 LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
-        params.isMember(jss::ledger_index);
-    if (!needsLedger)
-        return Status::OK;
 
     auto getBool = [&](Json::StaticString const& field, bool& out) -> Status {
         if (!params.isMember(field))
@@ -68,6 +64,13 @@ LedgerHandler::check()
         (binary ? LedgerFill::binary : 0) | (owner_funds ? LedgerFill::ownerFunds : 0) |
         (queue ? LedgerFill::dumpQueue : 0);
 
+    bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
+        params.isMember(jss::ledger_index);
+    if (!needsLedger)
+        return Status::OK;
+    if (auto s = lookupLedger(ledger_, context_, result_))
+        return s;
+
     if (full || accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
@@ -81,9 +84,6 @@ LedgerHandler::check()
         }
         context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
-
-    if (auto s = lookupLedger(ledger_, context_, result_))
-        return s;
 
     if (queue)
     {
