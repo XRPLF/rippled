@@ -259,7 +259,7 @@ public:
 
         return T::checkGranularSemantics(view, tx, heldGranularPermissions);
     }
-  
+
     static NotTEC
     checkSponsor(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////

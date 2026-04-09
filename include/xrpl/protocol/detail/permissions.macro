@@ -73,7 +73,7 @@ GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546,
 GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniversal | tfMPTLock,
     ({{sfMPTokenIssuanceID, soeREQUIRED},
       {sfHolder, soeOPTIONAL}}))
-      
+
 /** Grants the ability to unlock an MPToken. */
 GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
     ({{sfMPTokenIssuanceID, soeREQUIRED},

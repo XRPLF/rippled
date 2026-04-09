@@ -4168,7 +4168,7 @@ class Invariants_test : public beast::unit_test::suite
                 });
         }
     }
-        
+
     testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
