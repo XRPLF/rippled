@@ -391,6 +391,28 @@ checkTxJsonFields(
     return ret;
 }
 
+static Expected<void, Json::Value>
+checkNetworkID(Json::Value const& tx_json, uint32_t appNetworkId)
+{
+    if (appNetworkId > 1024)
+    {
+        if (!tx_json.isMember(jss::NetworkID))
+        {
+            return Unexpected(RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::missing_field_message("tx_json.NetworkID")));
+        }
+        if (!tx_json[jss::NetworkID].isIntegral() ||
+            tx_json[jss::NetworkID].asUInt() != appNetworkId)
+        {
+            return Unexpected(RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::invalid_field_message("tx_json.NetworkID")));
+        }
+    }
+    return Expected<void, Json::Value>();
+}
+
 //------------------------------------------------------------------------------
 
 // A move-only struct that makes it easy to return either a Json::Value or a
@@ -1199,8 +1221,16 @@ transactionSignFor(
         if (!tx_json.isObject())
             return RPC::object_field_error(jss::tx_json);
 
-        // If the tx_json.SigningPubKey field is missing,
-        // insert an empty one.
+        if (auto checkResult =
+                detail::checkNetworkID(tx_json, app.config().NETWORK_ID);
+            !checkResult)
+        {
+            return std::move(checkResult).error();
+        }
+
+        // If the tx_json.SigningPubKey field is missing, insert an empty one,
+        // in order for the `checkMultiSignFields` to not return an error
+        // for non-multisign transactions.
         if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
             tx_json[sfSigningPubKey.getJsonName()] = "";
     }

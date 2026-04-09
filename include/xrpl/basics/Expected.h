@@ -166,15 +166,27 @@ public:
     }
 
     constexpr E const&
-    error() const
+    error() const&
     {
         return Base::error();
     }
 
     constexpr E&
-    error()
+    error() &
     {
         return Base::error();
+    }
+
+    constexpr E&&
+    error() &&
+    {
+        return std::move(Base::error());
+    }
+
+    constexpr E const&&
+    error() const&&
+    {
+        return std::move(Base::error());
     }
 
     constexpr explicit
@@ -233,15 +245,27 @@ public:
     }
 
     constexpr E const&
-    error() const
+    error() const&
     {
         return Base::error();
     }
 
     constexpr E&
-    error()
+    error() &
     {
         return Base::error();
+    }
+
+    constexpr E&&
+    error() &&
+    {
+        return std::move(Base::error());
+    }
+
+    constexpr E const&&
+    error() const&&
+    {
+        return std::move(Base::error());
     }
 
     constexpr explicit
