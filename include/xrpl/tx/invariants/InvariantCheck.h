@@ -398,7 +398,9 @@ using InvariantChecks = std::tuple<
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
-    ValidVault>;
+    ValidVault,
+    ValidConfidentialMPToken,
+    ValidMPTPayment>;
 
 /**
  * @brief get a tuple of all invariant checks

@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
@@ -7,7 +8,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/TrustSet.h>
 
 namespace {
@@ -82,7 +82,7 @@ TrustSet::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.getCurrency())
+    if (badCurrency() == saLimitAmount.get<Issue>().currency)
     {
         JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
@@ -107,59 +107,28 @@ TrustSet::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-TrustSet::checkPermission(ReadView const& view, STTx const& tx)
+TrustSet::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::uint32_t const txFlags = tx.getFlags();
-
-    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
-    // TrustlineUnfreeze granular permission. Setting other flags returns
-    // error.
-    if ((txFlags & tfTrustSetPermissionMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return terNO_DELEGATE_PERMISSION;
-
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
-        keylet::line(tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+        keylet::line(
+            tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
-    // if the trustline does not exist, granular permissions are
-    // not allowed to create trustline
+    // granular permissions are not allowed to create a trustline
     if (!sleRippleState)
         return terNO_DELEGATE_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
-
-    if (((txFlags & tfSetfAuth) != 0u) && !granularPermissions.contains(TrustlineAuthorize))
-        return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfSetFreeze) != 0u) && !granularPermissions.contains(TrustlineFreeze))
-        return terNO_DELEGATE_PERMISSION;
-    if (((txFlags & tfClearFreeze) != 0u) && !granularPermissions.contains(TrustlineUnfreeze))
-        return terNO_DELEGATE_PERMISSION;
-
-    // updating LimitAmount is not allowed only with granular permissions,
+    // updating LimitAmount is not allowed with granular permissions,
     // unless there's a new granular permission for this in the future.
     auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
         ? sleRippleState->getFieldAmount(sfHighLimit)
         : sleRippleState->getFieldAmount(sfLowLimit);
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(tx[sfAccount]);
+    saLimitAllow.get<Issue>().account = tx[sfAccount];
 
     if (curLimit != saLimitAllow)
         return terNO_DELEGATE_PERMISSION;
@@ -188,7 +157,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
 
-    auto const currency = saLimitAmount.getCurrency();
+    auto const currency = saLimitAmount.get<Issue>().currency;
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
     if (id == uDstAccountID)
@@ -241,7 +210,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
                 {
                     return tecAMM_EMPTY;
                 }
-                if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                if (lpTokens.get<Issue>().currency != saLimitAmount.get<Issue>().currency)
                 {
                     return tecNO_PERMISSION;
                 }
@@ -317,7 +286,7 @@ TrustSet::doApply()
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency(saLimitAmount.getCurrency());
+    Currency const currency(saLimitAmount.get<Issue>().currency);
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
@@ -336,7 +305,7 @@ TrustSet::doApply()
     // items.
     //
     // We do this because being able to exchange currencies,
-    // which needs trust lines, is a powerful Ripple feature.
+    // which needs trust lines, is a powerful XRPL feature.
     // So we want to make it easy for a gateway to fund the
     // accounts of its users without fear of being tricked.
     //
@@ -377,7 +346,7 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(account_);
+    saLimitAllow.get<Issue>().account = account_;
 
     SLE::pointer const sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));

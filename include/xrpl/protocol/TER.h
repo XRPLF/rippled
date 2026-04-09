@@ -121,6 +121,8 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    temBAD_MPT,
+    temBAD_CIPHERTEXT,
 };
 
 //------------------------------------------------------------------------------
@@ -208,6 +210,7 @@ enum TERcodes : TERUnderlyingType {
     terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
+    terLOCKED,                  // MPT is locked
 };
 
 //------------------------------------------------------------------------------
@@ -346,6 +349,7 @@ enum TECcodes : TERUnderlyingType {
     // backward compatibility with historical data on non-prod networks, can be
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
+    tecBAD_PROOF = 199,
 };
 
 //------------------------------------------------------------------------------

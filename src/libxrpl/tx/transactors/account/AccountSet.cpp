@@ -1,5 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -7,7 +8,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/account/AccountSet.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 
 namespace xrpl {
 
@@ -151,55 +151,6 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (uClearFlag == asfAuthorizedNFTokenMinter && tx.isFieldPresent(sfNFTokenMinter))
         return temMALFORMED;
-
-    return tesSUCCESS;
-}
-
-NotTEC
-AccountSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    // AccountSet is prohibited to be granted on a transaction level,
-    // but some granular permissions are allowed.
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
-
-    auto const uSetFlag = tx.getFieldU32(sfSetFlag);
-    auto const uClearFlag = tx.getFieldU32(sfClearFlag);
-    auto const uTxFlags = tx.getFlags();
-    // We don't support any flag based granular permission under
-    // AccountSet transaction. If any delegated account is trying to
-    // update the flag on behalf of another account, it is not
-    // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || ((uTxFlags & tfUniversalMask) != 0u))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfEmailHash) && !granularPermissions.contains(AccountEmailHashSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfWalletLocator) || tx.isFieldPresent(sfNFTokenMinter))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfMessageKey) && !granularPermissions.contains(AccountMessageKeySet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfDomain) && !granularPermissions.contains(AccountDomainSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfTransferRate) && !granularPermissions.contains(AccountTransferRateSet))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfTickSize) && !granularPermissions.contains(AccountTickSizeSet))
-        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }

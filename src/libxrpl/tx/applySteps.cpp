@@ -95,7 +95,6 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 // For Transactor::Normal
 //
 
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
 template <class T>
     requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
@@ -175,7 +174,7 @@ invoke_preclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result = Transactor::checkPermission<T>(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))

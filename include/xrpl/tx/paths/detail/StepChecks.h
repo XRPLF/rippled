@@ -50,8 +50,7 @@ checkFreeze(
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (isLPTokenFrozen(
-                    view, src, (*sleAmm)[sfAsset].get<Issue>(), (*sleAmm)[sfAsset2].get<Issue>()))
+            if (isLPTokenFrozen(view, src, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
             {
                 return terNO_LINE;
             }
