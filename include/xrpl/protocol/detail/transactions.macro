@@ -938,7 +938,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 #endif
 TRANSACTION(ttBATCH, 71, Batch,
     Delegation::notDelegable,
-    featureBatch,
+    featureBatchV1_1,
     noPriv,
     ({
     {sfRawTransactions, soeREQUIRED},

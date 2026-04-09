@@ -13,6 +13,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
 namespace xrpl {
@@ -142,14 +143,11 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        bool const withInnerSigFix = features[fixBatchInnerSigs];
-
         for (bool const withBatch : {true, false})
         {
-            testcase << "enabled: Batch " << (withBatch ? "enabled" : "disabled")
-                     << ", Inner Sig Fix: " << (withInnerSigFix ? "enabled" : "disabled");
+            testcase << "enabled: Batch " << (withBatch ? "enabled" : "disabled");
 
-            auto const amend = withBatch ? features : features - featureBatch;
+            auto const amend = withBatch ? features : features - featureBatchV1_1;
 
             test::jtx::Env env{*this, amend};
 
@@ -373,6 +371,25 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temINVALID_INNER_BATCH: tfInnerBatchTxn set but no parentBatchId.
+        {
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn));
+            PreflightContext pfCtx(
+                env.app(), *jtx.stx, env.current()->rules(), tapNONE, env.journal);
+            auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
+            BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
+        }
+
+        // temINVALID_INNER_BATCH: parentBatchId set but tfInnerBatchTxn not
+        // set.
+        {
+            auto jtx = env.jt(pay(alice, bob, XRP(1)));
+            PreflightContext pfCtx(
+                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), tapBATCH, env.journal);
+            auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
+            BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
+        }
+
         // temBAD_FEE: Batch: inner txn must have a fee of 0.
         {
             auto const seq = env.seq(alice);
@@ -554,6 +571,7 @@ class Batch_test : public beast::unit_test::suite
 
             Serializer msg;
             serializeBatch(msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
+            finishMultiSigningData(bob.id(), msg);
             auto const sig = xrpl::sign(bob.pk(), bob.sk(), msg.slice());
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfAccount.jsonName] =
                 bob.human();
@@ -911,6 +929,25 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
+            env.close();
+        }
+
+        // Invalid: inner txn with invalid memo (non-URL-safe MemoType)
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+
+            auto tx1 = pay(alice, bob, XRP(10));
+            auto& ma = tx1["Memos"];
+            auto& mi = ma[ma.size()];
+            auto& m = mi["Memo"];
+            m["MemoType"] = strHex(std::string("\x01\x02\x03", 3));
+            m["MemoData"] = strHex(std::string("test"));
+
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(tx1, seq + 1),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
+                ter(telENV_RPC_FAILED));
             env.close();
         }
     }
@@ -1406,7 +1443,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
+        // temARRAY_TOO_LARGE: Batch preflight: signers array exceeds 8 entries.
         {
             test::jtx::Env env{*this, features};
 
@@ -2192,22 +2229,16 @@ class Batch_test : public beast::unit_test::suite
     void
     doTestInnerSubmitRPC(FeatureBitset features, bool withBatch)
     {
-        bool const withInnerSigFix = features[fixBatchInnerSigs];
+        std::string const testName =
+            std::string("inner submit rpc: batch ") + (withBatch ? "enabled" : "disabled") + ": ";
 
-        std::string const testName = [&]() {
-            std::stringstream ss;
-            ss << "inner submit rpc: batch " << (withBatch ? "enabled" : "disabled")
-               << ", inner sig fix: " << (withInnerSigFix ? "enabled" : "disabled") << ": ";
-            return ss.str();
-        }();
-
-        auto const amend = withBatch ? features : features - featureBatch;
+        auto const amend = withBatch ? features : features - featureBatchV1_1;
 
         using namespace test::jtx;
         using namespace std::literals;
 
         test::jtx::Env env{*this, amend};
-        if (!BEAST_EXPECT(amend[featureBatch] == withBatch))
+        if (!BEAST_EXPECT(amend[featureBatchV1_1] == withBatch))
             return;
 
         auto const alice = Account("alice");
@@ -2329,8 +2360,7 @@ class Batch_test : public beast::unit_test::suite
                 s.slice(),
                 __LINE__,
                 "fails local checks: Empty SigningPubKey.",
-                "fails local checks: Empty SigningPubKey.",
-                withBatch && !withInnerSigFix);
+                "fails local checks: Empty SigningPubKey.");
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn pseudo-transaction
@@ -2341,7 +2371,7 @@ class Batch_test : public beast::unit_test::suite
         {
             STTx const amendTx(ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
                 obj.setAccountID(sfAccount, AccountID());
-                obj.setFieldH256(sfAmendment, fixBatchInnerSigs);
+                obj.setFieldH256(sfAmendment, featureBatchV1_1);
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
@@ -2353,8 +2383,7 @@ class Batch_test : public beast::unit_test::suite
                 "Pseudo-transaction",
                 s.slice(),
                 __LINE__,
-                withInnerSigFix ? "fails local checks: Empty SigningPubKey."
-                                : "fails local checks: Cannot submit pseudo transactions.",
+                "fails local checks: Empty SigningPubKey.",
                 "fails local checks: Empty SigningPubKey.");
         }
     }
@@ -2413,6 +2442,53 @@ class Batch_test : public beast::unit_test::suite
         // Alice pays XRP & Fee; Bob receives XRP
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - batchFee);
         BEAST_EXPECT(env.balance(bob) == XRP(1000));
+    }
+
+    void
+    testCheckAllSignatures(FeatureBitset features)
+    {
+        testcase("check all signatures");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // Verifies that checkBatchSign validates all signers even when an
+        // unfunded account (signed with its master key) appears first in the
+        // sorted signer list. A funded account with an invalid signature must
+        // still be rejected with tefBAD_AUTH.
+
+        test::jtx::Env env{*this, features};
+
+        auto const alice = Account("alice");
+        // "aaa" sorts before other accounts alphabetically, ensuring the
+        // unfunded account is checked first in the sorted signer list
+        auto const unfunded = Account("aaa");
+        auto const carol = Account("carol");
+        env.fund(XRP(10000), alice, carol);
+        env.close();
+
+        // Verify sort order: unfunded.id() < carol.id()
+        BEAST_EXPECT(unfunded.id() < carol.id());
+
+        auto const seq = env.seq(alice);
+        auto const ledSeq = env.current()->seq();
+        auto const batchFee = batch::calcBatchFee(env, 2, 3);
+
+        // The batch includes:
+        // 1. alice pays unfunded (to create unfunded's account)
+        // 2. unfunded does a noop (signed by unfunded's master key - valid)
+        // 3. carol pays alice (signed by alice's key - INVALID since alice is
+        //    not carol's regular key)
+        //
+        // checkBatchSign must validate all signers regardless of order.
+        // This must fail with tefBAD_AUTH.
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, unfunded, XRP(100)), seq + 1),
+            batch::inner(noop(unfunded), ledSeq),
+            batch::inner(pay(carol, alice, XRP(1000)), env.seq(carol)),
+            batch::sig(unfunded, Reg{carol, alice}),
+            ter(tefBAD_AUTH));
+        env.close();
     }
 
     void
@@ -4319,6 +4395,53 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testStandaloneInnerBatchFlag(FeatureBitset features)
+    {
+        testcase("standalone tx with tfInnerBatchTxn rejected");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // A standalone Payment with tfInnerBatchTxn must be rejected.
+        // Without proper guards this would bypass signature verification
+        // in preflight2.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Submit a normal Payment with tfInnerBatchTxn flag.
+            // preflight1 must reject with temINVALID_INNER_BATCH because
+            // the flag is set but no parentBatchId exists.
+            env(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn), ter(telENV_RPC_FAILED));
+            env.close();
+
+            // Verify via direct apply path (bypassing RPC layer)
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+                // Construct a Payment STTx with tfInnerBatchTxn,
+                // empty signing pub key, and no signature — mimicking
+                // what an attacker would send to skip sig verification.
+                STTx const stx = STTx(ttPAYMENT, [&](auto& obj) {
+                    obj.setAccountID(sfAccount, alice.id());
+                    obj.setAccountID(sfDestination, bob.id());
+                    obj.setFieldAmount(sfAmount, XRP(1));
+                    obj.setFieldAmount(sfFee, XRP(0));
+                    obj.setFieldU32(sfSequence, env.seq(alice));
+                    obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+                });
+
+                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                // Must NOT be applied — signature was never checked
+                BEAST_EXPECT(!result.applied);
+                return false;
+            });
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -4334,6 +4457,7 @@ class Batch_test : public beast::unit_test::suite
         testIndependent(features);
         testInnerSubmitRPC(features);
         testAccountActivation(features);
+        testCheckAllSignatures(features);
         testAccountSet(features);
         testAccountDelete(features);
         testLoan(features);
@@ -4351,6 +4475,7 @@ class Batch_test : public beast::unit_test::suite
         testBatchDelegate(features);
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
+        testStandaloneInnerBatchFlag(features);
     }
 
 public:
@@ -4360,7 +4485,6 @@ public:
         using namespace test::jtx;
 
         auto const sa = testable_amendments();
-        testWithFeats(sa - fixBatchInnerSigs);
         testWithFeats(sa);
     }
 };

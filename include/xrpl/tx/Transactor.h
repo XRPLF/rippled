@@ -162,9 +162,6 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
-
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -332,20 +329,7 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    static NotTEC
-    checkPermissionImpl(
-        ReadView const& view,
-        STTx const& tx,
-        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
-
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-    TER
-    payFee();
+protected:
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -360,6 +344,21 @@ private:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
+
+private:
+    static NotTEC
+    checkPermissionImpl(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
 
     void trapTransaction(uint256) const;
 

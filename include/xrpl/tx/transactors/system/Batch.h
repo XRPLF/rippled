@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -26,6 +24,9 @@ public:
 
     static NotTEC
     preflightSigValidated(PreflightContext const& ctx);
+
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);

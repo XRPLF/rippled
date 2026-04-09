@@ -20,11 +20,7 @@ namespace test {
 
 class TxQPosNegFlows_test : public beast::unit_test::suite
 {
-    // Same as corresponding values from TxQ.h
-    static constexpr FeeLevel64 baseFeeLevel{256};
-    static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
-
-    static void
+    void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
         auto metrics = env.app().getTxQ().getMetrics(*env.current());
@@ -70,7 +66,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
     {
         FeeLevel64 const expectedMedFeeLevel = (feeLevel1 + feeLevel2 + FeeLevel64{1}) / 2;
 
-        return std::max(expectedMedFeeLevel, minEscalationFeeLevel).fee();
+        return std::max(expectedMedFeeLevel, jtx::minEscalationFeeLevel).fee();
     }
 
     static auto

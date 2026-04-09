@@ -73,6 +73,7 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
     tx_type_ = safe_cast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::transactionID);
+    buildBatchTxnIds();
 }
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
@@ -89,6 +90,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 
     applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::transactionID);
+    buildBatchTxnIds();
 }
 
 STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
@@ -106,6 +108,7 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
         LogicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::transactionID);
+    buildBatchTxnIds();
 }
 
 STBase*
@@ -294,6 +297,8 @@ STTx::checkBatchSign(Rules const& rules) const
             JLOG(debugLog().fatal()) << "not a batch transaction";
             return Unexpected("Not a batch transaction.");
         }
+        if (!isFieldPresent(sfBatchSigners))
+            return Unexpected("Missing BatchSigners field.");
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -308,9 +313,8 @@ STTx::checkBatchSign(Rules const& rules) const
     }
     catch (std::exception const& e)
     {
-        JLOG(debugLog().error()) << "Batch signature check failed: " << e.what();
+        return Unexpected(std::string("Internal batch signature check failure: ") + e.what());
     }
-    return Unexpected("Internal batch signature check failure.");
 }
 
 Json::Value
@@ -432,6 +436,7 @@ STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
     Serializer msg;
     serializeBatch(msg, getFlags(), getBatchTransactionIDs());
+    finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
 
@@ -505,7 +510,7 @@ multiSignHelper(
         {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
-                errorWhat.value_or("") + ".");
+                (errorWhat ? ": " + *errorWhat : "") + ".");
         }
     }
     // All signatures verified.
@@ -554,41 +559,24 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
         rules);
 }
 
-/**
- * @brief Retrieves a batch of transaction IDs from the STTx.
- *
- * This function returns a vector of transaction IDs by extracting them from
- * the field array `sfRawTransactions` within the STTx. If the batch
- * transaction IDs have already been computed and cached in `batchTxnIds_`,
- * it returns the cached vector. Otherwise, it computes the transaction IDs,
- * caches them, and then returns the vector.
- *
- * @return A vector of `uint256` containing the batch transaction IDs.
- *
- * @note The function asserts that the `sfRawTransactions` field array is not
- * empty and that the size of the computed batch transaction IDs matches the
- * size of the `sfRawTransactions` field array.
- */
+void
+STTx::buildBatchTxnIds()
+{
+    if (tx_type_ != ttBATCH || !isFieldPresent(sfRawTransactions))
+        return;
+
+    auto const& raw = getFieldArray(sfRawTransactions);
+    batchTxnIds_.reserve(raw.size());
+    for (STObject const& rb : raw)
+        batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
+}
+
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
-        !getFieldArray(sfRawTransactions).empty(),
-        "STTx::getBatchTransactionIDs : empty raw transactions");
-
-    // The list of inner ids is built once, then reused on subsequent calls.
-    // After the list is built, it must always have the same size as the array
-    // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.empty())
-    {
-        for (STObject const& rb : getFieldArray(sfRawTransactions))
-            batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
-    }
-
-    XRPL_ASSERT(
-        batchTxnIds_.size() == getFieldArray(sfRawTransactions).size(),
-        "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
+        !batchTxnIds_.empty(), "STTx::getBatchTransactionIDs : batch transaction IDs not built");
     return batchTxnIds_;
 }
 
@@ -756,6 +744,9 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
             }
 
             raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
+
+            if (!passesLocalChecks(raw, reason))
+                return false;
         }
         catch (std::exception const& e)
         {
