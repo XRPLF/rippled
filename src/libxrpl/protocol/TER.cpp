@@ -215,6 +215,7 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

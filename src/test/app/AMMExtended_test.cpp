@@ -6,7 +6,7 @@
 #include <test/jtx/sendmax.h>
 
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/helpers/AMMUtils.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/tx/paths/AMMOffer.h>

@@ -2,7 +2,7 @@
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/ledger/helpers/AMMUtils.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/server/NetworkOPs.h>
 
