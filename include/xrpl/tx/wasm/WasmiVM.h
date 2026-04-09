@@ -8,11 +8,12 @@
 namespace xrpl {
 
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
-struct WasmVec
+class WasmVec
 {
     using TD = std::remove_pointer_t<decltype(T::data)>;
     T vec_;
 
+public:
     WasmVec(size_t s = 0) : vec_ WASM_EMPTY_VEC
     {
         if (s > 0)
@@ -92,6 +93,12 @@ struct WasmVec
     size() const
     {
         return vec_.size;
+    }
+
+    bool
+    empty() const
+    {
+        return vec_.size == 0u;
     }
 };
 
