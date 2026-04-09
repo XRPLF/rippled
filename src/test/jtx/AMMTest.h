@@ -13,7 +13,7 @@ namespace jtx {
 
 class AMM;
 
-enum class Fund { All, Acct, Gw, IOUOnly };
+enum class Fund { All, Acct, Gw, TokenOnly };
 
 struct TestAMMArg
 {
@@ -28,7 +28,13 @@ struct TestAMMArg
     bool noLog = false;
 };
 
-void
+// A hint to testAMM() or fund() to create/fund MPT.
+// A distinct MPT is created if both AMM assets
+// are MPT. The actual MPT asset can be accessed
+// via AMM::operator[](0|1).
+inline static auto AMMMPT = MPT("AMM");
+
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -36,7 +42,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -45,13 +51,22 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts = {},
-    Fund how = Fund::All);
+    Fund how = Fund::All,
+    std::optional<Account> const& mptIssuer = std::nullopt);
+
+struct TestAMMArgs
+{
+    std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::ter> const& ter = std::nullopt;
+    std::vector<FeatureBitset> const& features = {testable_amendments()};
+};
 
 class AMMTestBase : public beast::unit_test::suite
 {
@@ -135,24 +150,6 @@ protected:
 
     jtx::Env
     pathTestEnv();
-
-    Json::Value
-    find_paths_request(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
-
-    std::tuple<STPathSet, STAmount, STAmount>
-    find_paths(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
 };
 
 }  // namespace jtx

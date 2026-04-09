@@ -306,18 +306,11 @@ requireAuth(
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             auto const asset = sleVault->at(sfAsset);
-            if (auto const err = std::visit(
-                    [&]<ValidIssueType TIss>(TIss const& issue) {
-                        if constexpr (std::is_same_v<TIss, Issue>)
-                        {
-                            return requireAuth(view, issue, account, authType);
-                        }
-                        else
-                        {
-                            return requireAuth(view, issue, account, authType, depth + 1);
-                        }
-                    },
-                    asset.value());
+            if (auto const err = asset.visit(
+                    [&](Issue const& issue) { return requireAuth(view, issue, account, authType); },
+                    [&](MPTIssue const& issue) {
+                        return requireAuth(view, issue, account, authType, depth + 1);
+                    });
                 !isTesSuccess(err))
                 return err;
         }
@@ -485,6 +478,21 @@ canTransfer(
             return TER{tecNO_AUTH};
     }
     return tesSUCCESS;
+}
+
+TER
+canTrade(ReadView const& view, Asset const& asset)
+{
+    return asset.visit(
+        [&](Issue const&) -> TER { return tesSUCCESS; },
+        [&](MPTIssue const& mptIssue) -> TER {
+            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+            if (!sleIssuance)
+                return tecOBJECT_NOT_FOUND;
+            if (!sleIssuance->isFlag(lsfMPTCanTrade))
+                return tecNO_PERMISSION;
+            return tesSUCCESS;
+        });
 }
 
 TER
@@ -768,6 +776,151 @@ createMPToken(
     view.insert(mptoken);
 
     return tesSUCCESS;
+}
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    if (mptIssue.getIssuer() == holder)
+        return tesSUCCESS;
+
+    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
+    if (!view.exists(mptokenID))
+    {
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, 0);
+            !isTesSuccess(err))
+        {
+            return err;
+        }
+        auto const sleAcct = view.peek(keylet::account(holder));
+        if (!sleAcct)
+        {
+            return tecINTERNAL;
+        }
+        adjustOwnerCount(view, sleAcct, 1, j);
+    }
+    return tesSUCCESS;
+}
+
+std::int64_t
+maxMPTAmount(SLE const& sleIssuance)
+{
+    return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
+}
+
+std::int64_t
+availableMPTAmount(SLE const& sleIssuance)
+{
+    auto const max = maxMPTAmount(sleIssuance);
+    auto const outstanding = sleIssuance[sfOutstandingAmount];
+    return max - outstanding;
+}
+
+std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    auto const sle = view.read(keylet::mptIssuance(mptID));
+    if (!sle)
+        Throw<std::runtime_error>(transHuman(tecINTERNAL));
+    return availableMPTAmount(*sle);
+}
+
+bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow)
+{
+    std::uint64_t const limit = (allowOverflow == AllowMPTOverflow::Yes)
+        ? std::numeric_limits<std::uint64_t>::max()
+        : maximumAmount;
+    return (sendAmount > maximumAmount || outstandingAmount > (limit - sendAmount));
+}
+
+STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
+{
+    STAmount amount{issue};
+
+    auto const sle = view.read(keylet::mptIssuance(issue));
+    if (!sle)
+        return amount;
+    auto const available = availableMPTAmount(*sle);
+    return view.balanceHookSelfIssueMPT(issue, available);
+}
+
+void
+issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount)
+{
+    auto const available = availableMPTAmount(view, issue);
+    view.issuerSelfDebitHookMPT(issue, amount, available);
+}
+
+static TER
+checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
+{
+    if (!asset.holds<MPTIssue>())
+        return tesSUCCESS;
+
+    auto const& issuanceID = asset.get<MPTIssue>().getMptID();
+    auto const validTx = txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
+        txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
+        txType == ttCHECK_CASH || txType == ttPAYMENT;
+    XRPL_ASSERT(validTx, "xrpl::checkMPTAllowed : all MPT tx or DEX");
+    if (!validTx)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const& issuer = asset.getIssuer();
+    if (!view.exists(keylet::account(issuer)))
+        return tecNO_ISSUER;  // LCOV_EXCL_LINE
+
+    auto const issuanceKey = keylet::mptIssuance(issuanceID);
+    auto const issuanceSle = view.read(issuanceKey);
+    if (!issuanceSle)
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
+
+    auto const flags = issuanceSle->getFlags();
+
+    if ((flags & lsfMPTLocked) != 0u)
+        return tecLOCKED;  // LCOV_EXCL_LINE
+    // Offer crossing and Payment
+    if ((flags & lsfMPTCanTrade) == 0)
+        return tecNO_PERMISSION;
+
+    if (accountID != issuer)
+    {
+        if ((flags & lsfMPTCanTransfer) == 0)
+            return tecNO_PERMISSION;
+
+        auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
+        // Allow to succeed since some tx create MPToken if it doesn't exist.
+        // Tx's have their own check for missing MPToken.
+        if (!mptSle)
+            return tesSUCCESS;
+
+        if (mptSle->isFlag(lsfMPTLocked))
+            return tecLOCKED;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+checkMPTTxAllowed(
+    ReadView const& view,
+    TxType txType,
+    Asset const& asset,
+    AccountID const& accountID)
+{
+    // use isDEXAllowed for payment/offer crossing
+    XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
+    return checkMPTAllowed(view, txType, asset, accountID);
 }
 
 }  // namespace xrpl

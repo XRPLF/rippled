@@ -265,7 +265,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
-        auto const components = detail::computeOverpaymentComponents(
+        auto const components = xrpl::detail::computeOverpaymentComponents(
             IOU,
             loanScale,
             overpayment,

@@ -4155,8 +4155,12 @@ class Batch_test : public beast::unit_test::suite
             std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
+                // jv2 fails with terNO_DELEGATE_PERMISSION.
             };
             validateClosedLedger(env, testCases);
+
+            // verify jv2 is not present in the closed ledger.
+            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
         }
     }
 

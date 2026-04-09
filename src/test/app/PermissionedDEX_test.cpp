@@ -641,7 +641,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 PermissionedDEX(env);
 
             // Fund devin and create USD trustline
-            Account badDomainOwner("badDomainOwner");
+            Account const badDomainOwner("badDomainOwner");
             Account const devin("devin");
             env.fund(XRP(1000), badDomainOwner, devin);
             env.close();
@@ -1163,7 +1163,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 PermissionedDEX(env);
 
             // Fund accounts
-            Account badDomainOwner("badDomainOwner");
+            Account const badDomainOwner("badDomainOwner");
             Account const devin("devin");
             env.fund(XRP(1000), badDomainOwner, devin);
             env.close();

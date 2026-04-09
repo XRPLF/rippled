@@ -495,9 +495,9 @@ class LoanBroker_test : public beast::unit_test::suite
 
         Account const issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
-        Account alice{"alice"};
+        Account const alice{"alice"};
         // Evan will attempt to be naughty
-        Account evan{"evan"};
+        Account const evan{"evan"};
         // Bystander doesn't have anything to do with the SAV or Broker, or any
         // of the relevant tokens
         Account const bystander{"bystander"};
@@ -1290,7 +1290,7 @@ class LoanBroker_test : public beast::unit_test::suite
         auto const broker = env.le(brokerKeylet);
         if (!BEAST_EXPECT(broker))
             return;
-        Account brokerPseudo("pseudo", broker->at(sfAccount));
+        Account const brokerPseudo("pseudo", broker->at(sfAccount));
 
         // Can't unauthorize LoanBroker pseudo-account
         asset.authorize(
@@ -1527,9 +1527,9 @@ class LoanBroker_test : public beast::unit_test::suite
     testRIPD4274IOU()
     {
         using namespace jtx;
-        Account issuer("broker");
-        Account broker("issuer");
-        Account dest("destination");
+        Account const issuer("broker");
+        Account const broker("issuer");
+        Account const dest("destination");
         auto const token = issuer["IOU"];
 
         enum TrustState {
@@ -1654,9 +1654,9 @@ class LoanBroker_test : public beast::unit_test::suite
     testRIPD4274MPT()
     {
         using namespace jtx;
-        Account issuer("broker");
-        Account broker("issuer");
-        Account dest("destination");
+        Account const issuer("broker");
+        Account const broker("issuer");
+        Account const dest("destination");
 
         enum MPTState {
             RequireAuth,
