@@ -3926,7 +3926,7 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
-            fixEnabled ? failTers : failTers);
+            failTers);
     }
 
 public:
