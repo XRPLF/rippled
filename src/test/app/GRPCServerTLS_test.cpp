@@ -332,13 +332,13 @@ bool
 makeTestGRPCCall(std::unique_ptr<org::xrpl::rpc::v1::XRPLedgerAPIService::Stub> const& stub)
 {
     grpc::ClientContext context;
-    org::xrpl::rpc::v1::GetLedgerRequest request;
+    org::xrpl::rpc::v1::GetLedgerRequest const request;
     org::xrpl::rpc::v1::GetLedgerResponse response;
 
     // Set a short deadline to avoid hanging on failed connections
     context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(2));
 
-    grpc::Status status = stub->GetLedger(&context, request, &response);
+    grpc::Status const status = stub->GetLedger(&context, request, &response);
     return status.ok();
 }
 
@@ -362,7 +362,7 @@ public:
         BEAST_EXPECT(*grpcPort > 0);
 
         // Test 1: Plaintext client should connect successfully
-        std::string serverAddress = "localhost:" + std::to_string(*grpcPort);
+        std::string const serverAddress = "localhost:" + std::to_string(*grpcPort);
         auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
         BEAST_EXPECT(makeTestGRPCCall(plaintextStub));
@@ -385,7 +385,7 @@ public:
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort > 0);
 
-        std::string serverAddress = "localhost:" + std::to_string(*grpcPort);
+        std::string const serverAddress = "localhost:" + std::to_string(*grpcPort);
 
         // Test 1: Plaintext client should FAIL against TLS server
         auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
@@ -455,7 +455,7 @@ public:
 
         try
         {
-            Env env(*this, std::move(cfg));
+            Env const env(*this, std::move(cfg));
             fail("Should have thrown exception for incomplete TLS config");
         }
         catch (std::runtime_error const& e)
@@ -481,7 +481,7 @@ public:
 
         try
         {
-            Env env(*this, std::move(cfg));
+            Env const env(*this, std::move(cfg));
             fail("Should have thrown exception for incomplete TLS config");
         }
         catch (std::runtime_error const& e)
@@ -508,7 +508,7 @@ public:
 
             try
             {
-                Env env(*this, std::move(cfg));
+                Env const env(*this, std::move(cfg));
                 fail("Should have thrown exception for ssl_client_ca without TLS config");
             }
             catch (std::runtime_error const& e)
@@ -530,7 +530,7 @@ public:
 
             try
             {
-                Env env(*this, std::move(cfg));
+                Env const env(*this, std::move(cfg));
                 fail("Should have thrown exception for ssl_client_ca with only ssl_cert");
             }
             catch (std::runtime_error const& e)
@@ -554,7 +554,7 @@ public:
 
             try
             {
-                Env env(*this, std::move(cfg));
+                Env const env(*this, std::move(cfg));
                 fail("Should have thrown exception for ssl_client_ca with only ssl_key");
             }
             catch (std::runtime_error const& e)
@@ -585,7 +585,7 @@ public:
 
             try
             {
-                Env env(*this, std::move(cfg));
+                Env const env(*this, std::move(cfg));
                 fail("Should have thrown exception for ssl_cert_chain without TLS config");
             }
             catch (std::runtime_error const& e)
@@ -607,7 +607,7 @@ public:
 
             try
             {
-                Env env(*this, std::move(cfg));
+                Env const env(*this, std::move(cfg));
                 fail("Should have thrown exception for ssl_cert_chain with only ssl_cert");
             }
             catch (std::runtime_error const& e)

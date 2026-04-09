@@ -568,7 +568,7 @@ GRPCServerImpl::createServerCredentials()
         {
             boost::system::error_code ec;
 
-            std::string certContents = getFileContents(ec, *sslCertPath_);
+            std::string const certContents = getFileContents(ec, *sslCertPath_);
             if (ec)
             {
                 JLOG(journal_.error())
@@ -577,7 +577,7 @@ GRPCServerImpl::createServerCredentials()
                 return nullptr;
             }
 
-            std::string keyContents = getFileContents(ec, *sslKeyPath_);
+            std::string const keyContents = getFileContents(ec, *sslKeyPath_);
             if (ec)
             {
                 JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_
