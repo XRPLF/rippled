@@ -231,7 +231,7 @@ struct Peer
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
@@ -501,16 +501,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value const& consensusJson)
     {
         onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -520,10 +514,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        Json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
             bool const proposing = mode == ConsensusMode::proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 

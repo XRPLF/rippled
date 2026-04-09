@@ -88,22 +88,19 @@ STIssue::getJson(JsonOptions) const
 void
 STIssue::add(Serializer& s) const
 {
-    if (holds<Issue>())
-    {
-        auto const& issue = asset_.get<Issue>();
-        s.addBitString(issue.currency);
-        if (!isXRP(issue.currency))
-            s.addBitString(issue.account);
-    }
-    else
-    {
-        auto const& issue = asset_.get<MPTIssue>();
-        s.addBitString(issue.getIssuer());
-        s.addBitString(noAccount());
-        std::uint32_t sequence = 0;
-        memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
-        s.add32(sequence);
-    }
+    asset_.visit(
+        [&](Issue const& issue) {
+            s.addBitString(issue.currency);
+            if (!isXRP(issue.currency))
+                s.addBitString(issue.account);
+        },
+        [&](MPTIssue const& issue) {
+            s.addBitString(issue.getIssuer());
+            s.addBitString(noAccount());
+            std::uint32_t sequence = 0;
+            memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
+            s.add32(sequence);
+        });
 }
 
 bool
@@ -116,7 +113,9 @@ STIssue::isEquivalent(STBase const& t) const
 bool
 STIssue::isDefault() const
 {
-    return holds<Issue>() && asset_.get<Issue>() == xrpIssue();
+    return asset_.visit(
+        [](Issue const& issue) { return issue == xrpIssue(); },
+        [](MPTIssue const&) { return false; });
 }
 
 STBase*

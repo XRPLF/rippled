@@ -56,8 +56,8 @@ struct TAmounts
         return *this;
     }
 
-    In in;
-    Out out;
+    In in{};
+    Out out{};
 };
 
 using Amounts = TAmounts<STAmount, STAmount>;
@@ -78,7 +78,7 @@ operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 
 //------------------------------------------------------------------------------
 
-// Ripple specific constant used for parsing qualities and other things
+// XRPL specific constant used for parsing qualities and other things
 #define QUALITY_ONE 1'000'000'000
 
 /** Represents the logical ratio of output currency to input currency.

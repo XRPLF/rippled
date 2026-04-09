@@ -940,7 +940,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
-        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
+        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
         BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
@@ -984,7 +984,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 2);
         auto const jrNextOffer = jrr[jss::offers][1u];
         BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());
-        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
+        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
         BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);

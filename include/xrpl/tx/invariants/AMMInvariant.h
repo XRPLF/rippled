@@ -15,12 +15,12 @@ class ValidAMM
     std::optional<AccountID> ammAccount_;
     std::optional<STAmount> lptAMMBalanceAfter_;
     std::optional<STAmount> lptAMMBalanceBefore_;
-    bool ammPoolChanged_;
+    bool ammPoolChanged_{false};
 
 public:
     enum class ZeroAllowed : bool { No = false, Yes = true };
 
-    ValidAMM() : ammPoolChanged_{false}
+    ValidAMM()
     {
     }
     void

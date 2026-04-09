@@ -8,15 +8,15 @@ AMMLiquidity<TIn, TOut>::AMMLiquidity(
     ReadView const& view,
     AccountID const& ammAccountID,
     std::uint32_t tradingFee,
-    Issue const& in,
-    Issue const& out,
+    Asset const& in,
+    Asset const& out,
     AMMContext& ammContext,
     beast::Journal j)
     : ammContext_(ammContext)
     , ammAccountID_(ammAccountID)
     , tradingFee_(tradingFee)
-    , issueIn_(in)
-    , issueOut_(out)
+    , assetIn_(in)
+    , assetOut_(out)
     , initialBalances_{fetchBalances(view)}
     , j_(j)
 {
@@ -26,13 +26,13 @@ template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 {
-    auto const assetIn = ammAccountHolds(view, ammAccountID_, issueIn_);
-    auto const assetOut = ammAccountHolds(view, ammAccountID_, issueOut_);
+    auto const amountIn = ammAccountHolds(view, ammAccountID_, assetIn_);
+    auto const amountOut = ammAccountHolds(view, ammAccountID_, assetOut_);
     // This should not happen.
-    if (assetIn < beast::zero || assetOut < beast::zero)
+    if (amountIn < beast::zero || amountOut < beast::zero)
         Throw<std::runtime_error>("AMMLiquidity: invalid balances");
 
-    return TAmounts{get<TIn>(assetIn), get<TOut>(assetOut)};
+    return TAmounts{get<TIn>(amountIn), get<TOut>(amountOut)};
 }
 
 template <typename TIn, typename TOut>
@@ -42,7 +42,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
     TAmounts<TIn, TOut> cur{};
 
     cur.in = toAmount<TIn>(
-        getIssue(balances.in),
+        getAsset(balances.in),
         InitialFibSeqPct * initialBalances_.in,
         Number::rounding_mode::upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
@@ -60,7 +60,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
         "xrpl::AMMLiquidity::generateFibSeqOffer : maximum iterations");
 
     cur.out = toAmount<TOut>(
-        getIssue(balances.out),
+        getAsset(balances.out),
         cur.out * fib[ammContext_.curIters() - 1],
         Number::rounding_mode::downward);
     // swapAssetOut() returns negative in this case
@@ -89,14 +89,18 @@ maxAmount()
     {
         return STAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
     }
+    else if constexpr (std::is_same_v<T, MPTAmount>)
+    {
+        return MPTAmount(maxMPTokenAmount);
+    }
 }
 
 template <typename T>
 T
-maxOut(T const& out, Issue const& iss)
+maxOut(T const& out, Asset const& asset)
 {
     Number const res = out * Number{99, -2};
-    return toAmount<T>(iss, res, Number::rounding_mode::downward);
+    return toAmount<T>(asset, res, Number::rounding_mode::downward);
 }
 }  // namespace
 
@@ -113,7 +117,7 @@ AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules con
             Quality{balances});
     }
 
-    auto const out = maxOut<TOut>(balances.out, issueOut());
+    auto const out = maxOut<TOut>(balances.out, assetOut());
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
     return AMMOffer<TIn, TOut>(
@@ -211,8 +215,8 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         if (offer->amount().in > beast::zero && offer->amount().out > beast::zero)
         {
             JLOG(j_.trace()) << "AMMLiquidity::getOffer, created " << to_string(offer->amount().in)
-                             << "/" << issueIn_ << " " << to_string(offer->amount().out) << "/"
-                             << issueOut_;
+                             << "/" << assetIn_ << " " << to_string(offer->amount().out) << "/"
+                             << assetOut_;
             return offer;
         }
 
@@ -225,9 +229,13 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     return std::nullopt;
 }
 
-template class AMMLiquidity<STAmount, STAmount>;
 template class AMMLiquidity<IOUAmount, IOUAmount>;
 template class AMMLiquidity<XRPAmount, IOUAmount>;
 template class AMMLiquidity<IOUAmount, XRPAmount>;
+template class AMMLiquidity<MPTAmount, MPTAmount>;
+template class AMMLiquidity<XRPAmount, MPTAmount>;
+template class AMMLiquidity<MPTAmount, XRPAmount>;
+template class AMMLiquidity<MPTAmount, IOUAmount>;
+template class AMMLiquidity<IOUAmount, MPTAmount>;
 
 }  // namespace xrpl

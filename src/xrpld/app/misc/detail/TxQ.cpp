@@ -257,7 +257,6 @@ TxQ::MaybeTx::MaybeTx(
     , account(txn_->getAccountID(sfAccount))
     , lastValid(getLastLedgerSequence(*txn_))
     , seqProxy(txn_->getSeqProxy())
-    , retriesRemaining(retriesAllowed)
     , flags(flags_)
     , pfResult(pfResult_)
 {

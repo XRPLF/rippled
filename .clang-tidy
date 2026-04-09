@@ -78,14 +78,14 @@ Checks: "-*,
   bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
   bugprone-virtual-near-miss,
-  # cppcoreguidelines-init-variables, # has issues
-  # cppcoreguidelines-misleading-capture-default-by-value, # has issues
+  cppcoreguidelines-init-variables,
+  cppcoreguidelines-misleading-capture-default-by-value,
   cppcoreguidelines-no-suspend-with-lock,
-  # cppcoreguidelines-pro-type-member-init, # has issues
+  cppcoreguidelines-pro-type-member-init,
   cppcoreguidelines-pro-type-static-cast-downcast,
-  # cppcoreguidelines-rvalue-reference-param-not-moved, # has issues
-  # cppcoreguidelines-use-default-member-init, # has issues
-  # cppcoreguidelines-virtual-class-destructor, # has issues
+  cppcoreguidelines-rvalue-reference-param-not-moved,
+  cppcoreguidelines-use-default-member-init,
+  cppcoreguidelines-virtual-class-destructor,
   hicpp-ignored-remove-result,
   misc-const-correctness,
   misc-definitions-in-headers,

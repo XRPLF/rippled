@@ -12,7 +12,7 @@ namespace detail {
 class flags_helper
 {
 protected:
-    std::uint32_t mask_;
+    std::uint32_t mask_{0};
 
 private:
     void
@@ -79,7 +79,7 @@ private:
 
 protected:
     template <class... Args>
-    flags_helper(Args... args) : mask_(0)
+    flags_helper(Args... args)
     {
         set_args(args...);
     }
@@ -104,7 +104,7 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class flags : private detail::flags_helper
+class flags : private xrpl::detail::flags_helper
 {
 private:
     Account account_;
@@ -120,7 +120,7 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private detail::flags_helper
+class nflags : private xrpl::detail::flags_helper
 {
 private:
     Account account_;

@@ -13,9 +13,7 @@ JobQueue::JobQueue(
     Logs& logs,
     perf::PerfLog& perfLog)
     : m_journal(journal)
-    , m_lastJob(0)
     , m_invalidJobData(JobTypes::instance().getInvalid(), collector, logs)
-    , m_processCount(0)
     , m_workers(*this, &perfLog, "JobQueue", threadCount)
     , perfLog_(perfLog)
     , m_collector(collector)

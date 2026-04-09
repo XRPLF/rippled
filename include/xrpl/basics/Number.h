@@ -73,12 +73,12 @@ struct MantissaRange
     enum mantissa_scale { small, large };
 
     explicit constexpr MantissaRange(mantissa_scale scale_)
-        : min(getMin(scale_)), max(min * 10 - 1), log(logTen(min).value_or(-1)), scale(scale_)
+        : min(getMin(scale_)), log(logTen(min).value_or(-1)), scale(scale_)
     {
     }
 
     rep min;
-    rep max;
+    rep max{min * 10 - 1};
     int log;
     mantissa_scale scale;
 
