@@ -6807,6 +6807,57 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testVectorIndexes()
+    {
+        testcase("WasmValVec indicies");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(&vrt);
+
+        bool ex = false;
+        try
+        {
+            // hfs.getLedgerSqn();
+            WasmValVec params(2), result(1);
+            // 3 parameters instead of 2
+            auto* trap =
+                ww(getLedgerSqn_wrap, &import[0], params, result, 0, sizeof(std::uint32_t), 1);
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
+                BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->header().seq);
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECTS(e.what() == std::string("Out of bound"), e.what());
+            ex = true;
+        }
+
+        // const version
+        ex = false;
+        try
+        {
+            WasmValVec params(2);
+            [[maybe_unused]] auto const x = params[2];
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECTS(e.what() == std::string("Out of bound"), e.what());
+            ex = true;
+        }
+
+        BEAST_EXPECT(ex);
+    }
+
+    void
     run() override
     {
         testGetLedgerSqn();
@@ -6842,6 +6893,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testTraceAccount();
         testTraceAmount();
         testFloats();
+
+        testVectorIndexes();
     }
 };
 
