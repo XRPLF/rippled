@@ -29,6 +29,13 @@ doCanDelete(RPC::JsonContext& context)
         {
             canDeleteSeq = canDelete.asUInt();
         }
+        else if (canDelete.isInt())
+        {
+            auto const seq = canDelete.asInt();
+            if (seq < 0)
+                return RPC::make_error(rpcINVALID_PARAMS);
+            canDeleteSeq = static_cast<std::uint32_t>(seq);
+        }
         else if (canDelete.isString())
         {
             std::string canDeleteStr = canDelete.asString();

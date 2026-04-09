@@ -358,6 +358,15 @@ public:
             auto const result = env.rpc("json", "can_delete", to_string(jvParams));
             BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
         }
+
+        // negative int — Json::Reader parses integer literals as intValue;
+        // negative values must be rejected
+        {
+            Json::Value jvParams;
+            jvParams[jss::can_delete] = -1;
+            auto const result = env.rpc("json", "can_delete", to_string(jvParams));
+            BEAST_EXPECT(bad(result, rpcINVALID_PARAMS));
+        }
     }
 
     void
