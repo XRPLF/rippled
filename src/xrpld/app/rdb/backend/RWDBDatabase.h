@@ -493,11 +493,13 @@ public:
         if (range)
         {
             std::size_t count = 0;
-            for (LedgerIndex seq = range->first(); seq <= range->last(); ++seq)
+            for (LedgerIndex seq = range->first(); ; ++seq)
             {
                 auto found = ledgers_.find(seq);
                 if (found != ledgers_.end() && !found->second.transactionsPurged)
                     ++count;
+                if (seq == range->last())
+                    break;
             }
             return (count == (range->last() - range->first() + 1))
                 ? TxSearched::All
