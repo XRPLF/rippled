@@ -363,7 +363,7 @@ CheckCash::doApply()
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkReserve = [&]() -> std::optional<WAccountRoot> {
-                WAccountRoot const dst(accountID_, psb, j_);
+                WAccountRoot dst(accountID_, psb, j_);
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (std::uint32_t const ownerCount = {dst->at(sfOwnerCount)};
