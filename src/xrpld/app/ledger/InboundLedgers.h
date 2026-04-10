@@ -26,7 +26,12 @@ public:
     // Queue. TODO review whether all callers of acquire() can use this
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
-    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
+    acquireAsync(
+        JobType type,
+        std::string const& name,
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;
