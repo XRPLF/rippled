@@ -962,7 +962,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // alice: starts with XRP(100000), USD(100)
         // Create AMM pool with good quality (~5 USD per XRP)
-        AMM amm(env, alice, XRP(10), USD(50));
+        const AMM amm(env, alice, XRP(10), USD(50));
 
         // bob creates a domain LOB offer at worse quality (1 USD per XRP)
         auto const bobOfferSeq{env.seq(bob)};
