@@ -1,8 +1,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -111,7 +111,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    WritableAccountRoot wrappedIssuer(accountID_, view());
+    WAccountRoot wrappedIssuer(accountID_, view(), j_);
     if (!wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -138,7 +138,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        wrappedIssuer.adjustOwnerCount(1, j_);
+        wrappedIssuer.adjustOwnerCount(1);
     }
 
     if (subject == accountID_)
@@ -147,15 +147,15 @@ CredentialCreate::doApply()
     }
     else
     {
+        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
+        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
         auto const page =
             view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Adding Credential to subject directory "
+                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
-        WritableAccountRoot subjectAcct(subject, view());
-        subjectAcct.update();
     }
 
     view().insert(sleCred);

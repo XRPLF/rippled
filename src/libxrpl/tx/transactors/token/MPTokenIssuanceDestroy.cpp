@@ -1,5 +1,5 @@
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
@@ -16,19 +16,19 @@ TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    MPTokenIssuance const mptIssuance(ctx.view, ctx.tx[sfMPTokenIssuanceID]);
-    if (!mptIssuance)
+    auto const sleMPT = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleMPT)
         return tecOBJECT_NOT_FOUND;
 
     // ensure it is issued by the tx submitter
-    if (mptIssuance.getIssuer() != ctx.tx[sfAccount])
+    if ((*sleMPT)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances
-    if (mptIssuance->at(sfOutstandingAmount) != 0)
+    if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
 
-    if (mptIssuance->at(~sfLockedAmount).value_or(0) != 0)
+    if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
@@ -37,18 +37,17 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    WritableMPTokenIssuance mptIssuance(view(), ctx_.tx[sfMPTokenIssuanceID]);
-    if (accountID_ != mptIssuance.getIssuer())
+    auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+    if (accountID_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(
-            keylet::ownerDir(accountID_), (*mptIssuance)[sfOwnerNode], mptIssuance->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    mptIssuance.erase();
+    view().erase(mpt);
 
-    WritableAccountRoot acct(accountID_, view());
-    acct.adjustOwnerCount(-1, j_);
+    WAccountRoot acct(accountID_, view(), j_);
+    acct.adjustOwnerCount(-1);
 
     return tesSUCCESS;
 }

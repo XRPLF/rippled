@@ -14,7 +14,7 @@ namespace xrpl {
 struct PreflightContext
 {
 public:
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
@@ -57,7 +57,7 @@ public:
 struct PreclaimContext
 {
 public:
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     ReadView const& view;
     TER preflightResult;
     ApplyFlags flags;
@@ -115,15 +115,16 @@ protected:
     beast::Journal const j_;
 
     AccountID const accountID_;
-    WritableAccountRoot account_;
+    WAccountRoot account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
-    virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
 
 public:
+    virtual ~Transactor() = default;
+
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
     ApplyResult

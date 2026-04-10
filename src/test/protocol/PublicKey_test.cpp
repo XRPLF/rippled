@@ -46,7 +46,7 @@ public:
         }
     }
 
-    blob
+    static blob
     sig(std::string const& hex)
     {
         blob b;
@@ -54,7 +54,7 @@ public:
         return b;
     }
 
-    bool
+    static bool
     check(std::optional<ECDSACanonicality> answer, std::string const& s)
     {
         return ecdsaCanonicality(makeSlice(sig(s))) == answer;
@@ -304,7 +304,7 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {
@@ -421,7 +421,7 @@ public:
             KeyType::secp256k1,
             generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
-        PublicKey pk2(pk1);
+        PublicKey const pk2(pk1);
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 

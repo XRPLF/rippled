@@ -1,6 +1,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -161,9 +162,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto wrappedAccount = WritableAccountRoot(ctx.tx.getAccountID(sfAccount), ctx.view()))
+    if (auto wrappedAccount = WAccountRoot(ctx.tx.getAccountID(sfAccount), ctx.view(), ctx.journal))
     {
-        wrappedAccount.adjustOwnerCount(count, ctx.journal);
+        wrappedAccount.adjustOwnerCount(count);
         return true;
     }
 
@@ -235,7 +236,7 @@ OracleSet::doApply()
         }
         STArray updatedSeries;
         for (auto const& iter : pairs)
-            updatedSeries.push_back(std::move(iter.second));
+            updatedSeries.push_back(iter.second);
         sle->setFieldArray(sfPriceDataSeries, updatedSeries);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
@@ -283,7 +284,7 @@ OracleSet::doApply()
                 pairs.emplace(key, std::move(priceData));
             }
             for (auto const& iter : pairs)
-                series.push_back(std::move(iter.second));
+                series.push_back(iter.second);
         }
 
         sle->setFieldArray(sfPriceDataSeries, series);

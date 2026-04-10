@@ -2,8 +2,8 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/CaptureLogs.h>
 
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 namespace test {
@@ -18,8 +18,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if holder does not exist.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(100000), gw, alice);
             env.close();
 
@@ -32,7 +32,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.trust(USD(10000), alice);
             env(pay(gw, alice, USD(100)));
 
-            AMM amm(env, alice, XRP(100), USD(100));
+            AMM const amm(env, alice, XRP(100), USD(100));
             env.close();
 
             env(amm::ammClawback(gw, Account("unknown"), USD, XRP, std::nullopt),
@@ -43,8 +43,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // return terNO_AMM error.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(100000), gw, alice);
             env.close();
 
@@ -75,8 +75,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // return temMALFORMED error.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -91,7 +91,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Issuer can not clawback from himself.
             env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt), ter(temMALFORMED));
@@ -103,8 +103,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if the Asset field matches the Account field.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -119,7 +119,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // The Asset's issuer field is alice, while the Account field is gw.
             // This should return temMALFORMED because they do not match.
@@ -131,8 +131,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if the Amount field matches the Asset field.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -147,7 +147,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // The Asset's issuer subfield is gw account and Amount's issuer
             // subfield is alice account. Return temBAD_AMOUNT because
@@ -160,8 +160,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test if the Amount is invalid, which is less than zero.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -176,7 +176,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Return temBAD_AMOUNT if the Amount value is less than 0.
             env(amm::ammClawback(
@@ -193,8 +193,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // transaction is prohibited.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -207,7 +207,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(gw, alice["USD"](-100)));
 
             // gw creates AMM pool of XRP/USD.
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // If asfAllowTrustLineClawback is not set, the issuer is not
             // allowed to send the AMMClawback transaction.
@@ -217,8 +217,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test invalid flag.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -233,7 +233,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(100)));
             env.close();
 
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Return temINVALID_FLAG when providing invalid flag.
             env(amm::ammClawback(gw, alice, USD, XRP, std::nullopt),
@@ -245,8 +245,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // are not issued by the same issuer.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(10000), gw, alice);
             env.close();
 
@@ -262,7 +262,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // gw creates AMM pool of XRP/USD.
-            AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Return temINVALID_FLAG because the issuer set tfClawTwoAssets,
             // but the issuer only issues USD in the pool. The issuer is not
@@ -276,8 +276,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test clawing back XRP is being prohibited.
         {
             Env env(*this);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, alice);
             env.close();
 
@@ -293,7 +293,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // Alice creates AMM pool of XRP/USD.
-            AMM amm(env, alice, XRP(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, XRP(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             // Clawback XRP is prohibited.
@@ -309,8 +309,8 @@ class AMMClawback_test : public beast::unit_test::suite
         if (!features[featureAMMClawback])
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, alice);
             env.close();
 
@@ -342,9 +342,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // issuer. Claw back USD, and EUR goes back to the holder.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, gw2, alice);
             env.close();
 
@@ -370,7 +370,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, EUR(3000)));
 
             // Alice creates AMM pool of EUR/USD.
-            AMM amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(
@@ -422,8 +422,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // to the holder.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, alice);
             env.close();
 
@@ -441,7 +441,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, USD(3000)));
 
             // Alice creates AMM pool of XRP/USD.
-            AMM amm(env, alice, XRP(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, XRP(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(amm.expectBalances(USD(2000), XRP(1000), IOUAmount{1414213562373095, -9}));
@@ -501,9 +501,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // balance in AMM pool.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, gw2, alice);
             env.close();
 
@@ -527,7 +527,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, EUR(6000)));
 
             // Alice creates AMM pool of EUR/USD
-            AMM amm(env, alice, EUR(5000), USD(4000), ter(tesSUCCESS));
+            AMM const amm(env, alice, EUR(5000), USD(4000), ter(tesSUCCESS));
             env.close();
 
             if (!features[fixAMMv1_3])
@@ -672,10 +672,10 @@ class AMMClawback_test : public beast::unit_test::suite
         // creates the AMM pool EUR/XRP.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(1000000), gw, gw2, alice, bob);
             env.close();
 
@@ -1082,11 +1082,11 @@ class AMMClawback_test : public beast::unit_test::suite
         // issuer. Claw back all the USD for different users.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(1000000), gw, gw2, alice, bob, carol);
             env.close();
 
@@ -1288,9 +1288,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // different users.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(1000000), gw, alice, bob);
             env.close();
 
@@ -1400,10 +1400,10 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test AMMClawback for USD/EUR pool. The assets are issued by different
         // issuer. Claw back all the USD for different users.
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(1000000), gw, alice, bob, carol);
         env.close();
 
@@ -1534,10 +1534,10 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test AMMClawback for USD/EUR pool. The assets are issued by different
         // issuer. Claw back all the USD for different users.
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account gw2{"gateway2"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const gw2{"gateway2"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(1000000), gw, gw2, alice, bob);
         env.close();
 
@@ -1629,9 +1629,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // gw and gw2 issues token for each other. Test AMMClawback from
         // each other.
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account gw2{"gateway2"};
-        Account alice{"alice"};
+        Account const gw{"gateway"};
+        Account const gw2{"gateway2"};
+        Account const alice{"alice"};
         env.fund(XRP(1000000), gw, gw2, alice);
         env.close();
 
@@ -1815,8 +1815,8 @@ class AMMClawback_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account alice{"alice"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
         env.fund(XRP(1000000), gw, alice);
         env.close();
 
@@ -1829,7 +1829,7 @@ class AMMClawback_test : public beast::unit_test::suite
         env.trust(USD(100000), alice);
         env(pay(gw, alice, USD(5000)));
 
-        AMM amm(env, gw, USD(1000), XRP(2000), ter(tesSUCCESS));
+        AMM const amm(env, gw, USD(1000), XRP(2000), ter(tesSUCCESS));
         env.close();
 
         // Alice did not deposit in the amm pool. So AMMClawback from Alice
@@ -1846,9 +1846,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // test individually frozen trustline.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, gw2, alice);
             env.close();
 
@@ -1872,7 +1872,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, EUR(3000)));
 
             // Alice creates AMM pool of EUR/USD.
-            AMM amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(
@@ -1910,9 +1910,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // test individually frozen trustline of both USD and EUR currency.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, gw2, alice);
             env.close();
 
@@ -1936,7 +1936,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, EUR(3000)));
 
             // Alice creates AMM pool of EUR/USD.
-            AMM amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(
@@ -1960,9 +1960,9 @@ class AMMClawback_test : public beast::unit_test::suite
         // test gw global freeze.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
-            Account alice{"alice"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
             env.fund(XRP(1000000), gw, gw2, alice);
             env.close();
 
@@ -1986,7 +1986,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.require(balance(alice, EUR(3000)));
 
             // Alice creates AMM pool of EUR/USD.
-            AMM amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(
@@ -2010,10 +2010,10 @@ class AMMClawback_test : public beast::unit_test::suite
         // global freeze.
         {
             Env env(*this, features);
-            Account gw{"gateway"};
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(1000000), gw, alice, bob, carol);
             env.close();
 
@@ -2149,8 +2149,8 @@ class AMMClawback_test : public beast::unit_test::suite
         // Test AMMClawback for USD/XRP pool. Claw back USD, and XRP goes back
         // to the holder.
         Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-        Account gw{"gateway"};
-        Account alice{"alice"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
         env.fund(XRP(1000000000), gw, alice);
         env.close();
 
@@ -2212,21 +2212,22 @@ class AMMClawback_test : public beast::unit_test::suite
         using namespace jtx;
         std::string logs;
 
-        auto setupAccounts = [&](Env& env, Account& gw, Account& alice, Account& bob) {
-            env.fund(XRP(100000), gw, alice, bob);
-            env.close();
-            env(fset(gw, asfAllowTrustLineClawback));
-            env.close();
+        auto setupAccounts =
+            [&](Env& env, Account const& gw, Account const& alice, Account const& bob) {
+                env.fund(XRP(100000), gw, alice, bob);
+                env.close();
+                env(fset(gw, asfAllowTrustLineClawback));
+                env.close();
 
-            auto const USD = gw["USD"];
-            env.trust(USD(100000), alice);
-            env(pay(gw, alice, USD(50000)));
-            env.trust(USD(100000), bob);
-            env(pay(gw, bob, USD(40000)));
-            env.close();
+                auto const USD = gw["USD"];
+                env.trust(USD(100000), alice);
+                env(pay(gw, alice, USD(50000)));
+                env.trust(USD(100000), bob);
+                env(pay(gw, bob, USD(40000)));
+                env.close();
 
-            return USD;
-        };
+                return USD;
+            };
 
         auto getLPTokenBalances = [&](auto& env,
                                       auto const& amm,
@@ -2242,7 +2243,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/XRP pool. AMMClawback almost last holder's USD balance
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
             AMM amm(env, alice, XRP(2), USD(1));
@@ -2275,7 +2276,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/XRP pool. AMMClawback part of last holder's USD balance
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
             AMM amm(env, alice, XRP(2), USD(1));
@@ -2317,7 +2318,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/XRP pool. AMMClawback all of last holder's USD balance
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
             AMM amm(env, alice, XRP(2), USD(1));
@@ -2354,10 +2355,10 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/IOU pool, different issuers
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
-            Account gw2{"gateway2"};
+            Account const gw2{"gateway2"};
             env.fund(XRP(100000), gw2);
             env.close();
             auto const EUR = gw2["EUR"];
@@ -2394,7 +2395,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/IOU pool, same issuer
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
             auto const EUR = gw["EUR"];
@@ -2433,7 +2434,7 @@ class AMMClawback_test : public beast::unit_test::suite
         // IOU/IOU pool, larger asset ratio
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
-            Account gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const USD = setupAccounts(env, gw, alice, bob);
 
             auto const EUR = gw["EUR"];

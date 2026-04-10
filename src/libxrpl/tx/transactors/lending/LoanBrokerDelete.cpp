@@ -84,7 +84,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::zero)
     {
-        if (auto const ret = makeTokenBase(ctx.view, asset)->checkDeepFrozen(brokerOwner))
+        if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {
             JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
             return ret;
@@ -132,11 +132,10 @@ LoanBrokerDelete::doApply()
             return ter;
     }
 
-    if (auto ter =
-            makeWritableTokenBase(view(), vaultAsset)->removeEmptyHolding(brokerPseudoID, j_))
+    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    WritableAccountRoot brokerPseudo(brokerPseudoID, view());
+    WAccountRoot brokerPseudo(brokerPseudoID, view(), j_);
     if (!brokerPseudo)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -163,13 +162,13 @@ LoanBrokerDelete::doApply()
     view().erase(broker);
 
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        wrappedOwner.adjustOwnerCount(-2, j_);
+        wrappedOwner.adjustOwnerCount(-2);
     }
 
     associateAsset(*broker, vaultAsset);

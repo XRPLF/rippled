@@ -1,6 +1,8 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/payment/Payment.h>
@@ -46,9 +48,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
-    auto const dstAcct = tx[~sfDestination].value_or(account);
+    auto const dstAcct = AccountRoot(tx[~sfDestination].value_or(account), ctx.view);
 
-    if (isPseudoAccount(ctx.view, dstAcct))
+    if (dstAcct.isPseudoAccount())
     {
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
@@ -79,15 +81,15 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    auto token = makeTokenBase(ctx.view, vaultAsset);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret = token->canTransfer(pseudoAccountID, dstAcct))
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct.id());
+        !isTesSuccess(ret))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
     // Enforce all the usual asset transfer checks.
     AuthType authType = AuthType::WeakAuth;
-    if (account != dstAcct)
+    if (account != dstAcct.id())
     {
         if (auto const ret = canWithdraw(ctx.view, tx))
             return ret;
@@ -98,17 +100,17 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Destination MPToken must exist (if asset is an MPT)
-    if (auto const ter = token->requireAuth(dstAcct, authType))
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct.id(), authType))
         return ter;
 
     // Check for freezes, unless sending directly to the issuer
-    if (dstAcct != vaultAsset.getIssuer())
+    if (dstAcct.id() != vaultAsset.getIssuer())
     {
         // Cannot send a frozen Asset
-        if (auto const ret = token->checkFrozen(pseudoAccountID))
+        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
             return ret;
         // Destination account cannot receive if asset is deep frozen
-        if (auto const ret = token->checkDeepFrozen(dstAcct))
+        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct.id(), vaultAsset))
             return ret;
     }
 
@@ -118,7 +120,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const minimumCover = [&]() {
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),

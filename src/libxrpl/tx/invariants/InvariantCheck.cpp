@@ -3,7 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -283,25 +284,29 @@ NoZeroEscrow::visitEntry(
         }
         else
         {
-            // IOU case
-            if (amount.holds<Issue>())
-            {
-                if (amount <= beast::zero)
-                    return true;
+            return amount.asset().visit(
+                [&](Issue const& issue) {
+                    // IOU case
+                    if (amount <= beast::zero)
+                        return true;
 
-                if (badCurrency() == amount.getCurrency())
-                    return true;
-            }
+                    if (badCurrency() == issue.currency)
+                        return true;
 
-            // MPT case
-            if (amount.holds<MPTIssue>())
-            {
-                if (amount <= beast::zero)
-                    return true;
+                    return false;
+                }
 
-                if (amount.mpt() > MPTAmount{maxMPTokenAmount})
-                    return true;  // LCOV_EXCL_LINE
-            }
+                // MPT case
+                ,
+                [&](MPTIssue const&) {
+                    if (amount <= beast::zero)
+                        return true;
+
+                    if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                        return true;  // LCOV_EXCL_LINE
+
+                    return false;
+                });
         }
         return false;
     };
@@ -599,8 +604,8 @@ NoXRPTrustLines::visitEntry(
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        xrpTrustLine_ = after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+        xrpTrustLine_ = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
     }
 }
 
@@ -630,11 +635,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = uFlags & lsfLowFreeze;
-        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
+        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
-        bool const highFreeze = uFlags & lsfHighFreeze;
-        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
+        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
 
         deepFreezeWithoutFreeze_ = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
     }
@@ -657,6 +662,19 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 }
 
 //------------------------------------------------------------------------------
+
+[[nodiscard]] static bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
+{
+    auto const& fields = getPseudoAccountFields();
+
+    // Intentionally use defensive coding here because it's cheap and makes the
+    // semantics of true return value clean.
+    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
+        std::count_if(fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
+            return sleAcct->isFieldPresent(*sf);
+        }) > 0;
+}
 
 void
 ValidNewAccountRoot::visitEntry(
@@ -773,17 +791,23 @@ ValidClawback::finalize(
             return false;
         }
 
-        if (trustlinesChanged == 1)
+        bool const mptV2Enabled = view.rules().enabled(featureMPTokensV2);
+        if (trustlinesChanged == 1 || (mptV2Enabled && mptokensChanged == 1))
         {
             AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
-            STAmount const holderBalance =
-                accountHolds(view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+            STAmount const holderBalance = amount.asset().visit(
+                [&](Issue const& issue) {
+                    return accountHolds(view, holder, issue.currency, issuer, fhIGNORE_FREEZE, j);
+                },
+                [&](MPTIssue const& issue) {
+                    return accountHolds(view, issuer, issue, fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+                });
 
             if (holderBalance.signum() < 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: trustline balance is negative";
+                JLOG(j.fatal()) << "Invariant failed: trustline or MPT balance is negative";
                 return false;
             }
         }

@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 //
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -61,18 +62,17 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    auto token = makeTokenBase(ctx.view, vaultAsset);
     // Cannot transfer a non-transferable Asset
-    if (auto const ret = token->canTransfer(account, pseudoAccountID))
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
     // Cannot transfer a frozen Asset
-    if (auto const ret = token->checkFrozen(account))
+    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
         return ret;
     // Pseudo-account cannot receive if asset is deep frozen
-    if (auto const ret = token->checkDeepFrozen(pseudoAccountID))
+    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return ret;
     // Cannot transfer unauthorized asset
-    if (auto const ret = token->requireAuth(account, AuthType::StrongAuth))
+    if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
 
     if (accountHolds(

@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -90,9 +91,10 @@ TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const vaultAsset = ctx.tx[sfAsset];
-    auto const account = ctx.tx[sfAccount];
+    auto const& account = ctx.tx[sfAccount];
+    auto const issuer = AccountRoot(vaultAsset.getIssuer(), ctx.view);
 
-    if (auto const ter = makeTokenBase(ctx.view, vaultAsset)->canAddHolding())
+    if (auto const ter = canAddHolding(ctx.view, vaultAsset))
         return ter;
 
     // Check for pseudo-account issuers - we do not want a vault to hold such
@@ -100,16 +102,13 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     // impossible to clawback (should the need arise)
     if (!vaultAsset.native())
     {
-        if (isPseudoAccount(ctx.view, vaultAsset.getIssuer()))
+        if (issuer.isPseudoAccount())
             return tecWRONG_ASSET;
     }
 
     // Cannot create Vault for an Asset frozen for the vault owner
-    if (auto token = makeTokenBase(ctx.view, vaultAsset))
-    {
-        if (token->isFrozen(account))
-            return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
-    }
+    if (isFrozen(ctx.view, account, vaultAsset))
+        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
@@ -135,7 +134,7 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    WritableAccountRoot owner(accountID_, view());
+    WAccountRoot owner(accountID_, view(), j_);
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -144,7 +143,7 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    owner.adjustOwnerCount(2, j_);
+    owner.adjustOwnerCount(2);
     auto const ownerCount = owner->at(sfOwnerCount);
     if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
@@ -156,9 +155,7 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter =
-            makeWritableTokenBase(view(), asset)->addEmptyHolding(pseudoId, preFeeBalance_, j_);
-        !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -169,7 +166,7 @@ VaultCreate::doApply()
     std::uint32_t mptFlags = 0;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -215,21 +212,21 @@ VaultCreate::doApply()
     {
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     }
-    if (scale)
+    if (scale != 0u)
         vault->at(sfScale) = scale;
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    WritableMPTokenIssuance mptToken(view(), mptIssuanceID);
-    if (auto const err = mptToken.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
+    if (auto const err =
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if (txFlags & tfVaultPrivate)
+    if ((txFlags & tfVaultPrivate) != 0u)
     {
-        if (auto const err =
-                mptToken.authorizeMPToken(preFeeBalance_, pseudoId, ctx_.journal, {}, accountID_);
+        if (auto const err = authorizeMPToken(
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

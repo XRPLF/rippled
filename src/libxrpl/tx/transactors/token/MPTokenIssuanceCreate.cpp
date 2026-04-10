@@ -1,4 +1,6 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
@@ -31,8 +33,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // If the mutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
-        mutableFlags && (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -77,7 +79,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
-    WritableAccountRoot acct(args.account, view);
+    WAccountRoot acct(args.account, view, journal);
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -96,7 +98,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (!ownerNode)
             return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = WritableMPTokenIssuance::makeNew(mptId, view);
+        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
@@ -121,11 +123,11 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
-        mptIssuance.update();
+        view.insert(mptIssuance);
     }
 
     // Update owner count.
-    acct.adjustOwnerCount(1, journal);
+    acct.adjustOwnerCount(1);
 
     return mptId;
 }

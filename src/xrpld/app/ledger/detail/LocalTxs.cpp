@@ -1,6 +1,6 @@
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 
@@ -95,7 +95,7 @@ public:
     void
     push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard const lock(m_lock);
 
         m_txns.emplace_back(index, txn);
     }
@@ -108,7 +108,7 @@ public:
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
         {
-            std::lock_guard lock(m_lock);
+            std::lock_guard const lock(m_lock);
 
             for (auto const& it : m_txns)
                 tset.insert(it.getTX());
@@ -122,7 +122,7 @@ public:
     void
     sweep(ReadView const& view) override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard const lock(m_lock);
 
         m_txns.remove_if([&view](auto const& txn) {
             if (txn.isExpired(view.header().seq))
@@ -159,7 +159,7 @@ public:
     std::size_t
     size() override
     {
-        std::lock_guard lock(m_lock);
+        std::lock_guard const lock(m_lock);
 
         return m_txns.size();
     }

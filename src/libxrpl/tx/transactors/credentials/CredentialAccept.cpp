@@ -1,6 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -60,7 +60,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (sleCred->getFieldU32(sfFlags) & lsfAccepted)
+    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -76,8 +76,8 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    WritableAccountRoot wrappedSubject(accountID_, view());
-    WritableAccountRoot wrappedIssuer(issuer, view());
+    WAccountRoot wrappedSubject(accountID_, view(), j_);
+    WAccountRoot wrappedIssuer(issuer, view(), j_);
 
     if (!wrappedSubject || !wrappedIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -104,8 +104,8 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    wrappedIssuer.adjustOwnerCount(-1, j_);
-    wrappedSubject.adjustOwnerCount(1, j_);
+    wrappedIssuer.adjustOwnerCount(-1);
+    wrappedSubject.adjustOwnerCount(1);
 
     return tesSUCCESS;
 }

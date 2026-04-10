@@ -1,6 +1,6 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -54,7 +54,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, view());
+    WAccountRoot wrappedOwner(accountID_, view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -69,8 +69,6 @@ TicketCreate::doApply()
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
-
-    beast::Journal viewJ{ctx_.registry.journal("View")};
 
     // The starting ticket sequence is the same as the current account
     // root sequence.  Before we got here to doApply(), the transaction
@@ -88,7 +86,7 @@ TicketCreate::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
-        SLE::pointer sleTicket = std::make_shared<SLE>(ticketKeylet);
+        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
@@ -112,7 +110,7 @@ TicketCreate::doApply()
     wrappedOwner->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    wrappedOwner.adjustOwnerCount(ticketCount, viewJ);
+    wrappedOwner.adjustOwnerCount(ticketCount);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

@@ -2,6 +2,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -45,8 +46,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
-    auto const token = makeTokenBase(ctx.view, vaultAsset);
-    if (auto ter = token->canTransfer(account, vaultAccount); !isTesSuccess(ter))
+    if (auto ter = canTransfer(ctx.view, vaultAsset, account, vaultAccount); !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: vault assets are non-transferable.";
         return ter;
@@ -62,8 +62,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = MPTokenIssuance(ctx.view, vaultShare);
-    if (!mptIssuance)
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -71,7 +71,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (mptIssuance->isFlag(lsfMPTLocked))
+    if (sleIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
@@ -80,18 +80,18 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (token->isFrozen(account))
+    if (isFrozen(ctx.view, account, vaultAsset))
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
-    if (MPTokenIssuance(ctx.view, vaultShare).isFrozen(account))
+    if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const maybeDomainID = mptIssuance->at(~sfDomainID);
+        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
-        // perform authorization check based on DomainID read from mptIssuance.
+        // perform authorization check based on DomainID read from sleIssuance.
         // Had the vault shares been a regular MPToken, we would allow
         // authorization granted by the Issuer explicitly, but Vault uses Issuer
         // pseudo-account, which cannot grant an authorization.
@@ -110,11 +110,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Source MPToken must exist (if asset is an MPT)
-    if (auto token = makeTokenBase(ctx.view, vaultAsset))
-    {
-        if (auto const ter = token->requireAuth(account); !isTesSuccess(ter))
-            return ter;
-    }
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
+        return ter;
 
     if (accountHolds(
             ctx.view,
@@ -139,8 +136,9 @@ VaultDeposit::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
-    WritableMPTokenIssuance mptoken(view(), (*vault)[sfShareMPTID]);
-    if (!mptoken.exists())
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -152,16 +150,18 @@ VaultDeposit::doApply()
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
-        if (auto const err = mptoken.enforceMPTokenAuthorization(accountID_, preFeeBalance_, j_);
+        if (auto const err = enforceMPTokenAuthorization(
+                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
     else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptoken.getMptID(), accountID_)))
+        if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
-            if (auto const err = mptoken.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
+            if (auto const err = authorizeMPToken(
+                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -172,9 +172,11 @@ VaultDeposit::doApply()
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
-            if (auto const err = mptoken.authorizeMPToken(
-                    preFeeBalance_,         // priorBalance
-                    mptoken->at(sfIssuer),  // account
+            if (auto const err = authorizeMPToken(
+                    view(),
+                    preFeeBalance_,             // priorBalance
+                    mptIssuanceID->value(),     // mptIssuanceID
+                    sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
                     {},         // flags
                     accountID_  // holderID
@@ -189,7 +191,7 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, mptoken, amount);
+            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -197,7 +199,7 @@ VaultDeposit::doApply()
         if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
-        auto const maybeAssets = sharesToAssetsDeposit(vault, mptoken, sharesCreated);
+        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -219,7 +221,7 @@ VaultDeposit::doApply()
             << "VaultDeposit: overflow error with"
             << " scale=" << (int)vault->at(sfScale).value()  //
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << mptoken->at(sfOutstandingAmount) << ", amount=" << amount;
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
         return tecPATH_DRY;
     }
 

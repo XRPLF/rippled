@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 //
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -12,103 +13,77 @@
 
 namespace xrpl {
 
-// Forward declarations for functions that remain in View.h/cpp
 bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptShare,
-    int depth);
-
-[[nodiscard]] TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node = sfOwnerNode);
-
-bool
-MPTokenIssuance::isGlobalFrozen() const
+isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
-    if (sle_)
-        return sle_->isFlag(lsfMPTLocked);
-    return false;
-}
-
-bool
-MPTokenIssuance::isIndividualFrozen(AccountID const& account) const
-{
-    if (auto const sle = readView_.read(keylet::mptoken(mptID_, account)))
+    if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
         return sle->isFlag(lsfMPTLocked);
     return false;
 }
 
 bool
-MPTokenIssuance::isFrozen(AccountID const& account, int depth) const
+isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
-    return isGlobalFrozen() || isIndividualFrozen(account) ||
-        isVaultPseudoAccountFrozen(readView_, account, mptIssue_, depth);
+    if (auto const sle = view.read(keylet::mptoken(mptIssue.getMptID(), account)))
+        return sle->isFlag(lsfMPTLocked);
+    return false;
+}
+
+bool
+isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+{
+    return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
 }
 
 [[nodiscard]] bool
-MPTokenIssuance::isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth) const
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    MPTIssue const& mptIssue,
+    int depth)
 {
-    if (isGlobalFrozen())
+    if (isGlobalFrozen(view, mptIssue))
         return true;
 
     for (auto const& account : accounts)
     {
-        if (isIndividualFrozen(account))
+        if (isIndividualFrozen(view, account, mptIssue))
             return true;
     }
 
     for (auto const& account : accounts)
     {
-        if (isVaultPseudoAccountFrozen(readView_, account, mptIssue_, depth))
+        if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
             return true;
     }
 
     return false;
 }
 
-TER
-MPTokenIssuance::checkFrozen(AccountID const& account) const
-{
-    return isFrozen(account) ? TER{tecLOCKED} : TER{tesSUCCESS};
-}
-
-bool
-MPTokenIssuance::isDeepFrozen(AccountID const& account, int depth) const
-{
-    return isFrozen(account, depth);
-}
-
-TER
-MPTokenIssuance::checkDeepFrozen(AccountID const& account) const
-{
-    return isDeepFrozen(account) ? TER{tecLOCKED} : TER{tesSUCCESS};
-}
-
 Rate
-MPTokenIssuance::transferRate() const
+transferRate(ReadView const& view, MPTID const& issuanceID)
 {
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
     // which represents 50% of 1,000,000,000
-    if (sle_ && sle_->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + 10'000 * sle_->getFieldU16(sfTransferFee)};
+    if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
+        sle && sle->isFieldPresent(sfTransferFee))
+        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
 
     return parityRate;
 }
 
 [[nodiscard]] TER
-MPTokenIssuance::canAddHolding() const
+canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 {
-    if (!sle_)
+    auto mptID = mptIssue.getMptID();
+    auto issuance = view.read(keylet::mptIssuance(mptID));
+    if (!issuance)
     {
         return tecOBJECT_NOT_FOUND;
     }
-    if (!sle_->isFlag(lsfMPTCanTransfer))
+    if (!issuance->isFlag(lsfMPTCanTransfer))
     {
         return tecNO_AUTH;
     }
@@ -117,32 +92,38 @@ MPTokenIssuance::canAddHolding() const
 }
 
 [[nodiscard]] TER
-WritableMPTokenIssuance::addEmptyHolding(
+addEmptyHolding(
+    ApplyView& view,
     AccountID const& accountID,
     XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
     beast::Journal journal)
 {
-    if (!mutableSle_)
+    auto const& mptID = mptIssue.getMptID();
+    auto const mpt = view.peek(keylet::mptIssuance(mptID));
+    if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (mutableSle_->isFlag(lsfMPTLocked))
+    if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (applyView_.peek(keylet::mptoken(mptID_, accountID)))
+    if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
-    if (accountID == mptIssue_.getIssuer())
+    if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(priorBalance, accountID, journal);
+    return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER
-WritableMPTokenIssuance::authorizeMPToken(
+authorizeMPToken(
+    ApplyView& view,
     XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
     AccountID const& account,
     beast::Journal journal,
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    WritableAccountRoot wrappedAcct(account, applyView_);
+    WAccountRoot wrappedAcct(account, view, journal);
     if (!wrappedAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -154,20 +135,22 @@ WritableMPTokenIssuance::authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if (flags & tfMPTUnauthorize)
+        if ((flags & tfMPTUnauthorize) != 0)
         {
-            auto const mptokenKey = keylet::mptoken(mptID_, account);
-            auto const sleMpt = applyView_.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+            auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+            auto const sleMpt = view.peek(mptokenKey);
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
+                (view.rules().enabled(fixSecurity3_1_3) &&
+                 (*sleMpt)[~sfLockedAmount].value_or(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (!applyView_.dirRemove(
+            if (!view.dirRemove(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            wrappedAcct.adjustOwnerCount(-1, journal);
+            wrappedAcct.adjustOwnerCount(-1);
 
-            applyView_.erase(sleMpt);
+            view.erase(sleMpt);
             return tesSUCCESS;
         }
 
@@ -183,47 +166,49 @@ WritableMPTokenIssuance::authorizeMPToken(
         std::uint32_t const uOwnerCount = wrappedAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
             (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : applyView_.fees().accountReserve(uOwnerCount + 1));
+                              : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
 
         // Defensive check before we attempt to create MPToken for the issuer
-        if (!mutableSle_ || mutableSle_->getAccountID(sfIssuer) == account)
+        auto const mpt = view.read(keylet::mptIssuance(mptIssuanceID));
+        if (!mpt || mpt->getAccountID(sfIssuer) == account)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::authorizeMPToken : invalid issuance or issuers token");
-            if (applyView_.rules().enabled(featureLendingProtocol))
+            if (view.rules().enabled(featureLendingProtocol))
                 return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
 
-        auto const mptokenKey = keylet::mptoken(mptID_, account);
+        auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
         auto mptoken = std::make_shared<SLE>(mptokenKey);
-        if (auto ter = dirLink(applyView_, account, mptoken))
+        if (auto ter = dirLink(view, account, mptoken))
             return ter;  // LCOV_EXCL_LINE
 
         (*mptoken)[sfAccount] = account;
-        (*mptoken)[sfMPTokenIssuanceID] = mptID_;
+        (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
         (*mptoken)[sfFlags] = 0;
-        applyView_.insert(mptoken);
+        view.insert(mptoken);
 
         // Update owner count.
-        wrappedAcct.adjustOwnerCount(1, journal);
+        wrappedAcct.adjustOwnerCount(1);
 
         return tesSUCCESS;
     }
 
-    if (!mutableSle_)
+    auto const sleMptIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleMptIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the account that submitted this tx is the issuer of the MPT
     // Note: `account_` is issuer's account
     //       `holderID` is holder's account
-    if (account != (*mutableSle_)[sfIssuer])
+    if (account != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMpt = applyView_.peek(keylet::mptoken(mptID_, *holderID));
+    auto const sleMpt = view.peek(keylet::mptoken(mptIssuanceID, *holderID));
     if (!sleMpt)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -232,7 +217,7 @@ WritableMPTokenIssuance::authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if (flags & tfMPTUnauthorize)
+    if ((flags & tfMPTUnauthorize) != 0)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
@@ -246,29 +231,37 @@ WritableMPTokenIssuance::authorizeMPToken(
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
 
-    applyView_.update(sleMpt);
+    view.update(sleMpt);
     return tesSUCCESS;
 }
 
 [[nodiscard]] TER
-WritableMPTokenIssuance::removeEmptyHolding(AccountID const& accountID, beast::Journal journal)
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
 {
     // If the account is the issuer, then no token should exist. MPTs do not
     // have the legacy ability to create such a situation, but check anyway. If
     // a token does exist, it will get deleted. If not, return success.
-    bool const accountIsIssuer = accountID == mptIssue_.getIssuer();
-    auto const mptoken = applyView_.peek(keylet::mptoken(mptID_, accountID));
+    bool const accountIsIssuer = accountID == mptIssue.getIssuer();
+    auto const& mptID = mptIssue.getMptID();
+    auto const mptoken = view.peek(keylet::mptoken(mptID, accountID));
     if (!mptoken)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     // Unlike a trust line, if the account is the issuer, and the token has a
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
-    if (mptoken->at(sfMPTAmount) != 0)
+    if (mptoken->at(sfMPTAmount) != 0 ||
+        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].value_or(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
+        view,
         {},  // priorBalance
+        mptID,
         accountID,
         journal,
         tfMPTUnauthorize  // flags
@@ -276,18 +269,25 @@ WritableMPTokenIssuance::removeEmptyHolding(AccountID const& accountID, beast::J
 }
 
 [[nodiscard]] TER
-MPTokenIssuance::requireAuth(AccountID const& account, AuthType authType, int depth) const
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    AuthType authType,
+    int depth)
 {
-    if (!sle_)
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const sleIssuance = view.read(mptID);
+    if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto const mptIssuer = AccountRoot(sle_->getAccountID(sfIssuer), readView_);
+    auto const mptIssuer = AccountRoot(sleIssuance->getAccountID(sfIssuer), view);
 
     // issuer is always "authorized"
     if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
 
-    bool const featureSAVEnabled = readView_.rules().enabled(featureSingleAssetVault);
+    bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
 
     if (featureSAVEnabled)
     {
@@ -300,19 +300,23 @@ MPTokenIssuance::requireAuth(AccountID const& account, AuthType authType, int de
 
         if (mptIssuer->isFieldPresent(sfVaultID))
         {
-            auto const sleVault = readView_.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
+            auto const sleVault = view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             auto const asset = sleVault->at(sfAsset);
-            if (auto const err =
-                    makeTokenBase(readView_, asset)->requireAuth(account, authType, depth + 1);
+            if (auto const err = asset.visit(
+                    [&](Issue const& issue) { return requireAuth(view, issue, account, authType); },
+                    [&](MPTIssue const& issue) {
+                        return requireAuth(view, issue, account, authType, depth + 1);
+                    });
                 !isTesSuccess(err))
                 return err;
         }
     }
 
-    auto const sleToken = readView_.read(keylet::mptoken(mptID_, account));
+    auto const mptokenID = keylet::mptoken(mptID.key, account);
+    auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
     if (!sleToken && (authType == AuthType::StrongAuth || authType == AuthType::Legacy))
@@ -320,14 +324,14 @@ MPTokenIssuance::requireAuth(AccountID const& account, AuthType authType, int de
 
     // Note, this check is not amendment-gated because DomainID will be always
     // empty **unless** writing to it has been enabled by an amendment
-    auto const maybeDomainID = sle_->at(~sfDomainID);
+    auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     if (maybeDomainID)
     {
         XRPL_ASSERT(
-            sle_->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-        auto const ter = credentials::validDomain(readView_, *maybeDomainID, account);
+        auto const ter = credentials::validDomain(view, *maybeDomainID, account);
         if (isTesSuccess(ter))
         {
             return ter;  // Note: sleToken might be null
@@ -343,43 +347,48 @@ MPTokenIssuance::requireAuth(AccountID const& account, AuthType authType, int de
     if (featureSAVEnabled)
     {
         // Implicitly authorize Vault and LoanBroker pseudo-accounts
-        if (isPseudoAccount(readView_, account, {&sfVaultID, &sfLoanBrokerID}))
+        AccountRoot const accountRoot(account, view);
+        if (accountRoot.isPseudoAccount({&sfVaultID, &sfLoanBrokerID}))
             return tesSUCCESS;
     }
 
     // mptoken must be authorized if issuance enabled requireAuth
-    if (sle_->isFlag(lsfMPTRequireAuth) && (!sleToken || !sleToken->isFlag(lsfMPTAuthorized)))
+    if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
+        (!sleToken || !sleToken->isFlag(lsfMPTAuthorized)))
         return tecNO_AUTH;
 
     return tesSUCCESS;  // Note: sleToken might be null
 }
 
 [[nodiscard]] TER
-WritableMPTokenIssuance::enforceMPTokenAuthorization(
+enforceMPTokenAuthorization(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
-    if (!mutableSle_)
+    auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
-        mutableSle_->isFlag(lsfMPTRequireAuth),
+        sleIssuance->isFlag(lsfMPTRequireAuth),
         "xrpl::enforceMPTokenAuthorization : authorization required");
 
-    if (account == mutableSle_->at(sfIssuer))
+    if (account == sleIssuance->at(sfIssuer))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const keylet = keylet::mptoken(mptID_, account);
-    auto const sleToken = readView_.read(keylet);  //  NOTE: might be null
-    auto const maybeDomainID = mutableSle_->at(~sfDomainID);
+    auto const keylet = keylet::mptoken(mptIssuanceID, account);
+    auto const sleToken = view.read(keylet);  //  NOTE: might be null
+    auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
     bool const authorizedByDomain = [&]() -> bool {
         // NOTE: defensive here, should be checked in preclaim
-        if (!maybeDomainID)
+        if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
 
-        auto const ter = verifyValidDomain(applyView(), account, *maybeDomainID, j);
+        auto const ter = verifyValidDomain(view, account, *maybeDomainID, j);
         if (isTesSuccess(ter))
             return true;
         if (ter == tecEXPIRED)
@@ -398,7 +407,7 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         // Either way, return tecNO_AUTH and there is nothing else to do
         return expired ? tecEXPIRED : tecNO_AUTH;
     }
-    if (!authorizedByDomain && maybeDomainID)
+    if (!authorizedByDomain && maybeDomainID.has_value())
     {
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the
@@ -410,7 +419,7 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         // We found an MPToken, but sfDomainID is not set, so this is a classic
         // MPToken which requires authorization by the token issuer.
         XRPL_ASSERT(
-            sleToken != nullptr && !maybeDomainID,
+            sleToken != nullptr && !maybeDomainID.has_value(),
             "xrpl::enforceMPTokenAuthorization : found MPToken");
         if (sleToken->isFlag(lsfMPTAuthorized))
             return tesSUCCESS;
@@ -421,7 +430,9 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
     {
         // Found an MPToken, authorized by the domain. Ignore authorization flag
         // lsfMPTAuthorized because it is meaningless. Return tesSUCCESS
-        XRPL_ASSERT(maybeDomainID, "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
+        XRPL_ASSERT(
+            maybeDomainID.has_value(),
+            "xrpl::enforceMPTokenAuthorization : found MPToken for domain");
         return tesSUCCESS;
     }
     if (authorizedByDomain)
@@ -429,11 +440,13 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
         // Could not find MPToken but there should be one because we are
         // authorized by domain. Proceed to create it, then return tesSUCCESS
         XRPL_ASSERT(
-            maybeDomainID && sleToken == nullptr,
+            maybeDomainID.has_value() && sleToken == nullptr,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
-                priorBalance,  // priorBalance
-                account,       // account
+                view,
+                priorBalance,   // priorBalance
+                mptIssuanceID,  // mptIssuanceID
+                account,        // account
                 j);
             !isTesSuccess(err))
             return err;
@@ -448,71 +461,66 @@ WritableMPTokenIssuance::enforceMPTokenAuthorization(
 }
 
 TER
-MPTokenIssuance::canTransfer(AccountID const& from, AccountID const& to) const
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& from,
+    AccountID const& to)
 {
-    if (!sle_)
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const sleIssuance = view.read(mptID);
+    if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!(sle_->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
     {
-        if (from != (*sle_)[sfIssuer] && to != (*sle_)[sfIssuer])
+        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
     }
     return tesSUCCESS;
 }
 
-//------------------------------------------------------------------------------
-//
-// Token capability checks (MPT-specific)
-//
-//------------------------------------------------------------------------------
-
-bool
-MPTokenIssuance::canClawback() const
+TER
+canTrade(ReadView const& view, Asset const& asset)
 {
-    if (!sle_)
-        return false;
-    return sle_->isFlag(lsfMPTCanClawback);
-}
-
-bool
-MPTokenIssuance::requiresAuth() const
-{
-    if (!sle_)
-        return false;
-    return sle_->isFlag(lsfMPTRequireAuth);
+    return asset.visit(
+        [&](Issue const&) -> TER { return tesSUCCESS; },
+        [&](MPTIssue const& mptIssue) -> TER {
+            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+            if (!sleIssuance)
+                return tecOBJECT_NOT_FOUND;
+            if (!sleIssuance->isFlag(lsfMPTCanTrade))
+                return tecNO_PERMISSION;
+            return tesSUCCESS;
+        });
 }
 
 TER
-rippleLockEscrowMPT(
-    ApplyView& view,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal j)
+lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, beast::Journal j)
 {
     auto const mptIssue = amount.get<MPTIssue>();
-    auto mptIssuance = WritableMPTokenIssuance(view, mptIssue);
-    if (!mptIssuance.exists())
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for "
-                        << mptIssue.getMptID();
+        JLOG(j.error()) << "lockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
-    if (mptIssuance.getIssuer() == sender)
+    if (amount.getIssuer() == sender)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleLockEscrowMPT: sender is the issuer, cannot lock MPTs.";
+        JLOG(j.error()) << "lockEscrowMPT: sender is the issuer, cannot lock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
     // 1. Decrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
     {
-        auto const mptokenID = keylet::mptoken(mptIssuance.getMptID(), sender);
+        auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: MPToken not found for " << sender;
+            JLOG(j.error()) << "lockEscrowMPT: MPToken not found for " << sender;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
@@ -522,8 +530,8 @@ rippleLockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: insufficient MPTAmount for "
-                            << to_string(sender) << ": " << amt << " < " << pay;
+            JLOG(j.error()) << "lockEscrowMPT: insufficient MPTAmount for " << to_string(sender)
+                            << ": " << amt << " < " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -534,8 +542,8 @@ rippleLockEscrowMPT(
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on locked amount for "
-                            << to_string(sender) << ": " << locked << " + " << pay;
+            JLOG(j.error()) << "lockEscrowMPT: overflow on locked amount for " << to_string(sender)
+                            << ": " << locked << " + " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -554,34 +562,34 @@ rippleLockEscrowMPT(
     // 1. Increase the Issuance EscrowedAmount
     // 2. DO NOT change the Issuance OutstandingAmount
     {
-        uint64_t const issuanceEscrowed = (*mptIssuance)[~sfLockedAmount].value_or(0);
+        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].value_or(0);
         auto const pay = amount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on issuance "
+            JLOG(j.error()) << "lockEscrowMPT: overflow on issuance "
                                "locked amount for "
                             << mptIssue.getMptID() << ": " << issuanceEscrowed << " + " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        if (mptIssuance->isFieldPresent(sfLockedAmount))
+        if (sleIssuance->isFieldPresent(sfLockedAmount))
         {
-            (*mptIssuance)[sfLockedAmount] += pay;
+            (*sleIssuance)[sfLockedAmount] += pay;
         }
         else
         {
-            mptIssuance->setFieldU64(sfLockedAmount, pay);
+            sleIssuance->setFieldU64(sfLockedAmount, pay);
         }
 
-        mptIssuance.update();
+        view.update(sleIssuance);
     }
     return tesSUCCESS;
 }
 
 TER
-rippleUnlockEscrowMPT(
+unlockEscrowMPT(
     ApplyView& view,
     AccountID const& sender,
     AccountID const& receiver,
@@ -591,36 +599,35 @@ rippleUnlockEscrowMPT(
 {
     if (!view.rules().enabled(fixTokenEscrowV1))
     {
-        XRPL_ASSERT(
-            netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
+        XRPL_ASSERT(netAmount == grossAmount, "xrpl::unlockEscrowMPT : netAmount == grossAmount");
     }
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
-    auto mptIssuance = WritableMPTokenIssuance(view, mptIssue);
-    if (!mptIssuance)
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for "
-                        << mptIssue.getMptID();
+        JLOG(j.error()) << "unlockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
     // Decrease the Issuance EscrowedAmount
     {
-        if (!mptIssuance->isFieldPresent(sfLockedAmount))
+        if (!sleIssuance->isFieldPresent(sfLockedAmount))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in issuance for "
+            JLOG(j.error()) << "unlockEscrowMPT: no locked amount in issuance for "
                             << mptIssue.getMptID();
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        auto const locked = mptIssuance->getFieldU64(sfLockedAmount);
+        auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
         auto const redeem = grossAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for "
                             << mptIssue.getMptID() << ": " << locked << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
@@ -628,23 +635,23 @@ rippleUnlockEscrowMPT(
         auto const newLocked = locked - redeem;
         if (newLocked == 0)
         {
-            mptIssuance->makeFieldAbsent(sfLockedAmount);
+            sleIssuance->makeFieldAbsent(sfLockedAmount);
         }
         else
         {
-            mptIssuance->setFieldU64(sfLockedAmount, newLocked);
+            sleIssuance->setFieldU64(sfLockedAmount, newLocked);
         }
-        mptIssuance.update();
+        view.update(sleIssuance);
     }
 
     if (issuer != receiver)
     {
         // Increase the MPT Holder MPTAmount
-        auto const mptokenID = keylet::mptoken(mptIssue.getMptID(), receiver);
+        auto const mptokenID = keylet::mptoken(mptID.key, receiver);
         auto sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
+            JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
@@ -654,8 +661,8 @@ rippleUnlockEscrowMPT(
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: overflow on MPTAmount for "
-                            << to_string(receiver) << ": " << current << " + " << delta;
+            JLOG(j.error()) << "unlockEscrowMPT: overflow on MPTAmount for " << to_string(receiver)
+                            << ": " << current << " + " << delta;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -665,40 +672,39 @@ rippleUnlockEscrowMPT(
     else
     {
         // Decrease the Issuance OutstandingAmount
-        auto const outstanding = mptIssuance->getFieldU64(sfOutstandingAmount);
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
         auto const redeem = netAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient outstanding amount for "
                             << mptIssue.getMptID() << ": " << outstanding << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        mptIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
-        mptIssuance.update();
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+        view.update(sleIssuance);
     }
 
     if (issuer == sender)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: sender is the issuer, "
+        JLOG(j.error()) << "unlockEscrowMPT: sender is the issuer, "
                            "cannot unlock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
     // Decrease the MPT Holder EscrowedAmount
-    auto const mptokenID = keylet::mptoken(mptIssue.getMptID(), sender);
+    auto const mptokenID = keylet::mptoken(mptID.key, sender);
     auto sle = view.peek(mptokenID);
     if (!sle)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
+        JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << sender;
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
     if (!sle->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
-                        << to_string(sender);
+        JLOG(j.error()) << "unlockEscrowMPT: no locked amount in MPToken for " << to_string(sender);
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
@@ -708,8 +714,8 @@ rippleUnlockEscrowMPT(
     // Underflow check for subtraction
     if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
-                        << to_string(sender) << ": " << locked << " < " << delta;
+        JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for " << to_string(sender)
+                        << ": " << locked << " < " << delta;
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
@@ -731,89 +737,190 @@ rippleUnlockEscrowMPT(
     auto const diff = grossAmount.mpt().value() - netAmount.mpt().value();
     if (diff != 0)
     {
-        auto const outstanding = mptIssuance->getFieldU64(sfOutstandingAmount);
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, diff)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient outstanding amount for "
                             << mptIssue.getMptID() << ": " << outstanding << " < " << diff;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
-        mptIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
-        mptIssuance.update();
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
+        view.update(sleIssuance);
     }
     return tesSUCCESS;
 }
 
-STAmount
-MPTokenIssuance::accountHolds(
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
     AccountID const& account,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j,
-    SpendableHandling includeFullBalance) const
+    std::uint32_t const flags)
 {
-    return accountHolds(account, zeroIfFrozen, ahIGNORE_AUTH, j, includeFullBalance);
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
+
+    return tesSUCCESS;
+}
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    if (mptIssue.getIssuer() == holder)
+        return tesSUCCESS;
+
+    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
+    if (!view.exists(mptokenID))
+    {
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, 0);
+            !isTesSuccess(err))
+        {
+            return err;
+        }
+        auto acct = WAccountRoot(holder, view, j);
+        if (!acct)
+        {
+            return tecINTERNAL;
+        }
+        acct.adjustOwnerCount(1);
+    }
+    return tesSUCCESS;
+}
+
+std::int64_t
+maxMPTAmount(SLE const& sleIssuance)
+{
+    return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
+}
+
+std::int64_t
+availableMPTAmount(SLE const& sleIssuance)
+{
+    auto const max = maxMPTAmount(sleIssuance);
+    auto const outstanding = sleIssuance[sfOutstandingAmount];
+    return max - outstanding;
+}
+
+std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    auto const sle = view.read(keylet::mptIssuance(mptID));
+    if (!sle)
+        Throw<std::runtime_error>(transHuman(tecINTERNAL));
+    return availableMPTAmount(*sle);
+}
+
+bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow)
+{
+    std::uint64_t const limit = (allowOverflow == AllowMPTOverflow::Yes)
+        ? std::numeric_limits<std::uint64_t>::max()
+        : maximumAmount;
+    return (sendAmount > maximumAmount || outstandingAmount > (limit - sendAmount));
 }
 
 STAmount
-MPTokenIssuance::accountHolds(
-    AccountID const& account,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j,
-    SpendableHandling includeFullBalance) const
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
 {
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    STAmount amount{issue};
 
-    if (returnSpendable && account == mptIssue_.getIssuer())
+    auto const sle = view.read(keylet::mptIssuance(issue));
+    if (!sle)
+        return amount;
+    auto const available = availableMPTAmount(*sle);
+    return view.balanceHookSelfIssueMPT(issue, available);
+}
+
+void
+issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount)
+{
+    auto const available = availableMPTAmount(view, issue);
+    view.issuerSelfDebitHookMPT(issue, amount, available);
+}
+
+static TER
+checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
+{
+    if (!asset.holds<MPTIssue>())
+        return tesSUCCESS;
+
+    auto const& issuanceID = asset.get<MPTIssue>().getMptID();
+    auto const validTx = txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
+        txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
+        txType == ttCHECK_CASH || txType == ttPAYMENT;
+    XRPL_ASSERT(validTx, "xrpl::checkMPTAllowed : all MPT tx or DEX");
+    if (!validTx)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const& issuer = asset.getIssuer();
+    if (!view.exists(keylet::account(issuer)))
+        return tecNO_ISSUER;  // LCOV_EXCL_LINE
+
+    auto const issuanceKey = keylet::mptIssuance(issuanceID);
+    auto const issuanceSle = view.read(issuanceKey);
+    if (!issuanceSle)
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
+
+    auto const flags = issuanceSle->getFlags();
+
+    if ((flags & lsfMPTLocked) != 0u)
+        return tecLOCKED;  // LCOV_EXCL_LINE
+    // Offer crossing and Payment
+    if ((flags & lsfMPTCanTrade) == 0)
+        return tecNO_PERMISSION;
+
+    if (accountID != issuer)
     {
-        // if the account is the issuer, and the issuance exists, their limit is
-        // the issuance limit minus the outstanding value
+        if ((flags & lsfMPTCanTransfer) == 0)
+            return tecNO_PERMISSION;
 
-        if (!sle_)
-        {
-            return STAmount{mptIssue_};
-        }
-        return STAmount{
-            mptIssue_,
-            sle_->at(~sfMaximumAmount).value_or(maxMPTokenAmount) - sle_->at(sfOutstandingAmount)};
+        auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
+        // Allow to succeed since some tx create MPToken if it doesn't exist.
+        // Tx's have their own check for missing MPToken.
+        if (!mptSle)
+            return tesSUCCESS;
+
+        if (mptSle->isFlag(lsfMPTLocked))
+            return tecLOCKED;
     }
 
-    STAmount amount;
+    return tesSUCCESS;
+}
 
-    auto const sleMpt = readView_.read(keylet::mptoken(mptID_, account));
-
-    if (!sleMpt)
-    {
-        amount.clear(mptIssue_);
-    }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(account))
-    {
-        amount.clear(mptIssue_);
-    }
-    else
-    {
-        amount = STAmount{mptIssue_, sleMpt->getFieldU64(sfMPTAmount)};
-
-        // Only if auth check is needed, as it needs to do an additional read
-        // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
-            readView_.rules().enabled(featureSingleAssetVault))
-        {
-            if (auto const err = requireAuth(account, AuthType::StrongAuth); !isTesSuccess(err))
-                amount.clear(mptIssue_);
-        }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
-        {
-            // if auth is enabled on the issuance and mpt is not authorized,
-            // clear amount
-            if (sle_ && sle_->isFlag(lsfMPTRequireAuth) && !sleMpt->isFlag(lsfMPTAuthorized))
-                amount.clear(mptIssue_);
-        }
-    }
-
-    return amount;
+TER
+checkMPTTxAllowed(
+    ReadView const& view,
+    TxType txType,
+    Asset const& asset,
+    AccountID const& accountID)
+{
+    // use isDEXAllowed for payment/offer crossing
+    XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
+    return checkMPTAllowed(view, txType, asset, accountID);
 }
 
 }  // namespace xrpl

@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 //
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
@@ -125,11 +126,10 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (auto const ter = makeTokenBase(ctx.view, asset)->canAddHolding())
+        if (auto const ter = canAddHolding(ctx.view, asset))
             return ter;
 
-        if (auto const ter = makeTokenBase(ctx.view, sleVault->at(sfAsset))
-                                 ->checkFrozen(sleVault->at(sfAccount)))
+        if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
         {
             JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
             return ter;
@@ -202,7 +202,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        WritableAccountRoot owner(accountID_, view);
+        WAccountRoot owner(accountID_, view, j_);
         if (!owner)
         {
             // This should be impossible
@@ -220,7 +220,7 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        owner.adjustOwnerCount(2, j_);
+        owner.adjustOwnerCount(2);
         auto const ownerCount = owner->at(sfOwnerCount);
         if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
@@ -231,8 +231,7 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = makeWritableTokenBase(view, sleVault->at(sfAsset))
-                           ->addEmptyHolding(pseudoId, preFeeBalance_, j_))
+        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

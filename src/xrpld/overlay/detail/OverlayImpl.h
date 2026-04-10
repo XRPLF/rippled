@@ -49,9 +49,8 @@ public:
 
         explicit Child(OverlayImpl& overlay);
 
-        virtual ~Child();
-
     public:
+        virtual ~Child();
         virtual void
         stop() = 0;
     };
@@ -98,7 +97,7 @@ private:
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
     std::atomic<Peer::id_t> next_id_;
-    int timer_count_;
+    int timer_count_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
@@ -255,7 +254,7 @@ public:
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
             // Iterate over a copy of the peer list because peer
             // destruction can invalidate iterators.
@@ -429,7 +428,7 @@ private:
         http_request_type const& request,
         address_type remote_address);
 
-    std::shared_ptr<Writer>
+    static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
@@ -573,7 +572,7 @@ private:
     collect_metrics()
     {
         auto counts = m_traffic.getCounts();
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         XRPL_ASSERT(
             counts.size() == m_stats.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");

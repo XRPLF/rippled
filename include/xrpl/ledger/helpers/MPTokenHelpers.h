@@ -14,238 +14,133 @@
 
 namespace xrpl {
 
-class MPTokenIssuance : public virtual TokenBase
-{
-public:
-    MPTokenIssuance(ReadView const& view, MPTIssue const& mptIssue)
-        : ReadOnlySLE(view.read(keylet::mptIssuance(mptIssue.getMptID())), view)
-        , TokenBase(view, view.read(keylet::mptIssuance(mptIssue.getMptID())))
-        , mptID_(mptIssue.getMptID())
-        , mptIssue_(mptIssue)
-    {
-    }
+//------------------------------------------------------------------------------
+//
+// Freeze checking (MPT-specific)
+//
+//------------------------------------------------------------------------------
 
-    MPTokenIssuance(ReadView const& view, MPTID const& mptID)
-        : ReadOnlySLE(view.read(keylet::mptIssuance(mptID)), view)
-        , TokenBase(view, view.read(keylet::mptIssuance(mptID)))
-        , mptID_(mptID)
-        , mptIssue_(MPTIssue(mptID_))
-    {
-    }
+[[nodiscard]] bool
+isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
-    MPTID const&
-    getMptID() const
-    {
-        return mptID_;
-    }
+[[nodiscard]] bool
+isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
-    MPTIssue const&
-    getMptIssue() const
-    {
-        return mptIssue_;
-    }
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
 
-    AccountID const&
-    getIssuer() const
-    {
-        return mptIssue_.getIssuer();
-    }
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    MPTIssue const& mptIssue,
+    int depth = 0);
 
-    //------------------------------------------------------------------------------
-    //
-    // Freeze checking (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//
+// Transfer rate (MPT-specific)
+//
+//------------------------------------------------------------------------------
 
-    [[nodiscard]] bool
-    isGlobalFrozen() const override;
+/** Returns MPT transfer fee as Rate. Rate specifies
+ * the fee as fractions of 1 billion. For example, 1% transfer rate
+ * is represented as 1,010,000,000.
+ * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, MPTID const& issuanceID);
 
-    [[nodiscard]] bool
-    isIndividualFrozen(AccountID const& account) const override;
+//------------------------------------------------------------------------------
+//
+// Holding checks (MPT-specific)
+//
+//------------------------------------------------------------------------------
 
-    [[nodiscard]] bool
-    isFrozen(AccountID const& account, int depth = 0) const override;
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, MPTIssue const& mptIssue);
 
-    [[nodiscard]] TER
-    checkFrozen(AccountID const& account) const override;
+//------------------------------------------------------------------------------
+//
+// Authorization (MPT-specific)
+//
+//------------------------------------------------------------------------------
 
-    [[nodiscard]] bool
-    isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth = 0) const override;
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal,
+    std::uint32_t flags = 0,
+    std::optional<AccountID> holderID = std::nullopt);
 
-    [[nodiscard]] bool
-    isDeepFrozen(AccountID const& account, int depth = 0) const override;
+/** Check if the account lacks required authorization for MPT.
+ *
+ * requireAuth check is recursive for MPT shares in a vault, descending to
+ * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ * purely defensive, as we currently do not allow such vaults to be created.
+ * WeakAuth intentionally allows missing MPTokens under MPToken V2.
+ */
+[[nodiscard]] TER
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    AuthType authType = AuthType::Legacy,
+    int depth = 0);
 
-    [[nodiscard]] TER
-    checkDeepFrozen(AccountID const& account) const override;
+/** Enforce account has MPToken to match its authorization.
+ *
+ *   Called from doApply - it will check for expired (and delete if found any)
+ *   credentials matching DomainID set in MPTokenIssuance. Must be called if
+ *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
+ */
+[[nodiscard]] TER
+enforceMPTokenAuthorization(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
 
-    //------------------------------------------------------------------------------
-    //
-    // Transfer rate (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
+/** Check if the destination account is allowed
+ *  to receive MPT. Return tecNO_AUTH if it doesn't
+ *  and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& from,
+    AccountID const& to);
 
-    /** Returns MPT transfer fee as Rate. Rate specifies
-     * the fee as fractions of 1 billion. For example, 1% transfer rate
-     * is represented as 1,010,000,000.
-     * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
-     */
-    [[nodiscard]] Rate
-    transferRate() const override;
+/** Check if Asset can be traded on DEX. return tecNO_PERMISSION
+ * if it doesn't and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTrade(ReadView const& view, Asset const& asset);
 
-    //------------------------------------------------------------------------------
-    //
-    // Holding checks (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//
+// Empty holding operations (MPT-specific)
+//
+//------------------------------------------------------------------------------
 
-    [[nodiscard]] TER
-    canAddHolding() const override;
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
 
-    /** Check if the account lacks required authorization for MPT.
-     *
-     * requireAuth check is recursive for MPT shares in a vault, descending to
-     * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
-     * purely defensive, as we currently do not allow such vaults to be created.
-     */
-    [[nodiscard]] TER
-    requireAuth(AccountID const& account, AuthType authType = AuthType::Legacy, int depth = 0)
-        const override;
-
-    /** Check if the destination account is allowed
-     *  to receive MPT. Return tecNO_AUTH if it doesn't
-     *  and tesSUCCESS otherwise.
-     */
-    [[nodiscard]] TER
-    canTransfer(AccountID const& from, AccountID const& to) const override;
-
-    //------------------------------------------------------------------------------
-    //
-    // Token capability checks (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] bool
-    canClawback() const override;
-
-    [[nodiscard]] bool
-    requiresAuth() const override;
-
-    STAmount
-    accountHolds(
-        AccountID const& account,
-        FreezeHandling zeroIfFrozen,
-        beast::Journal j,
-        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
-
-    [[nodiscard]] STAmount
-    accountHolds(
-        AccountID const& account,
-        FreezeHandling zeroIfFrozen,
-        AuthHandling zeroIfUnauthorized,
-        beast::Journal j,
-        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
-
-protected:
-    MPTID const mptID_;
-    MPTIssue const mptIssue_;
-};
-
-class WritableMPTokenIssuance : public virtual WritableTokenBase, public virtual MPTokenIssuance
-{
-public:
-    WritableMPTokenIssuance(ApplyView& view, MPTIssue const& mptIssue)
-        : ReadOnlySLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
-        , TokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
-        , WritableSLE(view.peek(keylet::mptIssuance(mptIssue.getMptID())), view)
-        , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptIssue.getMptID())))
-        , MPTokenIssuance(view, mptIssue)
-    {
-    }
-
-    WritableMPTokenIssuance(ApplyView& view, MPTID const& mptID)
-        : ReadOnlySLE(view.peek(keylet::mptIssuance(mptID)), view)
-        , TokenBase(view, view.peek(keylet::mptIssuance(mptID)))
-        , WritableSLE(view.peek(keylet::mptIssuance(mptID)), view)
-        , WritableTokenBase(view, view.peek(keylet::mptIssuance(mptID)))
-        , MPTokenIssuance(view, mptID)
-    {
-    }
-
-    // Resolve ambiguity: use writable operator-> for non-const, read-only for const
-    using WritableSLE::operator->;
-    using MPTokenIssuance::operator->;
-    using WritableSLE::operator*;
-    using MPTokenIssuance::operator*;
-
-    //------------------------------------------------------------------------------
-    //
-    // Authorization (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] TER
-    authorizeMPToken(
-        XRPAmount const& priorBalance,
-        AccountID const& account,
-        beast::Journal journal,
-        std::uint32_t flags = 0,
-        std::optional<AccountID> holderID = std::nullopt);
-
-    /** Enforce account has MPToken to match its authorization.
-     *
-     *   Called from doApply - it will check for expired (and delete if found any)
-     *   credentials matching DomainID set in MPTokenIssuance. Must be called if
-     *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
-     */
-    [[nodiscard]] TER
-    enforceMPTokenAuthorization(
-        AccountID const& account,
-        XRPAmount const& priorBalance,
-        beast::Journal j);
-
-    //------------------------------------------------------------------------------
-    //
-    // Empty holding operations (MPT-specific)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] TER
-    addEmptyHolding(AccountID const& accountID, XRPAmount priorBalance, beast::Journal journal)
-        override;
-
-    [[nodiscard]] TER
-    removeEmptyHolding(AccountID const& accountID, beast::Journal journal) override;
-
-    /** Create a WritableMPTokenIssuance backed by a brand-new SLE
-     *  (not yet inserted into the view).
-     */
-    [[nodiscard]] static WritableMPTokenIssuance
-    makeNew(MPTID const& mptID, ApplyView& view)
-    {
-        return WritableMPTokenIssuance(
-            mptID, std::make_shared<SLE>(keylet::mptIssuance(mptID)), view);
-    }
-
-    [[nodiscard]] static WritableMPTokenIssuance
-    makeNew(std::uint32_t const seq, AccountID const& issuer, ApplyView& view)
-    {
-        auto const mptID = makeMptID(seq, issuer);
-        return WritableMPTokenIssuance(
-            mptID, std::make_shared<SLE>(keylet::mptIssuance(mptID)), view);
-    }
-
-private:
-    // This is a private constructor only used by `makeNew`
-    WritableMPTokenIssuance(MPTID const& mptID, std::shared_ptr<SLE> sle, ApplyView& view)
-        : ReadOnlySLE(sle, view)
-        , TokenBase(view, sle)
-        , WritableSLE(sle, view)
-        , WritableTokenBase(view, sle)
-        , MPTokenIssuance(view, mptID)
-    {
-        insert();
-    }
-};
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
 
 //------------------------------------------------------------------------------
 //
@@ -254,19 +149,95 @@ private:
 //------------------------------------------------------------------------------
 
 TER
-rippleLockEscrowMPT(
+lockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     STAmount const& saAmount,
     beast::Journal j);
 
 TER
-rippleUnlockEscrowMPT(
+unlockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     AccountID const& uGranteeID,
     STAmount const& netAmount,
     STAmount const& grossAmount,
     beast::Journal j);
+
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags);
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j);
+
+//------------------------------------------------------------------------------
+//
+// MPT Overflow related
+//
+//------------------------------------------------------------------------------
+
+// MaximumAmount doesn't exceed 2**63-1
+std::int64_t
+maxMPTAmount(SLE const& sleIssuance);
+
+// OutstandingAmount may overflow and available amount might be negative.
+// But available amount is always <= |MaximumAmount - OutstandingAmount|.
+std::int64_t
+availableMPTAmount(SLE const& sleIssuance);
+
+std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID);
+
+/** Checks for two types of OutstandingAmount overflow during a send operation.
+ * 1.  **Direct directSendNoFee (Overflow: No):** A true overflow check when
+ * `OutstandingAmount > MaximumAmount`. This threshold is used for direct
+ * directSendNoFee transactions that bypass the payment engine.
+ * 2.  **accountSend & Payment Engine (Overflow: Yes):** A temporary overflow
+ * check when `OutstandingAmount > UINT64_MAX`. This higher threshold is used
+ * for `accountSend` and payments processed via the payment engine.
+ */
+bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow);
+
+/**
+ * Determine funds available for an issuer to sell in an issuer owned offer.
+ * Issuing step, which could be either MPTEndPointStep last step or BookStep's
+ * TakerPays may overflow OutstandingAmount. Redeeming step, in BookStep's
+ * TakerGets redeems the offer's owner funds, essentially balancing out
+ * the overflow, unless the offer's owner is the issuer.
+ */
+[[nodiscard]] STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
+
+/** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+ * See ApplyView::issuerSelfDebitHookMPT().
+ */
+void
+issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);
+
+//------------------------------------------------------------------------------
+//
+// MPT DEX
+//
+//------------------------------------------------------------------------------
+
+/* Return true if a transaction is allowed for the specified MPT/account. The
+ * function checks MPTokenIssuance and MPToken objects flags to determine if the
+ * transaction is allowed.
+ */
+TER
+checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID const& accountID);
 
 }  // namespace xrpl

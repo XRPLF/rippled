@@ -118,7 +118,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
@@ -156,7 +156,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     if (tx.isFlag(tfLoanOverpayment) && !loanSle->isFlag(lsfLoanOverpayment))
     {
         JLOG(ctx.j.warn()) << "Requested overpayment on a loan that doesn't allow it";
-        return temINVALID_FLAG;
+        return ctx.view.rules().enabled(fixSecurity3_1_3) ? TER{tecNO_PERMISSION} : temINVALID_FLAG;
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
@@ -197,18 +197,17 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
     }
 
-    auto token = makeTokenBase(ctx.view, asset);
-    if (auto const ret = token->checkFrozen(account))
+    if (auto const ret = checkFrozen(ctx.view, account, asset))
     {
         JLOG(ctx.j.warn()) << "Borrower account is frozen.";
         return ret;
     }
-    if (auto const ret = token->checkDeepFrozen(vaultPseudoAccount))
+    if (auto const ret = checkDeepFrozen(ctx.view, vaultPseudoAccount, asset))
     {
         JLOG(ctx.j.warn()) << "Vault pseudo-account can not receive funds (deep frozen).";
         return ret;
     }
-    if (auto const ret = token->requireAuth(account))
+    if (auto const ret = requireAuth(ctx.view, asset, account))
     {
         JLOG(ctx.j.warn()) << "Borrower account is not authorized.";
         return ret;
@@ -275,26 +274,25 @@ LoanPay::doApply()
     //
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
-    auto token = makeTokenBase(view, asset);
     bool const sendBrokerFeeToOwner = [&]() {
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
-            !token->isDeepFrozen(brokerOwner) &&
-            !token->requireAuth(brokerOwner, AuthType::StrongAuth);
+            !isDeepFrozen(view, brokerOwner, asset) &&
+            !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
-    WritableAccountRoot brokerPayeeAcct(brokerPayee, view);
+    WAccountRoot brokerPayeeAcct(brokerPayee, view, j_);
     if (!sendBrokerFeeToOwner)
     {
         // If we can't send the fee to the owner, and the pseudo-account is
         // frozen, then we have to fail the payment.
-        if (auto const ret = token->checkDeepFrozen(brokerPayee))
+        if (auto const ret = checkDeepFrozen(view, brokerPayee, asset))
         {
             JLOG(j_.warn()) << "Both Loan Broker and Loan Broker pseudo-account "
                                "can not receive funds (deep frozen).";
@@ -521,7 +519,7 @@ LoanPay::doApply()
 
     if (totalPaidToVaultRounded != beast::zero)
     {
-        if (auto const ter = token->requireAuth(vaultPseudoAccount, AuthType::StrongAuth))
+        if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
     }
 
@@ -530,10 +528,8 @@ LoanPay::doApply()
         if (brokerPayee == accountID_)
         {
             // The broker may have deleted their holding. Recreate it if needed
-            if (auto const ter =
-                    makeWritableTokenBase(view, asset)
-                        ->addEmptyHolding(
-                            brokerPayee, brokerPayeeAcct->at(sfBalance).value().xrp(), j_);
+            if (auto const ter = addEmptyHolding(
+                    view, brokerPayee, brokerPayeeAcct->at(sfBalance).value().xrp(), asset, j_);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,
@@ -541,7 +537,7 @@ LoanPay::doApply()
                 return ter;
             }
         }
-        if (auto const ter = token->requireAuth(brokerPayee, AuthType::StrongAuth))
+        if (auto const ter = requireAuth(view, asset, brokerPayee, AuthType::StrongAuth))
             return ter;
     }
 

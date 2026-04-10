@@ -16,7 +16,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     auto owner = sle->getAccountID(sfAccount);
 
     // Detect legacy directories.
-    uint256 uDirectory = sle->getFieldH256(sfBookDirectory);
+    uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
 
     if (!view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false))
     {
@@ -48,8 +48,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    WritableAccountRoot wrappedOwner(owner, view);
-    wrappedOwner.adjustOwnerCount(-1, j);
+    WAccountRoot wrappedOwner(owner, view, j);
+    wrappedOwner.adjustOwnerCount(-1);
 
     view.erase(sle);
 

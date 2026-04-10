@@ -3,6 +3,9 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -12,7 +15,6 @@
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
@@ -21,10 +23,7 @@ namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -215,7 +214,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!acctDst)
         return tecNO_DST;
 
-    if (acctDst->getFlags() & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if (((acctDst->getFlags() & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -227,7 +226,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (acctDst->getFlags() & lsfDepositAuth)
+        if ((acctDst->getFlags() & lsfDepositAuth) != 0u)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -294,7 +293,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
-    std::int32_t deletableDirEntryCount{0};
+    std::uint32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind
@@ -312,7 +311,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
         LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
-        if (!nonObligationDeleter(nodeType))
+        if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
@@ -328,11 +327,11 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    WritableAccountRoot src(accountID_, view());
+    WAccountRoot src(accountID_, view(), j_);
     XRPL_ASSERT(src.exists(), "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    WritableAccountRoot dst(dstID, view());
+    WAccountRoot dst(dstID, view(), j_);
     XRPL_ASSERT(dst.exists(), "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src.exists() || !dst.exists())

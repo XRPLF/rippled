@@ -18,7 +18,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
         {
             AccountRoot const acct(id, view);
 
-            if (acct && (!(acct->getFlags() & lsfPasswordSpent)))
+            if (acct && ((acct->getFlags() & lsfPasswordSpent) == 0u))
             {
                 // flag is armed and they signed with the right account
                 return XRPAmount{0};
@@ -44,7 +44,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    WritableAccountRoot acct(accountID_, view());
+    WAccountRoot acct(accountID_, view(), j_);
     if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

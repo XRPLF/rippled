@@ -1,6 +1,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
@@ -38,11 +38,11 @@ DIDDelete::deleteSLE(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(owner, view);
+    WAccountRoot wrappedOwner(owner, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
     wrappedOwner.update();
 
     // Remove object from ledger

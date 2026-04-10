@@ -181,7 +181,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD, STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -231,7 +231,7 @@ public:
         using namespace jtx;
 
         // Ensure MPT is enabled
-        FeatureBitset features = testable_amendments() | featureMPTokensV1;
+        FeatureBitset const features = testable_amendments() | featureMPTokensV1;
         Env env(*this, features);
 
         Account const alice{"alice"};

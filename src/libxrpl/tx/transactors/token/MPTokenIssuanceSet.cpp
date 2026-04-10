@@ -1,8 +1,7 @@
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
 namespace xrpl {
@@ -56,7 +55,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const txFlags = ctx.tx.getFlags();
 
     // fails if both flags are set
-    if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
+    if (((txFlags & tfMPTLock) != 0u) && ((txFlags & tfMPTUnlock) != 0u))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
@@ -78,7 +77,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && (txFlags & tfUniversalMask))
+        if (isMutate && ((txFlags & tfUniversalMask) != 0u))
             return temMALFORMED;
 
         if (transferFee && *transferFee > maxTransferFee)
@@ -89,7 +88,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
         if (mutableFlags)
         {
-            if (!*mutableFlags || (*mutableFlags & tmfMPTokenIssuanceSetMutableMask))
+            if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
@@ -103,7 +102,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
             // in the same transaction is not allowed.
-            if (transferFee.value_or(0) && (*mutableFlags & tmfMPTClearCanTransfer))
+            if ((transferFee.value_or(0) != 0u) && ((*mutableFlags & tmfMPTClearCanTransfer) != 0u))
                 return temMALFORMED;
         }
     }
@@ -131,16 +130,16 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 
     // this is added in case more flags will be added for MPTokenIssuanceSet
     // in the future. Currently unreachable.
-    if (txFlags & tfMPTokenIssuanceSetMask)
+    if ((txFlags & tfMPTokenIssuanceSetMask) != 0u)
         return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
 
-    if (txFlags & tfMPTLock && !granularPermissions.contains(MPTokenIssuanceLock))
+    if (((txFlags & tfMPTLock) != 0u) && !granularPermissions.contains(MPTokenIssuanceLock))
         return terNO_DELEGATE_PERMISSION;
 
-    if (txFlags & tfMPTUnlock && !granularPermissions.contains(MPTokenIssuanceUnlock))
+    if (((txFlags & tfMPTUnlock) != 0u) && !granularPermissions.contains(MPTokenIssuanceUnlock))
         return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
@@ -150,11 +149,11 @@ TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
-    if (!mptIssuance)
+    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!mptIssuance->isFlag(lsfMPTCanLock))
+    if (!sleMptIssuance->isFlag(lsfMPTCanLock))
     {
         // For readability two separate `if` rather than `||` of two conditions
         if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
@@ -169,7 +168,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     }
 
     // ensure it is issued by the tx submitter
-    if (mptIssuance.getIssuer() != ctx.tx[sfAccount])
+    if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     if (auto const holderID = ctx.tx[~sfHolder])
@@ -185,7 +184,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (!mptIssuance.requiresAuth())
+        if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
             return tecNO_PERMISSION;
 
         if (*domain != beast::zero)
@@ -198,7 +197,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
     // the ledger.
-    auto const currentMutableFlags = mptIssuance->getFieldU32(sfMutableFlags);
+    auto const currentMutableFlags = sleMptIssuance->getFieldU32(sfMutableFlags);
 
     auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
         return currentMutableFlags & mutableFlag;
@@ -225,7 +224,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         // was previously enabled (at issuance or via a prior mutation). Setting
         // it by tmfMPTSetCanTransfer in the current transaction does not meet
         // this requirement.
-        if (fee > 0u && !mptIssuance->isFlag(lsfMPTCanTransfer))
+        if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))
@@ -259,11 +258,11 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfMPTLock)
+    if ((txFlags & tfMPTLock) != 0u)
     {
         flagsOut |= lsfMPTLocked;
     }
-    else if (txFlags & tfMPTUnlock)
+    else if ((txFlags & tfMPTUnlock) != 0u)
     {
         flagsOut &= ~lsfMPTLocked;
     }
@@ -272,17 +271,17 @@ MPTokenIssuanceSet::doApply()
     {
         for (auto const& f : mptMutabilityFlags)
         {
-            if (mutableFlags & f.setFlag)
+            if ((mutableFlags & f.setFlag) != 0u)
             {
                 flagsOut |= f.canMutateFlag;
             }
-            else if (mutableFlags & f.clearFlag)
+            else if ((mutableFlags & f.clearFlag) != 0u)
             {
                 flagsOut &= ~f.canMutateFlag;
             }
         }
 
-        if (mutableFlags & tmfMPTClearCanTransfer)
+        if ((mutableFlags & tmfMPTClearCanTransfer) != 0u)
         {
             // If the lsfMPTCanTransfer flag is being cleared, then also clear
             // the TransferFee field.

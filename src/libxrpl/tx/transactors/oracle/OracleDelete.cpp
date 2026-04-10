@@ -1,4 +1,5 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -55,13 +56,13 @@ OracleDelete::deleteOracle(
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot wrappedOwner(account, view);
+    WAccountRoot wrappedOwner(account, view, j);
     if (!wrappedOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
-    wrappedOwner.adjustOwnerCount(count, j);
+    wrappedOwner.adjustOwnerCount(count);
 
     view.erase(sle);
 

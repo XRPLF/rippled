@@ -67,6 +67,11 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
+    XRPL_ASSERT(
+        txFeatureMap_.size() == delegableTx_.size(),
+        "xrpl::Permission : txFeatureMap_ and delegableTx_ must have same "
+        "size");
+
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
     {
         XRPL_ASSERT(
@@ -176,13 +181,13 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
 }
 
 uint32_t
-Permission::txToPermissionType(TxType const& type) const
+Permission::txToPermissionType(TxType const& type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const& value) const
+Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
 }

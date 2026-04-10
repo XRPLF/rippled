@@ -4,33 +4,52 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
+#include <concepts>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 
 namespace xrpl {
 
+// Concept to distinguish read-only vs writable view types
+template <typename V>
+concept WritableView = std::derived_from<V, ApplyView>;
+
 /**
- * Read-only base class for all ledger entry view classes.
+ * View-parameterized base class for all ledger entry wrappers.
  *
- * Provides common functionality for existence checking and raw SLE read access.
- * Supports read-only (ReadView) contexts.
+ * SLEBase<ReadView>  — read-only:  holds shared_ptr<SLE const> + ReadView const&
+ * SLEBase<ApplyView> — writable:   holds shared_ptr<SLE> + ApplyView& + Keylet,
+ *                                   plus insert/update/erase operations
+ *
+ * Write-only members are gated by `requires` clauses, providing compile-time
+ * guarantees that read-only wrappers cannot mutate state.
  *
  * Derived classes should provide domain-specific accessors that hide
  * implementation details of the underlying ledger entry format.
  */
-class ReadOnlySLE
+template <typename ViewT>
+class SLEBase
 {
 public:
-    virtual ~ReadOnlySLE() = default;
+    static constexpr bool is_writable = WritableView<ViewT>;
 
-    // Copy/move constructors are fine (reference can be initialized from another)
-    ReadOnlySLE(ReadOnlySLE const&) = default;
-    ReadOnlySLE(ReadOnlySLE&&) = default;
-    // Assignment operators are deleted (cannot rebind reference members)
-    ReadOnlySLE&
-    operator=(ReadOnlySLE const&) = delete;
-    ReadOnlySLE&
-    operator=(ReadOnlySLE&&) = delete;
+    // SLE pointer type: mutable for writable views, const for read-only
+    using sle_ptr_type = std::conditional_t<is_writable, std::shared_ptr<SLE>, SLE::const_pointer>;
+
+    // View reference type: ApplyView& for writable, ReadView const& for read-only
+    using view_ref_type = std::conditional_t<is_writable, ApplyView&, ReadView const&>;
+
+    virtual ~SLEBase() = default;
+
+    SLEBase(SLEBase const&) = default;
+    SLEBase(SLEBase&&) = default;
+    SLEBase&
+    operator=(SLEBase const&) = delete;
+    SLEBase&
+    operator=(SLEBase&&) = delete;
+
+    // --- Common interface (always available) ---
 
     /** Returns true if the ledger entry exists */
     bool
@@ -46,155 +65,176 @@ public:
         return exists();
     }
 
-    /** Returns the underlying SLE for read access (always available) */
-    std::shared_ptr<SLE const> const&
+    /** Returns the underlying SLE for read access */
+    SLE::const_pointer
     sle() const
     {
         return sle_;
     }
 
-    /** Returns the read view (always available) */
+    /** Returns the read view (always available; ApplyView inherits ReadView) */
     ReadView const&
     readView() const
     {
-        return readView_;
+        return view_;
     }
 
+    /** Const dereference operators (always available) */
     STLedgerEntry const*
     operator->() const
     {
-        XRPL_ASSERT(exists(), "xrpl::ReadOnlySLE::operator-> : exists");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator-> : exists");
         return sle_.get();
     }
 
     STLedgerEntry const&
     operator*() const
     {
-        XRPL_ASSERT(exists(), "xrpl::ReadOnlySLE::operator* : exists");
+        XRPL_ASSERT(exists(), "xrpl::SLEBase::operator* : exists");
         return *sle_;
     }
 
-protected:
-    // Default constructor is deleted (cannot leave reference uninitialized)
-    ReadOnlySLE() = delete;
-
-    /** Constructor for read-only context (ReadView) */
-    explicit ReadOnlySLE(std::shared_ptr<SLE const> sle, ReadView const& view)
-        : sle_(std::move(sle)), readView_(view)
-    {
-    }
-
-    std::shared_ptr<SLE const> sle_;  // Always valid (const view)
-    ReadView const& readView_;        // Always valid
-};
-
-/**
- * Writable base class for all ledger entry view classes.
- *
- * Extends ReadOnlySLE with write access capabilities.
- * Supports read-write (ApplyView) contexts.
- *
- * Derived classes should provide domain-specific accessors that hide
- * implementation details of the underlying ledger entry format.
- */
-class WritableSLE
-{
-public:
-    virtual ~WritableSLE() = default;
-
-    // Copy/move constructors are fine (reference can be initialized from another)
-    WritableSLE(WritableSLE const&) = default;
-    WritableSLE(WritableSLE&&) = default;
-    // Assignment operators are deleted (cannot rebind reference members)
-    WritableSLE&
-    operator=(WritableSLE const&) = delete;
-    WritableSLE&
-    operator=(WritableSLE&&) = delete;
+    // --- Writable interface (compile-time gated) ---
 
     /** Returns a mutable SLE for write operations */
-    std::shared_ptr<SLE> const&
+    sle_ptr_type const&
     mutableSle() const
+        requires is_writable
     {
-        return mutableSle_;
+        return sle_;
     }
 
     /** Returns true if this wrapper supports write operations */
     bool
     canModify() const
+        requires is_writable
     {
-        return mutableSle_ != nullptr;
+        return sle_ != nullptr;
     }
 
     /** Returns the apply view for write operations */
     ApplyView&
     applyView() const
+        requires is_writable
     {
-        return applyView_;
+        return view_;
     }
 
+    /** Mutable dereference operators */
     STLedgerEntry*
     operator->()
+        requires is_writable
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::operator-> : can modify");
-        return mutableSle_.get();
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator-> : can modify");
+        return sle_.get();
     }
 
     STLedgerEntry&
     operator*()
+        requires is_writable
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::operator* : can modify");
-        return *mutableSle_;
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator* : can modify");
+        return *sle_;
     }
 
     void
     insert()
+        requires is_writable
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::insert : can modify");
-        applyView_.insert(mutableSle_);
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::insert : can modify");
+        view_.insert(sle_);
     }
 
     void
     erase()
+        requires is_writable
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::erase : can modify");
-        applyView_.erase(mutableSle_);
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::erase : can modify");
+        view_.erase(sle_);
     }
 
     void
     update()
+        requires is_writable
     {
-        XRPL_ASSERT(canModify(), "xrpl::WritableSLE::update : can modify");
-        applyView_.update(mutableSle_);
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::update : can modify");
+        view_.update(sle_);
     }
 
     void
     newSLE()
+        requires is_writable
     {
-        XRPL_ASSERT(!canModify(), "xrpl::WritableSLE::newSLE : mutableSle_ is not null");
-        mutableSle_ = std::make_shared<SLE>(key_);
+        XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : sle_ is not null");
+        sle_ = std::make_shared<SLE>(key_);
+    }
+
+    beast::Journal
+    journal() const
+    {
+        return j_;
     }
 
 protected:
-    // Default constructor is deleted (cannot leave reference uninitialized)
-    WritableSLE() = delete;
+    SLEBase() = delete;
 
-    /** Constructor for read-write context (ApplyView) */
-    explicit WritableSLE(std::shared_ptr<SLE> sle, ApplyView& view)
-        : applyView_(view)
+    /** Constructor for read-only context */
+    explicit SLEBase(
+        SLE::const_pointer sle,
+        ReadView const& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires(!is_writable)
+        : view_(view), sle_(std::move(sle)), j_(j)
+    {
+    }
+
+    /** Converting constructor: writable → read-only.
+     *  Enables implicit conversion from SLEBase<ApplyView> to
+     *  SLEBase<ReadView>, so functions taking ReadOnlySLE const& can
+     *  accept WritableSLE.
+     */
+    template <WritableView OtherViewT>
+    SLEBase(SLEBase<OtherViewT> const& other)
+        requires(!is_writable)
+        : view_(other.readView()), sle_(other.sle()), j_(other.journal())
+    {
+    }
+
+    /** Constructor for writable context (from existing SLE) */
+    explicit SLEBase(
+        std::shared_ptr<SLE> sle,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires is_writable
+        : view_(view)
         , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
-        , mutableSle_(std::move(sle))
+        , sle_(std::move(sle))
+        , j_(j)
     {
     }
 
-    /** Constructor for read-write context (ApplyView) */
-    explicit WritableSLE(Keylet const& key, ApplyView& view)
-        : applyView_(view), key_(key), mutableSle_(applyView_.peek(key))
+    /** Constructor for writable context (peek from view by keylet) */
+    explicit SLEBase(
+        Keylet const& key,
+        ApplyView& view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires is_writable
+        : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
     {
     }
 
-    ApplyView& applyView_;  // ApplyView for write contexts (first for init order)
-    Keylet const key_;
-    std::shared_ptr<SLE> mutableSle_;  // Mutable SLE for write contexts
+    view_ref_type view_;
+
+    // Keylet is only meaningful for writable views, but we conditionally
+    // include it to avoid wasting space in read-only wrappers.
+    struct Empty
+    {
+    };
+    [[no_unique_address]]
+    std::conditional_t<is_writable, Keylet, Empty> key_{};
+
+    sle_ptr_type sle_;
+    beast::Journal j_;
 };
 
 }  // namespace xrpl

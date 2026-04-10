@@ -1,5 +1,4 @@
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -15,10 +14,7 @@ namespace xrpl {
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) && !ctx.rules.enabled(featurePermissionedDomains))
-        return false;
-
-    return true;
+    return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
 NotTEC
@@ -72,8 +68,9 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    MPTokenIssuance const shareIssuance(ctx.view, (*vault)[sfShareMPTID]);
-    if (!shareIssuance)
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultSet: missing issuance of vault shares.";
@@ -98,7 +95,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
 
         // Sanity check only, this should be enforced by VaultCreate
-        if (!shareIssuance.requiresAuth())
+        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
@@ -126,8 +123,9 @@ VaultSet::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    WritableMPTokenIssuance shareIssuance(view(), (*vault)[sfShareMPTID]);
-    if (!shareIssuance)
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultSet: missing issuance of vault shares.";
@@ -154,13 +152,13 @@ VaultSet::doApply()
             // vault public (i.e. removal of lsfVaultPrivate flag). The
             // sfDomainID flag must be set in the MPTokenIssuance object and can
             // be freely updated.
-            shareIssuance->setFieldH256(sfDomainID, *domainId);
+            sleIssuance->setFieldH256(sfDomainID, *domainId);
         }
-        else if (shareIssuance->isFieldPresent(sfDomainID))
+        else if (sleIssuance->isFieldPresent(sfDomainID))
         {
-            shareIssuance->makeFieldAbsent(sfDomainID);
+            sleIssuance->makeFieldAbsent(sfDomainID);
         }
-        shareIssuance.update();
+        view().update(sleIssuance);
     }
 
     // Note, we must update Vault object even if only DomainID is being updated

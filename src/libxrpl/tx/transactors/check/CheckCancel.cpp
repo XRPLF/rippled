@@ -1,6 +1,6 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
@@ -57,8 +57,6 @@ CheckCancel::doApply()
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
     AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.registry.journal("View");
-
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.
     if (srcId != dstId)
@@ -84,8 +82,8 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    WritableAccountRoot wrappedSrc(srcId, view());
-    wrappedSrc.adjustOwnerCount(-1, viewJ);
+    WAccountRoot wrappedSrc(srcId, view(), j_);
+    wrappedSrc.adjustOwnerCount(-1);
 
     // Remove check from ledger.
     view().erase(sleCheck);

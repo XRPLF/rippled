@@ -50,25 +50,25 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    MPTokenIssuance const shareIssuance(ctx.view, vault->at(sfShareMPTID));
+    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
 
-    if (!shareIssuance)
+    if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
 
-    if (shareIssuance.getIssuer() != vault->getAccountID(sfAccount))
+    if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: invalid owner of vault shares.";
         return tecNO_PERMISSION;
         // LCOV_EXCL_STOP
     }
 
-    if (shareIssuance->at(sfOutstandingAmount) != 0)
+    if (sleMPT->at(sfOutstandingAmount) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero outstanding shares.";
         return tecHAS_OBLIGATIONS;
@@ -87,13 +87,11 @@ VaultDelete::doApply()
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter =
-            makeWritableTokenBase(view(), asset)->removeEmptyHolding(vault->at(sfAccount), j_);
-        !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    WritableAccountRoot pseudoAcct(pseudoID, view());
+    WAccountRoot pseudoAcct(pseudoID, view(), j_);
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -105,8 +103,8 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    WritableMPTokenIssuance shareIssuance(view(), shareMPTID);
-    if (!shareIssuance)
+    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    if (!mpt)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
@@ -117,8 +115,7 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = makeWritableTokenBase(view(), MPTIssue(shareMPTID))
-                                 ->removeEmptyHolding(accountID_, j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
@@ -132,24 +129,23 @@ VaultDelete::doApply()
         }
     }
 
-    if (!view().dirRemove(
-            keylet::ownerDir(pseudoID), (*shareIssuance)[sfOwnerNode], shareIssuance->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: failed to delete issuance object.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    pseudoAcct.adjustOwnerCount(-1, j_);
+    pseudoAcct.adjustOwnerCount(-1);
 
-    shareIssuance.erase();
+    view().erase(mpt);
 
     // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    WritableAccountRoot vaultPseudo(pseudoID, view());
+    WAccountRoot vaultPseudo(pseudoID, view(), j_);
     if (!vaultPseudo || vaultPseudo->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -189,7 +185,7 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    WritableAccountRoot owner(ownerID, view());
+    WAccountRoot owner(ownerID, view(), j_);
     if (!owner)
     {
         // LCOV_EXCL_START
@@ -199,12 +195,10 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    owner.adjustOwnerCount(-2, j_);
+    owner.adjustOwnerCount(-2);
 
     // Destroy the vault.
     view().erase(vault);
-
-    associateAsset(*vault, asset);
 
     return tesSUCCESS;
 }

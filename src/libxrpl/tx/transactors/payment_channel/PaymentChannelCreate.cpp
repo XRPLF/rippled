@@ -2,6 +2,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -84,10 +85,10 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = acctDst->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (flags & lsfDisallowIncomingPayChan)
+        if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
-        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -106,7 +107,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 TER
 PaymentChannelCreate::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, ctx_.view());
+    WAccountRoot wrappedOwner(accountID_, ctx_.view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -164,7 +165,7 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*wrappedOwner)[sfBalance] = (*wrappedOwner)[sfBalance] - ctx_.tx[sfAmount];
-    wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+    wrappedOwner.adjustOwnerCount(1);
     wrappedOwner.update();
 
     return tesSUCCESS;

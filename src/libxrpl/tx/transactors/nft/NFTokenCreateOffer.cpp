@@ -1,8 +1,8 @@
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -45,7 +45,7 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
     std::uint32_t const txFlags = ctx.tx.getFlags();
 
     if (!nft::findToken(
-            ctx.view, ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
+            ctx.view, ctx.tx[((txFlags & tfSellNFToken) != 0u) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint

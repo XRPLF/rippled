@@ -1,5 +1,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -37,7 +38,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> sleMpt =
+        std::shared_ptr<SLE const> const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
@@ -47,7 +48,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if (ctx.tx.getFlags() & tfMPTUnauthorize)
+        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -78,12 +79,12 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
+        auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
-        if (!mptIssuance)
+        if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
 
-        if (accountID == mptIssuance.getIssuer())
+        if (accountID == (*sleMptIssuance)[sfIssuer])
             return tecNO_PERMISSION;
 
         // if holder wants to use and create a mpt
@@ -93,12 +94,15 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (AccountRoot const acctHolder(*holderID, ctx.view); !acctHolder)
+    AccountRoot const holder(*holderID, ctx.view);
+    if (!holder)
         return tecNO_DST;
 
-    MPTokenIssuance const mptIssuance(ctx.view, MPTIssue{ctx.tx[sfMPTokenIssuanceID]});
-    if (!mptIssuance)
+    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
+
+    std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
 
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
@@ -107,12 +111,12 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //
     // Note: `accountID` is issuer's account
     //       `holderID` is holder's account
-    if (accountID != mptIssuance.getIssuer())
+    if (accountID != (*sleMptIssuance)[sfIssuer])
         return tecNO_PERMISSION;
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if (!mptIssuance.requiresAuth())
+    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
@@ -122,34 +126,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // Can't unauthorize the pseudo-accounts because they are implicitly
     // always authorized. No need to amendment gate since Vault and LoanBroker
     // can only be created if the Vault amendment is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
+    if (holder.isPseudoAccount({&sfVaultID, &sfLoanBrokerID}))
         return tecNO_PERMISSION;
-
-    return tesSUCCESS;
-}
-
-TER
-MPTokenAuthorize::createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    std::uint32_t const flags)
-{
-    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-
-    auto const ownerNode =
-        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
-
-    if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    auto mptoken = std::make_shared<SLE>(mptokenKey);
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
-
-    view.insert(mptoken);
 
     return tesSUCCESS;
 }
@@ -158,9 +136,14 @@ TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
-    WritableMPTokenIssuance mptToken(ctx_.view(), tx[sfMPTokenIssuanceID]);
-    return mptToken.authorizeMPToken(
-        preFeeBalance_, accountID_, ctx_.journal, tx.getFlags(), tx[~sfHolder]);
+    return authorizeMPToken(
+        ctx_.view(),
+        preFeeBalance_,
+        tx[sfMPTokenIssuanceID],
+        accountID_,
+        ctx_.journal,
+        tx.getFlags(),
+        tx[~sfHolder]);
 }
 
 }  // namespace xrpl

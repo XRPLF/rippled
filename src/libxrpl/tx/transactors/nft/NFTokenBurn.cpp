@@ -1,9 +1,9 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -30,7 +30,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     // do so if the token is marked as burnable.
     if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
-        if (!(nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable))
+        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable) == 0)
             return tecNO_PERMISSION;
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
@@ -60,7 +60,7 @@ NFTokenBurn::doApply()
     if (!isTesSuccess(ret))
         return ret;
 
-    if (WritableAccountRoot issuer(nft::getIssuer(ctx_.tx[sfNFTokenID]), view()); issuer)
+    if (WAccountRoot issuer(nft::getIssuer(ctx_.tx[sfNFTokenID]), view(), j_); issuer)
     {
         (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
         issuer.update();

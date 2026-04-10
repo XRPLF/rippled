@@ -363,11 +363,12 @@ uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
 template <class... keyletParams>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct keyletDesc
 {
     std::function<Keylet(keyletParams...)> function;
     Json::StaticString expectedLEName;
-    bool includeInTests;
+    bool includeInTests{};
 };
 
 // This list should include all of the keylet functions that take a single

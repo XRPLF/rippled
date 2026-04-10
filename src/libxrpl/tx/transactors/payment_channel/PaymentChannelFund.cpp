@@ -1,10 +1,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
-
-#include <libxrpl/tx/transactors/payment_channel/PaymentChannelHelpers.h>
 
 namespace xrpl {
 
@@ -39,7 +38,7 @@ PaymentChannelFund::doApply()
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.journal("View"));
+            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (src != txAccount)
@@ -61,7 +60,7 @@ PaymentChannelFund::doApply()
         ctx_.view().update(slep);
     }
 
-    WritableAccountRoot acct(txAccount, ctx_.view());
+    WAccountRoot acct(txAccount, ctx_.view(), j_);
     if (!acct)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -78,7 +77,7 @@ PaymentChannelFund::doApply()
     }
 
     // do not allow adding funds if dst does not exist
-    if (AccountID const dst = (*slep)[sfDestination]; !AccountRoot(dst, ctx_.view()))
+    if (AccountID const dst = (*slep)[sfDestination]; !AccountRoot(dst, ctx_.view(), j_))
     {
         return tecNO_DST;
     }

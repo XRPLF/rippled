@@ -111,7 +111,7 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
@@ -490,7 +490,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
@@ -524,7 +524,7 @@ public:
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }
@@ -643,9 +643,9 @@ public:
             Params params{};
             params.items = default_items;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
+                beast::temp_dir const tempDir;
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
@@ -672,7 +672,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const default_args =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"

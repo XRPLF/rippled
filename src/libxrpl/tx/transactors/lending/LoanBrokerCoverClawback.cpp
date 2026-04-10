@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 //
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
@@ -124,7 +124,7 @@ determineAsset(
     {
         // We want the asset to match the vault asset, so use the account as the
         // issuer
-        return Issue{amount.getCurrency(), account};
+        return Issue{amount.get<Issue>().currency, account};
     }
 
     return Unexpected(tecWRONG_ASSET);
@@ -138,11 +138,11 @@ determineClawAmount(
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
-        NumberRoundModeGuard mg1(Number::upward);
+        NumberRoundModeGuard const mg1(Number::upward);
         auto const minRequiredCover =
             tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         // The subtraction probably won't round, but round down if it does.
-        NumberRoundModeGuard mg2(Number::downward);
+        NumberRoundModeGuard const mg2(Number::downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
     if (maxClawAmount <= beast::zero)
@@ -182,15 +182,16 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
-    MPTokenIssuance const mptIssuance(ctx.view, clawAmount.get<MPTIssue>());
-    if (!mptIssuance)
+    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const sleIssuance = ctx.view.read(issuanceKey);
+    if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!mptIssuance.canClawback())
+    if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
     // With all the checking already done, this should be impossible
-    if (mptIssuance.getIssuer() != sleIssuer[sfAccount])
+    if (sleIssuance->at(sfIssuer) != sleIssuer[sfAccount])
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;

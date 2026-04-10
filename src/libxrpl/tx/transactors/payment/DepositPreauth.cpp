@@ -1,6 +1,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -17,10 +19,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -44,7 +43,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (authPresent)
+    if (authPresent != 0)
     {
         // Make sure that the passed account is valid.
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
@@ -136,7 +135,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return {tefINTERNAL};
 
@@ -173,7 +172,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, j_);
+        wrappedOwner.adjustOwnerCount(1);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
@@ -183,7 +182,7 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        WritableAccountRoot wrappedOwner(accountID_, view());
+        WAccountRoot wrappedOwner(accountID_, view(), j_);
         if (!wrappedOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -234,7 +233,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, j_);
+        wrappedOwner.adjustOwnerCount(1);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
@@ -268,11 +267,11 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     }
 
     // If we succeeded, update the DepositPreauth owner's reserve.
-    WritableAccountRoot wrappedOwner(account, view);
+    WAccountRoot wrappedOwner(account, view, j);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    wrappedOwner.adjustOwnerCount(-1, j);
+    wrappedOwner.adjustOwnerCount(-1);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

@@ -1,7 +1,9 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 //
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -62,7 +64,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    WritableAccountRoot wrappedOwner(accountID_, view());
+    WAccountRoot wrappedOwner(accountID_, view(), j_);
     if (!wrappedOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -98,8 +100,6 @@ PermissionedDomainSet::doApply()
         Keylet const pdKeylet =
             keylet::permissionedDomain(accountID_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
-        if (!slePd)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
@@ -111,7 +111,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        wrappedOwner.adjustOwnerCount(1, ctx_.journal);
+        wrappedOwner.adjustOwnerCount(1);
         view().insert(slePd);
     }
 

@@ -22,11 +22,12 @@ public:
     using value_type = std::int64_t;
 
 protected:
-    value_type value_;
+    value_type value_{};
 
 public:
     MPTAmount() = default;
     constexpr MPTAmount(MPTAmount const& other) = default;
+    constexpr MPTAmount(beast::Zero);
     constexpr MPTAmount&
     operator=(MPTAmount const& other) = default;
 
@@ -85,6 +86,11 @@ constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
 {
 }
 
+constexpr MPTAmount::MPTAmount(beast::Zero)
+{
+    *this = beast::zero;
+}
+
 constexpr MPTAmount&
 MPTAmount::operator=(beast::Zero)
 {
@@ -114,6 +120,14 @@ constexpr MPTAmount::value_type
 MPTAmount::value() const
 {
     return value_;
+}
+
+// Output MPTAmount as just the value.
+template <class Char, class Traits>
+std::basic_ostream<Char, Traits>&
+operator<<(std::basic_ostream<Char, Traits>& os, MPTAmount const& q)
+{
+    return os << q.value();
 }
 
 inline std::string

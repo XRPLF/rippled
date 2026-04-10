@@ -1253,7 +1253,7 @@ checkLoanGuards(
     // loan can't be amortized in the specified number of payments, raise an
     // error
     {
-        NumberRoundModeGuard mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::upward);
 
         if (std::int64_t const computedPayments{
                 properties.loanState.valueOutstanding / roundedPayment};
@@ -1486,7 +1486,7 @@ computeLoanProperties(
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
-        NumberRoundModeGuard mg(periodicRate == 0 ? Number::to_nearest : Number::upward);
+        NumberRoundModeGuard const mg(periodicRate == 0 ? Number::to_nearest : Number::upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
@@ -1950,11 +1950,11 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j)
 {
-    // This function is only used for LoanBrokers, so assert that
-    // AccountRoot should use WritableAccountRoot.adjustOwnerCount instead
-    XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
     if (!sle)
         return;
+    // This function is only used for LoanBrokers, so assert that
+    // AccountRoot should use WAccountRoot.adjustOwnerCount instead
+    XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];

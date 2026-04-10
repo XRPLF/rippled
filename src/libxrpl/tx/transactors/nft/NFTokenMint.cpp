@@ -206,7 +206,7 @@ NFTokenMint::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
-        WritableAccountRoot root(issuer, view());
+        WAccountRoot root(issuer, view(), j_);
         if (!root)
         {
             // Should not happen.  Checked in preclaim.
@@ -260,7 +260,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        AccountRoot(accountID_, view())->getFieldU32(sfOwnerCount);
+        AccountRoot(accountID_, view(), j_)->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -313,7 +313,7 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter = AccountRoot(accountID_, view())->getFieldU32(sfOwnerCount);
+    if (auto const ownerCountAfter = AccountRoot(accountID_, view(), j_)->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
         if (auto const reserve = view().fees().accountReserve(ownerCountAfter);

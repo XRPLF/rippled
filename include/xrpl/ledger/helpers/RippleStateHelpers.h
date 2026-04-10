@@ -19,191 +19,6 @@
 
 namespace xrpl {
 
-class IOUToken : public virtual TokenBase
-{
-public:
-    IOUToken(ReadView const& view, Issue const& issue)
-        : ReadOnlySLE(view.read(keylet::account(issue.getIssuer())), view)
-        , TokenBase(view, view.read(keylet::account(issue.getIssuer())))
-        , issue_(issue)
-        , issuer_(issue.getIssuer())
-        , issuerAccount_(issuer_, view)
-        , currency_(issue.currency)
-    {
-    }
-
-    IOUToken(ReadView const& view, AccountID const& issuer, Currency const& currency)
-        : IOUToken(view, Issue{currency, issuer})
-    {
-    }
-
-    [[nodiscard]] AccountID const&
-    getIssuer() const
-    {
-        return issuer_;
-    }
-
-    [[nodiscard]] Currency const&
-    getCurrency() const
-    {
-        return currency_;
-    }
-
-    [[nodiscard]] bool
-    isGlobalFrozen() const override
-    {
-        return issuerAccount_.isGlobalFrozen();
-    }
-
-    [[nodiscard]] bool
-    isIndividualFrozen(AccountID const& account) const override;
-
-    [[nodiscard]] bool
-    isFrozen(AccountID const& account, int depth = 0) const override;
-
-    [[nodiscard]] TER
-    checkFrozen(AccountID const& account) const override;
-
-    [[nodiscard]] bool
-    isAnyFrozen(std::initializer_list<AccountID> const& accounts, int depth = 0) const override;
-
-    [[nodiscard]] bool
-    isDeepFrozen(AccountID const& account, int depth = 0) const override;
-
-    [[nodiscard]] TER
-    checkDeepFrozen(AccountID const& account) const override;
-
-    [[nodiscard]] Rate
-    transferRate() const override;
-
-    STAmount
-    accountHolds(
-        AccountID const& account,
-        FreezeHandling zeroIfFrozen,
-        beast::Journal j,
-        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
-
-    [[nodiscard]] STAmount
-    accountHolds(
-        AccountID const& account,
-        FreezeHandling zeroIfFrozen,
-        AuthHandling zeroIfUnauthorized,
-        beast::Journal j,
-        SpendableHandling includeFullBalance = shSIMPLE_BALANCE) const override;
-
-    /** Returns the funds available for account to pay for an amount.
-     *
-     * If the account is the issuer of the currency, it can always
-     * afford to pay (returns saDefault as-is). Otherwise, returns
-     * the result of accountHolds.
-     */
-    [[nodiscard]] STAmount
-    accountFunds(
-        AccountID const& id,
-        STAmount const& saDefault,
-        FreezeHandling freezeHandling,
-        beast::Journal j) const;
-
-    [[nodiscard]] TER
-    canAddHolding() const override;
-
-    //------------------------------------------------------------------------------
-    //
-    // Authorization and transfer checks (Asset-based dispatchers)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] TER
-    requireAuth(AccountID const& account, AuthType authType = AuthType::Legacy, int depth = 0)
-        const override;
-
-    [[nodiscard]] TER
-    canTransfer(AccountID const& from, AccountID const& to) const override;
-
-    //------------------------------------------------------------------------------
-    //
-    // Token capability checks (IOU-specific)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] bool
-    canClawback() const override;
-
-    [[nodiscard]] bool
-    requiresAuth() const override;
-
-protected:
-    Issue const issue_;
-    AccountID const issuer_;
-    AccountRoot const issuerAccount_;
-    Currency const currency_;
-};
-
-class WritableIOUToken : public virtual WritableTokenBase, public virtual IOUToken
-{
-public:
-    WritableIOUToken(ApplyView& view, Issue const& issue)
-        : ReadOnlySLE(view.peek(keylet::account(issue.getIssuer())), view)
-        , TokenBase(view, view.peek(keylet::account(issue.getIssuer())))
-        , WritableSLE(view.peek(keylet::account(issue.getIssuer())), view)
-        , WritableTokenBase(view, view.peek(keylet::account(issue.getIssuer())))
-        , IOUToken(view, issue)
-    {
-    }
-
-    WritableIOUToken(ApplyView& view, AccountID const& issuer, Currency const& currency)
-        : WritableIOUToken(view, Issue{currency, issuer})
-    {
-    }
-
-    // Resolve ambiguity: use writable operator-> for non-const, read-only for const
-    using WritableSLE::operator->;
-    using IOUToken::operator->;
-    using WritableSLE::operator*;
-    using IOUToken::operator*;
-
-    //------------------------------------------------------------------------------
-    //
-    // Holding management (WritableTokenBase interface)
-    //
-    //------------------------------------------------------------------------------
-
-    [[nodiscard]] TER
-    addEmptyHolding(AccountID const& accountID, XRPAmount priorBalance, beast::Journal journal)
-        override;
-
-    [[nodiscard]] TER
-    removeEmptyHolding(AccountID const& accountID, beast::Journal journal) override;
-
-    /** Create a WritableIOUToken backed by a brand-new SLE
-     *  (not yet inserted into the view).
-     */
-    [[nodiscard]] static WritableIOUToken
-    makeNew(AccountID const& id, Currency const& currency, ApplyView& view)
-    {
-        return makeNew(Issue{currency, id}, view);
-    }
-
-    [[nodiscard]] static WritableIOUToken
-    makeNew(Issue const& issue, ApplyView& view)
-    {
-        return WritableIOUToken(
-            issue, view, std::make_shared<SLE>(keylet::account(issue.getIssuer())));
-    }
-
-private:
-    // This is a private constructor only used by `makeNew`
-    WritableIOUToken(Issue const& issue, ApplyView& view, std::shared_ptr<SLE> sle)
-        : ReadOnlySLE(sle, view)
-        , TokenBase(view, sle)
-        , WritableSLE(sle, view)
-        , WritableTokenBase(view, sle)
-        , IOUToken(view, issue)
-    {
-        insert();
-    }
-};
-
 //------------------------------------------------------------------------------
 //
 // Credit functions (from Credit.h)
@@ -246,6 +61,69 @@ creditBalance(
 
 //------------------------------------------------------------------------------
 //
+// Freeze checking (IOU-specific)
+//
+//------------------------------------------------------------------------------
+
+[[nodiscard]] bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isIndividualFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isIndividualFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] bool
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue.currency, issue.account);
+}
+
+// Overload with depth parameter for uniformity with MPTIssue version.
+// The depth parameter is ignored for IOUs since they don't have vault recursion.
+[[nodiscard]] inline bool
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int /*depth*/)
+{
+    return isFrozen(view, account, issue);
+}
+
+[[nodiscard]] bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
+{
+    return isDeepFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+//
 // Trust line operations
 //
 //------------------------------------------------------------------------------
@@ -260,16 +138,16 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,             // ripple state entry
-    WritableAccountRoot& wrappedAcct,  // the account being set.
-    bool const bAuth,                  // authorize account.
-    bool const bNoRipple,              // others cannot ripple through
-    bool const bFreeze,                // funds cannot leave
-    bool bDeepFreeze,                  // can neither receive nor send funds
-    STAmount const& saBalance,         // balance of account being set.
-                                       // Issuer should be noAccount()
-    STAmount const& saLimit,           // limit for account being set.
-                                       // Issuer should be the account being set.
+    uint256 const& uIndex,      // ripple state entry
+    WAccountRoot& wrappedAcct,  // the account being set.
+    bool const bAuth,           // authorize account.
+    bool const bNoRipple,       // others cannot ripple through
+    bool const bFreeze,         // funds cannot leave
+    bool bDeepFreeze,           // can neither receive nor send funds
+    STAmount const& saBalance,  // balance of account being set.
+                                // Issuer should be noAccount()
+    STAmount const& saLimit,    // limit for account being set.
+                                // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j);
@@ -306,6 +184,43 @@ redeemIOU(
 
 //------------------------------------------------------------------------------
 //
+// Authorization and transfer checks (IOU-specific)
+//
+//------------------------------------------------------------------------------
+
+/** Check if the account lacks required authorization.
+ *
+ * Return tecNO_AUTH or tecNO_LINE if it does
+ * and tesSUCCESS otherwise.
+ *
+ * If StrongAuth then return tecNO_LINE if the RippleState doesn't exist. Return
+ * tecNO_AUTH if lsfRequireAuth is set on the issuer's AccountRoot, and the
+ * RippleState does exist, and the RippleState is not authorized.
+ *
+ * If WeakAuth then return tecNO_AUTH if lsfRequireAuth is set, and the
+ * RippleState exists, and is not authorized. Return tecNO_LINE if
+ * lsfRequireAuth is set and the RippleState doesn't exist. Consequently, if
+ * WeakAuth and lsfRequireAuth is *not* set, this function will return
+ * tesSUCCESS even if RippleState does *not* exist.
+ *
+ * The default "Legacy" auth type is equivalent to WeakAuth.
+ */
+[[nodiscard]] TER
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType = AuthType::Legacy);
+
+/** Check if the destination account is allowed
+ *  to receive IOU. Return terNO_RIPPLE if rippling is
+ *  disabled on both sides and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, AccountID const& to);
+
+//------------------------------------------------------------------------------
+//
 // Empty holding operations (IOU-specific)
 //
 //------------------------------------------------------------------------------
@@ -336,6 +251,16 @@ deleteAMMTrustLine(
     ApplyView& view,
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
+    beast::Journal j);
+
+/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+ * call to view.peek().
+ */
+[[nodiscard]] TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMPT,
+    AccountID const& ammAccountID,
     beast::Journal j);
 
 }  // namespace xrpl

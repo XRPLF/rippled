@@ -2,31 +2,27 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <functional>
-#include <initializer_list>
 #include <map>
+#include <memory>
+#include <optional>
+#include <set>
 #include <utility>
 
 namespace xrpl {
+
+// Forward declarations for SLE wrappers
+template <typename ViewT>
+class AccountRoot;
+using RAccountRoot = AccountRoot<ReadView>;
 
 enum class SkipEntry : bool { No = false, Yes };
 
@@ -39,10 +35,10 @@ enum class SkipEntry : bool { No = false, Yes };
 /** Determines whether the given expiration time has passed.
 
     In the XRP Ledger, expiration times are defined as the number of whole
-    seconds after the "Ripple Epoch" which, for historical reasons, is set
+    seconds after the "XRPL epoch" which, for historical reasons, is set
     to January 1, 2000 (00:00 UTC).
 
-    This is like the way the Unix epoch works, except the Ripple Epoch is
+    This is like the way the Unix epoch works, except the XRPL epoch is
     precisely 946,684,800 seconds after the Unix Epoch.
 
     See https://xrpl.org/basic-data-types.html#specifying-time
@@ -72,8 +68,8 @@ isVaultPseudoAccountFrozen(
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2);
+    Asset const& asset,
+    Asset const& asset2);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
@@ -166,7 +162,7 @@ canWithdraw(
     ReadView const& view,
     AccountID const& from,
     AccountID const& to,
-    AccountRoot const& toWrapped,
+    RAccountRoot const& toWrapped,
     STAmount const& amount,
     bool hasDestinationTag);
 

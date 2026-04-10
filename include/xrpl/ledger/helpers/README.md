@@ -1,8 +1,8 @@
-# Ledger Entry Helpers (`entries/`)
+# Ledger Entry Helpers (`helpers/`)
 
 ## Overview
 
-This folder contains helper classes and free functions for working with **Serialized Ledger Entries (SLEs)**. Its centerpiece is `SLEBase.h`, which defines two base classes — `ReadOnlySLE` and `WritableSLE` — that provide a type-safe, context-aware wrapper around the raw `std::shared_ptr<SLE>` used throughout the rest of the codebase.
+This folder contains helper classes and free functions for working with **Serialized Ledger Entries (SLEs)**. Its centerpiece is `SLEBase.h`, which defines the template class `SLEBase<ViewT>` — a type-safe, context-aware wrapper around the raw `std::shared_ptr<SLE>` used throughout the rest of the codebase.
 
 ## The Problem: Untyped SLE Access
 
@@ -16,24 +16,39 @@ Historically, ledger entries are passed around as bare `std::shared_ptr<SLE>` (o
 
 ## The Solution: `SLEBase.h`
 
-`SLEBase.h` introduces two base classes that pair an SLE with its view context and enforce read/write semantics at compile time.
+`SLEBase.h` introduces a single template class `SLEBase<ViewT>` that pairs an SLE with its view context and enforces read/write semantics at compile time via `requires` clauses.
 
-**`ReadOnlySLE`** bundles a `std::shared_ptr<SLE const>` with the `ReadView` it was read from. It provides existence checks and const-only access to the underlying entry. Derived classes add domain-specific read-only accessors (e.g. `AccountRoot::isGlobalFrozen()`).
+**`SLEBase<ReadView>`** (aliased as `ReadOnlySLE`) holds a `std::shared_ptr<SLE const>` and a `ReadView const&`. Write-only members are excluded at compile time.
 
-**`WritableSLE`** bundles a mutable `std::shared_ptr<SLE>` with the `ApplyView` used for writes. It provides helpers to insert, update, and erase the entry in the view, keeping the SLE and its view in sync automatically.
+**`SLEBase<ApplyView>`** (aliased as `WritableSLE`) holds a mutable `std::shared_ptr<SLE>`, an `ApplyView&`, and a `Keylet`. It exposes `insert()`, `update()`, `erase()`, and `newSLE()` to keep the SLE and its view in sync automatically.
 
-### Dual-Inheritance Pattern
+A converting constructor allows implicit conversion from `SLEBase<ApplyView>` to `SLEBase<ReadView>`, so functions taking a read-only wrapper can accept a writable one without a cast.
 
-Concrete writable wrappers inherit from _both_ the read-only wrapper and `WritableSLE`:
+### Template Pattern
+
+Each entry type is a single template class parameterized on the view type:
 
 ```
-WritableAccountRoot
-  ├── AccountRoot   (extends ReadOnlySLE)  — read-only domain methods
-  └── WritableSLE                          — write capabilities
+AccountRoot<ReadView>   — read-only:  RAccountRoot
+AccountRoot<ApplyView>  — writable:   WAccountRoot
 ```
 
-This lets a writable wrapper reuse all read-only domain logic from its parent while gaining mutation and persistence operations from `WritableSLE`.
+Both specializations share all domain read methods. Write methods on `WAccountRoot` are gated with `requires is_writable` so they are unavailable on `RAccountRoot` at compile time. The `R`/`W` prefix aliases (`RAccountRoot`, `WAccountRoot`) are provided for convenience and backward compatibility.
+
+## Files in This Directory
+
+| File                   | Description                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SLEBase.h`            | Template base class `SLEBase<ViewT>` and `ReadOnlySLE`/`WritableSLE` aliases                                                                                |
+| `AccountRootHelpers.h` | `AccountRoot<ViewT>` wrapper (`RAccountRoot`, `WAccountRoot`) and free functions for pseudo-accounts                                                        |
+| `CredentialHelpers.h`  | Free functions for Credential ledger entries                                                                                                                |
+| `DirectoryHelpers.h`   | Free functions for directory traversal (`dirFirst`, `dirNext`, `forEachItem`, etc.)                                                                         |
+| `MPTokenHelpers.h`     | Free functions for MPToken ledger entries and MPTokenIssuance<ViewT> wrapper (`RMPTokenIssuance`, `WMPTokenIssuance`) functions for MPTokenIssuance objects |
+| `OfferHelpers.h`       | Free function `offerDelete` for removing Offer entries                                                                                                      |
+| `RippleStateHelpers.h` | Free functions for RippleState (trust line) entries: credit, freeze, issuance, authorization                                                                |
+| `TokenHelpers.h`       | Shared token helpers (freeze/auth checks used by both IOU and MPT paths)                                                                                    |
+| `VaultHelpers.h`       | Free functions for Vault ledger entries                                                                                                                     |
 
 ## Migration Status
 
-This migration is still in progress and is still in the early stages. New code should prefer the wrapper style where possible; existing free functions will be migrated incrementally.
+This migration is still in progress. New code should prefer the wrapper style where possible; existing free functions will be migrated incrementally.

@@ -42,7 +42,7 @@ csprng_engine::mix_entropy(void* buffer, std::size_t count)
             e = rd();
     }
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     // We add data to the pool, but we conservatively assume that
     // it contributes no actual entropy.
