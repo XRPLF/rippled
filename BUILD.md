@@ -141,7 +141,7 @@ Alternatively, you can pull our recipes from the repository and export them loca
 
 ```bash
 # Define which recipes to export.
-recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'nudb' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
+recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -603,8 +603,8 @@ If you want to experiment with a new package, follow these steps:
      `default_options` property (with syntax `'$package:$option': $value`).
 3. Modify [`CMakeLists.txt`](./CMakeLists.txt):
    - Add a call to `find_package($package REQUIRED)`.
-   - Link a library from the package to the target `ripple_libs`
-     (search for the existing call to `target_link_libraries(ripple_libs INTERFACE ...)`).
+   - Link a library from the package to the target `xrpl_libs`
+     (search for the existing call to `target_link_libraries(xrpl_libs INTERFACE ...)`).
 4. Start coding! Don't forget to include whatever headers you need from the package.
 
 [1]: https://github.com/conan-io/conan-center-index/issues/13168

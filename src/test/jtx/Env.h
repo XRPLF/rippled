@@ -189,7 +189,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : test(suite_)
         , bundle_(suite_, std::move(config), std::move(logs), thresh)
-        , journal{bundle_.app->journal("Env")}
+        , journal{bundle_.app->getJournal("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
@@ -328,7 +328,7 @@ public:
     std::shared_ptr<OpenView const>
     current() const
     {
-        return app().openLedger().current();
+        return app().getOpenLedger().current();
     }
 
     /** Returns the last closed ledger.
@@ -510,14 +510,7 @@ public:
     */
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     balance(Account const& account, Asset const& asset) const;
-
-    PrettyAmount
-    balance(Account const& account, Issue const& issue) const;
-
-    PrettyAmount
-    balance(Account const& account, MPTIssue const& mptIssue) const;
 
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.

@@ -39,7 +39,7 @@ encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
     if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex || networkID > maxNetworkID)
         return std::nullopt;
 
-    uint64_t ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
+    uint64_t const ctidValue = ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
         ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
 
     std::stringstream buffer;
@@ -101,9 +101,9 @@ decodeCTID(T const ctid) noexcept
     if ((ctidValue & ctidPrefixMask) != ctidPrefix)
         return std::nullopt;
 
-    uint32_t ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
-    uint16_t txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
-    uint16_t networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
+    uint32_t const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
+    uint16_t const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
+    uint16_t const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
 
     return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }

@@ -150,7 +150,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobOffer{STAmount(XRP(1)), STAmount(USD.issue(), 1, 0)};
+            Amounts const bobOffer{STAmount(XRP(1)), STAmount(USD, 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
             // iteration.  This should mean that the size of the offer bob
@@ -160,12 +160,12 @@ public:
                  mantissaReduce <= 5'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount aliceUSD{
-                    bobOffer.out.issue(),
+                STAmount const aliceUSD{
+                    bobOffer.out.asset(),
                     bobOffer.out.mantissa() - mantissaReduce,
                     bobOffer.out.exponent()};
-                STAmount aliceXRP{bobOffer.in.issue(), bobOffer.in.mantissa() - 1};
-                Amounts aliceOffer{aliceUSD, aliceXRP};
+                STAmount const aliceXRP{bobOffer.in.asset(), bobOffer.in.mantissa() - 1};
+                Amounts const aliceOffer{aliceUSD, aliceXRP};
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
 
@@ -282,7 +282,7 @@ public:
             };
 
             // alice's offer (the old offer) is the same every time:
-            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(USD.issue(), 1, 0)};
+            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(USD, 1, 0)};
 
             // bob's offer has a slightly smaller TakerPays with each iteration.
             // This should mean that the size of the offer alice leaves in the
@@ -292,12 +292,12 @@ public:
                  mantissaReduce <= 4'000'000'000ull;
                  mantissaReduce += 20'000'000ull)
             {
-                STAmount bobUSD{
-                    aliceOffer.out.issue(),
+                STAmount const bobUSD{
+                    aliceOffer.out.asset(),
                     aliceOffer.out.mantissa() - mantissaReduce,
                     aliceOffer.out.exponent()};
-                STAmount bobXRP{aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
-                Amounts bobOffer{bobUSD, bobXRP};
+                STAmount const bobXRP{aliceOffer.in.asset(), aliceOffer.in.mantissa() - 1};
+                Amounts const bobOffer{bobUSD, bobXRP};
 
                 blockedCount += exerciseOfferPair(aliceOffer, bobOffer);
             }
@@ -407,7 +407,7 @@ public:
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        STAmount const tinyUSD(USD.issue(), /*mantissa*/ 1, /*exponent*/ -81);
+        STAmount const tinyUSD(USD, /*mantissa*/ 1, /*exponent*/ -81);
 
         {
             Env env{*this, testable_amendments()};
@@ -417,10 +417,10 @@ public:
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
 
-            STAmount const eurOffer(EUR.issue(), /*mantissa*/ 2957, /*exponent*/ -76);
-            STAmount const usdOffer(USD.issue(), /*mantissa*/ 7109, /*exponent*/ -76);
+            STAmount const eurOffer(EUR, /*mantissa*/ 2957, /*exponent*/ -76);
+            STAmount const usdOffer(USD, /*mantissa*/ 7109, /*exponent*/ -76);
 
-            STAmount const endLoop(USD.issue(), /*mantissa*/ 50, /*exponent*/ -81);
+            STAmount const endLoop(USD, /*mantissa*/ 50, /*exponent*/ -81);
 
             int blockedOrderBookCount = 0;
             for (STAmount initialBobUSD = tinyUSD; initialBobUSD <= endLoop;
@@ -445,7 +445,7 @@ public:
                 // Examine the aftermath of alice's offer.
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
-                    STAmount aliceBalanceUSD = env.balance(alice, USD);
+                    STAmount const aliceBalanceUSD = env.balance(alice, USD);
 #if 0
                     std::cout
                         << "bob initial: " << initialBobUSD
@@ -580,7 +580,7 @@ public:
                 {
                     Json::Value aliceOffer = ledgerEntryOffer(env, alice, aliceOfferSeq);
 
-                    Amounts aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
+                    Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
                     BEAST_EXPECT(aliceReducedOffer.in < aliceInitialOffer.in);
                     BEAST_EXPECT(aliceReducedOffer.out < aliceInitialOffer.out);
@@ -595,7 +595,7 @@ public:
                     if (badRate == 0)
                     {
                         STAmount const tweakedTakerGets(
-                            aliceReducedOffer.in.issue(),
+                            aliceReducedOffer.in.asset(),
                             aliceReducedOffer.in.mantissa() + 1,
                             aliceReducedOffer.in.exponent(),
                             aliceReducedOffer.in.negative());
@@ -629,7 +629,7 @@ public:
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = USD(0);
-                STAmount const step(increaseGets.issue(), 1, -8);
+                STAmount const step(increaseGets.asset(), 1, -8);
                 for (unsigned int i = 0; i < loopCount; ++i)
                 {
                     blockedCount +=

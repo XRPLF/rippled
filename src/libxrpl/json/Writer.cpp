@@ -80,7 +80,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
         stack_.push(Collection());
         stack_.top().type = ct;

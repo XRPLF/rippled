@@ -5,21 +5,21 @@ namespace xrpl {
 void
 BookListeners::addSubscriber(InfoSub::ref sub)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     mListeners[sub->getSeq()] = sub;
 }
 
 void
 BookListeners::removeSubscriber(std::uint64_t seq)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     mListeners.erase(seq);
 }
 
 void
 BookListeners::publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished)
 {
-    std::lock_guard sl(mLock);
+    std::lock_guard const sl(mLock);
     auto it = mListeners.cbegin();
 
     while (it != mListeners.cend())

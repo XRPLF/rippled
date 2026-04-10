@@ -387,7 +387,7 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
         m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }

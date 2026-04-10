@@ -1,4 +1,4 @@
-This document contains instructions for installing rippled.
+This document contains instructions for installing xrpld.
 The APT package manager is common on Debian-based Linux distributions like
 Ubuntu,
 while the YUM package manager is common on Red Hat-based Linux distributions
@@ -8,7 +8,7 @@ and the only supported option for installing custom builds.
 
 ## From source
 
-From a source build, you can install rippled and libxrpl using CMake's
+From a source build, you can install xrpld and libxrpl using CMake's
 `--install` mode:
 
 ```
@@ -16,7 +16,7 @@ cmake --install . --prefix /opt/local
 ```
 
 The default [prefix][1] is typically `/usr/local` on Linux and macOS and
-`C:/Program Files/rippled` on Windows.
+`C:/Program Files/xrpld` on Windows.
 
 [1]: https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html
 
@@ -50,9 +50,9 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
 
     In particular, make sure that the fingerprint matches. (In the above example, the fingerprint is on the third line, starting with `C001`.)
 
-5.  Add the appropriate Ripple repository for your operating system version:
+5.  Add the appropriate XRPL repository for your operating system version:
 
-        echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/rippled-deb focal stable" | \
+        echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/xrpld-deb focal stable" | \
             sudo tee -a /etc/apt/sources.list.d/ripple.list
 
     The above example is appropriate for **Ubuntu 20.04 Focal Fossa**. For other operating systems, replace the word `focal` with one of the following:
@@ -61,33 +61,33 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
     - `bullseye` for **Debian 11 Bullseye**
     - `buster` for **Debian 10 Buster**
 
-    If you want access to development or pre-release versions of `rippled`, use one of the following instead of `stable`:
-    - `unstable` - Pre-release builds ([`release` branch](https://github.com/ripple/rippled/tree/release))
-    - `nightly` - Experimental/development builds ([`develop` branch](https://github.com/ripple/rippled/tree/develop))
+    If you want access to development or pre-release versions of `xrpld`, use one of the following instead of `stable`:
+    - `unstable` - Pre-release builds ([`release` branch](https://github.com/XRPLF/rippled/tree/release))
+    - `nightly` - Experimental/development builds ([`develop` branch](https://github.com/XRPLF/rippled/tree/develop))
 
     **Warning:** Unstable and nightly builds may be broken at any time. Do not use these builds for production servers.
 
-6.  Fetch the Ripple repository.
+6.  Fetch the XRPL repository.
 
         sudo apt -y update
 
-7.  Install the `rippled` software package:
+7.  Install the `xrpld` software package:
 
-        sudo apt -y install rippled
+        sudo apt -y install xrpld
 
-8.  Check the status of the `rippled` service:
+8.  Check the status of the `xrpld` service:
 
-        systemctl status rippled.service
+        systemctl status xrpld.service
 
-    The `rippled` service should start automatically. If not, you can start it manually:
+    The `xrpld` service should start automatically. If not, you can start it manually:
 
-        sudo systemctl start rippled.service
+        sudo systemctl start xrpld.service
 
-9.  Optional: allow `rippled` to bind to privileged ports.
+9.  Optional: allow `xrpld` to bind to privileged ports.
 
     This allows you to serve incoming API requests on port 80 or 443. (If you want to do so, you must also update the config file's port settings.)
 
-        sudo setcap 'cap_net_bind_service=+ep' /opt/ripple/bin/rippled
+        sudo setcap 'cap_net_bind_service=+ep' /opt/xrpld/bin/xrpld
 
 ## With the YUM package manager
 
@@ -106,8 +106,8 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/rippled-rpm/stable/
-        gpgkey=https://repos.ripple.com/repos/rippled-rpm/stable/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/xrpld-rpm/stable/
+        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/stable/repodata/repomd.xml.key
         REPOFILE
 
     _Unstable_
@@ -118,8 +118,8 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/rippled-rpm/unstable/
-        gpgkey=https://repos.ripple.com/repos/rippled-rpm/unstable/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/xrpld-rpm/unstable/
+        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/unstable/repodata/repomd.xml.key
         REPOFILE
 
     _Nightly_
@@ -130,22 +130,22 @@ The default [prefix][1] is typically `/usr/local` on Linux and macOS and
         enabled=1
         gpgcheck=0
         repo_gpgcheck=1
-        baseurl=https://repos.ripple.com/repos/rippled-rpm/nightly/
-        gpgkey=https://repos.ripple.com/repos/rippled-rpm/nightly/repodata/repomd.xml.key
+        baseurl=https://repos.ripple.com/repos/xrpld-rpm/nightly/
+        gpgkey=https://repos.ripple.com/repos/xrpld-rpm/nightly/repodata/repomd.xml.key
         REPOFILE
 
 2.  Fetch the latest repo updates:
 
         sudo yum -y update
 
-3.  Install the new `rippled` package:
+3.  Install the new `xrpld` package:
 
-        sudo yum install -y rippled
+        sudo yum install -y xrpld
 
-4.  Configure the `rippled` service to start on boot:
+4.  Configure the `xrpld` service to start on boot:
 
-        sudo systemctl enable rippled.service
+        sudo systemctl enable xrpld.service
 
-5.  Start the `rippled` service:
+5.  Start the `xrpld` service:
 
-        sudo systemctl start rippled.service
+        sudo systemctl start xrpld.service

@@ -35,9 +35,9 @@ public:
 
 private:
     Asset mAsset;
-    mantissa_type mValue;
+    mantissa_type mValue{};
     exponent_type mOffset;
-    bool mIsNegative;
+    bool mIsNegative{};
 
 public:
     using value_type = STAmount;
@@ -164,12 +164,9 @@ public:
     constexpr TIss const&
     get() const;
 
-    Issue const&
-    issue() const;
-
-    // These three are deprecated
-    Currency const&
-    getCurrency() const;
+    template <ValidIssueType TIss>
+    TIss&
+    get();
 
     AccountID const&
     getIssuer() const;
@@ -224,9 +221,6 @@ public:
     // Zero while copying currency and issuer.
     void
     clear(Asset const& asset);
-
-    void
-    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount. */
     void
@@ -466,16 +460,11 @@ STAmount::get() const
     return mAsset.get<TIss>();
 }
 
-inline Issue const&
-STAmount::issue() const
+template <ValidIssueType TIss>
+TIss&
+STAmount::get()
 {
-    return get<Issue>();
-}
-
-inline Currency const&
-STAmount::getCurrency() const
-{
-    return mAsset.get<Issue>().currency;
+    return mAsset.get<TIss>();
 }
 
 inline AccountID const&
@@ -505,11 +494,13 @@ operator bool() const noexcept
 inline STAmount::
 operator Number() const
 {
-    if (native())
-        return xrp();
-    if (mAsset.holds<MPTIssue>())
-        return mpt();
-    return iou();
+    return asset().visit(
+        [&](Issue const& issue) -> Number {
+            if (issue.native())
+                return xrp();
+            return iou();
+        },
+        [&](MPTIssue const&) -> Number { return mpt(); });
 }
 
 inline STAmount&
@@ -532,7 +523,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 {
     bool const negative = number.mantissa() < 0;
     Number const working{negative ? -number : number};
-    Asset asset{a};
+    Asset const asset{a};
     if (asset.integral())
     {
         std::uint64_t const intValue = static_cast<std::int64_t>(working);
@@ -566,12 +557,6 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
-}
-
-inline void
-STAmount::setIssuer(AccountID const& uIssuer)
-{
-    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&
@@ -716,7 +701,7 @@ roundToAsset(
     std::int32_t scale,
     Number::rounding_mode rounding = Number::getround())
 {
-    NumberRoundModeGuard mg(rounding);
+    NumberRoundModeGuard const mg(rounding);
     STAmount const ret{asset, value};
     if (ret.integral())
         return ret;
