@@ -112,7 +112,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
         return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
+    getGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
         (txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee));
