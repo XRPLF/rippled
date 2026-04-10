@@ -177,13 +177,15 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.getSeqProxy().isTicket() && ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // Reject if the inner batch flag and parentBatchId are inconsistent.
+    // A standalone tx with tfInnerBatchTxn but no parentBatchId is an
+    // attack attempt. A tx with parentBatchId but without tfInnerBatchTxn
+    // is a programming error.
+    if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+        return temINVALID_INNER_BATCH;
 
     return tesSUCCESS;
 }
@@ -199,15 +201,18 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // It should be impossible for the InnerBatchTxn flag to be set without
-    // featureBatch being enabled
-    XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
-        "InnerBatch flag only set if feature enabled");
-    // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
+    // Skip signature check on batch inner transactions, but only if
+    // this tx was actually submitted through the batch apply path
+    // (parentBatchId is set). Without this check, a standalone tx
+    // with tfInnerBatchTxn could bypass signature verification.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        if (!ctx.rules.enabled(featureBatchV1_1))
+            return temINVALID_FLAG;
+        if (!ctx.parentBatchId.has_value())
+            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
+    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
@@ -256,19 +261,33 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkPermissionImpl(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& heldGranularPermissions)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
+    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    return checkTxPermission(sle, tx);
+    if (isTesSuccess(checkTxPermission(sle, tx)))
+        return tesSUCCESS;
+
+    if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
+        return terNO_DELEGATE_PERMISSION;
+
+    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    if (heldGranularPermissions.empty())
+        return terNO_DELEGATE_PERMISSION;
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, heldGranularPermissions))
+        return terNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -648,7 +667,7 @@ Transactor::checkSign(
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (parentBatchId && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatchV1_1))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -697,50 +716,6 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
-}
-
-NotTEC
-Transactor::checkBatchSign(PreclaimContext const& ctx)
-{
-    NotTEC ret = tesSUCCESS;
-    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
-    for (auto const& signer : signers)
-    {
-        auto const idAccount = signer.getAccountID(sfAccount);
-
-        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
-        if (pkSigner.empty())
-        {
-            if (ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-        else
-        {
-            // LCOV_EXCL_START
-            if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;
-            // LCOV_EXCL_STOP
-
-            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-
-            // A batch can include transactions from an un-created account ONLY
-            // when the account master key is the signer
-            if (!sleAccount)
-            {
-                if (idAccount != idSigner)
-                    return tefBAD_AUTH;
-
-                return tesSUCCESS;
-            }
-
-            if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
-    return ret;
 }
 
 NotTEC
@@ -1051,7 +1026,7 @@ Transactor::reset(XRPAmount fee)
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::zero && (!view().open() || balance >= fee),
+        (fee == beast::zero || balance != beast::zero) && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or

@@ -387,32 +387,41 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     \sa keylet::mptIssuance
  */
 LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
-    {sfIssuer,                   soeREQUIRED},
-    {sfSequence,                 soeREQUIRED},
-    {sfTransferFee,              soeDEFAULT},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfAssetScale,               soeDEFAULT},
-    {sfMaximumAmount,            soeOPTIONAL},
-    {sfOutstandingAmount,        soeREQUIRED},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfMPTokenMetadata,          soeOPTIONAL},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-    {sfDomainID,                 soeOPTIONAL},
-    {sfMutableFlags,             soeDEFAULT},
+    {sfIssuer,                        soeREQUIRED},
+    {sfSequence,                      soeREQUIRED},
+    {sfTransferFee,                   soeDEFAULT},
+    {sfOwnerNode,                     soeREQUIRED},
+    {sfAssetScale,                    soeDEFAULT},
+    {sfMaximumAmount,                 soeOPTIONAL},
+    {sfOutstandingAmount,             soeREQUIRED},
+    {sfLockedAmount,                  soeOPTIONAL},
+    {sfMPTokenMetadata,               soeOPTIONAL},
+    {sfPreviousTxnID,                 soeREQUIRED},
+    {sfPreviousTxnLgrSeq,             soeREQUIRED},
+    {sfDomainID,                      soeOPTIONAL},
+    {sfMutableFlags,                  soeDEFAULT},
+    {sfIssuerEncryptionKey,           soeOPTIONAL},
+    {sfAuditorEncryptionKey,          soeOPTIONAL},
+    {sfConfidentialOutstandingAmount, soeDEFAULT},
 }))
 
 /** A ledger object which tracks MPToken
     \sa keylet::mptoken
  */
 LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
-    {sfAccount,                  soeREQUIRED},
-    {sfMPTokenIssuanceID,        soeREQUIRED},
-    {sfMPTAmount,                soeDEFAULT},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
+    {sfAccount,                     soeREQUIRED},
+    {sfMPTokenIssuanceID,           soeREQUIRED},
+    {sfMPTAmount,                   soeDEFAULT},
+    {sfLockedAmount,                soeOPTIONAL},
+    {sfOwnerNode,                   soeREQUIRED},
+    {sfPreviousTxnID,               soeREQUIRED},
+    {sfPreviousTxnLgrSeq,           soeREQUIRED},
+    {sfConfidentialBalanceInbox,    soeOPTIONAL},
+    {sfConfidentialBalanceSpending, soeOPTIONAL},
+    {sfConfidentialBalanceVersion,  soeDEFAULT},
+    {sfIssuerEncryptedBalance,      soeOPTIONAL},
+    {sfAuditorEncryptedBalance,     soeOPTIONAL},
+    {sfHolderEncryptionKey,         soeOPTIONAL},
 }))
 
 /** A ledger object which tracks Oracle
@@ -466,6 +475,7 @@ LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
     {sfAuthorize,            soeREQUIRED},
     {sfPermissions,          soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
+    {sfDestinationNode,      soeOPTIONAL},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))

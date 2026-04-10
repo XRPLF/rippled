@@ -122,7 +122,7 @@ private:
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 
-    // The ID of the batch transaction we are executing under, if seated.
+    // The ID of the batch transaction we are executing under, if set.
     std::optional<uint256 const> parentBatchId_;
 };
 

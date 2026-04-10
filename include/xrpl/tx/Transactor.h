@@ -162,9 +162,6 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
-
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -206,8 +203,47 @@ public:
         return tesSUCCESS;
     }
 
+    /**
+     * This function can be overridden to introduce additional semantic constraints beyond the
+     * granular template validation for granular permissions. It is called by the base
+     * checkPermission method only after the transaction has successfully passed
+     * checkGranularSandbox.
+     */
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
+    {
+        return tesSUCCESS;
+    }
+
+    /**
+     * Checks whether the transaction is authorized to be executed by the delegated account.
+     * This function enforces the strict permission check hierarchy. It is explicitly
+     * designed NOT to be overridden. Derived transactors must instead implement
+     * checkGranularSemantics to add custom validation logic for granular permissions.
+     *
+     * The evaluation proceeds as follows:
+     * - If transaction-level permission is granted, the function immediately returns tesSUCCESS.
+     * - If transaction-level permission is not granted, the function checks whether the transaction
+     * matches the granular permission template defined in permissions.macro. If it does, it then
+     * calls checkGranularSemantics to perform any additional, fine-grained validation.
+     *
+     */
+    template <class T>
+    static NotTEC
+    checkPermission(ReadView const& view, STTx const& tx)
+    {
+        std::unordered_set<GranularPermissionType> heldGranularPermissions;
+        if (NotTEC const result = checkPermissionImpl(view, tx, heldGranularPermissions);
+            !isTesSuccess(result) || heldGranularPermissions.empty())
+        {
+            return result;
+        }
+
+        return T::checkGranularSemantics(view, tx, heldGranularPermissions);
+    }
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -293,14 +329,7 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-    TER
-    payFee();
+protected:
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -315,6 +344,21 @@ private:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
+
+private:
+    static NotTEC
+    checkPermissionImpl(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
 
     void trapTransaction(uint256) const;
 
