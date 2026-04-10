@@ -413,7 +413,7 @@ SponsorshipTransfer::doApply()
         if (!objSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, account_);
+        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, sponseeAccountID);
         if (!ownerAccountID)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
