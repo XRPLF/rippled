@@ -1,6 +1,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMUtils.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
