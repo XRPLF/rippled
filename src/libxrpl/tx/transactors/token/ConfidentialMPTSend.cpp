@@ -39,12 +39,8 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != ecGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
-    // Check the length of the ZKProof
-    auto const recipientCount = getConfidentialRecipientCount(hasAuditor);
-    auto const sizeEquality = getEqualityProofSize(recipientCount);
-
-    if (ctx.tx[sfZKProof].length() !=
-        sizeEquality + doublePedersenProofLength + ecDoubleBulletproofLength)
+    // Check the length of the ZKProof (fixed size regardless of recipient count)
+    if (ctx.tx[sfZKProof].length() != ecCompactSendProofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
