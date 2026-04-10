@@ -1378,6 +1378,53 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Expired credential cleanup");
 
+        // Pre-fix: without fixSecurity3_1_3, expired credential returns
+        // tecNO_PERMISSION and the credential SLE is NOT deleted.
+        {
+            Env env(*this, features - fixSecurity3_1_3);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin("devin");
+            env.fund(XRP(1000), devin);
+            env.close();
+            env.trust(USD(1000), devin);
+            env.close();
+            env(pay(gw, devin, USD(100)));
+            env.close();
+
+            auto jv = credentials::create(devin, domainOwner, credType);
+            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+            jv[sfExpiration.jsonName] = t + 20;
+            env(jv);
+            env(credentials::accept(devin, domainOwner, credType));
+            env.close();
+
+            auto const credKey =
+                keylet::credential(devin.id(), domainOwner.id(), makeSlice(credType));
+            BEAST_EXPECT(env.le(credKey));
+
+            env.close(std::chrono::seconds(20));
+
+            // Pre-fix: expired credential returns tecNO_PERMISSION, SLE stays
+            env(offer(devin, XRP(10), USD(10)), domain(domainID), ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(env.le(credKey));  // credential was NOT deleted
+
+            // Pre-fix: Payment with expired sender credential also returns
+            // tecNO_PERMISSION and leaves the credential SLE intact
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            env(pay(devin, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID),
+                ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(env.le(credKey));  // credential was NOT deleted
+        }
+
         // Scenario 1: OfferCreate with an expired credential deletes the
         // credential SLE from the ledger and returns tecEXPIRED
         {
