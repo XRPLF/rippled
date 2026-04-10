@@ -83,7 +83,8 @@ TxTest::getRules() const
 [[nodiscard]] TxResult
 TxTest::submit(std::shared_ptr<STTx const> stx)
 {
-    auto const result = apply(registry_, *openLedger_, *stx, tapNONE, registry_.journal("apply"));
+    auto const result =
+        apply(registry_, *openLedger_, *stx, tapNONE, registry_.getJournal("apply"));
 
     // Track successfully applied transactions for canonical reordering on close
     // We make a copy since the TransactionBase doesn't own the STTx
@@ -180,7 +181,7 @@ TxTest::close()
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
         {
-            auto result = apply(registry_, accum, *tx, tapNONE, registry_.journal("apply"));
+            auto result = apply(registry_, accum, *tx, tapNONE, registry_.getJournal("apply"));
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");
@@ -229,7 +230,7 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     auto const rippleState = ledger_entries::RippleState{sle};
 
     auto balance = rippleState.getBalance();
-    balance.setIssuer(iou.issue().account);
+    balance.get<Issue>().account = iou.issue().account;
     if (account > iou.issue().account)
         balance.negate();
     return balance;

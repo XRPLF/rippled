@@ -15,6 +15,13 @@
 #include <gtest/gtest.h>
 #include <helpers/TxTest.h>
 
+#include <algorithm>
+#include <initializer_list>
+#include <limits>
+#include <string>
+#include <string_view>
+#include <vector>
+
 namespace xrpl::test {
 
 TEST(AccountSet, NullAccountSet)
@@ -22,7 +29,7 @@ TEST(AccountSet, NullAccountSet)
     TxTest env;
 
     Account const alice("alice");
-    env.createAccount(alice, XRP(10), 0);
+    env.createAccount(alice, XRP(10));
 
     auto& view = env.getOpenLedger();
 
@@ -39,13 +46,13 @@ TEST(AccountSet, MostFlags)
     Account const alice("alice");
 
     TxTest env;
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
 
     // Give alice a regular key so she can legally set and clear
     // her asfDisableMaster flag.
     Account const alie{"alie", KeyType::secp256k1};
 
-    env.createAccount(alie, XRP(10000), 0);
+    env.createAccount(alie, XRP(10000));
     env.close();
 
     EXPECT_EQ(
@@ -145,7 +152,7 @@ TEST(AccountSet, SetAndResetAccountTxnID)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
 
     std::uint32_t const orig_flags = env.getAccountRoot(alice).getFlags();
 
@@ -177,7 +184,7 @@ TEST(AccountSet, SetNoFreeze)
     Account const alice("alice");
     Account const eric("eric");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // Set eric as alice's regular key (eric doesn't need to be funded)
@@ -219,7 +226,7 @@ TEST(AccountSet, Domain)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // The Domain field is represented as the hex string of the lowercase
@@ -285,7 +292,7 @@ TEST(AccountSet, MessageKey)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // Generate a random ed25519 key pair for the message key
@@ -325,7 +332,7 @@ TEST(AccountSet, WalletID)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     std::string_view locator = "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
@@ -355,7 +362,7 @@ TEST(AccountSet, EmailHash)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     std::string_view mh = "5F31A79367DC3137FADA860C05742EE6";
@@ -403,7 +410,7 @@ TEST(AccountSet, TransferRate)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     for (auto const& r : testData)
@@ -435,7 +442,7 @@ TEST(AccountSet, BadInputs)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // Setting and clearing the same flag is invalid
@@ -516,7 +523,7 @@ TEST(AccountSet, RequireAuthWithDir)
     Account const alice("alice");
     Account const bob("bob");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // alice should have an empty directory
@@ -563,7 +570,7 @@ TEST(AccountSet, Ticket)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // Get alice's current sequence - the ticket will be created at seq + 1
@@ -616,7 +623,7 @@ TEST(AccountSet, BadSigningKey)
     TxTest env;
     Account const alice("alice");
 
-    env.createAccount(alice, XRP(10000), 0);
+    env.createAccount(alice, XRP(10000));
     env.close();
 
     // Build a valid transaction first, then corrupt the signing key
@@ -647,9 +654,9 @@ TEST(AccountSet, Gateway)
     {
         TxTest env;
 
-        env.createAccount(gw, XRP(10000));
-        env.createAccount(alice, XRP(10000));
-        env.createAccount(bob, XRP(10000));
+        env.createAccount(gw, XRP(10000), asfDefaultRipple);
+        env.createAccount(alice, XRP(10000), asfDefaultRipple);
+        env.createAccount(bob, XRP(10000), asfDefaultRipple);
         env.close();
 
         // Set up trust lines: alice and bob trust gw for USD
@@ -700,12 +707,12 @@ TEST(AccountSet, Gateway)
 
     // Test out-of-bounds legacy transfer rates (4.0 and 4.294967295)
     // These require direct ledger modification since the transactor blocks them
-    for (double transferRate : {4.0, 4.294967295})
+    for (std::uint32_t transferRate : {4000000000U, 4294967295U})
     {
         TxTest env;
-        env.createAccount(gw, XRP(10000));
-        env.createAccount(alice, XRP(10000));
-        env.createAccount(bob, XRP(10000));
+        env.createAccount(gw, XRP(10000), asfDefaultRipple);
+        env.createAccount(alice, XRP(10000), asfDefaultRipple);
+        env.createAccount(bob, XRP(10000), asfDefaultRipple);
         env.close();
 
         // Set up trust lines
@@ -734,13 +741,12 @@ TEST(AccountSet, Gateway)
         auto slePtr = view.read(keylet::account(gw.id()));
         ASSERT_NE(slePtr, nullptr);
         auto sleCopy = std::make_shared<SLE>(*slePtr);
-        (*sleCopy)[sfTransferRate] = static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
+        (*sleCopy)[sfTransferRate] = transferRate;
         view.rawReplace(sleCopy);
 
         // Calculate the amount with the legacy transfer rate
         auto const amount = USD.amount(1);
-        auto const amountWithRate =
-            multiply(amount, Rate(static_cast<std::uint32_t>(transferRate * QUALITY_ONE)));
+        auto const amountWithRate = multiply(amount, Rate(transferRate));
 
         // Gateway pays alice 10 USD
         EXPECT_EQ(

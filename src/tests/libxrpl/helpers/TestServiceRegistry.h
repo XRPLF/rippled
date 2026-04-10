@@ -13,6 +13,7 @@
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {
@@ -101,7 +102,7 @@ public:
     }
 
     TimeKeeper&
-    timeKeeper() override
+    getTimeKeeper() override
     {
         throw std::logic_error("TestServiceRegistry::timeKeeper() not implemented");
     }
@@ -119,7 +120,7 @@ public:
     }
 
     CachedSLEs&
-    cachedSLEs() override
+    getCachedSLEs() override
     {
         return cachedSLEs_;
     }
@@ -162,44 +163,44 @@ public:
     }
 
     ValidatorList&
-    validators() override
+    getValidators() override
     {
         throw std::logic_error("TestServiceRegistry::validators() not implemented");
     }
 
     ValidatorSite&
-    validatorSites() override
+    getValidatorSites() override
     {
         throw std::logic_error("TestServiceRegistry::validatorSites() not implemented");
     }
 
     ManifestCache&
-    validatorManifests() override
+    getValidatorManifests() override
     {
         throw std::logic_error("TestServiceRegistry::validatorManifests() not implemented");
     }
 
     ManifestCache&
-    publisherManifests() override
+    getPublisherManifests() override
     {
         throw std::logic_error("TestServiceRegistry::publisherManifests() not implemented");
     }
 
     // Network services
     Overlay&
-    overlay() override
+    getOverlay() override
     {
         throw std::logic_error("TestServiceRegistry::overlay() not implemented");
     }
 
     Cluster&
-    cluster() override
+    getCluster() override
     {
         throw std::logic_error("TestServiceRegistry::cluster() not implemented");
     }
 
     PeerReservationTable&
-    peerReservations() override
+    getPeerReservations() override
     {
         throw std::logic_error("TestServiceRegistry::peerReservations() not implemented");
     }
@@ -267,19 +268,19 @@ public:
     }
 
     PendingSaves&
-    pendingSaves() override
+    getPendingSaves() override
     {
         return pendingSaves_;
     }
 
     OpenLedger&
-    openLedger() override
+    getOpenLedger() override
     {
         throw std::logic_error("TestServiceRegistry::openLedger() not implemented");
     }
 
     OpenLedger const&
-    openLedger() const override
+    getOpenLedger() const override
     {
         throw std::logic_error("TestServiceRegistry::openLedger() const not implemented");
     }
@@ -336,7 +337,7 @@ public:
     }
 
     beast::Journal
-    journal(std::string const& name) override
+    getJournal(std::string const& name) override
     {
         return logs_.journal(name);
     }
@@ -348,13 +349,13 @@ public:
     }
 
     Logs&
-    logs() override
+    getLogs() override
     {
         return logs_;
     }
 
     std::optional<uint256> const&
-    trapTxID() const override
+    getTrapTxID() const override
     {
         return trapTxID_;
     }
@@ -367,7 +368,7 @@ public:
 
     // Temporary: Get the underlying Application
     Application&
-    app() override
+    getApp() override
     {
         throw std::logic_error(
             "TestServiceRegistry::app() not implemented - no Application available in tests");

@@ -5,6 +5,8 @@
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
 
+#include <memory>
+
 namespace xrpl {
 namespace test {
 

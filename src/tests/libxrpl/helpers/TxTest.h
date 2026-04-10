@@ -18,7 +18,6 @@
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/IOU.h>
 #include <helpers/TestServiceRegistry.h>
@@ -27,6 +26,9 @@
 #include <concepts>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 namespace xrpl::test {
@@ -260,7 +262,7 @@ public:
      * @param accountFlags Optional account flags to set.
      */
     void
-    createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags = asfDefaultRipple);
+    createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags = 0);
 
     /**
      * @brief Get the account root object from the current open ledger.
