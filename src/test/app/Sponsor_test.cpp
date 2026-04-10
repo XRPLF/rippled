@@ -1168,7 +1168,7 @@ public:
         }
 
         {
-            // Dissolve object sponsorship from sponsor
+            // Dissolve object sponsorship from sponsor(no-ltSponsorship)
             Env env{*this, testable_amendments()};
             Account const alice("alice");
             Account const bob("bob");
@@ -1205,6 +1205,53 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        {
+            // Dissolve object sponsorship from sponsor (with ltSponsorship)
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)));
+            env.close();
+
+            auto const checkId = keylet::check(alice, seq).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(checkId)) != nullptr);
+
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::as(sponsor, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            env(sponsor::set_reserve(sponsor, 0, 100), sponsor::sponseeAcc(alice));
+            env.close();
+
+            BEAST_EXPECT(
+                env.le(keylet::unchecked(checkId))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(
+                env.le(keylet::sponsor(sponsor, alice))->getFieldU32(sfReserveCount) == 100);
+
+            // not the owner of the object
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd, checkId), ter(tecNO_PERMISSION));
+            env.close();
+
+            env(sponsor::transfer(sponsor, tfSponsorshipEnd, checkId), sponsor::sponseeAcc(alice));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::unchecked(checkId))->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(
+                env.le(keylet::sponsor(sponsor, alice))->getFieldU32(sfReserveCount) == 101);
         }
 
         {

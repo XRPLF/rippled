@@ -448,8 +448,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, newSponsorAccountID, -ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -485,19 +485,19 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, newSponsorAccountID, -ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
 
             // payback the reserve count if ltSponsorship exists
             if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, account_));
+                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
                 sponsorSle)
             {
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, oldSponsorAccountID, ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -521,11 +521,11 @@ SponsorshipTransfer::doApply()
 
             // payback the reserve count if ltSponsorship exists
             if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, account_));
+                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
                 sponsorSle)
             {
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, oldSponsorAccountID, ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
