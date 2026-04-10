@@ -9,6 +9,7 @@
 
 #include "test/jtx/check.h"
 #include "test/jtx/did.h"
+#include "test/jtx/sponsor.h"
 
 namespace xrpl {
 namespace test {
@@ -187,6 +188,11 @@ public:
 
         // Invalid Delete operation (sponsorship not found)
         env(sponsor::set(sponsor, tfDeleteObject), sponsor::sponseeAcc(alice), ter(tecNO_ENTRY));
+        env.close();
+
+        // insufficient balance to sponsor fee
+        adjustAccountXRPBalance(env, sponsor, env.current()->fees().reserve);
+        env(sponsor::set_fee(sponsor, 0, XRP(4)), sponsor::sponseeAcc(alice), ter(tecUNFUNDED));
         env.close();
 
         // insufficent reserve to create sponsorship
