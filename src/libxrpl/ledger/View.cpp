@@ -457,7 +457,7 @@ canTransferIOU(
     SendTransferHandling transferHandling,
     SendBalanceHandling balanceHandling)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the sender
     if (issuerHandling == SendIssuerHandling::ihSENDER_NOT_ALLOWED && issuer == sender)
         return tecNO_PERMISSION;
@@ -574,7 +574,7 @@ canTransferMPT(
     SendTransferHandling transferHandling,
     SendBalanceHandling balanceHandling)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the sender
     if (issuerHandling == SendIssuerHandling::ihSENDER_NOT_ALLOWED && issuer == sender)
         return tecNO_PERMISSION;

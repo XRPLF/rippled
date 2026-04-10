@@ -2278,7 +2278,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 void
 NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
 {
-    std::lock_guard sl(mSubLock);
+    std::lock_guard const sl(mSubLock);
 
     auto& streamMap = mStreamMaps[sContractEvents];
     if (!streamMap.empty())
@@ -4269,7 +4269,7 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 bool
 NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
 {
-    std::lock_guard sl(mSubLock);
+    std::lock_guard const sl(mSubLock);
     return mStreamMaps[sContractEvents].emplace(isrListener->getSeq(), isrListener).second;
 }
 
@@ -4277,7 +4277,7 @@ NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
 bool
 NetworkOPsImp::unsubContractEvent(std::uint64_t uSeq)
 {
-    std::lock_guard sl(mSubLock);
+    std::lock_guard const sl(mSubLock);
     return mStreamMaps[sContractEvents].erase(uSeq);
 }
 

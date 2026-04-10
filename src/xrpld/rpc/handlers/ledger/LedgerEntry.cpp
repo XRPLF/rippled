@@ -883,7 +883,7 @@ struct LedgerEntry
 Json::Value
 doLedgerEntry(RPC::JsonContext& context)
 {
-    static LedgerEntry ledgerEntryParsers[] = {
+    static LedgerEntry const ledgerEntryParsers[] = {
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 

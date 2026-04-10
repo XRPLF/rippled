@@ -1438,8 +1438,8 @@ class Contract_test : public beast::unit_test::suite
     loadContractWasmStr(std::string const& contract_name = "")
     {
         std::string const& dir = "e2e-tests";
-        std::string name = "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir + "/" +
-            contract_name + "/target/wasm32v1-none/release/" + contract_name + ".wasm";
+        std::string const name = "/Users/darkmatter/projects/ledger-works/xrpl-wasm-std/" + dir +
+            "/" + contract_name + "/target/wasm32v1-none/release/" + contract_name + ".wasm";
         if (!boost::filesystem::exists(name))
         {
             std::cout << "File does not exist: " << name << "\n";
@@ -1455,7 +1455,7 @@ class Contract_test : public beast::unit_test::suite
         }
 
         // Read the file into a vector
-        std::vector<char> buffer(
+        std::vector<char> const buffer(
             (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
         // Check if the buffer is empty
@@ -1482,7 +1482,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
+        std::string const contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1517,7 +1517,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
+        std::string const contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1552,7 +1552,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
+        std::string const contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1587,7 +1587,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string contractDataWasmHex = loadContractWasmStr("contract_data");
+        std::string const contractDataWasmHex = loadContractWasmStr("contract_data");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1627,7 +1627,7 @@ class Contract_test : public beast::unit_test::suite
         // Test Instance Parameter (1 of 2)
         // uint8, uint16, uint32, uint64, uint128, uint160, uint192, uint256
         {
-            std::string wasmHex = loadContractWasmStr("instance_params_uint");
+            std::string const wasmHex = loadContractWasmStr("instance_params_uint");
             auto const [contractAccount, contractHash, _] = setContract(
                 env,
                 tesSUCCESS,
@@ -1671,7 +1671,7 @@ class Contract_test : public beast::unit_test::suite
         {
             // Test Instance Parameter (2 of 2)
             // vl, account, amount (XRP), amount (IOU), number, currency, issue
-            std::string wasmHex = loadContractWasmStr("instance_params_other");
+            std::string const wasmHex = loadContractWasmStr("instance_params_other");
             auto const [contractAccount, contractHash, _] = setContract(
                 env,
                 tesSUCCESS,
@@ -1718,7 +1718,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string wasmHex = loadContractWasmStr("function_params");
+        std::string const wasmHex = loadContractWasmStr("function_params");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1808,7 +1808,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string emitTxWasmHex = loadContractWasmStr("emit_txn");
+        std::string const emitTxWasmHex = loadContractWasmStr("emit_txn");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1866,7 +1866,7 @@ class Contract_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::result][jss::status] == "success");
         }
 
-        std::string eventsWasmHex = loadContractWasmStr("events");
+        std::string const eventsWasmHex = loadContractWasmStr("events");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,
@@ -1947,7 +1947,7 @@ class Contract_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        std::string wasmHex = loadContractWasmStr("easymode");
+        std::string const wasmHex = loadContractWasmStr("easymode");
         auto const [contractAccount, contractHash, _] = setContract(
             env,
             tesSUCCESS,

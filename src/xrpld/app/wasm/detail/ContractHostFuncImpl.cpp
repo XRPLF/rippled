@@ -19,13 +19,13 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_UINT8: {
             if (funcParam.getInnerSType() != STI_UINT8)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            uint8_t data = funcParam.getFieldU8();
+            uint8_t const data = funcParam.getFieldU8();
             return Bytes{data};
         }
         case STI_UINT16: {
             if (funcParam.getInnerSType() != STI_UINT16)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            uint16_t data = funcParam.getFieldU16();
+            uint16_t const data = funcParam.getFieldU16();
             return Bytes{
                 static_cast<unsigned char>(data & 0xFF),
                 static_cast<unsigned char>((data >> 8) & 0xFF)};
@@ -33,7 +33,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_UINT32: {
             if (funcParam.getInnerSType() != STI_UINT32)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            uint32_t data = funcParam.getFieldU32();
+            uint32_t const data = funcParam.getFieldU32();
             return Bytes{
                 static_cast<unsigned char>(data & 0xFF),
                 static_cast<unsigned char>((data >> 8) & 0xFF),
@@ -43,7 +43,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_UINT64: {
             if (funcParam.getInnerSType() != STI_UINT64)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            uint64_t data = funcParam.getFieldU64();
+            uint64_t const data = funcParam.getFieldU64();
             return Bytes{
                 static_cast<unsigned char>(data & 0xFF),
                 static_cast<unsigned char>((data >> 8) & 0xFF),
@@ -95,7 +95,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_AMOUNT: {
             if (funcParam.getInnerSType() != STI_AMOUNT)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            STAmount data = funcParam.getFieldAmount();
+            STAmount const data = funcParam.getFieldAmount();
             Serializer s;
             data.add(s);
             auto const& serialized = s.getData();
@@ -104,7 +104,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_NUMBER: {
             if (funcParam.getInnerSType() != STI_NUMBER)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            STNumber data = funcParam.getFieldNumber();
+            STNumber const data = funcParam.getFieldNumber();
             Serializer s;
             data.add(s);
             auto const& serialized = s.getData();
@@ -113,7 +113,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_ISSUE: {
             if (funcParam.getInnerSType() != STI_ISSUE)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            STIssue data = funcParam.getFieldIssue();
+            STIssue const data = funcParam.getFieldIssue();
             Serializer s;
             data.add(s);
             auto const& serialized = s.getData();
@@ -122,7 +122,7 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
         case STI_CURRENCY: {
             if (funcParam.getInnerSType() != STI_CURRENCY)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
-            STCurrency data = funcParam.getFieldCurrency();
+            STCurrency const data = funcParam.getFieldCurrency();
             Serializer s;
             data.add(s);
             auto const& serialized = s.getData();
@@ -198,12 +198,12 @@ getDataOrCache(ContractContext& contractCtx, AccountID const& account)
         if (dataSle)
         {
             // Return the STJson from the SLE
-            STJson data = dataSle->getFieldJson(sfContractJson);
+            STJson const data = dataSle->getFieldJson(sfContractJson);
             return {data.isObject(), data};
         }
 
         // Return New STJson if not found
-        STJson data;
+        STJson const data;
         return {true, data};
     }
 
@@ -231,7 +231,7 @@ setDataCache(
         return HostFunctionError::INVALID_ACCOUNT;
     }
 
-    uint32_t maxDataModifications = 1000u;
+    uint32_t const maxDataModifications = 1000u;
 
     if (modified && dataMap.modifiedCount >= maxDataModifications)
     {
@@ -243,7 +243,7 @@ setDataCache(
     if (dataMap.find(account) == dataMap.end())
     {
         auto const& fees = contractCtx.applyCtx.view().fees();
-        STAmount bal = sleAccount->getFieldAmount(sfBalance);
+        STAmount const bal = sleAccount->getFieldAmount(sfBalance);
 
         int64_t availableForReserves =
             bal.xrp().drops() - fees.accountReserve(sleAccount->getFieldU32(sfOwnerCount)).drops();
@@ -465,7 +465,7 @@ ContractHostFunctionsImpl::setDataObjectField(
         }
 
         data.setObjectField(std::string(key), value);
-        if (HostFunctionError ret = setDataCache(contractCtx, account, data, j, true);
+        if (HostFunctionError const ret = setDataCache(contractCtx, account, data, j, true);
             ret != HostFunctionError::SUCCESS)
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
@@ -502,7 +502,7 @@ ContractHostFunctionsImpl::setDataNestedObjectField(
         }
 
         data.setNestedObjectField(std::string(key), std::string(nestedKey), value);
-        if (HostFunctionError ret = setDataCache(contractCtx, account, data, j, true);
+        if (HostFunctionError const ret = setDataCache(contractCtx, account, data, j, true);
             ret != HostFunctionError::SUCCESS)
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
@@ -761,7 +761,7 @@ ContractHostFunctionsImpl::setDataArrayElementField(
         }
 
         data.setArrayElementField(index, std::string(key), value);
-        if (HostFunctionError ret = setDataCache(contractCtx, account, data, j, true);
+        if (HostFunctionError const ret = setDataCache(contractCtx, account, data, j, true);
             ret != HostFunctionError::SUCCESS)
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
@@ -801,7 +801,7 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
         }
 
         data.setNestedArrayElementField(std::string(key), index, std::string(nestedKey), value);
-        if (HostFunctionError ret = setDataCache(contractCtx, account, data, j, true);
+        if (HostFunctionError const ret = setDataCache(contractCtx, account, data, j, true);
             ret != HostFunctionError::SUCCESS)
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "

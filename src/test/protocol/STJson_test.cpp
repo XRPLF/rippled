@@ -33,7 +33,7 @@ struct STJson_test : public beast::unit_test::suite
     testDefaultConstructor()
     {
         testcase("Default constructor");
-        STJson json;
+        STJson const json;
         BEAST_EXPECT(json.isObject());
         BEAST_EXPECT(!json.isArray());
         BEAST_EXPECT(json.getMap().empty());
@@ -63,7 +63,7 @@ struct STJson_test : public beast::unit_test::suite
         testcase("Move constructor (Object)");
         STJson::Map map;
         map["bar"] = std::make_shared<STUInt16>(sfTransactionType, 42);
-        STJson json(std::move(map));
+        STJson const json(std::move(map));
         BEAST_EXPECT(json.isObject());
         BEAST_EXPECT(json.getMap().size() == 1);
         BEAST_EXPECT(std::dynamic_pointer_cast<STUInt16>(json.getMap().at("bar"))->value() == 42);
@@ -77,7 +77,7 @@ struct STJson_test : public beast::unit_test::suite
         arr.push_back(std::make_shared<STUInt32>(sfNetworkID, 100));
         arr.push_back(std::make_shared<STUInt32>(sfNetworkID, 200));
 
-        STJson json(std::move(arr));
+        STJson const json(std::move(arr));
         BEAST_EXPECT(json.isArray());
         BEAST_EXPECT(!json.isObject());
         BEAST_EXPECT(json.arraySize() == 2);
@@ -91,12 +91,12 @@ struct STJson_test : public beast::unit_test::suite
     testTypeChecking()
     {
         testcase("Type checking methods");
-        STJson objJson;
+        STJson const objJson;
         BEAST_EXPECT(objJson.isObject());
         BEAST_EXPECT(!objJson.isArray());
         BEAST_EXPECT(objJson.getType() == STJson::JsonType::Object);
 
-        STJson arrJson(STJson::Array{});
+        STJson const arrJson(STJson::Array{});
         BEAST_EXPECT(arrJson.isArray());
         BEAST_EXPECT(!arrJson.isObject());
         BEAST_EXPECT(arrJson.getType() == STJson::JsonType::Array);
@@ -634,7 +634,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json;
             // XRP amount
-            STAmount xrp(sfAmount, static_cast<std::int64_t>(123456789u));
+            STAmount const xrp(sfAmount, static_cast<std::int64_t>(123456789u));
             json.setObjectField("amount", std::make_shared<STAmount>(xrp));
             Serializer s;
             json.add(s);
@@ -664,7 +664,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json;
             // Use a known AccountID (20 bytes)
-            AccountID acct = AccountID{};
+            AccountID const acct = AccountID{};
             json.setObjectField("acct", std::make_shared<STAccount>(sfAccount, acct));
             Serializer s;
             json.add(s);
@@ -693,7 +693,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson innerJson;
             // XRP amount
-            STAmount xrp(sfAmount, static_cast<std::int64_t>(123456789u));
+            STAmount const xrp(sfAmount, static_cast<std::int64_t>(123456789u));
             innerJson.setObjectField("amount", std::make_shared<STAmount>(xrp));
 
             STJson json;
@@ -716,7 +716,7 @@ struct STJson_test : public beast::unit_test::suite
 
         // Empty object
         {
-            STJson json;
+            STJson const json;
             Serializer s;
             json.add(s);
             auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
@@ -726,7 +726,7 @@ struct STJson_test : public beast::unit_test::suite
 
         // Empty array
         {
-            STJson json(STJson::Array{});
+            STJson const json(STJson::Array{});
             Serializer s;
             json.add(s);
             auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());

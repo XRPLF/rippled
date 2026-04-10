@@ -66,7 +66,7 @@ doContractInfo(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const caID{std::move(caid.value())};
+    auto const caID{caid.value()};
     auto const caSle = ledger->read(keylet::account(caID));
     if (!caSle)
     {

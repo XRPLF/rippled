@@ -47,10 +47,10 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
 
     // Read type byte
     auto typeByte = sit.get8();
-    JsonType type = static_cast<JsonType>(typeByte);
+    JsonType const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     if (type == JsonType::Array)
     {
@@ -82,7 +82,7 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
         data_ = std::move(map);
     }
 
-    int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+    int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
     if (consumedBytes != length)
         Throw<std::runtime_error>("STJson length mismatch");
 }
@@ -163,7 +163,7 @@ STJson::validateDepth(Value const& value, int currentDepth) const
         return;
 
     // Adding an STJson value increases depth by 1
-    int totalDepth = currentDepth + 1 + nested->getDepth();
+    int const totalDepth = currentDepth + 1 + nested->getDepth();
     if (totalDepth > 1)
         Throw<std::runtime_error>("STJson nesting depth exceeds maximum of 1");
 
@@ -203,10 +203,10 @@ STJson::fromSerialIter(SerialIter& sit)
 
     // Read type byte
     auto typeByte = sit.get8();
-    JsonType type = static_cast<JsonType>(typeByte);
+    JsonType const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     if (type == JsonType::Array)
     {
@@ -226,7 +226,7 @@ STJson::fromSerialIter(SerialIter& sit)
             }
         }
 
-        int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
         if (consumedBytes != length)
             Throw<std::runtime_error>("STJson length mismatch");
 
@@ -241,7 +241,7 @@ STJson::fromSerialIter(SerialIter& sit)
             map.emplace(std::move(key), std::move(value));
         }
 
-        int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
         if (consumedBytes != length)
             Throw<std::runtime_error>("STJson length mismatch");
 
@@ -268,7 +268,7 @@ STJson::Array
 STJson::parseArray(SerialIter& sit, int length)
 {
     Array array;
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
@@ -296,7 +296,7 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
 
     // Read SType marker (1 byte)
     auto typeCode = sit.get8();
-    SerializedTypeID stype = static_cast<SerializedTypeID>(typeCode);
+    SerializedTypeID const stype = static_cast<SerializedTypeID>(typeCode);
 
     // Dispatch to correct SType
     switch (stype)

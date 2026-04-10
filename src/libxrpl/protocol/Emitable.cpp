@@ -75,7 +75,7 @@ Emitable::getEmitableName(std::uint32_t const value) const
 {
     auto const emitableValue = static_cast<GranularEmitableType>(value);
     if (auto const granular = getGranularName(emitableValue))
-        return *granular;
+        return granular;
 
     // not a granular emitable, check if it maps to a transaction type
     auto const txType = emitableToTxType(value);
