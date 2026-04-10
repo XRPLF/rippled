@@ -6408,7 +6408,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .err = tecBAD_PROOF});
     }
 
-    /* This test verifies that rippled correctly rejects attempts to
+    /* This test verifies that xrpld correctly rejects attempts to
      * overflow the maximum allowable token amount via homomorphic manipulation.
      * It simulates an attack where an individual takes a valid ciphertext encrypting
      * the maximum amount (maxMPTokenAmount) and homomorphically adds an encryption of

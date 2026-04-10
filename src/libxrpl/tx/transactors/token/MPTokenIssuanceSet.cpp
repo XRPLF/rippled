@@ -26,10 +26,10 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
 // allowed.
 struct MPTMutabilityFlags
 {
-    std::uint32_t setFlag;
-    std::uint32_t clearFlag;
-    std::uint32_t mutabilityFlag;
-    std::uint32_t targetFlag;
+    std::uint32_t setFlag{};
+    std::uint32_t clearFlag{};
+    std::uint32_t mutabilityFlag{};
+    std::uint32_t targetFlag{};
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
