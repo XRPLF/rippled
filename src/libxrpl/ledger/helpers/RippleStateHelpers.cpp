@@ -781,6 +781,9 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
+    auto const sponsorSle =
+        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
+
     if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))
     {
         JLOG(j.error()) << "deleteAMMTrustLine: failed to delete the trustline.";
@@ -791,10 +794,7 @@ deleteAMMTrustLine(
     if ((sleState->getFlags() & uFlags) == 0u)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorSle =
-        getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
-    removeSponsorFromLedgerEntry(sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
     return tesSUCCESS;
 }
