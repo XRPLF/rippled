@@ -2216,6 +2216,63 @@ public:
                 BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             }
         }
+        {
+            // AMMDelete
+            // - remove sponsored LPToken trustlines
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                testable_amendments());
+            env.fund(XRP(20'000), alice, gw, sponsor);
+            env.close();
+            env(trust(alice, USD(10'000)));
+            env.close();
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            AMM amm(env, gw, XRP(10'000), USD(10'000));
+            for (auto i = 0; i < (maxDeletableAMMTrustLines * 2) + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                if (cosigning)
+                {
+                    env(trust(a, STAmount{amm.lptIssue(), 10'000}),
+                        sponsor::as(sponsor, spfSponsorReserve),
+                        sig(sfSponsorSignature, sponsor));
+                    env.close();
+                }
+                else
+                {
+                    env(sponsor::set_reserve(sponsor, 0, 1), sponsor::sponseeAcc(a));
+                    env.close();
+                    env(trust(a, STAmount{amm.lptIssue(), 10'000}),
+                        sponsor::as(sponsor, spfSponsorReserve));
+                    env.close();
+                }
+            }
+
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == maxDeletableAMMTrustLines * 2 + 10);
+
+            // The trustlines are partially deleted.
+            amm.withdrawAll(gw);
+            BEAST_EXPECT(amm.ammExists());
+
+            // AMMDelete has to be called twice to delete AMM.
+            amm.ammDelete(alice, ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+
+            // Deletes remaining trustlines and deletes AMM.
+            amm.ammDelete(alice);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+
+            BEAST_EXPECT(
+                !env.le(keylet::account(sponsor))->isFieldPresent(sfSponsoringAccountCount));
+        }
     }
 
     void
