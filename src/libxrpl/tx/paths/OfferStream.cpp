@@ -5,8 +5,13 @@
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/OfferStream.h>
+
+#include <type_traits>
 
 namespace xrpl {
 
@@ -274,6 +279,7 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
+        static_assert(!std::same_as<TIn, XRPAmount> || !std::same_as<TOut, XRPAmount>);
         if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
         {
             auto const original_funds = accountFundsHelper(

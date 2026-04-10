@@ -1438,7 +1438,18 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
             using TIn_ = typename TIn::amount_type;
             using TOut_ = typename TOut::amount_type;
-            return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+
+            if constexpr (ValidTaker<TIn_, TOut_>)
+            {
+                return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+            }
+            else
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::test::bookStepEqual : invalid book step");
+                // LCOV_EXCL_STOP
+                return false;
+            }
         },
         book.in.getAmountType(),
         book.out.getAmountType());
