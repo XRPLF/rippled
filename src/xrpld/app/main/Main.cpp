@@ -3,6 +3,9 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/handlers/Handlers.h>
+
+#include <xrpl/json/json_writer.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -358,7 +361,8 @@ run(int argc, char** argv)
         "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
         "verbose,v", "Verbose logging.")
 
-        ("force_ledger_present_range",
+        ("definitions", "Output server definitions as JSON and exit.")(
+        "force_ledger_present_range",
          po::value<std::string>(),
          "Specify the range of present ledgers for testing purposes. Min and "
          "max values are comma separated.")("version", "Display the build version.");
@@ -486,6 +490,12 @@ run(int argc, char** argv)
         std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
+        return 0;
+    }
+
+    if (vm.contains("definitions"))
+    {
+        std::cout << Json::FastWriter().write(getStaticServerDefinitions());
         return 0;
     }
 

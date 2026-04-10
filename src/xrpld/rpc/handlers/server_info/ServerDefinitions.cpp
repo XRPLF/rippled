@@ -387,4 +387,11 @@ doServerDefinitions(RPC::JsonContext& context)
     return defs.get();
 }
 
+Json::Value
+getStaticServerDefinitions()
+{
+    static detail::ServerDefinitions const defs{};
+    return defs.get();
+}
+
 }  // namespace xrpl
