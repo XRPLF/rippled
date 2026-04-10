@@ -451,10 +451,10 @@ ValidMPTTransfer::finalize(
         {
             // Classify each account as a sender or receiver based on whether their MPTAmount
             // decreased or increased. Count new MPToken holders (no amtBefore) as receivers.
-            if (value.amtAfter.has_value() &&
-                (!value.amtBefore.has_value() || *value.amtBefore != *value.amtAfter))
+            // Skip deleted MPToken holders (amtAfter is nullopt); deletion requires zero balance.
+            if (value.amtAfter.has_value() && value.amtBefore.value_or(0) != *value.amtAfter)
             {
-                if (*value.amtAfter > *value.amtBefore)
+                if (!value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore)
                 {
                     ++receivers;
                 }
@@ -462,13 +462,14 @@ ValidMPTTransfer::finalize(
                 {
                     ++senders;
                 }
-            }
-            // Check once: if any involved account is frozen, the whole
-            // issuance transfer is considered frozen. Only need to check for
-            // frozen if there is a transfer of funds.
-            if (!frozen && isFrozen(view, account, MPTIssue{mptID}))
-            {
-                frozen = true;
+
+                // Check once: if any involved account is frozen, the whole
+                // issuance transfer is considered frozen. Only need to check for
+                // frozen if there is a transfer of funds.
+                if (!frozen && isFrozen(view, account, MPTIssue{mptID}))
+                {
+                    frozen = true;
+                }
             }
         }
         // A transfer between holders has occurred (senders > 0 && receivers > 0).
