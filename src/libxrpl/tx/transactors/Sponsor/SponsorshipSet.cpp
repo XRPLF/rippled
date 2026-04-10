@@ -219,10 +219,14 @@ SponsorshipSet::doApply()
 
         auto const sponsorPage = view().dirInsert(
             keylet::ownerDir(sponsorAccountID), sponsorKeylet, describeOwnerDir(sponsorAccountID));
+        if (!sponsorPage)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfOwnerNode] = *sponsorPage;
 
         auto const sponseePage = view().dirInsert(
             keylet::ownerDir(sponseeAccountID), sponsorKeylet, describeOwnerDir(sponseeAccountID));
+        if (!sponseePage)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
