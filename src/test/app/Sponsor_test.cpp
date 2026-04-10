@@ -265,7 +265,7 @@ public:
         env.fund(XRP(1000000), alice, bob, gw, sp);
         env.close();
 
-        // Create a vault to get a pseudo acconst count
+        // Create a vault to get a pseudo account
         Vault const vault{env};
         auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
         env(tx);
@@ -3227,7 +3227,7 @@ public:
             env.close();
 
             // for free mptoken checks
-            // adjustAccountXRPBalance(env, sponsconst or, reserve(env, 2));
+            // adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
             std::uint32_t const ticketSeq{env.seq(sponsor) + 1};
             env(ticket::create(sponsor, 2));
             env.close();
