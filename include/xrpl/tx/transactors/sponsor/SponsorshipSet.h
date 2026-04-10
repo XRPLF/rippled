@@ -27,10 +27,6 @@ public:
 
     TER
     doApply() override;
-
-    // Interface used by DeleteAccount
-    static TER
-    deleteSponsorship(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 };
 
 }  // namespace xrpl
