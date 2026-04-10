@@ -83,9 +83,13 @@ GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniv
 GRANULAR_PERMISSION(SponsorFee, ttSPONSORSHIP_SET, 65549,
     tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee,
     ({{sfFeeAmount, soeOPTIONAL},
-      {sfMaxFee, soeOPTIONAL}}))
+      {sfMaxFee, soeOPTIONAL},
+      {sfSponsee, soeOPTIONAL},
+      {sfCounterpartySponsor, soeOPTIONAL}}))
 
 /** Grants the ability to set SponsorReserve. */
 GRANULAR_PERMISSION(SponsorReserve, ttSPONSORSHIP_SET, 65550,
     tfUniversal | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve,
-    ({{sfReserveCount, soeOPTIONAL}}))
+    ({{sfReserveCount, soeOPTIONAL},
+      {sfSponsee, soeOPTIONAL},
+      {sfCounterpartySponsor, soeOPTIONAL}}))

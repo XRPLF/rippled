@@ -632,9 +632,6 @@ AMMWithdraw::withdraw(
                     !isTesSuccess(ret))
                     return ret;
             }
-            // Update owner count.
-            if (!isIssue)
-                adjustOwnerCount(view, sleAccount, sponsorSle, 1, journal);
         }
         return tesSUCCESS;
     };
