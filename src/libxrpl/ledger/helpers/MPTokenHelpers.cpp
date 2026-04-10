@@ -348,9 +348,24 @@ requireAuth(
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     if (maybeDomainID)
     {
-        XRPL_ASSERT(
-            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
-            "xrpl::requireAuth : issuance requires authorization");
+        // Defensive check: An issuance with sfDomainID must strictly enforce lsfMPTRequireAuth.
+        // While preclaim checks prevent clearing this flag when sfDomainID is set, we verify here
+        // to guard against potential logic regressions in the future changes.
+        if (view.rules().enabled(fixSecurity3_1_3))
+        {
+            // Post-fixSecurity3_1_3: Return a proper error code instead of asserting.
+            if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth))
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+        else
+        {
+            // Pre-fixSecurity3_1_3: Fault via assertion in Debug mode;
+            // potentially fall through in Release mode.
+            XRPL_ASSERT(
+                sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+                "xrpl::requireAuth : issuance requires authorization");
+        }
+
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
         if (isTesSuccess(ter))
@@ -515,6 +530,22 @@ canTrade(ReadView const& view, Asset const& asset)
                 return tecNO_PERMISSION;
             return tesSUCCESS;
         });
+}
+
+TER
+canMPTTradeAndTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to)
+{
+    if (!asset.holds<MPTIssue>())
+        return tesSUCCESS;
+
+    if (auto const ter = canTrade(view, asset); !isTesSuccess(ter))
+        return ter;
+
+    return canTransfer(view, asset, from, to);
 }
 
 TER
@@ -894,67 +925,6 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 {
     auto const available = availableMPTAmount(view, issue);
     view.issuerSelfDebitHookMPT(issue, amount, available);
-}
-
-static TER
-checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
-{
-    if (!asset.holds<MPTIssue>())
-        return tesSUCCESS;
-
-    auto const& issuanceID = asset.get<MPTIssue>().getMptID();
-    auto const validTx = txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
-        txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
-        txType == ttCHECK_CASH || txType == ttPAYMENT;
-    XRPL_ASSERT(validTx, "xrpl::checkMPTAllowed : all MPT tx or DEX");
-    if (!validTx)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const& issuer = asset.getIssuer();
-    if (!view.exists(keylet::account(issuer)))
-        return tecNO_ISSUER;  // LCOV_EXCL_LINE
-
-    auto const issuanceKey = keylet::mptIssuance(issuanceID);
-    auto const issuanceSle = view.read(issuanceKey);
-    if (!issuanceSle)
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-
-    auto const flags = issuanceSle->getFlags();
-
-    if ((flags & lsfMPTLocked) != 0u)
-        return tecLOCKED;  // LCOV_EXCL_LINE
-    // Offer crossing and Payment
-    if ((flags & lsfMPTCanTrade) == 0)
-        return tecNO_PERMISSION;
-
-    if (accountID != issuer)
-    {
-        if ((flags & lsfMPTCanTransfer) == 0)
-            return tecNO_PERMISSION;
-
-        auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
-        // Allow to succeed since some tx create MPToken if it doesn't exist.
-        // Tx's have their own check for missing MPToken.
-        if (!mptSle)
-            return tesSUCCESS;
-
-        if (mptSle->isFlag(lsfMPTLocked))
-            return tecLOCKED;
-    }
-
-    return tesSUCCESS;
-}
-
-TER
-checkMPTTxAllowed(
-    ReadView const& view,
-    TxType txType,
-    Asset const& asset,
-    AccountID const& accountID)
-{
-    // use isDEXAllowed for payment/offer crossing
-    XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
-    return checkMPTAllowed(view, txType, asset, accountID);
 }
 
 }  // namespace xrpl
