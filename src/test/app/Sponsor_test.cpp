@@ -7,6 +7,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/did.h"
+
 namespace xrpl {
 namespace test {
 
@@ -731,6 +733,41 @@ public:
             env(sponsor::transfer(alice, tfSponsorshipEnd),
                 sponsor::sponseeAcc(alice),
                 ter(temMALFORMED));
+        }
+
+        {
+            // Invalid SponsorshipEnd permission (sponsor object/sponsor account)
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            {
+                // sponsor object
+                env(did::set(alice),
+                    did::uri("uri"),
+                    sponsor::as(sponsor, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor));
+                env.close();
+
+                auto const keylet = keylet::did(alice);
+                env(sponsor::transfer(bob, tfSponsorshipEnd, keylet.key),
+                    sponsor::sponseeAcc(alice),
+                    ter(tecNO_PERMISSION));
+            }
+            {
+                // sponsor object
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::as(sponsor, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor));
+                env.close();
+
+                env(sponsor::transfer(bob, tfSponsorshipEnd),
+                    sponsor::sponseeAcc(alice),
+                    ter(tecNO_PERMISSION));
+            }
         }
 
         {

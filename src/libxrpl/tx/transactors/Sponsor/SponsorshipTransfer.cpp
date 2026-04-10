@@ -271,6 +271,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             // check object is sponsored
             if (!sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
+
+            // only the sponsor or sponsee can end sponsorship
+            auto const sponsor = sle->getAccountID(sponsorField);
+            if (account != sponsor && account != sponseeAccountID)
+                return tecNO_PERMISSION;
         }
 
         // check new sponsor have sufficient balance
@@ -311,6 +316,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
             // check account is sponsored
             if (!sponseeSle->isFieldPresent(sfSponsor))
+                return tecNO_PERMISSION;
+
+            // only the sponsor or sponsee can end sponsorship
+            auto const sponsor = sponseeSle->getAccountID(sfSponsor);
+            if (account != sponsor && account != sponseeAccountID)
                 return tecNO_PERMISSION;
         }
 
