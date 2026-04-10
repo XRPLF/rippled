@@ -20,6 +20,11 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     uint256 uNodeIndex = beast::zero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
+        if (!params[jss::vault_id].isString())
+        {
+            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
+            return std::nullopt;
+        }
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
             RPC::inject_error(rpcINVALID_PARAMS, jvResult);
@@ -29,6 +34,11 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     }
     else if (!hasVaultId && hasOwner && hasSeq)
     {
+        if (!params[jss::owner].isString())
+        {
+            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
+            return std::nullopt;
+        }
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
