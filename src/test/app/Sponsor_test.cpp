@@ -7,6 +7,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/check.h"
 #include "test/jtx/did.h"
 
 namespace xrpl {
@@ -1448,8 +1449,8 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            auto const sponsorFeeBalance = [&](Account const& sponsor, Account const& alice) {
-                return env.le(keylet::sponsor(sponsor, alice))->getFieldAmount(sfFeeAmount).xrp();
+            auto const sponsorFeeBalance = [&](Account const& sponsor, Account const& sponsee) {
+                return env.le(keylet::sponsor(sponsor, sponsee))->getFieldAmount(sfFeeAmount).xrp();
             };
 
             {
@@ -1577,6 +1578,24 @@ public:
                 BEAST_EXPECT(env.balance(bob) == bobBalance);
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
                 BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee - feeAmt);
+            }
+
+            // make sfFeeAmount absent if tec error and all fee is paid
+            {
+                // reset FeeAmount and MaxFee
+                env(sponsor::del(sponsor), sponsor::sponseeAcc(alice));
+                env(sponsor::set_fee(sponsor, 0, XRP(10)), sponsor::sponseeAcc(alice));
+                env.close();
+
+                BEAST_EXPECT(env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
+                auto sponsorAvailableFee = sponsorFeeBalance(sponsor, alice);
+                printf("sponsorAvailableFee: %s\n", to_string(sponsorAvailableFee).c_str());
+                env(check::cancel(alice, uint256(1)),
+                    fee(sponsorAvailableFee),
+                    sponsor::as(sponsor, spfSponsorFee),
+                    ter(tecNO_ENTRY));
+                env.close();
+                BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
             }
         }
 
