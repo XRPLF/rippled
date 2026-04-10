@@ -22,6 +22,9 @@ public:
     {
     }
 
+    static uint32_t
+    calculateOracleReserve(std::size_t count);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 

@@ -87,15 +87,25 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 Expected<MPTID, TER>
-MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
+MPTokenIssuanceCreate::create(
+    ApplyView& view,
+    STTx const& tx,
+    beast::Journal journal,
+    MPTCreateArgs const& args)
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
         return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    if (args.priorBalance &&
-        *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return Unexpected(tecINSUFFICIENT_RESERVE);
+    auto const sponsor =
+        !isPseudoAccount((acct)) ? getTxReserveSponsor(view, tx) : std::shared_ptr<SLE>();
+    if (args.priorBalance)
+    {
+        if (auto const ret =
+                checkInsufficientReserve(view, tx, acct, *(args.priorBalance), sponsor, 1);
+            !isTesSuccess(ret))
+            return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
+    }
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
@@ -133,11 +143,13 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
+        addSponsorToLedgerEntry(mptIssuance, sponsor);
+
         view.insert(mptIssuance);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, 1, journal);
+    adjustOwnerCount(view, acct, sponsor, 1, journal);
 
     return mptId;
 }
@@ -148,6 +160,7 @@ MPTokenIssuanceCreate::doApply()
     auto const& tx = ctx_.tx;
     auto const result = create(
         view(),
+        tx,
         j_,
         {
             .priorBalance = preFeeBalance_,

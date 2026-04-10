@@ -283,6 +283,14 @@ STTx::checkSign(Rules const& rules) const
         if (auto const ret = checkSign(rules, counterSig); !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
+
+    if (isFieldPresent(sfSponsorSignature))
+    {
+        auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
+        if (auto const ret = checkSign(rules, sponsorSignatureObj); !ret)
+            return Unexpected("Sponsor: " + ret.error());
+    }
+
     return {};
 }
 

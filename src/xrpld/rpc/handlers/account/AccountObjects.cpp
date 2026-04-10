@@ -24,6 +24,7 @@ namespace xrpl {
     @param dirIndex Begin gathering account objects from this directory.
     @param entryIndex Begin gathering objects from this directory node.
     @param limit Maximum number of objects to find.
+    @param sponsored Whether to filter by sponsored objects.
     @param jvResult A JSON result that holds the request objects.
 */
 bool
@@ -34,6 +35,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
+    std::optional<bool> const sponsored,
     Json::Value& jvResult)
 {
     // check if dirIndex is valid
@@ -44,6 +46,13 @@ getAccountObjects(
                                 LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
         return it != typeFilter.end();
+    };
+
+    auto sponsoredMatchesFilter = [](bool const sponsored,
+                                     std::optional<AccountID> const& sponsor) {
+        if (sponsored)
+            return sponsor.has_value();
+        return !sponsor.has_value();
     };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
@@ -86,7 +95,17 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::none));
+            bool canAppendNFT = true;
+            if (sponsored.has_value())
+            {
+                std::optional<AccountID> const nftSponsor = cp->isFieldPresent(sfSponsor)
+                    ? cp->getAccountID(sfSponsor)
+                    : std::optional<AccountID>(std::nullopt);
+                if (!sponsoredMatchesFilter(sponsored.value(), nftSponsor))
+                    canAppendNFT = false;
+            }
+            if (canAppendNFT)
+                jvObjects.append(cp->getJson(JsonOptions::none));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -175,11 +194,31 @@ getAccountObjects(
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
 
-            if (!typeFilter.has_value() ||
-                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
-            {
+            bool canAppend = true;
+
+            if (typeFilter.has_value() &&
+                !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+                canAppend = false;
+
+            auto const getSponsor = [&sleNode]() -> std::optional<AccountID> {
+                if (sleNode->isFieldPresent(sfSponsor))
+                    return sleNode->getAccountID(sfSponsor);
+                if (sleNode->getType() == ltRIPPLE_STATE)
+                {
+                    if (sleNode->isFieldPresent(sfHighSponsor))
+                        return sleNode->getAccountID(sfHighSponsor);
+                    if (sleNode->isFieldPresent(sfLowSponsor))
+                        return sleNode->getAccountID(sfLowSponsor);
+                }
+                return std::nullopt;
+            };
+            std::optional<AccountID> const sponsor = getSponsor();
+
+            if (sponsored.has_value() && !sponsoredMatchesFilter(sponsored.value(), sponsor))
+                canAppend = false;
+
+            if (canAppend)
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
-            }
 
             if (++i == mlimit)
             {
@@ -265,6 +304,7 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::mptoken, ltMPTOKEN},
             {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
             {jss::vault, ltVAULT},
+            {jss::sponsorship, ltSPONSORSHIP},
         };
 
         typeFilter.emplace();
@@ -323,7 +363,18 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    if (!getAccountObjects(*ledger, accountID, typeFilter, dirIndex, entryIndex, limit, result))
+    std::optional<bool> sponsored;
+    if (params.isMember(jss::sponsored))
+    {
+        auto const& sponsoredJv = params[jss::sponsored];
+        if (!sponsoredJv.isBool())
+            return RPC::expected_field_error(jss::sponsored, "boolean");
+
+        sponsored = sponsoredJv.asBool();
+    }
+
+    if (!getAccountObjects(
+            *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsored, result))
         return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);

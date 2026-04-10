@@ -204,6 +204,17 @@ Batch::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (ctx.tx.isFieldPresent(sfSponsorFlags))
+    {
+        auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
+        if (sponsorFlags & spfSponsorReserve)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "spfSponsorReserve is not allowed on outer Batch.";
+            return temINVALID_FLAG;
+        }
+    }
+
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
     if (rawTxns.size() <= 1)
     {
@@ -306,6 +317,14 @@ Batch::preflight(PreflightContext const& ctx)
             auto const counterpartySignature = stx.getFieldObject(sfCounterpartySignature);
             if (auto const ret =
                     checkSignatureFields(counterpartySignature, hash, "counterparty signature "))
+            {
+                return ret;
+            }
+        }
+        if (stx.isFieldPresent(sfSponsorSignature))
+        {
+            auto const sponsorSignature = stx.getFieldObject(sfSponsorSignature);
+            if (auto const ret = checkSignatureFields(sponsorSignature, hash, "sponsor signature "))
             {
                 return ret;
             }

@@ -66,12 +66,15 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx_.tx[sfAmount])
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 

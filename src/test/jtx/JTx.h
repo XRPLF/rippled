@@ -36,7 +36,7 @@ struct JTx
     // Functions that sign the transaction from the Account
     std::vector<std::function<void(Env&, JTx&)>> mainSigners;
     // Functions that sign something else after the mainSigners, such as
-    // sfCounterpartySignature
+    // sfCounterpartySignature and sfSponsorSignature
     std::vector<std::function<void(Env&, JTx&)>> postSigners;
 
     JTx() = default;

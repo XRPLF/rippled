@@ -218,12 +218,27 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
+        auto const sponsor = getTxReserveSponsor(view, tx);
+
+        if (auto const ret =
+                checkInsufficientReserve(view, tx, owner, preFeeBalance_, {}, sponsor ? 1 : 2);
+            !isTesSuccess(ret))
+            return ret;
+
+        if (sponsor)
+        {
+            if (auto const ret =
+                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsor, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
+
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
-        auto const ownerCount = owner->at(sfOwnerCount);
-        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
-            return tecINSUFFICIENT_RESERVE;
+        // Pseudo-account cannot be sponsored
+        adjustOwnerCount(view, owner, {}, 1, j_);
+        // LoanBroker object can be sponsored
+        adjustOwnerCount(view, owner, sponsor, 1, j_);
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
@@ -231,7 +246,8 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter =
+                addEmptyHolding(view, tx, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:
@@ -251,6 +267,8 @@ LoanBrokerSet::doApply()
             broker->at(sfCoverRateMinimum) = *coverMin;
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
+
+        addSponsorToLedgerEntry(broker, sponsor);
 
         view.insert(broker);
 

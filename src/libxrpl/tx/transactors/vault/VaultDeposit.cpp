@@ -151,7 +151,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
+                ctx_.view(), ctx_.tx, mptIssuanceID, account_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -161,7 +161,12 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(),
+                    ctx_.tx,
+                    preFeeBalance_,
+                    mptIssuanceID->value(),
+                    account_,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -174,6 +179,7 @@ VaultDeposit::doApply()
                 account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
+                    ctx_.tx,
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
@@ -239,8 +245,14 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(),
+            account_,
+            vaultAccount,
+            assetsDeposited,
+            j_,
+            std::nullopt,
+            WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -259,9 +271,11 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+
     // Transfer shares from vault to depositor.
-    if (auto const ter =
-            accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), vaultAccount, account_, sharesCreated, j_, sponsor, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

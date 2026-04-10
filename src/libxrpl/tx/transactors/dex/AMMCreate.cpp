@@ -122,15 +122,33 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return terNO_RIPPLE;
     }
 
-    // Check the reserve for LPToken trustline
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
-    // Insufficient reserve
-    if (xrpBalance <= beast::zero)
+    if (ctx.view.rules().enabled(featureSponsor))
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-        return tecINSUF_RESERVE_LINE;
+        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        // Check the reserve for LPToken trustline
+        // Insufficient reserve
+        auto const accountSle = ctx.view.read(keylet::account(accountID));
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, accountSle, accountSle->getFieldAmount(sfBalance), sponsorSle, 1);
+            !isTesSuccess(ret))
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
+            return tecINSUF_RESERVE_LINE;
+        }
+    }
+    else
+    {
+        STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+        // Insufficient reserve
+        if (xrpBalance <= beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
+            return tecINSUF_RESERVE_LINE;
+        }
     }
 
+    auto const ownerCountAdj = isReserveSponsored(ctx.tx) ? 0 : 1;
+    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, ownerCountAdj, ctx.j);
     auto insufficientBalance = [&](STAmount const& amount) {
         if (isXRP(amount))
             return xrpBalance < amount;
@@ -269,7 +287,8 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal, sponsor);
     if (!isTesSuccess(res))
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -298,17 +317,30 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
                     }
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
+                if (auto const err = createMPToken(sb, mptID, accountId, std::nullopt, flags);
+                    !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.
                 return accountSend(
-                    sb, account_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes);
+                    sb,
+                    account_,
+                    accountId,
+                    amount,
+                    ctx_.journal,
+                    std::nullopt,  // don't sponsor for AMM Trustline
+                    WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
             [&](Issue const& issue) -> TER {
                 if (auto const res = accountSend(
-                        sb, account_, accountId, amount, ctx_.journal, WaiveTransferFee::Yes))
+                        sb,
+                        account_,
+                        accountId,
+                        amount,
+                        ctx_.journal,
+                        std::nullopt,  // don't sponsor for AMM Trustline
+                        WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))

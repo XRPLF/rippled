@@ -1162,6 +1162,35 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfZKProof, soeREQUIRED},
 }))
 
+/** This transaction transfer sponsorship */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
+    Delegation::delegable,
+    featureSponsor,
+    noPriv,
+    ({
+    {sfObjectID, soeOPTIONAL},
+    {sfSponsee, soeOPTIONAL},
+}))
+
+/** This transaction create sponsorship object */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+#endif
+TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
+    Delegation::delegable,
+    featureSponsor,
+    noPriv,
+    ({
+    {sfCounterpartySponsor, soeOPTIONAL},
+    {sfSponsee, soeOPTIONAL},
+    {sfFeeAmount, soeOPTIONAL},
+    {sfMaxFee, soeOPTIONAL},
+    {sfReserveCount, soeOPTIONAL},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

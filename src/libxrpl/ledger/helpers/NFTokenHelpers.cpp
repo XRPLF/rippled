@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STArray.h>
@@ -45,12 +46,19 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static std::shared_ptr<SLE>
+static Expected<std::shared_ptr<SLE>, TER>
 getPageForToken(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& owner,
+    std::optional<AccountID> const& sponsor,
     uint256 const& id,
-    std::function<void(ApplyView&, AccountID const&)> const& createCallback)
+    std::function<
+        TER(ApplyView&,
+            STTx const&,
+            std::shared_ptr<SLE> const&,
+            AccountID const&,
+            std::optional<AccountID> const&)> const& createCallback)
 {
     auto const base = keylet::nftpage_min(owner);
     auto const first = keylet::nftpage(base, id);
@@ -69,7 +77,9 @@ getPageForToken(
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
-        createCallback(view, owner);
+
+        if (auto const ret = createCallback(view, tx, cp, owner, sponsor); !isTesSuccess(ret))
+            return Unexpected(ret);
         return cp;
     }
 
@@ -182,7 +192,8 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    createCallback(view, owner);
+    if (auto const ret = createCallback(view, tx, np, owner, sponsor); ret != tesSUCCESS)
+        return Unexpected(ret);
 
     return (first.key < np->key()) ? np : cp;
 }
@@ -239,37 +250,69 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyView& view, AccountID owner, STObject&& nft)
+insertToken(
+    ApplyView& view,
+    STTx const& tx,
+    AccountID owner,
+    std::optional<AccountID> const& sponsor,
+    STObject&& nft)
 {
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    std::shared_ptr<SLE> const page =
-        getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
+    Expected<std::shared_ptr<SLE>, TER> const page = getPageForToken(
+        view,
+        tx,
+        owner,
+        sponsor,
+        nft[sfNFTokenID],
+        [](ApplyView& view,
+           STTx const& tx,
+           std::shared_ptr<SLE> const& newPage,
+           AccountID const& owner,
+           std::optional<AccountID> const& sponsor) -> TER {
+            std::shared_ptr<SLE> const sponsorSle =
+                sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>();
+
+            if (isReserveSponsored(tx))
+            {
+                auto const ownerSle = view.read(keylet::account(owner));
+                auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
+                if (auto const ret =
+                        checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
+                sponsorSle,
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
+            addSponsorToLedgerEntry(newPage, sponsorSle);
+            return tesSUCCESS;
         });
 
-    if (!page)
+    if (!page.has_value())
+        return page.error();
+
+    if (!(*page))
         return tecNO_SUITABLE_NFTOKEN_PAGE;
 
     {
-        auto arr = page->getFieldArray(sfNFTokens);
+        auto arr = (*page)->getFieldArray(sfNFTokens);
         arr.push_back(std::move(nft));
 
         arr.sort([](STObject const& o1, STObject const& o2) {
             return compareTokens(o1.getFieldH256(sfNFTokenID), o2.getFieldH256(sfNFTokenID));
         });
 
-        page->setFieldArray(sfNFTokens, arr);
+        (*page)->setFieldArray(sfNFTokens, arr);
     }
 
-    view.update(page);
+    view.update((*page));
 
     return tesSUCCESS;
 }
@@ -400,20 +443,25 @@ removeToken(
         curr->setFieldArray(sfNFTokens, arr);
         view.update(curr);
 
-        int cnt = 0;
-
         if (prev && mergePages(view, prev, curr))
-            cnt--;
-
-        if (next && mergePages(view, curr, next))
-            cnt--;
-
-        if (cnt != 0)
         {
+            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
-                cnt,
+                sponsor,
+                -1,
+                beast::Journal{beast::Journal::getNullSink()});
+        }
+
+        if (next && mergePages(view, curr, next))
+        {
+            auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
+            adjustOwnerCount(
+                view,
+                view.peek(keylet::account(owner)),
+                sponsor,
+                -1,
                 beast::Journal{beast::Journal::getNullSink()});
         }
 
@@ -449,9 +497,11 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
+            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
+                sponsor,
                 -1,
                 beast::Journal{beast::Journal::getNullSink()});
 
@@ -489,9 +539,15 @@ removeToken(
         view.update(next);
     }
 
-    view.erase(curr);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
+    adjustOwnerCount(
+        view,
+        view.peek(keylet::account(owner)),
+        sponsor,
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
 
-    int cnt = 1;
+    view.erase(curr);
 
     // Since we're here, try to consolidate the previous and current pages
     // of the page we removed (if any) into one.  mergePages() _should_
@@ -506,13 +562,14 @@ removeToken(
             view,
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
-        cnt++;
-
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        -1 * cnt,
-        beast::Journal{beast::Journal::getNullSink()});
+    {
+        adjustOwnerCount(
+            view,
+            view.peek(keylet::account(owner)),
+            getLedgerEntryReserveSponsor(view, prev),
+            -1,
+            beast::Journal{beast::Journal::getNullSink()});
+    }
 
     return tesSUCCESS;
 }
@@ -655,8 +712,13 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
+    auto const sponsor = getLedgerEntryReserveSponsor(view, offer);
     adjustOwnerCount(
-        view, view.peek(keylet::account(owner)), -1, beast::Journal{beast::Journal::getNullSink()});
+        view,
+        view.peek(keylet::account(owner)),
+        sponsor,
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;
@@ -935,6 +997,7 @@ tokenOfferCreatePreclaim(
 TER
 tokenOfferCreateApply(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& acctID,
     STAmount const& amount,
     std::optional<AccountID> const& dest,
@@ -946,9 +1009,11 @@ tokenOfferCreateApply(
     std::uint32_t txFlags)
 {
     Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet);
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return tecINSUFFICIENT_RESERVE;
+    auto const acct = view.read(acctKeylet);
+    auto const sponsor = getTxReserveSponsor(view, tx);
+    if (auto const ret = checkInsufficientReserve(view, tx, acct, priorBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
 
@@ -995,11 +1060,13 @@ tokenOfferCreateApply(
         if (dest)
             (*offer)[sfDestination] = *dest;
 
+        addSponsorToLedgerEntry(offer, sponsor);
+
         view.insert(offer);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+    adjustOwnerCount(view, view.peek(acctKeylet), sponsor, 1, j);
 
     return tesSUCCESS;
 }

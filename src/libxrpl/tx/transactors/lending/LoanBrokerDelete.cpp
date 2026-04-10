@@ -128,11 +128,11 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, account_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(view(), tx, brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
@@ -157,10 +157,6 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
-    view().erase(brokerPseudoSLE);
-
-    view().erase(broker);
-
     {
         auto owner = view().peek(keylet::account(account_));
         if (!owner)
@@ -168,8 +164,17 @@ LoanBrokerDelete::doApply()
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view(), owner, -2, j_);
+        // LoanBroker object can be sponsored
+        auto const sponsor = getLedgerEntryReserveSponsor(view(), broker);
+        adjustOwnerCount(view(), owner, sponsor, -1, j_);
+
+        // pseudo-account cannot be sponsored
+        adjustOwnerCount(view(), owner, {}, -1, j_);
     }
+
+    view().erase(brokerPseudoSLE);
+
+    view().erase(broker);
 
     associateAsset(*broker, vaultAsset);
 

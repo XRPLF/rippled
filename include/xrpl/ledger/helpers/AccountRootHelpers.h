@@ -38,9 +38,26 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    std::shared_ptr<SLE> const& accountSle,
+    std::shared_ptr<SLE> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j);
+
+inline void
+adjustOwnerCount(
+    ApplyView& view,
+    AccountID const& account,
+    std::optional<AccountID> const& sponsor,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    return adjustOwnerCount(
+        view,
+        view.peek(keylet::account(account)),
+        sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>(),
+        amount,
+        j);
+}
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate

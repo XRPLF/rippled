@@ -780,10 +780,10 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
-        if (preFeeBalance_ < reserve)
+        auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
+        if (auto const ret =
+                checkInsufficientReserve(sb, ctx_.tx, sleCreator, preFeeBalance_, sponsor, 1);
+            !isTesSuccess(ret))
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then
@@ -816,7 +816,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
+    adjustOwnerCount(sb, sleCreator, sponsor, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
@@ -885,6 +886,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfSell);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
+    addSponsorToLedgerEntry(sleOffer, sponsor);
 
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)

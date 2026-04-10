@@ -277,7 +277,75 @@ class Invariants_test : public beast::unit_test::suite
                 // check.
                 sleA1->at(sfBalance) = beast::zero;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
-                adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
+                adjustOwnerCount(ac.view(), sleA1, {}, 1, ac.journal);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoredOwnerCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoringOwnerCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setFieldU32(sfSponsoringAccountCount, 1);
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA1->setAccountID(sfSponsor, A2.id());
 
                 ac.view().erase(sleA1);
 
@@ -1624,6 +1692,7 @@ class Invariants_test : public beast::unit_test::suite
             "pseudo-account sequence changed"
             "pseudo-account flags are not set"
             "pseudo-account has a regular key"
+            "pseudo-account has a sponsorship field"
         */
         struct Mod
         {
@@ -1649,6 +1718,22 @@ class Invariants_test : public beast::unit_test::suite
             {
                 "pseudo-account has a regular key",
                 [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
             },
         });
 
@@ -4085,6 +4170,87 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
+    testSponsorship()
+    {
+        using namespace test::jtx;
+        using namespace std::string_literals;
+        testcase << "Sponsorship";
+        {
+            auto const expect_message =
+                "SponsoredOwnerCount does not equal "
+                "SponsoringOwnerCount delta.";
+
+            doInvariantCheck(
+                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoredOwnerCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+
+            doInvariantCheck(
+                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoringOwnerCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+        }
+
+        {
+            auto const expect_message =
+                "OwnerCount must be greater than or equal to SponsoredOwnerCount.";
+
+            doInvariantCheck(
+                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfOwnerCount, 0);
+                    sle->setFieldU32(sfSponsoredOwnerCount, 1);
+                    ac.view().update(sle);
+
+                    auto const sle2 = ac.view().peek(keylet::account(A2.id()));
+                    if (!sle2)
+                        return false;
+                    sle2->setFieldU32(sfSponsoringOwnerCount, 1);
+                    ac.view().update(sle2);
+                    return true;
+                });
+        }
+
+        {
+            auto const expect_message =
+                "Invariant failed: Net delta of SponsoringAccountCount does "
+                "not match net delta of sfSponsor presence.";
+
+            doInvariantCheck(
+                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoringAccountCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+
+            doInvariantCheck(
+                {{expect_message}}, [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setAccountID(sfSponsor, A2.id());
+                    ac.view().update(sle);
+                    return true;
+                });
+        }
+    }
+
+    void
     testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
@@ -4300,6 +4466,7 @@ public:
         testVault();
         testConfidentialMPTTransfer();
         testMPT();
+        testSponsorship();
     }
 };
 

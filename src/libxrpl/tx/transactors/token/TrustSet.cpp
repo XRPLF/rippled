@@ -296,8 +296,6 @@ TrustSet::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
-
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
     // an account owns, in the case of trust lines we only
@@ -315,9 +313,18 @@ TrustSet::doApply()
     // but the incremental reserve for the trust line as
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
+    auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
 
-    XRPAmount const reserveCreate(
-        (uOwnerCount < 2) ? XRPAmount(beast::zero) : view().fees().accountReserve(uOwnerCount + 1));
+    std::shared_ptr<SLE> txSponsorSle = {};
+    if (txSponsorAcc)
+        txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
+
+    std::uint32_t const uOwnerCount = ownerCount(txSponsorSle ? txSponsorSle : sle);
+
+    bool const isSponsoredAndPreFunded = txSponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
+    // If PreFunded Sponsor, it must be checked whether sufficient
+    // ReserveCount exists.
+    bool const freeTrustLine = uOwnerCount < 2 && !isSponsoredAndPreFunded;
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -505,6 +512,11 @@ TrustSet::doApply()
 
         bool bReserveIncrease = false;
 
+        auto const currentHighSponsor =
+            getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
+        auto const currentLowSponsor =
+            getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
+
         if (bSetAuth)
         {
             uFlagsOut |= (bHigh ? lsfHighAuth : lsfLowAuth);
@@ -512,9 +524,19 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
+            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            // For PreFunded sponsors, we need to check if there are sufficient reserves before
+            // calling adjustOwnerCount().
+            if (auto const ret = checkInsufficientReserve(
+                    view(), ctx_.tx, sleLowAccount, preFeeBalance_, txSponsorSle, 1);
+                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                return tecINSUF_RESERVE_LINE;
+
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
+
+            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -523,15 +545,27 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, currentLowSponsor, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
+            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            // For PreFunded sponsors, we need to check if there are sufficient reserves before
+            // calling adjustOwnerCount().
+            if (auto const ret = checkInsufficientReserve(
+                    view(), ctx_.tx, sleHighAccount, preFeeBalance_, txSponsorSle, 1);
+                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                return tecINSUF_RESERVE_LINE;
+
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
+
+            addSponsorToLedgerEntry(sleRippleState, txSponsorSle, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -540,8 +574,10 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, currentHighSponsor, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
         }
 
         if (uFlagsIn != uFlagsOut)
@@ -554,7 +590,10 @@ TrustSet::doApply()
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
+        else if (
+            auto const ret =
+                checkInsufficientReserve(view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 0);
+            !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -582,8 +621,15 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (preFeeBalance_ < reserveCreate)  // Reserve is not scaled by
-                                              // load.
+    else if (
+        auto const ret = checkInsufficientReserve(
+            ctx_.view(),
+            ctx_.tx,
+            sle,
+            preFeeBalance_,
+            txSponsorSle,
+            1);
+        !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
@@ -617,6 +663,7 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
+            txSponsorAcc,
             viewJ);
     }
 

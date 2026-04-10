@@ -342,6 +342,7 @@ EscrowFinish::doApply()
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
+                        ctx_.tx,
                         lockedRate,
                         sled,
                         preFeeBalance_,
@@ -373,7 +374,8 @@ EscrowFinish::doApply()
 
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
+    auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

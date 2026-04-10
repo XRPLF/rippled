@@ -271,6 +271,7 @@ LoanManage::defaultLoan(
         vaultSle->at(sfAccount),
         STAmount{vaultAsset, defaultCovered},
         j,
+        {},
         WaiveTransferFee::Yes);
 }
 

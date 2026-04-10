@@ -40,9 +40,23 @@ struct Fees
         the reserve increment times the number of increments.
     */
     XRPAmount
-    accountReserve(std::size_t ownerCount) const
+    accountReserve(
+        std::size_t ownerCount,
+        std::size_t sponsoredOwnerCount = 0,
+        std::size_t sponsoringOwnerCount = 0,
+        bool isAccountSponsored = false,
+        std::size_t sponsoringAccountCount = 0) const
     {
-        return reserve + ownerCount * increment;
+        auto const accountReserveUnits = (isAccountSponsored ? 0 : 1) + sponsoringAccountCount;
+
+        XRPL_ASSERT(
+            ownerCount >= sponsoredOwnerCount,
+            "xrpl::Fees::accountReserve : OwnerCount must be greater than or equal to "
+            "SponsoredOwnerCount");
+
+        auto const ownerReserveUnits = (ownerCount - sponsoredOwnerCount) + sponsoringOwnerCount;
+
+        return (reserve * accountReserveUnits) + (increment * ownerReserveUnits);
     }
 };
 

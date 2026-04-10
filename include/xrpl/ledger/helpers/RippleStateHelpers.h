@@ -149,6 +149,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
+    std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -229,6 +230,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,

@@ -135,7 +135,7 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfDisallowIncomingPayChan, 0x10000000)        /* True, reject new paychans */                                    \
         LSF_FLAG(lsfDisallowIncomingTrustline, 0x20000000)      /* True, reject new trustlines (only if no issued assets) */       \
         LSF_FLAG(lsfAllowTrustLineLocking, 0x40000000)          /* True, enable trustline locking */                               \
-        LSF_FLAG(lsfAllowTrustLineClawback, 0x80000000))        /* True, enable clawback */                                        \
+        LSF_FLAG(lsfAllowTrustLineClawback, 0x80000000))         /* True, enable clawback */                                       \
                                                                                                                                    \
     LEDGER_OBJECT(Offer,                                                                                                           \
         LSF_FLAG(lsfPassive, 0x00010000)                                                                                           \
@@ -201,7 +201,11 @@ enum LedgerEntryType : std::uint16_t {
     LEDGER_OBJECT(Loan,                                                                                                            \
         LSF_FLAG(lsfLoanDefault, 0x00010000)                                                                                       \
         LSF_FLAG(lsfLoanImpaired, 0x00020000)                                                                                      \
-        LSF_FLAG(lsfLoanOverpayment, 0x00040000))               /* True, loan allows overpayments */
+        LSF_FLAG(lsfLoanOverpayment, 0x00040000))               /* True, loan allows overpayments */                               \
+                                                                                                                                   \
+    LEDGER_OBJECT(Sponsorship,                                                                                                         \
+        LSF_FLAG(lsfSponsorshipRequireSignForFee, 0x00010000)                                                                      \
+        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))
 
 // clang-format on
 

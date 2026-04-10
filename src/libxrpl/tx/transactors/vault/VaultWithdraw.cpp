@@ -241,9 +241,11 @@ VaultWithdraw::doApply()
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+
     // Transfer shares from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), account_, vaultAccount, sharesRedeemed, j_, sponsor, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -252,7 +254,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (account_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(view(), ctx_.tx, account_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //

@@ -5,6 +5,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -453,6 +454,7 @@ canAddHolding(ReadView const& view, Asset const& asset)
 TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -460,7 +462,7 @@ addEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
+            return addEmptyHolding(view, tx, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }
@@ -468,13 +470,17 @@ addEmptyHolding(
 TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, accountID, issue, journal);
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return removeEmptyHolding(view, accountID, issue, journal);
+            else
+                return removeEmptyHolding(view, tx, accountID, issue, journal);
         },
         asset.value());
 }
@@ -522,6 +528,7 @@ directSendNoFeeIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
+    std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -589,7 +596,12 @@ directSendNoFeeIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
+            auto const currentSponsor = getLedgerEntryReserveSponsor(
+                view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+            adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, -1, j);
+
+            removeSponsorFromLedgerEntry(
+                sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -653,6 +665,7 @@ directSendNoFeeIOU(
         saReceiverLimit,
         0,
         0,
+        sponsorAccountID,
         j);
 }
 
@@ -667,6 +680,7 @@ directSendNoLimitIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = saAmount.getIssuer();
@@ -679,7 +693,8 @@ directSendNoLimitIOU(
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter = directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, false, j);
+        auto const ter =
+            directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, false, sponsorAccountID, j);
         if (!isTesSuccess(ter))
             return ter;
         saActual = saAmount;
@@ -697,10 +712,12 @@ directSendNoLimitIOU(
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult = directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, j);
+    TER terResult =
+        directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccountID, j);
 
     if (tesSUCCESS == terResult)
-        terResult = directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, j);
+        terResult =
+            directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorAccountID, j);
 
     return terResult;
 }
@@ -716,6 +733,7 @@ directSendNoLimitMultiIOU(
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = issue.getIssuer();
@@ -743,7 +761,8 @@ directSendNoLimitMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, j))
+            if (auto const ter = directSendNoFeeIOU(
+                    view, senderID, receiverID, amount, false, sponsorAccountID, j))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because directSendNoFeeIOU took
@@ -766,14 +785,15 @@ directSendNoLimitMultiIOU(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actual.getFullText();
 
-        if (TER const terResult = directSendNoFeeIOU(view, issuer, receiverID, amount, true, j))
+        if (TER const terResult =
+                directSendNoFeeIOU(view, issuer, receiverID, amount, true, sponsorAccountID, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
-        if (TER const terResult =
-                directSendNoFeeIOU(view, senderID, issuer, takeFromSender, true, j))
+        if (TER const terResult = directSendNoFeeIOU(
+                view, senderID, issuer, takeFromSender, true, sponsorAccountID, j))
             return terResult;
     }
 
@@ -787,6 +807,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -818,7 +839,8 @@ accountSendIOU(
         JLOG(j.trace()) << "accountSendIOU: " << to_string(uSenderID) << " -> "
                         << to_string(uReceiverID) << " : " << saAmount.getFullText();
 
-        return directSendNoLimitIOU(view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
+        return directSendNoLimitIOU(
+            view, uSenderID, uReceiverID, saAmount, saActual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -906,6 +928,7 @@ accountSendMultiIOU(
     Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -917,7 +940,8 @@ accountSendMultiIOU(
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
                         << receivers.size() << " IOUs";
 
-        return directSendNoLimitMultiIOU(view, senderID, issue, receivers, actual, j, waiveFee);
+        return directSendNoLimitMultiIOU(
+            view, senderID, issue, receivers, actual, j, sponsorAccountID, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1342,7 +1366,8 @@ directSendNoFee(
 {
     return saAmount.asset().visit(
         [&](Issue const&) {
-            return directSendNoFeeIOU(view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
+            return directSendNoFeeIOU(
+                view, uSenderID, uReceiverID, saAmount, bCheckIssuer, std::nullopt, j);
         },
         [&](MPTIssue const&) {
             XRPL_ASSERT(!bCheckIssuer, "xrpl::directSendNoFee : not checking issuer");
@@ -1357,12 +1382,14 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee,
     AllowMPTOverflow allowOverflow)
 {
     return saAmount.asset().visit(
         [&](Issue const&) {
-            return accountSendIOU(view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+            return accountSendIOU(
+                view, uSenderID, uReceiverID, saAmount, j, sponsorAccountID, waiveFee);
         },
         [&](MPTIssue const&) {
             return accountSendMPT(
@@ -1377,13 +1404,15 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
     return asset.visit(
         [&](Issue const& issue) {
-            return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
+            return accountSendMultiIOU(
+                view, senderID, issue, receivers, j, sponsorAccountID, waiveFee);
         },
         [&](MPTIssue const& issue) {
             return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);

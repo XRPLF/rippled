@@ -14,6 +14,7 @@ LedgerFormats::getCommonFields()
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},
+        {sfSponsor, soeOPTIONAL},
     };
     return commonFields;
 }

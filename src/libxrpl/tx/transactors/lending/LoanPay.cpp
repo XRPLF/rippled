@@ -528,7 +528,7 @@ LoanPay::doApply()
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
-                    view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
+                    view, tx, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,
@@ -546,6 +546,7 @@ LoanPay::doApply()
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
+            {},  // Vault and Broker cannot be sponsored
             WaiveTransferFee::Yes))
         return ter;
 

@@ -2,6 +2,7 @@
 //
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
@@ -71,7 +72,10 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
         }
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+        {
+            auto const sponsorSle = getLedgerEntryReserveSponsor(view, sleCredential);
+            adjustOwnerCount(view, sleAccount, sponsorSle, -1, j);
+        }
 
         return tesSUCCESS;
     };

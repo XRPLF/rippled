@@ -389,14 +389,33 @@ public:
             env.close();
 
             // Because we're hacking the ledger we need the account to have
-            // non-zero sfMintedNFTokens and sfBurnedNFTokens fields.  This
-            // prevents an exception when the AccountRoot template is applied.
+            // non-zero sfMintedNFTokens, sfBurnedNFTokens,
+            // sfSponsoredOwnerCount, sfSponsoringOwnerCount,
+            // sfSponsoringAccountCount fields. This prevents an exception when
+            // the AccountRoot template is applied.
             {
                 uint256 const nftId0{token::getNextID(env, gw, 0u)};
                 env(token::mint(gw, 0u));
                 env.close();
 
                 env(token::burn(gw, nftId0));
+                env.close();
+
+                env(did::set(gw),
+                    did::uri("uri"),
+                    sponsor::as(alice, spfSponsorReserve),
+                    sig(sfSponsorSignature, alice));
+                env.close();
+
+                env(did::set(alice),
+                    did::uri("uri"),
+                    sponsor::as(gw, spfSponsorReserve),
+                    sig(sfSponsorSignature, gw));
+                env.close();
+
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::as(gw, spfSponsorReserve),
+                    sig(sfSponsorSignature, gw));
                 env.close();
             }
 

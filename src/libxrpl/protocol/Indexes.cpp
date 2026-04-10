@@ -79,6 +79,7 @@ enum class LedgerNameSpace : std::uint16_t {
     VAULT = 'V',
     LOAN_BROKER = 'l',  // lower-case L
     LOAN = 'L',
+    SPONSORSHIP = '>',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -312,6 +313,12 @@ Keylet
 signers(AccountID const& account) noexcept
 {
     return signers(account, 0);
+}
+
+Keylet
+sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept
+{
+    return {ltSPONSORSHIP, indexHash(LedgerNameSpace::SPONSORSHIP, sponsor, sponsee)};
 }
 
 Keylet

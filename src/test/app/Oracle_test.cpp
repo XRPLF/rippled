@@ -1,5 +1,12 @@
 #include <test/jtx/Oracle.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
 
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {
@@ -451,7 +458,7 @@ private:
         oracle.remove({.owner = invalid, .fee = baseFee, .err = ter(tecNO_ENTRY)});
 
         // Invalid flags
-        oracle.remove({.flags = tfSellNFToken, .fee = baseFee, .err = ter(temINVALID_FLAG)});
+        oracle.remove({.flags = lsfSellNFToken, .fee = baseFee, .err = ter(temINVALID_FLAG)});
 
         // Bad fee
         oracle.remove({.fee = -1, .err = ter(temBAD_FEE)});
@@ -687,7 +694,7 @@ private:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), sig(alice));
+        env(fset(alice, lsfDisableMaster), sig(alice));
 
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}, {ed, 2}}), sig(alie));

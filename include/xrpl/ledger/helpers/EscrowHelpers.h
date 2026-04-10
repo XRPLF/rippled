@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -17,6 +18,7 @@ template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -31,6 +33,7 @@ template <>
 inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -56,8 +59,12 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
+        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
+        std::shared_ptr<SLE> sponsorSle = {};
+        if (sponsorAccountID)
+            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
+            !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
@@ -84,6 +91,7 @@ escrowUnlockApplyHelper<Issue>(
                 Issue(currency, receiver),                      // limit of zero
                 0,                                              // quality in
                 0,                                              // quality out
+                sponsorAccountID,                               // sponsor
                 journal);                                       // journal
             !isTesSuccess(ter))
         {
@@ -161,6 +169,7 @@ template <>
 inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -176,24 +185,30 @@ escrowUnlockApplyHelper<MPTIssue>(
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
     auto const issuanceKey = keylet::mptIssuance(mptID);
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
+    auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
+    if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
-        {
-            return tecINSUFFICIENT_RESERVE;
-        }
+        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
+        std::shared_ptr<SLE> sponsorSle = {};
+        if (sponsorAccountID)
+            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (auto const ter = createMPToken(view, mptID, receiver, 0); !isTesSuccess(ter))
+        if (auto const ter = createMPToken(view, mptID, receiver, sponsorAccountID, 0);
+            !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, 1, journal);
+        adjustOwnerCount(view, sleDest, sponsorSle, 1, journal);
+        auto mptSle = view.peek(mptKeylet);
+        addSponsorToLedgerEntry(mptSle, sponsorSle);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)
+    if (!view.exists(mptKeylet) && !receiverIssuer)
         return tecNO_PERMISSION;
 
     auto const xferRate = transferRate(view, amount);

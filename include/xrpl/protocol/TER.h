@@ -211,6 +211,7 @@ enum TERcodes : TERUnderlyingType {
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
+    terNO_SPONSORSHIP,          // No sponsorship found
 };
 
 //------------------------------------------------------------------------------
@@ -350,6 +351,7 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecBAD_PROOF = 199,
+    tecNO_SPONSOR_PERMISSION = 200,
 };
 
 //------------------------------------------------------------------------------

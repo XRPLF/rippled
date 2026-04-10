@@ -63,6 +63,56 @@ public:
     operator()(Env& env) const;
 };
 
+/** Match the number of items in the account's owner directory */
+class sponsored_owners
+{
+private:
+    Account account_;
+    std::uint32_t value_;
+
+public:
+    sponsored_owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
+/** Match the number of items in the account's owner directory */
+class sponsoring_owners
+{
+private:
+    Account account_;
+    std::uint32_t value_;
+
+public:
+    sponsoring_owners(Account const& account, std::uint32_t value)
+        : account_(account), value_(value)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
+/** Match the number of items in the account's owner directory */
+class sponsoring_account_count
+{
+private:
+    Account account_;
+    std::uint32_t value_;
+
+public:
+    sponsoring_account_count(Account const& account, std::uint32_t value)
+        : account_(account), value_(value)
+    {
+    }
+
+    void
+    operator()(Env& env) const;
+};
+
 /** Match the number of trust lines in the account's owner directory */
 using lines = owner_count<ltRIPPLE_STATE>;
 

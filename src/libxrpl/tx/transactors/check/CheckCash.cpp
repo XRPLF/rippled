@@ -282,6 +282,8 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const sponsorSle = getLedgerEntryReserveSponsor(psb, sleCheck);
+
     // Preclaim already checked that source has at least the requested
     // funds.
     //
@@ -310,7 +312,7 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            STAmount const srcLiquid{xrpLiquid(psb, srcId, -1, viewJ)};
+            STAmount const srcLiquid{xrpLiquid(psb, srcId, sponsorSle ? 0 : -1, viewJ)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -360,14 +362,20 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
+            auto const sponsorAccountID = getTxReserveSponsorAccountID(ctx_.tx);
+            std::shared_ptr<SLE> sponsorSle = {};
+            if (sponsorAccountID)
+                sponsorSle = psb.peek(keylet::account(*sponsorAccountID));
+
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkReserve = [&]() -> std::shared_ptr<SLE> {
                 auto sleDst = psb.peek(keylet::account(account_));
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
-                    preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
+                if (auto const ret = checkInsufficientReserve(
+                        psb, ctx_.tx, sleDst, preFeeBalance_, sponsorSle, 1);
+                    !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
                                         "Insufficient reserve to create line.";
@@ -424,6 +432,7 @@ CheckCash::doApply()
                                 Issue(currency, account_),  // limit of zero
                                 0,                          // quality in
                                 0,                          // quality out
+                                sponsorAccountID,           // sponsor
                                 viewJ);                     // journal
                             !isTesSuccess(ter))
                         {
@@ -470,7 +479,8 @@ CheckCash::doApply()
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
-                            if (auto const err = checkCreateMPT(psb, mptID, account_, j_);
+                            if (auto const err =
+                                    checkCreateMPT(psb, mptID, account_, sponsorAccountID, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;
@@ -556,7 +566,8 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+
+    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsorSle, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

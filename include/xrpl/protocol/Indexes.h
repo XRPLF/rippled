@@ -151,6 +151,10 @@ static ticket_t const ticket{};
 Keylet
 signers(AccountID const& account) noexcept;
 
+/** A Sponsor */
+Keylet
+sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept;
+
 /** A Check */
 /** @{ */
 Keylet

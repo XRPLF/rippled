@@ -65,12 +65,14 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     // Check reserve and funds availability
     {
         auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (auto const ret = checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx.tx[sfAmount])
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
@@ -166,7 +168,9 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
 
     return tesSUCCESS;

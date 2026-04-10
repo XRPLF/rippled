@@ -43,6 +43,9 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const sponsoredOwnerCountValue = canonical_UINT32();
+    auto const sponsoringOwnerCountValue = canonical_UINT32();
+    auto const sponsoringAccountCountValue = canonical_UINT32();
 
     AccountRootBuilder builder{
         accountValue,
@@ -70,6 +73,9 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setAMMID(aMMIDValue);
     builder.setVaultID(vaultIDValue);
     builder.setLoanBrokerID(loanBrokerIDValue);
+    builder.setSponsoredOwnerCount(sponsoredOwnerCountValue);
+    builder.setSponsoringOwnerCount(sponsoringOwnerCountValue);
+    builder.setSponsoringAccountCount(sponsoringAccountCountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -252,6 +258,30 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLoanBrokerID());
     }
 
+    {
+        auto const& expected = sponsoredOwnerCountValue;
+        auto const actualOpt = entry.getSponsoredOwnerCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSponsoredOwnerCount");
+        EXPECT_TRUE(entry.hasSponsoredOwnerCount());
+    }
+
+    {
+        auto const& expected = sponsoringOwnerCountValue;
+        auto const actualOpt = entry.getSponsoringOwnerCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSponsoringOwnerCount");
+        EXPECT_TRUE(entry.hasSponsoringOwnerCount());
+    }
+
+    {
+        auto const& expected = sponsoringAccountCountValue;
+        auto const actualOpt = entry.getSponsoringAccountCount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfSponsoringAccountCount");
+        EXPECT_TRUE(entry.hasSponsoringAccountCount());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -288,6 +318,9 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     auto const aMMIDValue = canonical_UINT256();
     auto const vaultIDValue = canonical_UINT256();
     auto const loanBrokerIDValue = canonical_UINT256();
+    auto const sponsoredOwnerCountValue = canonical_UINT32();
+    auto const sponsoringOwnerCountValue = canonical_UINT32();
+    auto const sponsoringAccountCountValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(AccountRoot::entryType, index);
 
@@ -314,6 +347,9 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     sle->at(sfAMMID) = aMMIDValue;
     sle->at(sfVaultID) = vaultIDValue;
     sle->at(sfLoanBrokerID) = loanBrokerIDValue;
+    sle->at(sfSponsoredOwnerCount) = sponsoredOwnerCountValue;
+    sle->at(sfSponsoringOwnerCount) = sponsoringOwnerCountValue;
+    sle->at(sfSponsoringAccountCount) = sponsoringAccountCountValue;
 
     AccountRootBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -605,6 +641,45 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLoanBrokerID");
     }
 
+    {
+        auto const& expected = sponsoredOwnerCountValue;
+
+        auto const fromSleOpt = entryFromSle.getSponsoredOwnerCount();
+        auto const fromBuilderOpt = entryFromBuilder.getSponsoredOwnerCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSponsoredOwnerCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfSponsoredOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringOwnerCountValue;
+
+        auto const fromSleOpt = entryFromSle.getSponsoringOwnerCount();
+        auto const fromBuilderOpt = entryFromBuilder.getSponsoringOwnerCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSponsoringOwnerCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfSponsoringOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringAccountCountValue;
+
+        auto const fromSleOpt = entryFromSle.getSponsoringAccountCount();
+        auto const fromBuilderOpt = entryFromBuilder.getSponsoringAccountCount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfSponsoringAccountCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfSponsoringAccountCount");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -703,5 +778,11 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getVaultID().has_value());
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
+    EXPECT_FALSE(entry.hasSponsoredOwnerCount());
+    EXPECT_FALSE(entry.getSponsoredOwnerCount().has_value());
+    EXPECT_FALSE(entry.hasSponsoringOwnerCount());
+    EXPECT_FALSE(entry.getSponsoringOwnerCount().has_value());
+    EXPECT_FALSE(entry.hasSponsoringAccountCount());
+    EXPECT_FALSE(entry.getSponsoringAccountCount().has_value());
 }
 }

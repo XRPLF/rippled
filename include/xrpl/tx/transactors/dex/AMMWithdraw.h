@@ -89,6 +89,7 @@ public:
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     equalWithdrawTokens(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const account,
         AccountID const& ammAccount,
@@ -123,6 +124,7 @@ public:
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     withdraw(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         AccountID const& account,
@@ -166,6 +168,7 @@ private:
     std::pair<TER, STAmount>
     withdraw(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
@@ -191,6 +194,7 @@ private:
     std::pair<TER, STAmount>
     equalWithdrawTokens(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
@@ -216,6 +220,7 @@ private:
     std::pair<TER, STAmount>
     equalWithdrawLimit(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
@@ -238,6 +243,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdraw(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
@@ -259,6 +265,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawTokens(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
@@ -281,6 +288,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawEPrice(
         Sandbox& view,
+        STTx const& tx,
         SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,

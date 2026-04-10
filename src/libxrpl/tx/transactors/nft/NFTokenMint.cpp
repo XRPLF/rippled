@@ -285,7 +285,9 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    if (TER const ret = nft::insertToken(ctx_.view(), account_, std::move(newToken));
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    if (TER const ret =
+            nft::insertToken(ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -296,6 +298,7 @@ NFTokenMint::doApply()
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
+                ctx_.tx,
                 ctx_.tx[sfAccount],
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],
@@ -316,9 +319,16 @@ NFTokenMint::doApply()
             view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                ctx_.tx,
+                view().read(keylet::account(account_)),
+                preFeeBalance_,
+                sponsor,
+                0);
+            !isTesSuccess(ret))
+            return ret;
     }
     return tesSUCCESS;
 }

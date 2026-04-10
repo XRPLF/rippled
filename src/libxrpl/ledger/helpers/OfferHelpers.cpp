@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 //
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/st.h>
@@ -48,7 +49,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsor, -1, j);
 
     view.erase(sle);
 

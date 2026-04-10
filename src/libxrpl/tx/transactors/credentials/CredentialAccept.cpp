@@ -82,16 +82,16 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret =
+            checkInsufficientReserve(view(), ctx_.tx, sleSubject, preFeeBalance_, newSponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    auto const currentSponsor = getLedgerEntryReserveSponsor(view(), sleCred);
 
     if (checkExpired(sleCred, view().header().parentCloseTime))
     {
@@ -104,8 +104,10 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, -1, j_);
-    adjustOwnerCount(view(), sleSubject, 1, j_);
+    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    removeSponsorFromLedgerEntry(sleCred);
+    adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
+    addSponsorToLedgerEntry(sleCred, newSponsor);
 
     return tesSUCCESS;
 }

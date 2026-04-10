@@ -2128,7 +2128,10 @@ class Delegate_test : public beast::unit_test::suite
             {"CredentialDelete", featureCredentials},
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
-            {"PermissionedDomainDelete", featurePermissionedDomains}};
+            {"PermissionedDomainDelete", featurePermissionedDomains},
+            {"SponsorshipTransfer", featureSponsor},
+            {"SponsorshipSet", featureSponsor},
+        };
 
         // Can not delegate tx if any required feature disabled.
         {
@@ -2247,7 +2250,7 @@ class Delegate_test : public beast::unit_test::suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 80;
+        std::size_t const expectedDelegableCount = 82;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

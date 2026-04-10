@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -105,6 +106,20 @@ class TxConsequences;
 struct PreflightResult;
 // Needed for preflight specialization
 class Change;
+
+enum class FeePayerType {
+    Account,
+    Delegate,
+    SponsorCoSigned,
+    SponsorPreFunded,
+};
+
+struct FeePayer
+{
+    Keylet entry;
+    SF_AMOUNT const& balanceField;
+    FeePayerType type{FeePayerType::Account};
+};
 
 class Transactor
 {
@@ -244,6 +259,9 @@ public:
 
         return T::checkGranularSemantics(view, tx, heldGranularPermissions);
     }
+
+    static NotTEC
+    checkSponsor(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -354,6 +372,9 @@ private:
 
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
+
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);

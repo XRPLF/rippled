@@ -415,8 +415,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            auto const reserve = psb.fees().accountReserve(ownerCount);
+            auto const reserve = calculateReserve(sleSrc, psb.fees());
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -708,7 +707,8 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
+            auto const sponsor = getLedgerEntryReserveSponsor(outerSb, sleClaimID);
+            adjustOwnerCount(outerSb, sleOwner, sponsor, -1, j);
         }
     }
 
@@ -927,6 +927,7 @@ TER
 applyCreateAccountAttestations(
     ApplyView& view,
     RawView& rawView,
+    STTx const& tx,
     TIter attBegin,
     TIter attEnd,
     AccountID const& doorAccount,
@@ -1008,10 +1009,10 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
-
-            if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+            // Door account should not have a sponsor
+            if (auto const ret = checkInsufficientReserve(psb, tx, sleDoor, balance, {}, 1);
+                !isTesSuccess(ret))
+                return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
         }
 
         std::vector<Attestations::AttestationCreateAccount> atts;
@@ -1117,7 +1118,9 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        auto const sponsor = getTxReserveSponsor(psb, tx);
+        adjustOwnerCount(psb, sleDoor, sponsor, 1, j);
+        addSponsorToLedgerEntry(createdSleClaimID, sponsor);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1290,6 +1293,7 @@ attestationDoApply(ApplyContext& ctx)
         return applyCreateAccountAttestations(
             ctx.view(),
             ctx.rawView(),
+            ctx.tx,
             &*att,
             &*att + 1,
             thisDoor,
@@ -1415,10 +1419,11 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, ctx.tx, sleAcc, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;
@@ -1460,7 +1465,9 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleBridge, sponsor);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1961,10 +1968,11 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, ctx.tx, sleAcc, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;
@@ -2020,7 +2028,9 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleClaimID, sponsor);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

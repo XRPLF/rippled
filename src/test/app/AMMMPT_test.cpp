@@ -925,7 +925,7 @@ private:
 
         // Insufficient reserve, XRP/MPT
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const starting_xrp = reserve(env, 4) + env.current()->fees().base * 4;
             env.fund(XRP(10'000), gw);
             env.fund(XRP(10'000), alice);
@@ -955,7 +955,13 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                ter(tecINSUF_RESERVE_LINE));
+                // After the Sponsor Amendment, it will result in tesSUCCESS
+                // if the current XRP == balance the required XRP balance calculated from the
+                // reserve.
+                // Before the Amendment, it will result in tecINSUF_RESERVE_LINE
+                // if the current XRP == balance the required XRP balance calculated from the
+                // reserve.
+                features[featureSponsor] ? ter(tesSUCCESS) : ter(tecINSUF_RESERVE_LINE));
         }
 
         // Invalid min
@@ -7005,6 +7011,7 @@ private:
         testInvalidInstance();
         testInvalidDeposit(all);
         testInvalidDeposit(all - featureAMMClawback);
+        testInvalidDeposit(all - featureSponsor);
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();

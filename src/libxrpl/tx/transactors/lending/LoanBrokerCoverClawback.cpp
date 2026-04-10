@@ -325,7 +325,7 @@ LoanBrokerCoverClawback::doApply()
     associateAsset(*sleBroker, vaultAsset);
 
     // Transfer assets from pseudo-account to depositor.
-    return accountSend(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
+    return accountSend(view(), brokerPseudoID, account, clawAmount, j_, {}, WaiveTransferFee::Yes);
 }
 
 //------------------------------------------------------------------------------

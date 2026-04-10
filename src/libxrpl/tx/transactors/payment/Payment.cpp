@@ -94,6 +94,19 @@ Payment::preflight(PreflightContext const& ctx)
 
     std::uint32_t const txFlags = tx.getFlags();
 
+    if ((txFlags & tfSponsorCreatedAccount) != 0u)
+    {
+        if (!ctx.rules.enabled(featureSponsor))
+            return temDISABLED;
+
+        if ((txFlags & tfNoRippleDirect) != 0u || (txFlags & tfPartialPayment) != 0u ||
+            (txFlags & tfLimitQuality) != 0u)
+            return temINVALID_FLAG;
+
+        if (!dstAmount.native())
+            return temBAD_AMOUNT;
+    }
+
     if (!MPTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
@@ -300,7 +313,13 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        if (dstAmount < STAmount(ctx.view.fees().reserve))
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
+        {
+            // The minimum amount when creating a Sponsored Account is 1 drop.
+            // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment
+            // reserve yourself.
+        }
+        else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -313,18 +332,26 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        ((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else
     {
-        // The tag is basically account-specific information we don't
-        // understand, but we can require someone to fill it in.
+        // The tfSponsorCreatedAccount flag is specific to account creation via
+        // sponsorship. If the destination account already exists, applying this
+        // flag is invalid.
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
+            return tecNO_SPONSOR_PERMISSION;
 
-        // We didn't make this test for a newly-formed account because there's
-        // no way for this field to be set.
-        JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+            !ctx.tx.isFieldPresent(sfDestinationTag))
+        {
+            // The tag is basically account-specific information we don't
+            // understand, but we can require someone to fill it in.
 
-        return tecDST_TAG_NEEDED;
+            // We didn't make this test for a newly-formed account because
+            // there's no way for this field to be set.
+            JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
+
+            return tecDST_TAG_NEEDED;
+        }
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
@@ -388,6 +415,19 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
+
+        if ((txFlags & tfSponsorCreatedAccount) != 0u)
+        {
+            auto const sponsor = view().peek(keylet::account(account_));
+            if (!sponsor)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            auto const currentSponsoringAccountCount =
+                sponsor->getFieldU32(sfSponsoringAccountCount);
+            sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
+
+            addSponsorToLedgerEntry(sleDst, sponsor);
+            view().update(sponsor);
+        }
 
         view().insert(sleDst);
     }
@@ -555,12 +595,10 @@ Payment::doApply()
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // ownerCount is the number of entries in this ledger for this
-    // account that require a reserve.
-    auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-
-    // This is the total reserve in drops.
-    auto const reserve = view().fees().accountReserve(ownerCount);
+    // the number of reserves in this ledger for this account that require a
+    // reserve.
+    auto const reserve = calculateReserve(sleSrc, view().fees()) +
+        (((txFlags & tfSponsorCreatedAccount) != 0u) ? view().fees().reserve : beast::zero);
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (account_).

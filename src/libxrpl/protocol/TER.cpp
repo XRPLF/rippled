@@ -107,6 +107,7 @@ transResults()
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
+        MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -218,6 +219,7 @@ transResults()
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(terLOCKED,                 "Fund is locked."),
+        MAKE_ERROR(terNO_SPONSORSHIP,         "No sponsorship found."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

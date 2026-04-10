@@ -48,7 +48,8 @@ msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
-        // Where to put the signature. Supports sfCounterPartySignature.
+        // Where to put the signature. Supports sfCounterPartySignature and
+        // sfSponsorSignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
         // The signing pub key is only required at the top level.

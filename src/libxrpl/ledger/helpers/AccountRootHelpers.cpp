@@ -74,9 +74,19 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     std::uint32_t const ownerCount =
         confineOwnerCount(view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
+    std::uint32_t const sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
+    std::uint32_t const sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
+    bool const isAccountSponsored = sle->isFieldPresent(sfSponsor);
+    std::uint32_t const sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
+
     // Pseudo-accounts have no reserve requirement
-    auto const reserve =
-        isPseudoAccount(sle) ? XRPAmount{0} : view.fees().accountReserve(ownerCount);
+    auto const reserve = isPseudoAccount(sle) ? XRPAmount{0}
+                                              : view.fees().accountReserve(
+                                                    ownerCount,
+                                                    sponsoredOwnerCount,
+                                                    sponsoringOwnerCount,
+                                                    isAccountSponsored,
+                                                    sponsoringAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -105,21 +115,69 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 void
-adjustOwnerCount(
+adjustSponsorOwnerCountHlp(
     ApplyView& view,
     std::shared_ptr<SLE> const& sle,
+    SField const& sfield,
     std::int32_t amount,
     beast::Journal j)
 {
-    if (!sle)
+    auto const accID = sle->getAccountID(sfAccount);
+    std::uint32_t const current{(sle)->getFieldU32(sfield)};
+    std::uint32_t const adjusted = confineOwnerCount(current, amount, accID, j);
+    view.adjustOwnerCountHook(accID, current, adjusted);
+    if (adjusted == 0)
+        sle->makeFieldAbsent(sfield);
+    else
+        sle->setFieldU32(sfield, adjusted);
+    view.update(sle);
+}
+
+void
+adjustOwnerCount(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& accountSle,
+    std::shared_ptr<SLE> const& sponsorSle,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    if (!accountSle)
         return;
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*sle)[sfAccount];
+
+    if (sponsorSle)
+    {
+        adjustSponsorOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, amount, j);
+        adjustSponsorOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, amount, j);
+
+        auto const account = accountSle->getAccountID(sfAccount);
+        auto const sponsorAccountID = (sponsorSle)->getAccountID(sfAccount);
+
+        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAccountID, account));
+
+        if (sponsorObjSle)
+        {
+            // pre funded
+            // update the pre-funded ReserveCount on Sponsorship ledger object
+
+            std::uint32_t const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
+            // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount =>
+            // payback (+)
+            std::uint32_t const adjusted =
+                confineOwnerCount(currentReserveCount, -amount, sponsorAccountID, j);
+            if (adjusted == 0)
+                sponsorObjSle->makeFieldAbsent(sfReserveCount);
+            else
+                sponsorObjSle->setFieldU32(sfReserveCount, adjusted);
+            view.update(sponsorObjSle);
+        }
+    }
+    std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*accountSle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->at(sfOwnerCount) = adjusted;
-    view.update(sle);
+    accountSle->at(sfOwnerCount) = adjusted;
+    view.update(accountSle);
 }
 
 AccountID

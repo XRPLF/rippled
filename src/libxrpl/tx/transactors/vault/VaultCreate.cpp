@@ -142,10 +142,26 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner, 2, j_);
-    auto const ownerCount = owner->at(sfOwnerCount);
-    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
-        return tecINSUFFICIENT_RESERVE;
+    auto const sponsor = getTxReserveSponsor(view(), tx);
+    if (!ctx_.view().rules().enabled(featureSponsor))
+    {
+        adjustOwnerCount(view(), owner, sponsor, 2, j_);
+        addSponsorToLedgerEntry(vault, sponsor);
+        if (auto const ret =
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0);
+            !isTesSuccess(ret))
+            return ret;
+    }
+    else
+    {
+        // after Sponsor Amendment, check insufficient reserve first
+        if (auto const ret =
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2);
+            !isTesSuccess(ret))
+            return ret;
+        adjustOwnerCount(view(), owner, sponsor, 2, j_);
+        addSponsorToLedgerEntry(vault, sponsor);
+    }
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
@@ -154,7 +170,8 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
+    if (auto ter = addEmptyHolding(view(), tx, pseudoId, preFeeBalance_, asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
@@ -174,6 +191,7 @@ VaultCreate::doApply()
     // in the vault
     auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
+        tx,
         j_,
         {
             .priorBalance = std::nullopt,
@@ -217,7 +235,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), tx, preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -225,7 +243,7 @@ VaultCreate::doApply()
     if ((txFlags & tfVaultPrivate) != 0u)
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), tx, preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
             !isTesSuccess(err))
             return err;
     }

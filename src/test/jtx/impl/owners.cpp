@@ -37,6 +37,24 @@ owners::operator()(Env& env) const
     env.test.expect(env.le(account_)->getFieldU32(sfOwnerCount) == value_);
 }
 
+void
+sponsored_owners::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoredOwnerCount) == value_);
+}
+
+void
+sponsoring_owners::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);
+}
+
+void
+sponsoring_account_count::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringAccountCount) == value_);
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace xrpl

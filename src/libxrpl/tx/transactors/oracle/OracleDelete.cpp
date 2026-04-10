@@ -62,7 +62,8 @@ OracleDelete::deleteOracle(
 
     auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
-    adjustOwnerCount(view, sleOwner, count, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, sleOwner, sponsor, count, j);
 
     view.erase(sle);
 

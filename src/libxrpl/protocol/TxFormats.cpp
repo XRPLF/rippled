@@ -28,6 +28,9 @@ TxFormats::getCommonFields()
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
         {sfDelegate, soeOPTIONAL},
+        {sfSponsor, soeOPTIONAL},
+        {sfSponsorFlags, soeOPTIONAL},
+        {sfSponsorSignature, soeOPTIONAL},
     };
     return commonFields;
 }

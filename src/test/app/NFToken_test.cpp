@@ -378,21 +378,40 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Account const alice{"alice"};
+        Account const bob{"bob"};
         Env env{*this, features};
-        env.fund(XRP(1000), alice);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         // We're going to hack the ledger in order to avoid generating
         // 4 billion or so NFTs.  Because we're hacking the ledger we
-        // need alice's account to have non-zero sfMintedNFTokens and
-        // sfBurnedNFTokens fields.  This prevents an exception when the
-        // AccountRoot template is applied.
+        // need alice's account to have non-zero sfMintedNFTokens,
+        // sfBurnedNFTokens, sfSponsoredOwnerCount, sfSponsoringOwnerCount,
+        // sfSponsoringAccountCount fields. This prevents an exception when
+        // the AccountRoot template is applied.
         {
             uint256 const nftId0{token::getNextID(env, alice, 0u)};
             env(token::mint(alice, 0u));
             env.close();
 
             env(token::burn(alice, nftId0));
+            env.close();
+
+            env(did::set(alice),
+                did::uri("uri"),
+                sponsor::as(bob, spfSponsorReserve),
+                sig(sfSponsorSignature, bob));
+            env.close();
+
+            env(did::set(bob),
+                did::uri("uri"),
+                sponsor::as(alice, spfSponsorReserve),
+                sig(sfSponsorSignature, alice));
+            env.close();
+
+            env(sponsor::transfer(bob, tfSponsorshipCreate),
+                sponsor::as(alice, spfSponsorReserve),
+                sig(sfSponsorSignature, alice));
             env.close();
         }
 

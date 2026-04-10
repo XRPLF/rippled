@@ -93,9 +93,11 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, ownerSle, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         Keylet const pdKeylet =
             keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
@@ -111,7 +113,8 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        adjustOwnerCount(view(), ownerSle, sponsor, 1, ctx_.journal);
+        addSponsorToLedgerEntry(slePd, sponsor);
         view().insert(slePd);
     }
 

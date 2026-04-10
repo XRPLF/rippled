@@ -536,6 +536,74 @@ class Simulate_test : public beast::unit_test::suite
             // test without autofill
             testTx(env, tx, validateOutput);
         }
+
+        {
+            // autofill sponsor signature
+
+            auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(result, tx, 2, env.current()->fees().base);
+
+                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(metadata[sfAffectedNodes.jsonName].size() == 2);
+
+                        auto node = metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(node.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = node[sfModifiedNode];
+                            BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
+                            auto previousFields = modifiedNode[sfPreviousFields];
+                            BEAST_EXPECT(!previousFields.isMember(sfBalance.jsonName));
+                        }
+
+                        auto node2 = metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(node2.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = node2[sfModifiedNode];
+                            BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
+
+                            auto previousFields = modifiedNode[sfPreviousFields];
+                            BEAST_EXPECT(previousFields.isMember(sfBalance.jsonName));
+                        }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            };
+
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), sponsor);
+            env.close();
+
+            Json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain] = newDomain;
+            tx[sfSponsor.jsonName] = sponsor.human();
+            tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+            tx[sfSponsorSignature.jsonName] = Json::objectValue;
+
+            // test with autofill
+            testTx(env, tx, validateOutput);
+
+            tx[sfSponsorSignature.jsonName][sfTxnSignature.jsonName] = "";
+            tx[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
+
+            // test without autofill
+            testTx(env, tx, validateOutput);
+        }
     }
 
     void

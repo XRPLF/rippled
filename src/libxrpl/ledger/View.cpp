@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -285,6 +286,93 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
+{
+    auto const ownerCount = sponsorSle->getFieldU32(sfOwnerCount);
+    auto const sponsoredOwnerCount = sponsorSle->getFieldU32(sfSponsoredOwnerCount);
+    auto const sponsoringOwnerCount = sponsorSle->getFieldU32(sfSponsoringOwnerCount);
+
+    return ownerCount + sponsoringOwnerCount - sponsoredOwnerCount;
+}
+
+XRPAmount
+calculateReserve(std::shared_ptr<SLE const> const& sle, Fees const& fees)
+{
+    XRPL_ASSERT(sle->getType() == ltACCOUNT_ROOT, "xrpl::calculateReserve : valid sle type");
+
+    return fees.accountReserve(
+        sle->getFieldU32(sfOwnerCount),
+        sle->getFieldU32(sfSponsoredOwnerCount),
+        sle->getFieldU32(sfSponsoringOwnerCount),
+        sle->isFieldPresent(sfSponsor),
+        sle->getFieldU32(sfSponsoringAccountCount));
+}
+
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    STTx const& tx,
+    std::shared_ptr<SLE const> accSle,
+    STAmount const& accBalance,
+    std::shared_ptr<SLE const> const& sponsorSle,
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta)
+{
+    if (sponsorSle)
+    {
+        auto const isCoSigning = isSponsorReserveCoSigning(tx);
+
+        auto const sle = view.read(
+            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+
+        if (isCoSigning)
+        {
+            if (sle)
+            {
+                auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
+                if (reserveCountAllowed < ownerCountDelta)
+                    return tecINSUFFICIENT_RESERVE;
+
+                return tesSUCCESS;
+            }
+            auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
+            STAmount const sponsorReserve{view.fees().accountReserve(
+                sponsorSle->getFieldU32(sfOwnerCount),
+                sponsorSle->getFieldU32(sfSponsoredOwnerCount),
+                sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
+                sponsorSle->isFieldPresent(sfSponsor),
+                sponsorSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
+
+            if (sponsorBalance < sponsorReserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+        else
+        {
+            // pre funded
+            if (!sle)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
+            if (reserveCountAllowed < ownerCountDelta)
+                return tecINSUFFICIENT_RESERVE;
+        }
+    }
+    else
+    {
+        STAmount const reserve{view.fees().accountReserve(
+            accSle->getFieldU32(sfOwnerCount) + ownerCountDelta,
+            accSle->getFieldU32(sfSponsoredOwnerCount),
+            accSle->getFieldU32(sfSponsoringOwnerCount),
+            accSle->isFieldPresent(sfSponsor),
+            accSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
+
+        if (accBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+    return tesSUCCESS;
+}
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
@@ -408,7 +496,7 @@ doWithdraw(
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(view, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = addEmptyHolding(view, tx, senderAcct, priorBalance, amount.asset(), j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
@@ -434,9 +522,12 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
+    auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
+
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(view, sourceAcct, dstAcct, amount, j, WaiveTransferFee::Yes);
+    return accountSend(
+        view, sourceAcct, dstAcct, amount, j, sponsorAccountID, WaiveTransferFee::Yes);
 }
 
 TER

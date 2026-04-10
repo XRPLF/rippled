@@ -2,6 +2,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 
 namespace xrpl {
@@ -47,7 +48,8 @@ closeChannel(
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
+    adjustOwnerCount(view, sle, sponsor, -1, j);
     view.update(sle);
 
     // Remove PayChan from ledger

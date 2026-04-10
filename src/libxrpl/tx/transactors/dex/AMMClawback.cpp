@@ -207,6 +207,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             AMMWithdraw::equalWithdrawTokens(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 holder,
                 ammAccount,
@@ -295,6 +296,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
+            ctx_.tx,
             ammSle,
             holder,
             ammAccount,
@@ -328,6 +330,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
         return AMMWithdraw::withdraw(
             sb,
+            ctx_.tx,
             ammSle,
             ammAccount,
             holder,
@@ -348,6 +351,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     // tfee is actually not used, so pass tfee as 0.
     return AMMWithdraw::withdraw(
         sb,
+        ctx_.tx,
         ammSle,
         ammAccount,
         holder,

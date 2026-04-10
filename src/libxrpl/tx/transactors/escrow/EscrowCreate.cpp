@@ -398,16 +398,18 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
-
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
-    if (balance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret = checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (balance < reserve + STAmount(amount).xrp())
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
@@ -499,7 +501,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }

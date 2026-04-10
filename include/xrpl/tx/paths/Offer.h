@@ -213,7 +213,8 @@ template <typename... Args>
 TER
 TOffer<TIn, TOut>::send(Args&&... args)
 {
-    return accountSend(std::forward<Args>(args)..., WaiveTransferFee::No, AllowMPTOverflow::Yes);
+    return accountSend(
+        std::forward<Args>(args)..., std::nullopt, WaiveTransferFee::No, AllowMPTOverflow::Yes);
 }
 
 template <StepAmount TIn, StepAmount TOut>

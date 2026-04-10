@@ -91,13 +91,11 @@ LoanDelete::doApply()
     if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    // Delete the Loan object
-    view.erase(loanSle);
-
     // Decrement the LoanBroker's owner count.
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
-    adjustOwnerCount(view, brokerSle, -1, j_);
+    adjustOwnerCount(view, brokerSle, {}, -1, j_);
+
     // If there are no loans left, then any remaining debt must be forgiven,
     // because there is no other way to pay it back.
     if (brokerSle->at(sfOwnerCount) == 0)
@@ -117,7 +115,11 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    adjustOwnerCount(view, borrowerSle, -1, j_);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, loanSle);
+    adjustOwnerCount(view, borrowerSle, sponsor, -1, j_);
+
+    // Delete the Loan object
+    view.erase(loanSle);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

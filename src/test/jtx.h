@@ -7,6 +7,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
+#include <test/jtx/Oracle.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/account_txn_id.h>
 #include <test/jtx/acctdelete.h>
@@ -48,6 +49,7 @@
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tag.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>

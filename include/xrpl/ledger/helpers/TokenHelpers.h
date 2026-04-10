@@ -214,6 +214,7 @@ canAddHolding(ReadView const& view, Asset const& asset);
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -222,6 +223,7 @@ addEmptyHolding(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal);
@@ -276,6 +278,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID = std::nullopt,
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 
@@ -293,6 +296,7 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccountID,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

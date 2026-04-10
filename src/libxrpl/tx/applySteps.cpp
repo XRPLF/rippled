@@ -174,6 +174,9 @@ invoke_preclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
+                        if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
+                            return result;
+
                         if (NotTEC const result = Transactor::checkPermission<T>(ctx.view, ctx.tx))
                             return result;
 

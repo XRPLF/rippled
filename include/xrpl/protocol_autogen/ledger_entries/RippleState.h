@@ -243,6 +243,54 @@ public:
     {
         return this->sle_->isFieldPresent(sfHighQualityOut);
     }
+
+    /**
+     * @brief Get sfHighSponsor (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getHighSponsor() const
+    {
+        if (hasHighSponsor())
+            return this->sle_->at(sfHighSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHighSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHighSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfHighSponsor);
+    }
+
+    /**
+     * @brief Get sfLowSponsor (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getLowSponsor() const
+    {
+        if (hasLowSponsor())
+            return this->sle_->at(sfLowSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLowSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLowSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfLowSponsor);
+    }
 };
 
 /**
@@ -407,6 +455,28 @@ public:
     setHighQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfHighQualityOut] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHighSponsor (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setHighSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfHighSponsor] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLowSponsor (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfLowSponsor] = value;
         return *this;
     }
 

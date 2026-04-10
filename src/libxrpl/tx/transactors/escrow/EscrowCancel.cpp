@@ -167,6 +167,7 @@ EscrowCancel::doApply()
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
+                        ctx_.tx,
                         parityRate,
                         slep,
                         preFeeBalance_,
@@ -194,7 +195,8 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
+    auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

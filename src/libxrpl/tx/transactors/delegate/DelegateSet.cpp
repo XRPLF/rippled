@@ -82,11 +82,11 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    STAmount const reserve{
-        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-    if (preFeeBalance_ < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret =
+            checkInsufficientReserve(view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     sle = std::make_shared<SLE>(delegateKey);
     sle->setAccountID(sfAccount, account_);
@@ -114,7 +114,8 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sle, sponsor);
 
     return tesSUCCESS;
 }
@@ -154,7 +155,8 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
 
     view.erase(sle);
 

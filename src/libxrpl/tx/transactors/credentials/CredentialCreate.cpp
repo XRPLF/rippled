@@ -115,12 +115,11 @@ CredentialCreate::doApply()
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret =
+            checkInsufficientReserve(view(), ctx_.tx, sleIssuer, preFeeBalance_, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, account_);
@@ -138,7 +137,8 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        adjustOwnerCount(view(), sleIssuer, sponsor, 1, j_);
+        addSponsorToLedgerEntry(sleCred, sponsor);
     }
 
     if (subject == account_)
