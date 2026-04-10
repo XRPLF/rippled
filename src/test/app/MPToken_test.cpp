@@ -5884,9 +5884,15 @@ class MPToken_test : public beast::unit_test::suite
             checkId = keylet::check(alice, env.seq(alice)).key;
             env(check::create(alice, carol, mpt(100)));
             env.close();
-            // can cash
             env(pay(gw, alice, mpt(10)));
             env.close();
+            // can't cash
+            mpt.set({.account = gw, .mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+            env(check::cash(carol, checkId, mpt(10)), ter(tecNO_AUTH));
+            env.close();
+            // can cash
+            mpt.set({.account = gw, .mutableFlags = tmfMPTSetCanTransfer});
             env(check::cash(carol, checkId, mpt(10)));
             env.close();
         }
