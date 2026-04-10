@@ -31,9 +31,8 @@ NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
     if (jobQueue_.isStopped())
         return;
 
-    if (!jobQueue_.addJob(jtWRITE, "NodeObject::store", [&task]() {
-            task.performScheduledTask();
-        }))
+    if (!jobQueue_.addJob(
+            jtWRITE, "NObjStore", [&task]() { task.performScheduledTask(); }))
     {
         // Job not added, presumably because we're shutting down.
         // Recover by executing the task synchronously.

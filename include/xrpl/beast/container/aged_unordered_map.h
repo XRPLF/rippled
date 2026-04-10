@@ -44,7 +44,6 @@ using aged_unordered_map = detail::aged_unordered_container<
     Hash,
     KeyEqual,
     Allocator>;
-
 }
 
 #endif

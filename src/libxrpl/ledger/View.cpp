@@ -1445,8 +1445,8 @@ doWithdraw(
             j) < amount)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "LoanBrokerCoverWithdraw: negative balance of "
-                           "broker cover assets.";
+        JLOG(j.error())
+            << "doWithdraw: negative balance of broker cover assets.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -3684,7 +3684,7 @@ sharesToAssetsWithdraw(
 {
     XRPL_ASSERT(
         !shares.negative(),
-        "ripple::sharesToAssetsDeposit : non-negative shares");
+        "ripple::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsWithdraw : shares and vault match");

@@ -43,7 +43,6 @@ using aged_unordered_set = detail::aged_unordered_container<
     Hash,
     KeyEqual,
     Allocator>;
-
 }
 
 #endif
