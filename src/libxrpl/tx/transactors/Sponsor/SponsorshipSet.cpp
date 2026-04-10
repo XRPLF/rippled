@@ -219,10 +219,14 @@ SponsorshipSet::doApply()
 
         auto const sponsorPage = view().dirInsert(
             keylet::ownerDir(sponsorAccountID), sponsorKeylet, describeOwnerDir(sponsorAccountID));
+        if (!sponsorPage)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfOwnerNode] = *sponsorPage;
 
         auto const sponseePage = view().dirInsert(
             keylet::ownerDir(sponseeAccountID), sponsorKeylet, describeOwnerDir(sponseeAccountID));
+        if (!sponseePage)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
@@ -287,41 +291,6 @@ SponsorshipSet::doApply()
         (*sponsorObjSle)[sfFlags] = flags;
 
     view().update(sponsorObjSle);
-
-    return tesSUCCESS;
-}
-
-TER
-SponsorshipSet::deleteSponsorship(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    beast::Journal j)
-{
-    auto const sponsorAccountID = sle->getAccountID(sfOwner);
-    auto const sponseeAccountID = sle->getAccountID(sfSponsee);
-
-    // adjust balance
-    auto const sponsorAccSle = view.peek(keylet::account(sponsorAccountID));
-    if (!sponsorAccSle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (sle->isFieldPresent(sfFeeAmount))
-    {
-        auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
-        (*sponsorAccSle)[sfBalance] += feeAmount;
-    }
-
-    auto const reserveSponsor = getLedgerEntryReserveSponsor(view, sle);
-    adjustOwnerCount(view, sponsorAccSle, reserveSponsor, -1, j);
-
-    view.update(sponsorAccSle);
-
-    // delete sponsor node
-    view.dirRemove(keylet::ownerDir(sponsorAccountID), (*sle)[sfOwnerNode], sle->key(), false);
-    // delete sponsee node
-    view.dirRemove(keylet::ownerDir(sponseeAccountID), (*sle)[sfSponseeNode], sle->key(), false);
-
-    view.erase(sle);
 
     return tesSUCCESS;
 }

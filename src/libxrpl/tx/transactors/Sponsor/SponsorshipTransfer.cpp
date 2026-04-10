@@ -204,10 +204,7 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
                     return sfLowSponsor;
             }
             // LCOV_EXCL_START
-            XRPL_ASSERT(
-                false,
-                "Should not happen. Owner should be checked before calling "
-                "this function.");
+            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
             // LCOV_EXCL_STOP
         }
         default:
@@ -271,6 +268,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             // check object is sponsored
             if (!sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
+
+            // only the sponsor or sponsee can end sponsorship
+            auto const sponsor = sle->getAccountID(sponsorField);
+            if (account != sponsor && account != sponseeAccountID)
+                return tecNO_PERMISSION;
         }
 
         // check new sponsor have sufficient balance
@@ -311,6 +313,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
             // check account is sponsored
             if (!sponseeSle->isFieldPresent(sfSponsor))
+                return tecNO_PERMISSION;
+
+            // only the sponsor or sponsee can end sponsorship
+            auto const sponsor = sponseeSle->getAccountID(sfSponsor);
+            if (account != sponsor && account != sponseeAccountID)
                 return tecNO_PERMISSION;
         }
 
@@ -403,7 +410,7 @@ SponsorshipTransfer::doApply()
         if (!objSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, account_);
+        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, sponseeAccountID);
         if (!ownerAccountID)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -438,8 +445,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, newSponsorAccountID, -ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -475,19 +482,19 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, newSponsorAccountID, -ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
 
             // payback the reserve count if ltSponsorship exists
             if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, account_));
+                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
                 sponsorSle)
             {
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, oldSponsorAccountID, ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -511,11 +518,11 @@ SponsorshipTransfer::doApply()
 
             // payback the reserve count if ltSponsorship exists
             if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, account_));
+                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
                 sponsorSle)
             {
-                if (auto const ter =
-                        adjustReserveCount(view(), account_, oldSponsorAccountID, ownerCountDelta);
+                if (auto const ter = adjustReserveCount(
+                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }

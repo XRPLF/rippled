@@ -169,18 +169,6 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
-TER
-removeSponsorshipFromLedger(
-    ServiceRegistry& registry,
-    ApplyView& view,
-    AccountID const&,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
-    beast::Journal j)
-{
-    return SponsorshipSet::deleteSponsorship(view, sleDel, j);
-}
-
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -207,8 +195,6 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
-        case ltSPONSORSHIP:
-            return removeSponsorshipFromLedger;
         default:
             return nullptr;
     }
@@ -398,9 +384,6 @@ AccountDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    // Use the current balance from the SLE, not mSourceBalance, because
-    // the cleanup loop may have returned pre-funded sfFeeAmount from
-    // ltSponsorship objects back to the account's sfBalance.
     auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;

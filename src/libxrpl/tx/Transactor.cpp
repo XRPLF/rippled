@@ -185,6 +185,11 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
             return temINVALID_FLAG;
         }
     }
+    else
+    {
+        JLOG(ctx.j.debug()) << "preflight1: no sponsor flags";
+        return temINVALID_FLAG;
+    }
 
     if (auto const ret = preflight0(ctx, flagMask))
         return ret;
@@ -233,13 +238,6 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
                                "same as the transaction originator";
         return temMALFORMED;
     }
-
-    // if (hasSponsor && hasSponsorFlags &&
-    //     ctx.tx.getFieldU32(sfSponsorFlags) == 0)
-    // {
-    //     JLOG(ctx.j.debug()) << "preflight1: sponsor with no sponsorship flags";
-    //     return temINVALID_FLAG;
-    // }
 
     return tesSUCCESS;
 }
@@ -1188,7 +1186,12 @@ Transactor::reset(XRPAmount fee)
     // If for some reason we are unable to consume the ticket or sequence
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
-    payerSle->setFieldAmount(payer.balanceField, balance - fee);
+    auto const feeAmountAfter = balance - fee;
+    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+        // Because ltSponsorship.sfFeeAmount is soeOptional
+        payerSle->makeFieldAbsent(payer.balanceField);
+    else
+        payerSle->setFieldAmount(payer.balanceField, feeAmountAfter);
 
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
