@@ -182,7 +182,7 @@ split_commas(FwdIt first, FwdIt last)
 
 template <class Result = std::vector<std::string>>
 Result
-split_commas(std::string_view const& s)
+split_commas(std::string_view s)
 {
     return split_commas(s.begin(), s.end());
 }

@@ -230,7 +230,7 @@ ServerHandler::onHandoff(
 static inline Json::Output
 makeOutput(Session& session)
 {
-    return [&](std::string_view const& b) { session.write(b.data(), b.size()); };
+    return [&](std::string_view b) { session.write(b.data(), b.size()); };
 }
 
 static std::map<std::string, std::string>
@@ -535,7 +535,7 @@ ServerHandler::processSession(
             auto const iter = session->request().find("X-User");
             if (iter != session->request().end())
             {
-                auto const val = iter->value();
+                auto const& val = iter->value();
                 return std::string_view(val.data(), val.size());
             }
             return std::string_view{};

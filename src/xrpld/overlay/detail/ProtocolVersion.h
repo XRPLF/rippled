@@ -38,7 +38,7 @@ to_string(ProtocolVersion const& p);
           no duplicates and will be sorted in ascending protocol order.
 */
 std::vector<ProtocolVersion>
-parseProtocolVersions(std::string_view const& s);
+parseProtocolVersions(std::string_view s);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
@@ -46,7 +46,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(std::string_view const& versions);
+negotiateProtocolVersion(std::string_view versions);
 
 /** The list of all the protocol versions we support. */
 std::string const&

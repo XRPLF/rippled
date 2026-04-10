@@ -88,14 +88,14 @@ public:
     }
 
     void
-    output(std::string_view const& bytes)
+    output(std::string_view bytes)
     {
         markStarted();
         output_(bytes);
     }
 
     void
-    stringOutput(std::string_view const& bytes)
+    stringOutput(std::string_view bytes)
     {
         markStarted();
         std::size_t position = 0, writtenUntil = 0;

@@ -8,12 +8,12 @@ namespace Json {
 
 class Value;
 
-using Output = std::function<void(std::string_view const&)>;
+using Output = std::function<void(std::string_view)>;
 
 inline Output
 stringOutput(std::string& s)
 {
-    return [&](std::string_view const& b) { s.append(b.data(), b.size()); };
+    return [&](std::string_view b) { s.append(b.data(), b.size()); };
 }
 
 /** Writes a minimal representation of a Json value to an Output in O(n) time.
