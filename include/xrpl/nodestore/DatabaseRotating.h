@@ -34,6 +34,14 @@ public:
         std::unique_ptr<NodeStore::Backend>&& newBackend,
         std::function<void(std::string const& writableName, std::string const& archiveName)> const&
             f) = 0;
+    /** Populate @a dest with every object in the archive backend.
+
+        Used by in-memory (RWDB) backends to pre-populate a new writable
+        backend before rotation, avoiding per-node write-lock contention on
+        the live writable backend.  @a dest must not yet be shared.
+    */
+    virtual void
+    copyArchiveTo(Backend& dest) = 0;
 };
 
 }  // namespace NodeStore

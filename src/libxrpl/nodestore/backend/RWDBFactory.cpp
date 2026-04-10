@@ -1,4 +1,5 @@
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/ReaderPreferringSharedMutex.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
@@ -10,7 +11,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 #include <vector>
 
 namespace xrpl {
@@ -24,7 +25,7 @@ private:
     std::string name_;
     beast::Journal const journal_;
     bool isOpen_{false};
-    mutable std::recursive_mutex mutex_;
+    mutable reader_preferring_shared_mutex mutex_;
     DataStore table_;
 
 public:
@@ -57,7 +58,7 @@ public:
     void
     open(bool) override
     {
-        std::lock_guard lock(mutex_);
+        std::unique_lock lock(mutex_);
         if (isOpen_)
             Throw<std::runtime_error>("already open");
         isOpen_ = true;
@@ -66,22 +67,27 @@ public:
     bool
     isOpen() override
     {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         return isOpen_;
     }
 
     void
     close() override
     {
-        std::lock_guard lock(mutex_);
-        isOpen_ = false;
-        table_.clear();
+        DataStore old;
+        {
+            std::unique_lock lock(mutex_);
+            isOpen_ = false;
+            old.swap(table_);  // O(1) swap; release lock before destructor runs
+        }
+        // 'old' is now destroyed outside the lock — no fetch() can be
+        // blocked by the (potentially millions-of-entries) map destructor.
     }
 
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         if (!isOpen_)
             return notFound;
 
@@ -136,7 +142,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         if (!isOpen_)
             return;
 

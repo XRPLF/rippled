@@ -95,15 +95,9 @@ SHAMapStoreImp::SHAMapStoreImp(
     isMemoryBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
     // For RWDB, default online_delete to ledger_history only if user did not
-    // explicitly set online_delete.  Clamp to the minimum allowed interval
-    // so an implicit default never triggers the "online_delete must be at
-    // least N" check below.
+    // explicitly set online_delete.
     if (isMemoryBackend_ && deleteInterval_ == 0)
-    {
-        auto const minInterval =
-            config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
-        deleteInterval_ = std::max(config.LEDGER_HISTORY, minInterval);
-    }
+        deleteInterval_ = config.LEDGER_HISTORY;
 
     if (deleteInterval_ != 0u)
     {
@@ -289,69 +283,93 @@ SHAMapStoreImp::run()
             if (healthWait() == stopping)
                 return;
 
-            JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
-            std::uint64_t nodeCount = 0;
-
-            try
+            if (isMemoryBackend_)
             {
-                validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(
-                        &SHAMapStoreImp::copyNode,
-                        this,
-                        std::ref(nodeCount),
-                        std::placeholders::_1));
+                // For RWDB: skip the per-node copyNode promotion loop.
+                // Instead, bulk-copy the archive into a fresh backend that
+                // is not yet shared—so no exclusive-lock contention with
+                // live consensus reads/writes on the current writable backend.
+                // After rotate(), newBackend (archive copy) becomes the new
+                // writable, old writable becomes new archive, and old archive
+                // is destroyed.
+                JLOG(journal_.debug()) << "RWDB: creating pre-populated backend for rotation";
+                auto newBackend = makeBackendRotating();
+                dbRotating_->copyArchiveTo(*newBackend);
+                if (healthWait() == stopping)
+                    return;
+                JLOG(journal_.debug()) << "RWDB: archive copied to new backend";
+
+                ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+                lastRotated = validatedSeq;
+
+                dbRotating_->rotate(
+                    std::move(newBackend),
+                    [&](std::string const& writableName, std::string const& archiveName) {
+                        SavedState savedState;
+                        savedState.writableDb = writableName;
+                        savedState.archiveDb = archiveName;
+                        savedState.lastRotated = lastRotated;
+                        state_db_.setState(savedState);
+                        ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+                    });
+
+                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
             }
-            catch (SHAMapMissingNode const& e)
+            else
             {
-                JLOG(journal_.error())
-                    << "Missing node while copying ledger before rotate: " << e.what();
-                continue;
-            }
+                JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
+                std::uint64_t nodeCount = 0;
 
-            if (healthWait() == stopping)
-                return;
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+                try
+                {
+                    validatedLedger->stateMap().snapShot(false)->visitNodes(
+                        std::bind(
+                            &SHAMapStoreImp::copyNode,
+                            this,
+                            std::ref(nodeCount),
+                            std::placeholders::_1));
+                }
+                catch (SHAMapMissingNode const& e)
+                {
+                    JLOG(journal_.error())
+                        << "Missing node while copying ledger before rotate: " << e.what();
+                    continue;
+                }
 
-            // For in-memory backends (RWDB), skip freshenCaches.
-            // freshenCaches copies every cached object from archive to
-            // writable—millions of mutex acquisitions that create heavy
-            // contention with consensus threads.  Since RWDB stores
-            // shared_ptrs, cached objects remain valid even after the
-            // old archive backend is cleared.
-            if (!isMemoryBackend_)
-            {
+                if (healthWait() == stopping)
+                    return;
+                JLOG(journal_.debug())
+                    << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+
                 JLOG(journal_.debug()) << "freshening caches";
                 freshenCaches();
                 if (healthWait() == stopping)
                     return;
                 JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+
+                JLOG(journal_.trace()) << "Making a new backend";
+                auto newBackend = makeBackendRotating();
+                JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
+
+                clearCaches(validatedSeq);
+                if (healthWait() == stopping)
+                    return;
+
+                lastRotated = validatedSeq;
+
+                dbRotating_->rotate(
+                    std::move(newBackend),
+                    [&](std::string const& writableName, std::string const& archiveName) {
+                        SavedState savedState;
+                        savedState.writableDb = writableName;
+                        savedState.archiveDb = archiveName;
+                        savedState.lastRotated = lastRotated;
+                        state_db_.setState(savedState);
+                        clearCaches(validatedSeq);
+                    });
+
+                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
             }
-
-            JLOG(journal_.trace()) << "Making a new backend";
-            auto newBackend = makeBackendRotating();
-            JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
-
-            clearCaches(validatedSeq);
-            if (healthWait() == stopping)
-                return;
-
-            lastRotated = validatedSeq;
-
-            dbRotating_->rotate(
-                std::move(newBackend),
-                [&](std::string const& writableName, std::string const& archiveName) {
-                    SavedState savedState;
-                    savedState.writableDb = writableName;
-                    savedState.archiveDb = archiveName;
-                    savedState.lastRotated = lastRotated;
-                    state_db_.setState(savedState);
-
-                    clearCaches(validatedSeq);
-                });
-
-            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }
     }
 }
