@@ -204,10 +204,7 @@ getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
                     return sfLowSponsor;
             }
             // LCOV_EXCL_START
-            XRPL_ASSERT(
-                false,
-                "Should not happen. Owner should be checked before calling "
-                "this function.");
+            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
             // LCOV_EXCL_STOP
         }
         default:
