@@ -161,6 +161,16 @@ array_expected(std::string const& object, std::string const& field)
 }
 
 static inline Json::Value
+array_too_big(std::string const& object, std::string const& field)
+{
+    return RPC::make_error(
+        rpcINVALID_PARAMS,
+        "Field '" + make_name(object, field) +
+            "' exceeds allowed JSON array size of " +
+            std::to_string(maxSTParsedJSONArraySize) + " elements per field.");
+}
+
+static inline Json::Value
 string_expected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -743,6 +753,12 @@ parseLeaf(
                 return ret;
             }
 
+            if (not value.isNull() and value.size() > maxSTParsedJSONArraySize)
+            {
+                error = array_too_big(json_name, fieldName);
+                return ret;
+            }
+
             try
             {
                 STVector256 tail(field);
@@ -770,6 +786,12 @@ parseLeaf(
                 return ret;
             }
 
+            if (not value.isNull() and value.size() > maxSTParsedJSONArraySize)
+            {
+                error = array_too_big(json_name, fieldName);
+                return ret;
+            }
+
             try
             {
                 STPathSet tail(field);
@@ -783,6 +805,15 @@ parseLeaf(
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "]";
                         error = array_expected(json_name, ss.str());
+                        return ret;
+                    }
+
+                    if (not value[i].isNull() and
+                        value[i].size() > maxSTParsedJSONArraySize)
+                    {
+                        std::stringstream ss;
+                        ss << fieldName << "[" << i << "]";
+                        error = array_too_big(json_name, ss.str());
                         return ret;
                     }
 
@@ -980,8 +1011,6 @@ parseLeaf(
     return ret;
 }
 
-static int const maxDepth = 64;
-
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
 parseArray(
@@ -1005,7 +1034,7 @@ parseObject(
         return std::nullopt;
     }
 
-    if (depth > maxDepth)
+    if (depth > maxSTParsedJSONDepth)
     {
         error = too_deep(json_name);
         return std::nullopt;
@@ -1018,7 +1047,6 @@ parseObject(
         for (auto const& fieldName : json.getMemberNames())
         {
             Json::Value const& value = json[fieldName];
-
             auto const& field = SField::getField(fieldName);
 
             if (field == sfInvalid)
@@ -1128,9 +1156,15 @@ parseArray(
         return std::nullopt;
     }
 
-    if (depth > maxDepth)
+    if (depth > maxSTParsedJSONDepth)
     {
         error = too_deep(json_name);
+        return std::nullopt;
+    }
+
+    if (not json.isNull() and json.size() > maxSTParsedJSONArraySize)
+    {
+        error = array_too_big(json_name, "");
         return std::nullopt;
     }
 
@@ -1151,10 +1185,9 @@ parseArray(
             }
 
             // TODO: There doesn't seem to be a nice way to get just the
-            // first/only key in an object without copying all keys into
-            // a vector
+            // first/only key in an object without copying all keys into a
+            // vector
             std::string const objectName(json[i].getMemberNames()[0]);
-            ;
             auto const& nameField(SField::getField(objectName));
 
             if (nameField == sfInvalid)

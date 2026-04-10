@@ -26,6 +26,13 @@
 
 namespace ripple {
 
+/** Maximum JSON object nesting depth permitted during parsing. */
+inline constexpr std::size_t maxSTParsedJSONDepth = 64;
+
+/** Maximum number of elements permitted in any JSON array field during parsing.
+    Requests exceeding this limit are rejected with an invalidParams error. */
+inline constexpr std::size_t maxSTParsedJSONArraySize = 512;
+
 /** Holds the serialized result of parsing an input JSON object.
     This does validation and checking on the provided JSON.
 */
