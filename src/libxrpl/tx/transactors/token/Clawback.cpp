@@ -95,7 +95,7 @@ preclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.get<Issue>().currency));
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -118,8 +118,7 @@ preclaimHelper<Issue>(
     // We can't directly check the balance of trustline because
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
-    if (accountHolds(
-            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
+    if (accountHolds(ctx.view, holder, clawAmount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j) <=
         beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
@@ -200,7 +199,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     AccountID const holder = clawAmount.getIssuer();  // cannot be reference
 
     // Replace the `issuer` field with issuer's account
-    clawAmount.get<Issue>().account = issuer;
+    clawAmount.setIssuer(issuer);
     if (holder == issuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -208,7 +207,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     STAmount const spendableAmount = accountHolds(
         ctx.view(),
         holder,
-        clawAmount.get<Issue>().currency,
+        clawAmount.getCurrency(),
         clawAmount.getIssuer(),
         fhIGNORE_FREEZE,
         ctx.journal);

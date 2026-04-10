@@ -21,7 +21,7 @@ class OfferCreateBuilder;
  * Type: ttOFFER_CREATE (7)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
- * Privileges: mayCreateMPT
+ * Privileges: noPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use OfferCreateBuilder to construct new transactions.
@@ -49,7 +49,6 @@ public:
 
     /**
      * @brief Get sfTakerPays (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -61,7 +60,6 @@ public:
 
     /**
      * @brief Get sfTakerGets (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -196,7 +194,6 @@ public:
 
     /**
      * @brief Set sfTakerPays (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&
@@ -208,7 +205,6 @@ public:
 
     /**
      * @brief Set sfTakerGets (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&

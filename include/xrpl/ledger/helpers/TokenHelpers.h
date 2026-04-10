@@ -31,9 +31,6 @@ enum SpendableHandling { shSIMPLE_BALANCE, shFULL_BALANCE };
 
 enum class WaiveTransferFee : bool { No = false, Yes };
 
-/** Controls whether accountSend is allowed to overflow OutstandingAmount **/
-enum class AllowMPTOverflow : bool { No = false, Yes };
-
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
  * - WeakAuth
@@ -179,16 +176,6 @@ accountFunds(
     FreezeHandling freezeHandling,
     beast::Journal j);
 
-// Overload with AuthHandling to support IOU and MPT.
-[[nodiscard]] STAmount
-accountFunds(
-    ReadView const& view,
-    AccountID const& id,
-    STAmount const& saDefault,
-    FreezeHandling freezeHandling,
-    AuthHandling authHandling,
-    beast::Journal j);
-
 /** Returns the transfer fee as Rate based on the type of token
  * @param view The ledger view
  * @param amount The amount to transfer
@@ -270,8 +257,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No,
-    AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 using MultiplePaymentDestinations = std::vector<std::pair<AccountID, Number>>;
 /** Like accountSend, except one account is sending multiple payments (with the

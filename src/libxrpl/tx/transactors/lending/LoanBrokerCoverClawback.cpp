@@ -123,7 +123,7 @@ determineAsset(
     {
         // We want the asset to match the vault asset, so use the account as the
         // issuer
-        return Issue{amount.get<Issue>().currency, account};
+        return Issue{amount.getCurrency(), account};
     }
 
     return Unexpected(tecWRONG_ASSET);

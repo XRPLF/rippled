@@ -84,10 +84,11 @@ bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2)
+    Issue const& asset,
+    Issue const& asset2)
 {
-    return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
+    return isFrozen(view, account, asset.currency, asset.account) ||
+        isFrozen(view, account, asset2.currency, asset2.account);
 }
 
 bool
@@ -333,19 +334,22 @@ withdrawToDestExceedsLimit(
     if (from == to || to == issuer || isXRP(issuer))
         return tesSUCCESS;
 
-    return amount.asset().visit(
-        [&](Issue const& issue) -> TER {
-            auto const& currency = issue.currency;
-            auto const owed = creditBalance(view, to, issuer, currency);
-            if (owed <= beast::zero)
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            if constexpr (std::is_same_v<TIss, Issue>)
             {
-                auto const limit = creditLimit(view, to, issuer, currency);
-                if (-owed >= limit || amount > (limit + owed))
-                    return tecNO_LINE;
+                auto const& currency = issue.currency;
+                auto const owed = creditBalance(view, to, issuer, currency);
+                if (owed <= beast::zero)
+                {
+                    auto const limit = creditLimit(view, to, issuer, currency);
+                    if (-owed >= limit || amount > (limit + owed))
+                        return tecNO_LINE;
+                }
             }
             return tesSUCCESS;
         },
-        [](MPTIssue const&) -> TER { return tesSUCCESS; });
+        amount.asset().value());
 }
 
 [[nodiscard]] TER

@@ -10,11 +10,7 @@ namespace xrpl {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    return ctx.rules.enabled(featureMPTokensV2) ||
-        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
+    return ammEnabled(ctx.rules);
 }
 
 NotTEC
@@ -47,7 +43,8 @@ AMMDelete::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+    auto const ter =
+        deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
     if (isTesSuccess(ter) || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 

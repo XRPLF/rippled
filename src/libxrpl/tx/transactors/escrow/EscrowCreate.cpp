@@ -72,7 +72,7 @@ escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
     if (amount.native() || amount <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (badCurrency() == amount.get<Issue>().currency)
+    if (badCurrency() == amount.getCurrency())
         return temBAD_CURRENCY;
 
     return tesSUCCESS;
@@ -163,8 +163,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    Issue const& issue = amount.get<Issue>();
-    AccountID const& issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -177,7 +176,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, issue.currency));
+    auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, amount.getCurrency()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -192,23 +191,23 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, account); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, dest); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, issue))
+    if (isFrozen(ctx.view, account, amount.issue()))
         return tecFROZEN;
 
     // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, issue))
+    if (isFrozen(ctx.view, dest, amount.issue()))
         return tecFROZEN;
 
     STAmount const spendableAmount =
-        accountHolds(ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
+        accountHolds(ctx.view, account, amount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)

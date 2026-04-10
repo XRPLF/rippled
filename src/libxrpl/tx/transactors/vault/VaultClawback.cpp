@@ -163,43 +163,44 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        return vaultAsset.visit(
-            [&](MPTIssue const& issue) -> TER {
-                auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
-                if (mptIssue == nullptr)
-                    return tecOBJECT_NOT_FOUND;
-
-                std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                if ((issueFlags & lsfMPTCanClawback) == 0u)
+        return std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                if constexpr (std::is_same_v<TIss, MPTIssue>)
                 {
-                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                           "MPT vault asset.";
-                    return tecNO_PERMISSION;
-                }
+                    auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                    if (mptIssue == nullptr)
+                        return tecOBJECT_NOT_FOUND;
 
+                    std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
+                    if (!(issueFlags & lsfMPTCanClawback))
+                    {
+                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                               "MPT vault asset.";
+                        return tecNO_PERMISSION;
+                    }
+                }
+                else if constexpr (std::is_same_v<TIss, Issue>)
+                {
+                    auto const issuerSle = ctx.view.read(keylet::account(account));
+                    if (!issuerSle)
+                    {
+                        // LCOV_EXCL_START
+                        JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
+                        return tefINTERNAL;
+                        // LCOV_EXCL_STOP
+                    }
+
+                    std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
+                    if (!(issuerFlags & lsfAllowTrustLineClawback) || (issuerFlags & lsfNoFreeze))
+                    {
+                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                               "IOU vault asset.";
+                        return tecNO_PERMISSION;
+                    }
+                }
                 return tesSUCCESS;
             },
-            [&](Issue const&) -> TER {
-                auto const issuerSle = ctx.view.read(keylet::account(account));
-                if (!issuerSle)
-                {
-                    // LCOV_EXCL_START
-                    JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
-                    return tefINTERNAL;
-                    // LCOV_EXCL_STOP
-                }
-
-                std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
-                if (((issuerFlags & lsfAllowTrustLineClawback) == 0u) ||
-                    ((issuerFlags & lsfNoFreeze) != 0u))
-                {
-                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                           "IOU vault asset.";
-                    return tecNO_PERMISSION;
-                }
-
-                return tesSUCCESS;
-            });
+            vaultAsset.value());
     }
 
     // Invalid asset

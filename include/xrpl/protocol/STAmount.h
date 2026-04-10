@@ -164,9 +164,12 @@ public:
     constexpr TIss const&
     get() const;
 
-    template <ValidIssueType TIss>
-    TIss&
-    get();
+    Issue const&
+    issue() const;
+
+    // These three are deprecated
+    Currency const&
+    getCurrency() const;
 
     AccountID const&
     getIssuer() const;
@@ -221,6 +224,9 @@ public:
     // Zero while copying currency and issuer.
     void
     clear(Asset const& asset);
+
+    void
+    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount. */
     void
@@ -460,11 +466,16 @@ STAmount::get() const
     return mAsset.get<TIss>();
 }
 
-template <ValidIssueType TIss>
-TIss&
-STAmount::get()
+inline Issue const&
+STAmount::issue() const
 {
-    return mAsset.get<TIss>();
+    return get<Issue>();
+}
+
+inline Currency const&
+STAmount::getCurrency() const
+{
+    return mAsset.get<Issue>().currency;
 }
 
 inline AccountID const&
@@ -494,13 +505,11 @@ operator bool() const noexcept
 inline STAmount::
 operator Number() const
 {
-    return asset().visit(
-        [&](Issue const& issue) -> Number {
-            if (issue.native())
-                return xrp();
-            return iou();
-        },
-        [&](MPTIssue const&) -> Number { return mpt(); });
+    if (native())
+        return xrp();
+    if (mAsset.holds<MPTIssue>())
+        return mpt();
+    return iou();
 }
 
 inline STAmount&
@@ -557,6 +566,12 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
+}
+
+inline void
+STAmount::setIssuer(AccountID const& uIssuer)
+{
+    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&

@@ -4,7 +4,6 @@
 #include <test/jtx/tags.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Units.h>
@@ -57,7 +56,7 @@ struct None
 // could change that value (however unlikely).
 constexpr XRPAmount dropsPerXRP{1'000'000};
 
-/** Represents an XRP, IOU, or MPT quantity
+/** Represents an XRP or IOU quantity
     This customizes the string conversion and supports
     XRP conversions from integer and floating point.
 */
@@ -232,9 +231,11 @@ public:
 // Specifies an order book
 struct BookSpec
 {
-    xrpl::Asset asset;
+    AccountID account;
+    xrpl::Currency currency;
 
-    BookSpec(xrpl::Asset const& asset_) : asset(asset_)
+    BookSpec(AccountID const& account_, xrpl::Currency const& currency_)
+        : account(account_), currency(currency_)
     {
     }
 };
@@ -249,10 +250,6 @@ struct XRP_t
         an Issue is expected.
     */
     operator Issue() const
-    {
-        return xrpIssue();
-    }
-    operator Asset() const
     {
         return xrpIssue();
     }
@@ -320,7 +317,7 @@ struct XRP_t
     friend BookSpec
     operator~(XRP_t const&)
     {
-        return BookSpec(Issue{xrpCurrency(), xrpAccount()});
+        return BookSpec(xrpAccount(), xrpCurrency());
     }
 };
 
@@ -416,10 +413,6 @@ public:
     {
         return issue();
     }
-    operator Asset() const
-    {
-        return asset();
-    }
     operator PrettyAsset() const
     {
         return asset();
@@ -454,7 +447,7 @@ public:
     friend BookSpec
     operator~(IOU const& iou)
     {
-        return BookSpec(Issue{iou.currency, iou.account.id()});
+        return BookSpec(iou.account.id(), iou.currency);
     }
 };
 
@@ -477,16 +470,6 @@ public:
     xrpl::MPTID issuanceID;
 
     MPT(std::string const& n, xrpl::MPTID const& issuanceID_) : name(n), issuanceID(issuanceID_)
-    {
-    }
-    MPT(std::string const& n = "") : name(n), issuanceID(noMPT())
-    {
-    }
-    MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
-    {
-    }
-    MPT(AccountID const& account, std::int32_t seq = 0)
-        : name(""), issuanceID(makeMptID(seq, account))
     {
     }
 
@@ -528,14 +511,6 @@ public:
     {
         return asset();
     }
-    operator xrpl::Asset() const
-    {
-        return mpt();
-    }
-    operator xrpl::MPTID() const
-    {
-        return mpt();
-    }
 
     template <class T>
         requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
@@ -554,13 +529,15 @@ public:
     None
     operator()(none_t) const
     {
-        return {noMPT()};
+        return {mptIssue()};
     }
 
     friend BookSpec
     operator~(MPT const& mpt)
     {
-        return BookSpec{Asset{mpt}};
+        assert(false);
+        Throw<std::logic_error>("MPT is not supported");
+        return BookSpec{beast::zero, noCurrency()};
     }
 };
 
@@ -600,7 +577,7 @@ struct AnyAmount
     {
         if (!is_any)
             return;
-        value.get<Issue>().account = id;
+        value.setIssuer(id);
     }
 };
 

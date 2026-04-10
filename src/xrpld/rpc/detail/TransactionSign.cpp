@@ -206,10 +206,7 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) &&
-        (!doPath ||
-         (!app.getOpenLedger().current()->rules().enabled(featureMPTokensV2) &&
-          amount.holds<MPTIssue>())))
+    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -245,11 +242,9 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer if Issue.
+            // If no SendMax, default to Amount with sender as issuer.
             sendMax = amount;
-            sendMax.asset().visit(
-                [&](Issue const&) { sendMax.get<Issue>().account = srcAddressID; },
-                [](MPTIssue const&) {});
+            sendMax.setIssuer(srcAddressID);
         }
 
         if (sendMax.native() && amount.native())
@@ -265,11 +260,11 @@ checkPayment(
             if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
+                    std::make_shared<RippleLineCache>(ledger, app.getJournal("RippleLineCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.asset(),
-                    sendMax.getIssuer(),
+                    sendMax.issue().currency,
+                    sendMax.issue().account,
                     amount,
                     std::nullopt,
                     domain,
@@ -280,7 +275,7 @@ checkPayment(
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet const paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
                 }
             }
 

@@ -212,12 +212,12 @@ requiredUInt192(
 }
 
 template <>
-inline std::optional<Asset>
+inline std::optional<Issue>
 parse(Json::Value const& param)
 {
     try
     {
-        return assetFromJson(param);
+        return issueFromJson(param);
     }
     catch (std::runtime_error const&)
     {
@@ -225,10 +225,10 @@ parse(Json::Value const& param)
     }
 }
 
-inline Expected<Asset, Json::Value>
-requiredAsset(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+inline Expected<Issue, Json::Value>
+requiredIssue(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
 {
-    return required<Asset>(params, fieldName, err, "Asset");
+    return required<Issue>(params, fieldName, err, "Issue");
 }
 
 inline Expected<STXChainBridge, Json::Value>

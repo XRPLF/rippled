@@ -109,34 +109,10 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 Book book;
 
-                if (sle->isFieldPresent(sfTakerPaysCurrency))
-                {
-                    Issue issue;
-                    issue.currency = sle->getFieldH160(sfTakerPaysCurrency);
-                    issue.account = sle->getFieldH160(sfTakerPaysIssuer);
-                    book.in = issue;
-                }
-                else
-                {
-                    XRPL_ASSERT(
-                        sle->isFieldPresent(sfTakerPaysMPT),
-                        "OrderBookDB::update, must be TakerPaysMPT");
-                    book.in = sle->getFieldH192(sfTakerPaysMPT);
-                }
-                if (sle->isFieldPresent(sfTakerGetsCurrency))
-                {
-                    Issue issue;
-                    issue.currency = sle->getFieldH160(sfTakerGetsCurrency);
-                    issue.account = sle->getFieldH160(sfTakerGetsIssuer);
-                    book.out = issue;
-                }
-                else
-                {
-                    XRPL_ASSERT(
-                        sle->isFieldPresent(sfTakerGetsMPT),
-                        "OrderBookDB::update, must be TakerGetsMPT");
-                    book.out = sle->getFieldH192(sfTakerGetsMPT);
-                }
+                book.in.currency = sle->getFieldH160(sfTakerPaysCurrency);
+                book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
+                book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
+                book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
@@ -161,9 +137,9 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
             }
             else if (sle->getType() == ltAMM)
             {
-                auto const asset1 = (*sle)[sfAsset];
-                auto const asset2 = (*sle)[sfAsset2];
-                auto addBook = [&](Asset const& in, Asset const& out) {
+                auto const issue1 = (*sle)[sfAsset].get<Issue>();
+                auto const issue2 = (*sle)[sfAsset2].get<Issue>();
+                auto addBook = [&](Issue const& in, Issue const& out) {
                     allBooks[in].insert(out);
 
                     if (isXRP(out))
@@ -171,8 +147,8 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 
                     ++cnt;
                 };
-                addBook(asset1, asset2);
-                addBook(asset2, asset1);
+                addBook(issue1, issue2);
+                addBook(issue2, issue1);
             }
         }
     }
@@ -224,7 +200,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
@@ -238,17 +214,17 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
                 ret.reserve(books.size());
 
                 for (auto const& gets : books)
-                    ret.emplace_back(asset, gets, domain);
+                    ret.emplace_back(issue, gets, domain);
             }
         };
 
         if (!domain)
         {
-            getBooks(allBooks_, asset);
+            getBooks(allBooks_, issue);
         }
         else
         {
-            getBooks(domainBooks_, std::make_pair(asset, *domain));
+            getBooks(domainBooks_, std::make_pair(issue, *domain));
         }
     }
 
@@ -256,18 +232,18 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
 }
 
 int
-OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
 {
     std::lock_guard const sl(mLock);
 
     if (!domain)
     {
-        if (auto it = allBooks_.find(asset); it != allBooks_.end())
+        if (auto it = allBooks_.find(issue); it != allBooks_.end())
             return static_cast<int>(it->second.size());
     }
     else
     {
-        if (auto it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
+        if (auto it = domainBooks_.find({issue, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -275,12 +251,12 @@ OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& d
 }
 
 bool
-OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& domain)
+OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> const& domain)
 {
     std::lock_guard const sl(mLock);
     if (domain)
-        return xrpDomainBooks_.contains({asset, *domain});
-    return xrpBooks_.contains(asset);
+        return xrpDomainBooks_.contains({issue, *domain});
+    return xrpBooks_.contains(issue);
 }
 
 BookListeners::pointer
@@ -344,8 +320,8 @@ OrderBookDBImpl::processTxn(
                         data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
-                            {data->getFieldAmount(sfTakerGets).asset(),
-                             data->getFieldAmount(sfTakerPays).asset(),
+                            {data->getFieldAmount(sfTakerGets).issue(),
+                             data->getFieldAmount(sfTakerPays).issue(),
                              (*data)[~sfDomainID]});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);

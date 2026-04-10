@@ -5,7 +5,6 @@
 #include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/detail/AccountAssets.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -17,9 +16,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 
 namespace xrpl {
 namespace test {
@@ -846,7 +848,7 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -888,14 +890,15 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue())) == nullptr);
     }
 
     void
@@ -938,13 +941,14 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue())) == nullptr);
     }
 
     void

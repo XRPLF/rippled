@@ -128,16 +128,15 @@ ValidAMM::finalizeCreate(
         auto const [amount, amount2] = ammPoolHolds(
             view,
             *ammAccount_,
-            tx[sfAmount].asset(),
-            tx[sfAmount2].asset(),
+            tx[sfAmount].get<Issue>(),
+            tx[sfAmount2].get<Issue>(),
             fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) != *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " " << amount2 << " "
                             << *lptAMMBalanceAfter_;
@@ -189,7 +188,12 @@ ValidAMM::generalInvariant(
     beast::Journal const& j) const
 {
     auto const [amount, amount2] = ammPoolHolds(
-        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+        view,
+        *ammAccount_,
+        tx[sfAsset].get<Issue>(),
+        tx[sfAsset2].get<Issue>(),
+        fhIGNORE_FREEZE,
+        j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
     // all balances are greater than zero

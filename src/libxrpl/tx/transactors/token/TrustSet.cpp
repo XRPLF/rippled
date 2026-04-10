@@ -82,7 +82,7 @@ TrustSet::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.get<Issue>().currency)
+    if (badCurrency() == saLimitAmount.getCurrency())
     {
         JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
@@ -135,8 +135,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
-        keylet::line(
-            tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
+        keylet::line(tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
 
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
@@ -160,7 +159,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
         : sleRippleState->getFieldAmount(sfLowLimit);
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.get<Issue>().account = tx[sfAccount];
+    saLimitAllow.setIssuer(tx[sfAccount]);
 
     if (curLimit != saLimitAllow)
         return terNO_DELEGATE_PERMISSION;
@@ -189,7 +188,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
 
-    auto const currency = saLimitAmount.get<Issue>().currency;
+    auto const currency = saLimitAmount.getCurrency();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
     if (id == uDstAccountID)
@@ -242,7 +241,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
                 {
                     return tecAMM_EMPTY;
                 }
-                if (lpTokens.get<Issue>().currency != saLimitAmount.get<Issue>().currency)
+                if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
                 {
                     return tecNO_PERMISSION;
                 }
@@ -318,7 +317,7 @@ TrustSet::doApply()
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency(saLimitAmount.get<Issue>().currency);
+    Currency const currency(saLimitAmount.getCurrency());
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
@@ -378,7 +377,7 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.get<Issue>().account = account_;
+    saLimitAllow.setIssuer(account_);
 
     SLE::pointer const sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));

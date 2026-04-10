@@ -41,8 +41,7 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Issue const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::line(receiver, issue);
+    Keylet const trustLineKey = keylet::line(receiver, amount.issue());
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -65,9 +64,9 @@ escrowUnlockApplyHelper<Issue>(
             return tecNO_LINE_INSUF_RESERVE;
         }
 
-        Currency const currency = issue.currency;
-        STAmount initialBalance(issue);
-        initialBalance.get<Issue>().account = noAccount();
+        Currency const currency = amount.getCurrency();
+        STAmount initialBalance(amount.issue());
+        initialBalance.setIssuer(noAccount());
 
         if (TER const ter = trustCreate(
                 view,                                           // payment sandbox
@@ -114,8 +113,7 @@ escrowUnlockApplyHelper<Issue>(
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
         // compute transfer fee, if any
-        auto const xferFee =
-            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), true);
+        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.issue(), true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }

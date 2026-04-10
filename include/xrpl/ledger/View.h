@@ -63,8 +63,8 @@ isVaultPseudoAccountFrozen(
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2);
+    Issue const& asset,
+    Issue const& asset2);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>

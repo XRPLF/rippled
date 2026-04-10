@@ -224,7 +224,7 @@ private:
         AccountID const& ammAccount,
         STAmount const& amount,
         STAmount const& amount2,
-        Asset const& lptIssue,
+        Issue const& lptIssue,
         std::uint16_t tfee);
 };
 
