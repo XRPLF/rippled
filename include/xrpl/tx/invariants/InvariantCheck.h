@@ -402,6 +402,7 @@ using InvariantChecks = std::tuple<
     ValidVault,
     ValidConfidentialMPToken,
     ValidMPTPayment,
+    ValidMPTTransfer,
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField>;
 

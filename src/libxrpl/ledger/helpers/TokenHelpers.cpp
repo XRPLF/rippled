@@ -41,11 +41,27 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
 }
 
+TER
+checkGlobalFrozen(ReadView const& view, Asset const& asset)
+{
+    if (isGlobalFrozen(view, asset))
+        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+    return tesSUCCESS;
+}
+
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
         [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
+}
+
+TER
+checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    if (isIndividualFrozen(view, account, asset))
+        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+    return tesSUCCESS;
 }
 
 bool

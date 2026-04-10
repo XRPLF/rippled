@@ -26,10 +26,10 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
 // allowed.
 struct MPTMutabilityFlags
 {
-    std::uint32_t setFlag;
-    std::uint32_t clearFlag;
-    std::uint32_t mutabilityFlag;
-    std::uint32_t targetFlag;
+    std::uint32_t setFlag{};
+    std::uint32_t clearFlag{};
+    std::uint32_t mutabilityFlag{};
+    std::uint32_t targetFlag{};
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
@@ -222,6 +222,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
+        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
+            return tecNO_PERMISSION;
         if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
             (*mutableFlags & tmfMPTClearCanConfidentialAmount))
         {

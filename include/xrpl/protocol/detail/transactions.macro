@@ -1080,7 +1080,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 
 /** This transaction type converts into confidential MPT balance. */
 #if TRANSACTION_INCLUDE
-#include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
+#   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
     Delegation::delegable,
@@ -1099,7 +1099,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
 
 /** This transaction type merges MPT inbox. */
 #if TRANSACTION_INCLUDE
-#include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
+#   include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
     Delegation::delegable,
@@ -1111,7 +1111,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
 
 /** This transaction type converts back into public MPT balance. */
 #if TRANSACTION_INCLUDE
-#include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
+#   include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
     Delegation::delegable,
@@ -1129,7 +1129,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
 }))
 
 #if TRANSACTION_INCLUDE
-#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
+#   include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
     Delegation::delegable,
@@ -1149,7 +1149,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
 }))
 
 #if TRANSACTION_INCLUDE
-#include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
+#   include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     Delegation::delegable,
