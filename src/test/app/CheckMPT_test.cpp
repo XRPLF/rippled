@@ -1813,10 +1813,10 @@ class CheckMPT_test : public beast::unit_test::suite
             // Use offers to automatically create MPT.
             MPT const OF4 = gw1["OF4"];
             gw1.set(OF4, tfMPTLock);
-            env(offer(gw1, XRP(92), OF4(92)), ter(tecFROZEN));
+            env(offer(gw1, XRP(92), OF4(92)), ter(tecLOCKED));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(OF4, alice)) == nullptr);
-            env(offer(alice, OF4(92), XRP(92)), ter(tecFROZEN));
+            env(offer(alice, OF4(92), XRP(92)), ter(tecLOCKED));
             env.close();
 
             // No one's owner count should have changed.
@@ -1904,10 +1904,10 @@ class CheckMPT_test : public beast::unit_test::suite
             // Use offers to automatically create MPT.
             MPT const OF4 = gw1["OF4"];
             gw1.set(OF4, tfMPTLock);
-            env(offer(alice, XRP(91), OF4(91)), ter(tecFROZEN));
+            env(offer(alice, XRP(91), OF4(91)), ter(tecLOCKED));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(OF4, alice)) == nullptr);
-            env(offer(bob, OF4(91), XRP(91)), ter(tecFROZEN));
+            env(offer(bob, OF4(91), XRP(91)), ter(tecLOCKED));
             env.close();
 
             // No one's owner count should have changed.

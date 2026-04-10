@@ -99,7 +99,7 @@ private:
                  .pay = 30'000,
                  .flags = tfMPTCanLock | MPTDEXFlags});
             USD.set({.flags = tfMPTLock});
-            AMM const ammAliceFail(env, alice, XRP(10'000), USD(10'000), ter(tecFROZEN));
+            AMM const ammAliceFail(env, alice, XRP(10'000), USD(10'000), ter(tecLOCKED));
             USD.set({.flags = tfMPTUnlock});
             AMM const ammAlice(env, alice, XRP(10'000), USD(10'000));
         }
@@ -303,7 +303,7 @@ private:
                  .pay = 30'000,
                  .flags = tfMPTCanLock | MPTDEXFlags});
             BTC.set({.flags = tfMPTLock});
-            AMM const ammAlice(env, alice, USD(10'000), BTC(10'000), ter(tecFROZEN));
+            AMM const ammAlice(env, alice, USD(10'000), BTC(10'000), ter(tecLOCKED));
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
@@ -320,7 +320,7 @@ private:
             BTC.set({.holder = alice, .flags = tfMPTLock});
 
             // alice's token is locked
-            AMM const ammAlice(env, alice, USD(10'000), BTC(10'000), ter(tecFROZEN));
+            AMM const ammAlice(env, alice, USD(10'000), BTC(10'000), ter(tecLOCKED));
             BEAST_EXPECT(!ammAlice.ammExists());
 
             // bob can create
@@ -645,14 +645,14 @@ private:
             BTC.set({.flags = tfMPTLock});
 
             ammAlice.deposit(
-                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             ammAlice.deposit(
-                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
-            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
 
-            ammAlice.deposit(carol, USD(100), BTC(100), std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, USD(100), BTC(100), std::nullopt, std::nullopt, ter(tecLOCKED));
         }
 
         // Individually lock MPT or freeze IOU (AMM) with IOU/MPT AMM
@@ -673,20 +673,19 @@ private:
 
             // Carol can not deposit locked mpt
             ammAlice.deposit(
-                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
-            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             if (!features[featureAMMClawback])
             {
-                ammAlice.deposit(
-                    carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
+                ammAlice.deposit(carol, USD(100), std::nullopt, std::nullopt, std::nullopt);
             }
             else
             {
-                // Carol can not deposit non-forzen token either
+                // Carol can not deposit non-frozen token either
                 ammAlice.deposit(
-                    carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                    carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
             }
 
             // Alice can deposit because she's not individually locked
@@ -727,9 +726,9 @@ private:
             ammAlice.deposit(carol, USD(100), std::nullopt, std::nullopt, std::nullopt);
 
             // Can not deposit locked token
-            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
             ammAlice.deposit(
-                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // Unlock AMM MPT
             BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
@@ -761,10 +760,10 @@ private:
             // Carol's BTC is locked
             BTC.set({.holder = carol, .flags = tfMPTLock});
             ammAlice.deposit(
-                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             ammAlice.deposit(
-                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // Unlock carol's BTC
             BTC.set({.holder = carol, .flags = tfMPTUnlock});
@@ -780,9 +779,9 @@ private:
             ammAlice.deposit(carol, USD(100), std::nullopt, std::nullopt, std::nullopt);
 
             // Can not deposit locked token BTC
-            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
             ammAlice.deposit(
-                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, BTC(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // Unlock AMM MPT BTC
             BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
@@ -797,9 +796,9 @@ private:
             ammAlice.deposit(carol, BTC(100), std::nullopt, std::nullopt, std::nullopt);
 
             // Can not deposit locked token USD
-            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(carol, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
             ammAlice.deposit(
-                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecFROZEN));
+                carol, USD(100), std::nullopt, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // Unlock AMM MPT USD
             USD.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
@@ -853,7 +852,7 @@ private:
 
             AMM amm(env, gw, XRP(10'000), BTC(10'000));
 
-            amm.deposit({.account = alice, .asset1In = BTC(10), .err = ter(tecNO_PERMISSION)});
+            amm.deposit({.account = alice, .asset1In = BTC(10), .err = ter(tecNO_AUTH)});
         }
 
         // Insufficient XRP balance
@@ -2211,7 +2210,7 @@ private:
                     .account = alice,
                     .asset1Out = BTC(100),
                     .assets = {{XRP, BTC}},
-                    .err = ter(tecNO_PERMISSION)});
+                    .err = ter(tecNO_AUTH)});
         }
 
         // Globally locked MPT
@@ -2232,8 +2231,8 @@ private:
             BTC.set({.flags = tfMPTLock});
 
             ammAlice.withdraw(
-                alice, MPT(ammAlice[1])(100), std::nullopt, std::nullopt, ter(tecFROZEN));
-            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+                alice, MPT(ammAlice[1])(100), std::nullopt, std::nullopt, ter(tecLOCKED));
+            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // can single withdraw the other asset
             ammAlice.withdraw({.account = alice, .asset1Out = XRP(100)});
@@ -2261,8 +2260,8 @@ private:
 
             // Alice's BTC is locked
             BTC.set({.holder = alice, .flags = tfMPTLock});
-            ammAlice.withdraw(alice, 1000, std::nullopt, std::nullopt, ter(tecFROZEN));
-            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.withdraw(alice, 1000, std::nullopt, std::nullopt, ter(tecLOCKED));
+            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // can withdraw the other asset
             ammAlice.withdraw(alice, USD(100), std::nullopt, std::nullopt);
@@ -2290,8 +2289,8 @@ private:
             // Alice's BTC is locked
             BTC.set({.holder = alice, .flags = tfMPTLock});
 
-            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
-            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
+            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecLOCKED));
             // can still single withdraw the unlocked other asset
             ammAlice.withdraw(alice, USD(100), std::nullopt, std::nullopt);
 
@@ -2310,8 +2309,8 @@ private:
             ammAlice.withdraw(alice, USD(100), std::nullopt, std::nullopt);
 
             // Can not withdraw locked token BTC
-            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecFROZEN));
-            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.withdraw(alice, 1'000, std::nullopt, std::nullopt, ter(tecLOCKED));
+            ammAlice.withdraw(alice, BTC(100), std::nullopt, std::nullopt, ter(tecLOCKED));
 
             // Unlock AMM MPT
             BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
@@ -6807,33 +6806,33 @@ private:
             cb(amm, BTC);
         };
 
-        // Deposit two assets, one of which is frozen,
-        // then we should get tecFROZEN error.
+        // Deposit two assets, one of which is locked,
+        // then we should get tecLOCKED error.
         {
             Env env(*this);
             testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
-                amm.deposit(alice, BTC(100), XRP(100), std::nullopt, tfTwoAsset, ter(tecFROZEN));
+                amm.deposit(alice, BTC(100), XRP(100), std::nullopt, tfTwoAsset, ter(tecLOCKED));
             });
         }
 
-        // Deposit one asset, which is the frozen token,
-        // then we should get tecFROZEN error.
+        // Deposit one asset, which is the frozen locked,
+        // then we should get tecLOCKED error.
         {
             Env env(*this);
             testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
                 amm.deposit(
-                    alice, BTC(100), std::nullopt, std::nullopt, tfSingleAsset, ter(tecFROZEN));
+                    alice, BTC(100), std::nullopt, std::nullopt, tfSingleAsset, ter(tecLOCKED));
             });
         }
 
         // Deposit one asset which is not the frozen token,
-        // but the other asset is frozen. We should get tecFROZEN error
+        // but the other asset is frozen. We should get tecLOCKED error
         // when feature AMMClawback is enabled.
         {
             Env env(*this);
             testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
                 amm.deposit(
-                    alice, XRP(100), std::nullopt, std::nullopt, tfSingleAsset, ter(tecFROZEN));
+                    alice, XRP(100), std::nullopt, std::nullopt, tfSingleAsset, ter(tecLOCKED));
             });
         }
     }

@@ -24,7 +24,6 @@
 
 namespace xrpl {
 namespace test {
-
 class Invariants_test : public beast::unit_test::suite
 {
     // The optional Preclose function is used to process additional transactions
@@ -140,7 +139,11 @@ class Invariants_test : public beast::unit_test::suite
         for (TER const& terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
-            BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
+            if (!BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual))))
+            {
+                std::cout << terExpect << " " << terActual << " "
+                          << std::to_string(TERtoInt(terActual)) << std::endl;
+            }
             auto const messages = sink.messages().str();
 
             if (!isTesSuccess(terActual))
@@ -154,7 +157,10 @@ class Invariants_test : public beast::unit_test::suite
             // std::cerr << messages << '\n';
             for (auto const& m : expect_logs)
             {
-                BEAST_EXPECTS(messages.find(m) != std::string::npos, m);
+                if (!BEAST_EXPECTS(messages.find(m) != std::string::npos, m))
+                {
+                    std::cout << messages << " " << m << std::endl;
+                }
             }
         }
     }
@@ -4000,6 +4006,81 @@ class Invariants_test : public beast::unit_test::suite
                     id = mpt.issuanceID();
                     return true;
                 });
+        }
+
+        // Invalid transfer
+        std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
+            std::make_pair(ttAMM_WITHDRAW, false),
+            std::make_pair(ttPAYMENT, false),
+            std::make_pair(ttPAYMENT, true)};
+        for (auto const enabled : {true, false})
+        {
+            for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
+            {
+                for (auto const flag :
+                     {static_cast<std::uint32_t>(lsfMPTLocked),
+                      ~lsfMPTCanTransfer,
+                      ~lsfMPTCanTrade,
+                      0u})
+                {
+                    MPTID id{};
+                    auto const isSuccess = !enabled || flag == 0 ||
+                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade));
+                    std::pair<TER, TER> const error = isSuccess
+                        ? std::make_pair(TER(tesSUCCESS), TER(tesSUCCESS))
+                        : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
+                    doInvariantCheck(
+                        {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
+                        [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                            auto update = [&](AccountID const& a, std::uint64_t v) {
+                                auto sle = ac.view().peek(keylet::mptoken(id, a));
+                                if (!sle)
+                                    return false;
+                                sle->at(sfMPTAmount) = v;
+                                ac.view().update(sle);
+                                return true;
+                            };
+                            auto issuanceSle = ac.view().peek(keylet::mptIssuance(id));
+                            if (!issuanceSle)
+                                return false;
+                            auto const flags = issuanceSle->at(sfFlags);
+                            if (flag == lsfMPTLocked)
+                            {
+                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
+                            }
+                            else if (flag != 0u)
+                            {
+                                issuanceSle->at(sfFlags) = flags & flag;
+                            }
+                            issuanceSle->at(sfOutstandingAmount) = 200;
+                            ac.view().update(issuanceSle);
+                            return update(A1, 101) && update(A2, 99);
+                        },
+                        XRPAmount{},
+                        STTx{
+                            tx,
+                            [&](STObject& tx) {
+                                if (crossCurrencyPayment)
+                                {
+                                    tx.setFieldAmount(
+                                        sfSendMax, STAmount(MPTAmount{100}, MPTIssue{id}));
+                                }
+                            }},
+                        {error.first, error.second},
+                        [&](Account const& A1, Account const& A2, Env& env) {
+                            Account const gw("gw");
+                            env.fund(XRP(1'000), gw);
+                            MPTTester const USD(
+                                {.env = env, .issuer = gw, .holders = {A1, A2}, .pay = 100});
+                            id = USD.issuanceID();
+                            if (!enabled)
+                            {
+                                env.disableFeature(featureMPTokensV2);
+                            }
+                            return true;
+                        });
+                }
+            }
         }
     }
 
