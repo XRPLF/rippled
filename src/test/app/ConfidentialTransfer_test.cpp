@@ -71,19 +71,15 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     std::string
-    getTrivialSendProofHex(size_t nRecipients)
+    getTrivialSendProofHex()
     {
-        size_t const sizeEquality = getEqualityProofSize(nRecipients);
-        size_t const totalSize =
-            sizeEquality + (2 * ecPedersenProofLength) + ecDoubleBulletproofLength;
+        Buffer buf(ecCompactSendProofLength);
+        std::memset(buf.data(), 0, ecCompactSendProofLength);
 
-        Buffer buf(totalSize);
-        std::memset(buf.data(), 0, totalSize);
-
-        for (std::size_t i = 0; i < totalSize; i += ecGamalEncryptedLength)
+        for (std::size_t i = 0; i < ecCompactSendProofLength; i += ecGamalEncryptedLength)
         {
             buf.data()[i] = ecCompressedPrefixEvenY;
-            if (i + ecGamalEncryptedLength - 1 < totalSize)
+            if (i + ecGamalEncryptedLength - 1 < ecCompactSendProofLength)
                 buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
         }
 
@@ -2113,7 +2109,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2125,7 +2121,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .destEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2137,7 +2133,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .issuerEncryptedAmt = makeZeroBuffer(ecGamalEncryptedTotalLength),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2160,7 +2156,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = makeZeroBuffer(100),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temMALFORMED,
@@ -2171,7 +2167,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = makeZeroBuffer(100),
                 .err = temMALFORMED,
@@ -2182,7 +2178,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = makeZeroBuffer(ecPedersenCommitmentLength),
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temMALFORMED,
@@ -2193,7 +2189,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = makeZeroBuffer(ecPedersenCommitmentLength),
                 .err = temMALFORMED,
@@ -2255,7 +2251,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(4),
+                .proof = getTrivialSendProofHex(),
                 .auditorEncryptedAmt = makeZeroBuffer(10),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2267,7 +2263,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(4),
+                .proof = getTrivialSendProofHex(),
                 .auditorEncryptedAmt = getBadCiphertext(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2382,7 +2378,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfIssuerEncryptedAmount] = strHex(getTrivialCiphertext());
             jv[sfAmountCommitment] = strHex(getTrivialCommitment());
             jv[sfBalanceCommitment] = strHex(getTrivialCommitment());
-            jv[sfZKProof] = getTrivialSendProofHex(3);
+            jv[sfZKProof] = getTrivialSendProofHex();
 
             env(jv, ter(tecOBJECT_NOT_FOUND));
         }
@@ -2394,7 +2390,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = unknown,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = getTrivialCiphertext(),
                 .destEncryptedAmt = getTrivialCiphertext(),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
@@ -2410,7 +2406,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = dave,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = getTrivialCiphertext(),
                 .destEncryptedAmt = getTrivialCiphertext(),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
@@ -2422,7 +2418,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = dave,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = getTrivialCiphertext(),
                 .destEncryptedAmt = getTrivialCiphertext(),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
@@ -2438,7 +2434,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = eve,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = getTrivialCiphertext(),
                 .destEncryptedAmt = getTrivialCiphertext(),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
@@ -2702,7 +2698,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .err = tecBAD_PROOF,
             });
         }
@@ -2713,7 +2709,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(4),
+                .proof = getTrivialSendProofHex(),
                 .auditorEncryptedAmt = getTrivialCiphertext(),
                 .err = tecNO_PERMISSION,
             });
@@ -2773,7 +2769,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(4),
+                .proof = getTrivialSendProofHex(),
                 .auditorEncryptedAmt = getTrivialCiphertext(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -2987,7 +2983,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 0,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .senderEncryptedAmt = mptAlice.encryptAmount(bob, 0, bf),
             .destEncryptedAmt = mptAlice.encryptAmount(carol, 0, bf),
             .issuerEncryptedAmt = mptAlice.encryptAmount(alice, 0, bf),
@@ -3005,7 +3001,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 0,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .senderEncryptedAmt = mptAlice.encryptAmount(bob, 0, bf2),
             .destEncryptedAmt = mptAlice.encryptAmount(carol, 0, bf2),
             .issuerEncryptedAmt = mptAlice.encryptAmount(alice, 0, bf2),
@@ -4976,7 +4972,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfHolder] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[sfMPTAmount] = std::to_string(10);
-            std::string const dummyProof(196, '0');
+            std::string const dummyProof(ecCompactClawbackProofLength * 2, '0');
             jv[sfZKProof] = dummyProof;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
 
@@ -5562,25 +5558,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
         auto const version = mptAlice.getMPTokenVersion(bob);
 
-        // These tests verify that the pedersen linkage proof validation
+        // These tests verify that the compact ConvertBack proof validation
         // correctly rejects proofs generated with incorrect parameters.
-        // The pedersen linkage proof proves that the balance commitment
-        // PC = balance*G + rho*H is derived from the holder's encrypted
-        // spending balance.
-
-        // Helper to combine pedersen proof and bulletproof
-        auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
-            Buffer combinedProof(pedersenProof.size() + bulletproof.size());
-            std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
-            std::memcpy(
-                combinedProof.data() + pedersenProof.size(),
-                bulletproof.data(),
-                bulletproof.size());
-            return combinedProof;
-        };
-
-        auto const holderPubKey = mptAlice.getPubKey(bob);
-        BEAST_EXPECT(holderPubKey.has_value());
+        // The compact proof simultaneously verifies balance ownership,
+        // commitment linkage, and that remaining balance is non-negative.
 
         // Test 1: Proof generated with wrong pedersen commitment value.
         // The proof uses PC(1, rho) but the transaction submits PC(balance, rho).
@@ -5710,25 +5691,18 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // sequence, issuanceID, amount, version). Using a different context hash
         // makes the proof invalid for this transaction, preventing replay attacks.
         {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
             uint256 const badContextHash{1};
-            Buffer const pedersenProof = mptAlice.getBalanceLinkageProof(
+
+            Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
+                amt,
                 badContextHash,  // wrong context hash
-                *holderPubKey,
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
-
-            // Bulletproof uses correct context hash so only pedersen proof fails
-            Buffer const bulletproof =
-                mptAlice.getBulletproof({*spendingBalance - amt}, {pcBlindingFactor}, contextHash);
-
-            Buffer const proof = combineProofs(pedersenProof, bulletproof);
 
             mptAlice.convertBack({
                 .account = bob,
@@ -5828,110 +5802,88 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
         auto const version = mptAlice.getMPTokenVersion(bob);
 
-        // These tests verify that the bulletproof (range proof) validation
+        // These tests verify that the compact ConvertBack proof (sigma + bulletproof)
         // correctly rejects proofs generated with incorrect parameters.
-        // The bulletproof proves that the remaining balance (balance - amount)
-        // is non-negative, i.e., in the range [0, 2^64-1]. This prevents
-        // overdrafts where a user tries to convert back more than they have.
+        // The compact proof simultaneously verifies balance ownership, commitment
+        // linkage, and that the remaining balance is non-negative.
 
-        // Helper to combine pedersen proof and bulletproof
-        auto const combineProofs = [](Buffer const& pedersenProof, Buffer const& bulletproof) {
-            Buffer combinedProof(pedersenProof.size() + bulletproof.size());
-            std::memcpy(combinedProof.data(), pedersenProof.data(), pedersenProof.size());
-            std::memcpy(
-                combinedProof.data() + pedersenProof.size(),
-                bulletproof.data(),
-                bulletproof.size());
-            return combinedProof;
-        };
+        // Test 1: Proof generated with wrong balance value.
+        // The sigma proof claims balance=1 but the spending balance contains the
+        // actual balance. The compact proof's balance-linkage check fails.
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
 
-        auto const holderPubKey = mptAlice.getPubKey(bob);
-        BEAST_EXPECT(holderPubKey.has_value());
-
-        // Helper to generate pedersen proof with correct parameters.
-        // The pedersen proof links the encrypted balance to the pedersen commitment.
-        auto const getPedersenProof = [&](uint256 const& contextHash) {
-            return mptAlice.getBalanceLinkageProof(
+            Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
+                amt,
                 contextHash,
-                *holderPubKey,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = 1,  // wrong balance (actual balance is ~40)
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = amt,
+                .proof = proof,
+                .holderEncryptedAmt = bobCiphertext,
+                .issuerEncryptedAmt = issuerCiphertext,
+                .blindingFactor = blindingFactor,
+                .pedersenCommitment = pedersenCommitment,
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        // Test 2: Proof generated with wrong blinding factor (rho).
+        // The compact sigma proof must use the same blinding factor (rho) as the
+        // Pedersen commitment PC = balance*G + rho*H. Using a different rho
+        // creates an inconsistency the verifier detects.
+        {
+            uint256 const contextHash =
+                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
+
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                contextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpendingBalance,
+                    .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
+                });
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = amt,
+                .proof = proof,
+                .holderEncryptedAmt = bobCiphertext,
+                .issuerEncryptedAmt = issuerCiphertext,
+                .blindingFactor = blindingFactor,
+                .pedersenCommitment = pedersenCommitment,
+                .err = tecBAD_PROOF,
+            });
+        }
+
+        // Test 3: Proof generated with wrong context hash.
+        // The context hash binds the proof to a specific transaction (account,
+        // sequence, issuanceID, amount, version). Using a different context hash
+        // makes the proof invalid for this transaction, preventing replay attacks.
+        {
+            uint256 const badContextHash{1};
+            Buffer const proof = mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                badContextHash,  // wrong context hash
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
-        };
-
-        // Test 1: Bulletproof generated with wrong remaining balance.
-        // The bulletproof claims remaining balance is 1, but the pedersen
-        // commitment was created with (balance - amount). The verifier computes
-        // PC_rem = PC - amount*G and checks if the bulletproof matches, which fails.
-        {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
-
-            Buffer const bulletproof = mptAlice.getBulletproof(
-                {1},  // wrong remaining balance
-                {pcBlindingFactor},
-                contextHash);
-
-            Buffer const proof = combineProofs(getPedersenProof(contextHash), bulletproof);
-
-            mptAlice.convertBack({
-                .account = bob,
-                .amt = amt,
-                .proof = proof,
-                .holderEncryptedAmt = bobCiphertext,
-                .issuerEncryptedAmt = issuerCiphertext,
-                .blindingFactor = blindingFactor,
-                .pedersenCommitment = pedersenCommitment,
-                .err = tecBAD_PROOF,
-            });
-        }
-
-        // Test 2: Bulletproof generated with wrong blinding factor.
-        // The bulletproof must use the same blinding factor (rho) as the pedersen
-        // commitment PC = (balance - amount)*G + rho*H. Using a different rho
-        // creates a commitment mismatch and verification fails.
-        {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
-
-            Buffer const bulletproof = mptAlice.getBulletproof(
-                {*spendingBalance - amt},
-                {generateBlindingFactor()},  // wrong blinding factor
-                contextHash);
-
-            Buffer const proof = combineProofs(getPedersenProof(contextHash), bulletproof);
-
-            mptAlice.convertBack({
-                .account = bob,
-                .amt = amt,
-                .proof = proof,
-                .holderEncryptedAmt = bobCiphertext,
-                .issuerEncryptedAmt = issuerCiphertext,
-                .blindingFactor = blindingFactor,
-                .pedersenCommitment = pedersenCommitment,
-                .err = tecBAD_PROOF,
-            });
-        }
-
-        // Test 3: Bulletproof generated with wrong context hash.
-        // The context hash binds the proof to a specific transaction (account,
-        // sequence, issuanceID, amount, version). Using a different context hash
-        // makes the proof invalid for this transaction, preventing replay attacks.
-        {
-            uint256 const contextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), env.seq(bob), version);
-
-            uint256 const badContextHash{1};
-            Buffer const bulletproof = mptAlice.getBulletproof(
-                {*spendingBalance - amt},
-                {pcBlindingFactor},
-                badContextHash);  // wrong context hash
-
-            Buffer const proof = combineProofs(getPedersenProof(contextHash), bulletproof);
 
             mptAlice.convertBack({
                 .account = bob,
@@ -6627,7 +6579,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = getBadCiphertext(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6639,7 +6591,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .destEncryptedAmt = getBadCiphertext(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6651,7 +6603,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .issuerEncryptedAmt = getBadCiphertext(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6670,7 +6622,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = badCommitment,
                 .balanceCommitment = getTrivialCommitment(),
                 .err = temMALFORMED,
@@ -6680,7 +6632,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = badCommitment,
                 .err = temMALFORMED,
@@ -6714,10 +6666,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
             mptAlice.mergeInbox({.account = carol});
 
-            size_t const proofSize =
-                getEqualityProofSize(3) + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
-            Buffer badProof(proofSize);
-            std::memset(badProof.data(), 0xFF, proofSize);
+            Buffer badProof(ecCompactSendProofLength);
+            std::memset(badProof.data(), 0xFF, ecCompactSendProofLength);
             badProof.data()[0] = ecCompressedPrefixEvenY;
 
             mptAlice.send({
@@ -6777,7 +6727,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = badC1goodC2,
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6789,7 +6739,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .senderEncryptedAmt = goodC1badC2,
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6801,7 +6751,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .destEncryptedAmt = badC1goodC2,
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6813,7 +6763,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .account = bob,
                 .dest = carol,
                 .amt = 10,
-                .proof = getTrivialSendProofHex(3),
+                .proof = getTrivialSendProofHex(),
                 .destEncryptedAmt = goodC1badC2,
                 .amountCommitment = getTrivialCommitment(),
                 .balanceCommitment = getTrivialCommitment(),
@@ -6891,7 +6841,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 10,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .senderEncryptedAmt = wrongGroupCt,
             .amountCommitment = getTrivialCommitment(),
             .balanceCommitment = getTrivialCommitment(),
@@ -6903,7 +6853,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 10,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .destEncryptedAmt = wrongGroupCt,
             .amountCommitment = getTrivialCommitment(),
             .balanceCommitment = getTrivialCommitment(),
@@ -6915,7 +6865,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 10,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .issuerEncryptedAmt = wrongGroupCt,
             .amountCommitment = getTrivialCommitment(),
             .balanceCommitment = getTrivialCommitment(),
@@ -6927,7 +6877,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 10,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .amountCommitment = wrongGroupCommitment,
             .balanceCommitment = getTrivialCommitment(),
             .err = tecBAD_PROOF,
@@ -6938,7 +6888,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             .account = bob,
             .dest = carol,
             .amt = 10,
-            .proof = getTrivialSendProofHex(3),
+            .proof = getTrivialSendProofHex(),
             .amountCommitment = getTrivialCommitment(),
             .balanceCommitment = wrongGroupCommitment,
             .err = tecBAD_PROOF,
@@ -8405,7 +8355,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = bob.human();
             jv[sfMPTAmount.jsonName] = "50";
-            jv[sfZKProof.jsonName] = std::string(ecEqualityProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(ecCompactClawbackProofLength * 2, '0');
             env(jv, delegate::as(dave), ter(temMALFORMED));
         }
 
@@ -8418,7 +8368,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = carol.human();
             jv[sfMPTAmount.jsonName] = "100";
-            jv[sfZKProof.jsonName] = std::string(ecEqualityProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(ecCompactClawbackProofLength * 2, '0');
             env(jv, delegate::as(dave), ter(temMALFORMED));
         }
     }

@@ -4,6 +4,8 @@
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
+#include <secp256k1_mpt.h>
+
 namespace xrpl {
 
 /**
@@ -268,32 +270,34 @@ verifyRevealedAmount(
         issuer.encryptedAmount.size() != ecGamalEncryptedTotalLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto toParticipant = [](ConfidentialRecipient const& r) {
-        mpt_confidential_participant p;
-        std::memcpy(p.pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
-        std::memcpy(p.ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
-        return p;
+    secp256k1_context* ctx = mpt_secp256k1_context();
+    if (!ctx)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // All calls are evaluated before combining results to prevent timing attacks.
+    auto verifyCiphertext = [&](ConfidentialRecipient const& r) -> bool {
+        secp256k1_pubkey pk, c1, c2;
+        if (secp256k1_ec_pubkey_parse(ctx, &pk, r.publicKey.data(), r.publicKey.size()) != 1)
+            return false;
+        if (!mpt_make_ec_pair(r.encryptedAmount.data(), &c1, &c2))
+            return false;
+        return secp256k1_elgamal_verify_encryption(
+                   ctx, &c1, &c2, &pk, amount, blindingFactor.data()) == 1;
     };
 
-    auto const holderP = toParticipant(holder);
-    auto const issuerP = toParticipant(issuer);
-
-    mpt_confidential_participant auditorP;
-    mpt_confidential_participant const* auditorPtr = nullptr;
+    bool const holderOk = verifyCiphertext(holder);
+    bool const issuerOk = verifyCiphertext(issuer);
+    bool valid = holderOk && issuerOk;
     if (auditor)
     {
         if (auditor->publicKey.size() != ecPubKeyLength ||
             auditor->encryptedAmount.size() != ecGamalEncryptedTotalLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        auditorP = toParticipant(*auditor);
-        auditorPtr = &auditorP;
+        bool const auditorOk = verifyCiphertext(*auditor);
+        valid = valid && auditorOk;
     }
 
-    if (mpt_verify_revealed_amount(amount, blindingFactor.data(), &holderP, &issuerP, auditorPtr) !=
-        0)
-        return tecBAD_PROOF;
-
-    return tesSUCCESS;
+    return valid ? TER{tesSUCCESS} : TER{tecBAD_PROOF};
 }
 
 NotTEC
@@ -337,7 +341,7 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
 }
 
 TER
-verifyClawbackEqualityProof(
+verifyClawbackProof(
     uint64_t const amount,
     Slice const& proof,
     Slice const& pubKeySlice,
@@ -345,7 +349,7 @@ verifyClawbackEqualityProof(
     uint256 const& contextHash)
 {
     if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
-        proof.size() != ecEqualityProofLength)
+        proof.size() != ecCompactClawbackProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (mpt_verify_clawback_proof(
@@ -368,10 +372,7 @@ verifySendProof(
     uint256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
-    auto const expectedProofSize = getEqualityProofSize(recipientCount) +
-        2 * ecPedersenProofLength + ecDoubleBulletproofLength;
-
-    if (proof.size() != expectedProofSize || sender.publicKey.size() != ecPubKeyLength ||
+    if (proof.size() != ecCompactSendProofLength || sender.publicKey.size() != ecPubKeyLength ||
         sender.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
         destination.publicKey.size() != ecPubKeyLength ||
         destination.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
@@ -403,7 +404,6 @@ verifySendProof(
 
     if (mpt_verify_send_proof(
             proof.data(),
-            proof.size(),
             participants.data(),
             static_cast<uint8_t>(recipientCount),
             spendingBalance.data(),
@@ -424,8 +424,7 @@ verifyConvertBackProof(
     uint64_t amount,
     uint256 const& contextHash)
 {
-    if (proof.size() != ecPedersenProofLength + ecSingleBulletproofLength ||
-        pubKeySlice.size() != ecPubKeyLength ||
+    if (proof.size() != ecCompactConvertBackProofLength || pubKeySlice.size() != ecPubKeyLength ||
         spendingBalance.size() != ecGamalEncryptedTotalLength ||
         balanceCommitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
