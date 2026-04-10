@@ -22,7 +22,7 @@ optional fields easier to read:
 - The operation `x[~sfFoo]` means "return the value of 'Foo'
   if it exists, or nothing if it doesn't." This usage of the
   tilde/bitwise NOT operator is not standard outside of the
-  `rippled` codebase.
+  `xrpld` codebase.
   - As a consequence of this, `x[~sfFoo] = y[~sfFoo]`
     assigns the value of Foo from y to x, including omitting
     Foo from x if it doesn't exist in y.
@@ -33,7 +33,7 @@ or may not hold a value. For things not guaranteed to exist,
 you use `x[~sfFoo]` because you want such a container. It
 avoids having to look something up twice, once just to see if
 it exists and a second time to get/set its value.
-([Real example](https://github.com/ripple/rippled/blob/35f4698aed5dce02f771b34cfbb690495cb5efcc/src/ripple/app/tx/impl/PayChan.cpp#L229-L236))
+([Real example](https://github.com/XRPLF/rippled/blob/35f4698aed5dce02f771b34cfbb690495cb5efcc/src/ripple/app/tx/impl/PayChan.cpp#L229-L236))
 
 The source of this "type magic" is in
 [SField.h](./SField.h#L296-L302).

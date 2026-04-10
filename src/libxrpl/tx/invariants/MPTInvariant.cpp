@@ -2,6 +2,7 @@
 //
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -52,9 +53,10 @@ ValidMPTIssuance::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    if (isTesSuccess(result))
+    auto const& rules = view.rules();
+    bool const mptV2Enabled = rules.enabled(featureMPTokensV2);
+    if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
     {
-        auto const& rules = view.rules();
         [[maybe_unused]]
         bool const enforceCreatedByIssuer =
             rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol);
@@ -112,12 +114,12 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        bool const lendingProtocolEnabled = view.rules().enabled(featureLendingProtocol);
+        bool const lendingProtocolEnabled = rules.enabled(featureLendingProtocol);
         // ttESCROW_FINISH may authorize an MPT, but it can't have the
         // mayAuthorizeMPT privilege, because that may cause
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
-            (view.rules().enabled(featureSingleAssetVault) || lendingProtocolEnabled);
+            (rules.enabled(featureSingleAssetVault) || lendingProtocolEnabled);
         if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) || enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
@@ -134,19 +136,42 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            if (lendingProtocolEnabled && mptokensCreated_ + mptokensDeleted_ > 1)
+            if (mptV2Enabled && hasPrivilege(tx, mayAuthorizeMPT) &&
+                (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK))
+            {
+                if (submittedByIssuer && txnType == ttAMM_WITHDRAW && mptokensCreated_ > 0)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                       "submitted by issuer succeeded "
+                                       "but created bad number of mptokens";
+                    return false;
+                }
+                //  At most one MPToken may be created on withdraw/clawback since:
+                //  - Liquidity Provider must have at least one token in order
+                //    participate in AMM pool liquidity.
+                //  - At most two MPTokens may be deleted if AMM pool, which has exactly
+                //    two tokens, is empty after withdraw/clawback.
+                if (mptokensCreated_ > 1 || mptokensDeleted_ > 2)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize  succeeded "
+                                       "but created/deleted bad number of mptokens";
+                    return false;
+                }
+            }
+            else if (lendingProtocolEnabled && (mptokensCreated_ + mptokensDeleted_) > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
                                    "but created/deleted bad number mptokens";
                 return false;
             }
-            if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
                                    "succeeded but created/deleted mptokens";
                 return false;
             }
-            if (!submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
+            else if (
+                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -158,6 +183,52 @@ ValidMPTIssuance::finalize(
 
             return true;
         }
+
+        if (hasPrivilege(tx, mayCreateMPT))
+        {
+            bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
+
+            if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but created MPT issuances";
+                return false;
+            }
+            if (mptIssuancesDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but deleted issuances";
+                return false;
+            }
+            if (mptokensDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but deleted MPTokens";
+                return false;
+            }
+            // AMMCreate may auto-create up to two MPT objects:
+            //   - one per asset side in an MPT/MPT AMM, or one in an IOU/MPT AMM.
+            // CheckCash may auto-create at most one MPT object for the receiver.
+            if ((txnType == ttAMM_CREATE && mptokensCreated_ > 2) ||
+                (txnType == ttCHECK_CASH && mptokensCreated_ > 1))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but created bad number of mptokens";
+                return false;
+            }
+            if (submittedByIssuer)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
+                                   "succeeded but created mptokens";
+                return false;
+            }
+
+            // Offer crossing or payment may consume multiple offers
+            // where takerPays is MPT amount. If the offer owner doesn't
+            // own MPT then MPT is created automatically.
+            return true;
+        }
+
         if (txnType == ttESCROW_FINISH)
         {
             // ttESCROW_FINISH may authorize an MPT, but it can't have the
@@ -168,8 +239,9 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, mayDeleteMPT) && mptokensDeleted_ == 1 && mptokensCreated_ == 0 &&
-            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
+        if (hasPrivilege(tx, mayDeleteMPT) &&
+            ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
+            mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
             return true;
     }
 
@@ -192,6 +264,109 @@ ValidMPTIssuance::finalize(
 
     return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 && mptokensCreated_ == 0 &&
         mptokensDeleted_ == 0;
+}
+
+void
+ValidMPTPayment::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (overflow_)
+        return;
+
+    auto makeKey = [](SLE const& sle) {
+        if (sle.getType() == ltMPTOKEN_ISSUANCE)
+            return makeMptID(sle[sfSequence], sle[sfIssuer]);
+        return sle[sfMPTokenIssuanceID];
+    };
+
+    auto update = [&](SLE const& sle, Order order) -> bool {
+        auto const type = sle.getType();
+        if (type == ltMPTOKEN_ISSUANCE)
+        {
+            auto const outstanding = sle[sfOutstandingAmount];
+            if (outstanding > maxMPTokenAmount)
+            {
+                overflow_ = true;
+                return false;
+            }
+            data_[makeKey(sle)].outstanding[order] = outstanding;
+        }
+        else if (type == ltMPTOKEN)
+        {
+            auto const mptAmt = sle[sfMPTAmount];
+            auto const lockedAmt = sle[~sfLockedAmount].value_or(0);
+            if (mptAmt > maxMPTokenAmount || lockedAmt > maxMPTokenAmount ||
+                lockedAmt > (maxMPTokenAmount - mptAmt))
+            {
+                overflow_ = true;
+                return false;
+            }
+            auto const res = static_cast<std::int64_t>(mptAmt + lockedAmt);
+            // subtract before from after
+            if (order == Before)
+            {
+                data_[makeKey(sle)].mptAmount -= res;
+            }
+            else
+            {
+                data_[makeKey(sle)].mptAmount += res;
+            }
+        }
+        return true;
+    };
+
+    if (before && !update(*before, Before))
+        return;
+
+    if (after)
+    {
+        if (after->getType() == ltMPTOKEN_ISSUANCE)
+        {
+            overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
+        }
+        if (!update(*after, After))
+            return;
+    }
+}
+
+bool
+ValidMPTPayment::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (isTesSuccess(result))
+    {
+        bool const enforce = view.rules().enabled(featureMPTokensV2);
+        if (overflow_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
+            return !enforce;
+        }
+
+        auto const signedMax = static_cast<std::int64_t>(maxMPTokenAmount);
+        for (auto const& [id, data] : data_)
+        {
+            (void)id;
+            bool const addOverflows =
+                (data.mptAmount > 0 && data.outstanding[Before] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[Before] < (-signedMax - data.mptAmount));
+            if (addOverflows ||
+                data.outstanding[After] != (data.outstanding[Before] + data.mptAmount))
+            {
+                JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
+                                << data.outstanding[Before] << " " << data.outstanding[After] << " "
+                                << data.mptAmount;
+                return !enforce;
+            }
+        }
+    }
+
+    return true;
 }
 
 }  // namespace xrpl

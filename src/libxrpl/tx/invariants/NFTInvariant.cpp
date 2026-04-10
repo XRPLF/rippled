@@ -2,11 +2,12 @@
 //
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/protocol/st.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 

@@ -4,7 +4,7 @@ skinparam sequenceArrowThickness 2
 skinparam roundcorner 20
 skinparam maxmessagesize 160
 
-actor "Rippled Start" as RS
+actor "Xrpld Start" as RS
 participant "Timer" as T
 participant "NetworkOPs" as NOP
 participant "ValidatorList" as VL #lightgreen
