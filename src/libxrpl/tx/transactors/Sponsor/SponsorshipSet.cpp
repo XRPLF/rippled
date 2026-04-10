@@ -88,47 +88,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
-SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
-        return tesSUCCESS;
-
-    auto const txFlags = tx.getFlags();
-
-    // this is added in case more flags will be added for SponsorshipSet
-    // in the future. Currently unreachable.
-    if (txFlags & tfSponsorshipSetPermissionMask)
-        return terNO_DELEGATE_PERMISSION;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    getGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
-
-    auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
-        (txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee));
-    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
-        (txFlags &
-         (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve));
-
-    if (sponsoringFee && !granularPermissions.contains(SponsorFee))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (sponsoringReserve && !granularPermissions.contains(SponsorReserve))
-        return terNO_DELEGATE_PERMISSION;
-
-    return tesSUCCESS;
-}
-
 TER
 SponsorshipSet::preclaim(PreclaimContext const& ctx)
 {
