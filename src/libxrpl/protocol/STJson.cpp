@@ -162,9 +162,14 @@ STJson::validateDepth(Value const& value, int currentDepth) const
     if (!nested)
         return;
 
-    int valueDepth = nested->getDepth();
-    if (currentDepth + valueDepth > 1)
+    // Adding an STJson value increases depth by 1
+    int totalDepth = currentDepth + 1 + nested->getDepth();
+    if (totalDepth > 1)
         Throw<std::runtime_error>("STJson nesting depth exceeds maximum of 1");
+
+    // Arrays cannot contain arrays
+    if (isArray() && nested->isArray())
+        Throw<std::runtime_error>("STJson arrays cannot contain arrays");
 }
 
 void

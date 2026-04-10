@@ -310,11 +310,15 @@ class Contract_test : public beast::unit_test::suite
 
         auto const wasmBytes = strUnHex(jt.jv[sfContractCode.jsonName].asString());
         // std::cout << "WASM Size: " << wasmBytes->size() << std::endl;
+        if (!wasmBytes || wasmBytes->empty())
+            return std::make_tuple(jtx::Account{"invalid"}, uint256{}, jt.jv);
         uint256 const contractHash =
             xrpl::sha512Half_s(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
         auto const accountID = parseBase58<AccountID>(jt.jv[sfAccount].asString());
         auto const [contractKey, sle] = contractKeyAndSle(
             *env.current(), contractHash, *accountID, jt.jv[sfSequence.jsonName].asUInt());
+        if (!sle)
+            return std::make_tuple(jtx::Account{"invalid"}, contractHash, jt.jv);
         jtx::Account const contractAccount{
             "Contract pseudo-account", sle->getAccountID(sfContractAccount)};
         return std::make_tuple(contractAccount, contractHash, jt.jv);

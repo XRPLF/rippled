@@ -68,7 +68,11 @@ struct FeeSetup
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
 
-    /** Convert to a Fees object for use with Ledger construction. */
+    /** Convert to a Fees object for use with Ledger construction.
+        Extension fees (extensionComputeLimit, extensionSizeLimit, gasPrice)
+        are intentionally NOT set here. They start at 0 and are activated
+        through fee voting on the first flag ledger, or via the genesis
+        ledger SLE when featureSmartEscrow is in the initial amendments. */
     Fees
     toFees() const
     {
@@ -76,9 +80,9 @@ struct FeeSetup
         f.base = reference_fee;
         f.reserve = account_reserve;
         f.increment = owner_reserve;
-        f.extensionComputeLimit = extension_compute_limit;
-        f.extensionSizeLimit = extension_size_limit;
-        f.gasPrice = gas_price;
+        f.extensionComputeLimit = 0;
+        f.extensionSizeLimit = 0;
+        f.gasPrice = 0;
         return f;
     }
 };

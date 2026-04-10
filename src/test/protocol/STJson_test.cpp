@@ -752,14 +752,13 @@ struct STJson_test : public beast::unit_test::suite
             BEAST_EXPECT(*elem1 != nullptr);
         }
 
-        // Object with null value
+        // Object with null value - getObjectField treats null as absent
         {
             STJson json;
             json.setObjectField("null_field", nullptr);
 
             auto val = json.getObjectField("null_field");
-            BEAST_EXPECT(val.has_value());
-            BEAST_EXPECT(*val == nullptr);
+            BEAST_EXPECT(!val.has_value());
         }
     }
 

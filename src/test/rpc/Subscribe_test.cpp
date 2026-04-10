@@ -484,6 +484,9 @@ public:
 
                     if (jv.isMember(jss::extension_size) != isFlagLedger)
                         return false;
+
+                    if (jv.isMember(jss::gas_price) != isFlagLedger)
+                        return false;
                 }
                 else
                 {
@@ -491,6 +494,9 @@ public:
                         return false;
 
                     if (jv.isMember(jss::extension_size))
+                        return false;
+
+                    if (jv.isMember(jss::gas_price))
                         return false;
                 }
                 return true;
