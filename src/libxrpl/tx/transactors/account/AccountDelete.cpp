@@ -384,9 +384,6 @@ AccountDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Transfer any XRP remaining after the fee is paid to the destination:
-    // Use the current balance from the SLE, not mSourceBalance, because
-    // the cleanup loop may have returned pre-funded sfFeeAmount from
-    // ltSponsorship objects back to the account's sfBalance.
     auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
