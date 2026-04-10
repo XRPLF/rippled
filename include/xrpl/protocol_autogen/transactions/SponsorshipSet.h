@@ -18,7 +18,7 @@ class SponsorshipSetBuilder;
 /**
  * @brief Transaction: SponsorshipSet
  *
- * Type: ttSPONSORSHIP_SET (86)
+ * Type: ttSPONSORSHIP_SET (91)
  * Delegable: Delegation::delegable
  * Amendment: featureSponsor
  * Privileges: noPriv
