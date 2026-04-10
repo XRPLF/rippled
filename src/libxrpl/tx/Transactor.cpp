@@ -185,6 +185,11 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
             return temINVALID_FLAG;
         }
     }
+    else
+    {
+        JLOG(ctx.j.debug()) << "preflight1: no sponsor flags";
+        return temINVALID_FLAG;
+    }
 
     if (auto const ret = preflight0(ctx, flagMask))
         return ret;
@@ -231,13 +236,6 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
                                "same as the transaction originator";
         return temMALFORMED;
     }
-
-    // if (hasSponsor && hasSponsorFlags &&
-    //     ctx.tx.getFieldU32(sfSponsorFlags) == 0)
-    // {
-    //     JLOG(ctx.j.debug()) << "preflight1: sponsor with no sponsorship flags";
-    //     return temINVALID_FLAG;
-    // }
 
     return tesSUCCESS;
 }

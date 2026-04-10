@@ -422,8 +422,13 @@ public:
         // SponsorFlags=0 with valid sponsor (no sponsorship purpose)
         env(noop(alice), sponsor::as(sponsor, 0), ter(temINVALID_FLAG));
 
-        // Invalid Flags without sponsor
+        // no SponsorFlag with valid sponsor
         auto tx = noop(alice);
+        tx[sfSponsor.jsonName] = sponsor.human();
+        env(tx, ter(temINVALID_FLAG));
+
+        // Invalid Flags without sponsor
+        tx = noop(alice);
         tx[sfSponsorFlags.jsonName] = spfSponsorFee | spfSponsorReserve;
         env(tx, ter(temINVALID_FLAG));
     }
