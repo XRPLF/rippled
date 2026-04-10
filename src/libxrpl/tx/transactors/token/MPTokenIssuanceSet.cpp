@@ -222,6 +222,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
                 }))
             return tecNO_PERMISSION;
 
+        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
+            return tecNO_PERMISSION;
         if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
             (*mutableFlags & tmfMPTClearCanConfidentialAmount))
         {
