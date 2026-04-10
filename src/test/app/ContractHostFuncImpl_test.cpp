@@ -69,6 +69,7 @@ struct ContractHostFuncImpl_test : public beast::unit_test::suite
                     .eventMap = eventMap,
                     .changedDataCount = 0,
                 },
+            .emitView = std::nullopt,
         };
     }
 

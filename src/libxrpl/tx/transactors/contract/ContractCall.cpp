@@ -255,6 +255,7 @@ ContractCall::doApply()
                 .eventMap = eventMap,
                 .changedDataCount = 0,
             },
+        .emitView = std::nullopt,
     };
 
     ContractHostFunctionsImpl ledgerDataProvider(contractCtx);
