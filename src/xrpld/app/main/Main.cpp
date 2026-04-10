@@ -5,11 +5,10 @@
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
-#include <xrpl/json/json_writer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/server/Vacuum.h>
 
@@ -362,10 +361,10 @@ run(int argc, char** argv)
         "verbose,v", "Verbose logging.")
 
         ("definitions", "Output server definitions as JSON and exit.")(
-        "force_ledger_present_range",
-         po::value<std::string>(),
-         "Specify the range of present ledgers for testing purposes. Min and "
-         "max values are comma separated.")("version", "Display the build version.");
+            "force_ledger_present_range",
+            po::value<std::string>(),
+            "Specify the range of present ledgers for testing purposes. Min and "
+            "max values are comma separated.")("version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
