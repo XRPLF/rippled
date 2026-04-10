@@ -605,9 +605,8 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::find_if(dir.begin(), dir.end(), [&](auto const& sle) {
-                           return sle->key() == key;
-                       }) != dir.end();
+                return std::any_of(
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
             // Delegate object should appear in both alice's and bob's directories
@@ -655,9 +654,8 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::find_if(dir.begin(), dir.end(), [&](auto const& sle) {
-                           return sle->key() == key;
-                       }) != dir.end();
+                return std::any_of(
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
             BEAST_EXPECT(
@@ -725,9 +723,8 @@ class Delegate_test : public beast::unit_test::suite
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::find_if(dir.begin(), dir.end(), [&](auto const& sle) {
-                           return sle->key() == key;
-                       }) != dir.end();
+                return std::any_of(
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
             // Both Delegate objects exist and are in bob's directory
