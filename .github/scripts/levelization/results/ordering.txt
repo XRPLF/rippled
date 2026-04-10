@@ -217,7 +217,6 @@ xrpl.shamap > xrpl.protocol
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
-xrpl.tx > xrpl.protocol
 xrpld.app > test.unit_test
 xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
