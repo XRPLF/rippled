@@ -453,7 +453,7 @@ STData::getJson(JsonOptions options) const
 STBase*
 STData::makeFieldPresent()
 {
-    STBase const* f = &data_.get();  // getPIndex(index);
+    STBase* f = &data_.get();  // getPIndex(index);
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
