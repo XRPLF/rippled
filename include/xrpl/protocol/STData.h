@@ -193,7 +193,7 @@ STData::getFieldByValue() const
     // if (!rf)
     //     throwFieldNotFound(getFName());
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         Throw<std::runtime_error>("Field not present");
@@ -220,7 +220,7 @@ STData::getFieldByConstRef(V const& empty) const
     // if (!rf)
     //     throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return empty;  // optional field not present

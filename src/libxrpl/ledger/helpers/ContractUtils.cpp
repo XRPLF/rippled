@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
@@ -46,7 +27,7 @@ contractCreateFee(uint64_t byteCount)
     constexpr uint64_t mul = static_cast<uint64_t>(createByteMultiplier);
     if (byteCount > std::numeric_limits<uint64_t>::max() / mul)
         return feeCalculationFailed;  // overflow
-    uint64_t uf = byteCount * mul;
+    uint64_t const uf = byteCount * mul;
     if (uf > static_cast<uint64_t>(std::numeric_limits<int64_t>::max()))
         return feeCalculationFailed;
     return static_cast<int64_t>(uf);
@@ -299,7 +280,7 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
                 if (!param.isFieldPresent(sfParameterValue))
                     return temMALFORMED;
                 auto const& value = param.getFieldData(sfParameterValue);
-                STAmount amount = value.getFieldAmount();
+                STAmount const amount = value.getFieldAmount();
                 // Preflight Transfer Amount
                 if (isXRP(amount))
                 {
@@ -355,7 +336,7 @@ preclaimFlagParameters(
                     return tecINTERNAL;
 
                 auto const& value = param.getFieldData(sfParameterValue);
-                STAmount amount = value.getFieldAmount();
+                STAmount const amount = value.getFieldAmount();
                 // Preclaim Transfer Amount
                 if (isXRP(amount))
                 {
@@ -435,7 +416,7 @@ doApplyFlagParameters(
                     return tecINTERNAL;
 
                 auto const& value = param.getFieldData(sfParameterValue);
-                STAmount amount = value.getFieldAmount();
+                STAmount const amount = value.getFieldAmount();
                 if (auto ter = accountSend(
                         view, sourceAccount, contractAccount, amount, j, WaiveTransferFee::No);
                     !isTesSuccess(ter))
@@ -529,7 +510,8 @@ setContractData(
         if (!dataSle)
             return tesSUCCESS;
 
-        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
+        uint32_t const oldDataReserve =
+            contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
 
         std::uint64_t const page = (*dataSle)[sfOwnerNode];
         // Remove the page from the account directory
@@ -544,13 +526,13 @@ setContractData(
         return tesSUCCESS;
     }
 
-    std::uint32_t ownerCount{(*sleAccount)[sfOwnerCount]};
-    bool createNew = !dataSle;
+    std::uint32_t const ownerCount{(*sleAccount)[sfOwnerCount]};
+    bool const createNew = !dataSle;
     if (createNew)
     {
         // CREATE
-        uint32_t dataReserve = contractDataReserve(data.size());
-        uint32_t newReserve = ownerCount + dataReserve;
+        uint32_t const dataReserve = contractDataReserve(data.size());
+        uint32_t const newReserve = ownerCount + dataReserve;
         XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
         if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
             return tecINSUFFICIENT_RESERVE;
@@ -575,12 +557,13 @@ setContractData(
     else
     {
         // UPDATE
-        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
-        uint32_t newDataReserve = contractDataReserve(data.size());
+        uint32_t const oldDataReserve =
+            contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
+        uint32_t const newDataReserve = contractDataReserve(data.size());
         if (newDataReserve != oldDataReserve)
         {
             // if the reserve changes, we need to adjust the owner count
-            uint32_t newReserve = ownerCount - oldDataReserve + newDataReserve;
+            uint32_t const newReserve = ownerCount - oldDataReserve + newDataReserve;
             XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve)};
             if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
                 return tecINSUFFICIENT_RESERVE;
@@ -614,7 +597,7 @@ finalizeContractData(
     {
         auto const& acc = accEntry.first;
         auto const& cacheEntry = accEntry.second;
-        bool is_modified = cacheEntry.first;
+        bool const is_modified = cacheEntry.first;
         auto const& jsonData = cacheEntry.second;
         if (is_modified)
         {

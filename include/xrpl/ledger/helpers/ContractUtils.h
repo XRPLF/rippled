@@ -48,7 +48,7 @@ int64_t constexpr feeCalculationFailed = 0x7FFFFFFFFFFFFFFFLL;
 std::size_t constexpr maxContractParams = 8;
 
 /** The maximum number of contract functions that can be in a transaction. */
-std::size_t constexpr maxContractFunctions = 8;
+std::size_t constexpr maxContractFunctions = 32;
 
 int64_t
 contractCreateFee(uint64_t byteCount);

@@ -140,9 +140,9 @@ STData::STData(SField const& n, STNumber const& v)
 
 STData::STData(SerialIter& sit, SField const& name) : STBase(name), data_(STBase{})
 {
-    std::uint16_t stype = SerializedTypeID(sit.get16());
+    std::uint16_t const stype = SerializedTypeID(sit.get16());
     inner_type_ = stype;
-    SerializedTypeID s = static_cast<SerializedTypeID>(stype);
+    SerializedTypeID const s = static_cast<SerializedTypeID>(stype);
     switch (s)
     {
         case STI_UINT8: {
@@ -437,7 +437,7 @@ STData::getInnerTypeString() const
 std::string
 STData::getText() const
 {
-    std::string inner_type_str = getInnerTypeString();
+    std::string const inner_type_str = getInnerTypeString();
     return "STData{InnerType: " + inner_type_str + ", Data: " + data_.get().getText() + "}";
 }
 
@@ -453,7 +453,7 @@ STData::getJson(JsonOptions options) const
 STBase*
 STData::makeFieldPresent()
 {
-    STBase* f = &data_.get();  // getPIndex(index);
+    STBase const* f = &data_.get();  // getPIndex(index);
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
@@ -633,7 +633,7 @@ STData::getFieldH256() const
 Blob
 STData::getFieldVL() const
 {
-    STBlob empty;
+    STBlob const empty;
     STBlob const& b = getFieldByConstRef<STBlob>(empty);
     return Blob(b.data(), b.data() + b.size());
 }
@@ -738,7 +738,7 @@ dataFromJson(SField const& field, Json::Value const& v)
             {
                 auto const str = value.asString();
 
-                std::uint64_t val;
+                std::uint64_t val = 0;
 
                 bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
 
@@ -956,7 +956,7 @@ dataFromJson(SField const& field, Json::Value const& v)
             Throw<std::runtime_error>("STData: expected string for NUMBER");
         }
 
-        STNumber number = numberFromJson(field, value);
+        STNumber const number = numberFromJson(field, value);
         STData data(field, number);
         return data;
     }

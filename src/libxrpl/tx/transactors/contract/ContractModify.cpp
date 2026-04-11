@@ -103,7 +103,7 @@ ContractModify::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    std::uint32_t flags = contractSle->getFlags();
+    std::uint32_t const flags = contractSle->getFlags();
 
     // Check if the contract is immutable.
     if (flags & tfImmutable)

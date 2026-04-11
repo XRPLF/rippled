@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/st.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -67,6 +67,25 @@ struct ContractContext
     uint32_t generation = 0;               // generation of the contract being executed
     uint64_t burden = 0;                   // computational burden used
     ContractResult result;
+
+    /// Persistent view used to track cumulative state from emitted
+    /// transactions so that successive emits within the same WASM
+    /// execution see the correct sequence numbers, balances, etc.
+    std::optional<OpenView> emitView;
+
+    /// Return the emit view, lazily creating it on first use.
+    /// The view is layered on top of the transactor's ApplyViewImpl
+    /// (applyCtx.view()) so that reads automatically fall through to
+    /// the transactor's pending state (e.g. the tfSendAmount balance
+    /// transfer, consumed sequence number, paid fee) without needing
+    /// to manually copy SLE changes.
+    OpenView&
+    getEmitView()
+    {
+        if (!emitView)
+            emitView.emplace(static_cast<ReadView const*>(&applyCtx.view()));
+        return *emitView;
+    }
 };
 
 }  // namespace xrpl

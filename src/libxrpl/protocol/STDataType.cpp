@@ -26,7 +26,7 @@ STDataType::STDataType(SField const& n, SerializedTypeID v)
 STDataType::STDataType(SerialIter& sit, SField const& name)
     : STBase(name), inner_type_(STI_DATA), default_(false)
 {
-    std::uint16_t stype = SerializedTypeID(sit.get16());
+    std::uint16_t const stype = SerializedTypeID(sit.get16());
     inner_type_ = stype;
 }
 
@@ -134,7 +134,7 @@ STDataType::getInnerTypeString() const
 std::string
 STDataType::getText() const
 {
-    std::string inner_type_str = getInnerTypeString();
+    std::string const inner_type_str = getInnerTypeString();
     return "STDataType{InnerType: " + inner_type_str + "}";
 }
 
@@ -151,7 +151,7 @@ dataTypeFromJson(SField const& field, Json::Value const& v)
 {
     SerializedTypeID typeId = STI_NOTPRESENT;
     Json::Value type;
-    Json::Value value;
+    Json::Value const value;
 
     if (!v.isObject())
     {

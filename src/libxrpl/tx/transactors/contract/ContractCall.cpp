@@ -93,7 +93,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     auto it = std::find_if(
         functions.begin(), functions.end(), [&functionNameHexStr](STObject const& func) {
             auto const funcName = func.getFieldVL(sfFunctionName);
-            std::string functionNameDefHexStr(funcName.begin(), funcName.end());
+            std::string const functionNameDefHexStr(funcName.begin(), funcName.end());
             return functionNameDefHexStr == functionNameHexStr;
         });
 
@@ -178,9 +178,9 @@ ContractCall::doApply()
 
     // WASM execution
     auto const wasmStr = contractSourceSle->getFieldVL(sfContractCode);
-    std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+    std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
     auto const functionName = ctx_.tx.getFieldVL(sfFunctionName);
-    std::string funcName(functionName.begin(), functionName.end());
+    std::string const funcName(functionName.begin(), functionName.end());
 
     auto const contractFunctions = contractSle->isFieldPresent(sfFunctions)
         ? contractSle->getFieldArray(sfFunctions)
@@ -229,8 +229,8 @@ ContractCall::doApply()
             return tecINVALID_PARAMETERS;
     }
 
-    xrpl::ContractDataMap dataMap;
-    xrpl::ContractEventMap eventMap;
+    xrpl::ContractDataMap const dataMap;
+    xrpl::ContractEventMap const eventMap;
     ContractContext contractCtx = {
         .applyCtx = ctx_,
         .instanceParameters = instanceParameters,
@@ -255,6 +255,7 @@ ContractCall::doApply()
                 .eventMap = eventMap,
                 .changedDataCount = 0,
             },
+        .emitView = std::nullopt,
     };
 
     ContractHostFunctionsImpl ledgerDataProvider(contractCtx);
@@ -265,7 +266,7 @@ ContractCall::doApply()
         return tefINTERNAL;
     }
 
-    std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
+    std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
     auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, funcName, {});
 
     // Wasm Result
@@ -291,7 +292,7 @@ ContractCall::doApply()
         auto ret = re.value().result;
         if (ret < 0)
         {
-            JLOG(j_.trace()) << "WASM Execution Failed: " << contractCtx.result.exitReason;
+            JLOG(j_.trace()) << "WASM Execution Failed: " << ret;
             ctx_.setWasmReturnCode(ret);
             // ctx_.setWasmReturnStr(contractCtx.result.exitReason);
             return tecWASM_REJECTED;

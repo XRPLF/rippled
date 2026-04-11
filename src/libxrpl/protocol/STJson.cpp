@@ -1,3 +1,4 @@
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -46,10 +47,10 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
 
     // Read type byte
     auto typeByte = sit.get8();
-    JsonType type = static_cast<JsonType>(typeByte);
+    JsonType const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     if (type == JsonType::Array)
     {
@@ -81,7 +82,7 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
         data_ = std::move(map);
     }
 
-    int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+    int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
     if (consumedBytes != length)
         Throw<std::runtime_error>("STJson length mismatch");
 }
@@ -161,9 +162,14 @@ STJson::validateDepth(Value const& value, int currentDepth) const
     if (!nested)
         return;
 
-    int valueDepth = nested->getDepth();
-    if (currentDepth + valueDepth > 1)
+    // Adding an STJson value increases depth by 1
+    int const totalDepth = currentDepth + 1 + nested->getDepth();
+    if (totalDepth > 1)
         Throw<std::runtime_error>("STJson nesting depth exceeds maximum of 1");
+
+    // Arrays cannot contain arrays
+    if (isArray() && nested->isArray())
+        Throw<std::runtime_error>("STJson arrays cannot contain arrays");
 }
 
 void
@@ -197,10 +203,10 @@ STJson::fromSerialIter(SerialIter& sit)
 
     // Read type byte
     auto typeByte = sit.get8();
-    JsonType type = static_cast<JsonType>(typeByte);
+    JsonType const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     if (type == JsonType::Array)
     {
@@ -220,7 +226,7 @@ STJson::fromSerialIter(SerialIter& sit)
             }
         }
 
-        int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
         if (consumedBytes != length)
             Throw<std::runtime_error>("STJson length mismatch");
 
@@ -235,7 +241,7 @@ STJson::fromSerialIter(SerialIter& sit)
             map.emplace(std::move(key), std::move(value));
         }
 
-        int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
         if (consumedBytes != length)
             Throw<std::runtime_error>("STJson length mismatch");
 
@@ -262,7 +268,7 @@ STJson::Array
 STJson::parseArray(SerialIter& sit, int length)
 {
     Array array;
-    int initialBytesLeft = sit.getBytesLeft();
+    int const initialBytesLeft = sit.getBytesLeft();
 
     while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
@@ -290,7 +296,7 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
 
     // Read SType marker (1 byte)
     auto typeCode = sit.get8();
-    SerializedTypeID stype = static_cast<SerializedTypeID>(typeCode);
+    SerializedTypeID const stype = static_cast<SerializedTypeID>(typeCode);
 
     // Dispatch to correct SType
     switch (stype)
@@ -699,10 +705,11 @@ STJson::getJson(JsonOptions options) const
         auto const& map = std::get<Map>(data_);
         for (auto const& [key, value] : map)
         {
+            auto const hexKey = strHex(key);
             if (value)
-                obj[key] = value->getJson(options);
+                obj[hexKey] = value->getJson(options);
             else
-                obj[key] = Json::nullValue;
+                obj[hexKey] = Json::nullValue;
         }
         return obj;
     }

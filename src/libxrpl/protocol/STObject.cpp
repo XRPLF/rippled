@@ -775,6 +775,9 @@ STObject::addFieldFromSlice(SField const& sfield, Slice const& data)
         case STI_UINT160:
             element = std::make_unique<STUInt160>(sit, sfield);
             break;
+        case STI_UINT192:
+            element = std::make_unique<STUInt192>(sit, sfield);
+            break;
         case STI_UINT256:
             element = std::make_unique<STUInt256>(sit, sfield);
             break;

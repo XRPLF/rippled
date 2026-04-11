@@ -16,7 +16,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test default constructor
         {
-            STDataType dt1(sf);
+            STDataType const dt1(sf);
             BEAST_EXPECT(dt1.getInnerSType() == STI_NOTPRESENT);
             BEAST_EXPECT(dt1.getSType() == STI_DATATYPE);
             BEAST_EXPECT(dt1.getFName() == sf);
@@ -24,7 +24,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test constructor with SerializedTypeID
         {
-            STDataType dt2(sf, STI_UINT32);
+            STDataType const dt2(sf, STI_UINT32);
             BEAST_EXPECT(dt2.getInnerSType() == STI_UINT32);
             BEAST_EXPECT(!dt2.isDefault());
         }
@@ -34,7 +34,7 @@ struct STDataType_test : public beast::unit_test::suite
             Serializer s;
             s.add16(STI_UINT64);
             SerialIter sit(s.slice());
-            STDataType dt3(sit, sf);
+            STDataType const dt3(sit, sf);
             BEAST_EXPECT(dt3.getInnerSType() == STI_UINT64);
         }
     }
@@ -48,7 +48,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test copy
         {
-            STDataType original(sf, STI_UINT32);
+            STDataType const original(sf, STI_UINT32);
 
             // Use aligned storage for placement new
             alignas(STDataType) char buffer[sizeof(STDataType)];
@@ -96,7 +96,7 @@ struct STDataType_test : public beast::unit_test::suite
             std::string expectedHex;
         };
 
-        TypeTest tests[] = {
+        TypeTest const tests[] = {
             {STI_UINT16, "0001"},
             {STI_UINT32, "0002"},
             {STI_UINT64, "0003"},
@@ -137,22 +137,22 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test equivalent objects
         {
-            STDataType dt1(sf1, STI_UINT32);
-            STDataType dt2(sf1, STI_UINT32);
+            STDataType const dt1(sf1, STI_UINT32);
+            STDataType const dt2(sf1, STI_UINT32);
             BEAST_EXPECT(dt1.isEquivalent(dt2));
         }
 
         // Test non-equivalent objects (different inner types)
         {
-            STDataType dt1(sf1, STI_UINT32);
-            STDataType dt2(sf1, STI_UINT64);
+            STDataType const dt1(sf1, STI_UINT32);
+            STDataType const dt2(sf1, STI_UINT64);
             BEAST_EXPECT(!dt1.isEquivalent(dt2));
         }
 
         // Test non-equivalent objects (different default states)
         {
-            STDataType dt1(sf1);
-            STDataType dt2(sf1, STI_NOTPRESENT);
+            STDataType const dt1(sf1);
+            STDataType const dt2(sf1, STI_NOTPRESENT);
             // dt1 has default_ = true (implicit from first constructor)
             // dt2 has default_ = false (set in second constructor)
             BEAST_EXPECT(!dt1.isEquivalent(dt2));
@@ -160,7 +160,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test with non-STDataType object
         {
-            STDataType dt1(sf1, STI_UINT32);
+            STDataType const dt1(sf1, STI_UINT32);
             // Create a dummy STBase-derived object for comparison
             // Since we can't easily create other STBase types here,
             // we'll test that isEquivalent returns false for nullptr cast
@@ -199,7 +199,7 @@ struct STDataType_test : public beast::unit_test::suite
                     return nullptr;
                 }
             };
-            DummySTBase dummy;
+            DummySTBase const dummy;
             BEAST_EXPECT(!dt1.isEquivalent(dummy));
         }
     }
@@ -213,14 +213,14 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test default state
         {
-            STDataType dt1(sf);
+            STDataType const dt1(sf);
             // First constructor doesn't set default_ explicitly,
             // so it should be true (member initialization)
             BEAST_EXPECT(dt1.isDefault());
         }
 
         {
-            STDataType dt2(sf, STI_UINT32);
+            STDataType const dt2(sf, STI_UINT32);
             BEAST_EXPECT(!dt2.isDefault());
         }
     }
@@ -234,78 +234,78 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test known types
         {
-            STDataType dt(sf, STI_UINT8);
+            STDataType const dt(sf, STI_UINT8);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT8}");
         }
 
         {
-            STDataType dt(sf, STI_UINT16);
+            STDataType const dt(sf, STI_UINT16);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT16}");
         }
 
         {
-            STDataType dt(sf, STI_UINT32);
+            STDataType const dt(sf, STI_UINT32);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT32}");
         }
 
         {
-            STDataType dt(sf, STI_UINT64);
+            STDataType const dt(sf, STI_UINT64);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT64}");
         }
 
         {
-            STDataType dt(sf, STI_UINT128);
+            STDataType const dt(sf, STI_UINT128);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT128}");
         }
 
         {
-            STDataType dt(sf, STI_UINT160);
+            STDataType const dt(sf, STI_UINT160);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT160}");
         }
 
         {
-            STDataType dt(sf, STI_UINT192);
+            STDataType const dt(sf, STI_UINT192);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT192}");
         }
 
         {
-            STDataType dt(sf, STI_UINT256);
+            STDataType const dt(sf, STI_UINT256);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: UINT256}");
         }
 
         {
-            STDataType dt(sf, STI_VL);
+            STDataType const dt(sf, STI_VL);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: VL}");
         }
 
         {
-            STDataType dt(sf, STI_ACCOUNT);
+            STDataType const dt(sf, STI_ACCOUNT);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: ACCOUNT}");
         }
 
         {
-            STDataType dt(sf, STI_AMOUNT);
+            STDataType const dt(sf, STI_AMOUNT);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: AMOUNT}");
         }
 
         {
-            STDataType dt(sf, STI_ISSUE);
+            STDataType const dt(sf, STI_ISSUE);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: ISSUE}");
         }
 
         {
-            STDataType dt(sf, STI_CURRENCY);
+            STDataType const dt(sf, STI_CURRENCY);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: CURRENCY}");
         }
 
         {
-            STDataType dt(sf, STI_NUMBER);
+            STDataType const dt(sf, STI_NUMBER);
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: NUMBER}");
         }
 
         // Test unknown type (should return numeric string)
         {
-            STDataType dt(sf, static_cast<SerializedTypeID>(999));
+            STDataType const dt(sf, static_cast<SerializedTypeID>(999));
             BEAST_EXPECT(dt.getText() == "STDataType{InnerType: 999}");
         }
     }
@@ -319,21 +319,21 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test JSON output for various types
         {
-            STDataType dt(sf, STI_UINT32);
+            STDataType const dt(sf, STI_UINT32);
             Json::Value json = dt.getJson(JsonOptions::none);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "UINT32");
         }
 
         {
-            STDataType dt(sf, STI_AMOUNT);
+            STDataType const dt(sf, STI_AMOUNT);
             Json::Value json = dt.getJson(JsonOptions::none);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "AMOUNT");
         }
 
         {
-            STDataType dt(sf, STI_ACCOUNT);
+            STDataType const dt(sf, STI_ACCOUNT);
             Json::Value json = dt.getJson(JsonOptions::none);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "ACCOUNT");
@@ -341,7 +341,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Test unknown type
         {
-            STDataType dt(sf, static_cast<SerializedTypeID>(999));
+            STDataType const dt(sf, static_cast<SerializedTypeID>(999));
             Json::Value json = dt.getJson(JsonOptions::none);
             BEAST_EXPECT(json.isObject());
             BEAST_EXPECT(json[jss::type].asString() == "999");
@@ -359,98 +359,98 @@ struct STDataType_test : public beast::unit_test::suite
         {
             Json::Value v;
             v[jss::type] = "UINT8";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT8);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT16";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT16);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT32";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT32);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT64";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT64);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT128";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT128);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT160";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT160);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT192";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT192);
         }
 
         {
             Json::Value v;
             v[jss::type] = "UINT256";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_UINT256);
         }
 
         {
             Json::Value v;
             v[jss::type] = "VL";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_VL);
         }
 
         {
             Json::Value v;
             v[jss::type] = "ACCOUNT";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_ACCOUNT);
         }
 
         {
             Json::Value v;
             v[jss::type] = "AMOUNT";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_AMOUNT);
         }
 
         {
             Json::Value v;
             v[jss::type] = "ISSUE";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_ISSUE);
         }
 
         {
             Json::Value v;
             v[jss::type] = "CURRENCY";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_CURRENCY);
         }
 
         {
             Json::Value v;
             v[jss::type] = "NUMBER";
-            STDataType dt = dataTypeFromJson(sf, v);
+            STDataType const dt = dataTypeFromJson(sf, v);
             BEAST_EXPECT(dt.getInnerSType() == STI_NUMBER);
         }
 
@@ -458,10 +458,10 @@ struct STDataType_test : public beast::unit_test::suite
 
         // Non-object JSON should throw
         {
-            Json::Value v = "not an object";
+            Json::Value const v = "not an object";
             try
             {
-                STDataType dt = dataTypeFromJson(sf, v);
+                STDataType const dt = dataTypeFromJson(sf, v);
                 BEAST_EXPECT(false);  // Should not reach here
             }
             catch (std::runtime_error const& e)
@@ -476,7 +476,7 @@ struct STDataType_test : public beast::unit_test::suite
             v[jss::type] = "UNKNOWN_TYPE";
             try
             {
-                STDataType dt = dataTypeFromJson(sf, v);
+                STDataType const dt = dataTypeFromJson(sf, v);
                 BEAST_EXPECT(false);  // Should not reach here
             }
             catch (std::runtime_error const& e)
@@ -492,7 +492,7 @@ struct STDataType_test : public beast::unit_test::suite
             v[jss::type] = "";
             try
             {
-                STDataType dt = dataTypeFromJson(sf, v);
+                STDataType const dt = dataTypeFromJson(sf, v);
                 BEAST_EXPECT(false);  // Should not reach here
             }
             catch (std::runtime_error const& e)
@@ -527,7 +527,7 @@ struct STDataType_test : public beast::unit_test::suite
               STI_NUMBER})
         {
             // Create original
-            STDataType original(sf, typeId);
+            STDataType const original(sf, typeId);
 
             // Serialize
             Serializer s;
@@ -535,7 +535,7 @@ struct STDataType_test : public beast::unit_test::suite
 
             // Deserialize
             SerialIter sit(s.slice());
-            STDataType deserialized(sit, sf);
+            STDataType const deserialized(sit, sf);
 
             // Compare
             BEAST_EXPECT(deserialized.getInnerSType() == typeId);
@@ -550,7 +550,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         auto const& sf = sfParameterType;
 
-        std::vector<std::string> typeStrings = {
+        std::vector<std::string> const typeStrings = {
             "UINT8",
             "UINT16",
             "UINT32",
@@ -571,7 +571,7 @@ struct STDataType_test : public beast::unit_test::suite
             // Create from JSON
             Json::Value input;
             input[jss::type] = typeStr;
-            STDataType dt = dataTypeFromJson(sf, input);
+            STDataType const dt = dataTypeFromJson(sf, input);
 
             // Convert back to JSON
             Json::Value output = dt.getJson(JsonOptions::none);
@@ -594,7 +594,7 @@ struct STDataType_test : public beast::unit_test::suite
             std::string expected;
         };
 
-        TypeStringTest tests[] = {
+        TypeStringTest const tests[] = {
             {STI_UINT8, "UINT8"},
             {STI_UINT16, "UINT16"},
             {STI_UINT32, "UINT32"},
@@ -614,7 +614,7 @@ struct STDataType_test : public beast::unit_test::suite
 
         for (auto const& test : tests)
         {
-            STDataType dt(sf, test.type);
+            STDataType const dt(sf, test.type);
             BEAST_EXPECT(dt.getInnerTypeString() == test.expected);
         }
     }
