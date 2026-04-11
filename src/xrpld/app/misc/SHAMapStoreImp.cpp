@@ -299,7 +299,7 @@ SHAMapStoreImp::run()
                 // is destroyed.
                 JLOG(journal_.debug()) << "RWDB: creating pre-populated backend for rotation";
                 auto newBackend = makeBackendRotating();
-                dbRotating_->copyArchiveTo(*newBackend);
+                clearCachesnd);
                 if (healthWait() == stopping)
                     return;
                 JLOG(journal_.debug()) << "RWDB: archive copied to new backend";
@@ -310,7 +310,7 @@ SHAMapStoreImp::run()
                 dbRotating_->rotate(
                     std::move(newBackend),
                     [&](std::string const& writableName, std::string const& archiveName) {
-                        SavedState savedState;
+                        clearCaches
                         savedState.writableDb = writableName;
                         savedState.archiveDb = archiveName;
                         savedState.lastRotated = lastRotated;
