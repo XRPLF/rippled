@@ -33,8 +33,8 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (auto const res = checkEncryptedAmountFormat(ctx.tx); !isTesSuccess(res))
         return res;
 
-    // ConvertBack proof = pedersen linkage proof + single bulletproof
-    if (ctx.tx[sfZKProof].size() != ecPedersenProofLength + ecSingleBulletproofLength)
+    // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
+    if (ctx.tx[sfZKProof].size() != ecCompactConvertBackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;

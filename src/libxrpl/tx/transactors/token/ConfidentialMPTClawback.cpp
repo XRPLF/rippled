@@ -31,7 +31,7 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     // Verify proof length
-    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+    if (ctx.tx[sfZKProof].length() != ecCompactClawbackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -95,7 +95,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Verify the revealed confidential amount by the issuer matches the exact
     // confidential balance of the holder.
-    return verifyClawbackEqualityProof(
+    return verifyClawbackProof(
         amount,
         ctx.tx[sfZKProof],
         (*sleIssuance)[sfIssuerEncryptionKey],
