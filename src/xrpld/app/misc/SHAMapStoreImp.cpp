@@ -290,19 +290,56 @@ SHAMapStoreImp::run()
 
             if (isMemoryBackend_)
             {
-                // For RWDB: skip the per-node copyNode promotion loop.
-                // Instead, bulk-copy the archive into a fresh backend that
-                // is not yet shared—so no exclusive-lock contention with
-                // live consensus reads/writes on the current writable backend.
-                // After rotate(), newBackend (archive copy) becomes the new
-                // writable, old writable becomes new archive, and old archive
-                // is destroyed.
-                JLOG(journal_.debug()) << "RWDB: creating pre-populated backend for rotation";
+                // For RWDB: copy only the current validated ledger's live
+                // state nodes into a fresh backend that is not yet shared,
+                // avoiding both exclusive-lock contention on the live
+                // writable backend AND stale-node accumulation.
+                //
+                // copyArchiveTo would carry forward ALL archive entries
+                // (including stale nodes from older ledger versions that
+                // were promoted via fetch duplication), causing unbounded
+                // memory growth across rotation cycles.
+                JLOG(journal_.debug()) << "RWDB: copying live state for rotation";
                 auto newBackend = makeBackendRotating();
-                dbRotating_->copyArchiveTo(*newBackend);
-                if (healthWait() == stopping)
+                std::uint64_t nodeCount = 0;
+                bool aborted = false;
+
+                try
+                {
+                    validatedLedger->stateMap().snapShot(false)->visitNodes(
+                        [&](SHAMapTreeNode& node) -> bool {
+                            auto const hash = node.getHash().as_uint256();
+                            // Fetch the NodeObject from the rotating DB
+                            // (checks writable then archive) and store it
+                            // directly in the new unshared backend.
+                            auto obj = dbRotating_->fetchNodeObject(
+                                hash, 0, NodeStore::FetchType::synchronous, false);
+                            if (obj)
+                                newBackend->store(obj);
+
+                            if ((++nodeCount % checkHealthInterval_) == 0)
+                            {
+                                if (healthWait() == stopping)
+                                {
+                                    aborted = true;
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
+                }
+                catch (SHAMapMissingNode const& e)
+                {
+                    JLOG(journal_.error())
+                        << "Missing node while copying state before rotate: "
+                        << e.what();
+                    continue;
+                }
+
+                if (aborted)
                     return;
-                JLOG(journal_.debug()) << "RWDB: archive copied to new backend";
+                JLOG(journal_.debug())
+                    << "RWDB: copied " << nodeCount << " live nodes";
 
                 clearCaches(validatedSeq);
                 lastRotated = validatedSeq;
