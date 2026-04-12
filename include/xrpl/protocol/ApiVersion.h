@@ -138,10 +138,11 @@ forApiVersions(Fn const& fn, Args&&... args)
 {
     constexpr auto size = maxVer + 1 - minVer;
     [&]<std::size_t... offset>(std::index_sequence<offset...>) {
-        // NOLINTNEXTLINE(bugprone-use-after-move)
+        // NOLINTBEGIN(bugprone-use-after-move)
         (((void)fn(
              std::integral_constant<unsigned int, minVer + offset>{}, std::forward<Args>(args)...)),
          ...);
+        // NOLINTEND(bugprone-use-after-move)
     }(std::make_index_sequence<size>{});
 }
 
