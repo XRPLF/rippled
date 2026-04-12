@@ -538,7 +538,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }

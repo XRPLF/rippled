@@ -94,7 +94,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)
+        catch (suite::abort_exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)
