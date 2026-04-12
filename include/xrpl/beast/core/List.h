@@ -35,6 +35,8 @@ struct CopyConst<T const, U>
 template <typename T, typename Tag>
 class ListNode
 {
+    ListNode() = default;
+
 private:
     using value_type = T;
 
@@ -45,6 +47,7 @@ private:
 
     ListNode* m_next = nullptr;
     ListNode* m_prev = nullptr;
+    friend T;
 };
 
 //------------------------------------------------------------------------------

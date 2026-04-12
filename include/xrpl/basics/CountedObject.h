@@ -113,16 +113,20 @@ private:
     }
 
 public:
+private:
     CountedObject() noexcept
     {
         getCounter().increment();
     }
 
+public:
+private:
     CountedObject(CountedObject const&) noexcept
     {
         getCounter().increment();
     }
 
+public:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
@@ -130,6 +134,8 @@ public:
     {
         getCounter().decrement();
     }
+    friend Object;
+    friend Object;
 };
 
 }  // namespace xrpl

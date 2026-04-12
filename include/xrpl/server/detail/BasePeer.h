@@ -9,7 +9,6 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
-#include <functional>
 #include <string>
 
 namespace xrpl {
@@ -34,6 +33,7 @@ protected:
     boost::asio::strand<boost::asio::executor> strand_;
 
 public:
+    // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
     BasePeer(
         Port const& port,
         Handler& handler,
