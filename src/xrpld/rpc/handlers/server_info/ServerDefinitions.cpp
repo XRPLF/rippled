@@ -364,14 +364,14 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 }
 
-}  // namespace detail
-
-static detail::ServerDefinitions const&
+ServerDefinitions const&
 getDefinitions()
 {
-    static detail::ServerDefinitions const defs{};
+    static ServerDefinitions const defs{};
     return defs;
 }
+
+}  // namespace detail
 
 Json::Value
 doServerDefinitions(RPC::JsonContext& context)
@@ -385,7 +385,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    auto const& defs = getDefinitions();
+    auto const& defs = detail::getDefinitions();
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;
@@ -398,7 +398,7 @@ doServerDefinitions(RPC::JsonContext& context)
 Json::Value
 getStaticServerDefinitions()
 {
-    return getDefinitions().get();
+    return detail::getDefinitions().get();
 }
 
 }  // namespace xrpl
