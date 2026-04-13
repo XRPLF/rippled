@@ -103,6 +103,7 @@ floatLogImpl(Slice const& x, int32_t mode);
 
 }  // namespace wasm_float
 
+// Intended to work only through wasm runtime. Don't call them directly, except with unit tests
 struct HostFunctions
 {
     beast::Journal j_;
@@ -113,11 +114,11 @@ struct HostFunctions
 
     // LCOV_EXCL_START
     virtual void
-    setRT(void const*)
+    setRT(void*)
     {
     }
 
-    virtual void const*
+    virtual void*
     getRT() const
     {
         return nullptr;

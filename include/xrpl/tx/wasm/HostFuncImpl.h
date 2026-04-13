@@ -4,6 +4,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 
 namespace xrpl {
+
+// Intended to work only through wasm runtime. Don't call them directly, except with unit tests
 class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx_;
@@ -16,7 +18,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 
     std::optional<Bytes> data_;
 
-    void const* rt_ = nullptr;
+    void* rt_ = nullptr;
 
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
     getCurrentLedgerObj() const
@@ -64,12 +66,12 @@ public:
     }
 
     virtual void
-    setRT(void const* rt) override
+    setRT(void* rt) override
     {
         rt_ = rt;
     }
 
-    virtual void const*
+    virtual void*
     getRT() const override
     {
         return rt_;
