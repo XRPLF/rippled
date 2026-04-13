@@ -416,7 +416,8 @@ ValidMPTTransfer::finalize(
     // DEX transactions (AMM[Create,Deposit,Withdraw], cross-currency payments, offer creates) are
     // subject to the MPTCanTrade flag in addition to the standard transfer rules.
     // A payment is only DEX if it is a cross-currency payment.
-    auto const isDEX = [&tx, &txnType] {
+    auto const isDEX = [&tx] {
+        auto const txnType = tx.getTxnType();
         if (txnType == ttPAYMENT)
         {
             // A payment is cross-currency (and thus DEX) only if SendMax is present
