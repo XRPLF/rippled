@@ -20,7 +20,7 @@ struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    std::string description;
+    std::string description = {};  // NOLINT(readability-redundant-member-init)
 
     auto
     toJson() const -> Json::Value;

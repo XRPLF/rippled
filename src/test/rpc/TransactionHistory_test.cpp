@@ -17,7 +17,7 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env const env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(no_admin)};
 
         {
             // no params
@@ -41,7 +41,7 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Command retired from API v2");
         using namespace test::jtx;
-        Env const env{*this, envconfig(no_admin)};
+        Env env{*this, envconfig(no_admin)};
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;

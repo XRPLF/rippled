@@ -12,7 +12,8 @@ struct MPTCreateArgs
     AccountID const& account;
     std::uint32_t sequence = 0;
     std::uint32_t flags = 0;
-    std::optional<std::uint64_t> maxAmount;
+    std::optional<std::uint64_t> maxAmount =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
     std::optional<std::uint8_t> assetScale;
     std::optional<std::uint16_t> transferFee;
     std::optional<Slice> const& metadata{};

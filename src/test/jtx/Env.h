@@ -260,7 +260,8 @@ public:
     virtual ~Env() = default;
 
     Application&
-    app()  // NOLINT(readability-make-member-function-const)
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    app()
     {
         return *bundle_.app;
     }
@@ -272,7 +273,8 @@ public:
     }
 
     ManualTimeKeeper&
-    timeKeeper()  // NOLINT(readability-make-member-function-const)
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    timeKeeper()
     {
         return *bundle_.timeKeeper;
     }
@@ -283,14 +285,16 @@ public:
               close or by callers.
     */
     NetClock::time_point
-    now()  // NOLINT(readability-make-member-function-const)
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    now()
     {
         return timeKeeper().now();
     }
 
     /** Returns the connected client. */
     AbstractClient&
-    client()  // NOLINT(readability-make-member-function-const)
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    client()
     {
         return *bundle_.client;
     }

@@ -99,7 +99,7 @@ struct BidArg
     std::optional<Account> account = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMin = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
-    std::vector<Account> authAccounts;
+    std::vector<Account> authAccounts = {};  // NOLINT(readability-redundant-member-init)
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
 };
