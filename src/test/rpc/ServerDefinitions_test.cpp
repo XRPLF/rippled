@@ -1,5 +1,6 @@
 #include <test/jtx.h>
-#include <xrpld/rpc/handlers/Handlers.h>
+
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/LedgerFormats.h>

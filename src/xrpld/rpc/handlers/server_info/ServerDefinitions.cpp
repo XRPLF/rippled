@@ -1,3 +1,5 @@
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 

@@ -4,6 +4,7 @@
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -494,8 +495,10 @@ run(int argc, char** argv)
 
     if (vm.contains("definitions"))
     {
+        // LCOV_EXCL_START
         std::cout << Json::FastWriter().write(getStaticServerDefinitions());
         return 0;
+        // LCOV_EXCL_STOP
     }
 
 #ifndef ENABLE_TESTS
