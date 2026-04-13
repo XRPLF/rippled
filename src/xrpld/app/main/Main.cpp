@@ -3,7 +3,6 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
-#include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/basics/Log.h>
