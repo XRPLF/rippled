@@ -438,6 +438,7 @@ ValidMPTTransfer::finalize(
         std::uint16_t senders = 0;
         std::uint16_t receivers = 0;
         bool frozen = false;
+        bool reqAuth = false;
         auto const sleIssuance = view.read(keylet::mptIssuance(mptID));
         if (!sleIssuance)
         {
@@ -457,6 +458,10 @@ ValidMPTTransfer::finalize(
                 if (!value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore)
                 {
                     ++receivers;
+                    if (!reqAuth && !isTesSuccess(requireAuth(view, MPTIssue{mptID}, account)))
+                    {
+                        reqAuth = true;
+                    }
                 }
                 else
                 {
@@ -475,7 +480,8 @@ ValidMPTTransfer::finalize(
         // A transfer between holders has occurred (senders > 0 && receivers > 0).
         // Fail if the issuance is frozen, does not permit transfers, or — for
         // DEX transactions — does not permit trading.
-        if ((frozen || !canTransfer || (isDEX && !canTrade)) && senders > 0 && receivers > 0)
+        if (((frozen || !canTransfer || (isDEX && !canTrade)) && senders > 0 && receivers > 0) ||
+            reqAuth)
         {
             JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
             return enforce;
