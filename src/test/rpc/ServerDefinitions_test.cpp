@@ -1,4 +1,5 @@
 #include <test/jtx.h>
+#include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -453,9 +454,30 @@ public:
     }
 
     void
+    testGetStaticServerDefinitions()
+    {
+        testcase("getStaticServerDefinitions");
+
+        auto const defs = getStaticServerDefinitions();
+        BEAST_EXPECT(defs.isMember(jss::FIELDS));
+        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_TYPES));
+        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_RESULTS));
+        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_TYPES));
+        BEAST_EXPECT(defs.isMember(jss::TYPES));
+        BEAST_EXPECT(defs.isMember(jss::hash));
+
+        // verify it returns the same hash as the RPC handler
+        using namespace test::jtx;
+        Env env(*this);
+        auto const rpcResult = env.rpc("server_definitions");
+        BEAST_EXPECT(defs[jss::hash] == rpcResult[jss::result][jss::hash]);
+    }
+
+    void
     run() override
     {
         testServerDefinitions();
+        testGetStaticServerDefinitions();
     }
 };
 
