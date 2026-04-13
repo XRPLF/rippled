@@ -206,7 +206,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     if (reply.has_error() || !reply.has_ledgerheader() || !reply.has_ledgerhash() ||
         reply.ledgerhash().size() != uint256::size())
     {
-        JLOG(journal_.debug()) << "Bad message: Error reply";
+        JLOG(journal_.debug()) << "Bad message: Invalid or malformed replay delta response";
         return false;
     }
 
