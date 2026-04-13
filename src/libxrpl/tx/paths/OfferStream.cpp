@@ -225,11 +225,14 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Only validate domain membership when walking a domain book.
+        // Without fixSecurity3_1_3: validate domain membership for any book
+        // (original behaviour).
+        // With fixSecurity3_1_3: only validate when walking a domain book.
         // Hybrid offers carry sfDomainID but also participate in the open
         // book; expiry of the owner's domain credential should not evict
         // the offer from the open book.
-        if (book_.domain.has_value() && entry->isFieldPresent(sfDomainID) &&
+        if ((!view_.rules().enabled(fixSecurity3_1_3) || book_.domain.has_value()) &&
+            entry->isFieldPresent(sfDomainID) &&
             !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {

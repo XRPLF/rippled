@@ -1101,35 +1101,70 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid, true));
 
-        // bob's hybrid offer CAN still be consumed via a regular open-book
-        // payment even though his domain credential has been revoked.
-        auto const carolBalBefore = env.balance(carol, USD);
-        env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
-        env.close();
-        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(5));
-        BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(45), USD(45), lsfHybrid, true));
+        if (features[fixSecurity3_1_3])
+        {
+            // With the fix: hybrid offer CAN still be consumed via a regular
+            // open-book payment even though the domain credential was revoked.
+            auto const carolBalBefore = env.balance(carol, USD);
+            env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
+            env.close();
+            BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(5));
+            BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(45), USD(45), lsfHybrid, true));
 
-        // create a regular offer alongside the hybrid one
-        auto const regularOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), USD(10)));
-        env.close();
-        BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
+            // create a regular offer alongside the hybrid one
+            auto const regularOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
 
-        auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
-        BEAST_EXPECT(sleHybridOffer);
-        auto const openDir =
-            sleHybridOffer->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
-        // both offers are in the open book directory
-        BEAST_EXPECT(checkDirectorySize(env, openDir, 2));
+            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            BEAST_EXPECT(sleHybridOffer);
+            auto const openDir =
+                sleHybridOffer->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+            // both offers are in the open book directory
+            BEAST_EXPECT(checkDirectorySize(env, openDir, 2));
 
-        // a regular payment crosses the hybrid offer first (FIFO, older offer),
-        // then stops — the regular offer is untouched.
-        env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
-        env.close();
+            // A regular payment crosses the hybrid offer first (FIFO, older
+            // offer), then stops — the regular offer is untouched.
+            env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
+            env.close();
 
-        BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(40), USD(40), lsfHybrid, true));
-        BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
-        BEAST_EXPECT(checkDirectorySize(env, openDir, 2));
+            BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(40), USD(40), lsfHybrid, true));
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
+            BEAST_EXPECT(checkDirectorySize(env, openDir, 2));
+        }
+        else
+        {
+            // Without the fix (original behaviour): the open-book traversal
+            // also runs the offerInDomain eviction check, so the hybrid offer
+            // is treated as unfunded and the regular payment fails.
+            env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)), ter(tecPATH_PARTIAL));
+            env.close();
+            BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid, true));
+
+            // create a regular offer
+            auto const regularOfferSeq{env.seq(bob)};
+            env(offer(bob, XRP(10), USD(10)));
+            env.close();
+            BEAST_EXPECT(offerExists(env, bob, regularOfferSeq));
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(10), USD(10)));
+
+            auto const sleHybridOffer = env.le(keylet::offer(bob.id(), hybridOfferSeq));
+            BEAST_EXPECT(sleHybridOffer);
+            auto const openDir =
+                sleHybridOffer->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+            BEAST_EXPECT(checkDirectorySize(env, openDir, 2));
+
+            // This payment crosses the regular offer and permanently evicts the
+            // hybrid offer from the open book (since the payment succeeds, the
+            // sandbox — including the hybrid eviction — is committed).
+            env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, bob, hybridOfferSeq));
+            BEAST_EXPECT(checkOffer(env, bob, regularOfferSeq, XRP(5), USD(5)));
+            BEAST_EXPECT(checkDirectorySize(env, openDir, 1));
+        }
     }
 
     void
@@ -1288,74 +1323,96 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(checkOffer(env, bob, usdOfferSeq, XRP(5), USD(5), 0, false));
             BEAST_EXPECT(checkOffer(env, bob, eurOfferSeq, USD(5), EUR(5), lsfHybrid, true));
         }
+    }
 
-        // Regression: hybrid offer is NOT deleted from the open book when the
-        // owner's domain credential expires.
-        //
-        // OfferStream::step() must only run the offerInDomain eviction check
-        // when walking a domain book (book_.domain.has_value()).  When walking
-        // the open book the check must be skipped so that a hybrid offer stays
-        // available regardless of the owner's current domain-credential status.
-        {
-            Env env(*this, features);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                PermissionedDEX(env);
+    // Regression: hybrid offer is NOT evicted from the open book when the
+    // owner's domain credential expires (fixSecurity3_1_3).
+    // A domain payment after expiry should fail (domain book evicts the offer),
+    // but the open book remains usable.
+    void
+    testHybridOpenBookAfterCredentialExpiry(FeatureBitset features)
+    {
+        testcase("Hybrid open book after credential expiry");
 
-            Account const devin("devin");
-            env.fund(XRP(100000), devin);
-            env.close();
-            env.trust(USD(1000), devin);
-            env.close();
-            env(pay(gw, devin, USD(100)));
-            env.close();
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
 
-            // Give devin a credential that expires far enough in the future to
-            // survive the setup env.close() calls.
-            auto jv = credentials::create(devin, domainOwner, credType);
-            uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
-            jv[sfExpiration.jsonName] = t + 100;
-            env(jv);
-            env.close();
-            env(credentials::accept(devin, domainOwner, credType));
-            env.close();
+        Account const devin("devin");
+        env.fund(XRP(100000), devin);
+        env.close();
+        env.trust(USD(1000), devin);
+        env.close();
+        env(pay(gw, devin, USD(100)));
+        env.close();
 
-            // Devin creates a hybrid offer: sell USD(10) for XRP(10).
-            // The offer is placed in both the domain book and the open book.
-            auto const hybridOfferSeq{env.seq(devin)};
-            env(offer(devin, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID));
-            env.close();
+        // Give devin a credential that expires far enough in the future to
+        // survive the setup env.close() calls.
+        auto jv = credentials::create(devin, domainOwner, credType);
+        uint32_t const t = env.current()->header().parentCloseTime.time_since_epoch().count();
+        jv[sfExpiration.jsonName] = t + 100;
+        env(jv);
+        env.close();
+        env(credentials::accept(devin, domainOwner, credType));
+        env.close();
 
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(10), USD(10), lsfHybrid, true));
+        // Devin creates a hybrid offer: sell USD(10) for XRP(10).
+        // The offer is placed in both the domain book and the open book.
+        auto const hybridOfferSeq{env.seq(devin)};
+        env(offer(devin, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID));
+        env.close();
 
-            // A non-domain open-book payment partially crosses the offer while
-            // devin's credential is still valid.
-            auto const carolBalBefore = env.balance(carol, USD);
-            env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
-            env.close();
-            BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(5));
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(10), USD(10), lsfHybrid, true));
 
-            // Advance time so that devin's credential expires.
-            env.close(std::chrono::seconds(100));
+        // A non-domain open-book payment partially crosses the offer while
+        // devin's credential is still valid.
+        auto const carolBalBefore = env.balance(carol, USD);
+        env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(5));
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
 
-            // Confirm devin can no longer create domain offers.
-            env(offer(devin, XRP(1), USD(1)), domain(domainID), ter(tecNO_PERMISSION));
-            env.close();
+        // Advance time so that devin's credential expires.
+        env.close(std::chrono::seconds(100));
 
-            // The hybrid offer must still exist in the open book after expiry.
-            BEAST_EXPECT(offerExists(env, devin, hybridOfferSeq));
+        // Confirm devin can no longer create domain offers.
+        env(offer(devin, XRP(1), USD(1)), domain(domainID), ter(tecNO_PERMISSION));
+        env.close();
 
-            // A non-domain open-book payment must cross (not delete) the
-            // remaining portion of devin's hybrid offer.
-            auto const carolBalBefore2 = env.balance(carol, USD);
-            env(pay(alice, carol, USD(2)), path(~USD), sendmax(XRP(2)));
-            env.close();
+        // The hybrid offer must still exist in the open book after expiry.
+        BEAST_EXPECT(offerExists(env, devin, hybridOfferSeq));
 
-            // Carol received USD — the offer was crossed, not evicted.
-            BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore2 == USD(2));
-            // Offer still exists with 3 USD / 3 XRP remaining.
-            BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
-        }
+        // A non-domain open-book payment must cross (not evict) the
+        // remaining portion of devin's hybrid offer.
+        auto const carolBalBefore2 = env.balance(carol, USD);
+        env(pay(alice, carol, USD(2)), path(~USD), sendmax(XRP(2)));
+        env.close();
+
+        // Carol received USD — the offer was crossed, not evicted.
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore2 == USD(2));
+        // Offer still exists with 3 USD / 3 XRP remaining.
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
+
+        // A domain payment now fails because the domain book evicts devin's
+        // offer (his credential has expired).  The eviction is rolled back with
+        // the failed sandbox, so the offer is NOT permanently removed.
+        env(pay(alice, carol, USD(1)),
+            path(~USD),
+            sendmax(XRP(1)),
+            domain(domainID),
+            ter(tecPATH_PARTIAL));
+        env.close();
+
+        // Offer still intact in the open book — domain payment did not
+        // permanently delete it.
+        BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
+
+        // The open book can still fully consume the remaining portion.
+        auto const carolBalBefore3 = env.balance(carol, USD);
+        env(pay(alice, carol, USD(3)), path(~USD), sendmax(XRP(3)));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore3 == USD(3));
+        BEAST_EXPECT(!offerExists(env, devin, hybridOfferSeq));
     }
 
     void
@@ -1462,7 +1519,11 @@ public:
         // Test hybrid offers
         testHybridOfferCreate(all);
         testHybridBookStep(all);
+        // testHybridInvalidOffer: run once without the fix (old behaviour) and
+        // once with the fix (new behaviour).
         testHybridInvalidOffer(all);
+        testHybridInvalidOffer(all | fixSecurity3_1_3);
+        testHybridOpenBookAfterCredentialExpiry(all | fixSecurity3_1_3);
         testHybridOfferDirectories(all);
     }
 };
