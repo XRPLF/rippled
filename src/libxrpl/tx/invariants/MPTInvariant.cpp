@@ -410,8 +410,7 @@ ValidMPTTransfer::finalize(
     beast::Journal const& j)
 {
     // AMMClawback is called by the issuer, so freeze restrictions do not apply.
-    auto const txnType = tx.getTxnType();
-    if (txnType == ttAMM_CLAWBACK)
+    if (hasPrivilege(tx, overrideFreeze))
         return true;
 
     // DEX transactions (AMM[Create,Deposit,Withdraw], cross-currency payments, offer creates) are
