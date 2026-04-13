@@ -208,7 +208,7 @@ jobs:
           if-no-files-found: error
 
       - name: Export server definitions
-        if: ${{ runner.os != 'Windows' }}
+        if: ${{ runner.os != 'Windows' && !inputs.build_only }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           set -o pipefail
