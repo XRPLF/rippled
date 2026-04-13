@@ -1,6 +1,10 @@
 #pragma once
 
-#include <xrpl/tx/wasm/WasmiVM.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
+
+#include <wasm.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

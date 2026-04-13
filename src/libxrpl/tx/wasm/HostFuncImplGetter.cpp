@@ -107,6 +107,7 @@ getAnyFieldData(FieldValue const& variantObj)
     {
         return getAnyFieldData(*obj);
     }
+
     if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
     {
         return Bytes((*u)->begin(), (*u)->end());
