@@ -208,7 +208,7 @@ jobs:
           if-no-files-found: error
 
       - name: Export server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
+        if: ${{ runner.os != 'Windows' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           set -o pipefail
