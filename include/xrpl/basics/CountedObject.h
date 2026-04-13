@@ -112,15 +112,11 @@ private:
         return c;
     }
 
-public:
-private:
     CountedObject() noexcept
     {
         getCounter().increment();
     }
 
-public:
-private:
     CountedObject(CountedObject const&) noexcept
     {
         getCounter().increment();
@@ -134,7 +130,7 @@ public:
     {
         getCounter().decrement();
     }
-    friend Object;
+
     friend Object;
 };
 

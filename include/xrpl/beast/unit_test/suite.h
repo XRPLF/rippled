@@ -17,8 +17,6 @@
 namespace beast {
 namespace unit_test {
 
-class Thread;
-
 namespace detail {
 
 template <class String>
@@ -37,6 +35,8 @@ make_reason(String const& reason, char const* file, int line)
 }
 
 }  // namespace detail
+
+class Thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 

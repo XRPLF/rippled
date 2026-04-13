@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
+#include <functional>
 #include <string>
 
 namespace xrpl {

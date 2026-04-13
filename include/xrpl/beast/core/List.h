@@ -37,9 +37,7 @@ class ListNode
 {
     ListNode() = default;
 
-private:
     using value_type = T;
-
     friend class List<T, Tag>;
 
     template <typename>
