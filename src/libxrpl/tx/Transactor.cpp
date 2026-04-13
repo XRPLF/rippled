@@ -479,7 +479,15 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         if (payerSle->getType() != ltACCOUNT_ROOT)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        maxSpendable = payerSle->getFieldAmount(payer.balanceField).xrp();
+        if (payer.type == FeePayerType::SponsorCoSigned)
+        {
+            STAmount const sponsorReserve = calculateReserve(payerSle, ctx.view.fees());
+            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve.xrp();
+        }
+        else
+        {
+            maxSpendable = payerSle->getFieldAmount(payer.balanceField).xrp();
+        }
     }
 
     // NOTE: Because preclaim evaluates against a static readview, it

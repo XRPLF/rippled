@@ -1444,6 +1444,27 @@ public:
                 BEAST_EXPECT(env.balance(bob) == bobBalance);
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
             }
+
+            {
+                // below reserve
+                adjustAccountXRPBalance(env, sponsor, env.current()->fees().reserve);
+                env.close();
+                auto const feeAmt = XRP(4);
+
+                env(noop(alice),
+                    fee(env.current()->fees().base),
+                    sponsor::as(sponsor, spfSponsorFee),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(terINSUF_FEE_B));
+                env.close();
+
+                env(noop(alice),
+                    fee(XRP(10)),
+                    sponsor::as(sponsor, spfSponsorFee),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(terINSUF_FEE_B));
+                env.close();
+            }
         }
 
         {
@@ -1595,7 +1616,6 @@ public:
 
                 BEAST_EXPECT(env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
                 auto sponsorAvailableFee = sponsorFeeBalance(sponsor, alice);
-                printf("sponsorAvailableFee: %s\n", to_string(sponsorAvailableFee).c_str());
                 env(check::cancel(alice, uint256(1)),
                     fee(sponsorAvailableFee),
                     sponsor::as(sponsor, spfSponsorFee),
