@@ -17,6 +17,7 @@ enum class ProtocolFeature {
     ValidatorListPropagation,
     ValidatorList2Propagation,
     LedgerReplay,
+    LedgerDataCookies
 };
 
 /** Represents a peer connection in the overlay. */
@@ -116,6 +117,13 @@ public:
 
     virtual bool
     txReduceRelayEnabled() const = 0;
+
+    //
+    // Messages
+    //
+
+    virtual std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) = 0;
 };
 
 }  // namespace xrpl

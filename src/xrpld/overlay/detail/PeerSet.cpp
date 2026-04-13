@@ -2,7 +2,9 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/protocol/digest.h>
 
 namespace xrpl {
 
@@ -82,16 +84,45 @@ PeerSetImpl::sendRequest(
     std::shared_ptr<Peer> const& peer)
 {
     auto packet = std::make_shared<Message>(message, type);
+
+    auto const messageHash = [&]() {
+        auto const packetBuffer = packet->getBuffer(compression::Compressed::Off);
+        return sha512Half(Slice(packetBuffer.data(), packetBuffer.size()));
+    }();
+
+    // Allow messages to be re-sent to the same peer after a delay
+    using namespace std::chrono_literals;
+    constexpr std::chrono::seconds interval = 30s;
+
     if (peer)
     {
-        peer->send(packet);
+        if (app_.getHashRouter().shouldProcessForPeer(messageHash, peer->id(), interval))
+        {
+            JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to ["
+                                   << peer->id() << "]: " << messageHash;
+            peer->send(packet);
+        }
+        else
+            JLOG(journal_.debug()) << "Suppressing sending duplicate " << protocolMessageName(type)
+                                   << " message to [" << peer->id() << "]: " << messageHash;
         return;
     }
 
     for (auto id : peers_)
     {
         if (auto p = app_.getOverlay().findPeerByShortID(id))
-            p->send(packet);
+        {
+            if (app_.getHashRouter().shouldProcessForPeer(messageHash, p->id(), interval))
+            {
+                JLOG(journal_.trace()) << "Sending " << protocolMessageName(type) << " message to ["
+                                       << p->id() << "]: " << messageHash;
+                p->send(packet);
+            }
+            else
+                JLOG(journal_.debug())
+                    << "Suppressing sending duplicate " << protocolMessageName(type)
+                    << " message to [" << p->id() << "]: " << messageHash;
+        }
     }
 }
 

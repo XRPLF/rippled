@@ -20,6 +20,8 @@ namespace xrpl {
 constexpr ProtocolVersion const supportedProtocolList[]{
     {2, 1},
     {2, 2},
+    // Adds TMLedgerData::responseCookies and directResponse
+    {2, 3},
 };
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
