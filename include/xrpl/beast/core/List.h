@@ -39,7 +39,7 @@ class ListNode
 
     using value_type = T;
 
-    friend value_type;
+    friend T;
     friend class List<T, Tag>;
 
     template <typename>
