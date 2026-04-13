@@ -108,30 +108,30 @@ Checks: "-*,
   performance-move-constructor-init,
   performance-no-automatic-move,
   performance-trivially-destructible,
-  # readability-avoid-nested-conditional-operator, # has issues
-  # readability-avoid-return-with-void-value, # has issues
-  # readability-braces-around-statements, # has issues
-  # readability-const-return-type, # has issues
-  # readability-container-contains, # has issues
-  # readability-container-size-empty, # has issues
-  # readability-convert-member-functions-to-static, # has issues
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-return-with-void-value,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-container-contains,
+  readability-container-size-empty,
+  readability-convert-member-functions-to-static,
   readability-duplicate-include,
-  # readability-else-after-return, # has issues
-  # readability-enum-initial-value, # has issues
-  # readability-implicit-bool-conversion, # has issues
-  # readability-make-member-function-const, # has issues
-  # readability-math-missing-parentheses, # has issues
+  readability-else-after-return,
+  readability-enum-initial-value,
+  readability-implicit-bool-conversion,
+  readability-make-member-function-const,
+  readability-math-missing-parentheses,
   readability-misleading-indentation,
   readability-non-const-parameter,
-  # readability-redundant-casting, # has issues
-  # readability-redundant-declaration, # has issues
-  # readability-redundant-inline-specifier, # has issues
-  # readability-redundant-member-init, # has issues
+  readability-redundant-casting,
+  readability-redundant-declaration,
+  readability-redundant-inline-specifier,
+  readability-redundant-member-init,
   readability-redundant-string-init,
   readability-reference-to-constructed-temporary,
-  # readability-simplify-boolean-expr, # has issues
-  # readability-static-definition-in-anonymous-namespace, # has issues
-  # readability-suspicious-call-argument, # has issues
+  readability-simplify-boolean-expr,
+  readability-static-definition-in-anonymous-namespace,
+  readability-suspicious-call-argument,
   readability-use-std-min-max
   "
 # ---

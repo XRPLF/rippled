@@ -381,8 +381,10 @@ Scheduler::step()
     if (!step_one())
         return false;
     for (;;)
+    {
         if (!step_one())
             break;
+    }
     return true;
 }
 

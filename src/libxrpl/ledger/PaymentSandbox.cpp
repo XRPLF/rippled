@@ -239,7 +239,7 @@ DeferredCredits::apply(DeferredCredits& to)
             toVal.selfDebit += fromVal.selfDebit;
             for (auto& [k, v] : fromVal.holders)
             {
-                if (toVal.holders.find(k) == toVal.holders.end())
+                if (!toVal.holders.contains(k))
                 {
                     toVal.holders[k] = v;
                 }

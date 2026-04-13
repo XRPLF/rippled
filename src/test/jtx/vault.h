@@ -25,7 +25,7 @@ struct Vault
     {
         Account owner;
         Asset asset;
-        std::optional<std::uint32_t> flags{};
+        std::optional<std::uint32_t> flags;
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */
@@ -75,7 +75,7 @@ struct Vault
         Account issuer;
         uint256 id;
         Account holder;
-        std::optional<STAmount> amount{};
+        std::optional<STAmount> amount;
     };
 
     static Json::Value

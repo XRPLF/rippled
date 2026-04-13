@@ -309,7 +309,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort();
+    propagate_abort() const;
 
     template <class = void>
     void
@@ -486,9 +486,13 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
+    {
         pass();
+    }
     else
+    {
         fail(reason);
+    }
     return !b;
 }
 
@@ -522,7 +526,7 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort()
+suite::propagate_abort() const
 {
     if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());

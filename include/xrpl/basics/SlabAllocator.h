@@ -98,7 +98,7 @@ class SlabAllocator
 
                 ret = l_;
 
-                if (ret)
+                if (ret != nullptr)
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
@@ -159,7 +159,7 @@ public:
         std::size_t extra,
         std::size_t alloc = 0,
         std::size_t align = 0)
-        : itemAlignment_(align ? align : alignof(Type))
+        : itemAlignment_((align != 0u) ? align : alignof(Type))
         , itemSize_(boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
@@ -215,7 +215,7 @@ public:
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
         auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
-        if (!buf) [[unlikely]]
+        if (buf == nullptr) [[unlikely]]
             return nullptr;
 
 #if BOOST_OS_LINUX
@@ -235,7 +235,7 @@ public:
 
         // This operation is essentially guaranteed not to fail but
         // let's be careful anyways.
-        if (!boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize))
+        if (boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize) == nullptr)
         {
             boost::alignment::aligned_free(buf);
             return nullptr;

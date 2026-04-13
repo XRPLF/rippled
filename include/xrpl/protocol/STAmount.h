@@ -48,7 +48,7 @@ public:
     // Maximum native value supported by the code
     constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
     static_assert(isPowerOfTen(cMinValue));
-    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    constexpr static std::uint64_t cMaxValue = (cMinValue * 10) - 1;
     static_assert(cMaxValue == 9'999'999'999'999'999ull);
     constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
@@ -359,9 +359,13 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     : mAsset(issue), mOffset(amount.exponent()), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
+    {
         mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
+    }
     else
+    {
         mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
+    }
 
     canonicalize();
 }
@@ -370,9 +374,13 @@ inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
     : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
+    {
         mValue = unsafe_cast<std::uint64_t>(-amount.value());
+    }
     else
+    {
         mValue = unsafe_cast<std::uint64_t>(amount.value());
+    }
 
     canonicalize();
 }
@@ -476,7 +484,9 @@ STAmount::getIssuer() const
 inline int
 STAmount::signum() const noexcept
 {
-    return mValue ? (mIsNegative ? -1 : 1) : 0;
+    if (mValue == 0u)
+        return 0;
+    return mIsNegative ? -1 : 1;
 }
 
 inline STAmount
