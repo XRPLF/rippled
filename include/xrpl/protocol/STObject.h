@@ -1188,6 +1188,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
+        // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
         return empty;  // optional field not present
 
     T const* cf = dynamic_cast<T const*>(rf);
