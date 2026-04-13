@@ -38,6 +38,8 @@ class ListNode
     ListNode() = default;
 
     using value_type = T;
+
+    friend value_type;
     friend class List<T, Tag>;
 
     template <typename>
@@ -45,7 +47,6 @@ class ListNode
 
     ListNode* m_next = nullptr;
     ListNode* m_prev = nullptr;
-    friend T;
 };
 
 //------------------------------------------------------------------------------

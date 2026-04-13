@@ -122,10 +122,10 @@ private:
         getCounter().increment();
     }
 
-public:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
+public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
