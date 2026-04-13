@@ -358,7 +358,8 @@ run(int argc, char** argv)
         "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
         "quorum", po::value<std::size_t>(), "Override the minimum validation quorum.")(
         "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
-        "verbose,v", "Verbose logging.")("definitions", "Output server definitions as JSON and exit.")(
+        "verbose,v", "Verbose logging.")(
+        "definitions", "Output server definitions as JSON and exit.")(
         "force_ledger_present_range",
         po::value<std::string>(),
         "Specify the range of present ledgers for testing purposes. Min and "
