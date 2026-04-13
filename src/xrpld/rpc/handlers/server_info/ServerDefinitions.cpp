@@ -366,14 +366,12 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
 }  // namespace detail
 
-namespace {
-detail::ServerDefinitions const&
+static detail::ServerDefinitions const&
 getDefinitions()
 {
     static detail::ServerDefinitions const defs{};
     return defs;
 }
-}  // namespace
 
 Json::Value
 doServerDefinitions(RPC::JsonContext& context)
