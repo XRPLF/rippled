@@ -340,7 +340,7 @@ ValidatorList::cacheValidatorFile(ValidatorList::lock_guard const& lock, PublicK
     boost::system::error_code ec;
 
     Json::Value value = buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
-    // rippled should be the only process writing to this file, so
+    // xrpld should be the only process writing to this file, so
     // if it ever needs to be read, it is not expected to change externally, so
     // delay the refresh as long as possible: 24 hours. (See also
     // `ValidatorSite::missingSite()`)
@@ -1710,7 +1710,7 @@ ValidatorList::for_each_available(
         if (plCollection.status != PublisherStatus::available)
             continue;
         XRPL_ASSERT(
-            plCollection.maxSequence != 0,
+            plCollection.maxSequence.value_or(0) != 0,
             "xrpl::ValidatorList::for_each_available : nonzero maxSequence");
         func(
             plCollection.rawManifest,

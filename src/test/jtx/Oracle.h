@@ -81,7 +81,7 @@ struct RemoveArg
     std::optional<ter> const& err = std::nullopt;
 };
 
-// Simulate testStartTime as 10'000s from Ripple epoch time to make
+// Simulate testStartTime as 10'000s from XRPL epoch time to make
 // LastUpdateTime validation to work and to make unit-test consistent.
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime

@@ -1023,20 +1023,20 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         {
             Config c;
-            std::string const toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [ledger_replay]
 1
-)rippleConfig");
+)xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.LEDGER_REPLAY == true);
         }
 
         {
             Config c;
-            std::string const toLoad = (R"rippleConfig(
+            std::string const toLoad = (R"xrpldConfig(
 [ledger_replay]
 0
-)rippleConfig");
+)xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.LEDGER_REPLAY == false);
         }
