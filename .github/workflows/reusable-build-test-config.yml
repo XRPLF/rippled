@@ -210,7 +210,9 @@ jobs:
       - name: Export server definitions
         if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
         working-directory: ${{ env.BUILD_DIR }}
-        run: ./xrpld --definitions | python3 -m json.tool > server_definitions.json
+        run: |
+          set -o pipefail
+          ./xrpld --definitions | python3 -m json.tool > server_definitions.json
 
       - name: Upload server definitions
         if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
