@@ -215,9 +215,9 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     {
         info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
-        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header";
+        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header: " << e.what();
         return false;
     }
     uint256 const replyHash(reply.ledgerhash());
