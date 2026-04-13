@@ -295,6 +295,16 @@ SponsorshipSet::doApply()
                 (*sponsorObjSle).makeFieldAbsent(sfFeeAmount);
             else
                 (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+
+            if (auto const ret = checkInsufficientReserve(
+                    ctx_.view(),
+                    ctx_.tx,
+                    sponsorAccSle,
+                    STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
+                    reserveSponsorAccSle,
+                    0);
+                !isTesSuccess(ret))
+                return tecUNFUNDED;
         }
     }
 

@@ -256,6 +256,16 @@ public:
             fee(XRP(1)),
             ter(tecUNFUNDED));
         env.close();
+
+        // Increasing feeAmount to reach insufficient reserve
+        auto const currentFeeAmount =
+            env.le(keylet::sponsor(sponsor.id(), alice.id()))->getFieldAmount(sfFeeAmount).xrp();
+        adjustAccountXRPBalance(env, sponsor, XRP(310));
+        env(sponsor::set_fee(sponsor, 0, currentFeeAmount + XRP(309)),
+            sponsor::sponseeAcc(alice),
+            fee(XRP(1)),
+            ter(tecUNFUNDED));
+        env.close();
     }
 
     void
