@@ -100,7 +100,11 @@ MPTTester::MPTTester(MPTInitDef const& arg)
     : MPTTester{
           arg.env,
           arg.issuer,
-          MPTInit{.fund = arg.fund, .close = arg.close, .create = makeMPTCreate(arg)}}
+          MPTInit{
+              .holders = {},
+              .fund = arg.fund,
+              .close = arg.close,
+              .create = makeMPTCreate(arg)}}
 {
 }
 

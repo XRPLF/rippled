@@ -272,7 +272,7 @@ public:
     }
 
     ManualTimeKeeper&
-    timeKeeper() const
+    timeKeeper()  // NOLINT(readability-make-member-function-const)
     {
         return *bundle_.timeKeeper;
     }
@@ -283,14 +283,14 @@ public:
               close or by callers.
     */
     NetClock::time_point
-    now() const
+    now()  // NOLINT(readability-make-member-function-const)
     {
         return timeKeeper().now();
     }
 
     /** Returns the connected client. */
     AbstractClient&
-    client() const
+    client()  // NOLINT(readability-make-member-function-const)
     {
         return *bundle_.client;
     }
