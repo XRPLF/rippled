@@ -460,8 +460,13 @@ public:
         testcase("getStaticServerDefinitions");
 
         auto const defs = getStaticServerDefinitions();
+        BEAST_EXPECT(defs.isMember(jss::ACCOUNT_SET_FLAGS));
         BEAST_EXPECT(defs.isMember(jss::FIELDS));
+        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_FLAGS));
+        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_FORMATS));
         BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_TYPES));
+        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_FLAGS));
+        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_FORMATS));
         BEAST_EXPECT(defs.isMember(jss::TRANSACTION_RESULTS));
         BEAST_EXPECT(defs.isMember(jss::TRANSACTION_TYPES));
         BEAST_EXPECT(defs.isMember(jss::TYPES));
